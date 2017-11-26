@@ -38,7 +38,8 @@ import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, TaskCloser
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.TokenNameLookup
-import org.neo4j.internal.kernel.api.exceptions.{EntityNotFoundException, KernelException}
+import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager

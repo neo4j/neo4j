@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 
 /**
@@ -36,11 +36,10 @@ public interface ExplicitIndexWrite
      * @param node The id of the node to add
      * @param key The key to associate with the node
      * @param value The value to associate with the node an key
-     * @throws EntityNotFoundException If there is no node with the given index
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
+            throws KernelException;
 
     /**
      * Removes a node from an explicit index
@@ -81,11 +80,10 @@ public interface ExplicitIndexWrite
      * @param relationship The id of the relationship to add
      * @param key The key to associate with the node
      * @param value The value to associate with the relationship and key
-     * @throws EntityNotFoundException If there is no relationship with the given index
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
+            throws KernelException;
 
     /**
      * Adds relationship to explicit index.
@@ -97,7 +95,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws KernelException;
 
     /**
      * Adds relationship to explicit index.
@@ -108,7 +106,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws KernelException;
 
     /**
      * Adds relationship to explicit index.
@@ -118,7 +116,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws KernelException;
 
     /**
      * Creates an explicit index in a separate transaction if not yet available.

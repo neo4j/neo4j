@@ -28,7 +28,7 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.StubNodeCursor;
 import org.neo4j.internal.kernel.api.StubPropertyCursor;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;

@@ -42,10 +42,8 @@ import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
-import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
@@ -53,6 +51,7 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -135,7 +134,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getLabelsForNode(node: Long) = try {
     JavaConversionSupport.asScala(transactionalContext.statement.readOperations().nodeGetLabels(node))
   } catch {
-    case e: api.exceptions.EntityNotFoundException =>
+    case e: exceptions.EntityNotFoundException =>
       if (nodeOps.isDeletedInThisTx(node))
         throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction", e)
       else
@@ -379,20 +378,20 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       try {
         writes().nodeDelete(id)
       } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
       JavaConversionSupport.asScalaENFXSafe(transactionalContext.statement.readOperations().nodeGetPropertyKeys(id))
     } catch {
-      case _: api.exceptions.EntityNotFoundException => Iterator.empty
+      case _: exceptions.EntityNotFoundException => Iterator.empty
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Value = try {
       transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId)
     } catch {
-      case e: api.exceptions.EntityNotFoundException =>
+      case e: exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
         else
@@ -402,14 +401,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       transactionalContext.statement.readOperations().nodeHasProperty(id, propertyKey)
     } catch {
-      case _: api.exceptions.EntityNotFoundException => false
+      case _: exceptions.EntityNotFoundException => false
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
       try {
         transactionalContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
       } catch {
-        case _: api.exceptions.EntityNotFoundException => //ignore
+        case _: exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -417,7 +416,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       try {
         transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, value)
       } catch {
-        case _: api.exceptions.EntityNotFoundException => //ignore
+        case _: exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -468,7 +467,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       try {
         transactionalContext.statement.dataWriteOperations().relationshipDelete(id)
       } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
@@ -476,13 +475,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       JavaConversionSupport
         .asScalaENFXSafe(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id))
     } catch {
-      case _: api.exceptions.EntityNotFoundException => Iterator.empty
+      case _: exceptions.EntityNotFoundException => Iterator.empty
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Value = try {
       transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
     } catch {
-      case e: api.exceptions.EntityNotFoundException =>
+      case e: exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction", e)
         else
@@ -492,14 +491,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       transactionalContext.statement.readOperations().relationshipHasProperty(id, propertyKey)
     } catch {
-      case _: api.exceptions.EntityNotFoundException => false
+      case _: exceptions.EntityNotFoundException => false
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
       try {
         transactionalContext.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
       } catch {
-        case _: api.exceptions.EntityNotFoundException => //ignore
+        case _: exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -507,7 +506,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       try {
         transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, value)
       } catch {
-        case _: api.exceptions.EntityNotFoundException => //ignore
+        case _: exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -526,7 +525,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       })
       Option(relationship)
     } catch {
-      case e: api.exceptions.EntityNotFoundException => None
+      case e: exceptions.EntityNotFoundException => None
     }
 
     override def all: Iterator[Relationship] = {
@@ -560,7 +559,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         transactionalContext.statement.readOperations().relationshipVisit(id, NoopVisitor)
         true
       } catch {
-        case e: api.exceptions.EntityNotFoundException => false
+        case e: exceptions.EntityNotFoundException => false
       }
     }
   }
@@ -863,7 +862,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     try {
       transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node)
     } catch {
-      case _: api.exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
+      case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
     }
   }
 

@@ -26,11 +26,11 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
@@ -44,7 +44,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                 {
                     @Override
                     public void add( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws KernelException
                     {
                         ops.nodeAddToExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId, keyName, value );
                     }
@@ -82,7 +82,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                 {
                     @Override
                     public void add( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws KernelException
                     {
                         ops.relationshipAddToExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, entityId,
                                 keyName, value );
@@ -90,7 +90,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
 
                     @Override
                     public void remove( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws KernelException
                     {
                         ops.relationshipRemoveFromExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX,
                                 entityId, keyName, value );
@@ -98,7 +98,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
 
                     @Override
                     public void remove( ExplicitIndexWrite ops, long entityId, String keyName )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws KernelException
                     {
                         ops.relationshipRemoveFromExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX,
                                 entityId, keyName );
@@ -106,7 +106,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
 
                     @Override
                     public void remove( ExplicitIndexWrite ops, long entityId )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws KernelException
                     {
                         ops.relationshipRemoveFromExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, entityId );
                     }
@@ -120,19 +120,21 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                 };
 
         public abstract void add( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+                throws KernelException;
 
         public abstract void remove( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+                throws KernelException;
 
         public abstract void remove( ExplicitIndexWrite ops, long entityId, String keyName )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+                throws KernelException;
 
         public abstract void remove( ExplicitIndexWrite ops, long entityId )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+                throws KernelException;
 
         public abstract void ensureIndexExists( ExplicitIndexWrite write )
                 throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+
+
     }
 
     private AtomicReference<Set<String>> propertyKeysToInclude = new AtomicReference<>( Collections.emptySet() );
@@ -164,7 +166,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                     type.add( ops, entityId, name, value.asObject() );
                 }
             }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
+            catch ( KernelException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -194,7 +196,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                     type.add( ops, entityId, name, newValue.asObject() );
                 }
             }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
+            catch ( KernelException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -222,7 +224,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                     type.remove( ops, entityId, name );
                 }
             }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
+            catch ( KernelException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -245,7 +247,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                 ensureIndexExists( ops );
                 type.remove( ops, entityId );
             }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
+            catch ( KernelException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -300,18 +302,6 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     public Set<String> getAutoIndexedProperties()
     {
         return Collections.unmodifiableSet( propertyKeysToInclude.get() );
-    }
-
-    private void ensureIndexExists( DataWriteOperations ops ) throws ExplicitIndexNotFoundKernelException,
-            EntityNotFoundException
-    {
-        // Known racy, but this is safe because ensureIndexExists is concurrency safe, we just want to avoid calling it
-        // for every single write we make.
-        if ( !indexCreated )
-        {
-            type.ensureIndexExists( ops );
-            indexCreated = true;
-        }
     }
 
     private void ensureIndexExists( ExplicitIndexWrite ops ) throws ExplicitIndexNotFoundKernelException,
