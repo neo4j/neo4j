@@ -66,12 +66,14 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
         this.wildcardCounts = cacheFactory.newLongArray( anyRelationshipType + 1, 0 );
     }
 
-    public void process( long startNode, int type, long endNode )
+    @Override
+    public boolean process( RelationshipRecord record )
     {
         // Below is logic duplication of CountsState#addRelationship
+        int type = record.getType();
         increment( wildcardCounts, anyRelationshipType );
         increment( wildcardCounts, type );
-        startScratch = nodeLabelCache.get( client, startNode, startScratch );
+        startScratch = nodeLabelCache.get( client, record.getFirstNode(), startScratch );
         for ( int startNodeLabelId : startScratch )
         {
             if ( startNodeLabelId == -1 )
@@ -82,7 +84,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
             increment( labelsCounts, startNodeLabelId, anyRelationshipType, START );
             increment( labelsCounts, startNodeLabelId, type, START );
         }
-        endScratch = nodeLabelCache.get( client, endNode, endScratch );
+        endScratch = nodeLabelCache.get( client, record.getSecondNode(), endScratch );
         for ( int endNodeLabelId : endScratch )
         {
             if ( endNodeLabelId == -1 )
@@ -93,13 +95,6 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
             increment( labelsCounts, endNodeLabelId, anyRelationshipType, END );
             increment( labelsCounts, endNodeLabelId, type, END );
         }
-    }
-
-    @Override
-    public boolean process( RelationshipRecord record )
-    {
-        process( record.getFirstNode(), record.getType(), record.getSecondNode() );
-        // No need to update the store, we're just reading things here
         return false;
     }
 

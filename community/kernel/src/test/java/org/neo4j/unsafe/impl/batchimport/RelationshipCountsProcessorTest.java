@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
@@ -39,8 +40,8 @@ public class RelationshipCountsProcessorTest
 {
 
     private static final int ANY = -1;
-    private NodeLabelsCache nodeLabelCache = mock( NodeLabelsCache.class );
-    private CountsAccessor.Updater countsUpdater = mock( CountsAccessor.Updater.class );
+    private final NodeLabelsCache nodeLabelCache = mock( NodeLabelsCache.class );
+    private final CountsAccessor.Updater countsUpdater = mock( CountsAccessor.Updater.class );
 
     @Test
     public void shouldHandleBigNumberOfLabelsAndRelationshipTypes() throws Exception
@@ -89,8 +90,8 @@ public class RelationshipCountsProcessorTest
         RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
                 relationTypes, countsUpdater, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
 
-        countsProcessor.process( 1, 0, 3 );
-        countsProcessor.process( 2, 1, 4 );
+        countsProcessor.process( record( 1, 0, 3 ) );
+        countsProcessor.process( record( 2, 1, 4 ) );
 
         countsProcessor.done();
 
@@ -115,5 +116,15 @@ public class RelationshipCountsProcessorTest
         {
             return argument != null && argument >= 0;
         }
+    }
+
+    private RelationshipRecord record( long startNode, int type, long endNode )
+    {
+        RelationshipRecord record = new RelationshipRecord( 0 );
+        record.setInUse( true );
+        record.setFirstNode( startNode );
+        record.setSecondNode( endNode );
+        record.setType( type );
+        return record;
     }
 }

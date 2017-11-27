@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -28,6 +30,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisito
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.staging.ProducerStep;
+import org.neo4j.unsafe.impl.batchimport.staging.RecordDataAssembler;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.System.nanoTime;
@@ -58,9 +61,10 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
         }
     }
 
-    private class NodeVisitor implements NodeChangeVisitor, AutoCloseable, GroupVisitor
+    private class NodeVisitor implements NodeChangeVisitor, AutoCloseable, GroupVisitor, Supplier<RelationshipGroupRecord[]>
     {
-        private RelationshipGroupRecord[] batch = new RelationshipGroupRecord[batchSize];
+        private final RecordDataAssembler<RelationshipGroupRecord> assembler = new RecordDataAssembler<>( store::newRecord, null );
+        private RelationshipGroupRecord[] batch = get();
         private int cursor;
         private long time = nanoTime();
 
@@ -74,13 +78,13 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
         public long visit( long nodeId, int typeId, long out, long in, long loop )
         {
             long id = store.nextId();
-            RelationshipGroupRecord record = store.newRecord();
+            RelationshipGroupRecord record = batch[cursor++];
             record.setId( id );
-            batch[cursor++] = record.initialize( true, typeId, out, in, loop, nodeId, loop );
+            record.initialize( true, typeId, out, in, loop, nodeId, loop );
             if ( cursor == batchSize )
             {
                 send();
-                batch = new RelationshipGroupRecord[batchSize];
+                batch = control.reuse( this );
                 cursor = 0;
             }
             return id;
@@ -99,8 +103,15 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
         {
             if ( cursor > 0 )
             {
+                batch = assembler.cutOffAt( batch, cursor );
                 send();
             }
+        }
+
+        @Override
+        public RelationshipGroupRecord[] get()
+        {
+            return assembler.newBatchObject( batchSize );
         }
     }
 

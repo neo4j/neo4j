@@ -70,7 +70,11 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     {
         for ( RelationshipGroupRecord group : batch )
         {
-            assert group.inUse();
+            if ( !group.inUse() )
+            {
+                continue;
+            }
+
             long nodeId = group.getOwningNode();
             if ( cache.getByte( nodeId, 0 ) == 0 )
             {
@@ -88,6 +92,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
                 }
             }
         }
+        control.recycle( batch );
     }
 
     @Override

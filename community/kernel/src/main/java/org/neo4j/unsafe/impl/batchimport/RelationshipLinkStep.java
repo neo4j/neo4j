@@ -85,7 +85,7 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
                 if ( changeCount == -1 )
                 {
                     // No change for this record, it's OK, all the processors will reach the same conclusion
-                    batch[i] = null;
+                    batch[i].setInUse( false );
                 }
                 else
                 {
