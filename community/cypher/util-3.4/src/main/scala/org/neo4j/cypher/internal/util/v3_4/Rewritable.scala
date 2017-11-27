@@ -295,7 +295,7 @@ object bottomUpWithArgs {
           val (job :: jobs, doneJobs) = stack.pop()
           stack.push((jobs, doneJobs += job))
         } else {
-          stack.push((next.children.toList, new mutable.MutableList()))
+          stack.push((next.childrenWithListsAsSeq.toList, new mutable.MutableList()))
         }
         rec(stack)
       }
