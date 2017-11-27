@@ -16,8 +16,11 @@
  */
 package org.neo4j.cypher.internal.v3_4.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
+abstract class LogicalProperty extends Expression {
+  def map: Expression
+  def propertyKey: PropertyKeyName
+}
 
-case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression {
-  override def asCanonicalStringVal = s"${map.asCanonicalStringVal}.${propertyKey.asCanonicalStringVal}"
+object LogicalProperty {
+  def unapply(p: LogicalProperty): Option[(Expression, PropertyKeyName)] = Some((p.map, p.propertyKey))
 }
