@@ -133,8 +133,6 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
 
         public abstract void ensureIndexExists( ExplicitIndexWrite write )
                 throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
-
-
     }
 
     private AtomicReference<Set<String>> propertyKeysToInclude = new AtomicReference<>( Collections.emptySet() );

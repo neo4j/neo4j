@@ -465,7 +465,7 @@ public class StoreStatement implements StorageStatement
         DynamicRecord record = store.newRecord();
         do
         {
-            store.getRecordByCursor( reference, record, RecordLoad.CHECK, page );
+            store.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
             reference = record.getNextBlock();
             byte[] data = record.getData();
             if ( buffer.remaining() < data.length )

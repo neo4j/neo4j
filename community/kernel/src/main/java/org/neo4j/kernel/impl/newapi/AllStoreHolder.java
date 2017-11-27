@@ -262,7 +262,7 @@ public class AllStoreHolder extends Read implements Token
     @Override
     void property( PropertyRecord record, long reference, PageCursor pageCursor )
     {
-        properties.loadRecordByCursor( reference, record, RecordLoad.NORMAL, pageCursor );
+        properties.loadRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 
     @Override
