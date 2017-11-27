@@ -19,20 +19,22 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
-case class NodeProperty(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
+import org.neo4j.cypher.internal.v3_4.expressions.Property
+
+case class NodeProperty(offset: Int, propToken: Int, name: String)(prop: Property) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name
 }
 
 // Token did not exist at plan time, so we'll need to look it up at runtime
-case class NodePropertyLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
+case class NodePropertyLate(offset: Int, propKey: String, name: String)(prop: Property) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name
 }
 
-case class NodePropertyExists(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
+case class NodePropertyExists(offset: Int, propToken: Int, name: String)(prop: Property) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name
 }
 
 // Token did not exist at plan time, so we'll need to look it up at runtime
-case class NodePropertyExistsLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
+case class NodePropertyExistsLate(offset: Int, propKey: String, name: String)(prop: Property) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name
 }

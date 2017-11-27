@@ -19,20 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
-import org.neo4j.cypher.internal.v3_4.expressions.Property
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Property}
 
-case class RelationshipProperty(offset: Int, propToken: Int, name: String)(prop: Property) extends RuntimeProperty(prop) {
-  override def asCanonicalStringVal: String = name
-}
-
-case class RelationshipPropertyLate(offset: Int, propKey: String, name: String)(prop: Property) extends RuntimeProperty(prop) {
-  override def asCanonicalStringVal: String = name
-}
-
-case class RelationshipPropertyExists(offset: Int, propToken: Int, name: String)(prop: Property) extends RuntimeProperty(prop) {
-  override def asCanonicalStringVal: String = name
-}
-
-case class RelationshipPropertyExistsLate(offset: Int, propKey: String, name: String)(prop: Property) extends RuntimeProperty(prop) {
-  override def asCanonicalStringVal: String = name
+class RuntimeProperty(val prop: Property) extends Property(map = prop.map, propertyKey = prop.propertyKey)(InputPosition.NONE)
+  with SemanticCheckableExpression {
+  override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

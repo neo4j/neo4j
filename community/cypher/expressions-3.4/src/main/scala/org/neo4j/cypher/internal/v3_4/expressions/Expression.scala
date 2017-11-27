@@ -40,6 +40,26 @@ object Expression {
     def pushScope(newVariables: Set[Variable]): TreeAcc[A] = copy(stack = stack.push(newVariables))
     def popScope: TreeAcc[A] = copy(stack = stack.pop)
   }
+
+  def mapExpressionHasPropertyReadDependency(mapEntityName: String, mapExpression: Expression): Boolean =
+    mapExpression match {
+      case MapExpression(items) => items.exists {
+        case (k, v) => v.subExpressions.exists {
+          case Property(Variable(entityName), propertyKey) =>
+            entityName == mapEntityName && propertyKey == k
+          case _ => false
+        }
+      }
+      case _ => false
+    }
+
+  def hasPropertyReadDependency(entityName: String, expression: Expression, propertyKey: PropertyKeyName): Boolean =
+    expression.subExpressions.exists {
+      case Property(Variable(name), key) =>
+        name == entityName && key == propertyKey
+      case _ =>
+        false
+    }
 }
 
 abstract class Expression extends ASTNode {
@@ -51,6 +71,12 @@ abstract class Expression extends ASTNode {
   def arguments: Seq[Expression] = this.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
       acc => (acc :+ e, None)
+  }
+
+  // Collects all sub-expressions recursively
+  def subExpressions: Seq[Expression] = this.treeFold(List.empty[Expression]) {
+    case e: Expression if e != this =>
+      acc => (acc :+ e, Some(identity))
   }
 
   // All variables referenced from this expression or any of its children

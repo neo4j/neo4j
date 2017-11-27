@@ -18,6 +18,35 @@ package org.neo4j.cypher.internal.v3_4.expressions
 
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 
-case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression {
+class Property(val map: Expression, val propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression {
   override def asCanonicalStringVal = s"${map.asCanonicalStringVal}.${propertyKey.asCanonicalStringVal}"
+
+  //--------------------------------------------------------------------------------------------------
+  // The methods below are what we would get automatically if this was a case class
+  //--------------------------------------------------------------------------------------------------
+  def copy(map: Expression = this.map, propertyKey: PropertyKeyName = this.propertyKey)(position: InputPosition): Property =
+    new Property(map, propertyKey)(position)
+
+  override def productElement(n: Int) =
+    n match {
+      case 0 => map
+      case 1 => propertyKey
+      case _ => throw new java.lang.IndexOutOfBoundsException(n.toString)
+    }
+
+  override def productArity = 2
+
+  override def canEqual(that: Any) = that.isInstanceOf[Property]
+
+  override def toString: String = s"Property($map, $propertyKey)"
+
+  override def hashCode(): Int = runtime.ScalaRunTime._hashCode(Property.this)
+
+  override def equals(obj: scala.Any): Boolean = runtime.ScalaRunTime._equals(Property.this, obj)
+}
+
+object Property {
+  def apply(map: Expression, propertyKey: PropertyKeyName)(position: InputPosition) = new Property(map, propertyKey)(position)
+
+  def unapply(p: Property): Option[(Expression, PropertyKeyName)] = Some((p.map, p.propertyKey))
 }

@@ -143,17 +143,17 @@ class SlottedRewriter(tokenContext: TokenContext) {
         val rewrittenProjection = e.projection.endoRewrite(rewriter)
         e.copy(plan = rewrittenPlan, projection = rewrittenProjection)(e.position)
 
-      case prop@Property(Variable(key), PropertyKeyName(propKey)) =>
+      case prop@Property(Variable(key), PropertyKeyName(propKey)) if !prop.isInstanceOf[RuntimeProperty] =>
 
         slotConfiguration(key) match {
           case LongSlot(offset, nullable, typ) =>
             val maybeToken: Option[Int] = tokenContext.getOptPropertyKeyId(propKey)
 
             val propExpression = (typ, maybeToken) match {
-              case (CTNode, Some(token)) => NodeProperty(offset, token, s"$key.$propKey")
-              case (CTNode, None) => NodePropertyLate(offset, propKey, s"$key.$propKey")
-              case (CTRelationship, Some(token)) => RelationshipProperty(offset, token, s"$key.$propKey")
-              case (CTRelationship, None) => RelationshipPropertyLate(offset, propKey, s"$key.$propKey")
+              case (CTNode, Some(token)) => NodeProperty(offset, token, s"$key.$propKey")(prop)
+              case (CTNode, None) => NodePropertyLate(offset, propKey, s"$key.$propKey")(prop)
+              case (CTRelationship, Some(token)) => RelationshipProperty(offset, token, s"$key.$propKey")(prop)
+              case (CTRelationship, None) => RelationshipPropertyLate(offset, propKey, s"$key.$propKey")(prop)
               case _ => throw new InternalException(s"Expressions on object other then nodes and relationships are not yet supported")
             }
             if (nullable)
@@ -215,13 +215,13 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
       case idFunction: FunctionInvocation if idFunction.function == frontendFunctions.Exists =>
         idFunction.args.head match {
-          case Property(Variable(key), PropertyKeyName(propKey)) =>
-            checkIfPropertyExists(slotConfiguration, key, propKey)
+          case prop @ Property(Variable(key), PropertyKeyName(propKey)) =>
+            checkIfPropertyExists(slotConfiguration, key, propKey, prop)
           case _ => idFunction // Don't know how to specialize this
         }
 
-      case e@IsNull(Property(Variable(key), PropertyKeyName(propKey))) =>
-        Not(checkIfPropertyExists(slotConfiguration, key, propKey))(e.position)
+      case e @ IsNull(prop @ Property(Variable(key), PropertyKeyName(propKey))) =>
+        Not(checkIfPropertyExists(slotConfiguration, key, propKey, prop))(e.position)
 
       case _: ReduceExpression =>
         throw new CantCompileQueryException(s"Expressions with reduce are not yet supported in slot allocation")
@@ -294,22 +294,22 @@ class SlottedRewriter(tokenContext: TokenContext) {
         predicate))
   }
 
-  private def checkIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String) = {
+  private def checkIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String, prop: Property) = {
     val slot = slotConfiguration(key)
     val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
 
     val propExpression = (slot, maybeToken) match {
       case (LongSlot(offset, _, typ), Some(token)) if typ == CTNode =>
-        NodePropertyExists(offset, token, s"$key.$propKey")
+        NodePropertyExists(offset, token, s"$key.$propKey")(prop)
 
       case (LongSlot(offset, _, typ), None) if typ == CTNode =>
-        NodePropertyExistsLate(offset, propKey, s"$key.$propKey")
+        NodePropertyExistsLate(offset, propKey, s"$key.$propKey")(prop)
 
       case (LongSlot(offset, _, typ), Some(token)) if typ == CTRelationship =>
-        RelationshipPropertyExists(offset, token, s"$key.$propKey")
+        RelationshipPropertyExists(offset, token, s"$key.$propKey")(prop)
 
       case (LongSlot(offset, _, typ), None) if typ == CTRelationship =>
-        RelationshipPropertyExistsLate(offset, propKey, s"$key.$propKey")
+        RelationshipPropertyExistsLate(offset, propKey, s"$key.$propKey")(prop)
 
       case _ => throw new CantCompileQueryException(s"Expressions on object other then nodes and relationships are not yet supported")
     }
