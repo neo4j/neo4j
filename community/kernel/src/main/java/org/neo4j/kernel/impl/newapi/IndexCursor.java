@@ -27,6 +27,10 @@ abstract class IndexCursor
 
     final void initialize( IndexProgressor progressor )
     {
+        if ( progressor != null )
+        {
+            progressor.close();
+        }
         this.progressor = progressor;
     }
 
