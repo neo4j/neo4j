@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
-
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
