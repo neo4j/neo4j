@@ -26,18 +26,11 @@ public class DefaultThrottleLock implements ThrottleLock
     private final Object syncObject = new Object();
 
     @Override
-    public void lock( Channel channel, long timeout )
+    public void lock( Channel channel, long timeout ) throws InterruptedException
     {
         synchronized ( syncObject )
         {
-            try
-            {
-                syncObject.wait( timeout );
-            }
-            catch ( InterruptedException e )
-            {
-                // do nothing
-            }
+            syncObject.wait( timeout );
         }
     }
 

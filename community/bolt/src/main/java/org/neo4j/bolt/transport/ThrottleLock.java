@@ -24,7 +24,7 @@ import io.netty.channel.Channel;
 public interface ThrottleLock
 {
 
-    void lock( Channel channel, long timeout );
+    void lock( Channel channel, long timeout ) throws InterruptedException;
 
     void unlock( Channel channel );
 }

@@ -72,7 +72,14 @@ public class TransportWriteThrottle implements TransportThrottle
 
         while ( channel.isOpen() && !channel.isWritable() )
         {
-            lock.lock( channel, 1000 );
+            try
+            {
+                lock.lock( channel, 1000 );
+            }
+            catch ( InterruptedException ex )
+            {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
