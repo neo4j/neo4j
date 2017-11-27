@@ -7,12 +7,15 @@ import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection => SemanticDir
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, IdName => IdNameV3_4}
+import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable.{DuplicatableProduct, RewritableAny}
 import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
+import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
+import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
 
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -20,6 +23,19 @@ import scala.util.{Failure, Success, Try}
 
 object LogicalPlanConverter {
   private val rewriter: RewriterWithArgs = bottomUpWithArgs(RewriterWithArgs.lift {
+    case (arg: plansV3_3.Argument, children: Seq[AnyRef]) =>
+      plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(null)(Map.empty)
+    case (arg: plansV3_3.SingleRow, _) =>
+      plansV3_4.Argument()(null)()
+    case (_: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
+      plansV3_4.ProduceResult(children(1).asInstanceOf[LogicalPlanV3_4], children(0).asInstanceOf[Seq[String]])
+    case (_:plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>
+      plansV3_4.TriadicSelection(children(1).asInstanceOf[LogicalPlanV3_4],
+        children(5).asInstanceOf[LogicalPlanV3_4],
+        children(0).asInstanceOf[Boolean],
+        children(2).asInstanceOf[IdNameV3_4],
+        children(3).asInstanceOf[IdNameV3_4],
+        children(4).asInstanceOf[IdNameV3_4])(null)
     case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
       val newPlan = convertVersion("v3_3", "v3_4", plan, children, null, classOf[PlannerQuery])
       newPlan.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
@@ -31,8 +47,8 @@ object LogicalPlanConverter {
       expressionsV3_4.MapProjection(children(0).asInstanceOf[expressionsV3_4.Variable],
         children(1).asInstanceOf[Seq[expressionsV3_4.MapProjectionElement]])(helpers.as3_4(mp.position))
 
-    case (expressionV3_3: astV3_3.rewriters.DesugaredMapProjection, children: Seq[AnyRef]) =>
-      convertVersion("v3_3", "v3_4", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
+    case (item@(_: astV3_3.rewriters.DesugaredMapProjection | _: astV3_3.ProcedureResultItem | _: plansV3_3.ResolvedCall), children: Seq[AnyRef]) =>
+      convertVersion("v3_3", "v3_4", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
     case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
       convertVersion("frontend.v3_3.ast", "v3_4.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
     case (IdNameV3_3(name), _) => IdNameV3_4(name)
@@ -56,10 +72,38 @@ object LogicalPlanConverter {
     case (SemanticDirectionV3_3.INCOMING, _) => expressionsV3_4.SemanticDirection.INCOMING
     case (SemanticDirectionV3_3.OUTGOING, _) => expressionsV3_4.SemanticDirection.OUTGOING
 
+    case (irV3_3.SimplePatternLength, _) => irV3_4.SimplePatternLength
+
+    case (plansV3_3.IncludeTies, _) => plansV3_4.IncludeTies
+    case (plansV3_3.DoNotIncludeTies, _) => plansV3_4.DoNotIncludeTies
+
+    case (irV3_3.HasHeaders, _) => irV3_4.HasHeaders
+    case (irV3_3.NoHeaders, _) => irV3_4.NoHeaders
+
+    case (plansV3_3.ExpandAll, _) => plansV3_4.ExpandAll
+    case (plansV3_3.ExpandInto, _) => plansV3_4.ExpandInto
+
+    case (_: frontendV3_3.ExhaustiveShortestPathForbiddenException, _) => new utilV3_4.ExhaustiveShortestPathForbiddenException
+
+    case (spp: irV3_3.ShortestPathPattern, children: Seq[AnyRef]) =>
+      val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr)
+      irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[IdNameV3_4]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
     case (astV3_3.NilPathStep, _) => expressionsV3_4.NilPathStep
-    case (pathStep: astV3_3.PathStep, children: Seq[AnyRef]) =>
-      convertVersion("frontend.v3_3.ast", "v3_4.expressions", pathStep, children)
+    case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
+      convertVersion("frontend.v3_3.ast", "v3_4.expressions", item, children)
+    case (nameId: frontendV3_3.NameId, children: Seq[AnyRef]) =>
+      convertVersion("frontend.v3_3", "util.v3_4", nameId, children)
     case (_: frontendV3_3.helpers.NonEmptyList[_], children: Seq[AnyRef]) => NonEmptyList.from(children)
+    case (item@(_: plansV3_3.CypherValue |
+                _: plansV3_3.QualifiedName |
+                _: plansV3_3.FieldSignature |
+                _: plansV3_3.ProcedureAccessMode |
+                _: plansV3_3.ProcedureSignature |
+                _: plansV3_3.QueryExpression[_] |
+                _: plansV3_3.SeekableArgs |
+                _: irV3_3.PatternRelationship |
+                _: irV3_3.VarPatternLength), children: Seq[AnyRef]) =>
+      convertVersion("v3_3", "v3_4", item, children)
 
     case (_: List[_], children: Seq[AnyRef]) => children.toList
     case (_: Seq[_], children: Seq[AnyRef]) => children.toIndexedSeq
@@ -75,6 +119,10 @@ object LogicalPlanConverter {
 
   def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3): T = {
     new RewritableAny[ExpressionV3_3](expression).rewrite(rewriter, Seq.empty).asInstanceOf[T]
+  }
+
+  private def convertASTNode[T <: utilV3_4.ASTNode](ast: astV3_3.ASTNode): T = {
+    new RewritableAny[astV3_3.ASTNode](ast).rewrite(rewriter, Seq.empty).asInstanceOf[T]
   }
 
   private val constructors = new ThreadLocal[MutableHashMap[(String, String, String), Constructor[_]]]() {

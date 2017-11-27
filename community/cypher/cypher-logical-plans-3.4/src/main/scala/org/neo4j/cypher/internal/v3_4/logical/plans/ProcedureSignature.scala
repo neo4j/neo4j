@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
+import java.util
+
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UnresolvedCall
 import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
@@ -70,7 +72,20 @@ case class FieldSignature(name: String, typ: CypherType, default: Option[CypherV
   }
 }
 
-sealed trait  ProcedureAccessMode
+sealed trait ProcedureAccessMode {
+  def allowed: Array[String]
+
+  override def hashCode() = util.Arrays.hashCode(this.allowed.asInstanceOf[Array[Object]])
+
+  override def equals(obj: scala.Any) = {
+    if(obj.getClass != this.getClass) {
+      false
+    } else {
+      val other = obj.asInstanceOf[ProcedureAccessMode]
+      util.Arrays.equals(this.allowed.asInstanceOf[Array[Object]], other.allowed.asInstanceOf[Array[Object]])
+    }
+  }
+}
 
 case class ProcedureReadOnlyAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureReadWriteAccess(allowed: Array[String]) extends ProcedureAccessMode

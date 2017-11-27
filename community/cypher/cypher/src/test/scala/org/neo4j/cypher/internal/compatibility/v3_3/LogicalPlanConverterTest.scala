@@ -3,12 +3,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import java.lang.reflect.Modifier
 
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
+import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName => IdNameV3_4}
+import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3}
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, NonEmptyList, symbols => symbolsV3_4}
+import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
 import org.neo4j.cypher.internal.v3_4.expressions.{PathExpression, SemanticDirection}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{ErrorPlan, ProcedureCall}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
 import org.reflections.Reflections
@@ -190,9 +194,65 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     rewrittenPlan.lhs.get.assignedId should be(helpers.as3_4(ans_id))
   }
 
+  test("should convert ErrorPlan") {
+    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)
+    val e3_3 = plansV3_3.ErrorPlan(a3_3, new frontendV3_3.ExhaustiveShortestPathForbiddenException)(null)
+    e3_3.assignIds()
+
+    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(null)
+
+    val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[ErrorPlan](e3_3)
+    rewrittenPlan shouldBe an[plansV3_4.ErrorPlan]
+    rewrittenPlan.asInstanceOf[plansV3_4.ErrorPlan].source should be(a3_4)
+    rewrittenPlan.asInstanceOf[plansV3_4.ErrorPlan].exception shouldBe an[utilV3_4.ExhaustiveShortestPathForbiddenException]
+  }
+
+  test("should convert NodeIndexSeek") {
+    val var3_3 = astV3_3.Variable("n")(pos3_3)
+    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)
+    val n3_3 = plansV3_3.NodeIndexSeek(IdNameV3_3("a"),
+      astV3_3.LabelToken("b", frontendV3_3.LabelId(2)),
+      Seq(astV3_3.PropertyKeyToken("c", frontendV3_3.PropertyKeyId(3))),
+      plansV3_3.ScanQueryExpression(var3_3), Set.empty)(null)
+    n3_3.assignIds()
+
+    val var3_4 = expressionsV3_4.Variable("n")(pos3_4)
+    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(null)
+    val n3_4 = plansV3_4.NodeIndexSeek(IdNameV3_4("a"),
+      expressionsV3_4.LabelToken("b", utilV3_4.LabelId(2)),
+      Seq(expressionsV3_4.PropertyKeyToken("c", utilV3_4.PropertyKeyId(3))),
+      plansV3_4.ScanQueryExpression(var3_4), Set.empty)(null)
+
+    LogicalPlanConverter.convertLogicalPlan[ErrorPlan](n3_3) should be(n3_4)
+  }
+
+  test("should convert ProcedureCall") {
+    val var3_3 = astV3_3.Variable("n")(pos3_3)
+    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)
+    val inputv3_3 = plansV3_3.FieldSignature("d", symbolsV3_3.CTString, Some(plansV3_3.CypherValue("e", symbolsV3_3.CTString)))
+    val sigv3_3 = plansV3_3.ProcedureSignature(plansV3_3.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv3_3), None, None, plansV3_3.ProcedureReadWriteAccess(Array("foo", "bar")))
+    val pres3_3 = astV3_3.ProcedureResultItem(Some(astV3_3.ProcedureOutput("f")(pos3_3)), var3_3)(pos3_3)
+    val rc3_3 = plansV3_3.ResolvedCall(sigv3_3, Seq(var3_3), IndexedSeq(pres3_3))(pos3_3)
+    val pc3_3 = plansV3_3.ProcedureCall(a3_3, rc3_3)(null)
+    pc3_3.assignIds()
+
+    val var3_4 = expressionsV3_4.Variable("n")(pos3_4)
+    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(null)
+    val inputv3_4 = plansV3_4.FieldSignature("d", symbolsV3_4.CTString, Some(plansV3_4.CypherValue("e", symbolsV3_4.CTString)))
+    val sigv3_4 = plansV3_4.ProcedureSignature(plansV3_4.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv3_4), None, None, plansV3_4.ProcedureReadWriteAccess(Array("foo", "bar")))
+    val pres3_4 = astV3_4.ProcedureResultItem(Some(expressionsV3_4.ProcedureOutput("f")(pos3_4)), var3_4)(pos3_4)
+    val rc3_4 = plansV3_4.ResolvedCall(sigv3_4, Seq(var3_4), IndexedSeq(pres3_4))(pos3_4)
+    val pc3_4 = plansV3_4.ProcedureCall(a3_4, rc3_4)(null)
+
+    val plan = LogicalPlanConverter.convertLogicalPlan[ProcedureCall](pc3_3)
+    plan should be(pc3_4)
+  }
+
   test("should convert all expressions") {
     val subTypes = reflectExpressions.getSubTypesOf(classOf[astV3_3.Expression]).asScala
-    subTypes.filter { c => !Modifier.isAbstract(c.getModifiers) }.foreach { subType =>
+    subTypes.filter { c => !Modifier.isAbstract(c.getModifiers) }
+      .toList.sortBy(_.getName)
+      .foreach { subType =>
       val constructor = subType.getConstructors.head
       val paramTypes = constructor.getParameterTypes
       Try {
@@ -206,6 +266,35 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
         case Failure(e) => fail(s"Converting ${subType.getName} failed", e)
       }
     }
+  }
+
+  test("should convert all logical plans") {
+    val subTypes = reflectLogicalPlans.getSubTypesOf(classOf[plansV3_3.LogicalPlan]).asScala
+    subTypes.filter { c => !Modifier.isAbstract(c.getModifiers) }
+      .toList.sortBy(_.getName)
+      .foreach { subType =>
+        val constructor = subType.getConstructors.head
+        val paramTypes = constructor.getParameterTypes
+        val planV3_3 = {
+          if (subType.getSimpleName.equals("Selection")) {
+            // To avoid AssertionError
+            Try(plansV3_3.Selection(Seq(astV3_3.Variable("n")(pos3_3)), argumentProvider[plansV3_3.LogicalPlan](classOf[plansV3_3.LogicalPlan]))(null))
+          } else {
+            Try {
+              val constructorArgs = paramTypes.asInstanceOf[Array[Class[AnyRef]]].map(x => argumentProvider(x))
+              constructor.newInstance(constructorArgs: _*).asInstanceOf[plansV3_3.LogicalPlan]
+            }
+          }
+        }
+        planV3_3 match {
+          case Success(planV3_3) =>
+            planV3_3.assignIds()
+            val rewritten = LogicalPlanConverter.convertLogicalPlan[plansV3_4.LogicalPlan](planV3_3)
+            rewritten shouldBe an[plansV3_4.LogicalPlan]
+          case Failure(e: InstantiationException) => fail(s"could not instantiate 3.4 logical plan: ${subType.getSimpleName} with arguments ${paramTypes.toList}", e)
+          case Failure(e) => fail(s"Converting ${subType.getName} failed", e)
+        }
+      }
   }
 
   private def argumentProvider[T <: AnyRef](clazz: Class[T]): T = {
@@ -232,16 +321,43 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "ShortestPaths" => astV3_3.ShortestPaths(argumentProvider(classOf[astV3_3.PatternElement]), true)(pos3_3)
       case "CypherType" => symbolsV3_3.CTBoolean
       case "Scope" => frontendV3_3.Scope.empty
+      case "Equals" => astV3_3.Equals(variable, variable)(pos3_3)
+
+      case "LogicalPlan" => plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)
+      case "PlannerQuery" => null
+      case "Exception" => new frontendV3_3.ExhaustiveShortestPathForbiddenException
+      case "IdName" => IdNameV3_3("n")
+      case "LabelName" => astV3_3.LabelName("n")(pos3_3)
+      case "LabelToken" => astV3_3.LabelToken("a", argumentProvider(classOf[frontendV3_3.LabelId]))
+      case "LabelId" => frontendV3_3.LabelId(5)
+      case "PropertyKeyToken" => astV3_3.PropertyKeyToken("a", argumentProvider(classOf[frontendV3_3.PropertyKeyId]))
+      case "PropertyKeyId" => frontendV3_3.PropertyKeyId(5)
+      case "ResolvedCall" => plansV3_3.ResolvedCall(argumentProvider(classOf[plansV3_3.ProcedureSignature]), Seq.empty, IndexedSeq.empty)(pos3_3)
+      case "ProcedureSignature" => plansV3_3.ProcedureSignature(argumentProvider(classOf[plansV3_3.QualifiedName]), IndexedSeq.empty, None, None, argumentProvider(classOf[plansV3_3.ProcedureAccessMode]))
+      case "QualifiedName" => plansV3_3.QualifiedName(Seq.empty, "c")
+      case "ProcedureAccessMode" => plansV3_3.ProcedureReadWriteAccess(Array())
+      case "RelTypeName" => astV3_3.RelTypeName("x")(pos3_3)
+      case "QueryExpression" => plansV3_3.ScanQueryExpression(variable)
+      case "SeekableArgs" => plansV3_3.SingleSeekableArg(variable)
+      case "ExpansionMode" => plansV3_3.ExpandAll
+      case "ShortestPathPattern" => irV3_3.ShortestPathPattern(None, argumentProvider(classOf[irV3_3.PatternRelationship]), true)(argumentProvider(classOf[astV3_3.ShortestPaths]))
+      case "PatternRelationship" => irV3_3.PatternRelationship(IdNameV3_3("n"), (IdNameV3_3("n"), IdNameV3_3("n")), frontendV3_3.SemanticDirection.OUTGOING, Seq.empty, irV3_3.SimplePatternLength)
+      case "ShortestPaths" => astV3_3.ShortestPaths(argumentProvider(classOf[astV3_3.PatternElement]), true)(pos3_3)
+      case "PatternLength" => irV3_3.SimplePatternLength
+      case "Ties" => plansV3_3.IncludeTies
+      case "CSVFormat" => irV3_3.HasHeaders
+      case "VarPatternLength" => irV3_3.VarPatternLength(0, None)
 
       case "IndexedSeq" => IndexedSeq.empty
       case "boolean" => true
       case "String" => "test"
       case "Option" => None
       case "Set" => Set.empty
+      case "List" => List.empty
       case "Seq" => Seq.empty
+      case "Map" => Map.empty
+      case "int" => 42
     }
     value.asInstanceOf[T]
   }
-
-  // TODO test all LogicalPlan subclasses with reflections library
 }
