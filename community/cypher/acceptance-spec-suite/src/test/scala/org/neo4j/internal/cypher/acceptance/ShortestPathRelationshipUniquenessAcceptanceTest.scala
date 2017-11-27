@@ -81,7 +81,6 @@ class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFu
     WHERE a.id="2228" AND b.id="2638" AND ANY ( n IN nodes(p)[1..-1] WHERE (n.id = "32") )
     RETURN nodes(p) as nodes"""
         .stripMargin
-    println(query)
     val result = executeUsingCostPlannerOnly(query).columnAs("nodes").toList
     result should be(List(List(p0, pLongPath0, pLongPath1, pLongPath2, pLongPath3, pLongPath4, pLongPath5, p3, p2, p4, p5)))
   }
