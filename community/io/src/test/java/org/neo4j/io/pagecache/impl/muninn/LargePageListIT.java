@@ -39,13 +39,13 @@ public class LargePageListIT
     @Test
     public void veryLargePageListsMustBeFullyAccessible() throws Exception
     {
-        // We need roughly 4 GiBs of memory for the meta-data here, which is why this is an IT and not a Test.
+        // We need roughly 2 GiBs of memory for the meta-data here, which is why this is an IT and not a Test.
         // We add one extra page worth of data to the size here, to avoid ending up on a "convenient" boundary.
         int pageSize = (int) ByteUnit.kibiBytes( 8 );
-        long pageCacheSize = ByteUnit.tebiBytes( 1 ) + pageSize;
+        long pageCacheSize = ByteUnit.gibiBytes( 513 ) + pageSize;
         int pages = Math.toIntExact( pageCacheSize / pageSize );
 
-        MemoryManager mman = new MemoryManager( ByteUnit.gibiBytes( 4 ), ALIGNMENT );
+        MemoryManager mman = new MemoryManager( ByteUnit.gibiBytes( 2 ), ALIGNMENT );
         SwapperSet swappers = new SwapperSet();
         long victimPage = VictimPageReference.getVictimPage( pageSize );
 
