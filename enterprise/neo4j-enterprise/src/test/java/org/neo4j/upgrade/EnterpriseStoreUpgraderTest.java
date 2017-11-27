@@ -36,15 +36,15 @@ import static java.util.Collections.singletonList;
 
 public class EnterpriseStoreUpgraderTest extends StoreUpgraderTest
 {
-    public EnterpriseStoreUpgraderTest( String version )
+    public EnterpriseStoreUpgraderTest( RecordFormats recordFormats )
     {
-        super( version );
+        super( recordFormats );
     }
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<String> versions()
+    public static Collection<RecordFormats> versions()
     {
-        return singletonList( HighLimitV3_0_0.STORE_VERSION );
+        return singletonList( HighLimitV3_0_0.RECORD_FORMATS );
     }
 
     @Override

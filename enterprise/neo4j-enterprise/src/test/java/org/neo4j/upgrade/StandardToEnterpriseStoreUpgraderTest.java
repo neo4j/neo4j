@@ -28,9 +28,9 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgraderTest;
  */
 public class StandardToEnterpriseStoreUpgraderTest extends StoreUpgraderTest
 {
-    public StandardToEnterpriseStoreUpgraderTest( String version )
+    public StandardToEnterpriseStoreUpgraderTest( RecordFormats recordFormats )
     {
-        super( version );
+        super( recordFormats );
     }
 
     @Override
