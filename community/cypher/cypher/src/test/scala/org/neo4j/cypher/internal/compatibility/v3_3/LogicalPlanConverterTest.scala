@@ -163,13 +163,15 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     LogicalPlanConverter.convertExpression[PathExpression](p3_3b) should be(p3_4b)
   }
 
+  // TODO test expressionMap
+
   test("should convert AllNodeScan and keep id") {
     val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)
     a3_3.assignIds()
     val id3_3 = a3_3.assignedId
     val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(null)
 
-    val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.AllNodesScan](a3_3)
+    val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.AllNodesScan](a3_3)._1
     rewrittenPlan should be(a3_4)
     rewrittenPlan.assignedId should be(helpers.as3_4(id3_3))
   }
@@ -188,7 +190,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val i3_4b = expressionsV3_4.SignedDecimalIntegerLiteral("5")(pos3_4)
     val ag3_4 = plansV3_4.Aggregation(a3_4, Map("a" -> i3_4a), Map("b" -> i3_4b))(null)
 
-    val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.Aggregation](ag3_3)
+    val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.Aggregation](ag3_3)._1
     rewrittenPlan should be(ag3_4)
     rewrittenPlan.assignedId should be(helpers.as3_4(ag_id))
     rewrittenPlan.lhs.get.assignedId should be(helpers.as3_4(ans_id))
@@ -201,7 +203,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(null)
 
-    val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[ErrorPlan](e3_3)
+    val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[ErrorPlan](e3_3)._1
     rewrittenPlan shouldBe an[plansV3_4.ErrorPlan]
     rewrittenPlan.asInstanceOf[plansV3_4.ErrorPlan].source should be(a3_4)
     rewrittenPlan.asInstanceOf[plansV3_4.ErrorPlan].exception shouldBe an[utilV3_4.ExhaustiveShortestPathForbiddenException]
@@ -223,7 +225,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       Seq(expressionsV3_4.PropertyKeyToken("c", utilV3_4.PropertyKeyId(3))),
       plansV3_4.ScanQueryExpression(var3_4), Set.empty)(null)
 
-    LogicalPlanConverter.convertLogicalPlan[ErrorPlan](n3_3) should be(n3_4)
+    LogicalPlanConverter.convertLogicalPlan[ErrorPlan](n3_3)._1 should be(n3_4)
   }
 
   test("should convert ProcedureCall") {
@@ -244,7 +246,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val rc3_4 = plansV3_4.ResolvedCall(sigv3_4, Seq(var3_4), IndexedSeq(pres3_4))(pos3_4)
     val pc3_4 = plansV3_4.ProcedureCall(a3_4, rc3_4)(null)
 
-    val plan = LogicalPlanConverter.convertLogicalPlan[ProcedureCall](pc3_3)
+    val plan = LogicalPlanConverter.convertLogicalPlan[ProcedureCall](pc3_3)._1
     plan should be(pc3_4)
   }
 
@@ -289,7 +291,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
         planV3_3 match {
           case Success(planV3_3) =>
             planV3_3.assignIds()
-            val rewritten = LogicalPlanConverter.convertLogicalPlan[plansV3_4.LogicalPlan](planV3_3)
+            val rewritten = LogicalPlanConverter.convertLogicalPlan[plansV3_4.LogicalPlan](planV3_3)._1
             rewritten shouldBe an[plansV3_4.LogicalPlan]
           case Failure(e: InstantiationException) => fail(s"could not instantiate 3.4 logical plan: ${subType.getSimpleName} with arguments ${paramTypes.toList}", e)
           case Failure(e) => fail(s"Converting ${subType.getName} failed", e)

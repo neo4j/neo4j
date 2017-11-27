@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId => LogicalPla
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId => LogicalPlanIdV3_4}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
@@ -103,19 +104,21 @@ object helpers {
     val startPosition = logicalPlan.startPosition.map(as3_4 _)
     val plannerName = as3_4(logicalPlan.plannerName)
 
+    val table3_3 = logicalPlan.maybeSemanticTable.get
+    def isImportant(expression: ExpressionV3_3) : Boolean = table3_3.seen(expression)
+
+    val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, isImportant)
     LogicalPlanState(logicalPlan.queryText,
       startPosition,
       plannerName,
       None,
       None,
       logicalPlan.maybeExtractedParams,
-      // SemanticTable
-      logicalPlan.maybeSemanticTable.map(SemanticTableConverter.convertSemanticTable(_, ???)),
+      Some(SemanticTableConverter.convertSemanticTable(table3_3, expressionMap)),
       None,
-      logicalPlan.maybeLogicalPlan.map(LogicalPlanConverter.convertLogicalPlan _),
+      Some(plan3_4),
       Some(logicalPlan.maybePeriodicCommit.flatten.map(x => as3_4(x))),
       Set.empty)
-      // TODO map other parameters
   }
 
 }
