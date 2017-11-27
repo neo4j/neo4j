@@ -46,7 +46,9 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
     else {
       val seq = makeTraversable(list)
 
-      seqMethod(seq)(item => predicate.isMatch(m.newWith1(id, item), state))
+      seqMethod(seq)(item =>
+        // Since we can override an existing id here we use a method that guarantees that we do not overwrite an existing variable
+        predicate.isMatch(m.newScopeWith1(id, item), state))
     }
   }
 

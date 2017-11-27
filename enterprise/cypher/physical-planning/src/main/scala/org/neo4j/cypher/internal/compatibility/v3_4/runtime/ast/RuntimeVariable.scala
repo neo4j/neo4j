@@ -19,4 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
-case class ReferenceFromSlot(offset: Int, override val name: String) extends RuntimeVariable(name = name)
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.v3_4.expressions.{Variable, Expression => ASTExpression}
+
+class RuntimeVariable(name: String) extends Variable(name = name)(InputPosition.NONE) with SemanticCheckableExpression {
+  override def semanticCheck(ctx: ASTExpression.SemanticContext): SemanticCheck = SemanticCheckResult.success
+}

@@ -126,7 +126,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
     val resultPlan = in.endoRewrite(rewritePlanWithSlots)
 
     // TODO: This should probably only run when -ea is enabled
-    resultPlan.findByAllClass[Variable].foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
+    resultPlan.findByAllClass[Variable].filter(!_.isInstanceOf[RuntimeVariable]).foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
 
     resultPlan
   }
@@ -160,7 +160,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
             else
               propExpression
 
-          case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset))(prop.position)
+          case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset, key))(prop.position)
         }
 
       case e@Equals(Variable(k1), Variable(k2)) =>
@@ -185,14 +185,14 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case _ => throw new CantCompileQueryException(s"Invalid slot for GetDegree: $n")
         }
 
-      case Variable(k) =>
+      case v @ Variable(k) if !v.isInstanceOf[RuntimeVariable] =>
         slotConfiguration.get(k) match {
           case Some(slot) => slot match {
             case LongSlot(offset, false, CTNode) => NodeFromSlot(offset, k)
             case LongSlot(offset, true, CTNode) => NullCheck(offset, NodeFromSlot(offset, k))
             case LongSlot(offset, false, CTRelationship) => RelationshipFromSlot(offset, k)
             case LongSlot(offset, true, CTRelationship) => NullCheck(offset, RelationshipFromSlot(offset, k))
-            case RefSlot(offset, _, _) => ReferenceFromSlot(offset)
+            case RefSlot(offset, _, _) => ReferenceFromSlot(offset, k)
             case _ =>
               throw new CantCompileQueryException("Unknown type for `" + k + "` in the slot configuration")
           }

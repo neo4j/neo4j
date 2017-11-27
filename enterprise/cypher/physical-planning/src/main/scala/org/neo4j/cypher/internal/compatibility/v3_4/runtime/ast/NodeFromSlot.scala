@@ -19,6 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
-case class NodeFromSlot(offset: Int, name: String) extends RuntimeExpression {
+case class NodeFromSlot(offset: Int, override val name: String) extends RuntimeVariable(name) {
   override def asCanonicalStringVal: String = name
 }
