@@ -32,6 +32,8 @@ import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -63,6 +65,8 @@ public class BackupStrategyWrapperTest
     private PotentiallyErroneousState<BackupStageOutcome> FAILURE = new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null );
     private PageCache pageCache = mock( PageCache.class );
     private BackupRecoveryService backupRecoveryService = mock( BackupRecoveryService.class );
+    private LogProvider logProvider = mock( LogProvider.class );
+    private Log log = mock( Log.class );
 
     @Before
     public void setup()
@@ -73,8 +77,9 @@ public class BackupStrategyWrapperTest
         when( backupCopyService.findNewBackupLocationForBrokenExisting( any() ) ).thenReturn( availableOldBackupLocation );
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( backupStrategyImplementation.performFullBackup( any(), any(), any() ) ).thenReturn( SUCCESS );
+        when( logProvider.getLog( (Class) any() ) ).thenReturn( log );
 
-        subject = new BackupStrategyWrapper( backupStrategyImplementation, backupCopyService, pageCache, config, backupRecoveryService );
+        subject = new BackupStrategyWrapper( backupStrategyImplementation, backupCopyService, pageCache, config, backupRecoveryService, logProvider );
     }
 
     @Test
@@ -96,11 +101,33 @@ public class BackupStrategyWrapperTest
         // given
         when( backupCopyService.backupExists( any() ) ).thenReturn( false );
 
+        // and fallback is set to true
+        when( requiredArguments.isFallbackToFull() ).thenReturn( true );
+
         // when
         subject.doBackup( onlineBackupContext );
 
         // then
         verify( backupStrategyImplementation ).performFullBackup( any(), any(), any() );
+    }
+
+    @Test
+    public void fullBackupIsIgnoredIfNoOtherBackupAndNotFallback()
+    {
+        // given there is an existing backup
+        when( backupCopyService.backupExists( any() ) ).thenReturn( false );
+
+        // and we don't want to fallback to full backups
+        when( requiredArguments.isFallbackToFull() ).thenReturn( false );
+
+        // and incremental backup fails because it's a different store
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn( FAILURE );
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then full backup wasnt performed
+        verify( backupStrategyImplementation, never() ).performFullBackup( any(), any(), any() );
     }
 
     @Test
@@ -207,10 +234,10 @@ public class BackupStrategyWrapperTest
         PotentiallyErroneousState<BackupStrategyOutcome> state = subject.doBackup( onlineBackupContext );
 
         // then original existing backup is moved to err directory
-        verify( backupCopyService ).moveBackupLocation( desiredBackupLocation, newLocationForExistingBackup );
+        verify( backupCopyService ).moveBackupLocation( eq( desiredBackupLocation ), eq( newLocationForExistingBackup ) );
 
         // and new successful backup is renamed to original expected name
-        verify( backupCopyService ).moveBackupLocation( temporaryFullBackupLocation, desiredBackupLocation );
+        verify( backupCopyService ).moveBackupLocation( eq( temporaryFullBackupLocation ), eq( desiredBackupLocation ) );
 
         // and backup was successful
         assertEquals( BackupStrategyOutcome.SUCCESS, state.getState() );
@@ -250,6 +277,9 @@ public class BackupStrategyWrapperTest
     @Test
     public void performingFullBackupInvokesRecovery()
     {
+        // given full backup flag is set
+        when( requiredArguments.isFallbackToFull() ).thenReturn( true );
+
         // when
         subject.doBackup( onlineBackupContext );
 
@@ -332,7 +362,99 @@ public class BackupStrategyWrapperTest
         recoveryBeforeRenameOrder.verify( backupCopyService ).moveBackupLocation( eq( availableFreshBackupLocation ), eq( desiredBackupLocation ) );
     }
 
+    @Test
+    public void logsAreClearedAfterIncrementalBackup()
+    {
+        // given backup exists
+        when( backupCopyService.backupExists( any() ) ).thenReturn( true );
+
+        // and
+        incrementalBackupIsSuccessful( true );
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( backupCopyService ).clearLogs( any() );
+    }
+
+    @Test
+    public void logsAreNotClearedWhenIncrementalNotSuccessful()
+    {
+        // given backup exists
+        when( backupCopyService.backupExists( any() ) ).thenReturn( true );
+
+        // and incremental is not successful
+        incrementalBackupIsSuccessful( false );
+
+        // when backups are performed
+        subject.doBackup( onlineBackupContext );
+
+        // then do not
+        verify( backupCopyService, never() ).clearLogs( any() );
+    }
+
+    @Test
+    public void logsAreClearedWhenFullBackupIsSuccessful()
+    {
+        // given a backup doesn't exist
+        when( backupCopyService.backupExists( any() ) ).thenReturn( false );
+
+        // and
+        fallbackToFullPasses();
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( backupCopyService ).clearLogs( any() );
+    }
+
+    @Test
+    public void logsAreNotClearedWhenFullBackupIsNotSuccessful()
+    {
+        // given a backup doesn't exist
+        when( backupCopyService.backupExists( any() ) ).thenReturn( false );
+
+        // and
+        bothBackupsFail();
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( backupCopyService, never() ).clearLogs( any() );
+    }
+
+    @Test
+    public void logsWhenIncrementalFailsAndFallbackToFull()
+    {
+        // given backup exists
+        when( backupCopyService.backupExists( any() ) ).thenReturn( false );
+
+        // and fallback to full
+        fallbackToFullPasses();
+
+        // when
+        subject.doBackup( onlineBackupContext );
+
+        // then
+        verify( log ).info( "Previous backup not found, a new full backup will be performed." );
+    }
+
     // ====================================================================================================
+
+    private void incrementalBackupIsSuccessful( boolean isSuccessful )
+    {
+        if ( isSuccessful )
+        {
+            when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
+                    new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null ) );
+            return;
+        }
+        when( backupStrategyImplementation.performIncrementalBackup( any(), any(), any() ) ).thenReturn(
+                new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, null ) );
+    }
 
     private void bothBackupsFail()
     {

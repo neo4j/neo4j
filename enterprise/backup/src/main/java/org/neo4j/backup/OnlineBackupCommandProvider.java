@@ -95,7 +95,7 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
                 BackupSupportingClassesFactoryProvider.findBestProvider()
                         .orElseThrow( noProviderException() )
                         .getFactory( backupModuleResolveAtRuntime ),
-                new BackupFlowFactory( backupModuleResolveAtRuntime )
+                new BackupStrategyCoordinatorFactory( backupModuleResolveAtRuntime )
         );
     }
 
