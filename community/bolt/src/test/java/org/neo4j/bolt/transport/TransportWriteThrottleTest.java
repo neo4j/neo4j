@@ -180,7 +180,7 @@ public class TransportWriteThrottleTest
         Future future = Executors.newSingleThreadExecutor().submit( () -> throttle.acquire( channel ) );
 
         // Wait until lock is acquired.
-        if (!lock.waitLocked( 1, TimeUnit.SECONDS ))
+        if ( !lock.waitLocked( 1, TimeUnit.SECONDS ) )
         {
             fail( "lock should be acquired" );
         }
