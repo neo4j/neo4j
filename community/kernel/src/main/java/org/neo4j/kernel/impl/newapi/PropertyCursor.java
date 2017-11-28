@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
@@ -59,19 +60,21 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     private PropertyContainerState propertiesState;
     private Iterator<StorageProperty> changedProperties;
     private StorageProperty stateValue;
+    private AssertOpen assertOpen;
 
     public PropertyCursor()
     {
         super( NO_ID );
     }
 
-    void init( long reference, Read read )
+    void init( long reference, Read read, AssertOpen assertOpen )
     {
         if ( getId() != NO_ID )
         {
             clear();
         }
 
+        this.assertOpen = assertOpen;
         this.block = Integer.MAX_VALUE;
         this.read = read;
         if ( reference == NO_ID )
@@ -249,6 +252,14 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
             return stateValue.value();
         }
 
+        Value value = readValue();
+
+        assertOpen.assertOpen();
+        return value;
+    }
+
+    private Value readValue()
+    {
         PropertyType type = type();
         if ( type == null )
         {

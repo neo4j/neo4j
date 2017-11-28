@@ -198,7 +198,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
-                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
+                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore,
+                        this::assertTransactionOpen );
         this.operations =
                 new Operations(
                         allStoreHolder,

@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -67,7 +68,7 @@ public class MockStore extends Read implements TestRule
 
     MockStore( Cursors cursors )
     {
-        super( cursors, mock( TxStateHolder.class ) );
+        super( cursors, mock( TxStateHolder.class ), AssertOpen.ALWAYS_OPEN );
     }
 
     @Override

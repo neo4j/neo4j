@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -71,9 +72,11 @@ public class AllStoreHolder extends Read implements Token
     public AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
             TxStateHolder txStateHolder,
-            Cursors cursors, ExplicitIndexStore explicitIndexStore )
+            Cursors cursors,
+            ExplicitIndexStore explicitIndexStore,
+            AssertOpen assertOpen )
     {
-        super( cursors, txStateHolder );
+        super( cursors, txStateHolder, assertOpen );
         this.storeReadLayer = engine.storeReadLayer();
         this.statement = statement; // use provided statement, to assert no leakage
         this.explicitIndexes = Suppliers.lazySingleton( txStateHolder::explicitIndexTxState );
