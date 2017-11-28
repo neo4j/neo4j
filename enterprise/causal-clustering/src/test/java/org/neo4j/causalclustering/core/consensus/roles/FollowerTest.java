@@ -234,24 +234,6 @@ public class FollowerTest
     }
 
     @Test
-    public void shouldRenewElectionTimeoutOnReceiptOfHeartbeatInCurrentOrHigherTerm() throws Exception
-    {
-        // given
-        RaftState state = raftState()
-                .myself( myself )
-                .term(0)
-                .build();
-
-        Follower follower = new Follower();
-
-        Outcome outcome = follower.handle( new RaftMessages.Heartbeat( myself, 1, 1, 1 ),
-                state, log() );
-
-        // then
-        assertTrue( outcome.electionTimeoutRenewed() );
-    }
-
-    @Test
     public void shouldNotRenewElectionTimeoutOnReceiptOfHeartbeatInLowerTerm() throws Exception
     {
         // given

@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 public class TermState
 {
-    private long term;
+    private volatile long term;
 
     public TermState()
     {

@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.state;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.identity.BoundState;
@@ -36,7 +37,8 @@ public class CoreLife implements Lifecycle
     private final CommandApplicationProcess applicationProcess;
     private final CoreStateMachines coreStateMachines;
     private final RaftMessageHandler raftMessageHandler;
-    private CoreSnapshotService snapshotService;
+    private final LeaderAvailabilityHandler leaderAvailabilityHandler;
+    private final CoreSnapshotService snapshotService;
 
     public CoreLife(
             RaftMachine raftMachine,
@@ -44,7 +46,9 @@ public class CoreLife implements Lifecycle
             ClusterBinder clusterBinder,
             CommandApplicationProcess commandApplicationProcess,
             CoreStateMachines coreStateMachines,
-            RaftMessageHandler raftMessageHandler, CoreSnapshotService snapshotService )
+            RaftMessageHandler raftMessageHandler,
+            LeaderAvailabilityHandler leaderAvailabilityHandler,
+            CoreSnapshotService snapshotService )
     {
         this.raftMachine = raftMachine;
         this.localDatabase = localDatabase;
@@ -52,6 +56,7 @@ public class CoreLife implements Lifecycle
         this.applicationProcess = commandApplicationProcess;
         this.coreStateMachines = coreStateMachines;
         this.raftMessageHandler = raftMessageHandler;
+        this.leaderAvailabilityHandler = leaderAvailabilityHandler;
         this.snapshotService = snapshotService;
     }
 
@@ -66,6 +71,7 @@ public class CoreLife implements Lifecycle
     {
         BoundState boundState = clusterBinder.bindToCluster();
         raftMessageHandler.start( boundState.clusterId() );
+        leaderAvailabilityHandler.start( boundState.clusterId() );
 
         if ( boundState.snapshot().isPresent() )
         {
@@ -89,6 +95,7 @@ public class CoreLife implements Lifecycle
     {
         raftMachine.stopTimers();
         raftMessageHandler.stop();
+        leaderAvailabilityHandler.stop();
         applicationProcess.stop();
         localDatabase.stop();
     }
