@@ -63,7 +63,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val slots = physicalPlan.slotConfigurations(plan.assignedId)
     val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
 
-    plan match {
+    val pipe = plan match {
       case AllNodesScan(IdName(column), _) =>
         AllNodesScanSlottedPipe(column, slots, argumentSize)(id)
 
@@ -83,13 +83,15 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanSlottedPipe(column, LazyLabel(label), slots, argumentSize)(id)
 
-      case _:Argument =>
+      case _: Argument =>
         ArgumentSlottedPipe(slots, argumentSize)(id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
 
     }
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+    pipe
   }
 
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
@@ -98,7 +100,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val id = plan.assignedId
     val slots = physicalPlan.slotConfigurations(plan.assignedId)
 
-    plan match {
+    val pipe = plan match {
       case ProduceResult(_, columns) =>
         val runtimeColumns = createProjectionsForResult(columns, slots)
         ProduceResultSlottedPipe(source, runtimeColumns)(id)
@@ -258,6 +260,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+    pipe
   }
 
   private def refSlotAndNotAlias(slots: SlotConfiguration, k: String) = {
@@ -308,7 +312,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val id = plan.assignedId
     val slots = slotConfigs(plan.assignedId)
 
-    plan match {
+    val pipe = plan match {
       case Apply(_, _) =>
         ApplySlottedPipe(lhs, rhs)(id)
 
@@ -398,6 +402,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+    pipe
   }
 
   // Verifies the assumption that all shared slots are arguments with slot offsets within the first argument size number of slots

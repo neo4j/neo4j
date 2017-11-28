@@ -46,12 +46,21 @@ trait Pipe {
 
   // Used by profiling to identify where to report dbhits and rows
   def id: LogicalPlanId
+
+  // TODO: Alternatively we could pass the logicalPlanId when we create contexts, and in the SlottedQueryState use the
+  // SlotConfigurations map to get the slot configuration needed for the context creation,
+  // but then we would get an extra map lookup at runtime every time we create a new context.
+  protected var executionContextFactory: ExecutionContextFactory = CommunityExecutionContextFactory()
+
+  def setExecutionContextFactory(factory: ExecutionContextFactory) = {
+    executionContextFactory = factory
+  }
 }
 
 case class ArgumentPipe()(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
-    Iterator(state.createOrGetInitialContext())
+    Iterator(state.createOrGetInitialContext(executionContextFactory))
 }
 
 abstract class PipeWithSource(source: Pipe) extends Pipe {
