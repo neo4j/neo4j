@@ -40,6 +40,7 @@ import org.neo4j.causalclustering.core.IdentityModule;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
 import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.consensus.log.pruning.PruningScheduler;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipWaiter;
@@ -176,19 +177,20 @@ public class CoreServerModule
         RaftMessageHandler messageHandler =
                 new RaftMessageHandler( localDatabase, logProvider, consensusModule.raftMachine(), downloader, commandApplicationProcess );
 
-        CoreLife coreLife = new CoreLife( consensusModule.raftMachine(), localDatabase, clusteringModule.clusterBinder(), commandApplicationProcess,
-                coreStateMachinesModule.coreStateMachines, messageHandler, snapshotService );
-
-        RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess );
-        dependencies.satisfyDependency( raftLogPruner );
-
-        life.add( new PruningScheduler( raftLogPruner, jobScheduler, config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(),
-                logProvider ) );
-
         int queueSize = config.get( CausalClusteringSettings.raft_in_queue_size );
         int maxBatch = config.get( CausalClusteringSettings.raft_in_queue_max_batch );
 
         BatchingMessageHandler batchingMessageHandler = new BatchingMessageHandler( messageHandler, queueSize, maxBatch, logProvider );
+
+        LeaderAvailabilityHandler leaderAvailabilityHandler = new LeaderAvailabilityHandler(
+                        batchingMessageHandler, consensusModule.getLeaderAvailabilityTimers(), consensusModule.raftMachine()::term, logProvider
+        );
+
+        CoreLife coreLife = new CoreLife( consensusModule.raftMachine(), localDatabase,
+                clusteringModule.clusterBinder(), commandApplicationProcess,
+                coreStateMachinesModule.coreStateMachines, messageHandler, leaderAvailabilityHandler, snapshotService );
+
+        loggingRaftInbound.registerHandler( leaderAvailabilityHandler );
 
         long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
 
@@ -196,13 +198,17 @@ public class CoreServerModule
         long joinCatchupTimeout = config.get( CausalClusteringSettings.join_catch_up_timeout ).toMillis();
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
 
-        loggingRaftInbound.registerHandler( batchingMessageHandler );
-
         CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
                 platformModule.storeCopyCheckPointMutex, pipelineAppender );
+
+        RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess );
+        dependencies.satisfyDependency( raftLogPruner );
+
+        life.add( new PruningScheduler( raftLogPruner, jobScheduler,
+                config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(), logProvider ) );
 
         // Exposes this so that tests can start/stop the catchup server
         dependencies.satisfyDependency( catchupServer );
