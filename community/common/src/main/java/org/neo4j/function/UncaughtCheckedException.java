@@ -22,7 +22,7 @@ package org.neo4j.function;
 import java.util.Optional;
 
 /**
- * Wrapper around checked exceptions for rethrowing them as runtime exceotions when the signature of the containing method
+ * Wrapper around checked exceptions for rethrowing them as runtime exceptions when the signature of the containing method
  * cannot be changed to declare them.
  *
  * Thrown by {@link ThrowingFunction#catchThrown(Class, ThrowingFunction)}
@@ -42,7 +42,7 @@ public class UncaughtCheckedException extends RuntimeException
     }
 
     /**
-     * Check the that the cause has the given type and if succesful, return it.
+     * Check that the cause has the given type and if successful, return it.
      *
      * @param clazz class object for the desired type of the cause
      * @param <E> the desired type of the cause

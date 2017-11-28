@@ -136,10 +136,12 @@ public class ConsensusModule
 
         raftTimeoutService = new DelayedRenewableTimeoutService( systemClock(), logProvider );
 
+        boolean supportsPreVoting = config.get( CausalClusteringSettings.enable_pre_voting );
+
         raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightCache,
                 config.get( refuse_to_be_leader ),
-                platformModule.monitors, systemClock() );
+                supportsPreVoting, platformModule.monitors, systemClock() );
 
         life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
 

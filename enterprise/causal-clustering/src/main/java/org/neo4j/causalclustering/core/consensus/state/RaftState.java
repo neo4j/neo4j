@@ -46,24 +46,27 @@ public class RaftState implements ReadableRaftState
     private final Log log;
     private final RaftLog entryLog;
     private final InFlightCache inFlightCache;
+    private final boolean supportPreVoting;
 
     private TermState termState;
     private VoteState voteState;
 
     private MemberId leader;
     private Set<MemberId> votesForMe = new HashSet<>();
+    private Set<MemberId> preVotesForMe = new HashSet<>();
     private Set<MemberId> heartbeatResponses = new HashSet<>();
     private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     private long leaderCommit = -1;
     private long commitIndex = -1;
     private long lastLogIndexBeforeWeBecameLeader = -1;
+    private boolean isPreElection;
 
     public RaftState( MemberId myself,
                       StateStorage<TermState> termStorage,
                       RaftMembership membership,
                       RaftLog entryLog,
                       StateStorage<VoteState> voteStorage,
-                      InFlightCache inFlightCache, LogProvider logProvider )
+                      InFlightCache inFlightCache, LogProvider logProvider, boolean supportPreVoting )
     {
         this.myself = myself;
         this.termStorage = termStorage;
@@ -71,7 +74,11 @@ public class RaftState implements ReadableRaftState
         this.membership = membership;
         this.entryLog = entryLog;
         this.inFlightCache = inFlightCache;
-        log = logProvider.getLog( getClass() );
+        this.supportPreVoting = supportPreVoting;
+        this.log = logProvider.getLog( getClass() );
+
+        // Initial state
+        this.isPreElection = supportPreVoting;
     }
 
     @Override
@@ -170,6 +177,24 @@ public class RaftState implements ReadableRaftState
         return commitIndex;
     }
 
+    @Override
+    public boolean supportPreVoting()
+    {
+        return supportPreVoting;
+    }
+
+    @Override
+    public boolean isPreElection()
+    {
+        return isPreElection;
+    }
+
+    @Override
+    public Set<MemberId> preVotesForMe()
+    {
+        return preVotesForMe;
+    }
+
     public void update( Outcome outcome ) throws IOException
     {
         if ( termState().update( outcome.getTerm() ) )
@@ -186,9 +211,11 @@ public class RaftState implements ReadableRaftState
 
         leaderCommit = outcome.getLeaderCommit();
         votesForMe = outcome.getVotesForMe();
+        preVotesForMe = outcome.getPreVotesForMe();
         heartbeatResponses = outcome.getHeartbeatResponses();
         lastLogIndexBeforeWeBecameLeader = outcome.getLastLogIndexBeforeWeBecameLeader();
         followerStates = outcome.getFollowerStates();
+        isPreElection = outcome.isPreElection();
 
         for ( RaftLogCommand logCommand : outcome.getLogCommands() )
         {

@@ -66,7 +66,7 @@ public class RaftStateTest
         InFlightCache cache = new ConsecutiveInFlightCache();
         RaftState raftState = new RaftState( member( 0 ),
                 new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
-                new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance(), false );
 
         List<RaftLogCommand> logCommands = new LinkedList<RaftLogCommand>()
         {{
@@ -79,8 +79,8 @@ public class RaftStateTest
         }};
 
         Outcome raftTestMemberOutcome =
-                new Outcome( CANDIDATE, 0, null, -1, null, emptySet(), -1, initialFollowerStates(), true,
-                        logCommands, emptyOutgoingMessages(), emptySet(), -1, emptySet() );
+                new Outcome( CANDIDATE, 0, null, -1, null, emptySet(), emptySet(), -1, initialFollowerStates(), true,
+                        logCommands, emptyOutgoingMessages(), emptySet(), -1, emptySet(), false );
 
         //when
         raftState.update(raftTestMemberOutcome);
@@ -101,14 +101,15 @@ public class RaftStateTest
                 new InMemoryStateStorage<>( new TermState() ),
                 new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState( ) ),
-                new ConsecutiveInFlightCache(), NullLogProvider.getInstance() );
+                new ConsecutiveInFlightCache(), NullLogProvider.getInstance(),
+                false );
 
-        raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, emptySet(), -1, initialFollowerStates(), true, emptyLogCommands(),
-                emptyOutgoingMessages(), emptySet(), -1, emptySet() ) );
+        raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, emptySet(), emptySet(), -1, initialFollowerStates(), true, emptyLogCommands(),
+                emptyOutgoingMessages(), emptySet(), -1, emptySet(), false ) );
 
         // when
-        raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, emptySet(), -1, new FollowerStates<>(), true, emptyLogCommands(),
-                emptyOutgoingMessages(), emptySet(), -1, emptySet() ) );
+        raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, emptySet(), emptySet(), -1, new FollowerStates<>(), true, emptyLogCommands(),
+                emptyOutgoingMessages(), emptySet(), -1, emptySet(), false ) );
 
         // then
         assertEquals( 0, raftState.followerStates().size() );
