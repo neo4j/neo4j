@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.newapi.MockStore.block;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
+public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClient
 {
     @Rule
     public final MockStore store = new MockStore( new Cursors() );
