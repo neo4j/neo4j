@@ -22,8 +22,8 @@ package org.neo4j.cypher
 import java.io.{PrintWriter, StringWriter}
 
 import org.neo4j.graphdb.{NotFoundException, TransactionFailureException}
-
-import scala.language.reflectiveCalls
+import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.Status
 
 class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
@@ -138,25 +138,34 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     val ids = {
       val ids = graph.inTx {
-        (0 until NUM_NODES).map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next()).toList
+        (0 until NUM_NODES)
+          .map(ignored => execute("CREATE (n:Person) RETURN ID(n) as id")
+            .columnAs[Long]("id").next()
+          ).toList
       }
       new scala.util.Random(41).shuffle(ids)
     }
 
     graph.inTx {
       ids.foreach { id =>
-        execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:person_name {val:'Bob Smith'}) CREATE (a)-[r:name]->(b)").toList
+        execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:Name {val:'Bob Smith'}) CREATE (a)-[r:NAMED]->(b)").toList
       }
     }
 
-    val threads: List[MyThread] = ids.map { id =>
-      new MyThread(NUM_EXECUTIONS, () => {
-        execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
-      })
-    } ++ ids.map { id =>
-      new MyThread(NUM_EXECUTIONS, () => {
-          execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id CREATE (root)-[:name]->(b)").toList
-      }, ignoreRollbackAndNodeNotFound)
+    val threads: List[MyThread] = {
+      val detachThreads =
+        ids.map { id =>
+          new MyThread(NUM_EXECUTIONS, () => {
+            execute(s"MATCH (root)-[:NAMED]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
+          })
+        }
+      val createThreads =
+        ids.map { id =>
+          new MyThread(NUM_EXECUTIONS, () => {
+            execute(s"MATCH (root), (b:Name) WHERE ID(root) = $id CREATE (root)-[:NAMED]->(b)").toList
+          }, ignoreRollbackAndNodeNotFound)
+        }
+      new scala.util.Random(41).shuffle(detachThreads ++ createThreads)
     }
 
     threads.foreach(_.start())
@@ -174,12 +183,12 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
   val ignoreRollbackAndNodeNotFound: Throwable => Boolean = {
       // let's ignore the commit failures if they are caused by the above exceptions
       case ex: TransactionFailureException =>
-        val cause: Throwable = ex.getCause
-        cause.isInstanceOf[org.neo4j.kernel.api.exceptions.TransactionFailureException] &&
-          cause.getMessage == "Transaction rolled back even if marked as successful"
+        ex.getCause match {
+          case kex: KernelException if kex.status() == Status.Transaction.TransactionMarkedAsFailed => true
+          case _ => false
+        }
       case ex: CypherExecutionException =>
-        ex.getCause.isInstanceOf[org.neo4j.kernel.api.exceptions.EntityNotFoundException] &&
-          ex.getCause.getMessage.startsWith("Unable to load NODE with id")
+        ex.status == Status.Statement.EntityNotFound
       case ex: NotFoundException => true
       case _ => false
     }
