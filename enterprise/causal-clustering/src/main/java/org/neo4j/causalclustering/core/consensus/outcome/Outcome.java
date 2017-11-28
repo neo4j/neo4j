@@ -60,6 +60,8 @@ public class Outcome implements Message, ConsensusOutcome
     private MemberId votedFor;
     private boolean renewElectionTimeout;
     private boolean needsFreshSnapshot;
+    private boolean isPreElection;
+    private Set<MemberId> preVotesForMe;
 
     /* Candidate */
     private Set<MemberId> votesForMe;
@@ -78,10 +80,10 @@ public class Outcome implements Message, ConsensusOutcome
     }
 
     public Outcome( Role nextRole, long term, MemberId leader, long leaderCommit, MemberId votedFor,
-                    Set<MemberId> votesForMe, long lastLogIndexBeforeWeBecameLeader,
+                    Set<MemberId> votesForMe, Set<MemberId> preVotesForMe, long lastLogIndexBeforeWeBecameLeader,
                     FollowerStates<MemberId> followerStates, boolean renewElectionTimeout,
                     Collection<RaftLogCommand> logCommands, Collection<RaftMessages.Directed> outgoingMessages,
-                    Collection<ShipCommand> shipCommands, long commitIndex, Set<MemberId> heartbeatResponses )
+                    Collection<ShipCommand> shipCommands, long commitIndex, Set<MemberId> heartbeatResponses, boolean isPreElection )
     {
         this.nextRole = nextRole;
         this.term = term;
@@ -89,6 +91,7 @@ public class Outcome implements Message, ConsensusOutcome
         this.leaderCommit = leaderCommit;
         this.votedFor = votedFor;
         this.votesForMe = new HashSet<>( votesForMe );
+        this.preVotesForMe = new HashSet<>( preVotesForMe );
         this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
         this.followerStates = followerStates;
         this.renewElectionTimeout = renewElectionTimeout;
@@ -98,6 +101,7 @@ public class Outcome implements Message, ConsensusOutcome
         this.outgoingMessages.addAll( outgoingMessages );
         this.shipCommands.addAll( shipCommands );
         this.commitIndex = commitIndex;
+        this.isPreElection = isPreElection;
     }
 
     private void defaults( Role currentRole, ReadableRaftState ctx )
@@ -113,6 +117,8 @@ public class Outcome implements Message, ConsensusOutcome
         renewElectionTimeout = false;
         needsFreshSnapshot = false;
 
+        isPreElection = (currentRole == Role.FOLLOWER) && ctx.isPreElection();
+        preVotesForMe = isPreElection ? new HashSet<>( ctx.preVotesForMe() ) : emptySet();
         votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : emptySet();
         heartbeatResponses = (currentRole == Role.LEADER) ? new HashSet<>( ctx.heartbeatResponses() ) : emptySet();
 
@@ -214,6 +220,7 @@ public class Outcome implements Message, ConsensusOutcome
                ", renewElectionTimeout=" + renewElectionTimeout +
                ", needsFreshSnapshot=" + needsFreshSnapshot +
                ", votesForMe=" + votesForMe +
+               ", preVotesForMe=" + preVotesForMe +
                ", lastLogIndexBeforeWeBecameLeader=" + lastLogIndexBeforeWeBecameLeader +
                ", followerStates=" + followerStates +
                ", shipCommands=" + shipCommands +
@@ -317,5 +324,25 @@ public class Outcome implements Message, ConsensusOutcome
     public Set<MemberId> getHeartbeatResponses()
     {
         return heartbeatResponses;
+    }
+
+    public void setPreElection( boolean isPreElection )
+    {
+        this.isPreElection = isPreElection;
+    }
+
+    public boolean isPreElection()
+    {
+        return isPreElection;
+    }
+
+    public void addPreVoteForMe( MemberId from )
+    {
+        this.preVotesForMe.add( from );
+    }
+
+    public Set<MemberId> getPreVotesForMe()
+    {
+        return preVotesForMe;
     }
 }

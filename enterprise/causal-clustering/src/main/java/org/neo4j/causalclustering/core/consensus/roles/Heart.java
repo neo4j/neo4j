@@ -41,13 +41,14 @@ class Heart
         }
 
         outcome.renewElectionTimeout();
+        outcome.setPreElection( false );
         outcome.setNextTerm( request.leaderTerm() );
         outcome.setLeader( request.from() );
         outcome.setLeaderCommit( request.commitIndex() );
         outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(),
                 new RaftMessages.HeartbeatResponse( state.myself() ) ) );
 
-        if ( !Follower.logHistoryMatches( state, request.commitIndex(), request.commitIndexTerm(), log ) )
+        if ( !Follower.logHistoryMatches( state, request.commitIndex(), request.commitIndexTerm() ) )
         {
             return;
         }
