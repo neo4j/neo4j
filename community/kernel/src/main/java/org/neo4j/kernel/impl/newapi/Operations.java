@@ -367,7 +367,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         }
 
         ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
-        if ( allStoreHolder.nodeExists( node ) )
+        if ( allStoreHolder.nodeExistsInStore( node ) )
         {
             autoIndexing.nodes().entityRemoved( this, node );
             ktx.txState().nodeDoDelete( node );

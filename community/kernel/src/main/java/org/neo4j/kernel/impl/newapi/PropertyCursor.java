@@ -196,6 +196,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         propertiesState = null;
         changedProperties = null;
         stateValue = null;
+        read = null;
         clear();
     }
 

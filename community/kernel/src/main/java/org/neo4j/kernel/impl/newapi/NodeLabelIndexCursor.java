@@ -81,6 +81,7 @@ class NodeLabelIndexCursor extends IndexCursor
         super.close();
         node = NO_ID;
         labels = null;
+        read = null;
     }
 
     @Override

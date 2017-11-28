@@ -199,7 +199,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore,
-                        this::assertTransactionOpen );
+                        this::assertOpen );
         this.operations =
                 new Operations(
                         allStoreHolder,
@@ -459,6 +459,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( closed )
         {
             throw new IllegalStateException( "This transaction has already been completed." );
+        }
+    }
+
+    private void assertOpen()
+    {
+        Optional<Status> terminationReason = getReasonIfTerminated();
+        if ( terminationReason.isPresent() )
+        {
+            throw new TransactionTerminatedException( terminationReason.get() );
         }
     }
 

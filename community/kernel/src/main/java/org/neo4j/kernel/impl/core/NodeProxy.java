@@ -449,9 +449,9 @@ public class NodeProxy implements Node
         CursorFactory cursors = transaction.cursors();
         Map<String,Object> properties = new HashMap<>();
 
-        try ( NodeCursor nodes = cursors.allocateNodeCursor();
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
-              Statement ignore = actions.statement() )
+        try ( Statement ignore = actions.statement();
+              NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
         {
             Token token = transaction.token();
             transaction.dataRead().singleNode( nodeId, nodes );

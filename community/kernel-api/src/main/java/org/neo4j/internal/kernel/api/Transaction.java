@@ -62,6 +62,8 @@ public interface Transaction extends AutoCloseable
 
     /**
      * @return The Write operations of the graph.
+     * @throws InvalidTransactionTypeKernelException when transaction cannot be upgraded to a write transaction. This
+     * can happen when there have been schema modifications.
      */
     Write dataWrite() throws InvalidTransactionTypeKernelException;
 

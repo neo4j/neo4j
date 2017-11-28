@@ -271,6 +271,9 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             pageCursor.close();
             pageCursor = null;
         }
+        read = null;
+        labelCursor = null;
+
         reset();
     }
 

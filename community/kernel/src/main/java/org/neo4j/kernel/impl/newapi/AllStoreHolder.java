@@ -302,7 +302,7 @@ public class AllStoreHolder extends Read implements Token
         return PropertyUtil.readArrayFromBuffer( buffer );
     }
 
-    public boolean nodeExists( long id )
+    public boolean nodeExistsInStore( long id )
     {
         return storeReadLayer.nodeExists( id );
     }

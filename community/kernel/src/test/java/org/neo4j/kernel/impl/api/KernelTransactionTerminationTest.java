@@ -343,8 +343,9 @@ public class KernelTransactionTerminationTest
                     mock( Pool.class ), Clocks.fakeClock(), CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE,
                     TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
-                            mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock(Cursors.class), AutoIndexing.UNSUPPORTED, mock(
-                            ExplicitIndexStore.class) );
+                    mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock( Cursors.class ),
+                    AutoIndexing.UNSUPPORTED, mock(
+                            ExplicitIndexStore.class ) );
 
             this.monitor = monitor;
         }

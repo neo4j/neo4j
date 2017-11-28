@@ -102,6 +102,7 @@ class NodeValueIndexCursor extends IndexCursor
         this.node = NO_ID;
         this.keys = null;
         this.values = null;
+        this.read = null;
     }
 
     @Override

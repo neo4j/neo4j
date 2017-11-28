@@ -111,6 +111,7 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
             pageCursor.close();
             pageCursor = null;
         }
+        read = null;
         reset();
     }
 

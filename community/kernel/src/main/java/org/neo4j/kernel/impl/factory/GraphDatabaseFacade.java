@@ -332,8 +332,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         }
 
         KernelTransaction ktx = spi.currentTransaction();
-        try ( NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor();
-              Statement ignore = spi.currentStatement() )
+        try ( Statement ignore = spi.currentStatement();
+              NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor()
+        )
         {
             ktx.dataRead().singleNode( id, nodeCursor );
             if ( !nodeCursor.next() )
