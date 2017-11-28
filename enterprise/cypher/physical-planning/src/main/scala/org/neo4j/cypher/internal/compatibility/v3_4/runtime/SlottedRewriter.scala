@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
+import org.neo4j.cypher.internal.util.v3_4.AssertionUtils.ifAssertionsEnabled
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter, topDown}
@@ -126,8 +127,10 @@ class SlottedRewriter(tokenContext: TokenContext) {
     // Rewrite plan and note which logical plans are rewritten to something else
     val resultPlan = in.endoRewrite(rewritePlanWithSlots)
 
-    // TODO: This should probably only run when -ea is enabled
-    resultPlan.findByAllClass[Variable].filter(!_.isInstanceOf[RuntimeVariable]).foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
+    // Verify that we could rewrite all instances of Variable (only under -ea)
+    ifAssertionsEnabled {
+      resultPlan.findByAllClass[Variable].foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
+    }
 
     resultPlan
   }
@@ -143,7 +146,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
         val rewrittenProjection = e.projection.endoRewrite(rewriter)
         e.copy(plan = rewrittenPlan, projection = rewrittenProjection)(e.position)
 
-      case prop@Property(Variable(key), PropertyKeyName(propKey)) if !prop.isInstanceOf[RuntimeProperty] =>
+      case prop@Property(Variable(key), PropertyKeyName(propKey)) =>
 
         slotConfiguration(key) match {
           case LongSlot(offset, nullable, typ) =>
@@ -157,11 +160,12 @@ class SlottedRewriter(tokenContext: TokenContext) {
               case _ => throw new InternalException(s"Expressions on object other then nodes and relationships are not yet supported")
             }
             if (nullable)
-              NullCheck(offset, propExpression)
+              NullCheckProperty(offset, propExpression)
             else
               propExpression
 
-          case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset, key))(prop.position)
+          case RefSlot(offset, _, _) =>
+            prop.copy(map = ReferenceFromSlot(offset, key))(prop.position)
         }
 
       case e@Equals(Variable(k1), Variable(k2)) =>
@@ -186,13 +190,13 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case _ => throw new CantCompileQueryException(s"Invalid slot for GetDegree: $n")
         }
 
-      case v @ Variable(k) if !v.isInstanceOf[RuntimeVariable] =>
+      case v @ Variable(k) =>
         slotConfiguration.get(k) match {
           case Some(slot) => slot match {
             case LongSlot(offset, false, CTNode) => NodeFromSlot(offset, k)
-            case LongSlot(offset, true, CTNode) => NullCheck(offset, NodeFromSlot(offset, k))
+            case LongSlot(offset, true, CTNode) => NullCheckVariable(offset, NodeFromSlot(offset, k))
             case LongSlot(offset, false, CTRelationship) => RelationshipFromSlot(offset, k)
-            case LongSlot(offset, true, CTRelationship) => NullCheck(offset, RelationshipFromSlot(offset, k))
+            case LongSlot(offset, true, CTRelationship) => NullCheckVariable(offset, RelationshipFromSlot(offset, k))
             case RefSlot(offset, _, _) => ReferenceFromSlot(offset, k)
             case _ =>
               throw new CantCompileQueryException("Unknown type for `" + k + "` in the slot configuration")
@@ -315,12 +319,22 @@ class SlottedRewriter(tokenContext: TokenContext) {
     }
 
     if (slot.nullable)
-      NullCheck(slot.offset, propExpression)
+      NullCheckProperty(slot.offset, propExpression)
     else
       propExpression
   }
 
-  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {
-    lp => lp.isInstanceOf[LogicalPlan] && lp != thisPlan
+  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = { lp =>
+    lp match {
+      case _: LogicalPlan =>
+        lp != thisPlan
+
+      // Do not traverse into slotted runtime variables or properties
+      case _: RuntimeVariable | _: RuntimeProperty =>
+        true
+
+      case _ =>
+        false
+    }
   }
 }

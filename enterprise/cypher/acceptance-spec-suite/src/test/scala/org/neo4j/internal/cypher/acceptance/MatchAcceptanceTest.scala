@@ -119,7 +119,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode(Map("x" -> "Zzing"))
     createNode(Map("x" -> 'Ä'))
 
-    val result = executeWith(Configs.CommunityInterpreted, s"match (n) where n.x < 'Z' AND n.x < 'z' return n")
+    val result = executeWith(Configs.Interpreted, s"match (n) where n.x < 'Z' AND n.x < 'z' return n")
 
     result.columnAs("n").toList should equal(List(n1, n2))
   }

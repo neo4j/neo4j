@@ -522,7 +522,7 @@ object LdbcQueries {
       Map("tagName" -> "tag3-ᚠさ丵פش", "postCount" -> 2),
       Map("tagName" -> "tag5-ᚠさ丵פش", "postCount" -> 1))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
   }
 

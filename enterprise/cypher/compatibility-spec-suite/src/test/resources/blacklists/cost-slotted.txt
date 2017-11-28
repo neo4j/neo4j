@@ -7,15 +7,6 @@ Support column renaming for aggregates as well
 Support multiple divisions in aggregate function
 Aggregates in aggregates
 Aggregates with arithmetics
-Handling numerical ranges 1
-Handling numerical ranges 2
-Handling numerical ranges 3
-Handling numerical ranges 4
-Handling string ranges 1
-Handling string ranges 2
-Handling string ranges 3
-Handling string ranges 4
-Handling empty range
 Fail at runtime when attempting to index with an Int into a Map
 Fail at runtime when trying to index into a map with a non-string
 Fail at runtime when attempting to index with a String into a Collection

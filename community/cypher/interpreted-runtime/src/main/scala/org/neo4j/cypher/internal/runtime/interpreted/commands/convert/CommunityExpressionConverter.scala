@@ -318,7 +318,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
   private def toCommandExpression(expressions: Seq[ast.Expression], self: ExpressionConverters): Seq[CommandExpression] =
     expressions.map(self.toCommandExpression)
 
-  private def variable(e: ast.Variable) = commands.expressions.Variable(e.name)
+  private def variable(e: ast.LogicalVariable) = commands.expressions.Variable(e.name)
 
   private def inequalityExpression(original: ast.InequalityExpression, self: ExpressionConverters): predicates.ComparablePredicate = original match {
     case e: ast.LessThan => predicates.LessThan(self.toCommandExpression(e.lhs), self.toCommandExpression(e.rhs))

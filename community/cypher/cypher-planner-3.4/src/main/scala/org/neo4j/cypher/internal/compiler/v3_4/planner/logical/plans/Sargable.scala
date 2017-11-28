@@ -151,7 +151,7 @@ case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr
     RangeQueryExpression(PrefixSeekRangeWrapper(range)(expr.rhs.position))
 }
 
-case class InequalityRangeSeekable(ident: Variable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
+case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
   extends RangeSeekable[AndedPropertyInequalities, Expression] {
 
   def dependencies: Set[LogicalVariable] = expr.inequalities.map(_.dependencies).toSet.flatten

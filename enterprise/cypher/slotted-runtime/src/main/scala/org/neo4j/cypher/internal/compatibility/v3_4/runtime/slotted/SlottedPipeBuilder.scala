@@ -36,9 +36,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
-import org.neo4j.cypher.internal.util.v3_4.AssertionRunner.Thunk
+import org.neo4j.cypher.internal.util.v3_4.AssertionUtils._
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.{AssertionRunner, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions.{Equals, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -398,12 +398,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
-  }
-
-  private def ifAssertionsEnabled(f: => Unit): Unit = {
-    AssertionRunner.runUnderAssertion(new Thunk {
-      override def apply() = f
-    })
   }
 
   // Verifies the assumption that all shared slots are arguments with slot offsets within the first argument size number of slots
