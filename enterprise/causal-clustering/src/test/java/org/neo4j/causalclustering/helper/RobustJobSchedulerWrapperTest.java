@@ -33,7 +33,6 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -102,7 +101,7 @@ public class RobustJobSchedulerWrapperTest
 
         // then
         assertEventually( "run count", count::get, Matchers.equalTo( nRuns ), DEFAULT_TIMEOUT_MS , MILLISECONDS );
-        robustWrapper.cancelAndWaitTermination( jobHandle );
+        jobHandle.cancel( true );
         verify( log, timeout( DEFAULT_TIMEOUT_MS ).times( nRuns ) ).warn( "Uncaught exception", e );
     }
 
@@ -128,29 +127,7 @@ public class RobustJobSchedulerWrapperTest
 
         // then
         assertEventually( "run count", count::get, Matchers.equalTo( 1 ), DEFAULT_TIMEOUT_MS , MILLISECONDS );
-        robustWrapper.cancelAndWaitTermination( jobHandle );
+        jobHandle.cancel( true );
         verify( log, timeout( DEFAULT_TIMEOUT_MS ).times( 1 ) ).error( "Uncaught error rethrown", e );
-    }
-
-    @Test
-    public void shouldBeAbleToCancelJob() throws Exception
-    {
-        // given
-        RobustJobSchedulerWrapper robustWrapper = new RobustJobSchedulerWrapper( actualScheduler, log );
-
-        // when
-        AtomicInteger count = new AtomicInteger();
-        JobHandle jobHandle = robustWrapper.scheduleRecurring( "JobName", 1, count::incrementAndGet );
-        assertEventually( "run count", count::get, Matchers.greaterThanOrEqualTo( 100 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
-
-        // then
-        robustWrapper.cancelAndWaitTermination( jobHandle );
-        int finalCount = count.get();
-
-        // when
-        Thread.sleep( 50 ); // should not keep increasing during this time
-
-        // then
-        assertEquals( finalCount, count.get() );
     }
 }
