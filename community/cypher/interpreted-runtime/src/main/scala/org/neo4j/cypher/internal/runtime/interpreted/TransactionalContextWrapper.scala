@@ -28,19 +28,17 @@ import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, Statement}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
-  override type ReadOps = ReadOperations
-
-  override type DbmsOps = DbmsOperations
-
   def getOrBeginNewIfClosed(): TransactionalContextWrapper = TransactionalContextWrapper(tc.getOrBeginNewIfClosed())
 
   def isOpen: Boolean = tc.isOpen
+
+  def kernelTransaction: KernelTransaction = tc.kernelTransaction()
 
   def graph: GraphDatabaseQueryService = tc.graph()
 

@@ -39,6 +39,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -71,6 +73,8 @@ public class NodeProxy implements Node
     public interface NodeActions
     {
         Statement statement();
+
+        KernelTransaction kernelTransaction();
 
         GraphDatabaseService getGraphDatabase();
 
@@ -105,23 +109,18 @@ public class NodeProxy implements Node
     @Override
     public void delete()
     {
-        try ( Statement statement = actions.statement() )
+        try
         {
-            statement.dataWriteOperations().nodeDelete( getId() );
+            boolean deleted = actions.kernelTransaction().dataWrite().nodeDelete( getId() );
+            if ( !deleted )
+            {
+                throw new NotFoundException( "Unable to delete Node[" + nodeId +
+                                             "] since it has already been deleted." );
+            }
         }
-        catch ( InvalidTransactionTypeKernelException e )
+        catch ( KernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Unable to delete Node[" + nodeId +
-                                             "] since it has already been deleted." );
-        }
-        catch ( AutoIndexingKernelException e )
-        {
-            throw new IllegalStateException( "Auto indexing encountered a failure while deleting the node: "
-                                             + e.getMessage(), e );
         }
     }
 
@@ -346,7 +345,7 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            Value value =  statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
+            Value value = statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
             return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
         }
         catch ( EntityNotFoundException e )
@@ -379,7 +378,7 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public Map<String, Object> getProperties( String... keys )
+    public Map<String,Object> getProperties( String... keys )
     {
         Objects.requireNonNull( keys, "Properties keys should be not null array." );
 
@@ -405,7 +404,7 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public Map<String, Object> getAllProperties()
+    public Map<String,Object> getAllProperties()
     {
         try ( Statement statement = actions.statement() )
         {
@@ -413,7 +412,7 @@ public class NodeProxy implements Node
             {
                 try ( Cursor<PropertyItem> propertyCursor = statement.readOperations().nodeGetProperties( node.get() ) )
                 {
-                    Map<String, Object> properties = new HashMap<>();
+                    Map<String,Object> properties = new HashMap<>();
 
                     // Get all properties
                     while ( propertyCursor.next() )
@@ -546,8 +545,8 @@ public class NodeProxy implements Node
         {
             int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
             long relationshipId = statement.dataWriteOperations()
-                                           .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() );
-            return actions.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId()  );
+                    .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() );
+            return actions.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
         }
         catch ( IllegalTokenNameException | RelationshipTypeIdNotFoundKernelException e )
         {
@@ -556,7 +555,7 @@ public class NodeProxy implements Node
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( "Node[" + e.entityId() +
-                                             "] is deleted and cannot be used to create a relationship" );
+                                         "] is deleted and cannot be used to create a relationship" );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {

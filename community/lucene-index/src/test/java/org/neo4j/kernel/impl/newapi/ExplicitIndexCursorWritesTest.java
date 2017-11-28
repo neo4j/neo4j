@@ -17,39 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
-import java.util.NoSuchElementException;
+import org.neo4j.internal.kernel.api.ExplicitIndexCursorWritesTestBase;
 
-/**
- * Set of label ids.
- */
-public interface LabelSet
+public class ExplicitIndexCursorWritesTest extends ExplicitIndexCursorWritesTestBase<WriteTestSupport>
 {
-    int numberOfLabels();
-
-    int label( int offset );
-
-    boolean contains( int labelToken );
-
-    LabelSet NONE = new LabelSet()
+    @Override
+    public WriteTestSupport newTestSupport()
     {
-        @Override
-        public int numberOfLabels()
-        {
-            return 0;
-        }
-
-        @Override
-        public int label( int offset )
-        {
-            throw new NoSuchElementException();
-        }
-
-        @Override
-        public boolean contains( int labelToken )
-        {
-            return false;
-        }
-    };
+        return new WriteTestSupport();
+    }
 }

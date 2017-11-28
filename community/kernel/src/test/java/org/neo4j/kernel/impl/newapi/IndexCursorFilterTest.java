@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -41,7 +42,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
 {
     @Rule
-    public final MockStore store = new MockStore();
+    public final MockStore store = new MockStore( new Cursors() );
     private final List<Event> events = new ArrayList<>();
 
     @Test
@@ -128,7 +129,7 @@ public class IndexCursorFilterTest implements IndexProgressor, NodeValueClient
     private NodeValueClientFilter initializeFilter( int[] keys, IndexQuery... filters )
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
-                this, new NodeCursor( store ), new PropertyCursor( store ), filters );
+                this, new NodeCursor(), new PropertyCursor(), store, filters );
         filter.initialize( this, keys );
         return filter;
     }

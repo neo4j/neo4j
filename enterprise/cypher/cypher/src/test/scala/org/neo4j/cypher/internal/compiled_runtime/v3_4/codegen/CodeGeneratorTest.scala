@@ -1668,7 +1668,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     override def answer(invocationOnMock: InvocationOnMock): AnyRef = toObjectConverter(invocationOnMock.getArguments()(0))
   })
   when(transactionalContext.readOperations).thenReturn(ro)
-  when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
+  when(queryContext.entityAccessor).thenReturn(nodeManager)
   when(ro.nodeGetProperty(anyLong(), anyInt())).thenAnswer(new Answer[Value] {
     override def answer(invocationOnMock: InvocationOnMock): Value = {
       val id = invocationOnMock.getArguments()(0).asInstanceOf[Long]
