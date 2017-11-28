@@ -29,6 +29,39 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("should not fail") {
+    // Should plan without throwing exception
+    innerExecute(
+      """MATCH (study:Study {UUID:$studyUUID})
+        |MATCH (study)-[hasSubject:HAS_SUBJECT]->(subject:Study_Subject)-[:HAS_DATASET]->(dataset:Study_Dataset)<-[:HAS_DATASET]-(study)
+        |WHERE toLower(COALESCE(subject.Archived,'false')) = 'false' AND toLower(COALESCE(dataset.Archived,'false')) = 'false'
+        |WITH DISTINCT study, { RecordID: COALESCE(hasSubject.RecordID, subject.RecordID), SubjectUUID: subject.UUID } AS derivedData, subject
+        |MATCH (subject)-[:HAS_DATASET]-(dataset:Study_Dataset)<-[:HAS_DATASET]-(study)
+        |  WHERE size(FILTER(x in labels(dataset) WHERE x in ['YPQ','WASI'])) = 1 AND toLower(COALESCE(dataset.Archived,'false')) = 'false'
+        |WITH study, derivedData, subject, collect(dataset) AS datasets
+        |MATCH (stai:Study_Dataset:STAI) WHERE (stai IN datasets)
+        |MATCH (pswq:Study_Dataset:PSWQ) WHERE (pswq IN datasets)
+        |MATCH (pss:Study_Dataset:PSS) WHERE (pss IN datasets)
+        |MATCH (njre_q_r:Study_Dataset:NJRE_Q_R) WHERE (njre_q_r IN datasets)
+        |MATCH (iu:Study_Dataset:IU) WHERE (iu IN datasets)
+        |MATCH (gad_7:Study_Dataset:GAD_7) WHERE (gad_7 IN datasets)
+        |MATCH (fmps:Study_Dataset:FMPS) WHERE (fmps IN datasets)
+        |MATCH (bdi:Study_Dataset:BDI) WHERE (bdi IN datasets)
+        |MATCH (wdq:Study_Dataset:WDQ) WHERE (wdq IN datasets)
+        |MATCH (treasurehunt:Study_Dataset:TREASUREHUNT) WHERE (treasurehunt IN datasets)
+        |MATCH (scid_v2:Study_Dataset:SCID_V2) WHERE (scid_v2 IN datasets)
+        |MATCH (ybocs:Study_Dataset:YBOCS) WHERE (ybocs IN datasets)
+        |MATCH (bis:Study_Dataset:BIS) WHERE (bis IN datasets)
+        |MATCH (sdq:Study_Dataset:SDQ) WHERE (sdq IN datasets)
+        |MATCH (ehi:Study_Dataset:EHI) WHERE (ehi IN datasets)
+        |MATCH (oci_r:Study_Dataset:OCI_R) WHERE (oci_r IN datasets)
+        |MATCH (pi_wsur:Study_Dataset:PI_WSUR) WHERE (pi_wsur IN datasets)
+        |MATCH (rfq:Study_Dataset:RFQ) WHERE (rfq IN datasets)
+        |OPTIONAL MATCH (wasi:Study_Dataset:WASI) WHERE (wasi IN datasets)
+        |OPTIONAL MATCH (ypq:Study_Dataset:YPQ) WHERE (ypq IN datasets)
+        |RETURN DISTINCT derivedData AS DerivedData, subject , stai, pswq, pss, njre_q_r, iu, gad_7, fmps, bdi, wdq, treasurehunt, scid_v2, ybocs, bis, sdq, ehi, oci_r, pi_wsur, rfq, wasi, ypq""".stripMargin)
+  }
+
   test("Should not use both pruning var expand and projections that need path info") {
     val n1 = createLabeledNode("Neo")
     val n2 = createLabeledNode()
