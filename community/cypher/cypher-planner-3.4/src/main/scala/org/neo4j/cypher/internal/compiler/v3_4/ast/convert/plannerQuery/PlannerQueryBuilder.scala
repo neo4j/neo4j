@@ -88,7 +88,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
       val mergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph
       val newMergeMatchGraph = mergeMatchGraph.map {
         qg =>
-          val requiredArguments = qg.coveredIdsExceptArguments intersect qg.argumentIds
+          val requiredArguments = qg.nodesAndRelationshipsMatched intersect qg.argumentIds
           qg.withArgumentIds(requiredArguments)
       }
       plannerQuery.amendQueryGraph(qg => newMergeMatchGraph.map(qg.withMergeMatch).getOrElse(qg)).updateTail(fixArgumentIdsOnMerge)
