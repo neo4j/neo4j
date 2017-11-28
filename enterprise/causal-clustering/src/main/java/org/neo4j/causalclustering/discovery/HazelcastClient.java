@@ -137,8 +137,8 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     @Override
     public void stop() throws Throwable
     {
-        scheduler.cancelAndWaitTermination( keepAliveJob );
-        scheduler.cancelAndWaitTermination( refreshTopologyJob );
+        keepAliveJob.cancel( true );
+        refreshTopologyJob.cancel( true );
         disconnectFromCore();
     }
 
