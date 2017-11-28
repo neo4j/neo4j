@@ -120,7 +120,7 @@ public class NativeLabelScanStoreMigratorTest
         File nodeIdFile = new File( storeDir, StoreFile.NODE_STORE.storeFileName() + ".id" );
         writeFile( nodeIdFile, new byte[]{1, 2, 3} );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
     }
 
     @Test

@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.test.rule.TestDirectory;
@@ -197,7 +198,7 @@ public class IdContainerTest
     private static class SingleByteFileSystemAbstraction extends DefaultFileSystemAbstraction
     {
         @Override
-        public StoreFileChannel open( File fileName, String mode ) throws IOException
+        public StoreFileChannel open( File fileName, OpenMode mode ) throws IOException
         {
             return new SingleByteBufferChannel( super.open( fileName, mode ) );
         }
