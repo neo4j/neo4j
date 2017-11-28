@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -173,6 +174,12 @@ public class AllStoreHolder extends Read implements Token
     }
 
     @Override
+    public String labelGetName( int token ) throws LabelNotFoundKernelException
+    {
+        return storeReadLayer.labelGetName( token );
+    }
+
+    @Override
     public void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -304,7 +311,7 @@ public class AllStoreHolder extends Read implements Token
         return PropertyUtil.readArrayFromBuffer( buffer );
     }
 
-    public boolean nodeExistsInStore( long id )
+    boolean nodeExistsInStore( long id )
     {
         return storeReadLayer.nodeExists( id );
     }

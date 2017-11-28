@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 
 /**
@@ -47,6 +48,8 @@ public interface Token
     int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException;
 
     void labelCreateForName( String labelName, int id ) throws KernelException;
+
+    String labelGetName( int token ) throws LabelNotFoundKernelException;
 
     void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException;
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -56,6 +57,12 @@ public class KernelToken implements Token
     public void labelCreateForName( String labelName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public String labelGetName( int token ) throws LabelNotFoundKernelException
+    {
+        return store.labelGetName( token );
     }
 
     @Override
