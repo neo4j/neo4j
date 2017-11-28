@@ -73,6 +73,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
             try ( NeoStores neoStores = storeFactory.openAllNeoStores();
                     Lifespan lifespan = new Lifespan() )
             {
+                neoStores.verifyStoreOk();
                 // Remove any existing file to ensure we always do migration
                 deleteNativeIndexFile( migrationDir );
 

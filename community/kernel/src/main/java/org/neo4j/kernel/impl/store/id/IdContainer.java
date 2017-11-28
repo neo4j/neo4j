@@ -137,11 +137,11 @@ public class IdContainer
     private static long readAndValidate( StoreChannel channel, File fileName ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
-        int read = channel.read( buffer );
-        if ( read != HEADER_SIZE )
+        int totalBytesRead = readBuffer( channel, buffer );
+        if ( totalBytesRead != HEADER_SIZE )
         {
             throw new InvalidIdGeneratorException(
-                    "Unable to read header, bytes read: " + read );
+                    "Unable to read header, bytes read: " + totalBytesRead );
         }
         buffer.flip();
         byte storageStatus = buffer.get();
@@ -174,7 +174,7 @@ public class IdContainer
         ByteBuffer buffer = ByteBuffer.allocate( Byte.BYTES );
         buffer.put( STICKY_GENERATOR ).flip();
         fileChannel.position( 0 );
-        fileChannel.write( buffer );
+        fileChannel.writeAll( buffer );
         fileChannel.force( false );
     }
 
@@ -184,7 +184,7 @@ public class IdContainer
         ByteBuffer buffer = ByteBuffer.allocate( Byte.BYTES );
         buffer.put( CLEAN_GENERATOR ).flip();
         fileChannel.position( 0 );
-        fileChannel.write( buffer );
+        fileChannel.writeAll( buffer );
     }
 
     public void close( long highId )
@@ -218,7 +218,7 @@ public class IdContainer
         ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
         buffer.put( STICKY_GENERATOR ).putLong( highId ).flip();
         fileChannel.position( 0 );
-        fileChannel.write( buffer );
+        fileChannel.writeAll( buffer );
     }
 
     public void delete()
@@ -305,13 +305,29 @@ public class IdContainer
             channel.truncate( 0 );
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
             buffer.put( CLEAN_GENERATOR ).putLong( highId ).flip();
-            channel.write( buffer );
+            channel.writeAll( buffer );
             channel.force( false );
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Unable to create id file " + file, e );
         }
+    }
+
+    private static int readBuffer( StoreChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        int totalBytesRead = 0;
+        int currentBytesRead;
+        do
+        {
+            currentBytesRead = channel.read( buffer );
+            if ( currentBytesRead > 0 )
+            {
+                totalBytesRead += currentBytesRead;
+            }
+        }
+        while ( buffer.hasRemaining() && currentBytesRead >= 0 );
+        return totalBytesRead;
     }
 
     @Override
