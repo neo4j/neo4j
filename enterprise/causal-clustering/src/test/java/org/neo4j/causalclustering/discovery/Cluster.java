@@ -205,8 +205,8 @@ public class Cluster
     {
         try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown cluster" ) )
         {
-            shutdownReadReplicas( errorHandler );
             shutdownCoreMembers( errorHandler );
+            shutdownReadReplicas( errorHandler );
         }
     }
 
