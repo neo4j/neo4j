@@ -174,21 +174,37 @@ public class Cluster
         return member;
     }
 
-    public void shutdown() throws ExecutionException, InterruptedException
+    public void shutdown()
     {
-        shutdownReadReplicas();
-        shutdownCoreMembers();
+        try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown cluster" ) )
+        {
+            shutdownReadReplicas( errorHandler );
+            shutdownCoreMembers( errorHandler );
+        }
     }
 
-    public void shutdownCoreMembers() throws InterruptedException, ExecutionException
+    private void shutdownCoreMembers( ErrorHandler errorHandler )
+    {
+        shutdownMembers( coreMembers(), errorHandler );
+    }
+
+    public void shutdownCoreMembers()
+    {
+        try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown core members" ) )
+        {
+            shutdownCoreMembers( errorHandler );
+        }
+    }
+
+    private void shutdownMembers( Collection<? extends ClusterMember> clusterMembers, ErrorHandler errorHandler )
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> memberShutdownSuppliers = new ArrayList<>();
-        for ( final CoreClusterMember coreClusterMember : coreMembers.values() )
+        for ( final ClusterMember clusterMember : clusterMembers )
         {
             memberShutdownSuppliers.add( () ->
             {
-                coreClusterMember.shutdown();
+                clusterMember.shutdown();
                 return null;
             } );
         }
@@ -196,6 +212,10 @@ public class Cluster
         try
         {
             combine( executor.invokeAll( memberShutdownSuppliers ) ).get();
+        }
+        catch ( Exception e )
+        {
+            errorHandler.add( e );
         }
         finally
         {
@@ -462,9 +482,9 @@ public class Cluster
         }
     }
 
-    private void shutdownReadReplicas()
+    private void shutdownReadReplicas( ErrorHandler errorHandler )
     {
-        readReplicas.values().forEach( ReadReplica::shutdown );
+        shutdownMembers( readReplicas(), errorHandler );
     }
 
     /**
