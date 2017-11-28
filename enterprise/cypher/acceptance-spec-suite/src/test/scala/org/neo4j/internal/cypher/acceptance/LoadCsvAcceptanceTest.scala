@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.io.{File, FileWriter, PrintWriter}
+import java.io.{File, PrintWriter}
 import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
+import java.nio.file.Files
 import java.util.Collections.emptyMap
 
 import org.neo4j.cypher._
@@ -124,22 +125,18 @@ class LoadCsvAcceptanceTest
   }
 
   test("make sure to release all possible locks/references on input files") {
-    val file = new File("to-be-removed.csv")
-    val writer = new FileWriter(file)
-    writer.write("foo")
-    writer.close()
+    val path = Files.createTempFile("file",".csv")
 
-    val filePathForQuery =
-      if(System.getProperty("os.name").toLowerCase.startsWith("Windows".toLowerCase)){
-        file.getAbsolutePath.replace('\\','/').replaceAll(".:/","///");  // matches something like "C:\"
-      } else {
-        "//" + file.getAbsolutePath
-      }
+    Files.write(path,"foo".getBytes)
+    assert(Files.exists(path))
 
-    val result = executeWith(expectedToSucceed, s"LOAD CSV FROM 'file:$filePathForQuery' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val filePathForQuery = path.normalize().toUri
+    val result = execute(s"LOAD CSV FROM '$filePathForQuery' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
 
-    assert(file.delete())
+    result.close()
+
+    assert(Files.deleteIfExists(path))
   }
 
   test("import three numbers") {
