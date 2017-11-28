@@ -75,6 +75,7 @@ public final class MemoryManager
      * Allocate a contiguous, aligned region of memory of the given size in bytes.
      * @param bytes the number of bytes to allocate.
      * @return A pointer to the allocated memory.
+     * @throws OutOfMemoryError if the requested memory could not be allocated.
      */
     public synchronized long allocateAligned( long bytes )
     {
@@ -129,6 +130,38 @@ public final class MemoryManager
         }
     }
 
+    private static long allocateNativeMemory( long size )
+    {
+        try
+        {
+            return UnsafeUtil.allocateMemory( size );
+        }
+        catch ( OutOfMemoryError e )
+        {
+            NativeMemoryAllocationRefusedError error = new NativeMemoryAllocationRefusedError( size );
+            try
+            {
+                error.initCause( e );
+            }
+            catch ( Throwable ignore )
+            {
+                // This can only happen if our NMARE somehow already has a cause initialised, which should not
+                // be the case, but it could if the JDK decided to inject a default cause in some future version.
+                // To avoid loosing the ability to trace this cause back, we'll add it as a suppressed exception
+                // instead.
+                try
+                {
+                    error.addSuppressed( e );
+                }
+                catch ( Throwable ignore2 )
+                {
+                    // Okay, we tried.
+                }
+            }
+            throw error;
+        }
+    }
+
     private static class Grab
     {
         public final Grab next;
@@ -140,11 +173,11 @@ public final class MemoryManager
         Grab( Grab next, long size, long alignment )
         {
             this.next = next;
-            this.address = UnsafeUtil.allocateMemory( size );
+            this.address = allocateNativeMemory( size );
             this.limit = address + size;
             this.alignMask = alignment - 1;
 
-            nextAlignedPointer = nextAligned( address );
+            nextAlignedPointer = nextAligned( this.address );
         }
 
         Grab( Grab next, long address, long limit, long alignMask, long nextAlignedPointer )
