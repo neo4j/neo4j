@@ -136,7 +136,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
         val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(new TransactionBoundPlanContextV3_3(tcV3_3, notificationLoggerV3_3))
         val planContextV3_4 = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4))
 
-        // TODO try to port the actual simpleExpressionEvaluator from 3.3
+        // Only used during planning
         def simpleExpressionEvaluatorV3_3 = new logicalV3_3.ExpressionEvaluator {
           override def evaluateExpression(expr: Expression): Option[Any] = None
         }
@@ -157,7 +157,6 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
 
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_3)
-        // TODO do we need two separate or one joined cache?
         val cache = provideCache(cacheAccessor, cacheMonitor, planContextV3_3, planCacheFactory)
         val statisticsV3_4 = GraphStatisticsWrapper(planContextV3_3.statistics)
         val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContextV3_3.txIdProvider, statisticsV3_4)
@@ -167,7 +166,6 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
           val logicalPlanStateV3_3 = compiler.planPreparedQuery(preparedQuery, contextV3_3)
           val logicalPlanStateV3_4 = helpers.as3_4(logicalPlanStateV3_3)
           // Here we switch from 3.3 to 3.4
-          // TODO map 3.3 context to 3.4
           val result = createExecPlan.transform(logicalPlanStateV3_4, contextV3_4)
           result.maybeExecutionPlan.get
         }
