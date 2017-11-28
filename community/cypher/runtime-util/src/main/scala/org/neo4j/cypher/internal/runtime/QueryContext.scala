@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
 
 import scala.collection.Iterator
 
@@ -79,7 +79,7 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateLabelId(labelName: String): Int
 
-  def getLabelsForNode(node: Long): Iterator[Int]
+  def getLabelsForNode(node: Long): ListValue
 
   def isLabelSetOnNode(label: Int, node: Long): Boolean
 

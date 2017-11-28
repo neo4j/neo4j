@@ -30,7 +30,7 @@ import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -93,7 +93,7 @@ trait QueryContextAdaptation {
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship = ???
 
-  override def getLabelsForNode(node: Long): scala.Iterator[Int] = ???
+  override def getLabelsForNode(node: Long): ListValue = ???
 
   override def dropUniqueConstraint(descriptor: IndexDescriptor): Unit = ???
 

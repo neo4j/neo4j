@@ -42,7 +42,7 @@ import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
-import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -61,8 +61,8 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.storable.{TextValue, Value, Values}
+import org.neo4j.values.virtual.{EdgeValue, ListValue, VirtualValues}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -97,8 +97,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val neo4jTransactionalContext = new Neo4jTransactionalContext(context.graph, statementProvider, guard, statementProvider, locker, newTx, statementProvider.get(), query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
-  //We cannot assign to value because of periodic commit
+  //We cannot assign to valuea because of periodic commit
   private def writes() = transactionalContext.kernelTransaction.dataWrite()
+  private def reads() = transactionalContext.kernelTransaction.dataRead()
+  private def cursors = transactionalContext.kernelTransaction.cursors()
+  private def token = transactionalContext.kernelTransaction.token()
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = {
     if (transactionalContext.isOpen) {
@@ -131,14 +134,30 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     transactionalContext.statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
 
-  override def getLabelsForNode(node: Long) = try {
-    JavaConversionSupport.asScala(transactionalContext.statement.readOperations().nodeGetLabels(node))
-  } catch {
-    case e: exceptions.EntityNotFoundException =>
-      if (nodeOps.isDeletedInThisTx(node))
-        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction", e)
-      else
-        Iterator.empty
+  override def getLabelsForNode(node: Long): ListValue = try {
+    var nodeCursor: NodeCursor = null
+    try {
+      nodeCursor = cursors.allocateNodeCursor()
+      reads().singleNode(node, nodeCursor)
+      if (!nodeCursor.next()) {
+        if (nodeOps.isDeletedInThisTx(node))
+          throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
+        else
+          VirtualValues.EMPTY_LIST
+      }
+      val labelSet = nodeCursor.labels()
+      val labelArray = new Array[TextValue](labelSet.numberOfLabels())
+      var i = 0
+      while (i < labelSet.numberOfLabels()) {
+        labelArray(i) = Values.stringValue(token.labelGetName(labelSet.label(i)))
+        i += 1
+      }
+      VirtualValues.list(labelArray: _*)
+    } finally {
+      if (nodeCursor != null) {
+        nodeCursor.close()
+      }
+    }
   }
 
   override def getPropertiesForNode(node: Long) =

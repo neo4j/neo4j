@@ -23,7 +23,6 @@ import java.net.URL
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
@@ -33,7 +32,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.{EdgeValue, ListValue}
 
 import scala.collection.Iterator
 
@@ -56,7 +55,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def createRelationship(start: Node, end: Node, relType: String): Relationship =
     translateException(inner.createRelationship(start, end, relType))
 
-  override def getLabelsForNode(node: Long): Iterator[Int] =
+  override def getLabelsForNode(node: Long): ListValue =
     translateException(inner.getLabelsForNode(node))
 
   override def getLabelName(id: Int): String =

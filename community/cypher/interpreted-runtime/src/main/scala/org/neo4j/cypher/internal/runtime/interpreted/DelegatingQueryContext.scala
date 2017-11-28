@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.{EdgeValue, ListValue}
 
 import scala.collection.Iterator
 
@@ -66,7 +66,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getOrCreateRelTypeId(relTypeName: String): Int = singleDbHit(inner.getOrCreateRelTypeId(relTypeName))
 
-  override def getLabelsForNode(node: Long): Iterator[Int] = singleDbHit(inner.getLabelsForNode(node))
+  override def getLabelsForNode(node: Long): ListValue = singleDbHit(inner.getLabelsForNode(node))
 
   override def getLabelName(id: Int): String = singleDbHit(inner.getLabelName(id))
 
