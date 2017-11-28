@@ -221,9 +221,10 @@ public class LogFilesBuilder
         requireNonNull( fileSystem );
         Supplier<LogVersionRepository> logVersionRepositorySupplier = getLogVersionRepositorySupplier();
         LongSupplier lastCommittedIdSupplier = lastCommittedIdSupplier();
+        LongSupplier committingTransactionIdSupplier = committingIdSupplier();
         long rotationThreshold = getRotationThreshold();
         return new TransactionLogFilesContext( rotationThreshold, logEntryReader,
-                lastCommittedIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem );
+                lastCommittedIdSupplier, committingTransactionIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem );
     }
 
     private long getRotationThreshold()
@@ -306,6 +307,37 @@ public class LogFilesBuilder
             requireNonNull( dependencies, TransactionIdStore.class.getSimpleName() + " is required. " +
                     "Please provide an instance or a dependencies where it can be found." );
             return () -> resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
+        }
+    }
+
+    private LongSupplier committingIdSupplier() throws IOException
+    {
+        if ( transactionIdStore != null )
+        {
+            return () -> transactionIdStore.committingTransactionId();
+        }
+        if ( fileBasedOperationsOnly )
+        {
+            return () ->
+            {
+                throw new UnsupportedOperationException( "Current version of log files can't perform any " +
+                        "operation that require availability of transaction id store. Please build full version of log files " +
+                        "to be able to use them." );
+            };
+        }
+        if ( readOnly )
+        {
+            requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
+                    "transaction info from store store." );
+            requireNonNull( storeDirectory, "Store directory is required." );
+            ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDirectory );
+            return transactionIdStore::committingTransactionId;
+        }
+        else
+        {
+            requireNonNull( dependencies, TransactionIdStore.class.getSimpleName() + " is required. " +
+                    "Please provide an instance or a dependencies where it can be found." );
+            return () -> resolveDependency( TransactionIdStore.class ).committingTransactionId();
         }
     }
 

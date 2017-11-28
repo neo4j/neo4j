@@ -111,14 +111,6 @@ public class MetaDataStoreTest
         };
     }
 
-    private MetaDataStore newMetaDataStore() throws IOException
-    {
-        LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( STORE_DIR, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheWithFakeOverflow, fs, logProvider );
-        return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
-    }
-
     @Test
     public void getCreationTimeShouldFailWhenStoreIsClosed() throws IOException
     {
@@ -325,6 +317,22 @@ public class MetaDataStoreTest
         {
             assertThat( e, instanceOf( IllegalStateException.class ) );
         }
+    }
+
+    @Test
+    public void currentCommittingTransactionId() throws IOException
+    {
+        MetaDataStore metaDataStore = newMetaDataStore();
+        metaDataStore.nextCommittingTransactionId();
+        long lastCommittingTxId = metaDataStore.nextCommittingTransactionId();
+        assertEquals( lastCommittingTxId, metaDataStore.committingTransactionId() );
+
+        metaDataStore.nextCommittingTransactionId();
+        metaDataStore.nextCommittingTransactionId();
+
+        lastCommittingTxId = metaDataStore.nextCommittingTransactionId();
+        assertEquals( lastCommittingTxId, metaDataStore.committingTransactionId() );
+        metaDataStore.close();
     }
 
     @Test
@@ -768,4 +776,13 @@ public class MetaDataStoreTest
             store.logRecords( NullLogger.getInstance() );
         }
     }
+
+    private MetaDataStore newMetaDataStore() throws IOException
+    {
+        LogProvider logProvider = NullLogProvider.getInstance();
+        StoreFactory storeFactory = new StoreFactory( STORE_DIR, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+                pageCacheWithFakeOverflow, fs, logProvider );
+        return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
+    }
+
 }
