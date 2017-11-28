@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.LongFunction;
 
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -45,7 +46,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     protected final RecordStore<RECORD> store;
     private final int recordSize;
     private final PrepareIdSequence prepareIdSequence;
-    private long recordsUpdated;
+    private final LongAdder recordsUpdated = new LongAdder();
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
             PrepareIdSequence prepareIdSequence )
@@ -70,7 +71,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
                 recordsUpdatedInThisBatch++;
             }
         }
-        recordsUpdated += recordsUpdatedInThisBatch;
+        recordsUpdated.add( recordsUpdatedInThisBatch );
     }
 
     @Override
@@ -83,7 +84,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     @Override
     public Stat stat( Key key )
     {
-        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize * recordsUpdated ) : null;
+        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize * recordsUpdated.sum() ) : null;
     }
 
     @Override
