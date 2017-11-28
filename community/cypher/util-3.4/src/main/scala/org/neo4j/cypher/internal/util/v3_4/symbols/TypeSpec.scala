@@ -68,7 +68,7 @@ object TypeSpec {
  *
  * @param ranges A set of TypeRanges, the intersection of which constitutes the entire set of types matched by this specification
  */
-class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
+class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
   def contains(that: CypherType): Boolean = contains(that, ranges)
   private def contains(that: CypherType, rs: Seq[TypeRange]): Boolean = rs.exists(_ contains that)
 
