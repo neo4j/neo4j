@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, Variable}
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
 
-sealed trait PlannerQuery {
+trait PlannerQuery {
   val queryGraph: QueryGraph
   val horizon: QueryHorizon
   val tail: Option[PlannerQuery]
@@ -92,8 +92,6 @@ sealed trait PlannerQuery {
 
   def exists(f: PlannerQuery => Boolean): Boolean =
     f(this) || tail.exists(_.exists(f))
-
-  def all(f: PlannerQuery => Boolean): Boolean = !exists(x => !f(x))
 
   def ++(other: PlannerQuery): PlannerQuery = {
     (this.horizon, other.horizon) match {

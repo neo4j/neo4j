@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticTable => SemanticTableV3_3, ast => astV3_3}
@@ -30,10 +49,12 @@ object SemanticTableConverter {
 
   private def convert(types: astV3_3.ASTAnnotationMap[astV3_3.Expression, frontendV3_3.ExpressionTypeInfo], expressionMapping: ExpressionMapping3To4):
   astV3_4.ASTAnnotationMap[expressionsV3_4.Expression, frontendV3_4.semantics.ExpressionTypeInfo] = {
-    val x: Map[ExpressionV3_4, ExpressionTypeInfo] = types.map {
+    val result: Map[ExpressionV3_4, ExpressionTypeInfo] = types.filter {
+      case (exprV3_3, _) => expressionMapping.isDefinedAt((exprV3_3, exprV3_3.position))
+    }.map {
       case (exprV3_3, typeInfoV3_3) => (expressionMapping((exprV3_3, exprV3_3.position)), convert(typeInfoV3_3))
     }
-    astV3_4.ASTAnnotationMap(x.toSeq:_*)
+    astV3_4.ASTAnnotationMap(result.toSeq:_*)
   }
 
   private def convert(resolvedRelTypeNames: mutable.Map[String, frontendV3_3.RelTypeId]): mutable.Map[String, utilV3_4.RelTypeId] = {

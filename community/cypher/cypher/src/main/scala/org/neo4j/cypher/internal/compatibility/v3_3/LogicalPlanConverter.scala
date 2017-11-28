@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.lang.reflect.Constructor
@@ -35,23 +54,21 @@ object LogicalPlanConverter {
 
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
       val rewritten = RewriterWithArgs.lift {
-        case (_: plansV3_3.Argument, children: Seq[AnyRef]) =>
-        plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(null)(Map.empty)
-        case (_: plansV3_3.SingleRow, _) =>
-        plansV3_4.Argument()(null)()
-      case (_: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
-        plansV3_4.ProduceResult(children(1).asInstanceOf[LogicalPlanV3_4], children(0).asInstanceOf[Seq[String]])
-      case (_: plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>
-        plansV3_4.TriadicSelection(children(1).asInstanceOf[LogicalPlanV3_4],
-          children(5).asInstanceOf[LogicalPlanV3_4],
-          children(0).asInstanceOf[Boolean],
-          children(2).asInstanceOf[IdNameV3_4],
-          children(3).asInstanceOf[IdNameV3_4],
-          children(4).asInstanceOf[IdNameV3_4])(null)
-      case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
-        val newPlan = convertVersion("v3_3", "v3_4", plan, children, null, classOf[PlannerQuery])
-        newPlan.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
-        newPlan
+        case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
+          plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(new PlannerQueryWrapper(plan.solved))(Map.empty)
+        case (plan: plansV3_3.SingleRow, _) =>
+          plansV3_4.Argument()(new PlannerQueryWrapper(plan.solved))()
+        case (_: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
+          plansV3_4.ProduceResult(children(1).asInstanceOf[LogicalPlanV3_4], children(0).asInstanceOf[Seq[String]])
+        case (plan: plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>
+          plansV3_4.TriadicSelection(children(1).asInstanceOf[LogicalPlanV3_4],
+            children(5).asInstanceOf[LogicalPlanV3_4],
+            children(0).asInstanceOf[Boolean],
+            children(2).asInstanceOf[IdNameV3_4],
+            children(3).asInstanceOf[IdNameV3_4],
+            children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))
+        case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
+          convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery])
 
       case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
         new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
@@ -124,8 +141,9 @@ object LogicalPlanConverter {
       case (None, _) => None
       case (p: Product, children: Seq[AnyRef]) => new DuplicatableProduct(p).copyConstructor.invoke(p, children: _*)
       }.apply(before)
-      // Save Mapping from 3.3 expression to 3.4 expression
       before._1 match {
+        case plan: LogicalPlanV3_3 => rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
+        // Save Mapping from 3.3 expression to 3.4 expression
         case e: ExpressionV3_3 if isImportant(e) => expressionMap += (((e,e.position), rewritten.asInstanceOf[ExpressionV3_4]))
         case _ =>
       }

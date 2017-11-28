@@ -76,7 +76,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
     val pipeBuilder = pipeBuilderFactory(
       monitors = monitors,
       recurse = p => buildPipe(p),
-      readOnly = plan.solved.all(_.queryGraph.readOnly),
+      readOnly = plan.solved.readOnly,
       expressionConverters = expressionConverters)
 
     val planStack = new mutable.Stack[LogicalPlan]()

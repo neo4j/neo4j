@@ -22,21 +22,22 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
-import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracer3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, PlannerName => PlannerNameV3_3}
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
+import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
+import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, ProcedurePlannerName}
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.{Cardinality, InputPosition}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId => LogicalPlanIdV3_3}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId => LogicalPlanIdV3_4}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
-import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
@@ -98,6 +99,10 @@ object helpers {
 
   def as3_4(periodicCommit: irV3_3.PeriodicCommit): irV3_4.PeriodicCommit = {
     irV3_4.PeriodicCommit(periodicCommit.batchSize)
+  }
+
+  def as3_4(cardinality: CardinalityV3_3) : Cardinality = {
+    Cardinality(cardinality.amount)
   }
 
   def as3_4(logicalPlan: LogicalPlanStateV3_3) : LogicalPlanState = {
