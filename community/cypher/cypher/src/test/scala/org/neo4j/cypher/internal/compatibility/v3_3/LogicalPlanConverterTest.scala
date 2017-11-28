@@ -163,7 +163,48 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     LogicalPlanConverter.convertExpression[PathExpression](p3_3b) should be(p3_4b)
   }
 
-  // TODO test expressionMap
+  test("should not save expression mappings if isImportant always returns false") {
+    def isImportant(expression: astV3_3.Expression): Boolean = false
+
+    val var3_3 = astV3_3.Variable("n")(pos3_3)
+    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)
+    val l3_3 = plansV3_3.Limit(a3_3, var3_3, plansV3_3.IncludeTies)(null)
+    l3_3.assignIds()
+
+    val expressionMapping = LogicalPlanConverter.convertLogicalPlan[plansV3_4.NodeIndexSeek](l3_3, isImportant)._2
+    expressionMapping shouldBe empty
+  }
+
+  test("should save expression mappings if isImportant always returns true") {
+    def isImportant(expression: astV3_3.Expression): Boolean = true
+
+    val var3_3 = astV3_3.Variable("n")(pos3_3)
+    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)
+    val l3_3 = plansV3_3.Limit(a3_3, var3_3, plansV3_3.IncludeTies)(null)
+    l3_3.assignIds()
+
+    val var3_4 = expressionsV3_4.Variable("n")(pos3_4)
+
+    val expressionMapping = LogicalPlanConverter.convertLogicalPlan[plansV3_4.NodeIndexSeek](l3_3, isImportant)._2
+    expressionMapping should contain only ((var3_3, var3_3.position) -> var3_4)
+  }
+
+  test("should save distinct expressions with different positions in expression mappings") {
+    def isImportant(expression: astV3_3.Expression): Boolean = true
+
+    val var3_3a = astV3_3.Variable("n")(InputPositionV3_3(0, 0, 0))
+    val var3_3b = astV3_3.Variable("n")(InputPositionV3_3(1, 1, 1))
+    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)
+    val l3_3a = plansV3_3.Limit(a3_3, var3_3a, plansV3_3.IncludeTies)(null)
+    val l3_3b = plansV3_3.Limit(l3_3a, var3_3b, plansV3_3.IncludeTies)(null)
+    l3_3b.assignIds()
+
+    val var3_4a = expressionsV3_4.Variable("n")(InputPosition(0, 0, 0))
+    val var3_4b = expressionsV3_4.Variable("n")(InputPosition(1, 1, 1))
+
+    val expressionMapping = LogicalPlanConverter.convertLogicalPlan[plansV3_4.NodeIndexSeek](l3_3b, isImportant)._2
+    expressionMapping should contain only((var3_3a, var3_3a.position) -> var3_4a, (var3_3b, var3_3b.position) -> var3_4b)
+  }
 
   test("should convert AllNodeScan and keep id") {
     val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(null)

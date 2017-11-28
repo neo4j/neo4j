@@ -1,6 +1,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticTable => SemanticTableV3_3, ast => astV3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo, SemanticTable => SemanticTableV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3, v3_4 => frontendV3_4}
@@ -13,11 +14,11 @@ import scala.collection.mutable
 
 object SemanticTableConverter {
 
-  // TODO key (Expr, InputPosition) instead of just Expr ? in expressionMapping
+  type ExpressionMapping3To4 = Map[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4]
 
   // The semantic table needs to have the same objects as keys, therefore we cannot convert expressions again
   // but must use the already converted 3.4 instances
-  def convertSemanticTable(table: SemanticTableV3_3, expressionMapping: Map[ExpressionV3_3, ExpressionV3_4]): SemanticTableV3_4 = {
+  def convertSemanticTable(table: SemanticTableV3_3, expressionMapping: ExpressionMapping3To4): SemanticTableV3_4 = {
     new SemanticTableV3_4(
       convert(table.types, expressionMapping),
       astV3_4.ASTAnnotationMap.empty,
@@ -27,10 +28,10 @@ object SemanticTableConverter {
   }
 
 
-  private def convert(types: astV3_3.ASTAnnotationMap[astV3_3.Expression, frontendV3_3.ExpressionTypeInfo], expressionMapping: Map[ExpressionV3_3, ExpressionV3_4]):
+  private def convert(types: astV3_3.ASTAnnotationMap[astV3_3.Expression, frontendV3_3.ExpressionTypeInfo], expressionMapping: ExpressionMapping3To4):
   astV3_4.ASTAnnotationMap[expressionsV3_4.Expression, frontendV3_4.semantics.ExpressionTypeInfo] = {
     val x: Map[ExpressionV3_4, ExpressionTypeInfo] = types.map {
-      case (exprV3_3, typeInfoV3_3) => (expressionMapping(exprV3_3), convert(typeInfoV3_3))
+      case (exprV3_3, typeInfoV3_3) => (expressionMapping((exprV3_3, exprV3_3.position)), convert(typeInfoV3_3))
     }
     astV3_4.ASTAnnotationMap(x.toSeq:_*)
   }
@@ -49,8 +50,7 @@ object SemanticTableConverter {
       frontendV3_4.semantics.ExpressionTypeInfo(convert(specified), expected.map(convert _))
   }
 
-  private def convert(specified: frontendV3_3.symbols.TypeSpec): utilV3_4.symbols.TypeSpec = specified match {
-    case t: frontendV3_3.symbols.TypeSpec =>
+  private def convert(specified: frontendV3_3.symbols.TypeSpec): utilV3_4.symbols.TypeSpec = {
       new utilV3_4.symbols.TypeSpec(???) // TODO use specified.ranges.map(convert _) as soon as 3.3.1 is in
   }
 

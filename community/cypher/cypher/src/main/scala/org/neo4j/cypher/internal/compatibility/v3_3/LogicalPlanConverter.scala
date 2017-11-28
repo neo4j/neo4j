@@ -2,8 +2,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.lang.reflect.Constructor
 
+import org.neo4j.cypher.internal.compatibility.v3_3.SemanticTableConverter.ExpressionMapping3To4
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3, InputPosition => InputPositionV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, IdName => IdNameV3_4}
@@ -24,17 +25,19 @@ import scala.util.{Failure, Success, Try}
 
 object LogicalPlanConverter {
 
-  // TODO fill expressionMap
-  class LogicalPlanRewriter(val expressionMap: mutable.Map[ExpressionV3_3, ExpressionV3_4] = new mutable.HashMap[ExpressionV3_3, ExpressionV3_4],
-                            val isImportant: ExpressionV3_3 => Boolean = _ => true)
+  type MutableExpressionMapping3To4 = mutable.Map[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4]
+
+  private class LogicalPlanRewriter(val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4],
+                                    val isImportant: ExpressionV3_3 => Boolean = _ => true)
     extends RewriterWithArgs {
 
     override def apply(v1: (AnyRef, Seq[AnyRef])): AnyRef = rewriter.apply(v1)
 
-    private val rewriter: RewriterWithArgs = bottomUpWithArgs(RewriterWithArgs.lift {
-      case (arg: plansV3_3.Argument, children: Seq[AnyRef]) =>
+    private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
+      val rewritten = RewriterWithArgs.lift {
+        case (_: plansV3_3.Argument, children: Seq[AnyRef]) =>
         plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(null)(Map.empty)
-      case (arg: plansV3_3.SingleRow, _) =>
+        case (_: plansV3_3.SingleRow, _) =>
         plansV3_4.Argument()(null)()
       case (_: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
         plansV3_4.ProduceResult(children(1).asInstanceOf[LogicalPlanV3_4], children(0).asInstanceOf[Seq[String]])
@@ -120,11 +123,18 @@ object LogicalPlanConverter {
       case (_: Map[_, _], children: Seq[AnyRef]) => Map(children.map(_.asInstanceOf[(_, _)]): _*)
       case (None, _) => None
       case (p: Product, children: Seq[AnyRef]) => new DuplicatableProduct(p).copyConstructor.invoke(p, children: _*)
-    })
+      }.apply(before)
+      // Save Mapping from 3.3 expression to 3.4 expression
+      before._1 match {
+        case e: ExpressionV3_3 if isImportant(e) => expressionMap += (((e,e.position), rewritten.asInstanceOf[ExpressionV3_4]))
+        case _ =>
+      }
+      rewritten
+    }
   }
 
   def convertLogicalPlan[T <: LogicalPlanV3_4](logicalPlan: LogicalPlanV3_3,
-                                               isImportant: ExpressionV3_3 => Boolean = _ => true): (LogicalPlanV3_4, Map[ExpressionV3_3, ExpressionV3_4]) = {
+                                               isImportant: ExpressionV3_3 => Boolean = _ => true): (LogicalPlanV3_4, ExpressionMapping3To4) = {
     val rewriter = new LogicalPlanRewriter(isImportant = isImportant)
     val planV3_4 = new RewritableAny[LogicalPlanV3_3](logicalPlan).rewrite(rewriter, Seq.empty).asInstanceOf[T]
     (planV3_4, rewriter.expressionMap.toMap)
@@ -135,7 +145,7 @@ object LogicalPlanConverter {
   }
 
   private def convertASTNode[T <: utilV3_4.ASTNode](ast: astV3_3.ASTNode,
-                                                    expressionMap: mutable.Map[ExpressionV3_3, ExpressionV3_4],
+                                                    expressionMap: MutableExpressionMapping3To4,
                                                     isImportant: ExpressionV3_3 => Boolean): T = {
     new RewritableAny[astV3_3.ASTNode](ast).rewrite(new LogicalPlanRewriter(expressionMap, isImportant), Seq.empty).asInstanceOf[T]
   }
