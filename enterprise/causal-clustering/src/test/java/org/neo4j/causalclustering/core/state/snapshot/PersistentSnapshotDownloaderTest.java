@@ -90,7 +90,8 @@ public class PersistentSnapshotDownloaderTest
         Thread thread = new Thread( persistentSnapshotDownloader );
         thread.start();
 
-        Predicates.await( () -> {
+        Predicates.await( () ->
+        {
             try
             {
                 verify( log, atLeast( 1 ) ).error( startsWith( "Failed to download snapshot. Retrying in" )
@@ -126,7 +127,8 @@ public class PersistentSnapshotDownloaderTest
         Thread thread = new Thread( persistentSnapshotDownloader );
         thread.start();
 
-        Predicates.await( () -> {
+        Predicates.await( () ->
+        {
             try
             {
                 verify( log, atLeast( 1 ) ).warn(
