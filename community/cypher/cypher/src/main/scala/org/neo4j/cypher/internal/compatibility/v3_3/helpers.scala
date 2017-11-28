@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, Upd
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracer3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, PlannerName => PlannerNameV3_3}
-import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, PlannerName => PlannerNameV3_3, ast => astV3_3}
+import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
@@ -105,6 +105,8 @@ object helpers {
     Cardinality(cardinality.amount)
   }
 
+  def as3_4(statement: astV3_3.Statement) : astV3_4.Statement = StatementWrapper(statement)
+
   def as3_4(logicalPlan: LogicalPlanStateV3_3) : LogicalPlanState = {
     val startPosition = logicalPlan.startPosition.map(as3_4 _)
     val plannerName = as3_4(logicalPlan.plannerName)
@@ -113,10 +115,13 @@ object helpers {
     def isImportant(expression: ExpressionV3_3) : Boolean = table3_3.seen(expression)
 
     val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, isImportant)
+
+    val statement3_3 = logicalPlan.maybeStatement.get
+
     LogicalPlanState(logicalPlan.queryText,
       startPosition,
       plannerName,
-      None,
+      Some(as3_4(statement3_3)),
       None,
       logicalPlan.maybeExtractedParams,
       Some(SemanticTableConverter.convertSemanticTable(table3_3, expressionMap)),
