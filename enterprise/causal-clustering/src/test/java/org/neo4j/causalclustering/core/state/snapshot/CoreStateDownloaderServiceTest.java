@@ -53,13 +53,11 @@ public class CoreStateDownloaderServiceTest
         neo4jJobScheduler.init();
     }
 
-
     @After
     public void shutdown()
     {
         neo4jJobScheduler.shutdown();
     }
-
 
     @Test
     public void shouldRunPersistentDownloader() throws Exception
@@ -74,7 +72,8 @@ public class CoreStateDownloaderServiceTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( someMember );
         coreStateDownloaderService.scheduleDownload( leaderLocator );
-        Predicates.await( () -> {
+        Predicates.await( () ->
+        {
             try
             {
                 verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
