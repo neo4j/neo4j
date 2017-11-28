@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.store.format.highlimit.v306.HighLimitV3_0_6;
 import org.neo4j.kernel.impl.store.format.highlimit.v310.HighLimitV3_1_0;
+import org.neo4j.kernel.impl.store.format.highlimit.v320.HighLimitV3_2_0;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -358,7 +359,8 @@ public class RecordFormatSelectorTest
 
         assertEquals( HighLimitV3_0_6.RECORD_FORMATS, findSuccessor( HighLimitV3_0_0.RECORD_FORMATS ).get() );
         assertEquals( HighLimitV3_1_0.RECORD_FORMATS, findSuccessor( HighLimitV3_0_6.RECORD_FORMATS ).get() );
-        assertEquals( HighLimit.RECORD_FORMATS, findSuccessor( HighLimitV3_1_0.RECORD_FORMATS ).get() );
+        assertEquals( HighLimitV3_2_0.RECORD_FORMATS, findSuccessor( HighLimitV3_1_0.RECORD_FORMATS ).get() );
+        assertEquals( HighLimit.RECORD_FORMATS, findSuccessor( HighLimitV3_2_0.RECORD_FORMATS ).get() );
     }
 
     private PageCache getPageCache()

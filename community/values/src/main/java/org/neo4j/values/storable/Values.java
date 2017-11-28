@@ -496,9 +496,7 @@ public final class Values
         {
             return pointArray( copy( value, new Point[value.length] ) );
         }
-        throw new IllegalArgumentException(
-                format( "%s[] is not a supported property value type",
-                        value.getClass().getComponentType().getName() ) );
+        return null;
     }
 
     private static <T> T copy( Object[] value, T target )

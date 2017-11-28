@@ -40,6 +40,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -94,7 +95,8 @@ public class BackupToolIT
 
             // Perform backup
             backupTool.executeBackup( new HostnamePort( "localhost", backupPort ), backupDir.toFile(),
-                    ConsistencyCheck.NONE, Config.defaults(), 20L * 60L * 1000L, false );
+                    ConsistencyCheck.NONE, Config.defaults( GraphDatabaseSettings.record_format, StandardV3_4.NAME ),
+                    20L * 60L * 1000L, false );
         }
         finally
         {
@@ -108,6 +110,7 @@ public class BackupToolIT
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
                 .setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1:" + backupPort )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV2_3.NAME )
                 .newGraphDatabase();
     }
 
