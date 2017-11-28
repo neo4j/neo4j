@@ -44,7 +44,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Group( "dbms.ssl.policy" )
 public class SslPolicyConfig
 {
-    private static final String TLS_VERSION_DEFAULTS = join( ",", new String[]{"TLSv1.2", "TLSv1.1", "TLSv1"} );
+    private static final String TLS_VERSION_DEFAULTS = join( ",", new String[]{"TLSv1.2"} );
 
     @Description( "The mandatory base directory for cryptographic objects of this policy." +
                   " It is also possible to override each individual configuration with absolute paths." )
