@@ -30,14 +30,14 @@ object Expression {
 
   val DefaultTypeMismatchMessageGenerator = (expected: String, existing: String) => s"expected $expected but was $existing"
 
-  final case class TreeAcc[A](data: A, stack: Stack[Set[Variable]] = Stack.empty) {
+  final case class TreeAcc[A](data: A, stack: Stack[Set[LogicalVariable]] = Stack.empty) {
     def mapData(f: A => A): TreeAcc[A] = copy(data = f(data))
 
     def inScope(variable: Variable) = stack.exists(_.contains(variable))
-    def variablesInScope: Set[Variable] = stack.toSet.flatten
+    def variablesInScope: Set[LogicalVariable] = stack.toSet.flatten
 
-    def pushScope(newVariable: Variable): TreeAcc[A] = pushScope(Set(newVariable))
-    def pushScope(newVariables: Set[Variable]): TreeAcc[A] = copy(stack = stack.push(newVariables))
+    def pushScope(newVariable: LogicalVariable): TreeAcc[A] = pushScope(Set(newVariable))
+    def pushScope(newVariables: Set[LogicalVariable]): TreeAcc[A] = copy(stack = stack.push(newVariables))
     def popScope: TreeAcc[A] = copy(stack = stack.pop)
   }
 
@@ -81,8 +81,8 @@ abstract class Expression extends ASTNode {
 
   // All variables referenced from this expression or any of its children
   // that are not introduced inside this expression
-  def dependencies: Set[Variable] =
-    this.treeFold(TreeAcc[Set[Variable]](Set.empty)) {
+  def dependencies: Set[LogicalVariable] =
+    this.treeFold(TreeAcc[Set[LogicalVariable]](Set.empty)) {
       case scope: ScopeExpression =>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
@@ -95,7 +95,7 @@ abstract class Expression extends ASTNode {
 
   // All (free) occurrences of variable in this expression or any of its children
   // (i.e. excluding occurrences referring to shadowing redefinitions of variable)
-  def occurrences(variable: Variable): Set[Ref[Variable]] =
+  def occurrences(variable: LogicalVariable): Set[Ref[Variable]] =
     this.treeFold(TreeAcc[Set[Ref[Variable]]](Set.empty)) {
       case scope: ScopeExpression => {
         case acc =>
@@ -108,7 +108,7 @@ abstract class Expression extends ASTNode {
       }
     }.data
 
-  def copyAndReplace(variable: Variable) = new {
+  def copyAndReplace(variable: LogicalVariable) = new {
     def by(replacement: => Expression): Expression = {
       val replacedOccurences = occurrences(variable)
       self.endoRewrite(bottomUp(Rewriter.lift {
@@ -119,8 +119,8 @@ abstract class Expression extends ASTNode {
 
   // List of child expressions together with any of its dependencies introduced
   // by any of its parent expressions (where this expression is the root of the tree)
-  def inputs: Seq[(Expression, Set[Variable])] =
-    this.treeFold(TreeAcc[Seq[(Expression, Set[Variable])]](Seq.empty)) {
+  def inputs: Seq[(Expression, Set[LogicalVariable])] =
+    this.treeFold(TreeAcc[Seq[(Expression, Set[LogicalVariable])]](Seq.empty)) {
       case scope: ScopeExpression=>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)

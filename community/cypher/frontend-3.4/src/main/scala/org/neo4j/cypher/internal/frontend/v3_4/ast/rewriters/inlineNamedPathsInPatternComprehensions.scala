@@ -32,7 +32,7 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter {
   })
 
   private implicit final class InliningExpression(val expr: Expression) extends AnyVal {
-    def inline(path: Variable, patternElement: PatternElement) =
+    def inline(path: LogicalVariable, patternElement: PatternElement) =
       expr.copyAndReplace(path) by {
         PathExpression(projectNamedPaths.patternPartPathExpression(patternElement))(expr.position)
       }

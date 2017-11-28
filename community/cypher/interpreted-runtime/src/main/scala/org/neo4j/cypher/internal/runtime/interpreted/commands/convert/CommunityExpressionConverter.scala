@@ -309,7 +309,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
 
   private def toCommandParameter(e: ast.Parameter) = commandexpressions.ParameterExpression(e.name)
 
-  private def toCommandProperty(e: ast.Property, self: ExpressionConverters): commandexpressions.Property =
+  private def toCommandProperty(e: ast.LogicalProperty, self: ExpressionConverters): commandexpressions.Property =
     commandexpressions.Property(self.toCommandExpression(e.map), PropertyKey(e.propertyKey.name))
 
   private def toCommandExpression(expression: Option[ast.Expression], self: ExpressionConverters): Option[CommandExpression] =

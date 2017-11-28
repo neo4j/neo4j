@@ -117,7 +117,7 @@ object expandSolverStep {
   }
 
   def extractLegacyPredicates(availablePredicates: Seq[Expression], patternRel: PatternRelationship,
-                              nodeId: IdName): Seq[(Variable, Expression)] = {
+                              nodeId: IdName): Seq[(LogicalVariable, Expression)] = {
     availablePredicates.collect {
       //MATCH ()-[r* {prop:1337}]->()
       case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId@Variable(patternRel.name.name))

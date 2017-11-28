@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.v3_4.expressions._
 object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
   override def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
-    val arguments = qg.argumentIds.map(n => Variable(n.name)(null))
-    val idSeekPredicates: Option[(Expression, Variable, SeekableArgs)] = e match {
+    val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n.name)(null))
+    val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
       // MATCH (a)-[r]-(b) WHERE id(r) IN expr
       // MATCH a WHERE id(a) IN {param}
       case predicate@AsIdSeekable(seekable) if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>

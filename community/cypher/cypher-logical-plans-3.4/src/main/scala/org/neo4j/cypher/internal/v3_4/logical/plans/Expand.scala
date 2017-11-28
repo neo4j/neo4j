@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 /**
   * For every source row, traverse all the relationships of 'from' which fulfill the
@@ -84,7 +84,7 @@ case class VarExpand(source: LogicalPlan,
                      tempEdge: IdName,
                      nodePredicate: Expression,
                      edgePredicate: Expression,
-                     legacyPredicates: Seq[(Variable, Expression)])
+                     legacyPredicates: Seq[(LogicalVariable, Expression)])
                     (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   override val lhs = Some(source)
   override def rhs = None
@@ -107,7 +107,7 @@ case class PruningVarExpand(source: LogicalPlan,
                             to: IdName,
                             minLength: Int,
                             maxLength: Int,
-                            predicates: Seq[(Variable, Expression)] = Seq.empty)
+                            predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
                            (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
 
   override val lhs = Some(source)
@@ -130,7 +130,7 @@ case class FullPruningVarExpand(source: LogicalPlan,
                                 to: IdName,
                                 minLength: Int,
                                 maxLength: Int,
-                                predicates: Seq[(Variable, Expression)] = Seq.empty)
+                                predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
                                (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
 
   override val lhs = Some(source)

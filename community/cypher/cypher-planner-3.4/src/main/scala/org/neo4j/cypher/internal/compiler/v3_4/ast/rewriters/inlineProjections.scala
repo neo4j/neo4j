@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Pattern, Variable}
+import org.neo4j.cypher.internal.util.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalVariable, Pattern}
 
 case object inlineProjections extends Rewriter {
 
@@ -67,8 +67,8 @@ case object inlineProjections extends Rewriter {
   }
 
 
-  private def findAllDependencies(variable: Variable, context: InliningContext): Set[Variable] = {
-    val (dependencies, _) = fixedPoint[(Set[Variable], List[Variable])]({
+  private def findAllDependencies(variable: LogicalVariable, context: InliningContext): Set[LogicalVariable] = {
+    val (dependencies, _) = fixedPoint[(Set[LogicalVariable], List[LogicalVariable])]({
       case (deps, Nil) =>
         (deps, Nil)
       case (deps, queue) =>

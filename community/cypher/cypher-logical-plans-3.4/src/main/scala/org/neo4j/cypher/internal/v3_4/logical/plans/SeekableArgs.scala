@@ -26,7 +26,7 @@ sealed trait SeekableArgs {
   def expr: Expression
   def sizeHint: Option[Int]
 
-  def dependencies: Set[Variable] = expr.dependencies
+  def dependencies: Set[LogicalVariable] = expr.dependencies
 
   def mapValues(f: Expression => Expression): SeekableArgs
   def asQueryExpression: QueryExpression[Expression]

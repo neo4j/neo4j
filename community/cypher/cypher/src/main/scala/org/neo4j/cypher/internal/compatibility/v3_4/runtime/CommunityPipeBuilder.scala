@@ -314,9 +314,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  private def varLengthPredicate(predicates: Seq[(Variable, ASTExpression)]): VarLengthPredicate  = {
+  private def varLengthPredicate(predicates: Seq[(LogicalVariable, ASTExpression)]): VarLengthPredicate  = {
     //Creates commands out of the predicates
-    def asCommand(predicates: Seq[(Variable, ASTExpression)]) = {
+    def asCommand(predicates: Seq[(LogicalVariable, ASTExpression)]) = {
       val (keys: Seq[Variable], exprs) = predicates.unzip
 
       val commands = exprs.map(buildPredicate)

@@ -21,9 +21,19 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.neo4j.cypher.internal.v3_4.expressions.{Variable, Expression => ASTExpression}
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, InternalException}
+import org.neo4j.cypher.internal.v3_4.expressions.{LogicalVariable, Expression => ASTExpression}
 
-class RuntimeVariable(name: String) extends Variable(name = name)(InputPosition.NONE) with SemanticCheckableExpression {
+abstract class RuntimeVariable(override val name: String) extends LogicalVariable with SemanticCheckableExpression {
   override def semanticCheck(ctx: ASTExpression.SemanticContext): SemanticCheck = SemanticCheckResult.success
+
+  override def position: InputPosition = InputPosition.NONE
+
+  override def copyId = fail()
+
+  override def renameId(newName: String) = fail()
+
+  override def bumpId = fail()
+
+  private def fail(): Nothing = throw new InternalException("Tried using a RuntimeVariable as Variable")
 }
