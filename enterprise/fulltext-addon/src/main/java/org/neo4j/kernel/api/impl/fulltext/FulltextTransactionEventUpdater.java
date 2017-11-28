@@ -34,11 +34,11 @@ import org.neo4j.logging.Log;
 
 class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
 {
-    private final FulltextProvider fulltextProvider;
+    private final FulltextProviderImpl fulltextProvider;
     private final Log log;
     private final FulltextUpdateApplier applier;
 
-    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider, Log log,
+    FulltextTransactionEventUpdater( FulltextProviderImpl fulltextProvider, Log log,
                                      FulltextUpdateApplier applier )
     {
         this.fulltextProvider = fulltextProvider;

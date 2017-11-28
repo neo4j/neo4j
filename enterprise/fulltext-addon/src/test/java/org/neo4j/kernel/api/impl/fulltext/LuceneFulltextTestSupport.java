@@ -77,9 +77,9 @@ public class LuceneFulltextTestSupport
         transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
     }
 
-    protected FulltextProvider createProvider() throws IOException
+    protected FulltextProviderImpl createProvider() throws IOException
     {
-        return new FulltextProvider( db, LOG, availabilityGuard, scheduler, transactionIdStore,
+        return new FulltextProviderImpl( db, LOG, availabilityGuard, scheduler, transactionIdStore,
                 fs, storeDir, analyzer );
     }
 
