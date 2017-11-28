@@ -1,20 +1,11 @@
 Shorthand case with filter should work as expected
 Add labels inside FOREACH
-Merge using unique constraint should update existing node
-Merge using unique constraint should create missing node
-Should match on merge using multiple unique indexes if only found single node for both indexes
-Should match on merge using multiple unique indexes and labels if only found single node for both indexes
-Should match on merge using multiple unique indexes using same key if only found single node for both indexes
-Should create on merge using multiple unique indexes if found no nodes
-Should create on merge using multiple unique indexes and labels if found no nodes
 Should fail on merge using multiple unique indexes using same key if found different nodes
 Should fail on merge using multiple unique indexes if found different nodes
 Should fail on merge using multiple unique indexes if it found a node matching single property only
 Should fail on merge using multiple unique indexes if it found a node matching single property only flipped order
 Should fail on merge using multiple unique indexes and labels if found different nodes
 Merge with uniqueness constraints must properly handle multiple labels
-Works with property repeated in literal map in set
-Works with property in map that gets set
 Failing when creation would violate constraint
 Explanation of in-query procedure call
 Merging inside a FOREACH using a previously matched node
@@ -25,21 +16,10 @@ Inside nested FOREACH
 Inside nested FOREACH, nodes inlined
 Should handle running merge inside a foreach loop
 Merge inside foreach should see variables introduced by update actions outside foreach
-Using a single bound node
-Using a longer pattern
-Using bound nodes in mid-pattern
-Using bound nodes in mid-pattern when pattern partly matches
-Introduce named paths
 Returning a pattern expression with bound nodes
 Using a variable-length pattern expression in a WITH
 Pattern expression inside list comprehension
-Filter using a pattern predicate that is a logical OR between an expression and a subquery
-Filter using a pattern predicate that is a logical OR between two expressions and a subquery
-Filter using a pattern predicate that is a logical OR between one expression and a negated subquery
-Filter using a pattern predicate that is a logical OR between one subquery and a negated subquery
-Filter using a pattern predicate that is a logical OR between one negated subquery and a subquery
 Filter using a pattern predicate that is a logical OR between two subqueries
-Filter using a pattern predicate that is a logical OR between one negated subquery, a subquery, and an equality expression
 Filter using a pattern predicate that is a logical OR between one negated subquery, two subqueries, and an equality expression
 Filter using a pattern predicate that is a logical OR between one negated subquery, two subqueries, and an equality expression 2
 Using a pattern predicate after aggregation 1

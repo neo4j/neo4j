@@ -550,7 +550,7 @@ order by a.COL1""".format(a, b))
 
   test("with should not forget parameters2") {
     val id = createNode().getId
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "match (n) where id(n) = {id} with n set n.foo={id} return n", params = Map("id" -> id)).toList
+    val result = executeWith(createConf, "match (n) where id(n) = {id} with n set n.foo={id} return n", params = Map("id" -> id)).toList
 
     result should have size 1
     graph.inTx {
@@ -654,28 +654,28 @@ order by a.COL1""".format(a, b))
 
   test("should add label to node") {
     val a = createNode()
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "match (a) where id(a) = 0 SET a :foo RETURN a")
+    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a :foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should add multiple labels to node") {
     val a = createNode()
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "match (a) where id(a) = 0 SET a :foo:bar RETURN a")
+    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a :foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should set label on node") {
     val a = createNode()
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "match (a) SET a:foo RETURN a")
+    val result = executeWith(createConf, "match (a) SET a:foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should set multiple labels on node") {
     val a = createNode()
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "match (a) where id(a) = 0 SET a:foo:bar RETURN a")
+    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a:foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }

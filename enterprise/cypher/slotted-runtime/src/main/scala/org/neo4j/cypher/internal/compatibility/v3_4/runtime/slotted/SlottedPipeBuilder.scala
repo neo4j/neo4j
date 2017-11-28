@@ -257,6 +257,27 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Eager(_) =>
         EagerSlottedPipe(source, slots)(id)
 
+      case _: DeleteNode |
+           _: DeleteRelationship |
+           _: DeletePath |
+           _: DeleteExpression |
+           _: DetachDeleteNode |
+           _: DetachDeletePath |
+           _: DetachDeleteExpression =>
+        fallback.build(plan, source)
+
+      case _: SetLabels |
+           _: SetNodeProperty |
+           _: SetNodePropertiesFromMap |
+           _: SetRelationshipPropery |
+           _: SetRelationshipPropertiesFromMap |
+           _: SetProperty |
+           _: RemoveLabels =>
+        fallback.build(plan, source)
+
+      case _: LockNodes =>
+        fallback.build(plan, source)
+
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
@@ -316,8 +337,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Apply(_, _) =>
         ApplySlottedPipe(lhs, rhs)(id)
 
-      case _: SemiApply |
-           _: AntiSemiApply =>
+      case _: AbstractSemiApply |
+           _: AbstractSelectOrSemiApply =>
         fallback.build(plan, lhs, rhs)
 
       case RollUpApply(_, rhsPlan, collectionName, identifierToCollect, nullables) =>
@@ -400,7 +421,11 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           SlottedPipeBuilder.computeUnionMapping(lhsSlots, slots),
           SlottedPipeBuilder.computeUnionMapping(rhsSlots, slots))(id = id)
 
-      case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+      case _: AssertSameNode =>
+        fallback.build(plan, lhs, rhs)
+
+      case _ =>
+        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe

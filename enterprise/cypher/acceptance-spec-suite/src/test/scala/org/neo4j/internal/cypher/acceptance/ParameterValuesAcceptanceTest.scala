@@ -53,7 +53,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
       emptyBooleanArray, Array[String]()).foreach { array =>
 
       val q = "CREATE (n) SET n.prop = $param RETURN n.prop AS p"
-      val r = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, q, params = Map("param" -> array))
+      val r = executeWith(Configs.Interpreted - Configs.Version2_3, q, params = Map("param" -> array))
 
       assertStats(r, nodesCreated = 1, propertiesWritten = 1)
       val returned = r.columnAs[Array[_]]("p").next()
@@ -68,7 +68,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
       Array[Boolean](false, true), Array[String]("", " ")).foreach { array =>
 
       val q = "CREATE (n) SET n.prop = $param RETURN n.prop AS p"
-      val r = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, q, params = Map("param" -> array))
+      val r = executeWith(Configs.Interpreted - Configs.Version2_3, q, params = Map("param" -> array))
 
       assertStats(r, nodesCreated = 1, propertiesWritten = 1)
       val returned = r.columnAs[Array[_]]("p").next()
@@ -101,7 +101,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   test("removing property when not sure if it is a node or relationship should still work - NODE") {
     val n = createNode("name" -> "Anders")
 
-    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "WITH {p} as p SET p.lastname = p.name REMOVE p.name", params = Map("p" -> n))
+    executeWith(Configs.Interpreted - Configs.Cost2_3, "WITH {p} as p SET p.lastname = p.name REMOVE p.name", params = Map("p" -> n))
 
     graph.inTx {
       n.getProperty("lastname") should equal("Anders")
@@ -112,7 +112,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   test("removing property when not sure if it is a node or relationship should still work - REL") {
     val r = relate(createNode(), createNode(), "name" -> "Anders")
 
-    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "WITH {p} as p SET p.lastname = p.name REMOVE p.name", params = Map("p" -> r))
+    executeWith(Configs.Interpreted - Configs.Cost2_3, "WITH {p} as p SET p.lastname = p.name REMOVE p.name", params = Map("p" -> r))
 
     graph.inTx {
       r.getProperty("lastname") should equal("Anders")
