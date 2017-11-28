@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   */
 case class NodeByIdSeek(idName: IdName, nodeIds: SeekableArgs, argumentIds: Set[IdName])
                        (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan {
+  extends NodeLogicalLeafPlan {
 
   def availableSymbols: Set[IdName] = argumentIds + idName
 }

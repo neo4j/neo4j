@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgument
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue}
+import org.neo4j.values.virtual.{VirtualEdgeValue, MapValue, VirtualNodeValue}
 
 import scala.collection.Map
 
@@ -119,7 +119,7 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
 
   override def name = "SetNodeProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[NodeValue](item).id()
+  override protected def id(item: Any) = CastSupport.castOrFail[VirtualNodeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
 }
@@ -130,7 +130,7 @@ case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPr
 
   override def name = "SetRelationshipProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[EdgeValue](item).id()
+  override protected def id(item: Any) = CastSupport.castOrFail[VirtualEdgeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }
@@ -144,8 +144,8 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
     val resolvedEntity = entityExpr(executionContext, state)
     if (resolvedEntity != Values.NO_VALUE) {
       val (entityId, ops) = resolvedEntity match {
-        case node: NodeValue => (node.id(), state.query.nodeOps)
-        case rel: EdgeValue => (rel.id(), state.query.relationshipOps)
+        case node: VirtualNodeValue => (node.id(), state.query.nodeOps)
+        case rel: VirtualEdgeValue => (rel.id(), state.query.relationshipOps)
         case _ => throw new InvalidArgumentException(
           s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")
       }
@@ -210,7 +210,7 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 
   override def name = "SetNodePropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[NodeValue](item).id()
+  override protected def id(item: Any) = CastSupport.castOrFail[VirtualNodeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
 }
@@ -221,7 +221,7 @@ case class SetRelationshipPropertyFromMapOperation(relName: String, expression: 
 
   override def name = "SetRelationshipPropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[EdgeValue](item).id()
+  override protected def id(item: Any) = CastSupport.castOrFail[VirtualEdgeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }
@@ -231,7 +231,7 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val value: AnyValue = executionContext.get(nodeName).get
     if (value != Values.NO_VALUE) {
-      val nodeId = CastSupport.castOrFail[NodeValue](value).id()
+      val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
       val labelIds = labels.map(_.getOrCreateId(state.query).id)
       state.query.setLabelsOnNode(nodeId, labelIds.iterator)
     }

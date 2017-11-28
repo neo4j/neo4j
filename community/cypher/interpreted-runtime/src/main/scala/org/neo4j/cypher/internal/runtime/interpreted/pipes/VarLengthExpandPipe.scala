@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{EdgeValue, NodeReference, NodeValue, VirtualValues}
 
 import scala.collection.mutable
 
@@ -90,11 +90,11 @@ case class VarLengthExpandPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
       row => {
-        fetchFromContext(row, fromName) match {
+        fetchFromContext(row, state, fromName) match {
           case n: NodeValue =>
             val paths = varLengthExpand(n, state, max, row)
             paths.collect {
-              case (node, rels) if rels.length >= min && isToNodeValid(row, node) =>
+              case (node, rels) if rels.length >= min && isToNodeValid(row, state, node) =>
                 row.newWith2(relName, VirtualValues.list(rels:_*), toName, node)
             }
 
@@ -106,9 +106,16 @@ case class VarLengthExpandPipe(source: Pipe,
     }
   }
 
-  private def isToNodeValid(row: ExecutionContext, node: Any): Boolean =
-    !nodeInScope || fetchFromContext(row, toName) == node
+  private def isToNodeValid(row: ExecutionContext, state: QueryState, node: Any): Boolean =
+    !nodeInScope || fetchFromContext(row, state, toName) == node
 
-  def fetchFromContext(row: ExecutionContext, name: String): Any =
-    row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
+  def fetchFromContext(row: ExecutionContext, state: QueryState, name: String): Any =
+    row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing")) match {
+      case node: NodeValue =>
+        node
+      case nodeRef: NodeReference =>
+        ValueUtils.fromNodeProxy(state.query.nodeOps.getById(nodeRef.id()))
+      case Values.NO_VALUE =>
+        Values.NO_VALUE
+    }
 }

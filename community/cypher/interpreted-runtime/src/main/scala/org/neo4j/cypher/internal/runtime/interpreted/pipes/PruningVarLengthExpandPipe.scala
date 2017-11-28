@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{EdgeValue, NodeReference, NodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
@@ -264,6 +264,16 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         val row = input.next()
         row.get(fromName) match {
           case Some(node: NodeValue) =>
+            val nextState = new PrePruningDFS(whenEmptied = this,
+                                              node = node,
+                                              path = new Array[Long](max),
+                                              pathLength = 0,
+                                              state = state,
+                                              row = row,
+                                              expandMap = Primitive.longObjectMap[FullExpandDepths]())
+            nextState.next()
+          case Some(nodeRef: NodeReference) =>
+            val node = ValueUtils.fromNodeProxy(state.query.nodeOps.getById(nodeRef.id()))
             val nextState = new PrePruningDFS(whenEmptied = this,
                                               node = node,
                                               path = new Array[Long](max),
