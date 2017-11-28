@@ -87,8 +87,6 @@ trait QueryContext extends TokenContext {
 
   def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
 
-  def getPropertiesForNode(node: Long): Iterator[Int]
-
   def getPropertiesForRelationship(relId: Long): Iterator[Int]
 
   def getOrCreatePropertyKeyId(propertyKey: String): Int

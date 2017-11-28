@@ -116,8 +116,6 @@ trait QueryContextAdaptation {
 
   override def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator = ???
 
-  override def getPropertiesForNode(node: Long): scala.Iterator[Int] = ???
-
   override def getImportURL(url: URL): Either[String, URL] = ???
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long = ???

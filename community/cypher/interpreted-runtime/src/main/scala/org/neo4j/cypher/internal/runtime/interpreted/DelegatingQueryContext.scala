@@ -92,8 +92,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.removeLabelsFromNode(node, labelIds))
 
-  override def getPropertiesForNode(node: Long): Iterator[Int] = singleDbHit(inner.getPropertiesForNode(node))
-
   override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
     singleDbHit(inner.getPropertiesForRelationship(relId))
 

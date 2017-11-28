@@ -160,9 +160,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def getPropertiesForNode(node: Long) =
-    JavaConversionSupport.asScala(transactionalContext.statement.readOperations().nodeGetPropertyKeys(node))
-
   override def getPropertiesForRelationship(relId: Long) =
     JavaConversionSupport.asScala(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(relId))
 

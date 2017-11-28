@@ -79,9 +79,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(inner.removeLabelsFromNode(node, labelIds))
 
-  override def getPropertiesForNode(node: Long): Iterator[Int] =
-    translateException(inner.getPropertiesForNode(node))
-
   override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
     translateException(inner.getPropertiesForRelationship(relId))
 
