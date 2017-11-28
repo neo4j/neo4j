@@ -29,14 +29,14 @@ public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMe
 {
     private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler;
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
-    private final LongSupplier term;
+    private final ShouldRenewElectionTimeout shouldRenewElectionTimeout;
 
     public LeaderAvailabilityHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler,
             LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
     {
         this.delegateHandler = delegateHandler;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
-        this.term = term;
+        this.shouldRenewElectionTimeout = new ShouldRenewElectionTimeout( term );
     }
 
     public static ComposableMessageHandler composable( LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
@@ -66,24 +66,102 @@ public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMe
 
     private void handleTimeouts( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
     {
-        if ( shouldRenewElectionTimeout( message.message() ) )
+        if ( message.dispatch( shouldRenewElectionTimeout ) )
         {
             leaderAvailabilityTimers.renewElection();
         }
     }
 
-    // TODO replace with visitor pattern
-    private boolean shouldRenewElectionTimeout( RaftMessages.RaftMessage message )
+    private static class ShouldRenewElectionTimeout implements RaftMessages.Handler<Boolean, RuntimeException>
     {
-        switch ( message.type() )
+        private final LongSupplier term;
+
+        private ShouldRenewElectionTimeout( LongSupplier term )
         {
-        case HEARTBEAT:
-            RaftMessages.Heartbeat heartbeat = (RaftMessages.Heartbeat) message;
-            return heartbeat.leaderTerm() >= term.getAsLong();
-        case APPEND_ENTRIES_REQUEST:
-            RaftMessages.AppendEntries.Request request = (RaftMessages.AppendEntries.Request) message;
+            this.term = term;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.AppendEntries.Request request )
+        {
             return request.leaderTerm() >= term.getAsLong();
-        default:
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Heartbeat heartbeat )
+        {
+            return heartbeat.leaderTerm() >= term.getAsLong();
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Vote.Request request )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Vote.Response response )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.PreVote.Request request )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.PreVote.Response response )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.AppendEntries.Response response )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.LogCompactionInfo logCompactionInfo )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.HeartbeatResponse heartbeatResponse )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Timeout.Election election )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Timeout.Heartbeat heartbeat )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.NewEntry.Request request )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.NewEntry.BatchRequest batchRequest )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.PruneRequest pruneRequest )
+        {
             return false;
         }
     }
