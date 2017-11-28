@@ -287,7 +287,7 @@ public class NativeLabelScanStoreMigratorTest
     {
         try ( StoreChannel storeChannel = fileSystem.create( file ) )
         {
-            storeChannel.write( sourceBuffer );
+            storeChannel.writeAll( sourceBuffer );
         }
     }
 }
