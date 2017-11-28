@@ -87,9 +87,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
 //[NodePropertyUpdate[1, prop:0 add:USA, labelsBefore:[], labelsAfter:[0]]]
@@ -110,12 +109,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> parameters()
+    public static Collection<SchemaIndexProvider.Descriptor> parameters()
     {
-        return asList(
-                new Object[]{LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR},
-                new Object[]{NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR},
-                new Object[]{InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR} );
+        return asList( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR,
+                NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR,
+                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
     }
 
     @Parameterized.Parameter( 0 )
