@@ -44,11 +44,15 @@ trait DebugPrettyPrinter {
     println("\u001b[30m")
   }
 
-  protected def printPipeInfo(logicalPlan: LogicalPlan, slotConfigurations: Map[LogicalPlanId, SlotConfiguration], pipeInfo: PipeInfo) = {
+  protected def printRewrittenPlanInfo(logicalPlan: LogicalPlan) = {
     if (PRINT_REWRITTEN_LOGICAL_PLAN) {
       println(s"\n\u001b[35m[REWRITTEN LOGICAL PLAN]\n") // Magenta
       prettyPrintLogicalPlan(logicalPlan)
     }
+    println("\u001b[30m")
+  }
+
+  protected def printPipeInfo(slotConfigurations: Map[LogicalPlanId, SlotConfiguration], pipeInfo: PipeInfo) = {
     if (PRINT_PIPELINE_INFO) {
       println(s"\n\u001b[36m[SLOT CONFIGURATIONS]\n") // Cyan
       prettyPrintPipelines(slotConfigurations)
