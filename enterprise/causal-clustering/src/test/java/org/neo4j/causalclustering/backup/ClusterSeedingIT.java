@@ -245,7 +245,7 @@ public class ClusterSeedingIT
             Object oldKey = e.getValue();
 
             BasicFileAttributes attr = Files.readAttributes( file.toPath(), BasicFileAttributes.class );
-            assertEquals( "Creation time for file: " + file, oldKey, attr.fileKey() );
+            assertEquals( "File key for file: " + file, oldKey, attr.fileKey() );
         }
     }
 
