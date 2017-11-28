@@ -48,6 +48,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.PrintStreamLogger;
 import org.neo4j.storageengine.api.Token;
 
+import static java.lang.Long.parseLong;
+
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -58,6 +60,29 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  */
 public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordStore<RECORD>>
 {
+    private static class IdRange
+    {
+        private final long startId;
+        private final long endId;
+
+        IdRange( long startId, long endId )
+        {
+            this.startId = startId;
+            this.endId = endId;
+        }
+
+        static IdRange parse( String idString )
+        {
+            if ( idString.contains( "-" ) )
+            {
+                String[] parts = idString.split( "-" );
+                return new IdRange( parseLong( parts[0] ), parseLong( parts[1] ) );
+            }
+
+            long id = parseLong( idString );
+            return new IdRange( id, id + 1 );
+        }
+    }
 
     public static void main( String... args ) throws Exception
     {
@@ -84,7 +109,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
     private static void dumpFile( Function<File, StoreFactory> createStoreFactory, String fileName ) throws Exception
     {
         File file = new File( fileName );
-        long[] ids = null; // null means all possible ids
+        IdRange[] ids = null; // null means all possible ids
 
         if ( file.isFile() )
         {
@@ -99,10 +124,10 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
             int idStart = fileName.lastIndexOf( ':' );
 
             String[] idStrings = fileName.substring( idStart + 1 ).split( "," );
-            ids = new long[idStrings.length];
+            ids = new IdRange[idStrings.length];
             for ( int i = 0; i < ids.length; i++ )
             {
-                ids[i] = Long.parseLong( idStrings[i] );
+                ids[i] = IdRange.parse( idStrings[i] );
             }
             file = new File( fileName.substring( 0, idStart ) );
 
@@ -161,28 +186,28 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
     }
 
     private static <R extends AbstractBaseRecord, S extends RecordStore<R>> void dump(
-            long[] ids, S store ) throws Exception
+            IdRange[] ids, S store ) throws Exception
     {
         new DumpStore<R,S>( System.out ).dump( store, ids );
     }
 
-    private static void dumpPropertyKeys( NeoStores neoStores, long[] ids ) throws Exception
+    private static void dumpPropertyKeys( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         dumpTokens( neoStores.getPropertyKeyTokenStore(), ids );
     }
 
-    private static void dumpLabels( NeoStores neoStores, long[] ids ) throws Exception
+    private static void dumpLabels( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         dumpTokens( neoStores.getLabelTokenStore(), ids );
     }
 
-    private static void dumpRelationshipTypes( NeoStores neoStores, long[] ids ) throws Exception
+    private static void dumpRelationshipTypes( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         dumpTokens( neoStores.getRelationshipTypeTokenStore(), ids );
     }
 
     private static <R extends TokenRecord, T extends Token> void dumpTokens(
-            final TokenStore<R, T> store, long[] ids ) throws Exception
+            final TokenStore<R, T> store, IdRange[] ids ) throws Exception
     {
         try
         {
@@ -206,22 +231,22 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         }
     }
 
-    private static void dumpRelationshipGroups( NeoStores neoStores, long[] ids ) throws Exception
+    private static void dumpRelationshipGroups( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         dump( ids, neoStores.getRelationshipGroupStore() );
     }
 
-    private static void dumpRelationshipStore( NeoStores neoStores, long[] ids ) throws Exception
+    private static void dumpRelationshipStore( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         dump( ids, neoStores.getRelationshipStore() );
     }
 
-    private static void dumpPropertyStore( NeoStores neoStores, long[] ids ) throws Exception
+    private static void dumpPropertyStore( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         dump( ids, neoStores.getPropertyStore() );
     }
 
-    private static void dumpSchemaStore( NeoStores neoStores, long[] ids ) throws Exception
+    private static void dumpSchemaStore( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         try ( SchemaStore store = neoStores.getSchemaStore() )
         {
@@ -239,7 +264,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         }
     }
 
-    private static void dumpNodeStore( NeoStores neoStores, long[] ids ) throws Exception
+    private static void dumpNodeStore( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         new DumpStore<NodeRecord,NodeStore>( System.out )
         {
@@ -260,18 +285,17 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         this.printer = new HexPrinter( out ).withBytesGroupingFormat( 16, 4, "  " ).withLineNumberDigits( 8 );
     }
 
-    public final void dump( STORE store, long[] ids ) throws Exception
+    public final void dump( STORE store, IdRange[] ids ) throws Exception
     {
         int size = store.getRecordSize();
+        long highId = store.getHighId();
         out.println( "store.getRecordSize() = " + size );
+        out.println( "store.getHighId() = " + highId );
         out.println( "<dump>" );
         long used = 0;
-        long highId = -1;
 
         if ( ids == null )
         {
-            highId = store.getHighId();
-
             for ( long id = 0; id < highId; id++ )
             {
                 boolean inUse = dumpRecord( store, size, id );
@@ -284,9 +308,12 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         }
         else
         {
-            for ( long id : ids )
+            for ( IdRange range : ids )
             {
-                dumpRecord( store, size, id );
+                for ( long id = range.startId; id < range.endId; id++ )
+                {
+                    dumpRecord( store, size, id );
+                }
             }
         }
         out.println( "</dump>" );
