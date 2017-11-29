@@ -501,6 +501,21 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 }
 
 object SlottedPipeBuilder {
+
+  case class Factory(physicalPlan: PhysicalPlan)
+    extends PipeBuilderFactory {
+    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
+              expressionConverters: ExpressionConverters)
+             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
+
+      val expressionToExpression = recursePipes(recurse, planContext) _
+
+      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, expressionToExpression)
+
+      new SlottedPipeBuilder(fallback, expressionConverters, monitors, physicalPlan, readOnly, expressionToExpression)
+    }
+  }
+
   private def projectSlotExpression(slot: Slot): Expression = slot match {
     case LongSlot(offset, false, CTNode) =>
       slottedExpressions.NodeFromSlot(offset)
