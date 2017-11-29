@@ -66,7 +66,7 @@ public class TransactionLogAnalyzer
          * @param file {@link File} pointing to the opened log file.
          * @param logVersion log version.
          */
-        default void logFile( File file, long logVersion )
+        default void logFile( File file, long logVersion ) throws IOException
         {   // no-op by default
         }
 
@@ -179,7 +179,7 @@ public class TransactionLogAnalyzer
         }
 
         @Override
-        public void logFile( File file, long logVersion )
+        public void logFile( File file, long logVersion ) throws IOException
         {
             for ( Monitor monitor : monitors )
             {
