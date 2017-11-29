@@ -414,6 +414,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val refOffsets = refIds.map(e => slots.getReferenceOffsetFor(e.name))
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, slots)(id)
 
+      case ForeachApply(_, _, variable, expression) =>
+        val innerVariableSlot = slots.get(variable).getOrElse(throw new InternalException(s"Foreach variable '$variable' has no slot"))
+        ForeachSlottedPipe(lhs, rhs, innerVariableSlot, convertExpressions(expression))(id)
+
       case Union(_, _) =>
         val lhsSlots = slotConfigs(lhs.id)
         val rhsSlots = slotConfigs(rhs.id)

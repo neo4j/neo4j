@@ -258,7 +258,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
   // Should this really be deprecated? We have real use cases where we want to get the InternalExecutionResult
   // But do NOT want comparison support, for example see the query statistics support used in CompositeNodeKeyAcceptanceTests
   @deprecated("Rewrite to use executeWith instead")
-  protected def innerExecuteDeprecated(queryText: String, params: Map[String, Any]): InternalExecutionResult =
+  protected def innerExecuteDeprecated(queryText: String, params: Map[String, Any] = Map.empty): InternalExecutionResult =
     innerExecute(queryText, params)
 
   private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {

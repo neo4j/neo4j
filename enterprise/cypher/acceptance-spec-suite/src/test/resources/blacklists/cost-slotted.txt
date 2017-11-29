@@ -1,5 +1,4 @@
 Shorthand case with filter should work as expected
-Add labels inside FOREACH
 Should fail on merge using multiple unique indexes using same key if found different nodes
 Should fail on merge using multiple unique indexes if found different nodes
 Should fail on merge using multiple unique indexes if it found a node matching single property only
@@ -8,14 +7,6 @@ Should fail on merge using multiple unique indexes and labels if found different
 Merge with uniqueness constraints must properly handle multiple labels
 Failing when creation would violate constraint
 Explanation of in-query procedure call
-Merging inside a FOREACH using a previously matched node
-Merging inside a FOREACH using a previously matched node and a previously merged node
-Merging inside a FOREACH using two previously merged nodes
-Merging inside a FOREACH using two previously merged nodes that also depend on WITH
-Inside nested FOREACH
-Inside nested FOREACH, nodes inlined
-Should handle running merge inside a foreach loop
-Merge inside foreach should see variables introduced by update actions outside foreach
 Returning a pattern expression with bound nodes
 Using a variable-length pattern expression in a WITH
 Pattern expression inside list comprehension

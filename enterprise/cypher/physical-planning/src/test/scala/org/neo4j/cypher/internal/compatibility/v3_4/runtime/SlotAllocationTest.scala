@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
 import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -35,6 +36,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   private val z = IdName("z")
   private val LABEL = LabelName("label")(pos)
   private val r = IdName("r")
+  private val semanticTable = SemanticTable()
 
   test("only single allnodes scan") {
     // given
@@ -42,7 +44,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
 
     // then
     allocations should have size 1
@@ -56,7 +58,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
 
     // then
     allocations should have size 2
@@ -70,7 +72,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
 
     // then
     allocations should have size 1
@@ -84,7 +86,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     filter.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(filter).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(filter, semanticTable).slotConfigurations
 
     // then
     allocations should have size 2
@@ -99,7 +101,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(expand, semanticTable).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -122,7 +124,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(expand, semanticTable).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -143,7 +145,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
 
     // then
     allocations should have size 2
@@ -157,7 +159,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(expand, semanticTable).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -182,7 +184,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(expand, semanticTable).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -209,7 +211,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     expand.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(expand).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(expand, semanticTable).slotConfigurations
 
     // then we'll end up with two pipelines
     allocations should have size 2
@@ -236,7 +238,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     skip.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(skip).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(skip, semanticTable).slotConfigurations
 
     // then
     allocations should have size 2
@@ -258,7 +260,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     apply.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(apply).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(apply, semanticTable).slotConfigurations
 
     // then
     allocations should have size 3
@@ -283,7 +285,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     distinct.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(distinct).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(distinct, semanticTable).slotConfigurations
 
     // then
     allocations should have size 2
@@ -302,7 +304,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     distinct.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(distinct).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(distinct, semanticTable).slotConfigurations
 
     // then
     allocations should have size 3
@@ -327,7 +329,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     countStar.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(countStar).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(countStar, semanticTable).slotConfigurations
 
     // then
     allocations should have size 3
@@ -350,7 +352,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     projection.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(projection).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(projection, semanticTable).slotConfigurations
 
     // then
     allocations should have size 2
@@ -369,7 +371,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     Xproduct.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(Xproduct).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(Xproduct, semanticTable).slotConfigurations
 
     // then
     allocations should have size 3
@@ -394,7 +396,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     hashJoin.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(hashJoin).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(hashJoin, semanticTable).slotConfigurations
 
     // then
     allocations should have size 3
@@ -422,7 +424,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     hashJoin.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(hashJoin).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(hashJoin, semanticTable).slotConfigurations
 
     // then
     allocations should have size 5
@@ -458,7 +460,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     hashJoin.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(hashJoin).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(hashJoin, semanticTable).slotConfigurations
 
     // then
     allocations should have size 5 // One for each label-scan and expand, and one after the join
@@ -491,7 +493,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     apply.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(apply).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(apply, semanticTable).slotConfigurations
 
     // then
     val lhsPipeline = SlotConfiguration(Map(
@@ -519,7 +521,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     produceResult.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(produceResult).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(produceResult, semanticTable).slotConfigurations
 
     // then
     allocations should have size 3
@@ -543,7 +545,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     produceResult.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(produceResult).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(produceResult, semanticTable).slotConfigurations
 
     // then
     allocations should have size 4
@@ -577,7 +579,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
     val semiApply = semiApplyBuilder(lhs, rhs)(solved)
     semiApply.assignIds()
-    val allocations = SlotAllocation.allocateSlots(semiApply).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(semiApply, semanticTable).slotConfigurations
 
     val lhsPipeline = SlotConfiguration(Map(
       "x" -> LongSlot(0, nullable = false, CTNode)),
@@ -607,7 +609,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     apply.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(apply).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(apply, semanticTable).slotConfigurations
 
     // then
     allocations should have size 5
@@ -636,7 +638,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     aggregation.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(aggregation).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(aggregation, semanticTable).slotConfigurations
 
     allocations should have size 3
     allocations(expand.assignedId) should equal(
@@ -677,7 +679,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     rollUp.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(rollUp).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(rollUp, semanticTable).slotConfigurations
 
     // then
     allocations should have size 5
@@ -696,7 +698,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
 
     // then
     allocations should have size 3
@@ -713,7 +715,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
 
     // then
     allocations should have size 4
@@ -729,7 +731,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val allocations = SlotAllocation.allocateSlots(plan).slotConfigurations
+    val allocations = SlotAllocation.allocateSlots(plan, semanticTable).slotConfigurations
 
     // then
     allocations should have size 5
@@ -745,7 +747,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     plan.assignIds()
 
     // when
-    val physicalPlan = SlotAllocation.allocateSlots(plan)
+    val physicalPlan = SlotAllocation.allocateSlots(plan, semanticTable)
     val allocations = physicalPlan.slotConfigurations
 
     // then
