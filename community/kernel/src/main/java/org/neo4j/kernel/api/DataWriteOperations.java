@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Map;
-
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
