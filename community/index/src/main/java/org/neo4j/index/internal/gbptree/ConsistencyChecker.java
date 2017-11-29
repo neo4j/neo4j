@@ -31,9 +31,10 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 /**
  * <ul>
@@ -267,7 +268,6 @@ class ConsistencyChecker<KEY>
                 cursor.setCursorException( "Unexpected keyCount:" + keyCount );
                 continue;
             }
-            assertKeyOrder( cursor, range, keyCount );
             isInternal = TreeNode.isInternal( cursor );
             isLeaf = TreeNode.isLeaf( cursor );
         }
@@ -279,6 +279,12 @@ class ConsistencyChecker<KEY>
             throw new TreeInconsistencyException( "Page:" + cursor.getCurrentPageId() + " at level:" + level +
                     " isn't a tree node, parent expected range " + range );
         }
+
+        do
+        {
+            assertKeyOrder( cursor, range, keyCount, isLeaf ? LEAF : INTERNAL );
+        }
+        while ( cursor.shouldRetry() );
 
         assertPointerGenerationMatchesGeneration( cursor, currentNodeGeneration, expectedGeneration );
         assertSiblings( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
@@ -358,7 +364,7 @@ class ConsistencyChecker<KEY>
             {
                 child = childAt( cursor, pos );
                 childGeneration = node.pointerGeneration( cursor, child );
-                node.keyAt( cursor, readKey, pos );
+                node.keyAt( cursor, readKey, pos, INTERNAL );
             }
             while ( cursor.shouldRetry() );
             checkAfterShouldRetry( cursor );
@@ -408,13 +414,13 @@ class ConsistencyChecker<KEY>
         return node.childAt( cursor, pos, stableGeneration, unstableGeneration );
     }
 
-    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount )
+    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount, TreeNode.Type type )
     {
         KEY prev = layout.newKey();
         boolean first = true;
         for ( int pos = 0; pos < keyCount; pos++ )
         {
-            node.keyAt( cursor, readKey, pos );
+            node.keyAt( cursor, readKey, pos, type );
             if ( !range.inRange( readKey ) )
             {
                 cursor.setCursorException( "Expected range for this node is " + range + " but found " + readKey +

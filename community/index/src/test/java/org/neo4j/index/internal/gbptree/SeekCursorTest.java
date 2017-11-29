@@ -44,6 +44,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 
 public class SeekCursorTest
@@ -469,7 +471,7 @@ public class SeekCursorTest
             insert( i );
         }
         MutableLong primKey = layout.newKey();
-        node.keyAt( cursor, primKey, 0 );
+        node.keyAt( cursor, primKey, 0, INTERNAL );
         long expectedNext = primKey.longValue();
         long rightChild = GenerationSafePointerPair.pointer( node.childAt( cursor, 1, stableGeneration,
                 unstableGeneration ) );
@@ -498,7 +500,7 @@ public class SeekCursorTest
             insert( i );
         }
         MutableLong primKey = layout.newKey();
-        node.keyAt( cursor, primKey, 0 );
+        node.keyAt( cursor, primKey, 0, INTERNAL );
         long expectedNext = primKey.longValue();
         long rightChild = GenerationSafePointerPair.pointer( node.childAt( cursor, 1, stableGeneration,
                 unstableGeneration ) );
@@ -1294,7 +1296,7 @@ public class SeekCursorTest
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 1 );
+        node.keyAt( readCursor, from, keyCount - 1, LEAF );
         long fromInclusive = from.longValue();
         long toExclusive = fromInclusive + 1;
 
@@ -1330,7 +1332,7 @@ public class SeekCursorTest
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 1 );
+        node.keyAt( readCursor, from, keyCount - 1, LEAF );
         long fromInclusive = from.longValue();
         long toExclusive = fromInclusive - 1;
 
@@ -1366,8 +1368,8 @@ public class SeekCursorTest
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 2 );
-        node.keyAt( readCursor, to, keyCount - 1 );
+        node.keyAt( readCursor, from, keyCount - 2, LEAF );
+        node.keyAt( readCursor, to, keyCount - 1, LEAF );
         long fromInclusive = from.longValue();
         long toExclusive = to.longValue() + 1;
 
@@ -1403,8 +1405,8 @@ public class SeekCursorTest
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 1 );
-        node.keyAt( readCursor, to, keyCount - 2 );
+        node.keyAt( readCursor, from, keyCount - 1, LEAF );
+        node.keyAt( readCursor, to, keyCount - 2, LEAF );
         long fromInclusive = from.longValue();
         long toExclusive = to.longValue() - 1;
 
@@ -1437,7 +1439,7 @@ public class SeekCursorTest
 
         // from first key in left child
         readCursor.next( pointer( leftChild ) );
-        node.keyAt( readCursor, from, 0 );
+        node.keyAt( readCursor, from, 0, LEAF );
         long fromInclusive = from.longValue();
         long toExclusive = from.longValue() + 2;
 
@@ -1472,8 +1474,8 @@ public class SeekCursorTest
         // from first key in left child
         readCursor.next( pointer( rightChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
-        long fromInclusive = keyAt( readCursor, keyCount - 3 );
-        long toExclusive = keyAt( readCursor, keyCount - 1 );
+        long fromInclusive = keyAt( readCursor, keyCount - 3, LEAF );
+        long toExclusive = keyAt( readCursor, keyCount - 1, LEAF );
 
         // when
         TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
@@ -1506,8 +1508,8 @@ public class SeekCursorTest
         // from first key in left child
         readCursor.next( pointer( rightChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
-        long fromInclusive = keyAt( readCursor, keyCount - 1 );
-        long toExclusive = keyAt( readCursor, keyCount - 3 );
+        long fromInclusive = keyAt( readCursor, keyCount - 1, LEAF );
+        long toExclusive = keyAt( readCursor, keyCount - 3, LEAF );
 
         // when
         TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
@@ -1539,7 +1541,7 @@ public class SeekCursorTest
 
         // from first key in left child
         readCursor.next( pointer( leftChild ) );
-        node.keyAt( readCursor, from, 0 );
+        node.keyAt( readCursor, from, 0, LEAF );
         long fromInclusive = from.longValue() + 2;
         long toExclusive = from.longValue();
 
@@ -2120,7 +2122,7 @@ public class SeekCursorTest
         readCursor.next();
         int underflowBoundary = (maxKeyCount + 1) / 2;
         int keyCount = TreeNode.keyCount( readCursor );
-        long toRemove = keyAt( readCursor, 0 );
+        long toRemove = keyAt( readCursor, 0, LEAF );
         while ( keyCount >= underflowBoundary )
         {
             remove( toRemove );
@@ -2344,9 +2346,9 @@ public class SeekCursorTest
         return pointer( node.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
     }
 
-    private long keyAt( PageCursor cursor, int pos )
+    private long keyAt( PageCursor cursor, int pos, TreeNode.Type type )
     {
-        node.keyAt( cursor, readKey, pos );
+        node.keyAt( cursor, readKey, pos, type );
         return readKey.longValue();
     }
 }

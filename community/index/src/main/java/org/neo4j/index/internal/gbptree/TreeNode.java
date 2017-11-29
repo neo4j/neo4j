@@ -66,6 +66,12 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
  */
 class TreeNode<KEY,VALUE>
 {
+    enum Type
+    {
+        LEAF,
+        INTERNAL
+    }
+
     // Shared between all node types: TreeNode and FreelistNode
     static final int BYTE_POS_NODE_TYPE = 0;
     static final byte NODE_TYPE_TREE_NODE = 1;
@@ -234,7 +240,7 @@ class TreeNode<KEY,VALUE>
 
     // BODY METHODS
 
-    KEY keyAt( PageCursor cursor, KEY into, int pos )
+    KEY keyAt( PageCursor cursor, KEY into, int pos, Type type )
     {
         cursor.setOffset( keyOffset( pos ) );
         layout.readKey( cursor, into );

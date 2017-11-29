@@ -29,9 +29,10 @@ import org.neo4j.test.rule.RandomRule;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 import static org.neo4j.index.internal.gbptree.KeySearch.search;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
+import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 
 public class KeySearchTest
 {
@@ -58,7 +59,7 @@ public class KeySearchTest
         int keyCount = TreeNode.keyCount( cursor );
 
         // then
-        int result = search( cursor, node, searchKey, readKey, keyCount );
+        int result = search( cursor, node, LEAF, searchKey, readKey, keyCount );
         assertSearchResult( false, 0, result );
     }
 
@@ -70,7 +71,7 @@ public class KeySearchTest
         int keyCount = TreeNode.keyCount( cursor );
 
         // then
-        final int result = search( cursor, node, searchKey, readKey, keyCount );
+        final int result = search( cursor, node, INTERNAL, searchKey, readKey, keyCount );
         assertSearchResult( false, 0, result );
     }
 
@@ -419,7 +420,7 @@ public class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            int result = search( cursor, node, key, readKey, KEY_COUNT );
+            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT );
 
             // THEN
             assertSearchResult( true, i, result );
@@ -437,7 +438,7 @@ public class KeySearchTest
         for ( int i = 1; i < KEY_COUNT - 1; i++ )
         {
             key.setValue( key( i ) - 1 );
-            int result = search( cursor, node, key, readKey, KEY_COUNT );
+            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT );
 
             // THEN
             assertSearchResult( false, i, result );
@@ -469,7 +470,7 @@ public class KeySearchTest
         {
             long searchKey = random.nextInt( currentKey + 10 );
             key.setValue( searchKey );
-            int searchResult = search( cursor, node, key, readKey, keyCount );
+            int searchResult = search( cursor, node, LEAF, key, readKey, keyCount );
 
             // THEN position should be as expected
             boolean exists = contains( keys, searchKey );
@@ -502,8 +503,9 @@ public class KeySearchTest
     private int searchKey( long key )
     {
         int keyCount = TreeNode.keyCount( cursor );
+        TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
         searchKey.setValue( key );
-        return search( cursor, node, searchKey, readKey, keyCount );
+        return search( cursor, node, type, searchKey, readKey, keyCount );
     }
 
     private void appendKey( long key )

@@ -47,6 +47,8 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 
 @RunWith( Parameterized.class )
@@ -133,7 +135,7 @@ public class InternalTreeLogicTest
         // then
         goTo( readCursor, rootId );
         assertThat( keyCount(), is( 1 ) );
-        assertThat( keyAt( 0 ), is( key ) );
+        assertThat( keyAt( 0, LEAF ), is( key ) );
         assertThat( valueAt( 0 ), is( key ) );
     }
 
@@ -151,7 +153,7 @@ public class InternalTreeLogicTest
 
             // then
             readCursor.next( rootId );
-            assertThat( keyAt( 0 ), is( key ) );
+            assertThat( keyAt( 0, LEAF ), is( key ) );
             assertThat( valueAt( 0 ), is( key ) );
         }
     }
@@ -169,7 +171,7 @@ public class InternalTreeLogicTest
 
             // then
             readCursor.next( rootId );
-            assertThat( keyAt( i ), is( (long) i ) );
+            assertThat( keyAt( i, LEAF ), is( (long) i ) );
             assertThat( valueAt( i ), is( (long) i ) );
         }
     }
@@ -188,7 +190,7 @@ public class InternalTreeLogicTest
 
             // then
             readCursor.next( rootId );
-            assertThat( keyAt( (i + 1) / 2 ), is( key ) );
+            assertThat( keyAt( (i + 1) / 2, LEAF ), is( key ) );
         }
     }
 
@@ -335,7 +337,7 @@ public class InternalTreeLogicTest
         assertThat( TreeNode.keyCount( readCursor ), is( maxKeyCount - 1 ) );
         for ( int i = 0; i < maxKeyCount - 1; i++ )
         {
-            assertThat( keyAt( i ), is( i + 1L ) );
+            assertThat( keyAt( i, LEAF ), is( i + 1L ) );
         }
     }
 
@@ -357,11 +359,11 @@ public class InternalTreeLogicTest
         // then
         goTo( readCursor, rootId );
         assertThat( keyCount(), is( maxKeyCount - 1 ) );
-        assertThat( keyAt( middle ), is( middle + 1L ) );
+        assertThat( keyAt( middle, LEAF ), is( middle + 1L ) );
         for ( int i = 0; i < maxKeyCount - 1; i++ )
         {
             long expected = i < middle ? i : i + 1L;
-            assertThat( keyAt( i ), is( expected ) );
+            assertThat( keyAt( i, LEAF ), is( expected ) );
         }
     }
 
@@ -383,7 +385,7 @@ public class InternalTreeLogicTest
         assertThat( keyCount(), is( maxKeyCount - 1 ) );
         for ( int i = 0; i < maxKeyCount - 1; i++ )
         {
-            Long actual = keyAt( i );
+            Long actual = keyAt( i, LEAF );
             assertThat( actual, is( (long) i ) );
         }
     }
@@ -400,12 +402,12 @@ public class InternalTreeLogicTest
         // when
         generationManager.checkpoint();
         goTo( readCursor, structurePropagation.midChild );
-        assertThat( keyAt( 0 ), is( 0L ) );
+        assertThat( keyAt( 0, LEAF ), is( 0L ) );
         remove( 0, readValue );
 
         // then
         goTo( readCursor, structurePropagation.midChild );
-        assertThat( keyAt( 0 ), is( 1L ) );
+        assertThat( keyAt( 0, LEAF ), is( 1L ) );
     }
 
     @Test
@@ -420,13 +422,13 @@ public class InternalTreeLogicTest
         // when key to remove exists in internal
         Long keyToRemove = structurePropagation.rightKey.getValue();
         goTo( readCursor, rootId );
-        assertThat( keyAt( 0 ), is( keyToRemove ) );
+        assertThat( keyAt( 0, INTERNAL ), is( keyToRemove ) );
 
         // and as first key in right child
         long rightChild = structurePropagation.rightChild;
         goTo( readCursor, rightChild );
         int keyCountInRightChild = keyCount();
-        assertThat( keyAt( 0 ), is( keyToRemove ) );
+        assertThat( keyAt( 0, LEAF ), is( keyToRemove ) );
 
         // and we remove it
         generationManager.checkpoint();
@@ -435,13 +437,13 @@ public class InternalTreeLogicTest
         // then we should still find it in internal
         goTo( readCursor, rootId );
         assertThat( keyCount(), is( 1 ) );
-        assertThat( keyAt( 0 ), is( keyToRemove ) );
+        assertThat( keyAt( 0, INTERNAL ), is( keyToRemove ) );
 
         // but not in right leaf
         rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         goTo( readCursor, rightChild );
         assertThat( keyCount(), is( keyCountInRightChild - 1 ) );
-        assertThat( keyAt( 0 ), is( keyToRemove + 1 ) );
+        assertThat( keyAt( 0, LEAF ), is( keyToRemove + 1 ) );
     }
 
     @Test
@@ -463,7 +465,7 @@ public class InternalTreeLogicTest
         assertThat( keyCount(), is( maxKeyCount ) );
         for ( int i = 0; i < maxKeyCount; i++ )
         {
-            Long actual = keyAt( i );
+            Long actual = keyAt( i, LEAF );
             assertThat( actual, is( (long) i ) );
         }
     }
@@ -480,13 +482,13 @@ public class InternalTreeLogicTest
 
         // when key to remove exists in internal
         Long keyToRemove = structurePropagation.rightKey.getValue();
-        assertThat( keyAt( rootId, 0 ), is( keyToRemove ) );
+        assertThat( keyAt( rootId, 0, INTERNAL ), is( keyToRemove ) );
 
         // and as first key in right child
         long currentRightChild = structurePropagation.rightChild;
         goTo( readCursor, currentRightChild );
         int keyCountInRightChild = keyCount();
-        assertThat( keyAt( 0 ), is( keyToRemove ) );
+        assertThat( keyAt( 0, LEAF ), is( keyToRemove ) );
 
         // and we remove it
         generationManager.checkpoint();
@@ -496,12 +498,12 @@ public class InternalTreeLogicTest
 
         // then we should still find it in internal
         assertThat( keyCount(), is( 1 ) );
-        assertThat( keyAt( 0 ), is( keyToRemove ) );
+        assertThat( keyAt( 0, INTERNAL ), is( keyToRemove ) );
 
         // but not in right leaf
         goTo( readCursor, currentRightChild );
         assertThat( keyCount(), is( keyCountInRightChild - 1 ) );
-        assertThat( keyAt( 0 ), is( keyToRemove + 1 ) );
+        assertThat( keyAt( 0, LEAF ), is( keyToRemove + 1 ) );
 
         // and when we remove same key again, nothing should change
         assertNull( remove( keyToRemove, readValue ) );
@@ -527,7 +529,7 @@ public class InternalTreeLogicTest
 
         // ... and the prim key diving key range for left child and right child
         goTo( readCursor, rootId );
-        long primKey = keyAt( 0 );
+        long primKey = keyAt( 0, INTERNAL );
 
         // when
         // ... removing all keys from left child
@@ -546,7 +548,7 @@ public class InternalTreeLogicTest
         long expected = primKey;
         while ( expected < key )
         {
-            assertThat( keyAt( pos ), is( expected ) );
+            assertThat( keyAt( pos, LEAF ), is( expected ) );
             pos++;
             expected++;
         }
@@ -573,13 +575,13 @@ public class InternalTreeLogicTest
 
         // ... and the prim key dividing key range for left and right child
         goTo( readCursor, rootId );
-        long oldPrimKey = keyAt( 0 );
+        long oldPrimKey = keyAt( 0, INTERNAL );
 
         // ... and left and right child
         long originalLeftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long originalRightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         goTo( readCursor, originalRightChild );
-        List<Long> keysInRightChild = allKeys( readCursor );
+        List<Long> keysInRightChild = allKeys( readCursor, LEAF );
 
         // when
         // ... after checkpoint
@@ -596,13 +598,13 @@ public class InternalTreeLogicTest
             goTo( readCursor, rootId );
             rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
             goTo( readCursor, rightChild );
-            leftmostInRightChild = keyAt( 0 );
+            leftmostInRightChild = keyAt( 0, LEAF );
         } while ( leftmostInRightChild >= keysInRightChild.get( 0 ) );
 
         // then
         // ... primKey in root is updated
         goTo( readCursor, rootId );
-        Long primKey = keyAt( 0 );
+        Long primKey = keyAt( 0, INTERNAL );
         assertThat( primKey, is( leftmostInRightChild ) );
         assertThat( primKey, is( not( oldPrimKey ) ) );
 
@@ -643,7 +645,7 @@ public class InternalTreeLogicTest
 
         // WHEN
         generationManager.checkpoint();
-        long middleKey = keyAt( 0 ) + 1; // Should be located in middle leaf
+        long middleKey = keyAt( 0, INTERNAL ) + 1; // Should be located in middle leaf
         remove( middleKey, insertValue );
         allKeys.remove( middleKey );
 
@@ -672,10 +674,10 @@ public class InternalTreeLogicTest
 
         // new left child contain keys from old left and old middle
         goTo( readCursor, oldRightChild );
-        Long firstKeyOfOldRightChild = keyAt( 0 );
+        Long firstKeyOfOldRightChild = keyAt( 0, LEAF );
         List<Long> expectedKeysInNewLeftChild = allKeys.subList( 0, allKeys.indexOf( firstKeyOfOldRightChild ) );
         goTo( readCursor, newLeftChild );
-        assertNodeContainsExpectedKeys( expectedKeysInNewLeftChild );
+        assertNodeContainsExpectedKeys( expectedKeysInNewLeftChild, LEAF );
 
         // new children are siblings
         assertSiblings( newLeftChild, oldRightChild, TreeNode.NO_NODE_FLAG );
@@ -709,19 +711,19 @@ public class InternalTreeLogicTest
 
         // WHEN
         generationManager.checkpoint();
-        long keyInLeftChild = keyAt( 0 ) - 1; // Should be located in left leaf
+        long keyInLeftChild = keyAt( 0, INTERNAL ) - 1; // Should be located in left leaf
         remove( keyInLeftChild, insertValue );
         allKeys.remove( keyInLeftChild );
         // New structure
         // NOTE: oldleft gets a successor (intermediate) before removing key and then another one once it is merged,
         //       effectively creating a chain of successor pointers to our newleft that in the end contain keys from
         //       oldleft and oldmiddle
-        //                                                  ----root----
-        //                                                 /            |
-        //                                                v             v
+        //                                                         ----root----
+        //                                                        /            |
+        //                                                       v             v
         // oldleft -[successor]-> intermediate -[successor]-> newleft <-> oldright
-        //                                                ^
-        //                                                  \-[successor]- oldmiddle
+        //                                                      ^
+        //                                                       \-[successor]- oldmiddle
 
         // THEN
         // old root should still have 2 keys
@@ -748,10 +750,10 @@ public class InternalTreeLogicTest
 
         // new left child contain keys from old left and old middle
         goTo( readCursor, oldRightChild );
-        Long firstKeyInOldRightChild = keyAt( 0 );
+        Long firstKeyInOldRightChild = keyAt( 0, LEAF );
         List<Long> expectedKeysInNewLeftChild = allKeys.subList( 0, allKeys.indexOf( firstKeyInOldRightChild ) );
         goTo( readCursor, newLeftChild );
-        assertNodeContainsExpectedKeys( expectedKeysInNewLeftChild );
+        assertNodeContainsExpectedKeys( expectedKeysInNewLeftChild, LEAF );
 
         // new children are siblings
         assertSiblings( newLeftChild, oldRightChild, TreeNode.NO_NODE_FLAG );
@@ -779,16 +781,16 @@ public class InternalTreeLogicTest
 
         long oldLeft = rightmostLeafInSubtree( rootId, 0 );
         long oldRight = leftmostLeafInSubtree( rootId, 1 );
-        long oldSplitter = keyAt( 0 );
+        long oldSplitter = keyAt( 0, INTERNAL );
         long rightmostKeyInLeftSubtree = rightmostInternalKeyInSubtree( rootId, 0 );
 
         ArrayList<Long> allKeysInOldLeftAndOldRight = new ArrayList<>();
         goTo( readCursor, oldLeft );
-        allKeys( readCursor, allKeysInOldLeftAndOldRight );
+        allKeys( readCursor, allKeysInOldLeftAndOldRight, LEAF );
         goTo( readCursor, oldRight );
-        allKeys( readCursor, allKeysInOldLeftAndOldRight );
+        allKeys( readCursor, allKeysInOldLeftAndOldRight, LEAF );
 
-        long keyInOldRight = keyAt( 0 );
+        long keyInOldRight = keyAt( 0, LEAF );
 
         // WHEN
         generationManager.checkpoint();
@@ -798,7 +800,7 @@ public class InternalTreeLogicTest
         // THEN
         // oldSplitter in root should have been replaced by rightmostKeyInLeftSubtree
         goTo( readCursor, rootId );
-        Long newSplitter = keyAt( 0 );
+        Long newSplitter = keyAt( 0, INTERNAL );
         assertThat( newSplitter, is( not( oldSplitter ) ) );
         assertThat( newSplitter, is( rightmostKeyInLeftSubtree ) );
 
@@ -808,7 +810,7 @@ public class InternalTreeLogicTest
 
         // newRight contain all
         goToSuccessor( readCursor, oldRight );
-        List<Long> allKeysInNewRight = allKeys( readCursor );
+        List<Long> allKeysInNewRight = allKeys( readCursor, LEAF );
         assertEquals( allKeysInOldLeftAndOldRight, allKeysInNewRight );
     }
 
@@ -928,11 +930,11 @@ public class InternalTreeLogicTest
 
         // THEN
         goTo( readCursor, rootId );
-        int searchResult = KeySearch.search( readCursor, node, key( key ), new MutableLong(), keyCount() );
+        int searchResult = KeySearch.search( readCursor, node, LEAF, key( key ), new MutableLong(), keyCount() );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
         assertEquals( 0, pos );
-        assertEquals( key, keyAt( pos ).longValue() );
+        assertEquals( key, keyAt( pos, LEAF ).longValue() );
         assertEquals( baseValue + toAdd, valueAt( pos ).longValue() );
     }
 
@@ -954,11 +956,11 @@ public class InternalTreeLogicTest
 
         // THEN
         goTo( readCursor, structurePropagation.midChild );
-        int searchResult = KeySearch.search( readCursor, node, key( key ), new MutableLong(), keyCount() );
+        int searchResult = KeySearch.search( readCursor, node, LEAF, key( key ), new MutableLong(), keyCount() );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
         assertEquals( 1, pos );
-        assertEquals( key, keyAt( pos ).longValue() );
+        assertEquals( key, keyAt( pos, LEAF ).longValue() );
         assertEquals( key + toAdd, valueAt( pos ).longValue() );
     }
 
@@ -982,11 +984,11 @@ public class InternalTreeLogicTest
         goTo( readCursor, rootId );
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         goTo( readCursor, rightChild );
-        int searchResult = KeySearch.search( readCursor, node, key( key ), new MutableLong(), keyCount() );
+        int searchResult = KeySearch.search( readCursor, node, LEAF, key( key ), new MutableLong(), keyCount() );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
         assertEquals( 0, pos );
-        assertEquals( key, keyAt( pos ).longValue() );
+        assertEquals( key, keyAt( pos, LEAF ).longValue() );
         assertEquals( key + toAdd, valueAt( pos ).longValue() );
     }
 
@@ -1015,11 +1017,11 @@ public class InternalTreeLogicTest
         goTo( readCursor, rootId );
         long middle = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         goTo( readCursor, middle );
-        int searchResult = KeySearch.search( readCursor, node, key( key ), new MutableLong(), keyCount() );
+        int searchResult = KeySearch.search( readCursor, node, LEAF, key( key ), new MutableLong(), keyCount() );
         assertTrue( KeySearch.isHit( searchResult ) );
         int pos = KeySearch.positionOf( searchResult );
         assertEquals( 1, pos );
-        assertEquals( key, keyAt( pos ).longValue() );
+        assertEquals( key, keyAt( pos, LEAF ).longValue() );
         assertEquals( key + toAdd, valueAt( pos ).longValue() );
     }
 
@@ -1158,7 +1160,7 @@ public class InternalTreeLogicTest
 
         // add some more keys to middleChild to not have remove trigger a merge
         goTo( readCursor, middleChild );
-        Long firstKeyInMiddleChild = keyAt( 0 );
+        Long firstKeyInMiddleChild = keyAt( 0, LEAF );
         insert( firstKeyInMiddleChild + 1, firstKeyInMiddleChild + 1 );
         goTo( readCursor, rootId );
 
@@ -1185,7 +1187,7 @@ public class InternalTreeLogicTest
 
         // new middle child has seen change
         goTo( readCursor, newMiddleChild );
-        assertKeyNotFound( middleKey );
+        assertKeyNotFound( middleKey, LEAF );
 
         // sibling pointers updated
         assertSiblings( leftChild, newMiddleChild, rightChild );
@@ -1263,7 +1265,7 @@ public class InternalTreeLogicTest
         assertTrue( TreeNode.isInternal( readCursor ) );
         long leftLeaf = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         goTo( readCursor, leftLeaf );
-        long firstKeyInLeaf = keyAt( 0 );
+        long firstKeyInLeaf = keyAt( 0, LEAF );
 
         // WHEN
         generationManager.checkpoint();
@@ -1374,7 +1376,7 @@ public class InternalTreeLogicTest
             {
                 break;
             }
-            rightmostKeyInSubtree = keyAt( keyCount - 1 );
+            rightmostKeyInSubtree = keyAt( keyCount - 1, INTERNAL );
             found = true;
             long rightmostChild = childAt( readCursor, keyCount, stableGeneration, unstableGeneration );
             goTo( readCursor, rightmostChild );
@@ -1427,24 +1429,24 @@ public class InternalTreeLogicTest
         return rightmostChild;
     }
 
-    private void assertNodeContainsExpectedKeys( List<Long> expectedKeys )
+    private void assertNodeContainsExpectedKeys( List<Long> expectedKeys, TreeNode.Type type )
     {
-        List<Long> actualKeys = allKeys( readCursor );
+        List<Long> actualKeys = allKeys( readCursor, type );
         assertThat( actualKeys, is( expectedKeys ) );
     }
 
-    private List<Long> allKeys( PageCursor cursor )
+    private List<Long> allKeys( PageCursor cursor, TreeNode.Type type )
     {
         List<Long> keys = new ArrayList<>();
-        return allKeys( cursor, keys );
+        return allKeys( cursor, keys, type );
     }
 
-    private List<Long> allKeys( PageCursor cursor, List<Long> keys )
+    private List<Long> allKeys( PageCursor cursor, List<Long> keys, TreeNode.Type type )
     {
         int keyCount = TreeNode.keyCount( cursor );
         for ( int i = 0; i < keyCount; i++ )
         {
-            node.keyAt( cursor, readKey, i );
+            node.keyAt( cursor, readKey, i, type );
             keys.add( readKey.longValue() );
         }
         return keys;
@@ -1491,17 +1493,17 @@ public class InternalTreeLogicTest
     private void assertKeyAssociatedWithValue( long key, long expectedValue )
     {
         insertKey.setValue( key );
-        int search = KeySearch.search( readCursor, node, insertKey, readKey, TreeNode.keyCount( readCursor ) );
+        int search = KeySearch.search( readCursor, node, LEAF, insertKey, readKey, TreeNode.keyCount( readCursor ) );
         assertTrue( KeySearch.isHit( search ) );
         int keyPos = KeySearch.positionOf( search );
         node.valueAt( readCursor, readValue, keyPos );
         assertEquals( expectedValue, readValue.longValue() );
     }
 
-    private void assertKeyNotFound( long key )
+    private void assertKeyNotFound( long key, TreeNode.Type type )
     {
         insertKey.setValue( key );
-        int search = KeySearch.search( readCursor, node, insertKey, readKey, TreeNode.keyCount( readCursor ) );
+        int search = KeySearch.search( readCursor, node, type, insertKey, readKey, TreeNode.keyCount( readCursor ) );
         assertFalse( KeySearch.isHit( search ) );
     }
 
@@ -1572,13 +1574,13 @@ public class InternalTreeLogicTest
         goTo( readCursor, currentPageId );
     }
 
-    private Long keyAt( long nodeId, int pos ) throws IOException
+    private Long keyAt( long nodeId, int pos, TreeNode.Type type ) throws IOException
     {
         long prevId = readCursor.getCurrentPageId();
         try
         {
             readCursor.next( nodeId );
-            return node.keyAt( readCursor, readKey, pos ).getValue();
+            return node.keyAt( readCursor, readKey, pos, type ).getValue();
         }
         finally
         {
@@ -1586,9 +1588,9 @@ public class InternalTreeLogicTest
         }
     }
 
-    private Long keyAt( int pos )
+    private Long keyAt( int pos, TreeNode.Type type )
     {
-        return node.keyAt( readCursor, readKey, pos ).getValue();
+        return node.keyAt( readCursor, readKey, pos, type ).getValue();
     }
 
     private Long valueAt( int pos )

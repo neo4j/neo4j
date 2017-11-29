@@ -33,10 +33,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 public class TreeNodeTest
 {
@@ -143,7 +144,7 @@ public class TreeNodeTest
         }
     }
 
-    private void shouldSetAndGetKey() throws Exception
+    private void shouldSetAndGetKey( TreeNode.Type type ) throws Exception
     {
         // GIVEN
         MutableLong key = layout.newKey();
@@ -158,8 +159,8 @@ public class TreeNodeTest
         node.insertKeyAt( cursor, key, 1, 1 );
 
         // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0 ).longValue() );
-        assertEquals( otherKey, node.keyAt( cursor, key, 1 ).longValue() );
+        assertEquals( firstKey, node.keyAt( cursor, key, 0, type ).longValue() );
+        assertEquals( otherKey, node.keyAt( cursor, key, 1, type ).longValue() );
     }
 
     @Test
@@ -169,7 +170,7 @@ public class TreeNodeTest
         TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        shouldSetAndGetKey();
+        shouldSetAndGetKey( INTERNAL );
     }
 
     @Test
@@ -179,10 +180,10 @@ public class TreeNodeTest
         TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        shouldSetAndGetKey();
+        shouldSetAndGetKey( INTERNAL );
     }
 
-    private void shouldRemoveKey() throws Exception
+    private void shouldRemoveKey( TreeNode.Type type ) throws Exception
     {
         // GIVEN
         MutableLong key = layout.newKey();
@@ -200,8 +201,8 @@ public class TreeNodeTest
         node.removeKeyAt( cursor, 1, 3 );
 
         // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0 ).longValue() );
-        assertEquals( thirdKey, node.keyAt( cursor, key, 1 ).longValue() );
+        assertEquals( firstKey, node.keyAt( cursor, key, 0, type ).longValue() );
+        assertEquals( thirdKey, node.keyAt( cursor, key, 1, type ).longValue() );
     }
 
     @Test
@@ -211,7 +212,7 @@ public class TreeNodeTest
         TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        shouldRemoveKey();
+        shouldRemoveKey( LEAF );
     }
 
     @Test
@@ -221,7 +222,7 @@ public class TreeNodeTest
         TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        shouldRemoveKey();
+        shouldRemoveKey( INTERNAL );
     }
 
     @Test
@@ -380,9 +381,9 @@ public class TreeNodeTest
         node.insertKeyAt( cursor, key, 1, 2 );
 
         // THEN
-        assertEquals( 1, node.keyAt( cursor, key, 0 ).longValue() );
-        assertEquals( 2, node.keyAt( cursor, key, 1 ).longValue() );
-        assertEquals( 3, node.keyAt( cursor, key, 2 ).longValue() );
+        assertEquals( 1, node.keyAt( cursor, key, 0, LEAF ).longValue() );
+        assertEquals( 2, node.keyAt( cursor, key, 1, LEAF ).longValue() );
+        assertEquals( 3, node.keyAt( cursor, key, 2, LEAF ).longValue() );
     }
 
     @Test
@@ -471,7 +472,7 @@ public class TreeNodeTest
                 if ( expectedKeyCount > 0 )
                 {   // there are things to remove
                     int position = random.nextInt( expectedKeyCount );
-                    node.keyAt( cursor, key, position );
+                    node.keyAt( cursor, key, position, LEAF );
                     node.removeKeyAt( cursor, position, expectedKeyCount );
                     long expectedKey = remove( expectedKeys, expectedKeyCount, position );
                     assertEquals( expectedKey, key.longValue() );
@@ -491,7 +492,7 @@ public class TreeNodeTest
         for ( int i = 0; i < expectedKeyCount; i++ )
         {
             long expectedKey = expectedKeys[i];
-            node.keyAt( cursor, key, i );
+            node.keyAt( cursor, key, i, LEAF );
             assertEquals( expectedKey, key.longValue() );
 
             long expectedValue = expectedValues[i];
