@@ -161,12 +161,6 @@ public class FileSystemAbstractionInterruptionTest
     }
 
     @Test( expected = ClosedByInterruptException.class )
-    public void ch_write_ByteBuffer_position() throws IOException
-    {
-        chan( true ).write( ByteBuffer.allocate( 1 ), 1 );
-    }
-
-    @Test( expected = ClosedByInterruptException.class )
     public void ch_read_ByteBuffer() throws IOException
     {
         chan( true ).read( ByteBuffer.allocate( 1 ) );

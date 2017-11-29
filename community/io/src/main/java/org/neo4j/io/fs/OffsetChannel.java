@@ -55,12 +55,6 @@ public class OffsetChannel implements StoreChannel
     }
 
     @Override
-    public int write( ByteBuffer src, long position ) throws IOException
-    {
-        return delegate.write( src, offset( position ) );
-    }
-
-    @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         delegate.writeAll( src, offset( position ) );

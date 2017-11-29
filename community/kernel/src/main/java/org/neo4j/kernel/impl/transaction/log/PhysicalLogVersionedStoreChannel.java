@@ -48,12 +48,6 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public int write( ByteBuffer src, long position ) throws IOException
-    {
-        throw new UnsupportedOperationException( "Not needed" );
-    }
-
-    @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         throw new UnsupportedOperationException( "Not needed" );

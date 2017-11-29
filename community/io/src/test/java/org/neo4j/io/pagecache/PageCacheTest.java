@@ -1992,13 +1992,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 return new DelegatingStoreChannel( channel )
                 {
                     @Override
-                    public int write( ByteBuffer src, long position ) throws IOException
-                    {
-                        observedWrite.set( true );
-                        throw new IOException( "not allowed" );
-                    }
-
-                    @Override
                     public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
                     {
                         observedWrite.set( true );

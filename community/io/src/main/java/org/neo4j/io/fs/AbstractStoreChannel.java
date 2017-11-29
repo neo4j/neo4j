@@ -32,12 +32,6 @@ public class AbstractStoreChannel implements StoreChannel
     }
 
     @Override
-    public int write( ByteBuffer src, long position ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         throw new UnsupportedOperationException();

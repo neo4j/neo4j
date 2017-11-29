@@ -45,12 +45,6 @@ public class StoreFileChannel implements StoreChannel
     }
 
     @Override
-    public int write( ByteBuffer src, long position ) throws IOException
-    {
-        return channel.write( src, position );
-    }
-
-    @Override
     public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
     {
         return channel.write( srcs, offset, length );
@@ -62,7 +56,7 @@ public class StoreFileChannel implements StoreChannel
         long filePosition = position;
         long expectedEndPosition = filePosition + src.limit() - src.position();
         int bytesWritten;
-        while ( (filePosition += bytesWritten = write( src, filePosition )) < expectedEndPosition )
+        while ( (filePosition += bytesWritten = channel.write( src, filePosition )) < expectedEndPosition )
         {
             if ( bytesWritten < 0 )
             {

@@ -190,7 +190,7 @@ public class TestIndexProviderStore
 
         // Then
         StoreChannel channel = channelUsedToCreateFile[0];
-        verify( channel ).write( any( ByteBuffer.class ), eq( 0L ) );
+        verify( channel ).writeAll( any( ByteBuffer.class ), eq( 0L ) );
         verify( channel ).force( true );
         verify( channel ).close();
         verifyNoMoreInteractions( channel );

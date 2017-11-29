@@ -41,12 +41,6 @@ public class DelegatingStoreChannel implements StoreChannel
     }
 
     @Override
-    public int write( ByteBuffer src, long position ) throws IOException
-    {
-        return delegate.write( src, position );
-    }
-
-    @Override
     public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
     {
         return delegate.write( srcs, offset, length );

@@ -250,11 +250,5 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         {
             return super.read( dst, translateIncoming( position ) );
         }
-
-        @Override
-        public int write( ByteBuffer src, long position ) throws IOException
-        {
-            return super.write( src, translateIncoming( position ) );
-        }
     }
 }

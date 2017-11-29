@@ -40,12 +40,6 @@ public interface StoreChannel
     FileLock tryLock() throws IOException;
 
     /**
-     * NOTE: If you want to write bytes to disk, use #writeAll(), this does not guarantee all bytes will be written,
-     * and you are responsible for handling the return value of this call (which tells you how many bytes were written).
-     */
-    int write( ByteBuffer src, long position ) throws IOException;
-
-    /**
      * Same as #write(), except this method will write the full contents of the buffer in chunks if the OS fails to
      * write it all at once.
      */

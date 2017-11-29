@@ -39,6 +39,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 
+import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -68,13 +69,13 @@ public class EphemeralFileSystemAbstractionTest
         File aFile = new File( "test" );
         StoreChannel channel = fs.open( aFile, OpenMode.READ_WRITE );
 
-        ByteBuffer buffer = allocateDirect( Long.BYTES );
+        ByteBuffer buffer = allocate( Long.BYTES );
         int mebiBytes = (int) ByteUnit.mebiBytes( 1 );
         for ( int position = mebiBytes + 42; position < 10_000_000; position += mebiBytes )
         {
             buffer.putLong( 1 );
             buffer.flip();
-            channel.write( buffer, position );
+            channel.writeAll( buffer, position );
             buffer.clear();
         }
         channel.close();

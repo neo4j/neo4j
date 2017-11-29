@@ -118,12 +118,6 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public int write( ByteBuffer byteBuffer, long l ) throws IOException
-    {
-        return inner.write( byteBuffer, l );
-    }
-
-    @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         fs.ensureHasSpace();
