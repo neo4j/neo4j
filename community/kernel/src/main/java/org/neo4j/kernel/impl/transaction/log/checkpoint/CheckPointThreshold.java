@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.time.Clock;
 import java.util.function.Consumer;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -50,12 +52,25 @@ public interface CheckPointThreshold
     /**
      * This method notifies the threshold that a check point has happened. This must be called every time a check point
      * has been written in the transaction log in order to make sure that the threshold updates its condition.
-     *
+     * <p>
      * This is important since we might have multiple thresholds or forced check points.
      *
      * @param transactionId the latest transaction committed id used by the check point
      */
     void checkPointHappened( long transactionId );
+
+    /**
+     * Return any desired checking frequencies, as a number of milliseconds between calls to
+     * {@link #isCheckPointingNeeded(long, Consumer)}, if this {@link CheckPointThreshold} instance has any opinion on
+     * the matter, or return {@link LongStream#empty()} is fine with some default checking frequency.
+     * <p>
+     * This is returned as an {@link LongStream} because a threshold might be composed of multiple other thresholds.
+     * It is up to the caller to figure out how to best schedule this threshold, if the stream contains more than one
+     * frequency. One way could be to use the lowest frequency, e.g. with {@link LongStream#min()}.
+     *
+     * @return A stream desired scheduling frequencies, if any specific ones are desired by this threshold.
+     */
+    LongStream checkFrequencyMillis();
 
     static CheckPointThreshold createThreshold( Config config, Clock clock )
     {
@@ -104,6 +119,12 @@ public interface CheckPointThreshold
                 {
                     threshold.checkPointHappened( transactionId );
                 }
+            }
+
+            @Override
+            public LongStream checkFrequencyMillis()
+            {
+                return Stream.of( thresholds ).flatMapToLong( CheckPointThreshold::checkFrequencyMillis );
             }
         };
     }
