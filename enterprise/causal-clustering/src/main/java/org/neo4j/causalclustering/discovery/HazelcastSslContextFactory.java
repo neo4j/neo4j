@@ -25,6 +25,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.util.Properties;
 import java.util.UUID;
@@ -81,16 +82,28 @@ class HazelcastSslContextFactory implements SSLContextFactory
             throw new RuntimeException( e );
         }
 
-        String password = UUID.randomUUID().toString();
-        KeyStore keyStore = sslPolicy.getKeyStore( password.toCharArray(), password.toCharArray() );
+        SecureRandom rand = new SecureRandom();
+        char[] password = new char[32];
+        for ( int i = 0; i < password.length; i++ )
+        {
+            password[i] = (char) rand.nextInt( Character.MAX_VALUE + 1 );
+        }
 
         try
         {
-            keyManagerFactory.init( keyStore, password.toCharArray() );
+            KeyStore keyStore = sslPolicy.getKeyStore( password, password );
+            keyManagerFactory.init( keyStore, password );
         }
         catch ( KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e )
         {
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            for ( int i = 0; i < password.length; i++ )
+            {
+                password[i] = 0;
+            }
         }
 
         KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
