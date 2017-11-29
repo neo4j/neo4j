@@ -54,6 +54,7 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -85,7 +86,7 @@ public class ServerPoliciesLoadBalancingIT
     public void defaultBehaviour() throws Exception
     {
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3, new HazelcastDiscoveryServiceFactory(), emptyMap(),
-                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
 
         cluster.start();
 
@@ -98,7 +99,7 @@ public class ServerPoliciesLoadBalancingIT
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
                 new HazelcastDiscoveryServiceFactory(),
                 stringMap( CausalClusteringSettings.cluster_allow_reads_on_followers.name(), "true" ),
-                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
 
         cluster.start();
 
@@ -122,7 +123,7 @@ public class ServerPoliciesLoadBalancingIT
 
         cluster = new Cluster( testDir.directory( "cluster" ), 5, 5,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
 
         cluster.start();
         // should use the first rule: only cores for reading
@@ -175,7 +176,7 @@ public class ServerPoliciesLoadBalancingIT
 
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
 
         cluster.start();
         assertGetServersEventuallyMatchesOnAllCores( new CountsMatcher( 3, 1, 2, 3 ), policyContext( "all" ) );

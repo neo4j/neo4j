@@ -80,9 +80,10 @@ public class Cluster
     private final Map<String,String> readReplicaParams;
     private final Map<String,IntFunction<String>> instanceReadReplicaParams;
     private final String recordFormat;
-    protected final DiscoveryServiceFactory discoveryServiceFactory;
-    protected final String listenAddress;
-    protected final String advertisedAddress;
+    private final Monitors monitors;
+    private final DiscoveryServiceFactory discoveryServiceFactory;
+    private final String listenAddress;
+    private final String advertisedAddress;
 
     private Map<Integer,CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
     private Map<Integer,ReadReplica> readReplicas = new ConcurrentHashMap<>();
@@ -91,7 +92,7 @@ public class Cluster
             DiscoveryServiceFactory discoveryServiceFactory,
             Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
             Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
-            String recordFormat, IpFamily ipFamily, boolean useWildcard )
+            String recordFormat, IpFamily ipFamily, boolean useWildcard, Monitors monitors )
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
@@ -100,6 +101,7 @@ public class Cluster
         this.readReplicaParams = readReplicaParams;
         this.instanceReadReplicaParams = instanceReadReplicaParams;
         this.recordFormat = recordFormat;
+        this.monitors = monitors;
         listenAddress = useWildcard ? ipFamily.wildcardAddress() : ipFamily.localhostAddress();
         advertisedAddress = ipFamily.localhostName();
         List<AdvertisedSocketAddress> initialHosts = initialHosts( noOfCoreMembers );
@@ -163,7 +165,8 @@ public class Cluster
                 initialHosts,
                 recordFormat,
                 extraParams,
-                instanceExtraParams
+                instanceExtraParams,
+                monitors
         );
 
         coreMembers.put( memberId, coreClusterMember );
@@ -447,7 +450,8 @@ public class Cluster
                     initialHosts,
                     recordFormat,
                     extraParams,
-                    instanceExtraParams
+                    instanceExtraParams,
+                    monitors
             );
             coreMembers.put( i, coreClusterMember );
         }
@@ -459,7 +463,8 @@ public class Cluster
                                                        List<AdvertisedSocketAddress> initialHosts,
                                                        String recordFormat,
                                                        Map<String, String> extraParams,
-                                                       Map<String, IntFunction<String>> instanceExtraParams )
+                                                       Map<String, IntFunction<String>> instanceExtraParams,
+                                                       Monitors monitors )
     {
         int txPort = PortAuthority.allocatePort();
         int raftPort = PortAuthority.allocatePort();
@@ -483,7 +488,8 @@ public class Cluster
                 extraParams,
                 instanceExtraParams,
                 listenAddress,
-                advertisedAddress
+                advertisedAddress,
+                monitors
         );
     }
 
