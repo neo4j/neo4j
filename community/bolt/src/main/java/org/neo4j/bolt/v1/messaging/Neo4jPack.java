@@ -114,10 +114,7 @@ public class Neo4jPack
         @Override
         public void writeNodeReference( long nodeId ) throws IOException
         {
-            packStructHeader( 3, Neo4jPack.NODE );
-            pack( nodeId );
-            packListHeader( 0 );
-            packMapHeader( 0 );
+            throw new UnsupportedOperationException( "Cannot write a raw node reference" );
         }
 
         @Override
