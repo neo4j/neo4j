@@ -341,6 +341,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Maximum number of history files for the debug log." )
     public static final Setting<Integer> store_internal_log_max_archives = setting("dbms.logs.debug.rotation.keep_number", INTEGER, "7", min(1) );
 
+    @Description( "Configures the general policy for when check-points should occur. The default policy is to " +
+                  "check-point 'periodically', as specified by the 'dbms.checkpoint.interval.tx' and " +
+                  "'dbms.checkpoint.interval.time' settings. This policy is alternatively known as 'periodic' and " +
+                  "'interval'." )
+    public static final Setting<String> check_point_policy = setting( "dbms.checkpoint", STRING, "periodically" );
+
     @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
                   "often  than this (unless check pointing is triggered by a different event), but might check-point " +
                   "less often than this interval, if performing a check-point takes longer time than the configured " +

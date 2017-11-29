@@ -29,6 +29,8 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -40,12 +42,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold.createThreshold;
 
 public class CheckPointThresholdTest
 {
-    private FakeClock clock;
     private Config config;
+    private FakeClock clock;
+    private LogProvider logProvider;
     private Integer intervalTx;
     private Duration intervalTime;
     private Consumer<String> notTriggered;
@@ -55,8 +57,9 @@ public class CheckPointThresholdTest
     @Before
     public void setUp()
     {
-        clock = Clocks.fakeClock();
         config = Config.empty();
+        clock = Clocks.fakeClock();
+        logProvider = NullLogProvider.getInstance();
         intervalTx = config.get( GraphDatabaseSettings.check_point_interval_tx );
         intervalTime = config.get( GraphDatabaseSettings.check_point_interval_time );
         triggerConsumer = new LinkedBlockingQueue<>();
@@ -74,6 +77,11 @@ public class CheckPointThresholdTest
         config.augment( stringMap( GraphDatabaseSettings.check_point_interval_tx.name(), String.valueOf( count ) ) );
     }
 
+    private CheckPointThreshold createThreshold()
+    {
+        return CheckPointThreshold.createThreshold( config, clock, logProvider );
+    }
+
     private void verifyTriggered( String reason )
     {
         assertThat( triggerConsumer.poll(), containsString( reason ) );
@@ -87,7 +95,7 @@ public class CheckPointThresholdTest
     @Test
     public void mustCreateThresholdThatTriggersAfterTransactionCount() throws Exception
     {
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 1 ); // Initialise at transaction id offset by 1.
 
         // False because we're not yet at threshold.
@@ -103,7 +111,7 @@ public class CheckPointThresholdTest
     @Test
     public void mustCreateThresholdThatTriggersAfterTime() throws Exception
     {
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 1 );
         // Skip the initial wait period.
         clock.forward( intervalTime.toMillis(), MILLISECONDS );
@@ -122,7 +130,7 @@ public class CheckPointThresholdTest
     public void mustNotTriggerBeforeTimeWithTooFewCommittedTransactions() throws Throwable
     {
         withIntervalTime( "100ms" );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         clock.forward( 50, MILLISECONDS );
@@ -133,7 +141,7 @@ public class CheckPointThresholdTest
     public void mustTriggerWhenTimeThresholdIsReachedAndThereAreCommittedTransactions() throws Throwable
     {
         withIntervalTime( "100ms" );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         clock.forward( 199, MILLISECONDS );
@@ -147,7 +155,7 @@ public class CheckPointThresholdTest
     public void mustNotTriggerWhenTimeThresholdIsReachedAndThereAreNoCommittedTransactions() throws Throwable
     {
         withIntervalTime( "100ms" );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 42 );
 
         clock.forward( 199, MILLISECONDS );
@@ -160,7 +168,7 @@ public class CheckPointThresholdTest
     public void mustNotTriggerPastTimeThresholdSinceLastCheckpointWithNoNewTransactions()
     {
         withIntervalTime( "100ms" );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         clock.forward( 199, MILLISECONDS );
@@ -175,7 +183,7 @@ public class CheckPointThresholdTest
     public void mustTriggerPastTimeThresholdSinceLastCheckpointWithNewTransactions()
     {
         withIntervalTime( "100ms" );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         clock.forward( 199, MILLISECONDS );
@@ -191,7 +199,7 @@ public class CheckPointThresholdTest
     public void mustNotTriggerOnTransactionCountWhenThereAreNoNewTransactions() throws Throwable
     {
         withIntervalTx( 2 );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         assertFalse( threshold.isCheckPointingNeeded( 2, notTriggered ) );
@@ -201,7 +209,7 @@ public class CheckPointThresholdTest
     public void mustNotTriggerOnTransactionCountWhenCountIsBellowThreshold() throws Throwable
     {
         withIntervalTx( 2 );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         assertFalse( threshold.isCheckPointingNeeded( 3, notTriggered ) );
@@ -211,7 +219,7 @@ public class CheckPointThresholdTest
     public void mustTriggerOnTransactionCountWhenCountIsAtThreshold() throws Throwable
     {
         withIntervalTx( 2 );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         assertTrue( threshold.isCheckPointingNeeded( 4, triggered ) );
@@ -223,7 +231,7 @@ public class CheckPointThresholdTest
     public void mustNotTriggerOnTransactionCountAtThresholdIfCheckPointAlreadyHappened() throws Throwable
     {
         withIntervalTx( 2 );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         threshold.checkPointHappened( 4 );
@@ -234,7 +242,7 @@ public class CheckPointThresholdTest
     public void mustNotTriggerWhenTransactionCountIsWithinThresholdSinceLastTrigger() throws Exception
     {
         withIntervalTx( 2 );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         threshold.checkPointHappened( 4 );
@@ -245,7 +253,7 @@ public class CheckPointThresholdTest
     public void mustTriggerOnTransactionCountWhenCountIsAtThresholdSinceLastCheckPoint() throws Throwable
     {
         withIntervalTx( 2 );
-        CheckPointThreshold threshold = createThreshold( config, clock );
+        CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
         threshold.checkPointHappened( 4 );
@@ -259,9 +267,9 @@ public class CheckPointThresholdTest
     public void timeBasedThresholdMustSuggestSchedulingFrequency() throws Exception
     {
         long defaultInterval = intervalTime.toMillis();
-        assertThat( createThreshold( config, clock ).checkFrequencyMillis().min().getAsLong(), is( defaultInterval ) );
+        assertThat( createThreshold().checkFrequencyMillis().min().getAsLong(), is( defaultInterval ) );
 
         withIntervalTime( "100ms" );
-        assertThat( createThreshold( config, clock ).checkFrequencyMillis().min().getAsLong(), is( 100L ) );
+        assertThat( createThreshold().checkFrequencyMillis().min().getAsLong(), is( 100L ) );
     }
 }
