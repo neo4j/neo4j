@@ -26,6 +26,7 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -126,13 +127,26 @@ public class HazelcastClusterTopology
 
     private static Set<ReadReplicaAddresses> readReplicas( HazelcastInstance hazelcastInstance )
     {
+        Set<ReadReplicaAddresses> readReplicaAddresses = new HashSet<>();
         IMap<String/*uuid*/, String/*boltAddress*/> readReplicaMap = hazelcastInstance.getMap(
                 READ_REPLICA_BOLT_ADDRESS_MAP_NAME );
 
-        return readReplicaMap
-                .entrySet().stream()
-                .map( entry -> new ReadReplicaAddresses( ClientConnectorAddresses.fromString( entry.getValue() ) ) )
-                .collect( toSet() );
+        if ( readReplicaMap == null )
+        {
+            return readReplicaAddresses;
+        }
+
+        for ( Map.Entry<String,String> entry : readReplicaMap.entrySet() )
+        {
+            String addressesString = entry.getValue();
+            if ( addressesString != null )
+            {
+                ClientConnectorAddresses connectorUris = ClientConnectorAddresses.fromString( addressesString );
+                readReplicaAddresses.add( new ReadReplicaAddresses( connectorUris ) );
+            }
+        }
+
+        return readReplicaAddresses;
     }
 
     private static boolean canBeBootstrapped( HazelcastInstance hazelcastInstance, Config config )
