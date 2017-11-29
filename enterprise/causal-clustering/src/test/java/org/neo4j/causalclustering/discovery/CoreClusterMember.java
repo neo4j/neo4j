@@ -46,6 +46,7 @@ import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
 import static java.lang.String.format;
@@ -62,8 +63,9 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     protected final File storeDir;
     private final File clusterStateDir;
     private final File raftLogDir;
-    private final Map<String, String> config = stringMap();
+    private final Map<String,String> config = stringMap();
     private final int serverId;
+    private final Monitors monitors;
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
     protected CoreGraphDatabase database;
@@ -83,9 +85,12 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
                               Map<String, String> extraParams,
                               Map<String, IntFunction<String>> instanceExtraParams,
                               String listenAddress,
-                              String advertisedAddress )
+                              String advertisedAddress,
+                              Monitors monitors )
     {
         this.serverId = serverId;
+        this.monitors = monitors;
+
         this.discoveryPort = discoveryPort;
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
@@ -153,7 +158,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, Config.defaults( config ),
-                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
     @Override
