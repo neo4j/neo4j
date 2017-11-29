@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
@@ -109,7 +110,8 @@ public class ClusterRule extends ExternalResource
         if ( cluster == null )
         {
             cluster = new Cluster( clusterDirectory, noCoreMembers, noReadReplicas, discoveryServiceFactory, coreParams,
-                    instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, ipFamily, useWildcard );
+                    instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, ipFamily, useWildcard,
+                    new Monitors() );
         }
 
         return cluster;

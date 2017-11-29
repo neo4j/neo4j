@@ -79,6 +79,7 @@ public class Cluster
     private final Map<String,String> readReplicaParams;
     private final Map<String,IntFunction<String>> instanceReadReplicaParams;
     private final String recordFormat;
+    private final Monitors monitors;
     private final DiscoveryServiceFactory discoveryServiceFactory;
     private final String listenAddress;
     private final String advertisedAddress;
@@ -90,7 +91,7 @@ public class Cluster
             DiscoveryServiceFactory discoveryServiceFactory,
             Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
             Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
-            String recordFormat, IpFamily ipFamily, boolean useWildcard )
+            String recordFormat, IpFamily ipFamily, boolean useWildcard, Monitors monitors )
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
@@ -99,6 +100,7 @@ public class Cluster
         this.readReplicaParams = readReplicaParams;
         this.instanceReadReplicaParams = instanceReadReplicaParams;
         this.recordFormat = recordFormat;
+        this.monitors = monitors;
         HashSet<Integer> coreServerIds = new HashSet<>();
         for ( int i = 0; i < noOfCoreMembers; i++ )
         {
@@ -146,16 +148,6 @@ public class Cluster
     public CoreClusterMember addCoreMemberWithId( int memberId )
     {
         return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat );
-    }
-
-    private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams,
-            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
-    {
-        List<AdvertisedSocketAddress> initialMembers = buildInitialHosts( coreMembers.keySet() );
-        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialMembers,
-                discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams, listenAddress, advertisedAddress );
-        coreMembers.put( memberId, coreClusterMember );
-        return coreClusterMember;
     }
 
     public ReadReplica addReadReplicaWithIdAndRecordFormat( int memberId, String recordFormat )
@@ -339,6 +331,16 @@ public class Cluster
         return leaderTx( op, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
+    private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
+    {
+        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
+        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialHosts,
+                discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
+                listenAddress, advertisedAddress, monitors );
+        coreMembers.put( memberId, coreClusterMember );
+        return coreClusterMember;
+    }
+
     /**
      * Perform a transaction against the leader of the core cluster, retrying as necessary.
      */
@@ -425,7 +427,7 @@ public class Cluster
         {
             CoreClusterMember coreClusterMember = new CoreClusterMember( i, noOfCoreMembers, addresses,
                     discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
-                    listenAddress, advertisedAddress );
+                    listenAddress, advertisedAddress, monitors );
             coreMembers.put( i, coreClusterMember );
         }
     }
@@ -477,7 +479,7 @@ public class Cluster
         for ( int i = 0; i < noOfReadReplicas; i++ )
         {
             readReplicas.put( i, new ReadReplica( parentDir, i, discoveryServiceFactory, coreMemberAddresses,
-                    extraParams, instanceExtraParams, recordFormat, new Monitors(), advertisedAddress, listenAddress ) );
+                    extraParams, instanceExtraParams, recordFormat, monitors, advertisedAddress, listenAddress ) );
         }
     }
 
