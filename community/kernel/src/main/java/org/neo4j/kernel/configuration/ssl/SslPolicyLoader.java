@@ -340,8 +340,15 @@ public class SslPolicyLoader
             {
                 while ( input.available() > 0 )
                 {
-                    X509Certificate cert = (X509Certificate) certificateFactory.generateCertificate( input );
-                    trustStore.setCertificateEntry( Integer.toString( i++ ), cert );
+                    try
+                    {
+                        X509Certificate cert = (X509Certificate) certificateFactory.generateCertificate( input );
+                        trustStore.setCertificateEntry( Integer.toString( i++ ), cert );
+                    }
+                    catch ( Exception e )
+                    {
+                        throw new CertificateException( "Error loading certificate file: " + trustedCertFile, e );
+                    }
                 }
             }
         }
