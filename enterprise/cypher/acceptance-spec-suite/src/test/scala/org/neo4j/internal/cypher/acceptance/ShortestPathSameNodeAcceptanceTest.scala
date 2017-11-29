@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, Rewinda
 import org.neo4j.cypher.{ExecutionEngineFunSuite, RunWithConfigTestSupport, ShortestPathCommonEndNodesForbiddenException}
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V3_1, V3_3}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.logging.NullLogProvider
 
 class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTestSupport with CypherComparisonSupport {
 
   val expectedToFail = TestConfiguration(
-    Versions(Versions.Default, V3_1),
+    Versions(Versions.Default, V3_1, V3_3),
     Planners(Planners.Cost, Planners.Rule, Planners.Default),
     Runtimes(Runtimes.Interpreted, Runtimes.Default, Runtimes.ProcedureOrSchema))
 

@@ -2536,7 +2536,7 @@ class EagerizationAcceptanceTest
       TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
       TestConfiguration(Versions.Default, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
       TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.Rule, Runtimes.Default) +
-      Configs.Cost3_1
+      Configs.Cost3_1 + Configs.Version3_3
 
     executeWith(config, "EXPLAIN " + query, planComparisonStrategy = testEagerPlanComparisonStrategy(0))
   }

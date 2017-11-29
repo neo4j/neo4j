@@ -117,7 +117,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val result = innerExecuteDeprecated("explain match (a)-->(b), (c)-->(d) return *", Map.empty)
 
     result.notifications.toList should equal(List(
-      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(37, 1, 38), cartesianProduct(Set("c", "d").asJava))))
+      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(8, 1, 9), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("Warn for cartesian product when running 3.3") {
