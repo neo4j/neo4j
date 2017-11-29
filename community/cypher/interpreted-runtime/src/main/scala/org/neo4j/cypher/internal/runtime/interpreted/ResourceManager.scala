@@ -25,6 +25,8 @@ import java.util.Collections.newSetFromMap
 import org.neo4j.cypher.internal.runtime.CloseableResource
 import org.neo4j.helpers.Exceptions
 
+import scala.collection.JavaConverters._
+
 class ResourceManager extends CloseableResource {
   private val resources: util.Set[AutoCloseable] = newSetFromMap(new util.IdentityHashMap[AutoCloseable, java.lang.Boolean]())
 
@@ -39,6 +41,8 @@ class ResourceManager extends CloseableResource {
       throw new IllegalStateException(s"$resource is not in the resource set $resources")
     }
   }
+
+  def allResources: collection.Set[AutoCloseable] = resources.asScala
 
   override def close(success: Boolean): Unit = {
     val iterator = resources.iterator()

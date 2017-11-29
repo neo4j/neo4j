@@ -436,7 +436,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         propertyCursor = cursors.allocatePropertyCursor()
         reads().singleNode(id, nodeCursor)
         if (!nodeCursor.next()) {
-          if (isDeletedInThisTx(id)) throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
+          if (isDeletedInThisTx(id)) throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction")
           else  Values.NO_VALUE
         } else {
           nodeCursor.properties(propertyCursor)
@@ -510,7 +510,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def allPrimitive: PrimitiveLongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
-      resources.trace(nodeCursor)
 
       new PrimitiveLongIterator {
         private var _next: Long = -1L
@@ -975,12 +974,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   private def allocateAndTraceNodeCursor() = {
     val cursor = cursors.allocateNodeCursor()
-    resources.trace(cursor)
-    cursor
-  }
-
-  private def allocateAndTracePropertyCursor() = {
-    val cursor = cursors.allocatePropertyCursor()
     resources.trace(cursor)
     cursor
   }
