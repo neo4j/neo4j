@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
+import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -70,81 +71,95 @@ object LogicalPlanConverter {
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery])
 
-      case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
-        new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
-      case (mp: astV3_3.MapProjection, children: Seq[AnyRef]) =>
-        expressionsV3_4.MapProjection(children(0).asInstanceOf[expressionsV3_4.Variable],
-          children(1).asInstanceOf[Seq[expressionsV3_4.MapProjectionElement]])(helpers.as3_4(mp.position))
+        case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
+          new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
+        case (mp: astV3_3.MapProjection, children: Seq[AnyRef]) =>
+          expressionsV3_4.MapProjection(children(0).asInstanceOf[expressionsV3_4.Variable],
+            children(1).asInstanceOf[Seq[expressionsV3_4.MapProjectionElement]])(helpers.as3_4(mp.position))
 
-      case (item@(_: astV3_3.rewriters.DesugaredMapProjection | _: astV3_3.ProcedureResultItem | _: plansV3_3.ResolvedCall), children: Seq[AnyRef]) =>
-        convertVersion("v3_3", "v3_4", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
-      case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
-        convertVersion("frontend.v3_3.ast", "v3_4.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
-      case (IdNameV3_3(name), _) => IdNameV3_4(name)
+        case (item@(_: compilerV3_3.ast.PrefixSeekRangeWrapper |
+                    _: compilerV3_3.ast.InequalitySeekRangeWrapper |
+                    _: compilerV3_3.ast.NestedPlanExpression |
+                    _: compilerV3_3.ast.ResolvedFunctionInvocation), children: Seq[AnyRef]) =>
+          convertVersion("compiler.v3_3.ast", "v3_4.logical.plans", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
+        case (item@(_: astV3_3.rewriters.DesugaredMapProjection | _: astV3_3.ProcedureResultItem | _: plansV3_3.ResolvedCall), children: Seq[AnyRef]) =>
+          convertVersion("v3_3", "v3_4", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
+        case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
+          convertVersion("frontend.v3_3.ast", "v3_4.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
+        case (IdNameV3_3(name), _) => IdNameV3_4(name)
 
-      case (symbolsV3_3.CTAny, _) => symbolsV3_4.CTAny
-      case (symbolsV3_3.CTBoolean, _) => symbolsV3_4.CTBoolean
-      case (symbolsV3_3.CTFloat, _) => symbolsV3_4.CTFloat
-      case (symbolsV3_3.CTGeometry, _) => symbolsV3_4.CTGeometry
-      case (symbolsV3_3.CTGraphRef, _) => symbolsV3_4.CTGraphRef
-      case (symbolsV3_3.CTInteger, _) => symbolsV3_4.CTInteger
-      case (symbolsV3_3.ListType(_), children: Seq[AnyRef]) => symbolsV3_4.CTList(children.head.asInstanceOf[symbolsV3_4.CypherType])
-      case (symbolsV3_3.CTMap, _) => symbolsV3_4.CTMap
-      case (symbolsV3_3.CTNode, _) => symbolsV3_4.CTNode
-      case (symbolsV3_3.CTNumber, _) => symbolsV3_4.CTNumber
-      case (symbolsV3_3.CTPath, _) => symbolsV3_4.CTPath
-      case (symbolsV3_3.CTPoint, _) => symbolsV3_4.CTPoint
-      case (symbolsV3_3.CTRelationship, _) => symbolsV3_4.CTRelationship
-      case (symbolsV3_3.CTString, _) => symbolsV3_4.CTString
+        case (symbolsV3_3.CTAny, _) => symbolsV3_4.CTAny
+        case (symbolsV3_3.CTBoolean, _) => symbolsV3_4.CTBoolean
+        case (symbolsV3_3.CTFloat, _) => symbolsV3_4.CTFloat
+        case (symbolsV3_3.CTGeometry, _) => symbolsV3_4.CTGeometry
+        case (symbolsV3_3.CTGraphRef, _) => symbolsV3_4.CTGraphRef
+        case (symbolsV3_3.CTInteger, _) => symbolsV3_4.CTInteger
+        case (symbolsV3_3.ListType(_), children: Seq[AnyRef]) => symbolsV3_4.CTList(children.head.asInstanceOf[symbolsV3_4.CypherType])
+        case (symbolsV3_3.CTMap, _) => symbolsV3_4.CTMap
+        case (symbolsV3_3.CTNode, _) => symbolsV3_4.CTNode
+        case (symbolsV3_3.CTNumber, _) => symbolsV3_4.CTNumber
+        case (symbolsV3_3.CTPath, _) => symbolsV3_4.CTPath
+        case (symbolsV3_3.CTPoint, _) => symbolsV3_4.CTPoint
+        case (symbolsV3_3.CTRelationship, _) => symbolsV3_4.CTRelationship
+        case (symbolsV3_3.CTString, _) => symbolsV3_4.CTString
 
-      case (SemanticDirectionV3_3.BOTH, _) => expressionsV3_4.SemanticDirection.BOTH
-      case (SemanticDirectionV3_3.INCOMING, _) => expressionsV3_4.SemanticDirection.INCOMING
-      case (SemanticDirectionV3_3.OUTGOING, _) => expressionsV3_4.SemanticDirection.OUTGOING
+        case (SemanticDirectionV3_3.BOTH, _) => expressionsV3_4.SemanticDirection.BOTH
+        case (SemanticDirectionV3_3.INCOMING, _) => expressionsV3_4.SemanticDirection.INCOMING
+        case (SemanticDirectionV3_3.OUTGOING, _) => expressionsV3_4.SemanticDirection.OUTGOING
 
-      case (irV3_3.SimplePatternLength, _) => irV3_4.SimplePatternLength
+        case (irV3_3.SimplePatternLength, _) => irV3_4.SimplePatternLength
 
-      case (plansV3_3.IncludeTies, _) => plansV3_4.IncludeTies
-      case (plansV3_3.DoNotIncludeTies, _) => plansV3_4.DoNotIncludeTies
+        case (plansV3_3.IncludeTies, _) => plansV3_4.IncludeTies
+        case (plansV3_3.DoNotIncludeTies, _) => plansV3_4.DoNotIncludeTies
 
-      case (irV3_3.HasHeaders, _) => irV3_4.HasHeaders
-      case (irV3_3.NoHeaders, _) => irV3_4.NoHeaders
+        case (irV3_3.HasHeaders, _) => irV3_4.HasHeaders
+        case (irV3_3.NoHeaders, _) => irV3_4.NoHeaders
 
-      case (plansV3_3.ExpandAll, _) => plansV3_4.ExpandAll
-      case (plansV3_3.ExpandInto, _) => plansV3_4.ExpandInto
+        case (plansV3_3.ExpandAll, _) => plansV3_4.ExpandAll
+        case (plansV3_3.ExpandInto, _) => plansV3_4.ExpandInto
 
-      case (_: frontendV3_3.ExhaustiveShortestPathForbiddenException, _) => new utilV3_4.ExhaustiveShortestPathForbiddenException
+        case (_: frontendV3_3.ExhaustiveShortestPathForbiddenException, _) => new utilV3_4.ExhaustiveShortestPathForbiddenException
 
-      case (spp: irV3_3.ShortestPathPattern, children: Seq[AnyRef]) =>
-        val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, isImportant)
-        irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[IdNameV3_4]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
-      case (astV3_3.NilPathStep, _) => expressionsV3_4.NilPathStep
-      case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
-        convertVersion("frontend.v3_3.ast", "v3_4.expressions", item, children)
-      case (nameId: frontendV3_3.NameId, children: Seq[AnyRef]) =>
-        convertVersion("frontend.v3_3", "util.v3_4", nameId, children)
-      case (_: frontendV3_3.helpers.NonEmptyList[_], children: Seq[AnyRef]) => NonEmptyList.from(children)
-      case (item@(_: plansV3_3.CypherValue |
-                  _: plansV3_3.QualifiedName |
-                  _: plansV3_3.FieldSignature |
-                  _: plansV3_3.ProcedureAccessMode |
-                  _: plansV3_3.ProcedureSignature |
-                  _: plansV3_3.QueryExpression[_] |
-                  _: plansV3_3.SeekableArgs |
-                  _: irV3_3.PatternRelationship |
-                  _: irV3_3.VarPatternLength), children: Seq[AnyRef]) =>
-        convertVersion("v3_3", "v3_4", item, children)
+        case (spp: irV3_3.ShortestPathPattern, children: Seq[AnyRef]) =>
+          val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, isImportant)
+          irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[IdNameV3_4]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
+        case (astV3_3.NilPathStep, _) => expressionsV3_4.NilPathStep
+        case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
+          convertVersion("frontend.v3_3.ast", "v3_4.expressions", item, children)
+        case (nameId: frontendV3_3.NameId, children: Seq[AnyRef]) =>
+          convertVersion("frontend.v3_3", "util.v3_4", nameId, children)
+        case (frontendV3_3.helpers.Fby(head, tail), children: Seq[AnyRef]) => utilV3_4.Fby(children(0), children(1).asInstanceOf[utilV3_4.NonEmptyList[_]])
+        case (frontendV3_3.helpers.Last(head), children: Seq[AnyRef]) => utilV3_4.Last(children(0))
+        case (item@(_: plansV3_3.CypherValue |
+                    _: plansV3_3.QualifiedName |
+                    _: plansV3_3.FieldSignature |
+                    _: plansV3_3.ProcedureAccessMode |
+                    _: plansV3_3.ProcedureSignature |
+                    _: plansV3_3.UserFunctionSignature |
+                    _: plansV3_3.QueryExpression[_] |
+                    _: plansV3_3.SeekableArgs |
+                    _: irV3_3.PatternRelationship |
+                    _: irV3_3.VarPatternLength |
+                    _: plansV3_3.ColumnOrder), children: Seq[AnyRef]) =>
+          convertVersion("v3_3", "v3_4", item, children)
+        case (item: frontendV3_3.Bound[_], children: Seq[AnyRef]) =>
+          convertVersion("frontend.v3_3", "v3_4.logical.plans", item, children)
+        case (item: compilerV3_3.SeekRange[_], children: Seq[AnyRef]) =>
+          convertVersion("compiler.v3_3", "v3_4.logical.plans", item, children)
 
-      case (_: List[_], children: Seq[AnyRef]) => children.toList
-      case (_: Seq[_], children: Seq[AnyRef]) => children.toIndexedSeq
-      case (_: Set[_], children: Seq[AnyRef]) => children.toSet
-      case (_: Map[_, _], children: Seq[AnyRef]) => Map(children.map(_.asInstanceOf[(_, _)]): _*)
-      case (None, _) => None
-      case (p: Product, children: Seq[AnyRef]) => new DuplicatableProduct(p).copyConstructor.invoke(p, children: _*)
+        case (_: List[_], children: Seq[AnyRef]) => children.toList
+        case (_: Seq[_], children: Seq[AnyRef]) => children.toIndexedSeq
+        case (_: Set[_], children: Seq[AnyRef]) => children.toSet
+        case (_: Map[_, _], children: Seq[AnyRef]) => Map(children.map(_.asInstanceOf[(_, _)]): _*)
+        case (None, _) => None
+        case (p: Product, children: Seq[AnyRef]) => new DuplicatableProduct(p).copyConstructor.invoke(p, children: _*)
       }.apply(before)
       before._1 match {
-        case plan: LogicalPlanV3_3 => rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
+        case plan: LogicalPlanV3_3 =>
+          // TODO the 3.3 plan might actually have not been assigned an ID
+          rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
         // Save Mapping from 3.3 expression to 3.4 expression
-        case e: ExpressionV3_3 if isImportant(e) => expressionMap += (((e,e.position), rewritten.asInstanceOf[ExpressionV3_4]))
+        case e: ExpressionV3_3 if isImportant(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[ExpressionV3_4]))
         case _ =>
       }
       rewritten
@@ -175,6 +190,7 @@ object LogicalPlanConverter {
 
   private def getConstructor(classNameV3_3: String, oldPackage: String, newPackage: String): Constructor[_] = {
     constructors.get.getOrElseUpdate((classNameV3_3, oldPackage, newPackage), {
+      assert(classNameV3_3.contains(oldPackage), s"wrong 3.3 package name given. $classNameV3_3 does not contain $oldPackage")
       val classNameV3_4 = classNameV3_3.replace(oldPackage, newPackage)
       Try(Class.forName(classNameV3_4)).map(_.getConstructors.head) match {
         case Success(c) => c

@@ -137,8 +137,7 @@ object helpers {
     val startPosition = logicalPlan.startPosition.map(as3_4 _)
     val plannerName = as3_4(logicalPlan.plannerName)
 
-    val table3_3 = logicalPlan.maybeSemanticTable.get
-    def isImportant(expression: ExpressionV3_3) : Boolean = table3_3.seen(expression)
+    def isImportant(expression: ExpressionV3_3) : Boolean = logicalPlan.maybeSemanticTable.map(_.seen(expression)).getOrElse(false)
 
     val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, isImportant)
 
@@ -150,7 +149,7 @@ object helpers {
       Some(as3_4(statement3_3)),
       None,
       logicalPlan.maybeExtractedParams,
-      Some(SemanticTableConverter.convertSemanticTable(table3_3, expressionMap)),
+      logicalPlan.maybeSemanticTable.map(t => SemanticTableConverter.convertSemanticTable(t, expressionMap)),
       None,
       Some(plan3_4),
       Some(logicalPlan.maybePeriodicCommit.flatten.map(x => as3_4(x))),

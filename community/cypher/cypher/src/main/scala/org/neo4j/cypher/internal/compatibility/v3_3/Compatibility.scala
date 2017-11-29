@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.time.Clock
 
+import org.neo4j.cypher.CypherExecutionMode
+import org.neo4j.cypher.exceptionHandler.{runSafely => runtimeRunSafely}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_3
@@ -49,7 +51,6 @@ import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, 
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3, TransactionalContextWrapper => TransactionalContextWrapperV3_3}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
-import org.neo4j.cypher.{CypherExecutionMode, exceptionHandler}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.IndexUsage.{explicitIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.query.PlannerInfo
@@ -126,7 +127,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
         Some(helpers.as3_3(preParsedQuery.offset)), tracerV3_3))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapper, tracerV3_4: CompilationPhaseTracer):
-      (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
+      (ExecutionPlan, Map[String, Any]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_3.get
 
         //Context used for db communication during planning
@@ -218,7 +219,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
         case CypherExecutionMode.profile => ProfileMode
         case CypherExecutionMode.normal => NormalMode
       }
-      exceptionHandler.runSafely {
+      runSafely {
 
         val context = queryContext(transactionalContext)
 
@@ -226,7 +227,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
         new ExecutionResult(new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
           innerResult.withNotifications(preParsingNotifications.toSeq: _*),
-          exceptionHandler.runSafely
+          runtimeRunSafely
         ))
       }
     }

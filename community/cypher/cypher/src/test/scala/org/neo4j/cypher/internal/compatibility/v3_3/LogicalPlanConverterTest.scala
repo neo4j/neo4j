@@ -24,6 +24,7 @@ import java.lang.reflect.Modifier
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
+import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName => IdNameV3_4}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
@@ -45,6 +46,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
   val pos3_3 = InputPositionV3_3(0,0,0)
   val pos3_4 = InputPosition(0,0,0)
   val reflectExpressions = new Reflections("org.neo4j.cypher.internal.frontend.v3_3.ast")
+  val reflectLogicalPlanExpressions = new Reflections("org.neo4j.cypher.internal.compiler.v3_3.ast")
   val reflectLogicalPlans = new Reflections("org.neo4j.cypher.internal.v3_3.logical.plans")
   val solved3_3 = irV3_3.CardinalityEstimation.lift(irV3_3.PlannerQuery.empty, irV3_3.Cardinality.EMPTY)
   val solved3_4 = irV3_4.CardinalityEstimation.lift(irV3_4.PlannerQuery.empty, utilV3_4.Cardinality.EMPTY)
@@ -163,13 +165,17 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
   test("should convert AndedPropertyInequalities") {
     val var3_3 = astV3_3.Variable("n")(pos3_3)
     val p3_3 = astV3_3.Property(var3_3, astV3_3.PropertyKeyName("n")(pos3_3))(pos3_3)
-    val i3_3 = astV3_3.LessThan(var3_3, var3_3)(pos3_3)
-    val a3_3 = astV3_3.AndedPropertyInequalities(var3_3, p3_3, frontendV3_3.helpers.NonEmptyList(i3_3))
+    val i3_3a = astV3_3.LessThan(var3_3, var3_3)(pos3_3)
+    val i3_3b = astV3_3.LessThan(var3_3, var3_3)(pos3_3)
+    val i3_3c = astV3_3.GreaterThan(var3_3, var3_3)(pos3_3)
+    val a3_3 = astV3_3.AndedPropertyInequalities(var3_3, p3_3, frontendV3_3.helpers.NonEmptyList(i3_3a, i3_3b, i3_3c))
 
     val var3_4 = expressionsV3_4.Variable("n")(pos3_4)
     val p3_4 = expressionsV3_4.Property(var3_4, expressionsV3_4.PropertyKeyName("n")(pos3_4))(pos3_4)
-    val i3_4 = expressionsV3_4.LessThan(var3_4, var3_4)(pos3_4)
-    val a3_4 = expressionsV3_4.AndedPropertyInequalities(var3_4, p3_4, NonEmptyList(i3_4))
+    val i3_4a = expressionsV3_4.LessThan(var3_4, var3_4)(pos3_4)
+    val i3_4b = expressionsV3_4.LessThan(var3_4, var3_4)(pos3_4)
+    val i3_4c = expressionsV3_4.GreaterThan(var3_4, var3_4)(pos3_4)
+    val a3_4 = expressionsV3_4.AndedPropertyInequalities(var3_4, p3_4, NonEmptyList(i3_4a, i3_4b, i3_4c))
 
     LogicalPlanConverter.convertExpression[PathExpression](a3_3) should be(a3_4)
   }
@@ -339,8 +345,21 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     plan should be(pc3_4)
   }
 
+  test("should convert Sort") {
+    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+    val s3_3 = plansV3_3.Sort(a3_3, Seq(plansV3_3.Ascending(IdNameV3_3("n"))))(solved3_3)
+    s3_3.assignIds()
+
+    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(solved3_4)
+    val s3_4 = plansV3_4.Sort(a3_4, Seq(plansV3_4.Ascending(IdNameV3_4("n"))))(solved3_4)
+
+    val plan = LogicalPlanConverter.convertLogicalPlan[ProcedureCall](s3_3)._1
+    plan should be(s3_4)
+  }
+
   test("should convert all expressions") {
-    val subTypes = reflectExpressions.getSubTypesOf(classOf[astV3_3.Expression]).asScala
+    val subTypes = reflectExpressions.getSubTypesOf(classOf[astV3_3.Expression]).asScala ++
+      reflectLogicalPlanExpressions.getSubTypesOf(classOf[astV3_3.Expression]).asScala
     subTypes.filter { c => !Modifier.isAbstract(c.getModifiers) }
       .toList.sortBy(_.getName)
       .foreach { subType =>
@@ -351,6 +370,9 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
         constructor.newInstance(constructorArgs: _*).asInstanceOf[astV3_3.Expression]
       } match {
         case Success(expressionV3_3) =>
+          if(expressionV3_3.isInstanceOf[compilerV3_3.ast.NestedPlanExpression]) {
+            expressionV3_3.asInstanceOf[compilerV3_3.ast.NestedPlanExpression].plan.assignIds()
+          }
           val rewritten = LogicalPlanConverter.convertExpression[expressionsV3_4.Expression](expressionV3_3)
           rewritten shouldBe an[expressionsV3_4.Expression]
         case Failure(e: InstantiationException) => fail(s"could not instantiate 3.3 expression: ${subType.getSimpleName} with arguments ${paramTypes.toList}", e)
@@ -413,6 +435,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "CypherType" => symbolsV3_3.CTBoolean
       case "Scope" => frontendV3_3.Scope.empty
       case "Equals" => astV3_3.Equals(variable, variable)(pos3_3)
+      case "InequalitySeekRange" => compilerV3_3.RangeGreaterThan(frontendV3_3.helpers.NonEmptyList(frontendV3_3.InclusiveBound(variable)))
+      case "PrefixRange" => compilerV3_3.PrefixRange(variable)
 
       case "LogicalPlan" => plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
       case "PlannerQuery" => solved3_3
