@@ -39,6 +39,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector;
 import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
@@ -57,22 +58,24 @@ public class CoreClusterMember implements ClusterMember
     private final File storeDir;
     private final File clusterStateDir;
     private final File raftLogDir;
-    private final Map<String, String> config = stringMap();
+    private final Map<String,String> config = stringMap();
     private final int serverId;
+    private final Monitors monitors;
     private final String boltAdvertisedSocketAddress;
     private CoreGraphDatabase database;
 
     public CoreClusterMember( int serverId, int clusterSize,
-                              List<AdvertisedSocketAddress> addresses,
-                              DiscoveryServiceFactory discoveryServiceFactory,
-                              String recordFormat,
-                              File parentDir,
-                              Map<String, String> extraParams,
-                              Map<String, IntFunction<String>> instanceExtraParams,
-                              String listenAddress,
-                              String advertisedAddress )
+            List<AdvertisedSocketAddress> addresses,
+            DiscoveryServiceFactory discoveryServiceFactory,
+            String recordFormat,
+            File parentDir,
+            Map<String,String> extraParams,
+            Map<String,IntFunction<String>> instanceExtraParams,
+            String listenAddress,
+            String advertisedAddress, Monitors monitors )
     {
         this.serverId = serverId;
+        this.monitors = monitors;
         int hazelcastPort = 5000 + serverId;
         int txPort = 6000 + serverId;
         int raftPort = 7000 + serverId;
@@ -85,8 +88,10 @@ public class CoreClusterMember implements ClusterMember
         config.put( "dbms.mode", "CORE" );
         config.put( GraphDatabaseSettings.default_advertised_address.name(), advertisedAddress );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
-        config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, hazelcastPort ) );
-        config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
+        config.put( CausalClusteringSettings.discovery_listen_address.name(),
+                listenAddress( listenAddress, hazelcastPort ) );
+        config.put( CausalClusteringSettings.transaction_listen_address.name(),
+                listenAddress( listenAddress, txPort ) );
         config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress( listenAddress, raftPort ) );
         config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
         config.put( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
@@ -100,13 +105,15 @@ public class CoreClusterMember implements ClusterMember
         config.put( new BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedSocketAddress );
         config.put( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
         config.put( new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
-        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), listenAddress( listenAddress, httpPort ) );
-        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), advertisedAddress( advertisedAddress, httpPort ) );
+        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(),
+                listenAddress( listenAddress, httpPort ) );
+        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(),
+                advertisedAddress( advertisedAddress, httpPort ) );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );
 
-        for ( Map.Entry<String, IntFunction<String>> entry : instanceExtraParams.entrySet() )
+        for ( Map.Entry<String,IntFunction<String>> entry : instanceExtraParams.entrySet() )
         {
             config.put( entry.getKey(), entry.getValue().apply( serverId ) );
         }
@@ -143,7 +150,7 @@ public class CoreClusterMember implements ClusterMember
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, config,
-                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
     @Override
