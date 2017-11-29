@@ -235,7 +235,7 @@ trait Operations[T <: PropertyContainer] {
   def getByIdIfExists(id: Long): Option[T]
 }
 
-trait QueryTransactionalContext {
+trait QueryTransactionalContext extends CloseableResource {
 
   def readOperations: ReadOperations
 
@@ -266,5 +266,9 @@ trait Expander {
 trait UserDefinedAggregator {
   def update(args: IndexedSeq[Any]): Unit
   def result: Any
+}
+
+trait CloseableResource {
+  def close(success: Boolean)
 }
 
