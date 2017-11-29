@@ -41,7 +41,7 @@ import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
-import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor}
+import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor, PropertyCursor}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -66,6 +66,7 @@ import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue, VirtualValues}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper)
                                         (implicit indexSearchMonitor: IndexSearchMonitor)
@@ -395,26 +396,82 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def propertyKeyIds(id: Long): Iterator[Int] = try {
-      JavaConversionSupport.asScalaENFXSafe(transactionalContext.statement.readOperations().nodeGetPropertyKeys(id))
-    } catch {
-      case _: exceptions.EntityNotFoundException => Iterator.empty
+    override def propertyKeyIds(id: Long): Iterator[Int] = {
+      var nodeCursor: NodeCursor = null
+      var propertyCursor: PropertyCursor = null
+      try {
+        nodeCursor = cursors.allocateNodeCursor()
+        propertyCursor = cursors.allocatePropertyCursor()
+        reads().singleNode(id, nodeCursor)
+        if (!nodeCursor.next()) Iterator.empty
+        else {
+          val buffer = ArrayBuffer[Int]()
+          nodeCursor.properties(propertyCursor)
+          while (propertyCursor.next()) {
+            buffer.append(propertyCursor.propertyKey())
+          }
+          buffer.iterator
+        }
+      } finally {
+        if (nodeCursor != null) {
+          nodeCursor.close()
+        }
+        if (propertyCursor != null) {
+          propertyCursor.close()
+        }
+      }
     }
 
-    override def getProperty(id: Long, propertyKeyId: Int): Value = try {
-      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId)
-    } catch {
-      case e: exceptions.EntityNotFoundException =>
-        if (isDeletedInThisTx(id))
-          throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
-        else
+    override def getProperty(id: Long, propertyKeyId: Int): Value = {
+      var nodeCursor: NodeCursor = null
+      var propertyCursor: PropertyCursor = null
+      try {
+        nodeCursor = cursors.allocateNodeCursor()
+        propertyCursor = cursors.allocatePropertyCursor()
+        reads().singleNode(id, nodeCursor)
+        if (!nodeCursor.next()) {
+          if (isDeletedInThisTx(id)) throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
+          else  Values.NO_VALUE
+        } else {
+          nodeCursor.properties(propertyCursor)
+          while (propertyCursor.next()) {
+            if (propertyCursor.propertyKey() == propertyKeyId) return propertyCursor.propertyValue()
+          }
           Values.NO_VALUE
+        }
+      } finally {
+        if (nodeCursor != null) {
+          nodeCursor.close()
+        }
+        if (propertyCursor != null) {
+          propertyCursor.close()
+        }
+      }
     }
 
-    override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
-      transactionalContext.statement.readOperations().nodeHasProperty(id, propertyKey)
-    } catch {
-      case _: exceptions.EntityNotFoundException => false
+    override def hasProperty(id: Long, propertyKey: Int): Boolean = {
+      var nodeCursor: NodeCursor = null
+      var propertyCursor: PropertyCursor = null
+      try {
+        nodeCursor = cursors.allocateNodeCursor()
+        propertyCursor = cursors.allocatePropertyCursor()
+        reads().singleNode(id, nodeCursor)
+        if (!nodeCursor.next()) false
+        else {
+          nodeCursor.properties(propertyCursor)
+          while (propertyCursor.next()) {
+            if (propertyCursor.propertyKey() == propertyKey) return true
+          }
+          false
+        }
+      } finally {
+        if (nodeCursor != null) {
+          nodeCursor.close()
+        }
+        if (propertyCursor != null) {
+          propertyCursor.close()
+        }
+      }
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
@@ -440,14 +497,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def all: Iterator[NodeValue] = {
-      val nodeCursor = cursors.allocateNodeCursor()
-      resources.trace(nodeCursor)
+      val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
       nodeCursorToIterator(nodeCursor)
     }
 
     override def allPrimitive: PrimitiveLongIterator = {
-      val nodeCursor = cursors.allocateNodeCursor()
+      val nodeCursor = allocateAndTraceNodeCursor()
       resources.trace(nodeCursor)
 
       new PrimitiveLongIterator {
@@ -910,6 +966,18 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.statement.schemaWriteOperations()
+
+  private def allocateAndTraceNodeCursor() = {
+    val cursor = cursors.allocateNodeCursor()
+    resources.trace(cursor)
+    cursor
+  }
+
+  private def allocateAndTracePropertyCursor() = {
+    val cursor = cursors.allocatePropertyCursor()
+    resources.trace(cursor)
+    cursor
+  }
 
   private def nodeCursorToIterator(nodeCursor: NodeCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
     private var _next: NodeValue = fetchNext()
