@@ -46,7 +46,7 @@ import static java.lang.Math.toIntExact;
  * to call {@link #getOrCreateId(String)} methods on.
  */
 public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN extends Token>
-        implements ToIntFunction<Object>
+        implements ToIntFunction<Object>, AutoCloseable
 {
     private final Map<String,Integer> tokens = new HashMap<>();
     private final TokenStore<RECORD, TOKEN> store;
@@ -165,6 +165,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     /**
      * Closes this repository and writes all created tokens to the underlying store.
      */
+    @Override
     public void close()
     {
         flush();

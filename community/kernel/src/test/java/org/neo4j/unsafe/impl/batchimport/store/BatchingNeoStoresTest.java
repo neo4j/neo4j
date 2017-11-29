@@ -21,26 +21,35 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
-import java.io.File;
+import java.util.stream.Stream;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -50,13 +59,8 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 public class BatchingNeoStoresTest
 {
-    private final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fsr ).around( pageCacheRule );
-
-    private final File storeDir = new File( "dir" ).getAbsoluteFile();
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
 
     @Test
     public void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Exception
@@ -69,8 +73,8 @@ public class BatchingNeoStoresTest
         {
             RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(),
                     NullLogProvider.getInstance() );
-            BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT,
-                    NullLogService.getInstance(), EMPTY, Config.defaults() );
+            BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().absolutePath(),
+                    recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY, Config.defaults() );
             store.createNew();
             fail( "Should fail on existing data" );
         }
@@ -93,8 +97,8 @@ public class BatchingNeoStoresTest
         // WHEN
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
-        try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats,
-                DEFAULT, NullLogService.getInstance(), EMPTY, config ) )
+        try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().absolutePath(),
+                recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY, config ) )
         {
             store.createNew();
 
@@ -104,11 +108,76 @@ public class BatchingNeoStoresTest
         }
     }
 
+    @Test
+    public void shouldPruneAndOpenExistingDatabase() throws Exception
+    {
+        // given
+        for ( StoreType typeToTest : relevantRecordStores() )
+        {
+            // given all the stores with some records in them
+            PageCache pageCache = storage.pageCache();
+            storage.directory().cleanup();
+            try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(), pageCache,
+                    PageCacheTracer.NULL, storage.directory().absolutePath(), Standard.LATEST_RECORD_FORMATS, DEFAULT,
+                    NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+            {
+                stores.createNew();
+                for ( StoreType type : relevantRecordStores() )
+                {
+                    createRecordIn( stores.getNeoStores().getRecordStore( type ) );
+                }
+            }
+
+            // when opening and pruning all except the one we test
+            try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(), pageCache,
+                    PageCacheTracer.NULL, storage.directory().absolutePath(), Standard.LATEST_RECORD_FORMATS, DEFAULT,
+                    NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+            {
+                stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
+
+                // then only the one we kept should have data in it
+                for ( StoreType type : relevantRecordStores() )
+                {
+                    RecordStore<AbstractBaseRecord> store = stores.getNeoStores().getRecordStore( type );
+                    if ( type == typeToTest )
+                    {
+                        assertThat( store.toString(), (int) store.getHighId(), greaterThan( store.getNumberOfReservedLowIds() ) );
+                    }
+                    else
+                    {
+                        assertEquals( store.toString(), store.getNumberOfReservedLowIds(), store.getHighId() );
+                    }
+                }
+            }
+        }
+    }
+
+    private StoreType[] relevantRecordStores()
+    {
+        return Stream.of( StoreType.values() )
+                .filter( type -> type.isRecordStore() && type != StoreType.META_DATA ).toArray( StoreType[]::new );
+    }
+
+    private <RECORD extends AbstractBaseRecord> void createRecordIn( RecordStore<RECORD> store )
+    {
+        RECORD record = store.newRecord();
+        record.setId( store.nextId() );
+        record.setInUse( true );
+        if ( record instanceof PropertyRecord )
+        {
+            // Special hack for property store, since it's not enough to simply set a record as in use there
+            PropertyBlock block = new PropertyBlock();
+            ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ) );
+            ((PropertyRecord) record).addPropertyBlock( block );
+        }
+        store.updateRecord( record );
+    }
+
     private void someDataInTheDatabase()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fsr.get() ) )
-                .newImpermanentDatabase( storeDir );
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( storage.fileSystem() ) )
+                .newImpermanentDatabase( storage.directory().absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
