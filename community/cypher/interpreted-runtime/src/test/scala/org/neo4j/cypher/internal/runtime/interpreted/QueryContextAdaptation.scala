@@ -81,6 +81,8 @@ trait QueryContextAdaptation {
 
   override def entityAccessor: NodeManager = ???
 
+  override def resources: CloseableResource = ???
+
   override def getOrCreatePropertyKeyId(propertyKey: String): Int = ???
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = ???

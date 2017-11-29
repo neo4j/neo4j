@@ -40,6 +40,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def entityAccessor: NodeManager = inner.entityAccessor
 
+  override def resources: CloseableResource = inner.resources
+
   override def transactionalContext =
     new ExceptionTranslatingTransactionalContext(inner.transactionalContext)
 

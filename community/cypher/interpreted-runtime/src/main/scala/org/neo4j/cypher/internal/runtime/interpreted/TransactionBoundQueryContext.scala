@@ -71,9 +71,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
                                         (implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with
     IndexDescriptorCompatibility {
-
-  override val nodeOps = new NodeOperations
-  override val relationshipOps = new RelationshipOperations
+  override val resources: ResourceManager = new ResourceManager
+  override val nodeOps: NodeOperations = new NodeOperations
+  override val relationshipOps: RelationshipOperations = new RelationshipOperations
   override lazy val entityAccessor: NodeManager =
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 

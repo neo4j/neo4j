@@ -57,6 +57,8 @@ trait QueryContext extends TokenContext {
 
   def transactionalContext: QueryTransactionalContext
 
+  def resources: CloseableResource
+
   def nodeOps: Operations[Node]
 
   def relationshipOps: Operations[Relationship]
