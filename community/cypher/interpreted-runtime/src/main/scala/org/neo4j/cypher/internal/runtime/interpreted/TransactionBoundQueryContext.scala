@@ -439,11 +439,40 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
 
-    override def all: Iterator[NodeValue] =
-      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetAll())(getById)
+    override def all: Iterator[NodeValue] = {
+      val nodeCursor = cursors.allocateNodeCursor()
+      resources.trace(nodeCursor)
+      reads().allNodesScan(nodeCursor)
+      nodeCursorToIterator(nodeCursor)
+    }
 
-    override def allPrimitive: PrimitiveLongIterator =
-      transactionalContext.statement.readOperations().nodesGetAll()
+    override def allPrimitive: PrimitiveLongIterator = {
+      val nodeCursor = cursors.allocateNodeCursor()
+      resources.trace(nodeCursor)
+
+      new PrimitiveLongIterator {
+        private var _next: Long = -1L
+
+        private def fetchNext() =
+          if (nodeCursor.next()) nodeCursor.nodeReference()
+          else -1L
+
+        override def hasNext: Boolean = _next >= 0
+
+        override def next(): Long = {
+          if (!hasNext) {
+            nodeCursor.close()
+            Iterator.empty.next()
+          }
+
+          val current = _next
+          _next = fetchNext()
+          if (!hasNext) nodeCursor.close()
+
+          current
+        }
+      }
+    }
 
     override def indexGet(name: String, key: String, value: Any): Iterator[NodeValue] =
       JavaConversionSupport
@@ -882,6 +911,30 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.statement.schemaWriteOperations()
 
+  private def nodeCursorToIterator(nodeCursor: NodeCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
+    private var _next: NodeValue = fetchNext()
+
+    private def fetchNext() = {
+      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxyById(nodeCursor.nodeReference()))
+      else null
+    }
+
+    override def hasNext: Boolean = _next != null
+
+    override def next(): NodeValue = {
+      if (!hasNext) {
+        nodeCursor.close()
+        Iterator.empty.next()
+      }
+
+      val current = _next
+      _next = fetchNext()
+      if (!hasNext) {
+        nodeCursor.close()
+      }
+      current
+    }
+  }
 }
 
 object TransactionBoundQueryContext {
