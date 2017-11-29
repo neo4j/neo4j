@@ -20,12 +20,15 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.time.Clock;
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_policy;
 
 
 /**
@@ -72,19 +75,30 @@ public interface CheckPointThreshold
      */
     LongStream checkFrequencyMillis();
 
-    static CheckPointThreshold createThreshold( Config config, Clock clock )
+    /**
+     * Create and configure a {@link CheckPointThreshold} based on the given configurations.
+     */
+    static CheckPointThreshold createThreshold( Config config, Clock clock, LogProvider logProvider )
     {
-
-        int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
-        final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
-                new CountCommittedTransactionThreshold( txThreshold );
-
-        long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time ).toMillis();
-        TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( timeMillisThreshold, clock );
-
-        return or( countCommittedTransactionThreshold, timeCheckPointThreshold );
+        String policyName = config.get( check_point_policy );
+        CheckPointThresholdPolicy policy;
+        try
+        {
+            policy = CheckPointThresholdPolicy.loadPolicy( policyName );
+        }
+        catch ( NoSuchElementException e )
+        {
+            logProvider.getLog( CheckPointThreshold.class ).warn(
+                    "Could not load check point policy '" + check_point_policy.name() + "=" + policyName + "'. " +
+                    "Using default policy instead.", e );
+            policy = new PeriodicThresholdPolicy();
+        }
+        return policy.createThreshold( config, clock, logProvider );
     }
 
+    /**
+     * Create a new {@link CheckPointThreshold} which will trigger if any of the given thresholds triggers.
+     */
     static CheckPointThreshold or( final CheckPointThreshold... thresholds )
     {
         return new CheckPointThreshold()
