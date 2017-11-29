@@ -59,7 +59,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     private PageCursor arrayPage;
     private PropertyContainerState propertiesState;
     private Iterator<StorageProperty> changedProperties;
-    private StorageProperty stateValue;
+    private StorageProperty txStateValue;
     private AssertOpen assertOpen;
 
     public PropertyCursor()
@@ -109,7 +109,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         {
             this.propertiesState = null;
             this.changedProperties = null;
-            this.stateValue = null;
+            this.txStateValue = null;
             this.next = reference;
         }
     }
@@ -121,13 +121,13 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         {
             if ( changedProperties.hasNext() )
             {
-                stateValue = changedProperties.next();
+                txStateValue = changedProperties.next();
                 return true;
             }
             else
             {
                 changedProperties = null;
-                stateValue = null;
+                txStateValue = null;
             }
         }
 
@@ -195,7 +195,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         }
         propertiesState = null;
         changedProperties = null;
-        stateValue = null;
+        txStateValue = null;
         read = null;
         clear();
     }
@@ -203,9 +203,9 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     @Override
     public int propertyKey()
     {
-        if ( stateValue != null )
+        if ( txStateValue != null )
         {
-            return stateValue.propertyKeyId();
+            return txStateValue.propertyKeyId();
         }
         return PropertyBlock.keyIndexId( currentBlock() );
     }
@@ -248,9 +248,9 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     @Override
     public Value propertyValue()
     {
-        if ( stateValue != null )
+        if ( txStateValue != null )
         {
-            return stateValue.value();
+            return txStateValue.value();
         }
 
         Value value = readValue();

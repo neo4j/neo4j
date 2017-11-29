@@ -142,7 +142,7 @@ public interface ReadableTransactionState
 
     RelationshipState getRelationshipState( long id );
 
-    PropertyContainerState getPropertiesState( long reference );
+    PropertyContainerState getPropertiesState( long propertyReference );
 
     Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId );
 

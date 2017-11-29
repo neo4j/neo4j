@@ -42,6 +42,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
     private static final String INDEX_NAME = "foo";
     private static final String KEY = "bar";
     private static final String VALUE = "this is it";
+
     @Test
     public void shouldCreateExplicitNodeIndexEagerly() throws Exception
     {
@@ -101,7 +102,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         // Then
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, "this is it" );
+            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, VALUE );
             assertThat( hits.next().getId(), equalTo( nodeId ) );
             hits.close();
             ctx.success();
@@ -309,7 +310,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         // Then
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, "this is it" );
+            IndexHits<Node> hits = graphDb.index().forNodes( INDEX_NAME ).get( KEY, VALUE );
             assertFalse( hits.hasNext() );
             hits.close();
             ctx.success();
@@ -340,7 +341,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         // Then
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            IndexHits<Relationship> hits = graphDb.index().forRelationships( INDEX_NAME ).get( KEY, "this is it" );
+            IndexHits<Relationship> hits = graphDb.index().forRelationships( INDEX_NAME ).get( KEY, VALUE );
             assertFalse( hits.hasNext() );
             hits.close();
             ctx.success();
