@@ -257,37 +257,35 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
   class LoadNext(private val input: Iterator[ExecutionContext], val state: QueryState) extends State with Expandable {
 
-    override def next(): (State, ExecutionContext) =
+    override def next(): (State, ExecutionContext) = {
+      def nextState(row: ExecutionContext, node: NodeValue) = {
+        val nextState = new PrePruningDFS(whenEmptied = this,
+          node = node,
+          path = new Array[Long](max),
+          pathLength = 0,
+          state = state,
+          row = row,
+          expandMap = Primitive.longObjectMap[FullExpandDepths]())
+        nextState.next()
+      }
+
       if (input.isEmpty) {
         (Empty, null)
       } else {
         val row = input.next()
         row.get(fromName) match {
           case Some(node: NodeValue) =>
-            val nextState = new PrePruningDFS(whenEmptied = this,
-                                              node = node,
-                                              path = new Array[Long](max),
-                                              pathLength = 0,
-                                              state = state,
-                                              row = row,
-                                              expandMap = Primitive.longObjectMap[FullExpandDepths]())
-            nextState.next()
+            nextState(row, node)
           case Some(nodeRef: NodeReference) =>
             val node = ValueUtils.fromNodeProxy(state.query.nodeOps.getById(nodeRef.id()))
-            val nextState = new PrePruningDFS(whenEmptied = this,
-                                              node = node,
-                                              path = new Array[Long](max),
-                                              pathLength = 0,
-                                              state = state,
-                                              row = row,
-                                              expandMap = Primitive.longObjectMap[FullExpandDepths]())
-            nextState.next()
+            nextState(row, node)
           case Some(x: Value) if x == Values.NO_VALUE =>
             (Empty, null)
           case _ =>
             throw new InternalException(s"Expected a node on `$fromName`")
         }
       }
+    }
   }
 
   trait CheckPath {
