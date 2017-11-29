@@ -35,6 +35,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.startsWith;
@@ -70,6 +72,7 @@ public class PersistentSnapshotDownloaderTest
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
         verify( coreStateDownloader, times( 1 ) ).downloadSnapshot( any() );
+        assertFalse( persistentSnapshotDownloader.isRunning() );
     }
 
     @Test
@@ -103,6 +106,11 @@ public class PersistentSnapshotDownloaderTest
                 return false;
             }
         }, 1, TimeUnit.SECONDS );
+
+        // then
+        assertTrue( persistentSnapshotDownloader.isRunning() );
+
+        // when
         thread.stop();
 
         // then
@@ -141,6 +149,11 @@ public class PersistentSnapshotDownloaderTest
                 return false;
             }
         }, 1, TimeUnit.SECONDS );
+
+        // then
+        assertTrue( persistentSnapshotDownloader.isRunning() );
+
+        // when
         thread.stop();
 
         // then
@@ -170,6 +183,7 @@ public class PersistentSnapshotDownloaderTest
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
         assertEquals( 3, timeout.increments );
+        assertFalse(persistentSnapshotDownloader.isRunning());
     }
 
     private class EventuallySuccessfulDownloader extends CoreStateDownloader

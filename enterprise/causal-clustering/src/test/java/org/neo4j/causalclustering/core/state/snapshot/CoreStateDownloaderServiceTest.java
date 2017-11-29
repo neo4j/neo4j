@@ -25,15 +25,21 @@ import org.junit.Test;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.function.Predicates;
+import org.neo4j.kernel.impl.util.CountingJobScheduler;
+import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -88,6 +94,64 @@ public class CoreStateDownloaderServiceTest
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
         verify( coreStateDownloader, times( 1 ) ).downloadSnapshot( any() );
+    }
+
+    @Test
+    public void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime() throws Exception
+    {
+        AtomicInteger schedules = new AtomicInteger(  );
+        CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, neo4jJobScheduler );
+        CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
+        final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
+
+        final Log log = mock( Log.class );
+        CoreStateDownloaderService coreStateDownloaderService =
+                new CoreStateDownloaderService( countingJobScheduler, coreStateDownloader, applicationProcess,
+                        logProvider( log ) );
+
+        AtomicBoolean availableLeader = new AtomicBoolean( false );
+
+        LeaderLocator leaderLocator = new ControllableLeaderLocator( availableLeader );
+        coreStateDownloaderService.scheduleDownload( leaderLocator );
+        coreStateDownloaderService.scheduleDownload( leaderLocator );
+        coreStateDownloaderService.scheduleDownload( leaderLocator );
+        coreStateDownloaderService.scheduleDownload( leaderLocator );
+
+        availableLeader.set( true );
+
+        assertEquals(1, schedules.get());
+    }
+
+    private class ControllableLeaderLocator implements LeaderLocator
+    {
+        private final AtomicBoolean shouldProvideALeader;
+
+        ControllableLeaderLocator( AtomicBoolean shouldProvideALeader )
+        {
+            this.shouldProvideALeader = shouldProvideALeader;
+        }
+
+        @Override
+        public MemberId getLeader() throws NoLeaderFoundException
+        {
+            if ( shouldProvideALeader.get() )
+            {
+                return someMember;
+            }
+            throw new NoLeaderFoundException( "sorry" );
+        }
+
+        @Override
+        public void registerListener( Listener<MemberId> listener )
+        {
+            // do nothing
+        }
+
+        @Override
+        public void unregisterListener( Listener<MemberId> listener )
+        {
+            // do nothing
+        }
     }
 
     private LogProvider logProvider( Log log )
