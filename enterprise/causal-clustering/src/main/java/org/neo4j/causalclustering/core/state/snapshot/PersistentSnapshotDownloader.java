@@ -37,6 +37,7 @@ class PersistentSnapshotDownloader implements Runnable
     private final CoreStateDownloader downloader;
     private final Log log;
     private final TimeoutStrategy.Timeout timeout;
+    private boolean isRunning = false;
 
     PersistentSnapshotDownloader( LeaderLocator leaderLocator,
             CommandApplicationProcess applicationProcess, CoreStateDownloader downloader, Log log,
@@ -59,29 +60,42 @@ class PersistentSnapshotDownloader implements Runnable
     @Override
     public void run()
     {
-        applicationProcess.pauseApplier( CoreStateDownloaderService.OPERATION_NAME );
-        while ( true )
+        isRunning = true;
+        try
         {
-            if ( Thread.interrupted() )
+            applicationProcess.pauseApplier( CoreStateDownloaderService.OPERATION_NAME );
+            while ( true )
             {
-                break;
+                if ( Thread.interrupted() )
+                {
+                    break;
+                }
+                try
+                {
+                    downloader.downloadSnapshot( leaderLocator.getLeader() );
+                    applicationProcess.resumeApplier( CoreStateDownloaderService.OPERATION_NAME );
+                    break;
+                }
+                catch ( StoreCopyFailedException e )
+                {
+                    log.error( "Failed to download snapshot. Retrying in {} ms.", timeout.getMillis(), e );
+                }
+                catch ( NoLeaderFoundException e )
+                {
+                    log.warn( "No leader found. Retrying in {} ms.", timeout.getMillis() );
+                }
+                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( timeout.getMillis() ) );
+                timeout.increment();
             }
-            try
-            {
-                downloader.downloadSnapshot( leaderLocator.getLeader() );
-                applicationProcess.resumeApplier( CoreStateDownloaderService.OPERATION_NAME );
-                break;
-            }
-            catch ( StoreCopyFailedException e )
-            {
-                log.error( "Failed to download snapshot. Retrying in {} ms.", timeout.getMillis(), e );
-            }
-            catch ( NoLeaderFoundException e )
-            {
-                log.warn( "No leader found. Retrying in {} ms.", timeout.getMillis() );
-            }
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( timeout.getMillis() ) );
-            timeout.increment();
         }
+        finally
+        {
+            isRunning = false;
+        }
+    }
+
+    public boolean isRunning()
+    {
+        return isRunning;
     }
 }
