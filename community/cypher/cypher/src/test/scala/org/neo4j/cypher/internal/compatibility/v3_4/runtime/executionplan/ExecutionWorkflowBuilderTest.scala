@@ -36,7 +36,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
   val PlannerName = IDPPlannerName
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   val logicalPlan = {
-    val x = Argument()(solved)()
+    val x = Argument()(solved)
     x.assignIds()
     x
   }

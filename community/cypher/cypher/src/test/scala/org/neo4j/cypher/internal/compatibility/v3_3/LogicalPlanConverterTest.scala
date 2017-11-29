@@ -276,7 +276,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val s3_3_id = s3_3.assignedId
     val p3_3_id = p3_3.assignedId
 
-    val s3_4 = plansV3_4.Argument()(solved3_4)()
+    val s3_4 = plansV3_4.Argument()(solved3_4)
     val p3_4 = plansV3_4.ProduceResult(s3_4, Seq("a"))
 
     val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.ProduceResult](p3_3)._1

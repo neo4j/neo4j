@@ -55,9 +55,9 @@ object LogicalPlanConverter {
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
       val rewritten = RewriterWithArgs.lift {
         case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
-          plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(new PlannerQueryWrapper(plan.solved))(Map.empty)
+          plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(new PlannerQueryWrapper(plan.solved))
         case (plan: plansV3_3.SingleRow, _) =>
-          plansV3_4.Argument()(new PlannerQueryWrapper(plan.solved))()
+          plansV3_4.Argument()(new PlannerQueryWrapper(plan.solved))
         case (_: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
           plansV3_4.ProduceResult(children(1).asInstanceOf[LogicalPlanV3_4], children(0).asInstanceOf[Seq[String]])
         case (plan: plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>

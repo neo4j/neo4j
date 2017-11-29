@@ -132,7 +132,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("create node") {
     // given
     val label = LabelName("label")(pos)
-    val argument = Argument()(solved)()
+    val argument = Argument()(solved)
     val createNode = CreateNode(argument, z, Seq(label), None)(solved)
 
     // when
@@ -590,7 +590,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("that argument does not apply here") {
     // given MATCH (x) MATCH (x)<-[r]-(y)
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
-    val arg = Argument(Set(x))(solved)()
+    val arg = Argument(Set(x))(solved)
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
 
     val apply = Apply(lhs, rhs)(solved)
@@ -656,7 +656,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given UNWIND [1,2,3] as x RETURN x ORDER BY x
     val xVar = varFor("x")
     val xVarName = IdName.fromVariable(xVar)
-    val leaf = Argument()(solved)()
+    val leaf = Argument()(solved)
     val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val sort = Sort(unwind, List(plans.Ascending(xVarName)))(solved)
 
