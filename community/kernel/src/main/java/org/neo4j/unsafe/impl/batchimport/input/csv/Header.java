@@ -112,7 +112,7 @@ public class Header implements Cloneable
         public String toString()
         {
             return (name != null ? name : "") +
-                   ":" + (type == Type.PROPERTY ? extractor.toString().toLowerCase() : type.name()) +
+                   ":" + (type == Type.PROPERTY ? extractor.name().toLowerCase() : type.name()) +
                    (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
         }
 

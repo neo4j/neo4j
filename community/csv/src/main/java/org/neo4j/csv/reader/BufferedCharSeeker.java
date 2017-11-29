@@ -338,6 +338,7 @@ public class BufferedCharSeeker implements CharSeeker
         dataLength = nextChunk.length();
         dataCapacity = nextChunk.maxFieldSize();
         bufferPos = nextChunk.startPosition();
+        bufferStartPos = bufferPos;
         bufferEnd = bufferPos + dataLength;
         int shift = seekStartPos - nextChunk.backPosition();
         seekStartPos = nextChunk.backPosition();

@@ -42,7 +42,7 @@ public class InputEntity implements InputEntityVisitor, Cloneable
 
     public InputEntity()
     {
-        this( new InputEntityVisitor.Adapter() );
+        this( InputEntityVisitor.NULL );
     }
 
     public boolean hasPropertyId;
@@ -302,8 +302,90 @@ public class InputEntity implements InputEntityVisitor, Cloneable
         return properties.size() / 2;
     }
 
+    public Object propertyKey( int i )
+    {
+        return properties.get( i * 2 );
+    }
+
     public Object propertyValue( int i )
     {
         return properties.get( i * 2 + 1 );
+    }
+
+    public void replayOnto( InputEntityVisitor visitor ) throws IOException
+    {
+        // properties
+        if ( hasPropertyId )
+        {
+            visitor.propertyId( propertyId );
+        }
+        else if ( !properties.isEmpty() )
+        {
+            int propertyCount = propertyCount();
+            for ( int i = 0; i < propertyCount; i++ )
+            {
+                if ( hasIntPropertyKeyIds )
+                {
+                    visitor.property( (Integer) propertyKey( i ), propertyValue( i ) );
+                }
+                else
+                {
+                    visitor.property( (String) propertyKey( i ), propertyValue( i ) );
+                }
+            }
+        }
+
+        // id
+        if ( hasLongId )
+        {
+            visitor.id( longId );
+        }
+        else if ( objectId != null )
+        {
+            visitor.id( objectId, idGroup );
+        }
+
+        // labels
+        if ( hasLabelField )
+        {
+            visitor.labelField( labelField );
+        }
+        else if ( !labels.isEmpty() )
+        {
+            visitor.labels( labels.toArray( new String[labels.size()] ) );
+        }
+
+        // start id
+        if ( hasLongStartId )
+        {
+            visitor.startId( longStartId );
+        }
+        else if ( objectStartId != null )
+        {
+            visitor.startId( objectStartId, startIdGroup );
+        }
+
+        // end id
+        if ( hasLongEndId )
+        {
+            visitor.endId( longEndId );
+        }
+        else if ( objectEndId != null )
+        {
+            visitor.endId( objectEndId, endIdGroup );
+        }
+
+        // type
+        if ( hasIntType )
+        {
+            visitor.type( intType );
+        }
+        else if ( stringType != null )
+        {
+            visitor.type( stringType );
+        }
+
+        // all done
+        visitor.endOfEntity();
     }
 }

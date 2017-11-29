@@ -32,7 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
 /**
- * Iterates over chunks of CSV input data.
+ * Iterates over one group of input data, e.g. one or more input files. A whole group conforms to the same header.
  */
 public class CsvGroupInputIterator extends InputIterator.Adapter
 {
@@ -56,13 +56,15 @@ public class CsvGroupInputIterator extends InputIterator.Adapter
     }
 
     @Override
-    public CsvInputChunk newChunk()
+    public InputChunk newChunk()
     {
-        return new CsvInputChunk( idType, config.delimiter(), badCollector, extractors(),
-                new ChunkImpl( new char[config.bufferSize()] ) );
+        return config.multilineFields()
+                ? new EagerlyReadInputChunk()
+                : new CsvInputChunk( idType, config.delimiter(), badCollector, extractors( config ),
+                        new ChunkImpl( new char[config.bufferSize()] ) );
     }
 
-    private Extractors extractors()
+    static Extractors extractors( Configuration config )
     {
         return new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull() );
     }
@@ -80,7 +82,7 @@ public class CsvGroupInputIterator extends InputIterator.Adapter
                 }
                 Data data = source.next().create( config );
                 current = new CsvInputIterator( new MultiReadable( data.stream() ), data.decorator(),
-                        headerFactory, idType, config, groups );
+                        headerFactory, idType, config, groups, badCollector, extractors( config ) );
             }
 
             if ( current.next( chunk ) )

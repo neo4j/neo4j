@@ -113,11 +113,11 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
 
     private static Object idValue( Entry entry, long id )
     {
-        switch ( entry.extractor().toString() )
+        switch ( entry.extractor().name() )
         {
         case "String": return "" + id;
         case "long": return id;
-        default: throw new IllegalArgumentException( entry.toString() );
+        default: throw new IllegalArgumentException( entry.name() );
         }
     }
 
@@ -129,7 +129,7 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
     private static Object randomProperty( Entry entry, Randoms random )
     {
         // TODO crude way of determining value type
-        String type = entry.extractor().toString();
+        String type = entry.extractor().name();
         if ( type.equals( "String" ) )
         {
             return random.string( 5, 20, Randoms.CSA_LETTERS_AND_DIGITS );

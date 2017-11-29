@@ -24,14 +24,16 @@ import java.io.IOException;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharReadable;
-import org.neo4j.csv.reader.CharReadableChunker;
 import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.ClosestNewLineChunker;
+import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.csv.reader.Source;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.csv.reader.SourceTraceability;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
@@ -40,29 +42,27 @@ import static java.util.Arrays.copyOf;
 class CsvInputIterator implements SourceTraceability, Closeable
 {
     private final CharReadable stream;
-    private final CharReadableChunker chunker;
+    private final Chunker chunker;
     private final Header header;
     private final Decorator decorator;
     private final Configuration config;
 
-    CsvInputIterator( CharReadable stream, Decorator decorator, Header header, Configuration config )
+    CsvInputIterator( CharReadable stream, Decorator decorator, Header header, Configuration config, IdType idType, Collector badCollector,
+            Extractors extractors )
     {
-        if ( config.multilineFields() )
-        {
-            throw new UnsupportedOperationException( "Multi-line fields unsupported" );
-        }
-
         this.stream = stream;
         this.config = config;
         this.decorator = decorator;
         this.header = header;
-        this.chunker = new ClosestNewLineChunker( stream, config.bufferSize() );
+        this.chunker = config.multilineFields()
+                ? new EagerParserChunker( stream, idType, header, badCollector, extractors, 1_000, config, decorator )
+                : new ClosestNewLineChunker( stream, config.bufferSize() );
     }
 
     CsvInputIterator( CharReadable stream, Decorator decorator, Header.Factory headerFactory, IdType idType,
-            Configuration config, Groups groups ) throws IOException
+            Configuration config, Groups groups, Collector badCollector, Extractors extractors ) throws IOException
     {
-        this( stream, decorator, extractHeader( stream, headerFactory, idType, config, groups ), config );
+        this( stream, decorator, extractHeader( stream, headerFactory, idType, config, groups ), config, idType, badCollector, extractors );
     }
 
     static Header extractHeader( CharReadable stream, Header.Factory headerFactory, IdType idType,
@@ -78,15 +78,18 @@ class CsvInputIterator implements SourceTraceability, Closeable
             CharSeeker firstSeeker = seeker( firstChunk, config );
             return headerFactory.create( firstSeeker, config, idType, groups );
         }
-        else
-        {
-            // TODO: blargh
-            return headerFactory.create( null, null, null, null );
-        }
+
+        return headerFactory.create( null, null, null, null );
     }
 
     public boolean next( InputChunk chunk ) throws IOException
     {
+        if ( config.multilineFields() )
+        {
+            EagerlyReadInputChunk csvChunk = (EagerlyReadInputChunk) chunk;
+            return chunker.nextChunk( csvChunk );
+        }
+
         CsvInputChunk csvChunk = (CsvInputChunk) chunk;
         Chunk processingChunk = csvChunk.processingChunk();
         if ( chunker.nextChunk( processingChunk ) )
@@ -96,7 +99,7 @@ class CsvInputIterator implements SourceTraceability, Closeable
         return false;
     }
 
-    private boolean initialized( InputChunk chunk, CharSeeker seeker )
+    private boolean initialized( InputChunk chunk, CharSeeker seeker ) throws IOException
     {
         CsvInputChunk csvChunk = (CsvInputChunk) chunk;
         return csvChunk.initialize( seeker, header.clone(), decorator );
@@ -106,6 +109,7 @@ class CsvInputIterator implements SourceTraceability, Closeable
     public void close() throws IOException
     {
         chunker.close();
+        decorator.close();
     }
 
     @Override
@@ -117,7 +121,7 @@ class CsvInputIterator implements SourceTraceability, Closeable
     @Override
     public long position()
     {
-        return stream.position();
+        return chunker.position();
     }
 
     private static CharSeeker seeker( Chunk chunk, Configuration config )

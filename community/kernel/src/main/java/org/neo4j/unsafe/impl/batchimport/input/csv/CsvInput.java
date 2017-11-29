@@ -47,6 +47,7 @@ import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.input.Collector.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.calculatePropertySize;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvGroupInputIterator.extractors;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInputIterator.extractHeader;
 
 /**
@@ -228,7 +229,8 @@ public class CsvInput implements Input
                             // Extract the header from the first file in this group
                             header = extractHeader( source, headerFactory, idType, config, groups );
                         }
-                        try ( CsvInputIterator iterator = new CsvInputIterator( source, data.decorator(), header, config );
+                        try ( CsvInputIterator iterator = new CsvInputIterator( source, data.decorator(), header, config,
+                                idType, badCollector, extractors( config ) );
                               InputEntity entity = new InputEntity() )
                         {
                             int entities = 0;

@@ -49,4 +49,9 @@ public interface Chunker extends Closeable
      * @throws IOException on I/O error.
      */
     boolean nextChunk( Chunk chunk ) throws IOException;
+
+    /**
+     * @return byte position of how much data has been returned from {@link #nextChunk(Chunk)}.
+     */
+    long position();
 }

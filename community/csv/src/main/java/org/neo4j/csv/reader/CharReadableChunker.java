@@ -54,6 +54,7 @@ public abstract class CharReadableChunker implements Chunker
         reader.close();
     }
 
+    @Override
     public long position()
     {
         return position;

@@ -248,4 +248,8 @@ public interface InputEntityVisitor extends Closeable
             actual.close();
         }
     }
+
+    InputEntityVisitor NULL = new Adapter()
+    {   // empty
+    };
 }

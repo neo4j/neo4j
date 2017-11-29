@@ -90,4 +90,10 @@ class WrappedCharReadable extends CharReadable.Adapter
     {
         return length;
     }
+
+    @Override
+    public String toString()
+    {
+        return sourceDescription;
+    }
 }
