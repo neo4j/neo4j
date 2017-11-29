@@ -21,19 +21,18 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
-
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
-
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getFieldOffset;
 
 /**
@@ -59,50 +58,52 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     private final AtomicReference<Unit> head;
     private final AtomicReference<Unit> tail;
     private final Thread downstreamSender;
-    private volatile int numberOfProcessors = 1;
+    private volatile int targetNumberOfProcessors = 1;
     private final int maxProcessors;
     private final int maxQueueLength;
     private volatile Thread receiverThread;
+    private final StampedLock stripingLock;
 
     protected ForkedProcessorStep( StageControl control, String name, Configuration config )
     {
         super( control, name, config );
         this.maxProcessors = config.maxNumberOfProcessors();
         this.forkedProcessors = new Object[this.maxProcessors];
+        stripingLock = new StampedLock();
 
         Unit noop = new Unit( -1, null, 0 );
         head = new AtomicReference<>( noop );
         tail = new AtomicReference<>( noop );
 
-        applyProcessorCount();
+        stripingLock.unlock( applyProcessorCount( stripingLock.readLock() ) );
         downstreamSender = new CompletedBatchesSender( name + " [CompletedBatchSender]" );
         maxQueueLength = 200 + maxProcessors;
     }
 
-    private void applyProcessorCount()
+    private long applyProcessorCount( long lock )
     {
-        if ( numberOfForkedProcessors != numberOfProcessors )
+        if ( numberOfForkedProcessors != targetNumberOfProcessors )
         {
+            stripingLock.unlock( lock );
+            lock = stripingLock.writeLock();
             awaitAllCompleted();
-
-            // Now there's nothing in the pipeline so the changes below doesn't race with other batches being queued or completed
-
-            int processors = numberOfProcessors;
+            int processors = targetNumberOfProcessors;
             while ( numberOfForkedProcessors < processors )
             {
                 if ( forkedProcessors[numberOfForkedProcessors] == null )
                 {
-                    forkedProcessors[numberOfForkedProcessors] = new ForkedProcessor( numberOfForkedProcessors, head.get() );
+                    forkedProcessors[numberOfForkedProcessors] = new ForkedProcessor( numberOfForkedProcessors, tail.get() );
                 }
                 numberOfForkedProcessors++;
             }
-            while ( numberOfForkedProcessors > processors )
+            if ( numberOfForkedProcessors > processors )
             {
-                numberOfForkedProcessors--;
-                // It will notice itself later, the most important thing here is that further Units
-                // will have a lower number of processor as expected max
+                numberOfForkedProcessors = processors;
+                // Excess processors will notice that they are not needed right now, and will park until they are.
+                // The most important thing here is that future Units will have a lower number of processor as expected max.
             }
         }
+        return lock;
     }
 
     private void awaitAllCompleted()
@@ -116,8 +117,8 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     @Override
     public int processors( int delta )
     {
-        numberOfProcessors = max( 1, min( numberOfProcessors + delta, maxProcessors ) );
-        return numberOfProcessors;
+        targetNumberOfProcessors = max( 1, min( targetNumberOfProcessors + delta, maxProcessors ) );
+        return targetNumberOfProcessors;
     }
 
     @Override
@@ -128,15 +129,16 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     }
 
     @Override
-    public synchronized long receive( long ticket, T batch )
+    public long receive( long ticket, T batch )
     {
         long time = nanoTime();
-        applyProcessorCount();
         while ( queuedBatches.get() >= maxQueueLength )
         {
             PARK.park( receiverThread = Thread.currentThread() );
         }
-
+        // It is of importance that all items in the queue at the same time agree on the number of processors. We take this lock in order to make sure that we
+        // do not interfere with another thread trying to drain the queue in order to change the processor count.
+        long lock = applyProcessorCount( stripingLock.readLock() );
         queuedBatches.incrementAndGet();
         Unit unit = new Unit( ticket, batch, numberOfForkedProcessors );
 
@@ -147,6 +149,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
 
         // [old head] -next-> [unit]
         myHead.next = unit;
+        stripingLock.unlock( lock );
 
         return nanoTime() - time;
     }
@@ -266,7 +269,6 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     {
         private final int id;
         private Unit current;
-        private volatile boolean end;
 
         ForkedProcessor( int id, Unit startingUnit )
         {
@@ -281,19 +283,20 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
         {
             try
             {
-                while ( !isCompleted() && !end )
+                while ( !isCompleted() )
                 {
                     Unit candidate = current.next;
                     if ( candidate != null )
                     {
-                        // There's work to do
+                        // There's work to do.
                         if ( id < candidate.processors )
                         {
+                            // We are expected to take care of this one.
                             long time = nanoTime();
                             forkedProcess( id, candidate.processors, candidate.batch );
                             candidate.processorDone( nanoTime() - time );
                         }
-                        // else skip to the next
+                        // Skip to the next.
 
                         current = candidate;
                     }

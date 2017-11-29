@@ -37,7 +37,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.Iterables.asList;
 
 public class ForkedProcessorStepTest
@@ -213,8 +212,8 @@ public class ForkedProcessorStepTest
                 {
                     if ( batch[i] % processors == id )
                     {
-                        assertTrue( "Was expecting " + ticket + " for " + batch[i],
-                                reference.compareAndSet( batch[i], ticket, ticket + 1 ) );
+                        boolean compareAndSet = reference.compareAndSet( batch[i], ticket, ticket + 1 );
+                        assertTrue( "I am " + id + ". Was expecting " + ticket + " for " + batch[i] + " but was " + reference.get( batch[i] ), compareAndSet );
                     }
                 }
             }
