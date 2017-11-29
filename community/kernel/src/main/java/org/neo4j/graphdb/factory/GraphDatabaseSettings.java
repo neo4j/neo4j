@@ -343,8 +343,9 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Configures the general policy for when check-points should occur. The default policy is to " +
                   "check-point 'periodically', as specified by the 'dbms.checkpoint.interval.tx' and " +
-                  "'dbms.checkpoint.interval.time' settings. This policy is alternatively known as 'periodic' and " +
-                  "'interval'." )
+                  "'dbms.checkpoint.interval.time' settings. " +
+                  "An alternative policy is to check-point 'continuously', which will ignore those settings and run " +
+                  "the check-point process all the time." )
     public static final Setting<String> check_point_policy = setting( "dbms.checkpoint", STRING, "periodically" );
 
     @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
