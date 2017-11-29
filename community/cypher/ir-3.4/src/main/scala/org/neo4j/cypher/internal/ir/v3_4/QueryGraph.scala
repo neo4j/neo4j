@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.ir.v3_4
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelName, Property}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.collection.{GenTraversableOnce, mutable}
 
@@ -327,6 +328,65 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
     copy(mutatingPatterns = mutatingPatterns ++ patterns)
+
+  override def toString: String = {
+    var added = false
+    val builder = new StringBuilder("QueryGraph {")
+    val stringifier = ExpressionStringifier()
+
+    def prettyPattern(p: PatternRelationship): String = {
+      val lArrow = if (p.dir == SemanticDirection.INCOMING) "<" else ""
+      val rArrow = if (p.dir == SemanticDirection.OUTGOING) ">" else ""
+      val types = if (p.types.isEmpty)
+        ""
+      else
+        p.types.map(l => l.name).mkString(":", ":", "")
+
+
+      val name = p.name.name
+      val length = p.length match {
+        case SimplePatternLength => ""
+        case VarPatternLength(1, None) => "*"
+        case VarPatternLength(x, None) => s"*$x.."
+        case VarPatternLength(min, Some(max)) => s"*$min..$max"
+      }
+
+      val relInfo = s"$name$types$length"
+
+      val left = s"(${p.nodes._1.name})-$lArrow-"
+      val right = s"-$rArrow-(${p.nodes._2.name})"
+
+      if (relInfo.isEmpty)
+        left + right
+      else
+        s"$left[$relInfo]$right"
+    }
+
+    def addSetIfNonEmpty[T](s: Iterable[T], name: String, f: T => String) = {
+      if (s.nonEmpty) {
+        if(added)
+          builder.append(", ")
+        else
+          added = true
+
+        val sortedInput = if(s.isInstanceOf[Set[_]]) s.map(x => f(x)).toSeq.sorted else s.map(f)
+        builder.
+          append(s"$name: ").
+          append(sortedInput.mkString("['", "', '", "']"))
+      }
+    }
+
+    addSetIfNonEmpty(patternNodes, "Nodes", (_: IdName).name)
+    addSetIfNonEmpty(patternRelationships, "Rels", prettyPattern)
+    addSetIfNonEmpty(argumentIds, "Arguments", (_: IdName).name)
+    addSetIfNonEmpty(selections.flatPredicates, "Predicates", stringifier.apply)
+    addSetIfNonEmpty(shortestPathPatterns, "Shortest paths", (_: ShortestPathPattern).toString)
+    addSetIfNonEmpty(optionalMatches, "Optional Matches: ", (_: QueryGraph).toString)
+    addSetIfNonEmpty(hints, "Hints", (_: Hint).toString)
+
+    builder.append("}")
+    builder.toString()
+  }
 }
 
 object QueryGraph {
