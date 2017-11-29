@@ -161,11 +161,17 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
     JavaConversionSupport.asScala(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(relId))
 
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean =
-    transactionalContext.statement.readOperations().nodeHasLabel(node, label)
+  override def isLabelSetOnNode(label: Int, node: Long): Boolean = {
+    var nodeCursor: NodeCursor = null;
+    try {
+      nodeCursor = cursors.allocateNodeCursor()
+      reads().singleNode(node, nodeCursor)
+      if (!nodeCursor.next()) false
+      else nodeCursor.labels().contains(label)
+    }
+  }
 
-  override def getOrCreateLabelId(labelName: String): Int =
-    transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
+  override def getOrCreateLabelId(labelName: String): Int = token.labelGetOrCreateForName(labelName)
 
   def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[EdgeValue] = {
     val relationships = types match {
