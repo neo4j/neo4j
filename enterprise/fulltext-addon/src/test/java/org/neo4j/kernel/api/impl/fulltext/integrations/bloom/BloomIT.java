@@ -35,6 +35,7 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
@@ -603,6 +604,24 @@ public class BloomIT
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void databaseShouldBeAbleToStartWithBloomPresentButDisabled() throws Exception
+    {
+        builder.setConfig( bloom_enabled, "false" );
+        db = getDb();
+        //all good.
+    }
+
+    @Test
+    public void shouldThrowSomewhatHelpfulMessageIfCalledWhenDisabled() throws Exception
+    {
+        builder.setConfig( bloom_enabled, "false" );
+        db = getDb();
+        expectedException.expect( QueryExecutionException.class );
+        expectedException.expectMessage( "enabled" );
+        db.execute( AWAIT_POPULATION );
     }
 
     @Test
