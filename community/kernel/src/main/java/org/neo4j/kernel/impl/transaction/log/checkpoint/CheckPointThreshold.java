@@ -19,7 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import java.time.Clock;
 import java.util.function.Consumer;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
+
 
 /**
  * A check point threshold provides information if a check point is required or not.
@@ -51,4 +56,55 @@ public interface CheckPointThreshold
      * @param transactionId the latest transaction committed id used by the check point
      */
     void checkPointHappened( long transactionId );
+
+    static CheckPointThreshold createThreshold( Config config, Clock clock )
+    {
+
+        int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
+        final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
+                new CountCommittedTransactionThreshold( txThreshold );
+
+        long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time ).toMillis();
+        TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( timeMillisThreshold, clock );
+
+        return or( countCommittedTransactionThreshold, timeCheckPointThreshold );
+    }
+
+    static CheckPointThreshold or( final CheckPointThreshold... thresholds )
+    {
+        return new CheckPointThreshold()
+        {
+            @Override
+            public void initialize( long transactionId )
+            {
+                for ( CheckPointThreshold threshold : thresholds )
+                {
+                    threshold.initialize( transactionId );
+                }
+            }
+
+            @Override
+            public boolean isCheckPointingNeeded( long transactionId, Consumer<String> consumer )
+            {
+                for ( CheckPointThreshold threshold : thresholds )
+                {
+                    if ( threshold.isCheckPointingNeeded( transactionId, consumer ) )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            @Override
+            public void checkPointHappened( long transactionId )
+            {
+                for ( CheckPointThreshold threshold : thresholds )
+                {
+                    threshold.checkPointHappened( transactionId );
+                }
+            }
+        };
+    }
 }

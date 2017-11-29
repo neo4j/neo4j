@@ -61,12 +61,11 @@ public class AbstractCheckPointThresholdTest
     private static class TheAbstractCheckPointThreshold extends AbstractCheckPointThreshold
     {
         private final boolean reached;
-        private final String description;
 
         TheAbstractCheckPointThreshold( boolean reached, String description )
         {
+            super( description );
             this.reached = reached;
-            this.description = description;
         }
 
         @Override
@@ -85,12 +84,6 @@ public class AbstractCheckPointThresholdTest
         protected boolean thresholdReached( long lastCommittedTransactionId )
         {
             return reached;
-        }
-
-        @Override
-        protected String description()
-        {
-            return description;
         }
     }
 }
