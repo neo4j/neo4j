@@ -76,8 +76,9 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
     def fixArgumentIdsOnOptionalMatch(plannerQuery: PlannerQuery): PlannerQuery = {
       val optionalMatches = plannerQuery.queryGraph.optionalMatches
-      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.queryGraph.coveredIds) { case (args, qg) =>
-        (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
+      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.queryGraph.idsWithoutOptionalMatchesOrUpdates) {
+        case (args, qg) =>
+          (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.dependencies))
       }
       plannerQuery
         .amendQueryGraph(_.withOptionalMatches(newOptionalMatches.toIndexedSeq))
@@ -88,7 +89,8 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
       val mergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph
       val newMergeMatchGraph = mergeMatchGraph.map {
         qg =>
-          val requiredArguments = qg.nodesAndRelationshipsMatched intersect qg.argumentIds
+          val nodesAndRels = QueryGraph.coveredIdsForPatterns(qg.patternNodes, qg.patternRelationships)
+          val requiredArguments = nodesAndRels intersect qg.argumentIds
           qg.withArgumentIds(requiredArguments)
       }
       plannerQuery.amendQueryGraph(qg => newMergeMatchGraph.map(qg.withMergeMatch).getOrElse(qg)).updateTail(fixArgumentIdsOnMerge)

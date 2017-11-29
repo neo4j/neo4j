@@ -63,7 +63,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
             // any dependencies from the next horizon
             dependencies --
             // But we don't need to solve variables already present by the non-optional part of the QG
-            graph.coveredIds
+            graph.idsWithoutOptionalMatchesOrUpdates
 
         val mustInclude = allDeps -- original.argumentIds
         val mustKeep = smallestGraphIncluding(original, mustInclude)

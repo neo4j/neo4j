@@ -88,7 +88,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   }
 
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
-    (qg.coveredIds -- plan.availableSymbols -- qg.argumentIds).isEmpty
+    (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
   private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
     for (pattern <- qg.patternRelationships)
