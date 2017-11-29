@@ -114,10 +114,17 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   }
 
   test("Warn for cartesian product") {
-    val result = executeWith(Configs.All, "explain match (a)-->(b), (c)-->(d) return *")
+    val result = innerExecuteDeprecated("explain match (a)-->(b), (c)-->(d) return *", Map.empty)
 
     result.notifications.toList should equal(List(
       CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(37, 1, 38), cartesianProduct(Set("c", "d").asJava))))
+  }
+
+  test("Warn for cartesian product when running 3.3") {
+    val result = innerExecuteDeprecated("explain cypher 3.3 match (a)-->(b), (c)-->(d) return *", Map.empty)
+
+    result.notifications.toList should equal(List(
+      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(19, 1, 20), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("Warn for cartesian product with runtime=compiled") {
@@ -407,6 +414,14 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   test("should warn for eager after load csv") {
     val result = innerExecuteDeprecated(
       "EXPLAIN MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line", Map.empty)
+
+    result should use("LoadCSV", "Eager")
+    result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.EagerOperatorWarning")
+  }
+
+  test("should warn for eager after load csv in 3.3") {
+    val result = innerExecuteDeprecated(
+      "EXPLAIN CYPHER 3.3 MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line", Map.empty)
 
     result should use("LoadCSV", "Eager")
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.EagerOperatorWarning")

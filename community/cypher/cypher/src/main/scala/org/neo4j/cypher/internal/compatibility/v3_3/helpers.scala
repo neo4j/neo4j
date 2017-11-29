@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, Upd
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracer3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, PlannerName => PlannerNameV3_3, ast => astV3_3}
-import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast => astV3_4}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, PlannerName => PlannerNameV3_3, ast => astV3_3, notification => nfV3_3}
+import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast => astV3_4, notification => nfV3_4}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
@@ -106,6 +106,32 @@ object helpers {
   }
 
   def as3_4(statement: astV3_3.Statement) : astV3_4.Statement = StatementWrapper(statement)
+
+  def as3_4(notification: nfV3_3.InternalNotification): nfV3_4.InternalNotification = notification match {
+    case nfV3_3.DeprecatedStartNotification(position, alternativeQuery) => nfV3_4.DeprecatedStartNotification(as3_4(position), alternativeQuery)
+    case nfV3_3.CartesianProductNotification(position, isolatedVariables) => nfV3_4.CartesianProductNotification(as3_4(position), isolatedVariables)
+    case nfV3_3.LengthOnNonPathNotification(position) => nfV3_4.LengthOnNonPathNotification(as3_4(position))
+    case nfV3_3.PlannerUnsupportedNotification => nfV3_4.PlannerUnsupportedNotification
+    case nfV3_3.RuntimeUnsupportedNotification => nfV3_4.RuntimeUnsupportedNotification
+    case nfV3_3.IndexHintUnfulfillableNotification(label, propertyKeys) => nfV3_4.IndexHintUnfulfillableNotification(label, propertyKeys)
+    case nfV3_3.JoinHintUnfulfillableNotification(identified) => nfV3_4.JoinHintUnfulfillableNotification(identified)
+    case nfV3_3.JoinHintUnsupportedNotification(identified) => nfV3_4.JoinHintUnsupportedNotification(identified)
+    case nfV3_3.IndexLookupUnfulfillableNotification(labels) => nfV3_4.IndexLookupUnfulfillableNotification(labels)
+    case nfV3_3.EagerLoadCsvNotification => nfV3_4.EagerLoadCsvNotification
+    case nfV3_3.LargeLabelWithLoadCsvNotification => nfV3_4.LargeLabelWithLoadCsvNotification
+    case nfV3_3.MissingLabelNotification(position, label) => nfV3_4.MissingLabelNotification(as3_4(position), label)
+    case nfV3_3.MissingRelTypeNotification(position, relType) => nfV3_4.MissingRelTypeNotification(as3_4(position), relType)
+    case nfV3_3.MissingPropertyNameNotification(position, name) => nfV3_4.MissingPropertyNameNotification(as3_4(position), name)
+    case nfV3_3.UnboundedShortestPathNotification(position) => nfV3_4.UnboundedShortestPathNotification(as3_4(position))
+    case nfV3_3.ExhaustiveShortestPathForbiddenNotification(position) => nfV3_4.ExhaustiveShortestPathForbiddenNotification(as3_4(position))
+    case nfV3_3.DeprecatedFunctionNotification(position, oldName, newName) => nfV3_4.DeprecatedFunctionNotification(as3_4(position), oldName, newName)
+    case nfV3_3.DeprecatedProcedureNotification(position, oldName, newName) => nfV3_4.DeprecatedProcedureNotification(as3_4(position), oldName, newName)
+    case nfV3_3.ProcedureWarningNotification(position, procedure, warning) => nfV3_4.ProcedureWarningNotification(as3_4(position), procedure, warning)
+    case nfV3_3.DeprecatedFieldNotification(position, procedure, field) => nfV3_4.DeprecatedFieldNotification(as3_4(position), procedure, field)
+    case nfV3_3.DeprecatedVarLengthBindingNotification(position, variable) => nfV3_4.DeprecatedVarLengthBindingNotification(as3_4(position), variable)
+    case nfV3_3.DeprecatedRelTypeSeparatorNotification(position) => nfV3_4.DeprecatedRelTypeSeparatorNotification(as3_4(position))
+    case nfV3_3.DeprecatedPlannerNotification => nfV3_4.DeprecatedPlannerNotification
+  }
 
   def as3_4(logicalPlan: LogicalPlanStateV3_3) : LogicalPlanState = {
     val startPosition = logicalPlan.startPosition.map(as3_4 _)

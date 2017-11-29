@@ -25,24 +25,23 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_3
 import org.neo4j.cypher.internal.compatibility.v3_4._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_4}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4, _}
 import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{idp => idpV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.{logical => logicalV3_3}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Statement => StatementV3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.phases
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracerV3_3, Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_3.phases
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
@@ -176,8 +175,8 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
           createPlan()
 
         // Log notifications/warnings from planning
-        // TODO we don't need logging, do we?
-        //executionPlan.notifications(planContext).foreach(notificationLogger.log)
+        notificationLoggerV3_3.notifications.map(helpers.as3_4).foreach(notificationLoggerV3_4.log)
+        executionPlan.notifications(planContextV3_4).foreach(notificationLoggerV3_4.log)
 
         (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
       }
