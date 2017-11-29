@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.InterruptibleChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.channels.SeekableByteChannel;
 
@@ -55,6 +56,17 @@ public interface StoreChannel
      * @see java.nio.channels.FileChannel#read(java.nio.ByteBuffer, long)
      */
     int read( ByteBuffer dst, long position ) throws IOException;
+
+    /**
+     * Try to Read a sequence of bytes from channel into the given buffer, till the buffer will be full.
+     * In case if end of channel will be reached during reading {@link IllegalStateException} will be thrown.
+     *
+     * @param dst destination buffer.
+     * @throws IOException if an I/O exception occurs.
+     * @throws IllegalStateException if end of stream reached during reading.
+     * @see ReadableByteChannel#read(ByteBuffer)
+     */
+    void readAll( ByteBuffer dst ) throws IOException;
 
     void force( boolean metaData ) throws IOException;
 

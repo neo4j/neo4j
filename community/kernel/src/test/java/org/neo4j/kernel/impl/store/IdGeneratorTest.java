@@ -140,7 +140,7 @@ public class IdGeneratorTest
             // verify that id generator is ok
             StoreChannel fileChannel = fs.open( idGeneratorFile(), OpenMode.READ_WRITE );
             ByteBuffer buffer = ByteBuffer.allocate( 9 );
-            assertEquals( 9, fileChannel.read( buffer ) );
+            fileChannel.readAll( buffer );
             buffer.flip();
             assertEquals( (byte) 0, buffer.get() );
             assertEquals( 0L, buffer.getLong() );

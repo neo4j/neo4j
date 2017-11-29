@@ -50,6 +50,12 @@ public class AbstractStoreChannel implements StoreChannel
     }
 
     @Override
+    public void readAll( ByteBuffer dst ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void force( boolean metaData ) throws IOException
     {
         throw new UnsupportedOperationException();

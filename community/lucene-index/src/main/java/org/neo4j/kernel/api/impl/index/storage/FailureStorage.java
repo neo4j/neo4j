@@ -117,7 +117,7 @@ public class FailureStorage
         try ( StoreChannel channel = fs.open( failureFile, OpenMode.READ_WRITE ) )
         {
             byte[] existingData = new byte[(int) channel.size()];
-            channel.read( ByteBuffer.wrap( existingData ) );
+            channel.readAll( ByteBuffer.wrap( existingData ) );
             channel.position( lengthOf( existingData ) );
 
             byte[] data = UTF8.encode( failure );
@@ -139,8 +139,8 @@ public class FailureStorage
         try ( StoreChannel channel = fs.open( failureFile, OpenMode.READ ) )
         {
             byte[] data = new byte[(int) channel.size()];
-            int readData = channel.read( ByteBuffer.wrap( data ) );
-            return readData <= 0 ? "" : UTF8.decode( withoutZeros( data ) );
+            channel.read( ByteBuffer.wrap( data ) );
+            return UTF8.decode( withoutZeros( data ) );
         }
     }
 
@@ -168,7 +168,7 @@ public class FailureStorage
         try ( StoreChannel channel = fs.open( failureFile, OpenMode.READ ) )
         {
             byte[] data = new byte[(int) channel.size()];
-            channel.read( ByteBuffer.wrap( data ) );
+            channel.readAll( ByteBuffer.wrap( data ) );
             channel.close();
             return !allZero( data );
         }

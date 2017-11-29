@@ -120,6 +120,12 @@ public class DelegatingStoreChannel implements StoreChannel
     }
 
     @Override
+    public void readAll( ByteBuffer dst ) throws IOException
+    {
+        delegate.readAll( dst );
+    }
+
+    @Override
     public long position() throws IOException
     {
         return delegate.position();

@@ -276,7 +276,7 @@ public class NodeStoreTest
                 return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
-                    public int read( ByteBuffer dst ) throws IOException
+                    public void readAll( ByteBuffer dst ) throws IOException
                     {
                         fired.setValue( true );
                         throw new IOException( "Proving a point here" );

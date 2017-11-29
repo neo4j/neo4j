@@ -73,6 +73,12 @@ public class OffsetChannel implements StoreChannel
     }
 
     @Override
+    public void readAll( ByteBuffer dst ) throws IOException
+    {
+        delegate.readAll( dst );
+    }
+
+    @Override
     public void force( boolean metaData ) throws IOException
     {
         delegate.force( metaData );

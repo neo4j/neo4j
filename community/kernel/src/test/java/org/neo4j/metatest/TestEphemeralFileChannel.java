@@ -119,10 +119,9 @@ public class TestEphemeralFileChannel
         // WHEN
         channel = fs.open( new File( file.getAbsolutePath() ), OpenMode.READ );
         byte[] readBytes = new byte[bytes.length];
-        int nrOfReadBytes = channel.read( ByteBuffer.wrap( readBytes ) );
+        channel.readAll( ByteBuffer.wrap( readBytes ) );
 
         // THEN
-        assertEquals( bytes.length, nrOfReadBytes );
         assertTrue( Arrays.equals( bytes, readBytes ) );
         fs.close();
     }

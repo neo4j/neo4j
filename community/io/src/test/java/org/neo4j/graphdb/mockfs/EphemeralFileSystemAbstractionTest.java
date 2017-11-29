@@ -40,7 +40,6 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocate;
-import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -263,8 +262,8 @@ public class EphemeralFileSystemAbstractionTest
         try
         {
             long claimedSize = channel.size();
-            ByteBuffer buffer = allocateDirect( (int) claimedSize );
-            channel.read( buffer, 0 );
+            ByteBuffer buffer = allocate( (int) claimedSize );
+            channel.readAll( buffer );
             buffer.flip();
 
             for ( int position = 0; position < claimedSize; position += 8 )
@@ -284,7 +283,7 @@ public class EphemeralFileSystemAbstractionTest
         try
         {
             long claimedSize = channel.size();
-            ByteBuffer buffer = allocateDirect( 8 );
+            ByteBuffer buffer = allocate( 8 );
             channel.read( buffer, 0 );
             buffer.flip();
 
@@ -313,15 +312,15 @@ public class EphemeralFileSystemAbstractionTest
 
     private ByteBuffer readLong( StoreChannel readChannel ) throws IOException
     {
-        ByteBuffer readBuffer = allocateDirect( 8 );
-        readChannel.read( readBuffer );
+        ByteBuffer readBuffer = allocate( 8 );
+        readChannel.readAll( readBuffer );
         readBuffer.flip();
         return readBuffer;
     }
 
     private void writeLong( StoreChannel channel, long value ) throws IOException
     {
-        ByteBuffer buffer = allocateDirect( 8 );
+        ByteBuffer buffer = allocate( 8 );
         buffer.putLong( value );
         buffer.flip();
         channel.write( buffer );

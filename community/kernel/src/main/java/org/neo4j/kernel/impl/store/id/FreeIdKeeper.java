@@ -183,7 +183,7 @@ public class FreeIdKeeper implements Closeable
         ByteBuffer readBuffer = ByteBuffer.allocate( bytesToRead );
 
         channel.position( startPosition );
-        readAll( bytesToRead, readBuffer );
+        channel.readAll( readBuffer );
         stackPosition = startPosition;
 
         readBuffer.flip();
@@ -198,21 +198,6 @@ public class FreeIdKeeper implements Closeable
             truncate( startPosition );
         }
         return true;
-    }
-
-    private void readAll( int bytesToRead, ByteBuffer readBuffer ) throws IOException
-    {
-        int totalRead = 0;
-        do
-        {
-            int bytesRead = channel.read( readBuffer );
-            if ( bytesRead <= 0 )
-            {
-                throw new IllegalStateException( "Unexpected value returned: " + bytesRead );
-            }
-            totalRead += bytesRead;
-        }
-        while ( totalRead < bytesToRead );
     }
 
     /**

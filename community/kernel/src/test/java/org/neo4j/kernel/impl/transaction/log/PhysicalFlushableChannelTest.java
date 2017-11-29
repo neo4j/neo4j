@@ -262,7 +262,7 @@ public class PhysicalFlushableChannelTest
         try ( StoreChannel channel = fileSystemRule.get().open( file, OpenMode.READ ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( (int) channel.size() );
-            channel.read( buffer );
+            channel.readAll( buffer );
             buffer.flip();
             return buffer;
         }

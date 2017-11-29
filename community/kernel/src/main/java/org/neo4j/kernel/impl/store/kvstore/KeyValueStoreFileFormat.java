@@ -227,11 +227,11 @@ public abstract class KeyValueStoreFileFormat
     private KeyValueStoreFile open( FileSystemAbstraction fs, File path, PageCache pages ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.wrap( new byte[maxSize * 4] );
-        try ( StoreChannel file = fs.open( path, OpenMode.READ ) )
+        try ( StoreChannel channel = fs.open( path, OpenMode.READ ) )
         {
             while ( buffer.hasRemaining() )
             {
-                int bytes = file.read( buffer );
+                int bytes = channel.read( buffer );
                 if ( bytes == -1 )
                 {
                     break;

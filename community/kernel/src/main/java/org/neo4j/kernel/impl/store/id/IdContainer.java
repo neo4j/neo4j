@@ -138,12 +138,7 @@ public class IdContainer
     private static long readAndValidate( StoreChannel channel, File fileName ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
-        int totalBytesRead = readBuffer( channel, buffer );
-        if ( totalBytesRead != HEADER_SIZE )
-        {
-            throw new InvalidIdGeneratorException(
-                    "Unable to read header, bytes read: " + totalBytesRead );
-        }
+        readHeader( channel, buffer );
         buffer.flip();
         byte storageStatus = buffer.get();
         if ( storageStatus != CLEAN_GENERATOR )
@@ -315,20 +310,18 @@ public class IdContainer
         }
     }
 
-    private static int readBuffer( StoreChannel channel, ByteBuffer buffer ) throws IOException
+    private static void readHeader( StoreChannel channel, ByteBuffer buffer ) throws IOException
     {
-        int totalBytesRead = 0;
-        int currentBytesRead;
-        do
+        try
         {
-            currentBytesRead = channel.read( buffer );
-            if ( currentBytesRead > 0 )
-            {
-                totalBytesRead += currentBytesRead;
-            }
+            channel.readAll( buffer );
         }
-        while ( buffer.hasRemaining() && currentBytesRead >= 0 );
-        return totalBytesRead;
+        catch ( IllegalStateException e )
+        {
+            ByteBuffer exceptionBuffer = buffer.duplicate();
+            exceptionBuffer.flip();
+            throw new InvalidIdGeneratorException( "Unable to read header, bytes read: " + Arrays.toString( getBufferBytes( exceptionBuffer ) ) );
+        }
     }
 
     @Override
@@ -337,5 +330,12 @@ public class IdContainer
         return "IdContainer{" + "file=" + file + ", fs=" + fs + ", fileChannel=" + fileChannel + ", defragCount=" +
                 freeIdKeeper.getCount() + ", grabSize=" + grabSize + ", aggressiveReuse=" +
                 aggressiveReuse + ", closed=" + closed + '}';
+    }
+
+    private static byte[] getBufferBytes( ByteBuffer buffer )
+    {
+        byte[] bytes = new byte[buffer.position()];
+        buffer.get( bytes );
+        return bytes;
     }
 }

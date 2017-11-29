@@ -100,6 +100,19 @@ public class StoreFileChannel implements StoreChannel
     }
 
     @Override
+    public void readAll( ByteBuffer dst ) throws IOException
+    {
+        while ( dst.hasRemaining() )
+        {
+            int bytesRead = channel.read( dst );
+            if ( bytesRead < 0 )
+            {
+                throw new IllegalStateException( "Channel has reached end-of-stream." );
+            }
+        }
+    }
+
+    @Override
     public void force( boolean metaData ) throws IOException
     {
         channel.force( metaData );

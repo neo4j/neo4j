@@ -1768,7 +1768,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ByteBuffer buf = ByteBuffer.allocate( 20 );
         try ( StoreChannel channel = fs.open( file( "a" ), OpenMode.READ ) )
         {
-            channel.read( buf );
+            channel.readAll( buf );
         }
         buf.flip();
 
@@ -2120,7 +2120,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             for ( int i = 0; i < recordCount; i++ )
             {
                 bufA.clear();
-                channel.read( bufA );
+                channel.readAll( bufA );
                 bufA.flip();
                 bufB.clear();
                 generateRecordForId( i, bufB );
