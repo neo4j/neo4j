@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgument
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{VirtualEdgeValue, MapValue, VirtualNodeValue}
+import org.neo4j.values.virtual._
 
 import scala.collection.Map
 
@@ -115,7 +115,7 @@ abstract class SetEntityPropertyOperation[T <: PropertyContainer](itemName: Stri
 
 case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
                                     expression: Expression, needsExclusiveLock: Boolean = true)
-  extends SetEntityPropertyOperation[Node](nodeName, propertyKey, expression) {
+  extends SetEntityPropertyOperation[NodeValue](nodeName, propertyKey, expression) {
 
   override def name = "SetNodeProperty"
 
@@ -126,7 +126,7 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
 
 case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey,
                                             expression: Expression, needsExclusiveLock: Boolean = true)
-  extends SetEntityPropertyOperation[Relationship](relName, propertyKey, expression) {
+  extends SetEntityPropertyOperation[EdgeValue](relName, propertyKey, expression) {
 
   override def name = "SetRelationshipProperty"
 
@@ -206,7 +206,7 @@ abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: Str
 
 case class SetNodePropertyFromMapOperation(nodeName: String, expression: Expression,
                                            removeOtherProps: Boolean, needsExclusiveLock: Boolean = true)
-  extends SetPropertyFromMapOperation[Node](nodeName, expression, removeOtherProps) {
+  extends SetPropertyFromMapOperation[NodeValue](nodeName, expression, removeOtherProps) {
 
   override def name = "SetNodePropertyFromMap"
 
@@ -217,7 +217,7 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 
 case class SetRelationshipPropertyFromMapOperation(relName: String, expression: Expression,
                                                    removeOtherProps: Boolean, needsExclusiveLock: Boolean = true)
-  extends SetPropertyFromMapOperation[Relationship](relName, expression, removeOtherProps) {
+  extends SetPropertyFromMapOperation[EdgeValue](relName, expression, removeOtherProps) {
 
   override def name = "SetRelationshipPropertyFromMap"
 

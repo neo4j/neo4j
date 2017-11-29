@@ -23,7 +23,6 @@ import java.util
 import java.util.Map
 
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue, VirtualValues}
 
@@ -49,7 +48,7 @@ trait MapSupport {
   }
 }
 
-class LazyMap[T <: PropertyContainer](ctx: QueryContext, ops: Operations[T], id: Long)
+class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
   extends java.util.Map[String, AnyValue] {
 
   import scala.collection.JavaConverters._

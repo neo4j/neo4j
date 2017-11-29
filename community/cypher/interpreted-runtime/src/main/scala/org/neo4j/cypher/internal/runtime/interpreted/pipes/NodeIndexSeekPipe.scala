@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.indexQuery
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QueryExpression}
-import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
@@ -46,7 +45,7 @@ case class NodeIndexSeekPipe(ident: String,
     val index = indexFactory(state)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
-    resultNodes.map(node => baseContext.newWith1(ident, fromNodeProxy(node)))
+    resultNodes.map(node => baseContext.newWith1(ident, node))
   }
 
 }

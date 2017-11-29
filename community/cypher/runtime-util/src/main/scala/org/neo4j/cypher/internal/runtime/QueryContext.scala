@@ -25,7 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor, KernelStatisticProvider, TokenContext}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -59,25 +59,23 @@ trait QueryContext extends TokenContext {
 
   def resources: CloseableResource
 
-  def nodeOps: Operations[Node]
+  def nodeOps: Operations[NodeValue]
 
-  def relationshipOps: Operations[Relationship]
+  def relationshipOps: Operations[EdgeValue]
 
   def createNode(): Node
 
   def createNodeId(): Long
 
-  def createRelationship(start: Node, end: Node, relType: String): Relationship
-
-  def createRelationship(start: Long, end: Long, relType: Int): Relationship
+  def createRelationship(start: Long, end: Long, relType: Int): EdgeValue
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[Relationship]
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[EdgeValue]
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator
 
-  def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship
+  def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): EdgeValue
 
   def getOrCreateLabelId(labelName: String): Int
 
@@ -98,21 +96,21 @@ trait QueryContext extends TokenContext {
   def dropIndexRule(descriptor: IndexDescriptor)
 
   //TODO this should be `Seq[AnyValue]`
-  def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[Node]
+  def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[NodeValue]
 
-  def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node]
+  def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[NodeValue]
 
-  def indexScanByContains(index: IndexDescriptor, value: String): Iterator[Node]
+  def indexScanByContains(index: IndexDescriptor, value: String): Iterator[NodeValue]
 
-  def indexScanByEndsWith(index: IndexDescriptor, value: String): Iterator[Node]
+  def indexScanByEndsWith(index: IndexDescriptor, value: String): Iterator[NodeValue]
 
-  def indexScan(index: IndexDescriptor): Iterator[Node]
+  def indexScan(index: IndexDescriptor): Iterator[NodeValue]
 
   def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator
 
-  def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[Node]
+  def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[NodeValue]
 
-  def getNodesByLabel(id: Int): Iterator[Node]
+  def getNodesByLabel(id: Int): Iterator[NodeValue]
 
   def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator
 
@@ -203,7 +201,7 @@ trait QueryContext extends TokenContext {
 
 }
 
-trait Operations[T <: PropertyContainer] {
+trait Operations[T] {
   def delete(id: Long)
 
   def setProperty(obj: Long, propertyKeyId: Int, value: Value)

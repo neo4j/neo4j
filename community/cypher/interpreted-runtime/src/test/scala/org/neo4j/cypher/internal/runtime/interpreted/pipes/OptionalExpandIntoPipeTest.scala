@@ -23,10 +23,10 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Not, Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Node, Relationship}
@@ -124,13 +124,14 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     // given
     when(query.getRelationshipsForIds(any(), any(), any())).thenReturn(Iterator.empty)
     when(query.getRelationshipsForIds(startNode.getId, SemanticDirection.OUTGOING, None))
-      .thenReturn(Iterator(relationship1, relationship2, relationship3, selfRelationship))
+      .thenReturn(Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2),
+                           fromRelationshipProxy(relationship3), fromRelationshipProxy(selfRelationship)))
     when(query.getRelationshipsForIds(endNode1.getId, SemanticDirection.INCOMING, None))
-      .thenReturn(Iterator(relationship1))
+      .thenReturn(Iterator(fromRelationshipProxy(relationship1)))
     when(query.getRelationshipsForIds(endNode2.getId, SemanticDirection.INCOMING, None))
-      .thenReturn(Iterator(relationship2))
+      .thenReturn(Iterator(fromRelationshipProxy(relationship2)))
     when(query.getRelationshipsForIds(endNode3.getId, SemanticDirection.INCOMING, None))
-      .thenReturn(Iterator(relationship3))
+      .thenReturn(Iterator(fromRelationshipProxy(relationship3)))
 
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1),//(1) - (2)

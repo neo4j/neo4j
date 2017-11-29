@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{EdgeValue, ListValue}
+import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
 
 import scala.collection.Iterator
 
@@ -54,9 +54,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def createNodeId(): Long =
     translateException(inner.createNodeId())
 
-  override def createRelationship(start: Node, end: Node, relType: String): Relationship =
-    translateException(inner.createRelationship(start, end, relType))
-
   override def getLabelsForNode(node: Long): ListValue =
     translateException(inner.getLabelsForNode(node))
 
@@ -72,11 +69,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateLabelId(labelName: String): Int =
     translateException(inner.getOrCreateLabelId(labelName))
 
-  override def nodeOps: Operations[Node] =
-    new ExceptionTranslatingOperations[Node](inner.nodeOps)
+  override def nodeOps: Operations[NodeValue] =
+    new ExceptionTranslatingOperations[NodeValue](inner.nodeOps)
 
-  override def relationshipOps: Operations[Relationship] =
-    new ExceptionTranslatingOperations[Relationship](inner.relationshipOps)
+  override def relationshipOps: Operations[EdgeValue] =
+    new ExceptionTranslatingOperations[EdgeValue](inner.relationshipOps)
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(inner.removeLabelsFromNode(node, labelIds))
@@ -102,10 +99,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropIndexRule(descriptor: IndexDescriptor) =
     translateException(inner.dropIndexRule(descriptor))
 
-  override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[Node] =
+  override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[NodeValue] =
     translateException(inner.indexSeek(index, values))
 
-  override def getNodesByLabel(id: Int): Iterator[Node] =
+  override def getNodesByLabel(id: Int): Iterator[NodeValue] =
     translateException(inner.getNodesByLabel(id))
 
   override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator =
@@ -206,7 +203,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
     translateException(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
-  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship =
+  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): EdgeValue =
     translateException(inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId))
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) =
@@ -259,7 +256,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def assertSchemaWritesAllowed(): Unit = translateException(inner.assertSchemaWritesAllowed())
 
-  class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
+  class ExceptionTranslatingOperations[T](inner: Operations[T])
     extends DelegatingOperations[T](inner) {
     override def delete(id: Long) =
       translateException(inner.delete(id))

@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.graphdb.Node
-import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.{TextValue, Values}
+import org.neo4j.values.virtual.NodeValue
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,
@@ -45,7 +44,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     val resultNodes = value match {
       case value: TextValue =>
         queryContextCall(state, descriptor, value.stringValue()).
-          map(node => baseContext.newWith1(ident, ValueUtils.fromNodeProxy(node)))
+          map(node => baseContext.newWith1(ident, node))
       case Values.NO_VALUE =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
@@ -54,7 +53,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     resultNodes
   }
 
-  protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String): Iterator[Node]
+  protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String): Iterator[NodeValue]
 
 }
 

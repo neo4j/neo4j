@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
 
 class KeysFunctionTest extends CypherFunSuite {
@@ -38,7 +38,7 @@ class KeysFunctionTest extends CypherFunSuite {
 
     val queryContext = mock[QueryContext]
 
-    val ops = mock[Operations[Node]]
+    val ops = mock[Operations[NodeValue]]
     when(queryContext.nodeOps).thenReturn(ops)
     when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator(11, 12, 13))
 
@@ -60,7 +60,7 @@ class KeysFunctionTest extends CypherFunSuite {
     // GIVEN
     val node = mock[Node]
     val queryContext = mock[QueryContext]
-    val ops = mock[Operations[Node]]
+    val ops = mock[Operations[NodeValue]]
     when(queryContext.nodeOps).thenReturn(ops)
     when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator.empty)
 
