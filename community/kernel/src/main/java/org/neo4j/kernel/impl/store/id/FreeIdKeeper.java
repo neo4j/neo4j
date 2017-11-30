@@ -25,10 +25,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.impl.store.id.IdContainer.NO_RESULT;
 
@@ -134,21 +136,52 @@ public class FreeIdKeeper implements Closeable
             result = freeIds.removeFirst();
             freeIdCount--;
         }
-        else if ( readFromDisk.size() > 0 )
+        else
         {
-            result = readFromDisk.removeFirst();
-            freeIdCount--;
+            result = getIdFromDisk();
+            if ( result != NO_RESULT )
+            {
+                freeIdCount--;
+            }
         }
-        else if ( freeIdCount > 0 && readIdBatch() )
+        return result;
+    }
+
+    public long[] getIds( int numberOfIds )
+    {
+        if ( freeIdCount == 0 )
         {
-            result = readFromDisk.removeFirst();
-            freeIdCount--;
+            return PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+        }
+        int reusableIds = (int) min( numberOfIds, freeIdCount );
+        long[] ids = new long[reusableIds];
+        int cursor = 0;
+        while ( (cursor < reusableIds) && !freeIds.isEmpty() )
+        {
+            ids[cursor++] = freeIds.removeFirst();
+        }
+        while ( cursor < reusableIds )
+        {
+            ids[cursor++] = getIdFromDisk();
+        }
+        freeIdCount -= reusableIds;
+        return ids;
+    }
+
+    private long getIdFromDisk()
+    {
+        if ( readFromDisk.isEmpty() )
+        {
+            readIdBatch();
+        }
+        if ( !readFromDisk.isEmpty() )
+        {
+            return readFromDisk.removeFirst();
         }
         else
         {
-            result = NO_RESULT;
+            return NO_RESULT;
         }
-        return result;
     }
 
     public long getCount()
@@ -159,11 +192,11 @@ public class FreeIdKeeper implements Closeable
     /*
      * After this method returns, if there were any entries found, they are placed in the readFromDisk list.
      */
-    private boolean readIdBatch()
+    private void readIdBatch()
     {
         try
         {
-            return readIdBatch0();
+            readIdBatch0();
         }
         catch ( IOException e )
         {
@@ -171,11 +204,11 @@ public class FreeIdKeeper implements Closeable
         }
     }
 
-    private boolean readIdBatch0() throws IOException
+    private void readIdBatch0() throws IOException
     {
         if ( stackPosition == 0 )
         {
-            return false;
+            return;
         }
 
         long startPosition = max( stackPosition - batchSize * ID_ENTRY_SIZE, 0 );
@@ -197,7 +230,6 @@ public class FreeIdKeeper implements Closeable
         {
             truncate( startPosition );
         }
-        return true;
     }
 
     private void readAll( int bytesToRead, ByteBuffer readBuffer ) throws IOException
