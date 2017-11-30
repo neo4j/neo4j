@@ -55,6 +55,7 @@ import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.causalclustering.core.state.RaftMessageHandler;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -177,10 +178,13 @@ public class CoreServerModule
 
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy,
                 remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachinesModule.coreStateMachines,
-                snapshotService, commandApplicationProcess, topologyService );
+                snapshotService, topologyService );
+
+        CoreStateDownloaderService downloadService = new CoreStateDownloaderService( platformModule
+                .jobScheduler, downloader, commandApplicationProcess, logProvider );
 
         RaftMessageHandler messageHandler = new RaftMessageHandler( localDatabase, logProvider,
-                consensusModule.raftMachine(), downloader, commandApplicationProcess );
+                consensusModule.raftMachine(), downloadService, commandApplicationProcess );
 
         int queueSize = config.get( CausalClusteringSettings.raft_in_queue_size );
         int maxBatch = config.get( CausalClusteringSettings.raft_in_queue_max_batch );
