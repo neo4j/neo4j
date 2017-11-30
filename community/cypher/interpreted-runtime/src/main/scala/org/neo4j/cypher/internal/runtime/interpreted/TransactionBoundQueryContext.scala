@@ -514,9 +514,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def allPrimitive: PrimitiveLongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
-
+      reads().allNodesScan(nodeCursor)
       new PrimitiveLongIterator {
-        private var _next: Long = -1L
+        private var _next: Long = fetchNext()
 
         private def fetchNext() =
           if (nodeCursor.next()) nodeCursor.nodeReference()
