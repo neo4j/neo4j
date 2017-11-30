@@ -51,7 +51,7 @@ public class DetailedExecutionMonitor extends ExecutionMonitor.Adapter
     @Override
     public void start( StageExecution execution )
     {
-        out.println( format( "%n>>>>> EXECUTING STAGE %s <<<<<%n", execution.getStageName() ) );
+        out.println( format( "%n>>>>> EXECUTING STAGE %s <<<<<%n", execution.name() ) );
     }
 
     @Override

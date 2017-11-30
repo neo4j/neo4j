@@ -35,10 +35,12 @@ import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
  */
 public class NodeFirstGroupStage extends Stage
 {
+    public static final String NAME = "Node --> Group";
+
     public NodeFirstGroupStage( Configuration config, RecordStore<RelationshipGroupRecord> groupStore,
             RecordStore<NodeRecord> nodeStore, ByteArray cache )
     {
-        super( "Node --> Group", config );
+        super( NAME, null, config, 0 );
         add( new BatchFeedStep( control(), config, allIn( groupStore, config ), groupStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, groupStore, null ) );
         add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache ) );

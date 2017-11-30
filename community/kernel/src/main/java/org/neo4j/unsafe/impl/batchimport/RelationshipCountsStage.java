@@ -36,11 +36,13 @@ import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
  */
 public class RelationshipCountsStage extends Stage
 {
+    public static final String NAME = "Relationship counts";
+
     public RelationshipCountsStage( Configuration config, NodeLabelsCache cache, RelationshipStore relationshipStore,
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
             NumberArrayFactory cacheFactory, ProgressReporter progressReporter )
     {
-        super( "Relationship counts", config );
+        super( NAME, null, config, 0 );
         add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ),
                 relationshipStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, relationshipStore, null ) );

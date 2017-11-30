@@ -62,7 +62,7 @@ public class LonelyProcessingStepTest
 
         FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine, BinaryLatch endOfUpstreamLatch )
         {
-            super( new StageExecution( "Faulty", Configuration.DEFAULT, pipeLine, 0 ),
+            super( new StageExecution( "Faulty", null, Configuration.DEFAULT, pipeLine, 0 ),
                     "Faulty", Configuration.DEFAULT );
             this.endOfUpstreamLatch = endOfUpstreamLatch;
         }

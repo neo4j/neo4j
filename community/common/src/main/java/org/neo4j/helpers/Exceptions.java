@@ -22,6 +22,7 @@ package org.neo4j.helpers;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread.State;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Predicate;
@@ -30,6 +31,10 @@ import org.neo4j.function.Predicates;
 
 public class Exceptions
 {
+    public static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = ( t, e ) ->
+    {   // Don't print about it
+    };
+
     private static final String UNEXPECTED_MESSAGE = "Unexpected Exception";
 
     public static <T extends Throwable> T withCause( T exception, Throwable cause )

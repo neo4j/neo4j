@@ -19,21 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
@@ -105,6 +95,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     private final NumberArrayFactory arrayFactory;
     private final LongArray bigCounts;
     private final AtomicInteger bigCountsCursor = new AtomicInteger();
+    private long numberOfDenseNodes;
 
     public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold )
     {
@@ -140,7 +131,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     /**
      * Should only be used by tests
      */
-    void setCount( long nodeId, long count, int typeId, Direction direction )
+    public void setCount( long nodeId, long count, int typeId, Direction direction )
     {
         if ( isDense( nodeId ) )
         {
@@ -868,49 +859,24 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         return (chunkChangedArray[chunkId] & chunkMask) != 0;
     }
 
-    public Iterator<Collection<Object>> splitRelationshipTypesIntoRounds(
-            Iterator<Entry<Object,MutableLong>> allTypes, long freeMemoryForDenseNodeCache )
+    public long calculateMaxMemoryUsage( long numberOfRelationships )
     {
-        PrefetchingIterator<Entry<Object,MutableLong>> peekableAllTypes =
-                new PrefetchingIterator<Entry<Object,MutableLong>>()
-        {
-            @Override
-            protected Entry<Object,MutableLong> fetchNextOrNull()
-            {
-                return allTypes.hasNext() ? allTypes.next() : null;
-            }
-        };
+        return calculateMaxMemoryUsage( numberOfDenseNodes, numberOfRelationships );
+    }
 
-        long numberOfDenseNodes = calculateNumberOfDenseNodes();
-        return new PrefetchingIterator<Collection<Object>>()
-        {
-            @Override
-            protected Collection<Object> fetchNextOrNull()
-            {
-                long currentSetOfRelationshipsMemoryUsage = 0;
-                Set<Object> typesToImportThisRound = new HashSet<>();
-                while ( peekableAllTypes.hasNext() )
-                {
-                    // Calculate worst-case scenario
-                    Map.Entry<Object,MutableLong> type = peekableAllTypes.peek();
-                    long relationshipCountForThisType = type.getValue().longValue();
-                    long maxDenseNodesForThisType = min( numberOfDenseNodes, relationshipCountForThisType * 2/*nodes/rel*/ );
-                    long memoryUsageForThisType = maxDenseNodesForThisType * NodeRelationshipCache.GROUP_ENTRY_SIZE;
-                    long memoryUsageUpToAndIncludingThisType =
-                            currentSetOfRelationshipsMemoryUsage + memoryUsageForThisType;
-                    if ( memoryUsageUpToAndIncludingThisType > freeMemoryForDenseNodeCache &&
-                            currentSetOfRelationshipsMemoryUsage > 0 )
-                    {
-                        // OK we've filled what we can into the cache, or worst-case at least
-                        // it's now time to import these types
-                        break;
-                    }
-                    peekableAllTypes.next();
-                    typesToImportThisRound.add( type.getKey() );
-                    currentSetOfRelationshipsMemoryUsage += memoryUsageForThisType;
-                }
-                return typesToImportThisRound.isEmpty() ? null : typesToImportThisRound;
-            }
-        };
+    public static long calculateMaxMemoryUsage( long numberOfDenseNodes, long numberOfRelationships )
+    {
+        long maxDenseNodesForThisType = min( numberOfDenseNodes, numberOfRelationships * 2/*nodes/rel*/ );
+        return maxDenseNodesForThisType * NodeRelationshipCache.GROUP_ENTRY_SIZE;
+    }
+
+    public void countingCompleted()
+    {
+        numberOfDenseNodes = calculateNumberOfDenseNodes();
+    }
+
+    public long getNumberOfDenseNodes()
+    {
+        return numberOfDenseNodes;
     }
 }

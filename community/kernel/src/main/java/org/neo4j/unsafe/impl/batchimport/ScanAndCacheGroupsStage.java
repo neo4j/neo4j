@@ -38,10 +38,12 @@ import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allInReversed;
  */
 public class ScanAndCacheGroupsStage extends Stage
 {
+    public static final String NAME = "Gather";
+
     public ScanAndCacheGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
             RelationshipGroupCache cache )
     {
-        super( "Gather", config );
+        super( NAME, null, config, 0 );
         add( new BatchFeedStep( control(), config, allInReversed( store, config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, store, null ) );
         add( new CacheGroupsStep( control(), config, cache ) );

@@ -94,7 +94,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
     private StageExecution execution( long doneBatches, Configuration config )
     {
         Step<?> step = ControlledStep.stepWithStats( "Test", 0, done_batches, doneBatches );
-        StageExecution execution = new StageExecution( "Test", config, Collections.singletonList( step ), 0 );
+        StageExecution execution = new StageExecution( "Test", null, config, Collections.singletonList( step ), 0 );
         return execution;
     }
 

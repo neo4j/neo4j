@@ -39,10 +39,12 @@ import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
  */
 public class CountGroupsStage extends Stage
 {
+    public static final String NAME = "Count groups";
+
     public CountGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
             RelationshipGroupCache groupCache )
     {
-        super( "Count groups", config );
+        super( NAME, null, config, 0 );
         add( new BatchFeedStep( control(), config, allIn( store, config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, store, null ) );
         add( new CountGroupsStep( control(), config, groupCache ) );

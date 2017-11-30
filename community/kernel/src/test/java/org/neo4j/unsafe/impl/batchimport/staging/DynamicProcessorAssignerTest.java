@@ -196,6 +196,6 @@ public class DynamicProcessorAssignerTest
 
     private StageExecution executionOf( Configuration config, Step<?>... steps )
     {
-        return new StageExecution( "Test", config, Arrays.asList( steps ), ORDER_SEND_DOWNSTREAM );
+        return new StageExecution( "Test", null, config, Arrays.asList( steps ), ORDER_SEND_DOWNSTREAM );
     }
 }
