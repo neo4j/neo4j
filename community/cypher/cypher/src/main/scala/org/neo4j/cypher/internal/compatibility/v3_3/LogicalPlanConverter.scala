@@ -156,7 +156,6 @@ object LogicalPlanConverter {
       }.apply(before)
       before._1 match {
         case plan: LogicalPlanV3_3 =>
-          // TODO the 3.3 plan might actually have not been assigned an ID
           try {
             rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
           } catch {
