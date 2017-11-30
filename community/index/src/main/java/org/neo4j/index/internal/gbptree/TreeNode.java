@@ -247,6 +247,8 @@ class TreeNode<KEY,VALUE>
         return into;
     }
 
+    // Insert key without associated value.
+    // Useful for internal nodes and testing.
     void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Type type )
     {
         insertKeySlotsAt( cursor, pos, 1, keyCount );
@@ -254,9 +256,23 @@ class TreeNode<KEY,VALUE>
         layout.writeKey( cursor, key );
     }
 
+    void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount )
+    {
+        insertKeyAt( cursor, key, pos, keyCount, Type.LEAF );
+        insertValueAt( cursor, value, pos, keyCount );
+    }
+
+    // Remove key without removing associated value.
+    // Useful for internal nodes and testing.
     void removeKeyAt( PageCursor cursor, int pos, int keyCount, Type type )
     {
         removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
+    }
+
+    void removeKeyValueAt( PageCursor cursor, int pos, int keyCount )
+    {
+        removeKeyAt( cursor, pos, keyCount, Type.LEAF );
+        removeValueAt( cursor, pos, keyCount );
     }
 
     private static void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
@@ -281,13 +297,15 @@ class TreeNode<KEY,VALUE>
         return value;
     }
 
-    void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
+    // Always insert together with key. Use insertKeyValueAt
+    private void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
     {
         insertValueSlotsAt( cursor, pos, 1, keyCount );
         setValueAt( cursor, value, pos );
     }
 
-    void removeValueAt( PageCursor cursor, int pos, int keyCount )
+    // Always insert together with key. Use removeKeyValueAt
+    private void removeValueAt( PageCursor cursor, int pos, int keyCount )
     {
         removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
     }
@@ -342,17 +360,23 @@ class TreeNode<KEY,VALUE>
         }
     }
 
-    void insertKeySlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    void insertKeyValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    {
+        insertKeySlotsAt( cursor, pos, numberOfSlots, keyCount );
+        insertValueSlotsAt( cursor, pos, numberOfSlots, keyCount );
+    }
+
+    private void insertKeySlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
     {
         insertSlotsAt( cursor, pos, numberOfSlots, keyCount, keyOffset( 0 ), keySize );
     }
 
-    void insertValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    private void insertValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
     {
         insertSlotsAt( cursor, pos, numberOfSlots, keyCount, valueOffset( 0 ), valueSize );
     }
 
-    void insertChildSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    private void insertChildSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
     {
         insertSlotsAt( cursor, pos, numberOfSlots, keyCount + 1, childOffset( 0 ), childSize() );
     }

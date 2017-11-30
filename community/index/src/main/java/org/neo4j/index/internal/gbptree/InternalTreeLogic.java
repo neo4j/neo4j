@@ -631,8 +631,7 @@ class InternalTreeLogic<KEY,VALUE>
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-            bTreeNode.insertKeyAt( cursor, key, pos, keyCount, LEAF );
-            bTreeNode.insertValueAt( cursor, value, pos, keyCount );
+            bTreeNode.insertKeyValueAt( cursor, key, value, pos, keyCount );
             TreeNode.setKeyCount( cursor, keyCount + 1 );
 
             return; // No split has occurred
@@ -770,8 +769,7 @@ class InternalTreeLogic<KEY,VALUE>
                     // first copy
                     copyKeysAndValues( cursor, middlePos, rightCursor, 0, countBeforePos );
                 }
-                bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos, LEAF );
-                bTreeNode.insertValueAt( rightCursor, newValue, countBeforePos, countBeforePos );
+                bTreeNode.insertKeyValueAt( rightCursor, newKey, newValue, countBeforePos, countBeforePos );
                 int countAfterPos = keyCount - pos;
                 if ( countAfterPos > 0 )
                 {
@@ -796,8 +794,7 @@ class InternalTreeLogic<KEY,VALUE>
         // If pos < middle. Write shifted values to left node. Else, don't write anything.
         if ( pos < middlePos )
         {
-            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1, LEAF );
-            bTreeNode.insertValueAt( cursor, newValue, pos, middlePos - 1 );
+            bTreeNode.insertKeyValueAt( cursor, newKey, newValue, pos, middlePos - 1 );
         }
         TreeNode.setKeyCount( cursor, middlePos );
         TreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
@@ -1263,9 +1260,8 @@ class InternalTreeLogic<KEY,VALUE>
     private void merge( PageCursor leftSiblingCursor, int leftSiblingKeyCount, PageCursor rightSiblingCursor,
             int rightSiblingKeyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        // Push keys in right sibling to the right
-        bTreeNode.insertKeySlotsAt( rightSiblingCursor, 0, leftSiblingKeyCount, rightSiblingKeyCount );
-        bTreeNode.insertValueSlotsAt( rightSiblingCursor, 0, leftSiblingKeyCount, rightSiblingKeyCount );
+        // Push keys and values in right sibling to the right
+        bTreeNode.insertKeyValueSlotsAt( rightSiblingCursor, 0, leftSiblingKeyCount, rightSiblingKeyCount );
 
         // Move keys and values from left sibling to right sibling
         copyKeysAndValues( leftSiblingCursor, 0, rightSiblingCursor, 0, leftSiblingKeyCount );
@@ -1287,9 +1283,8 @@ class InternalTreeLogic<KEY,VALUE>
         int keyCountInLeftSiblingAfterRebalance = totalKeyCount / 2;
         int numberOfKeysToMove = leftSiblingKeyCount - keyCountInLeftSiblingAfterRebalance;
 
-        // Push keys in right sibling to the right
-        bTreeNode.insertKeySlotsAt( cursor, 0, numberOfKeysToMove, keyCount );
-        bTreeNode.insertValueSlotsAt( cursor, 0, numberOfKeysToMove, keyCount );
+        // Push keys and values in right sibling to the right
+        bTreeNode.insertKeyValueSlotsAt( cursor, 0, numberOfKeysToMove, keyCount );
 
         // Move keys and values from left sibling to right sibling
         copyKeysAndValues( leftSiblingCursor, keyCountInLeftSiblingAfterRebalance, cursor, 0, numberOfKeysToMove );
@@ -1314,10 +1309,10 @@ class InternalTreeLogic<KEY,VALUE>
      */
     private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos )
     {
-        // Remove key/value
-        bTreeNode.removeKeyAt( cursor, pos, keyCount, LEAF );
+        // Save value to remove
         bTreeNode.valueAt( cursor, into, pos );
-        bTreeNode.removeValueAt( cursor, pos, keyCount );
+        // Remove key/value
+        bTreeNode.removeKeyValueAt( cursor, pos, keyCount );
 
         // Decrease key count
         int newKeyCount = keyCount - 1;

@@ -1019,7 +1019,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer remove rightmost key
             // [0 1 ... maxKeyCount-2]
-            removeAtPos( maxKeyCount - 1, LEAF );
+            removeAtPos( maxKeyCount - 1 );
             this.cursor.forceRetry();
 
             while ( cursor.next() )
@@ -1101,7 +1101,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer remove rightmost key
             // [1 ... maxKeyCount-1]
-            removeAtPos( 0, LEAF );
+            removeAtPos( 0 );
             seekCursor.forceRetry();
 
             while ( cursor.next() )
@@ -2284,8 +2284,7 @@ public class SeekCursorTest
         int keyCount = TreeNode.keyCount( cursor );
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
-        node.insertKeyAt( cursor, insertKey, keyCount, keyCount, type );
-        node.insertValueAt( cursor, insertValue, keyCount, keyCount );
+        node.insertKeyValueAt( cursor, insertKey, insertValue, keyCount, keyCount );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
@@ -2299,16 +2298,14 @@ public class SeekCursorTest
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
         TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
-        node.insertKeyAt( cursor, insertKey, pos, keyCount, type );
-        node.insertValueAt( cursor, insertValue, pos, keyCount );
+        node.insertKeyValueAt( cursor, insertKey, insertValue, pos, keyCount );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
-    private void removeAtPos( int pos, TreeNode.Type type )
+    private void removeAtPos( int pos )
     {
         int keyCount = TreeNode.keyCount( cursor );
-        node.removeKeyAt( cursor, pos, keyCount, type );
-        node.removeValueAt( cursor, pos, keyCount );
+        node.removeKeyValueAt( cursor, pos, keyCount );
         TreeNode.setKeyCount( cursor, keyCount - 1 );
     }
 
