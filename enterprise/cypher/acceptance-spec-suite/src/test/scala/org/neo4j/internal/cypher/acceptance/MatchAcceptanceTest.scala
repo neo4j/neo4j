@@ -805,8 +805,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createLabeledNode("B")
     createLabeledNode("C")
 
-    // TODO fixed when updating compiler dependencies to 3.3.1
-    val result = executeWith(Configs.Interpreted + Configs.Morsel - Configs.Version3_3, "MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
+    val result = executeWith(Configs.Interpreted + Configs.Morsel, "MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
 
     // Then
     result.toList should equal(List(Map("a" -> n1), Map("a" -> n2), Map("a" -> n3)))

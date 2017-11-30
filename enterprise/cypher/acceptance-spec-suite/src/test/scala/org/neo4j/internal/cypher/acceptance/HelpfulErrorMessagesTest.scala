@@ -24,9 +24,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  // Fixed in 3.2.8
-  // Fixed in 3.3.1
-  private val configuration = Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_3 - Configs.Version3_1 - Configs.Version2_3
+  private val configuration = Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3
 
   test("should provide sensible error message when omitting colon before relationship type on create") {
 

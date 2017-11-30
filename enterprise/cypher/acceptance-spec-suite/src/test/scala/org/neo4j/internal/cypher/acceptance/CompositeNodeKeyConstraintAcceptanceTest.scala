@@ -185,7 +185,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val b = createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person").getId
 
     val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel))
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
+    Configs.Version3_3
     failWithError(
       config,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY",
@@ -199,7 +200,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val b = createLabeledNode(Map("name" -> "A"), "Person").getId
 
     val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel))
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
+      Configs.Version3_3
     failWithError(
       config,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
@@ -210,7 +212,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   test("drop a non existent node key constraint") {
     val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel))
+      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
+      Configs.Version3_3
     failWithError(
       config,
       "DROP CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
@@ -235,7 +238,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // then
     val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel))
+      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
+      Configs.Version3_3
     failWithError(config,
       "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY",
       List("There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
@@ -248,7 +252,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // then
     val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel))
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
+      Configs.Version3_3
     failWithError(
       config,
       "CREATE INDEX ON :Person(firstname, lastname)",
