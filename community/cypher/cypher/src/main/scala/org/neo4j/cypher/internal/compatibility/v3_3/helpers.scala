@@ -82,7 +82,7 @@ object helpers {
 
   def as3_3(pos: InputPosition): InputPositionV3_3 = InputPositionV3_3(pos.offset, pos.line, pos.column)
 
-  def as3_4(pos: InputPositionV3_3): InputPosition = InputPosition(pos.offset, pos.line, pos.column)
+  def as3_4(pos: InputPositionV3_3): InputPosition = if(pos == null) null else InputPosition(pos.offset, pos.line, pos.column)
 
   def as3_4(planId: LogicalPlanIdV3_3) : LogicalPlanIdV3_4 = new LogicalPlanIdV3_4(planId.underlying)
 

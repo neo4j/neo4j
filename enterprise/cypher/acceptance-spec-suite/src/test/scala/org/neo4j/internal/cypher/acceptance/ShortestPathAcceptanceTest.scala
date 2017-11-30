@@ -50,6 +50,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   }
 
   // TODO The next four tests are expected to work with 3.1 and rule planner (not 2.3!) as soon as the dependencies are updated
+  // The first two are also expected to start working in 3.3 then
   val excludedConfigs = Configs.Version3_1 + Configs.AllRulePlanners
 
   test("shortest path in a with clause") {
@@ -63,7 +64,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version3_3 - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List(List(nodeA, nodeB)))
   }
@@ -79,7 +80,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version3_3 - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List(null))
   }

@@ -26,7 +26,7 @@ import scala.language.postfixOps
 
 class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   val configs = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema, Runtimes.Interpreted, Runtimes.Slotted)) +
-    TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledBytecode, Runtimes.CompiledSource))
+    TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledBytecode, Runtimes.CompiledSource)) + Configs.Version3_3
   val expectedException = "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs."
 
   test("from graph") {
