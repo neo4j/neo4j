@@ -160,9 +160,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
-        val nullableOffsets = nullableKeys.map(k => slots.getLongOffsetFor(k.name))
+        val nullableSlots = nullableKeys.map(k => slots.get(k.name).get)
         val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
-        OptionalSlottedPipe(source, nullableOffsets.toSeq, slots, argumentSize)(id)
+        OptionalSlottedPipe(source, nullableSlots.toSeq, slots, argumentSize)(id)
 
       case Projection(_, expressions) =>
         val expressionsWithSlots: Map[Int, Expression] = expressions collect {

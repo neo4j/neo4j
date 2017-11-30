@@ -19,24 +19,37 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.values.storable.Values
 
 case class OptionalSlottedPipe(source: Pipe,
-                               nullableOffsets: Seq[Int],
+                               nullableSlots: Seq[Slot],
                                slots: SlotConfiguration,
                                argumentSize: SlotConfiguration.Size)
                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with Pipe {
 
+  val setNullableSlotToNullFunctions =
+    nullableSlots.map {
+      case LongSlot(offset, _, _) =>
+        (context: ExecutionContext) => context.setLongAt(offset, -1L)
+      case RefSlot(offset, _, _) =>
+        (context: ExecutionContext) => context.setRefAt(offset, Values.NO_VALUE)
+    }
+
+  def setNullableSlotsToNull(context: ExecutionContext) =
+    setNullableSlotToNullFunctions.foreach { f =>
+      f(context)
+    }
+
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
     val context = PrimitiveExecutionContext(slots)
     state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
-    // TODO: This can probably be done with java.util.Arrays.fill knowing the first offset
-    nullableOffsets.foreach(offset => context.setLongAt(offset, -1))
+    setNullableSlotsToNull(context)
     context
   }
 
