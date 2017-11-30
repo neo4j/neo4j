@@ -81,6 +81,7 @@ public class PointPropertiesRecordFormatIT
             node.setProperty( "c", "d" );
             transaction.success();
         }
+        restartedOldFormatDatabase.shutdown();
     }
 
     @Test
@@ -109,6 +110,7 @@ public class PointPropertiesRecordFormatIT
             node.setProperty( "c", "d" );
             transaction.success();
         }
+        restartedOldFormatDatabase.shutdown();
     }
 
     @Test
