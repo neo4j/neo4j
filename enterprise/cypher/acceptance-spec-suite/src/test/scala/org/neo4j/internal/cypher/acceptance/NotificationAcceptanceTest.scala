@@ -622,6 +622,21 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
       DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(33, 1, 34),
                                        deprecatedName("rels", "relationships")))
   }
+
+  test("should warn when using START in newer runtimes") {
+    createNode()
+    val query = "EXPLAIN CYPHER runtime=slotted START n=node(0) RETURN n"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    val notifications = result.notifications
+    notifications should contain(RUNTIME_UNSUPPORTED.notification(new graphdb.InputPosition(31,1,32)))
+  }
+
+  test("should warn when using CREATE UNIQUE in newer runtimes") {
+    val query = "EXPLAIN CYPHER runtime=slotted MATCH (root { name: 'root' }) CREATE UNIQUE (root)-[:LOVES]-(someone) RETURN someone"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    val notifications = result.notifications
+    notifications should contain(RUNTIME_UNSUPPORTED.notification(new graphdb.InputPosition(61,1,62)))
+  }
 }
 
 object NotificationAcceptanceTest {
