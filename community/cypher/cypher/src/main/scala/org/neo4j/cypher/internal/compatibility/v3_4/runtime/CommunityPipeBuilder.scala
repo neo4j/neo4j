@@ -256,20 +256,24 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
 
       case SetNodeProperty(_, IdName(name), propertyKey, expression) =>
+        val needsExclusiveLock = ASTExpression.hasPropertyReadDependency(name, expression, propertyKey)
         SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
-          buildExpression(expression)))(id = id)
+          buildExpression(expression), needsExclusiveLock))(id = id)
 
       case SetNodePropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
+        val needsExclusiveLock = ASTExpression.mapExpressionHasPropertyReadDependency(name, expression)
         SetPipe(source,
-          SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
+          SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock))(id = id)
 
       case SetRelationshipPropery(_, IdName(name), propertyKey, expression) =>
+        val needsExclusiveLock = ASTExpression.hasPropertyReadDependency(name, expression, propertyKey)
         SetPipe(source,
-          SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression)))(id = id)
+          SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression), needsExclusiveLock))(id = id)
 
       case SetRelationshipPropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
+        val needsExclusiveLock = ASTExpression.mapExpressionHasPropertyReadDependency(name, expression)
         SetPipe(source,
-          SetRelationshipPropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
+          SetRelationshipPropertyFromMapOperation(name, buildExpression(expression), removeOtherProps, needsExclusiveLock))(id = id)
 
       case SetProperty(_, entityExpr, propertyKey, expression) =>
         SetPipe(source, SetPropertyOperation(
@@ -310,9 +314,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  private def varLengthPredicate(predicates: Seq[(Variable, ASTExpression)]): VarLengthPredicate  = {
+  private def varLengthPredicate(predicates: Seq[(LogicalVariable, ASTExpression)]): VarLengthPredicate  = {
     //Creates commands out of the predicates
-    def asCommand(predicates: Seq[(Variable, ASTExpression)]) = {
+    def asCommand(predicates: Seq[(LogicalVariable, ASTExpression)]) = {
       val (keys: Seq[Variable], exprs) = predicates.unzip
 
       val commands = exprs.map(buildPredicate)

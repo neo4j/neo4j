@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   val createConf = Configs.Interpreted - Configs.Cost2_3
-  val deleteConf = Configs.CommunityInterpreted - Configs.Cost2_3
+  val deleteConf = Configs.Interpreted - Configs.Cost2_3
 
   test("create a single node") {
     val before = graph.inTx(graph.getAllNodes.asScala.size)
@@ -201,7 +201,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "unwind {params} as m create (x) set x = m ", params = Map("params" -> maps))
+    val result = executeWith(createConf, "unwind {params} as m create (x) set x = m ", params = Map("params" -> maps))
 
     assertStats(result,
       nodesCreated = 3,
@@ -322,7 +322,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("delete and delete again") {
     createNode()
-    val result = executeWith(deleteConf, "match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
+    val result = executeWith(deleteConf - Configs.SlottedInterpreted, "match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
 
     assertStats(result, nodesDeleted = 1)
   }

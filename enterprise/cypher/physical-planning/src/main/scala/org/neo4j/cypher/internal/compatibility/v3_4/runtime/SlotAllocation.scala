@@ -379,7 +379,29 @@ object SlotAllocation {
       case Eager(_) =>
         source.copy()
 
-      case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
+      case _: DeleteNode |
+           _: DeleteRelationship |
+           _: DeletePath |
+           _: DeleteExpression |
+           _: DetachDeleteNode |
+           _: DetachDeletePath |
+           _: DetachDeleteExpression =>
+        source
+
+      case _: SetLabels |
+           _: SetNodeProperty |
+           _: SetNodePropertiesFromMap |
+           _: SetRelationshipPropery |
+           _: SetRelationshipPropertiesFromMap |
+           _: SetProperty |
+           _: RemoveLabels =>
+        source
+
+      case _: LockNodes =>
+        source
+
+      case p =>
+        throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
   /**
@@ -400,8 +422,8 @@ object SlotAllocation {
       case _: Apply =>
         rhs
 
-      case _: SemiApply |
-           _: AntiSemiApply =>
+      case _: AbstractSemiApply |
+           _: AbstractSelectOrSemiApply =>
         lhs
 
       case _: AntiConditionalApply |
@@ -471,7 +493,12 @@ object SlotAllocation {
             }
         }
         result
-      case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
+
+      case _: AssertSameNode =>
+        lhs
+
+      case p =>
+        throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
   private def addGroupingMap(groupingExpressions: Map[String, Expression],

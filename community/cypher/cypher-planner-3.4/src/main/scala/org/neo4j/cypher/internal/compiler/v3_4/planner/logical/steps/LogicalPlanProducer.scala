@@ -131,7 +131,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                     edgePredicate: Expression,
                     nodePredicate: Expression,
                     solvedPredicates: Seq[Expression],
-                    legacyPredicates: Seq[(Variable, Expression)] = Seq.empty,
+                    legacyPredicates: Seq[(LogicalVariable, Expression)] = Seq.empty,
                     mode: ExpansionMode)(implicit context: LogicalPlanningContext): LogicalPlan = pattern.length match {
     case l: VarPatternLength =>
       val projectedDir = projectedDirection(pattern, from, dir)

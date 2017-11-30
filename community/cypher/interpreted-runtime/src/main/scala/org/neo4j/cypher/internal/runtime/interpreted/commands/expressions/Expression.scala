@@ -116,25 +116,3 @@ trait ExpressionWInnerExpression extends Expression {
   def myType:CypherType
   def expectedInnerType:CypherType
 }
-
-object Expression {
-  def mapExpressionHasPropertyReadDependency(mapEntityName: String, mapExpression: Expression): Boolean =
-    mapExpression match {
-      case LiteralMap(map) => map.exists {
-        case (k, v) => v.subExpressions.exists {
-          case Property(Variable(entityName), propertyKey) =>
-            entityName == mapEntityName && propertyKey.name == k
-          case _ => false
-        }
-      }
-      case _ => false
-    }
-
-  def hasPropertyReadDependency(entityName: String, expression: Expression, propertyKey: String): Boolean =
-    expression.subExpressions.exists {
-      case Property(Variable(name), key) =>
-        name == entityName && key.name == propertyKey
-      case _ =>
-        false
-    }
-}

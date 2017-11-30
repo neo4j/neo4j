@@ -72,9 +72,9 @@ class SemanticTable(
 
   def isNodeCollection(expr: String) = getTypeFor(expr) == CTList(CTNode).invariant
 
-  def isNode(expr: Variable) = types(expr).specified == CTNode.invariant
+  def isNode(expr: LogicalVariable) = types(expr).specified == CTNode.invariant
 
-  def isRelationship(expr: Variable) = types(expr).specified == CTRelationship.invariant
+  def isRelationship(expr: LogicalVariable) = types(expr).specified == CTRelationship.invariant
 
   def addNode(expr: Variable) =
     copy(types = types.updated(expr, ExpressionTypeInfo(CTNode.invariant, None)))

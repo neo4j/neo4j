@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState.ScopeLocation
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalVariable, Variable}
 
 import scala.collection.immutable.HashMap
 import scala.language.postfixOps
 
 object SymbolUse {
-  def apply(variable:Variable):SymbolUse = SymbolUse(variable.name, variable.position)
+  def apply(variable:LogicalVariable):SymbolUse = SymbolUse(variable.name, variable.position)
 }
 
 // A symbol use represents the occurrence of a symbol at a position
@@ -378,7 +378,7 @@ case class SemanticState(currentScope: ScopeLocation,
         Left(SemanticError(s"`${variable.name}` already declared as variable", variable.position, symbol.positions.toSeq: _*))
     }
 
-  def declareVariable(variable: Variable, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
+  def declareVariable(variable: LogicalVariable, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
       case None =>
         Right(updateVariable(variable, possibleTypes, positions + variable.position))
@@ -427,7 +427,7 @@ case class SemanticState(currentScope: ScopeLocation,
         }
     }
 
-  def ensureVariableDefined(variable: Variable): Either[SemanticError, SemanticState] =
+  def ensureVariableDefined(variable: LogicalVariable): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
       case None  =>
         Left(SemanticError(s"Variable `${variable.name}` not defined", variable.position))
@@ -468,13 +468,13 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def expressionType(expression: Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateGraph(variable: Variable, locations: Set[InputPosition], generated: Boolean = false) =
+  private def updateGraph(variable: LogicalVariable, locations: Set[InputPosition], generated: Boolean = false) =
     copy(
       currentScope = currentScope.updateGraph(variable.name, locations, generated),
       typeTable = typeTable.updated(variable, ExpressionTypeInfo(CTGraphRef))
     )
 
-  private def updateVariable(variable: Variable, types: TypeSpec, locations: Set[InputPosition]) =
+  private def updateVariable(variable: LogicalVariable, types: TypeSpec, locations: Set[InputPosition]) =
     copy(
       currentScope = currentScope.updateVariable(variable.name, types, locations),
       typeTable = typeTable.updated(variable, ExpressionTypeInfo(types))

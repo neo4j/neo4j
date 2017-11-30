@@ -41,15 +41,15 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
   override def instance(ignored: CompilerContext): Rewriter = topDown(Rewriter.lift {
     case RegularPlannerQuery(graph, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _), tail)
       if validAggregations(aggregations) =>
-      val projectionDeps: Iterable[Variable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
+      val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
       rewrite(projectionDeps, graph, proj, tail)
 
     case RegularPlannerQuery(graph, proj@DistinctQueryProjection(distinctExpressions, _), tail) =>
-      val projectionDeps: Iterable[Variable] = distinctExpressions.values.flatMap(_.dependencies)
+      val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
       rewrite(projectionDeps, graph, proj, tail)
   })
 
-  private def rewrite(projectionDeps: Iterable[Variable], graph: QueryGraph, proj: QueryProjection, tail: Option[PlannerQuery]): RegularPlannerQuery = {
+  private def rewrite(projectionDeps: Iterable[LogicalVariable], graph: QueryGraph, proj: QueryProjection, tail: Option[PlannerQuery]): RegularPlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
     val dependencies: Set[IdName] = projectionDeps.map(IdName.fromVariable).toSet ++ updateDeps
 

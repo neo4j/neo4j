@@ -18,20 +18,19 @@ package org.neo4j.cypher.internal.v3_4.expressions
 
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 
-case class Variable(name: String)(val position: InputPosition) extends LogicalVariable {
+abstract class LogicalVariable extends Expression {
+  def name: String
 
-  override def copyId = copy()(position)
+  def copyId: LogicalVariable
 
-  override def renameId(newName: String) = copy(name = newName)(position)
+  def renameId(newName: String): LogicalVariable
 
-  override def bumpId = copy()(position.bumped())
+  def bumpId: LogicalVariable
 
-  override def asCanonicalStringVal: String = name
+  def position: InputPosition
 }
 
-object Variable {
-  implicit val byName: Ordering[Variable] =
-    Ordering.by { (variable: Variable) =>
-      (variable.name, variable.position)
-    }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
+object LogicalVariable {
+  def unapply(arg: Variable): Option[String] = Some(arg.name)
 }
+

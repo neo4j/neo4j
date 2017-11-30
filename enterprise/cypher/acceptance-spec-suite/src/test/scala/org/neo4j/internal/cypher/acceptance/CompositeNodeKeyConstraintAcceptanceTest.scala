@@ -157,7 +157,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("name" -> "A"), "Person")
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY".fixNewLines)
 
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
         TestConfiguration(V3_1 -> V3_1, Cost, Runtimes.Default) +
         TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
     failWithError(
@@ -171,7 +171,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
         TestConfiguration(V3_1, Cost, Runtimes.Default) +
         TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
     failWithError(
@@ -223,7 +223,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
         TestConfiguration(V3_1, Cost, Runtimes.Default) +
         TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
     failWithError(
@@ -237,7 +237,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
         TestConfiguration(V3_1, Cost, Runtimes.Default) +
         TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
     failWithError(
@@ -280,7 +280,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val id = createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood"), "Person").getId
 
     // Expect
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
         TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
         TestConfiguration(Versions(V2_3, Versions.Default), Rule, Runtimes.Default)
     failWithError(config,
@@ -295,7 +295,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val node = createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
 
     // When
-    val config = TestScenario(Versions.Default, Planners.Default, Interpreted) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted)) +
       TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(config, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines)
@@ -312,7 +312,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
 
     // When
-    val configWhen = TestScenario(Versions.Default, Planners.Default, Interpreted) +
+    val configWhen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted)) +
       TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines)
@@ -330,7 +330,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
 
     // When
-    val configWhen = TestScenario(Versions.Default, Planners.Default, Interpreted) +
+    val configWhen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
       TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines)

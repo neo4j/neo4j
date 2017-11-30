@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.v3_4.expressions
 import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
 
 case class AndedPropertyInequalities(
-                                      variable: Variable,
-                                      property: Property,
+                                      variable: LogicalVariable,
+                                      property: LogicalProperty,
                                       inequalities: NonEmptyList[InequalityExpression]
                                     ) extends Expression {
   def position = variable.position

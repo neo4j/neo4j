@@ -23,7 +23,7 @@ import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
@@ -49,7 +49,7 @@ case class NodeHashJoinSlottedPipe(leftSide: Array[Int],
     for (i <- keyColumns.indices) {
       val idx = keyColumns(i)
       val nodeId = context.getLongAt(idx)
-      if (nodeIsNull(nodeId))
+      if (entityIsNull(nodeId))
         return None
       key(i) = nodeId
     }

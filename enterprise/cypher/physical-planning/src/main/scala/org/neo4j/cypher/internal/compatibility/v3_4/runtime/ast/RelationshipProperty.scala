@@ -19,18 +19,20 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
-case class RelationshipProperty(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
+import org.neo4j.cypher.internal.v3_4.expressions.LogicalProperty
+
+case class RelationshipProperty(offset: Int, propToken: Int, name: String)(prop: LogicalProperty) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name
 }
 
-case class RelationshipPropertyLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
+case class RelationshipPropertyLate(offset: Int, propKey: String, name: String)(prop: LogicalProperty) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name
 }
 
-case class RelationshipPropertyExists(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
+case class RelationshipPropertyExists(offset: Int, propToken: Int, name: String)(prop: LogicalProperty) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name
 }
 
-case class RelationshipPropertyExistsLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
+case class RelationshipPropertyExistsLate(offset: Int, propKey: String, name: String)(prop: LogicalProperty) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name
 }

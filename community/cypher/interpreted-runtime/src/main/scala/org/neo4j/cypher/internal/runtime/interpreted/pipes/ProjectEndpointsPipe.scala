@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.VirtualValues.reverse
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{EdgeReference, EdgeValue, ListValue, NodeValue}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
@@ -70,23 +71,38 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   }
 
   private def findSimpleLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
-    val rel = Some(context(relName).asInstanceOf[EdgeValue]).filter(hasAllowedType)
+    val relValue = context(relName) match {
+      case edgeValue: EdgeValue => edgeValue
+      case edgeRef: EdgeReference => ValueUtils.fromRelationshipProxy(qtx.relationshipOps.getById(edgeRef.id()))
+    }
+    val rel = Some(relValue).filter(hasAllowedType)
     rel.flatMap { rel => pickStartAndEnd(rel, rel, context, qtx)}
   }
 
   private def findVarLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue, ListValue)] = {
     val rels = makeTraversable(context(relName))
-    if (rels.nonEmpty && allHasAllowedType(rels)) {
-      pickStartAndEnd(rels.head.asInstanceOf[EdgeValue], rels.last.asInstanceOf[EdgeValue], context, qtx).map { case (s, e) => (s, e, rels) }
+    if (rels.nonEmpty && allHasAllowedType(rels, qtx)) {
+      val firstRel = rels.head match {
+        case edgeValue: EdgeValue => edgeValue
+        case edgeRef: EdgeReference => ValueUtils.fromRelationshipProxy(qtx.relationshipOps.getById(edgeRef.id()))
+      }
+      val lastRel = rels.last match {
+        case edgeValue: EdgeValue => edgeValue
+        case edgeRef: EdgeReference => ValueUtils.fromRelationshipProxy(qtx.relationshipOps.getById(edgeRef.id()))
+      }
+      pickStartAndEnd(firstRel, lastRel, context, qtx).map { case (s, e) => (s, e, rels) }
     } else {
       None
     }
   }
 
-  private def allHasAllowedType(rels: ListValue): Boolean = {
+  private def allHasAllowedType(rels: ListValue, qtx: QueryContext): Boolean = {
     val iterator = rels.iterator()
     while(iterator.hasNext) {
-      val next = iterator.next().asInstanceOf[EdgeValue]
+      val next = iterator.next() match {
+        case edgeValue: EdgeValue => edgeValue
+        case edgeRef: EdgeReference => ValueUtils.fromRelationshipProxy(qtx.relationshipOps.getById(edgeRef.id()))
+      }
       if (!hasAllowedType(next)) return false
     }
     true

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -83,7 +83,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
 
     for (idx <- myVariables.indices) {
       key(idx) = context(myVariables(idx)) match {
-        case n: NodeValue => n.id
+        case n: VirtualNodeValue => n.id
         case _ => return None
       }
     }

@@ -67,7 +67,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("IdSeekable works") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
-    Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
+    Mockito.when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertMatches(expr) {
@@ -82,7 +82,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("IdSeekable does not match if rhs depends on lhs variable") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
-    Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
+    Mockito.when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
@@ -92,7 +92,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("IdSeekable does not match if function is not the id function") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("rand") _, nodeA)_
-    Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
+    Mockito.when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
@@ -103,7 +103,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   test("PropertySeekable works with plain expressions") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     val expr: Expression = In(leftExpr, expr2)_
-    Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
+    Mockito.when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     assertMatches(expr) {
       case AsPropertySeekable(seekable) =>
@@ -119,8 +119,8 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2))_
     val expr: Expression = In(leftExpr, rightExpr)_
-    Mockito.when(expr1.dependencies).thenReturn(Set.empty[Variable])
-    Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
+    Mockito.when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
+    Mockito.when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     assertMatches(expr) {
       case AsPropertySeekable(seekable) =>
@@ -134,7 +134,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("PropertySeekable does not match if rhs depends on lhs variable") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
+    Mockito.when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
     val expr: Expression = In(leftExpr, expr2)_
 
     assertDoesNotMatch(expr) {

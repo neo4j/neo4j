@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(src)  {
@@ -29,7 +29,7 @@ case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Logica
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map { ctx =>
       val nodesToLock: Set[Long] = variablesToLock.flatMap { varName =>
-        Option(ctx(varName).asInstanceOf[NodeValue]).map(_.id)
+        Option(ctx(varName).asInstanceOf[VirtualNodeValue]).map(_.id)
       }
       state.query.lockNodes(nodesToLock.toSeq: _*)
       ctx

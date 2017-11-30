@@ -14,24 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.v3_4.expressions
+package org.neo4j.cypher.internal.util.v3_4
 
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.AssertionRunner.Thunk
 
-case class Variable(name: String)(val position: InputPosition) extends LogicalVariable {
-
-  override def copyId = copy()(position)
-
-  override def renameId(newName: String) = copy(name = newName)(position)
-
-  override def bumpId = copy()(position.bumped())
-
-  override def asCanonicalStringVal: String = name
-}
-
-object Variable {
-  implicit val byName: Ordering[Variable] =
-    Ordering.by { (variable: Variable) =>
-      (variable.name, variable.position)
-    }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
+object AssertionUtils {
+  def ifAssertionsEnabled(f: => Unit): Unit = {
+    AssertionRunner.runUnderAssertion(new Thunk {
+      override def apply() = f
+    })
+  }
 }

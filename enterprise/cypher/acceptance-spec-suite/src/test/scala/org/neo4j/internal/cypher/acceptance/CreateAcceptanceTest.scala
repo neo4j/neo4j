@@ -42,7 +42,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createNode(("foo", 42), ("bar", "fu"))
     val query = "MATCH (a) SET a = {props} RETURN a.foo, a.bar"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz")))
     assertStats(result, propertiesWritten = 2)

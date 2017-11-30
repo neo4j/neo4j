@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import org.neo4j.cypher.InvalidSemanticsException
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, NonEmptyList}
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, IsList, IsMap}
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, NonEmptyList}
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue}
 
 import scala.util.{Failure, Success, Try}
 
@@ -152,8 +151,8 @@ case class True() extends Predicate {
 
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = variable(m, state) match {
-    case pc: NodeValue => Some(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc.id, _)))
-    case pc: EdgeValue => Some(
+    case pc: VirtualNodeValue => Some(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc.id, _)))
+    case pc: VirtualEdgeValue => Some(
       propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc.id, _)))
     case IsMap(map) => Some(map(state.query).get(propertyKey.name) != Values.NO_VALUE)
     case Values.NO_VALUE => None
@@ -290,7 +289,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
       None
 
     case value =>
-      val node = CastSupport.castOrFail[NodeValue](value)
+      val node = CastSupport.castOrFail[VirtualNodeValue](value)
       val nodeId = node.id
       val queryCtx = state.query
 

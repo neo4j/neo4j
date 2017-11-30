@@ -25,8 +25,9 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost2_3
-  val expectedToFail = Configs.CommunityInterpreted - Configs.Cost2_3 + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
-  val expectedToFail2 = Configs.CommunityInterpreted - Configs.Version2_3 + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
+  val expectedToSucceedIncludingSlotted = Configs.Interpreted - Configs.Cost2_3
+  val expectedToFail = Configs.Interpreted - Configs.Cost2_3 + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
+  val expectedToFail2 = Configs.Interpreted - Configs.Version2_3 + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
 
   test("optional match and set") {
     val n1 = createLabeledNode("L1")
@@ -34,7 +35,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     relate(n1, n2, "R1")
 
     // only fails when returning distinct...
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(expectedToSucceedIncludingSlotted,
       """
         |MATCH (n1:L1)-[:R1]->(n2:L2)
         |OPTIONAL MATCH (n3)<-[r:R2]-(n2)
@@ -50,7 +51,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val node = createNode()
 
     // when
-    val result = executeWith(expectedToSucceed, "MATCH (n) SET n.property = ['foo','bar'] RETURN n.property")
+    val result = executeWith(expectedToSucceedIncludingSlotted, "MATCH (n) SET n.property = ['foo','bar'] RETURN n.property")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -86,7 +87,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode()
 
     // when
-    val result = executeWith(expectedToSucceed, "MATCH (n) SET (CASE WHEN true THEN n END).name = 'neo4j' RETURN count(*)")
+    val result = executeWith(expectedToSucceedIncludingSlotted, "MATCH (n) SET (CASE WHEN true THEN n END).name = 'neo4j' RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -99,7 +100,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val r = relate(createNode(), createNode())
 
     // when
-    val result = executeWith(expectedToSucceed, "MATCH ()-[r]->() SET (CASE WHEN true THEN r END).name = 'neo4j' RETURN count(*)")
+    val result = executeWith(expectedToSucceedIncludingSlotted, "MATCH ()-[r]->() SET (CASE WHEN true THEN r END).name = 'neo4j' RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)

@@ -86,15 +86,15 @@ object extractPredicates {
     }
   }
 
-  private def replaceVariable(from: Variable, to: String): Rewriter =
+  private def replaceVariable(from: LogicalVariable, to: String): Rewriter =
     bottomUp(Rewriter.lift {
       case v: Variable if v == from => Variable(to)(v.position)
     })
 
   object AllRelationships {
-    def unapply(v: Any): Option[(Variable, String, Expression)] =
+    def unapply(v: Any): Option[(LogicalVariable, String, Expression)] =
       v match {
-        case AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ Variable(name))
+        case AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
             if variable == relId || !innerPredicate.dependencies(relId) =>
           Some((variable, name, innerPredicate))
 
@@ -103,7 +103,7 @@ object extractPredicates {
   }
 
   object AllRelationshipsInPath {
-    def unapply(v: Any): Option[(String, String, Variable, Expression)] =
+    def unapply(v: Any): Option[(String, String, LogicalVariable, Expression)] =
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
@@ -114,8 +114,8 @@ object extractPredicates {
               Seq(
                 PathExpression(
                   NodePathStep(
-                    startNode: Variable,
-                    MultiRelationshipPathStep(rel: Variable, _, NilPathStep))))))
+                    startNode: LogicalVariable,
+                    MultiRelationshipPathStep(rel: LogicalVariable, _, NilPathStep))))))
             if fname == "relationships" =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
@@ -124,7 +124,7 @@ object extractPredicates {
   }
 
   object AllNodesInPath {
-    def unapply(v: Any): Option[(String, String, Variable, Expression)] =
+    def unapply(v: Any): Option[(String, String, LogicalVariable, Expression)] =
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
@@ -135,8 +135,8 @@ object extractPredicates {
               Seq(
                 PathExpression(
                   NodePathStep(
-                    startNode: Variable,
-                    MultiRelationshipPathStep(rel: Variable, _, NilPathStep))))))
+                    startNode: LogicalVariable,
+                    MultiRelationshipPathStep(rel: LogicalVariable, _, NilPathStep))))))
             if fname == "nodes" =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
@@ -145,7 +145,7 @@ object extractPredicates {
   }
 
   object NoRelationshipInPath {
-    def unapply(v: Any): Option[(String, String, Variable, Expression)] =
+    def unapply(v: Any): Option[(String, String, LogicalVariable, Expression)] =
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
@@ -156,8 +156,8 @@ object extractPredicates {
               Seq(
                 PathExpression(
                   NodePathStep(
-                    startNode: Variable,
-                    MultiRelationshipPathStep(rel: Variable, _, NilPathStep))))))
+                    startNode: LogicalVariable,
+                    MultiRelationshipPathStep(rel: LogicalVariable, _, NilPathStep))))))
             if fname == "relationships" =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
@@ -166,7 +166,7 @@ object extractPredicates {
   }
 
   object NoNodeInPath {
-    def unapply(v: Any): Option[(String, String, Variable, Expression)] =
+    def unapply(v: Any): Option[(String, String, LogicalVariable, Expression)] =
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
@@ -177,8 +177,8 @@ object extractPredicates {
               Seq(
                 PathExpression(
                   NodePathStep(
-                    startNode: Variable,
-                    MultiRelationshipPathStep(rel: Variable, _, NilPathStep))))))
+                    startNode: LogicalVariable,
+                    MultiRelationshipPathStep(rel: LogicalVariable, _, NilPathStep))))))
             if fname == "nodes" =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
