@@ -135,6 +135,12 @@ public class StubNodeCursor implements NodeCursor
 
     }
 
+    @Override
+    public boolean isClosed()
+    {
+        return false;
+    }
+
     static class Node
     {
         final long id;

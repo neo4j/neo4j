@@ -48,11 +48,11 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected static KernelAPIReadTestSupport testSupport;
     private Session session;
     private Transaction tx;
-    protected CursorFactory cursors;
     protected Read read;
     protected ExplicitIndexRead indexRead;
     protected SchemaRead schemaRead;
     protected Token token;
+    protected ManagedTestCursors cursors;
 
     /**
      * Creates a new instance of KernelAPIReadTestSupport, which will be used to execute the concrete test
@@ -78,7 +78,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         }
         Kernel kernel = testSupport.kernelToTest();
         session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
-        cursors = kernel.cursors();
+        cursors = new ManagedTestCursors( kernel.cursors() );
         tx = session.beginTransaction( Transaction.Type.explicit );
         token = session.token();
         read = tx.dataRead();
@@ -92,6 +92,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         tx.success();
         tx.close();
         session.close();
+        cursors.assertAllClosedAndReset();
     }
 
     @AfterClass

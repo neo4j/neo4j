@@ -33,6 +33,10 @@ class NodeExplicitIndexCursor extends IndexCursor
     private long node;
     private float score;
 
+    public NodeExplicitIndexCursor() {
+        node = NO_ID;
+    }
+
     @Override
     public void initialize( IndexProgressor progressor, int expectedSize )
     {
@@ -84,5 +88,11 @@ class NodeExplicitIndexCursor extends IndexCursor
         node = NO_ID;
         score = 0;
         expectedSize = 0;
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return super.isClosed();
     }
 }

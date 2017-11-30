@@ -58,6 +58,12 @@ public class StubPropertyCursor implements PropertyCursor
     }
 
     @Override
+    public boolean isClosed()
+    {
+        return false;
+    }
+
+    @Override
     public int propertyKey()
     {
         return keys[offset];

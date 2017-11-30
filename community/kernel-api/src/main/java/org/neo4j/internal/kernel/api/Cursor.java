@@ -48,4 +48,6 @@ interface Cursor extends AutoCloseable
 
     @Override
     void close();
+
+    boolean isClosed();
 }

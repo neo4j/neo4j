@@ -116,4 +116,10 @@ class RelationshipExplicitIndexCursor extends IndexCursor
         score = 0;
         expectedSize = 0;
     }
+
+    @Override
+    public boolean isClosed()
+    {
+        return super.isClosed();
+    }
 }

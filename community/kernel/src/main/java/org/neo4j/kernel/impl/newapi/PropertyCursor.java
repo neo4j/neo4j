@@ -399,4 +399,9 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
+
+    public boolean isClosed()
+    {
+        return page == null;
+    }
 }

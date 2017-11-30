@@ -33,6 +33,11 @@ class NodeLabelIndexCursor extends IndexCursor
     private long node;
     private LabelSet labels;
 
+    public NodeLabelIndexCursor()
+    {
+        node = NO_ID;
+    }
+
     @Override
     public void initialize( IndexProgressor progressor, boolean providesLabels )
     {
@@ -76,5 +81,11 @@ class NodeLabelIndexCursor extends IndexCursor
         super.close();
         node = NO_ID;
         labels = null;
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return super.isClosed();
     }
 }

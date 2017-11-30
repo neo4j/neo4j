@@ -181,6 +181,12 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         reset();
     }
 
+    @Override
+    public boolean isClosed()
+    {
+        return pageCursor == null;
+    }
+
     private void reset()
     {
         next = NO_ID;
