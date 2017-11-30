@@ -335,7 +335,7 @@ public class ForkedProcessorStepTest
     {
         StressStage( Configuration config, int orderingGuarantees, int batches )
         {
-            super( "Stress", config, orderingGuarantees );
+            super( "Stress", null, config, orderingGuarantees );
 
             add( new PullingProducerStep( control(), config )
             {
