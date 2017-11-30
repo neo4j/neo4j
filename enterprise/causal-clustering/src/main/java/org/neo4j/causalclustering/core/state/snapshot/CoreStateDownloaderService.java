@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import java.util.concurrent.Executors;
-
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -53,16 +51,15 @@ public class CoreStateDownloaderService
 
     public void scheduleDownload( LeaderLocator leaderLocator )
     {
-        if ( currentJob == null || !currentJob.isRunning() )
+        if ( currentJob == null || currentJob.hasCompleted() )
         {
             synchronized ( this )
             {
-                if ( currentJob != null && currentJob.isRunning() )
+                if ( currentJob == null || currentJob.hasCompleted() )
                 {
-                    return;
+                    currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log );
+                    jobScheduler.schedule( downloadSnapshotGroup, currentJob );
                 }
-                currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log );
-                jobScheduler.schedule( downloadSnapshotGroup, currentJob );
             }
         }
     }

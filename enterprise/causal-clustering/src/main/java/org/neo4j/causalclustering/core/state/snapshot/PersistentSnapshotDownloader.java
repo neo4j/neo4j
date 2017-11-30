@@ -37,7 +37,7 @@ class PersistentSnapshotDownloader implements Runnable
     private final CoreStateDownloader downloader;
     private final Log log;
     private final TimeoutStrategy.Timeout timeout;
-    private boolean isRunning = false;
+    private State state;
 
     PersistentSnapshotDownloader( LeaderLocator leaderLocator,
             CommandApplicationProcess applicationProcess, CoreStateDownloader downloader, Log log,
@@ -48,6 +48,7 @@ class PersistentSnapshotDownloader implements Runnable
         this.downloader = downloader;
         this.log = log;
         this.timeout = timeout;
+        this.state = State.INITIATED;
     }
 
     PersistentSnapshotDownloader( LeaderLocator leaderLocator,
@@ -57,10 +58,17 @@ class PersistentSnapshotDownloader implements Runnable
                 new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS ).newTimeout() );
     }
 
+    private enum State
+    {
+        INITIATED,
+        RUNNING,
+        COMPLETED
+    }
+
     @Override
     public void run()
     {
-        isRunning = true;
+        state = State.RUNNING;
         try
         {
             applicationProcess.pauseApplier( CoreStateDownloaderService.OPERATION_NAME );
@@ -90,12 +98,18 @@ class PersistentSnapshotDownloader implements Runnable
         }
         finally
         {
-            isRunning = false;
+            state = State.COMPLETED;
         }
     }
 
-    public boolean isRunning()
+    boolean isRunning()
     {
-        return isRunning;
+        return state == State.RUNNING;
     }
+
+    boolean hasCompleted()
+    {
+        return state == State.COMPLETED;
+    }
+
 }
