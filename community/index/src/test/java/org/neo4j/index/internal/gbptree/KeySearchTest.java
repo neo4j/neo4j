@@ -460,7 +460,7 @@ public class KeySearchTest
         {
             keys[i] = currentKey;
             key.setValue( currentKey );
-            node.insertKeyAt( cursor, key, i, i );
+            node.insertKeyAt( cursor, key, i, i, LEAF );
             currentKey += random.nextInt( 100 ) + 10;
         }
         TreeNode.setKeyCount( cursor, keyCount );
@@ -512,7 +512,8 @@ public class KeySearchTest
     {
         insertKey.setValue( key );
         int keyCount = TreeNode.keyCount( cursor );
-        node.insertKeyAt( cursor, insertKey, keyCount, keyCount );
+        TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
+        node.insertKeyAt( cursor, insertKey, keyCount, keyCount, type );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
@@ -530,7 +531,7 @@ public class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            node.insertKeyAt( cursor, key, i, i );
+            node.insertKeyAt( cursor, key, i, i, LEAF );
         }
         TreeNode.setKeyCount( cursor, KEY_COUNT );
     }

@@ -247,7 +247,7 @@ class TreeNode<KEY,VALUE>
         return into;
     }
 
-    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
+    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Type type )
     {
         insertKeySlotsAt( cursor, pos, 1, keyCount );
         cursor.setOffset( keyOffset( pos ) );

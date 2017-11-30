@@ -152,11 +152,11 @@ public class TreeNodeTest
         // WHEN
         long firstKey = 10;
         key.setValue( firstKey );
-        node.insertKeyAt( cursor, key, 0, 0 );
+        node.insertKeyAt( cursor, key, 0, 0, type );
 
         long otherKey = 19;
         key.setValue( otherKey );
-        node.insertKeyAt( cursor, key, 1, 1 );
+        node.insertKeyAt( cursor, key, 1, 1, type );
 
         // THEN
         assertEquals( firstKey, node.keyAt( cursor, key, 0, type ).longValue() );
@@ -189,13 +189,13 @@ public class TreeNodeTest
         MutableLong key = layout.newKey();
         long firstKey = 10;
         key.setValue( firstKey );
-        node.insertKeyAt( cursor, key, 0, 0 );
+        node.insertKeyAt( cursor, key, 0, 0, type );
         long otherKey = 19;
         key.setValue( otherKey );
-        node.insertKeyAt( cursor, key, 1, 1 );
+        node.insertKeyAt( cursor, key, 1, 1, type );
         long thirdKey = 123;
         key.setValue( thirdKey );
-        node.insertKeyAt( cursor, key, 2, 2 );
+        node.insertKeyAt( cursor, key, 2, 2, type );
 
         // WHEN
         node.removeKeyAt( cursor, 1, 3 );
@@ -372,13 +372,13 @@ public class TreeNodeTest
         TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong key = layout.newKey();
         key.setValue( 1 );
-        node.insertKeyAt( cursor, key, 0, 0 );
+        node.insertKeyAt( cursor, key, 0, 0, LEAF );
         key.setValue( 3 );
-        node.insertKeyAt( cursor, key, 1, 1 );
+        node.insertKeyAt( cursor, key, 1, 1, LEAF );
 
         // WHEN
         key.setValue( 2 );
-        node.insertKeyAt( cursor, key, 1, 2 );
+        node.insertKeyAt( cursor, key, 1, 2, LEAF );
 
         // THEN
         assertEquals( 1, node.keyAt( cursor, key, 0, LEAF ).longValue() );
@@ -457,7 +457,7 @@ public class TreeNodeTest
                     }
                     while ( contains( expectedKeys, 0, expectedKeyCount, key.longValue() ) );
 
-                    node.insertKeyAt( cursor, key, position, expectedKeyCount );
+                    node.insertKeyAt( cursor, key, position, expectedKeyCount, LEAF );
                     insert( expectedKeys, expectedKeyCount, key.longValue(), position );
 
                     value.setValue( random.nextLong() );

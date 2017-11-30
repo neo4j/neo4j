@@ -1927,7 +1927,7 @@ public class SeekCursorTest
         TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
-        node.insertKeyAt( cursor, insertKey, 0, 0 );
+        node.insertKeyAt( cursor, insertKey, 0, 0, INTERNAL );
         TreeNode.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of child node)
         node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
@@ -2004,7 +2004,7 @@ public class SeekCursorTest
         TreeNode.initializeInternal( cursor, stableGeneration - 1, unstableGeneration - 1 );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
-        node.insertKeyAt( cursor, insertKey, 0, 0 );
+        node.insertKeyAt( cursor, insertKey, 0, 0, INTERNAL );
         TreeNode.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of internal node)
         node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
@@ -2143,7 +2143,7 @@ public class SeekCursorTest
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
         cursor.next( rootId );
         TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-        node.insertKeyAt( cursor, split.rightKey, 0, 0 );
+        node.insertKeyAt( cursor, split.rightKey, 0, 0, INTERNAL );
         TreeNode.setKeyCount( cursor, 1 );
         node.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
         node.setChildAt( cursor, split.rightChild, 1, stableGeneration, unstableGeneration );
@@ -2280,10 +2280,11 @@ public class SeekCursorTest
 
     private void append( long k )
     {
+        TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
         int keyCount = TreeNode.keyCount( cursor );
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
-        node.insertKeyAt( cursor, insertKey, keyCount, keyCount );
+        node.insertKeyAt( cursor, insertKey, keyCount, keyCount, type );
         node.insertValueAt( cursor, insertValue, keyCount, keyCount );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
@@ -2297,7 +2298,8 @@ public class SeekCursorTest
         }
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
-        node.insertKeyAt( cursor, insertKey, pos, keyCount );
+        TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
+        node.insertKeyAt( cursor, insertKey, pos, keyCount, type );
         node.insertValueAt( cursor, insertValue, pos, keyCount );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }

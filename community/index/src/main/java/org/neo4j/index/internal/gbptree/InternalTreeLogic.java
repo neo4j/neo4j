@@ -421,7 +421,7 @@ class InternalTreeLogic<KEY,VALUE>
             // No overflow
             int pos = positionOf( search( cursor, INTERNAL, primKey, readKey, keyCount ) );
 
-            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount );
+            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, INTERNAL );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
             // the one from the parent.
             bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, stableGeneration, unstableGeneration );
@@ -533,7 +533,7 @@ class InternalTreeLogic<KEY,VALUE>
                 // ... insert
                 if ( countBeforePos >= 0 )
                 {
-                    bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos );
+                    bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos, INTERNAL );
                 }
                 // ... second copy
                 int countAfterPos = keyCount - pos;
@@ -578,7 +578,7 @@ class InternalTreeLogic<KEY,VALUE>
         TreeNode.setKeyCount( cursor, middlePos );
         if ( pos < middlePos )
         {
-            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1 );
+            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1, INTERNAL );
             bTreeNode.insertChildAt( cursor, newRightChild, pos + 1, middlePos - 1,
                     stableGeneration, unstableGeneration );
         }
@@ -631,7 +631,7 @@ class InternalTreeLogic<KEY,VALUE>
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
             // No overflow, insert key and value
-            bTreeNode.insertKeyAt( cursor, key, pos, keyCount );
+            bTreeNode.insertKeyAt( cursor, key, pos, keyCount, LEAF );
             bTreeNode.insertValueAt( cursor, value, pos, keyCount );
             TreeNode.setKeyCount( cursor, keyCount + 1 );
 
@@ -770,7 +770,7 @@ class InternalTreeLogic<KEY,VALUE>
                     // first copy
                     copyKeysAndValues( cursor, middlePos, rightCursor, 0, countBeforePos );
                 }
-                bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos );
+                bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos, LEAF );
                 bTreeNode.insertValueAt( rightCursor, newValue, countBeforePos, countBeforePos );
                 int countAfterPos = keyCount - pos;
                 if ( countAfterPos > 0 )
@@ -796,7 +796,7 @@ class InternalTreeLogic<KEY,VALUE>
         // If pos < middle. Write shifted values to left node. Else, don't write anything.
         if ( pos < middlePos )
         {
-            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1 );
+            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1, LEAF );
             bTreeNode.insertValueAt( cursor, newValue, pos, middlePos - 1 );
         }
         TreeNode.setKeyCount( cursor, middlePos );

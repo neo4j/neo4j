@@ -51,6 +51,7 @@ import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER
 import static org.neo4j.index.internal.gbptree.Header.replace;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
@@ -1191,7 +1192,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
+                bTreeNode.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0, INTERNAL );
                 TreeNode.setKeyCount( cursor, 1 );
                 bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
                         stableGeneration, unstableGeneration );
