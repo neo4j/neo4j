@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions.Variable
+import org.neo4j.cypher.internal.v3_4.expressions.{LogicalVariable, Variable}
 
 class ConnectedComponentsTest extends CypherFunSuite {
   import connectedComponents._
@@ -72,5 +72,5 @@ class ConnectedComponentsTest extends CypherFunSuite {
     ))
   }
 
-  private def varFor(name: String): Variable = Variable(name)(null)
+  private def varFor(name: String): LogicalVariable = Variable(name)(null)
 }

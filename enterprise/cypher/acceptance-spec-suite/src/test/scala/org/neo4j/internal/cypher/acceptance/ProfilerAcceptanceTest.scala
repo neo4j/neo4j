@@ -193,7 +193,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id
         (1 to 100).foreach(_ => createNode())
 
-        val result = profileWithExecute(Configs.AllExceptSlotted, "match (n) where id(n) = 0 RETURN n")
+        val result = profileWithExecute(Configs.All, "match (n) where id(n) = 0 RETURN n")
 
         //WHEN THEN
         assertRows(1)(result)("NodeByIdSeek")
@@ -204,7 +204,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id
         (1 to 100).foreach(_ => createNode("foo" -> "bar"))
 
-        val result = profileWithExecute(Configs.AllExceptSlotted, "match (n) where id(n) = 0 RETURN n.foo")
+        val result = profileWithExecute(Configs.All, "match (n) where id(n) = 0 RETURN n.foo")
 
         //WHEN THEN
         assertRows(1)(result)("ProduceResults", "Projection", "NodeByIdSeek")
@@ -352,7 +352,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         val query = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE()"
 
         // given
-        executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).toList
+        executeWith(Configs.Interpreted - Configs.Cost2_3, query).toList
         deleteAllEntities()
         val initialTxCounts = graph.txCounts
 

@@ -42,8 +42,8 @@ class LoadCsvAcceptanceTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll
   with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport{
 
-  val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost2_3
-  val expectedToFail = Configs.CommunityInterpreted - Configs.Cost2_3 + TestConfiguration(Versions.Default, Planners.Default,
+  val expectedToSucceed = Configs.Interpreted - Configs.Cost2_3
+  val expectedToFail = Configs.Interpreted - Configs.Cost2_3 + TestConfiguration(Versions.Default, Planners.Default,
     Runtimes(Runtimes.Default, Runtimes.ProcedureOrSchema, Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
   def csvUrls(f: PrintWriter => Unit) = Seq(
@@ -73,7 +73,7 @@ class LoadCsvAcceptanceTest
 
     // when & then
     for (url <- urls) {
-      val result = executeWith(Configs.CommunityInterpreted - Configs.Version2_3,
+      val result = executeWith(Configs.Interpreted - Configs.Version2_3,
         s"""LOAD CSV WITH HEADERS FROM '$url' AS row
             | MATCH (user:User{userID: row.USERID}) USING INDEX user:User(userID)
             | MATCH (order:Order{orderID: row.OrderId})
@@ -218,7 +218,7 @@ class LoadCsvAcceptanceTest
         writer.println("5,'Emerald',")
     })
     for (url <- urls) {
-      val result = executeWith(expectedToSucceed, s"LOAD CSV WITH HEADERS FROM '$url' AS line WITH line WHERE line.x IS NOT NULL RETURN line.name")
+      val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, s"LOAD CSV WITH HEADERS FROM '$url' AS line WITH line WHERE line.x IS NOT NULL RETURN line.name")
       assert(result.toList === List(
         Map("line.name" -> "'Aardvark'"),
         Map("line.name" -> "'Cash'"),

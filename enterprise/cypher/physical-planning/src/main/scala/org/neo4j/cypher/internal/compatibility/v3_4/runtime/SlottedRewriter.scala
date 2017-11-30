@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.util.v3_4.AssertionUtils.ifAssertionsEnabled
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
@@ -227,17 +226,17 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case e @ IsNull(prop @ Property(Variable(key), PropertyKeyName(propKey))) =>
         Not(checkIfPropertyExists(slotConfiguration, key, propKey, prop))(e.position)
 
-      case _: ReduceExpression =>
-        throw new CantCompileQueryException(s"Expressions with reduce are not yet supported in slot allocation")
-
-      case _: DesugaredMapProjection =>
-        throw new CantCompileQueryException(s"Expressions with map projections are not yet supported in slot allocation")
-
-      case _: ShortestPathExpression =>
-        throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in slot allocation")
-
-      case _: PatternExpression =>
-        throw new CantCompileQueryException(s"Pattern expressions not yet supported in the slotted runtime")
+//      case _: ReduceExpression =>
+//        throw new CantCompileQueryException(s"Expressions with reduce are not yet supported in slot allocation")
+//
+//      case _: DesugaredMapProjection =>
+//        throw new CantCompileQueryException(s"Expressions with map projections are not yet supported in slot allocation")
+//
+//      case _: ShortestPathExpression =>
+//        throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in slot allocation")
+//
+//      case _: PatternExpression =>
+//        throw new CantCompileQueryException(s"Pattern expressions not yet supported in the slotted runtime")
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }

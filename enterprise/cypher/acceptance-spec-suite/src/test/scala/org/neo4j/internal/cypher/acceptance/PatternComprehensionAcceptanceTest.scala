@@ -388,7 +388,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
   test("pattern comprehension in RETURN following a WITH") {
     val query = """MATCH (e:X) WITH e LIMIT 5 RETURN [(e) --> (t) | t { .amount }]"""
 
-    executeWith(expectedToSucceedRestricted, query).toList //does not throw
+    executeWith(expectedToSucceedIncludingSlottedRestricted, query).toList //does not throw
   }
 
   test("pattern comprehension play nice with map projections") {

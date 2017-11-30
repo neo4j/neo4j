@@ -245,7 +245,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
     executeWith(createConf, "match (root) where id(root) = 0 match (root)-->(other) create (new {name:other.name}), (root)-[:REL]->(new)")
 
-    val result = executeWith(Configs.AllExceptSlotted, "match (root) where id(root) = 0 match (root)-->(other) return other.name order by other.name").columnAs[String]("other.name").toList
+    val result = executeWith(Configs.All, "match (root) where id(root) = 0 match (root)-->(other) return other.name order by other.name").columnAs[String]("other.name").toList
     result should equal(List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 

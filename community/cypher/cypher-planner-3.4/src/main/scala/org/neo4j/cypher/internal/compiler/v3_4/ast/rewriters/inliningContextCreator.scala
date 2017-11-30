@@ -57,7 +57,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
     }
   }
 
-  private def spoilVariableIfNotAliased(variable: Variable, context: InliningContext): InliningContext =
+  private def spoilVariableIfNotAliased(variable: LogicalVariable, context: InliningContext): InliningContext =
     if (context.isAliasedVarible(variable)) context
     else context.spoilVariable(variable)
 

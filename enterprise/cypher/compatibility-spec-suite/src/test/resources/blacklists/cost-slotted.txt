@@ -1,12 +1,4 @@
-Directed match of a simple relationship, count
-Directed match on self-relationship graph, count
-
-Keeping used expression 1
-Simple counting of nodes
-Support column renaming for aggregates as well
-Support multiple divisions in aggregate function
 Aggregates in aggregates
-Aggregates with arithmetics
 Fail at runtime when attempting to index with an Int into a Map
 Fail at runtime when trying to index into a map with a non-string
 Fail at runtime when attempting to index with a String into a Collection
@@ -22,22 +14,9 @@ IS NOT NULL with literal maps
 Optionally matching named paths with single and variable length patterns
 Optionally matching named paths with variable length patterns
 Variable length relationship in OPTIONAL MATCH
-Matching using a relationship that is already bound
-Matching using a relationship that is already bound, in conjunction with aggregation
-Matching using a relationship that is already bound, in conjunction with aggregation and ORDER BY
-Matching with LIMIT and optionally matching using a relationship that is already bound
-Matching with LIMIT and optionally matching using a relationship and node that are both already bound
-Matching with LIMIT, then matching again using a relationship and node that are both already bound along with an additional predicate
-Matching with LIMIT and predicates, then matching again using a relationship and node that are both already bound along with a duplicate predicate
-Matching twice with conflicting relationship types on same relationship
-Matching twice with duplicate relationship types on same relationship
-Matching relationships into a list and matching variable length using the list
-Matching relationships into a list and matching variable length using the list, with bound nodes
-Matching relationships into a list and matching variable length using the list, with bound nodes, wrong direction
 Matching and optionally matching with bound nodes in reverse direction
 Matching and optionally matching with unbound nodes and equality predicate in reverse direction
 Fail when using property access on primitive type
-Counting an empty graph
 Variable length pattern checking labels on endnodes
 Variable length patterns and nulls
 Failing on merging node with null property
@@ -68,8 +47,6 @@ Creating nodes from an unwound parameter list
 Unwind does not remove variables from scope
 Fail when asterisk operator is missing
 Fail on negative bound
-Handling relationships that are already bound in variable length paths
-A simple pattern with one bound endpoint
 Fail at compile time when attempting to index with a non-integer into a list
 `properties()` failing on an integer literal
 `properties()` failing on a string literal
@@ -122,8 +99,6 @@ Many CREATE clauses
 `labels()` failing on invalid arguments
 In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call
-In-query call to VOID procedure that takes no arguments
-In-query call to VOID procedure does not consume rows
 In-query call to procedure that takes no arguments and yields no results
 In-query call to procedure with explicit arguments
 In-query call to procedure with explicit arguments that drops all result fields

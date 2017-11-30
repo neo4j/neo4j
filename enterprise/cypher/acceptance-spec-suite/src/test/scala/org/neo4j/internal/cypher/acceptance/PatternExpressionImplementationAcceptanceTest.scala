@@ -309,7 +309,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     }
     relate(createNode(), createLabeledNode("A"), "T")
 
-    executeWith(Configs.CommunityInterpreted, "PROFILE MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r",
+    executeWith(Configs.Interpreted, "PROFILE MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("NodeByLabelScan")))
   }
 

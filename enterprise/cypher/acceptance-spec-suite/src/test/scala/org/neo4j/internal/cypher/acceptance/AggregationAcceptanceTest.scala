@@ -21,7 +21,6 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V2_3
 
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -73,7 +72,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node2 = createLabeledNode("Person")
     val node3 = createNode()
     // CountStore not supported by sloted
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a:Person) WITH count(a) as c RETURN c")
+    val result = executeWith(Configs.All, "MATCH (a:Person) WITH count(a) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -123,7 +122,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
   test("combine simple aggregation with sorting (can use node count store)") {
     val node1 = createNode()
     val node2 = createNode()
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a) RETURN count(a) ORDER BY count(a)")
+    val result = executeWith(Configs.All, "MATCH (a) RETURN count(a) ORDER BY count(a)")
     result.toList should equal(List(Map("count(a)" -> 2)))
   }
 

@@ -180,7 +180,7 @@ trait SemanticAnalysisTooling {
                      ): (SemanticState) => Either[SemanticError, SemanticState] =
     (s: SemanticState) => s.declareVariable(v, typeGen(s), positions)
 
-  def implicitVariable(v:Variable, possibleType: CypherType): (SemanticState) => Either[SemanticError, SemanticState] =
+  def implicitVariable(v:LogicalVariable, possibleType: CypherType): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(v, possibleType)
 
   def declareGraph(v:Variable): (SemanticState) => Either[SemanticError, SemanticState] =

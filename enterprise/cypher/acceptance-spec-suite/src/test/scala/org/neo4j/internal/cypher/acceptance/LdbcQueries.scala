@@ -1534,7 +1534,7 @@ object LdbcQueries {
       Map("weight" -> 4.0, "pathNodeIds" -> List(0, 1, 2, 4, 8, 5)),
       Map("weight" -> 3.0, "pathNodeIds" -> List(0, 1, 2, 4, 6, 5)))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
   }
 

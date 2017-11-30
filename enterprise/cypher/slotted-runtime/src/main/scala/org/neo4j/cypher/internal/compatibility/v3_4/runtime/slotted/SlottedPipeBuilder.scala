@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builde
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.DropResultPipe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => slottedExpressions}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
@@ -87,7 +86,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ArgumentSlottedPipe(slots, argumentSize)(id)
 
       case _ =>
-        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+        fallback.build(plan)
+        //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
 
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
@@ -279,7 +279,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         fallback.build(plan, source)
 
       case _ =>
-        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+        fallback.build(plan, source)
+        //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
@@ -429,7 +430,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         fallback.build(plan, lhs, rhs)
 
       case _ =>
-        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+        fallback.build(plan, lhs, rhs)
+        //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
