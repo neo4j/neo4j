@@ -26,10 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -151,20 +147,12 @@ public class ClusterSeedingIT
         fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 1 ).storeDir() );
         fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 2 ).storeDir() );
 
-        Map<File,Object> creation1 = fileKeys( cluster.getCoreMemberById( 0 ).storeDir() );
-        Map<File,Object> creation2 = fileKeys( cluster.getCoreMemberById( 1 ).storeDir() );
-        Map<File,Object> creation3 = fileKeys( cluster.getCoreMemberById( 2 ).storeDir() );
-
         cluster.start();
 
         // then
         dataMatchesEventually( before, cluster.coreMembers() );
         assertFalse( detectFileCopyMonitor.fileCopyDetected.get() );
         assertEquals( 4, pullRequestMonitor.numberOfRequests() );
-
-        assertFileKeysAreTheSame( creation1 );
-        assertFileKeysAreTheSame( creation2 );
-        assertFileKeysAreTheSame( creation3 );
     }
 
     @Test
@@ -185,7 +173,6 @@ public class ClusterSeedingIT
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
         fsa.copyRecursively( backupDir, newMember.storeDir() );
-        Map<File,Object> creationTimes = fileKeys( cluster.getCoreMemberById( 3 ).storeDir() );
         newMember.start();
 
         // then
@@ -193,7 +180,6 @@ public class ClusterSeedingIT
         assertFalse( detectFileCopyMonitor.fileCopyDetected.get() );
         assertEquals( 1, pullRequestMonitor.numberOfRequests() );
         assertEquals( 1, pullRequestMonitor.lastRequestedTxId() );
-        assertFileKeysAreTheSame( creationTimes );
     }
 
     @Test
@@ -215,14 +201,12 @@ public class ClusterSeedingIT
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
         fsa.copyRecursively( backupDir, newMember.storeDir() );
-        Map<File,Object> creationTimes = fileKeys( cluster.getCoreMemberById( 3 ).storeDir() );
         newMember.start();
 
         // then
         dataMatchesEventually( DbRepresentation.of( newMember.database() ), cluster.coreMembers() );
         assertFalse( detectFileCopyMonitor.fileCopyDetected.get() );
         assertEquals( 1, pullRequestMonitor.numberOfRequests() );
-        assertFileKeysAreTheSame( creationTimes );
     }
 
     @Test
@@ -242,33 +226,6 @@ public class ClusterSeedingIT
 
         // then
         dataMatchesEventually( before, cluster.coreMembers() );
-    }
-
-    private void assertFileKeysAreTheSame( Map<File,Object> fileKeys ) throws IOException
-    {
-        for ( Map.Entry<File,Object> e : fileKeys.entrySet() )
-        {
-            File file = e.getKey();
-            Object oldKey = e.getValue();
-
-            BasicFileAttributes attr = Files.readAttributes( file.toPath(), BasicFileAttributes.class );
-            assertEquals( "File key for file: " + file, oldKey, attr.fileKey() );
-        }
-    }
-
-    private Map<File,Object> fileKeys( File dir ) throws IOException
-    {
-        Map<File,Object> map = new HashMap<>();
-        File[] files = dir.listFiles();
-        assert files != null;
-
-        for ( File file : files )
-        {
-            BasicFileAttributes attr = Files.readAttributes( file.toPath(), BasicFileAttributes.class );
-            map.put( file, attr.fileKey() );
-        }
-
-        return map;
     }
 
     private class DetectPullRequestMonitor implements PullRequestMonitor
