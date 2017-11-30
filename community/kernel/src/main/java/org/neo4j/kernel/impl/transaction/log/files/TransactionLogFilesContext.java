@@ -31,18 +31,20 @@ class TransactionLogFilesContext
     private final long rotationThreshold;
     private final LogEntryReader logEntryReader;
     private final LongSupplier lastCommittedTransactionIdSupplier;
+    private final LongSupplier committingTransactionIdSupplier;
     private final Supplier<LogVersionRepository> logVersionRepositorySupplier;
     private final LogFileCreationMonitor logFileCreationMonitor;
     private final FileSystemAbstraction fileSystem;
 
     TransactionLogFilesContext( long rotationThreshold, LogEntryReader logEntryReader,
-            LongSupplier lastCommittedTransactionIdSupplier, LogFileCreationMonitor logFileCreationMonitor,
-            Supplier<LogVersionRepository> logVersionRepositorySupplier,
+            LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier,
+            LogFileCreationMonitor logFileCreationMonitor, Supplier<LogVersionRepository> logVersionRepositorySupplier,
             FileSystemAbstraction fileSystem )
     {
         this.rotationThreshold = rotationThreshold;
         this.logEntryReader = logEntryReader;
         this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
+        this.committingTransactionIdSupplier = committingTransactionIdSupplier;
         this.logVersionRepositorySupplier = logVersionRepositorySupplier;
         this.logFileCreationMonitor = logFileCreationMonitor;
         this.fileSystem = fileSystem;
@@ -66,6 +68,11 @@ class TransactionLogFilesContext
     long getLastCommittedTransactionId()
     {
         return lastCommittedTransactionIdSupplier.getAsLong();
+    }
+
+    long committingTransactionId()
+    {
+        return committingTransactionIdSupplier.getAsLong();
     }
 
     LogFileCreationMonitor getLogFileCreationMonitor()
