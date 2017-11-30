@@ -275,15 +275,6 @@ class TreeNode<KEY,VALUE>
         removeValueAt( cursor, pos, keyCount );
     }
 
-    private static void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
-    {
-        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
-                posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
-        {
-            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
-        }
-    }
-
     void setKeyAt( PageCursor cursor, KEY key, int pos, Type type )
     {
         cursor.setOffset( keyOffset( pos ) );
@@ -295,19 +286,6 @@ class TreeNode<KEY,VALUE>
         cursor.setOffset( valueOffset( pos ) );
         layout.readValue( cursor, value );
         return value;
-    }
-
-    // Always insert together with key. Use insertKeyValueAt
-    private void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
-    {
-        insertValueSlotsAt( cursor, pos, 1, keyCount );
-        setValueAt( cursor, value, pos );
-    }
-
-    // Always insert together with key. Use removeKeyValueAt
-    private void removeValueAt( PageCursor cursor, int pos, int keyCount )
-    {
-        removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
     }
 
     void setValueAt( PageCursor cursor, VALUE value, int pos )
@@ -345,6 +323,25 @@ class TreeNode<KEY,VALUE>
         GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
     }
 
+    void insertKeyValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    {
+        insertKeySlotsAt( cursor, pos, numberOfSlots, keyCount );
+        insertValueSlotsAt( cursor, pos, numberOfSlots, keyCount );
+    }
+
+    // Always insert together with key. Use insertKeyValueAt
+    private void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
+    {
+        insertValueSlotsAt( cursor, pos, 1, keyCount );
+        setValueAt( cursor, value, pos );
+    }
+
+    // Always insert together with key. Use removeKeyValueAt
+    private void removeValueAt( PageCursor cursor, int pos, int keyCount )
+    {
+        removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
+    }
+
     /**
      * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
      * from pos - itemCount.
@@ -360,10 +357,13 @@ class TreeNode<KEY,VALUE>
         }
     }
 
-    void insertKeyValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    private static void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
     {
-        insertKeySlotsAt( cursor, pos, numberOfSlots, keyCount );
-        insertValueSlotsAt( cursor, pos, numberOfSlots, keyCount );
+        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
+              posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
+        {
+            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
+        }
     }
 
     private void insertKeySlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
