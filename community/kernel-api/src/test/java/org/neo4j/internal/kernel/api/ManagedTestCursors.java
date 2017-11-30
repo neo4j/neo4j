@@ -37,8 +37,12 @@ public class ManagedTestCursors implements CursorFactory
 
     void assertAllClosedAndReset()
     {
-        for(Cursor n : allCursors ){
-            if (!n.isClosed()) fail("The Cursor " + n.toString() + " was not closed properly");
+        for ( Cursor n : allCursors )
+        {
+            if ( !n.isClosed() )
+            {
+                fail( "The Cursor " + n.toString() + " was not closed properly" );
+            }
         }
 
         allCursors.clear();

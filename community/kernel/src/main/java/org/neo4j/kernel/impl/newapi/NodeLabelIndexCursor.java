@@ -33,7 +33,7 @@ class NodeLabelIndexCursor extends IndexCursor
     private long node;
     private LabelSet labels;
 
-    public NodeLabelIndexCursor()
+    NodeLabelIndexCursor()
     {
         node = NO_ID;
     }

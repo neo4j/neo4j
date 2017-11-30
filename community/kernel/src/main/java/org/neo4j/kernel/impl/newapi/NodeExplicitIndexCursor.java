@@ -33,7 +33,8 @@ class NodeExplicitIndexCursor extends IndexCursor
     private long node;
     private float score;
 
-    public NodeExplicitIndexCursor() {
+    NodeExplicitIndexCursor()
+    {
         node = NO_ID;
     }
 

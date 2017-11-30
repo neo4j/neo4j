@@ -34,7 +34,7 @@ class NodeValueIndexCursor extends IndexCursor
     private int[] keys;
     private Value[] values;
 
-    public NodeValueIndexCursor()
+    NodeValueIndexCursor()
     {
         node = NO_ID;
     }
