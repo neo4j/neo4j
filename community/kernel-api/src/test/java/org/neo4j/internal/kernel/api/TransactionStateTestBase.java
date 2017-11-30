@@ -239,7 +239,6 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         // When/Then
         try ( Transaction tx = session.beginTransaction() )
         {
-
             int propToken = session.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
 
@@ -288,7 +287,6 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         // When/Then
         try ( Transaction tx = session.beginTransaction() )
         {
-
             propToken2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken2, stringValue( "world" ) ), NO_VALUE );
 

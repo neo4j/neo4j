@@ -323,11 +323,6 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
 
     private void assertOpen()
     {
-        if ( !ktx.isOpen() )
-        {
-            throw new NotInTransactionException( "The transaction has been closed." );
-        }
-
         Optional<Status> terminationReason = ktx.getReasonIfTerminated();
         if ( terminationReason.isPresent() )
         {
