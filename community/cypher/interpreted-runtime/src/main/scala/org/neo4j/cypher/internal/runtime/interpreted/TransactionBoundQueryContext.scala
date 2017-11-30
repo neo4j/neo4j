@@ -168,6 +168,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       reads().singleNode(node, nodeCursor)
       if (!nodeCursor.next()) false
       else nodeCursor.labels().contains(label)
+    } finally {
+      if (nodeCursor != null) {
+        nodeCursor.close()
+      }
     }
   }
 

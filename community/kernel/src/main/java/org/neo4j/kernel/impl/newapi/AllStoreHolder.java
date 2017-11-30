@@ -152,13 +152,13 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+       return storeReadLayer.labelGetOrCreateForName( labelName );
     }
 
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return storeReadLayer.propertyKeyGetOrCreateForName( propertyKeyName );
     }
 
     @Override
