@@ -36,9 +36,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
-import org.neo4j.cypher.internal.util.v3_4.AssertionRunner.Thunk
+import org.neo4j.cypher.internal.util.v3_4.AssertionUtils._
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.{AssertionRunner, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions.{Equals, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -63,7 +63,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val slots = physicalPlan.slotConfigurations(plan.assignedId)
     val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
 
-    plan match {
+    val pipe = plan match {
       case AllNodesScan(IdName(column), _) =>
         AllNodesScanSlottedPipe(column, slots, argumentSize)(id)
 
@@ -83,13 +83,15 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanSlottedPipe(column, LazyLabel(label), slots, argumentSize)(id)
 
-      case _:Argument =>
+      case _: Argument =>
         ArgumentSlottedPipe(slots, argumentSize)(id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
 
     }
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+    pipe
   }
 
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
@@ -98,7 +100,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val id = plan.assignedId
     val slots = physicalPlan.slotConfigurations(plan.assignedId)
 
-    plan match {
+    val pipe = plan match {
       case ProduceResult(_, columns) =>
         val runtimeColumns = createProjectionsForResult(columns, slots)
         ProduceResultSlottedPipe(source, runtimeColumns)(id)
@@ -255,9 +257,32 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Eager(_) =>
         EagerSlottedPipe(source, slots)(id)
 
+      case _: DeleteNode |
+           _: DeleteRelationship |
+           _: DeletePath |
+           _: DeleteExpression |
+           _: DetachDeleteNode |
+           _: DetachDeletePath |
+           _: DetachDeleteExpression =>
+        fallback.build(plan, source)
+
+      case _: SetLabels |
+           _: SetNodeProperty |
+           _: SetNodePropertiesFromMap |
+           _: SetRelationshipPropery |
+           _: SetRelationshipPropertiesFromMap |
+           _: SetProperty |
+           _: RemoveLabels =>
+        fallback.build(plan, source)
+
+      case _: LockNodes =>
+        fallback.build(plan, source)
+
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+    pipe
   }
 
   private def refSlotAndNotAlias(slots: SlotConfiguration, k: String) = {
@@ -308,12 +333,12 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val id = plan.assignedId
     val slots = slotConfigs(plan.assignedId)
 
-    plan match {
+    val pipe = plan match {
       case Apply(_, _) =>
         ApplySlottedPipe(lhs, rhs)(id)
 
-      case _: SemiApply |
-           _: AntiSemiApply =>
+      case _: AbstractSemiApply |
+           _: AbstractSelectOrSemiApply =>
         fallback.build(plan, lhs, rhs)
 
       case RollUpApply(_, rhsPlan, collectionName, identifierToCollect, nullables) =>
@@ -396,14 +421,14 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           SlottedPipeBuilder.computeUnionMapping(lhsSlots, slots),
           SlottedPipeBuilder.computeUnionMapping(rhsSlots, slots))(id = id)
 
-      case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
-    }
-  }
+      case _: AssertSameNode =>
+        fallback.build(plan, lhs, rhs)
 
-  private def ifAssertionsEnabled(f: => Unit): Unit = {
-    AssertionRunner.runUnderAssertion(new Thunk {
-      override def apply() = f
-    })
+      case _ =>
+        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+    }
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
+    pipe
   }
 
   // Verifies the assumption that all shared slots are arguments with slot offsets within the first argument size number of slots

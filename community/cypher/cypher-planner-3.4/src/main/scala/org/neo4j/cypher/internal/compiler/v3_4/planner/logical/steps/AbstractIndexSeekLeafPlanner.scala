@@ -53,7 +53,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     if (labelPredicateMap.isEmpty)
       Set.empty
     else {
-      val arguments: Set[Variable] = qg.argumentIds.map(n => Variable(n.name)(null))
+      val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n.name)(null))
       val plannables: Set[IndexPlannableExpression] = predicates.collect(
         indexPlannableExpression(qg.argumentIds, arguments, qg.hints))
       val result = plannables.map(_.name).flatMap { name =>
@@ -141,7 +141,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     }
 
   private def indexPlannableExpression(argumentIds: Set[IdName],
-                                       arguments: Set[Variable],
+                                       arguments: Set[LogicalVariable],
                                        hints: Set[Hint])(implicit labelPredicateMap: Map[IdName, Set[HasLabels]]):
   PartialFunction[Expression, IndexPlannableExpression] = {
     // n.prop IN [ ... ]
@@ -153,7 +153,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     // ... = n.prop
     // In some rare cases, we can't rewrite these predicates cleanly,
     // and so planning needs to search for these cases explicitly
-    case predicate@Equals(a, Property(seekable@Variable(_), propKeyName))
+    case predicate@Equals(a, Property(seekable@LogicalVariable(_), propKeyName))
       if a.dependencies.forall(arguments) && !arguments(seekable) =>
       val expr = SingleQueryExpression(a)
       IndexPlannableExpression(seekable.name, propKeyName, predicate, expr, hints, argumentIds)

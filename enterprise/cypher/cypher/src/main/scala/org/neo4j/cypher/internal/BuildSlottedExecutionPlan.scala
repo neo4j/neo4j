@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{SlottedExecutionResultBuilderFactory, SlottedPipeBuilder}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
@@ -43,7 +43,12 @@ import org.neo4j.values.virtual.MapValue
 
 object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] with DebugPrettyPrinter {
   val ENABLE_DEBUG_PRINTS = false // NOTE: false toggles all debug prints off, overriding the individual settings below
-  val PRINT_PLAN_INFO_EARLY = true // Should we print query text and logical plan before any exception from runtime building?
+
+  // Should we print query text and logical plan before we see any exceptions from execution plan building?
+  // Setting this to true is useful if you want to see the query and logical plan while debugging a failure
+  // Setting this to false is useful if you want to quickly spot the failure reason at the top of the output from tests
+  val PRINT_PLAN_INFO_EARLY = true
+
   override val PRINT_QUERY_TEXT = true
   override val PRINT_LOGICAL_PLAN = true
   override val PRINT_REWRITTEN_LOGICAL_PLAN = true
@@ -64,9 +69,15 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
-        printPlanInfo(from) // Print after execution to see exceptions first
+        printPlanInfo(from)
       }
+
       val (logicalPlan, physicalPlan) = rewritePlan(context, from.logicalPlan)
+
+      if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
+        printRewrittenPlanInfo(logicalPlan)
+      }
+
       val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
       val pipeBuilderFactory = EnterprisePipeBuilderFactory(physicalPlan)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
@@ -78,7 +89,8 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
         .build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
       val columns = from.statement().returnColumns
-      val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
+      val resultBuilderFactory =
+        new SlottedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, physicalPlan.slotConfigurations)
       val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
@@ -88,9 +100,13 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       val indexes = logicalPlan.indexUsage
       val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
 
-      if (ENABLE_DEBUG_PRINTS && !PRINT_PLAN_INFO_EARLY) {
-        printPlanInfo(from)
-        printPipeInfo(logicalPlan, physicalPlan.slotConfigurations, pipeInfo)
+      if (ENABLE_DEBUG_PRINTS) {
+        if (!PRINT_PLAN_INFO_EARLY) {
+          // Print after execution plan building to see any occuring exceptions first
+          printPlanInfo(from)
+          printRewrittenPlanInfo(logicalPlan)
+        }
+        printPipeInfo(physicalPlan.slotConfigurations, pipeInfo)
       }
 
       new CompilationState(from, Some(execPlan))

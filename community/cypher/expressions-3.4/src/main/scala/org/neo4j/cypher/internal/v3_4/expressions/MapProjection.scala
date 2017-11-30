@@ -19,7 +19,8 @@ package org.neo4j.cypher.internal.v3_4.expressions
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 
 case class MapProjection(
-                          name: Variable,
+                          name: Variable, // Since this is always rewritten to DesugaredMapProjection this
+                                          // (and in the elements below) may not need to be LogicalVariable
                           items: Seq[MapProjectionElement],
                           definitionPos: Option[InputPosition] = None)
                         (val position: InputPosition)

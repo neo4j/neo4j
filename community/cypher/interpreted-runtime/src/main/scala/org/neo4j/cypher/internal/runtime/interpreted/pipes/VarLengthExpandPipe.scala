@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual._
 
 import scala.collection.mutable
 
@@ -88,15 +88,23 @@ case class VarLengthExpandPipe(source: Pipe,
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    def expand(row: ExecutionContext, n: NodeValue) = {
+      val paths = varLengthExpand(n, state, max, row)
+      paths.collect {
+        case (node, rels) if rels.length >= min && isToNodeValid(row, state, node) =>
+          row.newWith2(relName, VirtualValues.list(rels: _*), toName, node)
+      }
+    }
+
     input.flatMap {
       row => {
-        fetchFromContext(row, fromName) match {
-          case n: NodeValue =>
-            val paths = varLengthExpand(n, state, max, row)
-            paths.collect {
-              case (node, rels) if rels.length >= min && isToNodeValid(row, node) =>
-                row.newWith2(relName, VirtualValues.list(rels:_*), toName, node)
-            }
+        fetchFromContext(row, state, fromName) match {
+          case node: NodeValue =>
+            expand(row, node)
+
+          case nodeRef: NodeReference =>
+            val node = ValueUtils.fromNodeProxy(state.query.nodeOps.getById(nodeRef.id))
+            expand(row, node)
 
           case Values.NO_VALUE => Iterator(row.newWith2(relName, Values.NO_VALUE, toName, Values.NO_VALUE))
 
@@ -106,9 +114,16 @@ case class VarLengthExpandPipe(source: Pipe,
     }
   }
 
-  private def isToNodeValid(row: ExecutionContext, node: Any): Boolean =
-    !nodeInScope || fetchFromContext(row, toName) == node
+  private def isToNodeValid(row: ExecutionContext, state: QueryState, node: VirtualNodeValue): Boolean =
+    !nodeInScope || {
+      fetchFromContext(row, state, toName) match {
+        case toNode: VirtualNodeValue =>
+          toNode.id == node.id
+        case _ =>
+          false
+      }
+    }
 
-  def fetchFromContext(row: ExecutionContext, name: String): Any =
+  def fetchFromContext(row: ExecutionContext, state: QueryState, name: String): Any =
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
 }

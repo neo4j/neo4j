@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChann
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -65,7 +64,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         logVersionRepository = context.getLogVersionRepository();
         // Make sure at least a bare bones log file is available before recovery
         long lastLogVersionUsed = this.logVersionRepository.getCurrentLogVersion();
-        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE );
+        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE, context::getLastCommittedTransactionId );
         channel.close();
     }
 
@@ -75,7 +74,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         // Recovery has taken place before this, so the log file has been truncated to last known good tx
         // Just read header and move to the end
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
-        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE );
+        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE, context::getLastCommittedTransactionId );
         // Move to the end
         channel.position( channel.size() );
         writer = new PositionAwarePhysicalFlushableChannel( channel );
@@ -138,9 +137,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
      * acknowledged to be committed back to the user, but will be considered committed anyway.</li>
      * <li>3-4: New log version has been set, starting the writer will see that the new file exists and
      * will be forgiving when trying to read the header of it, so that if it isn't complete a fresh
-     * header will be set (TODO actually there's a problem here where the last committed tx from
-     * {@link TransactionIdStore} is read and placed in the new header before recovery is completed, which means
-     * that, reading (2-3), this number may be a lower number than what the previous log actually contains</li>
+     * header will be set.</li>
      * </ol>
      *
      * Reading: what happens when rotation is between:
@@ -176,11 +173,13 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          * The log version is now in the store, flushed and persistent. If we crash
          * now, on recovery we'll attempt to open the version we're about to create
          * (but haven't yet), discover it's not there. That will lead to creating
-         * the file, setting the header and continuing. We'll do just that now.
-         * Note that by this point, rotation is done. The next few lines are
-         * "simply overhead" for continuing to work with the new file.
+         * the file, setting the header and continuing.
+         * We using committing transaction id as a source of last transaction id here since
+         * we can have transactions that are not yet published as committed but were already stored
+         * into transaction log that was just rotated.
          */
-        PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion, OpenMode.READ_WRITE );
+        PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion,
+                OpenMode.READ_WRITE, context::committingTransactionId );
         currentLog.close();
         return newLog;
     }

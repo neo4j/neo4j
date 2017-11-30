@@ -53,14 +53,6 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void writeWithPosition() throws Exception
-    {
-        long position = 500;
-        channel.write( buf, position );
-        verify( actual ).write( buf, position + offset );
-    }
-
-    @Test
     public void writeAll() throws Exception
     {
         channel.writeAll( buf );

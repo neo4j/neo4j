@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLon
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
@@ -52,7 +52,7 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
         val fromNode = inputRow.getLongAt(fromOffset)
         val toNode = inputRow.getLongAt(toOffset)
 
-        if (nodeIsNull(fromNode) || nodeIsNull(toNode)) {
+        if (entityIsNull(fromNode) || entityIsNull(toNode)) {
           Iterator(withNulls(inputRow))
         } else {
           val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)

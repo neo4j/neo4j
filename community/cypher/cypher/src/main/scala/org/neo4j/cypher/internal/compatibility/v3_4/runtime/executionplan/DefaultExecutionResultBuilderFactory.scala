@@ -33,18 +33,18 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
 
-case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
-                                                columns: List[String],
-                                                logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
+class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
+                                           columns: List[String],
+                                           logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
   def create(): ExecutionResultBuilder =
-    ExecutionWorkflowBuilder()
+    new ExecutionWorkflowBuilder()
 
-  case class ExecutionWorkflowBuilder() extends ExecutionResultBuilder {
-    private val taskCloser = new TaskCloser
-    private var externalResource: ExternalCSVResource = new CSVResources(taskCloser)
-    private var maybeQueryContext: Option[QueryContext] = None
-    private var pipeDecorator: PipeDecorator = NullPipeDecorator
-    private var exceptionDecorator: CypherException => CypherException = identity
+  class ExecutionWorkflowBuilder() extends ExecutionResultBuilder {
+    protected val taskCloser = new TaskCloser
+    protected var externalResource: ExternalCSVResource = new CSVResources(taskCloser)
+    protected var maybeQueryContext: Option[QueryContext] = None
+    protected var pipeDecorator: PipeDecorator = NullPipeDecorator
+    protected var exceptionDecorator: CypherException => CypherException = identity
 
     def setQueryContext(context: QueryContext) {
       maybeQueryContext = Some(context)
@@ -64,11 +64,15 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       exceptionDecorator = newDecorator
     }
 
+    protected def createQueryState(params: MapValue, queryId: AnyRef) = {
+      new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
+        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+    }
+
     def build(queryId: AnyRef, planType: ExecutionMode, params: MapValue,
               notificationLogger: InternalNotificationLogger, runtimeName: RuntimeName): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
-      val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
-        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+      val state = createQueryState(params, queryId)
       try {
         createResults(state, planType, notificationLogger, runtimeName)
       }
@@ -110,7 +114,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       }
     }
 
-    private def queryContext = maybeQueryContext.get
+    protected def queryContext = maybeQueryContext.get
 
     private def buildResultIterator(results: Iterator[ExecutionContext], isUpdating: Boolean): ResultIterator = {
       val closingIterator = new ClosingIterator(results, taskCloser, exceptionDecorator)

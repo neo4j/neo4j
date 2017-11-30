@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions
 
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, PathValueBuilder}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
 
 object SlottedProjectedPath {
 
@@ -34,14 +33,14 @@ object SlottedProjectedPath {
 
   case class singleNodeProjector(node: Expression, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, state: QueryState, builder: PathValueBuilder) = {
-      val nodeValue = node.apply(ctx, state).asInstanceOf[NodeValue]
+      val nodeValue = node.apply(ctx, state)
       tailProjector(ctx, state, builder.addNode(nodeValue))
     }
   }
 
   case class singleIncomingRelationshipProjector(rel: Expression, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, state: QueryState, builder: PathValueBuilder) = {
-      val relValue = rel.apply(ctx, state).asInstanceOf[EdgeValue]
+      val relValue = rel.apply(ctx, state)
       tailProjector(ctx, state, builder.addIncomingRelationship(relValue))
     }
   }
@@ -55,28 +54,28 @@ object SlottedProjectedPath {
 
   case class singleUndirectedRelationshipProjector(rel: Expression, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, state: QueryState, builder: PathValueBuilder) = {
-      val relValue = rel.apply(ctx, state).asInstanceOf[EdgeValue]
+      val relValue = rel.apply(ctx, state)
       tailProjector(ctx, state, builder.addUndirectedRelationship(relValue))
     }
   }
 
   case class multiIncomingRelationshipProjector(rel: Expression, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, state: QueryState, builder: PathValueBuilder) = {
-      val relListValue = rel.apply(ctx, state).asInstanceOf[ListValue]
+      val relListValue = rel.apply(ctx, state)
       tailProjector(ctx, state, builder.addIncomingRelationships(relListValue))
     }
   }
 
   case class multiOutgoingRelationshipProjector(rel: Expression, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, state: QueryState, builder: PathValueBuilder) = {
-      val relListValue = rel.apply(ctx, state).asInstanceOf[ListValue]
+      val relListValue = rel.apply(ctx, state)
       tailProjector(ctx, state, builder.addOutgoingRelationships(relListValue))
     }
   }
 
   case class multiUndirectedRelationshipProjector(rel: Expression, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, state: QueryState, builder: PathValueBuilder) = {
-      val relListValue = rel.apply(ctx, state).asInstanceOf[ListValue]
+      val relListValue = rel.apply(ctx, state)
       tailProjector(ctx, state, builder.addUndirectedRelationships(relListValue))
     }
   }

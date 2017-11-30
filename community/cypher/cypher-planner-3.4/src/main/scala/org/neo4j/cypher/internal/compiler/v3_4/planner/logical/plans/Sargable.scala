@@ -33,7 +33,7 @@ object WithSeekableArgs {
 
 object AsIdSeekable {
   def unapply(v: Any) = v match {
-    case WithSeekableArgs(func@FunctionInvocation(_, _, _, IndexedSeq(ident: Variable)), rhs)
+    case WithSeekableArgs(func@FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable)), rhs)
       if func.function == functions.Id && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
     case _ =>
@@ -43,7 +43,7 @@ object AsIdSeekable {
 
 object AsPropertySeekable {
   def unapply(v: Any) = v match {
-    case WithSeekableArgs(prop@Property(ident: Variable, propertyKey), rhs)
+    case WithSeekableArgs(prop@Property(ident: LogicalVariable, propertyKey), rhs)
       if !rhs.dependencies(ident) =>
       Some(PropertySeekable(prop, ident, rhs))
     case _ =>
@@ -54,7 +54,7 @@ object AsPropertySeekable {
 object AsPropertyScannable {
   def unapply(v: Any): Option[Scannable[Expression]] = v match {
 
-    case func@FunctionInvocation(_, _, _, IndexedSeq(property@Property(ident: Variable, _)))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(property@Property(ident: LogicalVariable, _)))
       if func.function == functions.Exists =>
       Some(ExplicitlyPropertyScannable(func, ident, property))
 
@@ -78,7 +78,7 @@ object AsPropertyScannable {
   }
 
   private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression) = lhs match {
-    case property@Property(ident: Variable, _) =>
+    case property@Property(ident: LogicalVariable, _) =>
       PartialPredicate.ifNotEqual(
         FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position),
         predicate
@@ -91,9 +91,9 @@ object AsPropertyScannable {
 
 object AsStringRangeSeekable {
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
-    case startsWith@StartsWith(Property(ident: Variable, propertyKey), lit@StringLiteral(prefix)) if prefix.nonEmpty =>
+    case startsWith@StartsWith(Property(ident: LogicalVariable, propertyKey), lit@StringLiteral(prefix)) if prefix.nonEmpty =>
       Some(PrefixRangeSeekable(PrefixRange(lit), startsWith, ident, propertyKey))
-    case startsWith@StartsWith(Property(ident: Variable, propertyKey), rhs) =>
+    case startsWith@StartsWith(Property(ident: LogicalVariable, propertyKey), rhs) =>
       Some(PrefixRangeSeekable(PrefixRange(rhs), startsWith, ident, propertyKey))
     case _ =>
       None
@@ -112,49 +112,49 @@ object AsValueRangeSeekable {
 
 sealed trait Sargable[+T <: Expression] {
   def expr: T
-  def ident: Variable
+  def ident: LogicalVariable
 
   def name = ident.name
 }
 
 sealed trait Seekable[T <: Expression] extends Sargable[T] {
-  def dependencies: Set[Variable]
+  def dependencies: Set[LogicalVariable]
 }
 
 sealed trait EqualitySeekable[T <: Expression] extends Seekable[T] {
   def args: SeekableArgs
 }
 
-case class IdSeekable(expr: FunctionInvocation, ident: Variable, args: SeekableArgs)
+case class IdSeekable(expr: FunctionInvocation, ident: LogicalVariable, args: SeekableArgs)
   extends EqualitySeekable[FunctionInvocation] {
 
-  def dependencies: Set[Variable] = args.dependencies
+  def dependencies: Set[LogicalVariable] = args.dependencies
 }
 
-case class PropertySeekable(expr: Property, ident: Variable, args: SeekableArgs)
-  extends EqualitySeekable[Property] {
+case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args: SeekableArgs)
+  extends EqualitySeekable[LogicalProperty] {
 
   def propertyKey: PropertyKeyName = expr.propertyKey
-  def dependencies: Set[Variable] = args.dependencies
+  def dependencies: Set[LogicalVariable] = args.dependencies
 }
 
 sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
   def range: SeekRange[V]
 }
 
-case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr: StartsWith, ident: Variable, propertyKey: PropertyKeyName)
+case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr: StartsWith, ident: LogicalVariable, propertyKey: PropertyKeyName)
   extends RangeSeekable[StartsWith, Expression] {
 
-  def dependencies: Set[Variable] = Set.empty
+  def dependencies: Set[LogicalVariable] = Set.empty
 
   def asQueryExpression: QueryExpression[Expression] =
     RangeQueryExpression(PrefixSeekRangeWrapper(range)(expr.rhs.position))
 }
 
-case class InequalityRangeSeekable(ident: Variable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
+case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
   extends RangeSeekable[AndedPropertyInequalities, Expression] {
 
-  def dependencies: Set[Variable] = expr.inequalities.map(_.dependencies).toSet.flatten
+  def dependencies: Set[LogicalVariable] = expr.inequalities.map(_.dependencies).toSet.flatten
 
   def range: InequalitySeekRange[Expression] =
     InequalitySeekRange.fromPartitionedBounds(expr.inequalities.partition {
@@ -171,14 +171,14 @@ case class InequalityRangeSeekable(ident: Variable, propertyKeyName: PropertyKey
 }
 
 sealed trait Scannable[+T <: Expression] extends Sargable[T] {
-  def ident: Variable
-  def property: Property
+  def ident: LogicalVariable
+  def property: LogicalProperty
 
   def propertyKey: PropertyKeyName = property.propertyKey
 }
 
-case class ExplicitlyPropertyScannable(expr: FunctionInvocation, ident: Variable, property: Property)
+case class ExplicitlyPropertyScannable(expr: FunctionInvocation, ident: LogicalVariable, property: LogicalProperty)
   extends Scannable[FunctionInvocation]
 
-case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: Variable, property: Property)
+case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: LogicalVariable, property: LogicalProperty)
   extends Scannable[PartialPredicate[T]]

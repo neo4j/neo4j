@@ -112,15 +112,15 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public FileLock tryLock() throws IOException
+    public void readAll( ByteBuffer dst ) throws IOException
     {
-        return inner.tryLock();
+        inner.readAll( dst );
     }
 
     @Override
-    public int write( ByteBuffer byteBuffer, long l ) throws IOException
+    public FileLock tryLock() throws IOException
     {
-        return inner.write( byteBuffer, l );
+        return inner.tryLock();
     }
 
     @Override

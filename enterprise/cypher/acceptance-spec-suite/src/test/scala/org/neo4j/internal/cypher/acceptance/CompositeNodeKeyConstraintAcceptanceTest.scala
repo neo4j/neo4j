@@ -154,7 +154,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
   }
 
   private val duplicateConstraintConfiguration =
-    TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
+    TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema, Slotted)) +
     TestConfiguration(V3_1 -> V3_3, Cost, Runtimes.Default) +
     TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
 
@@ -267,7 +267,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val id = createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood"), "Person").getId
 
     // Expect
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
         TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
         TestConfiguration(Versions(V2_3, Versions.Default), Rule, Runtimes.Default) +
         TestScenario(V3_3, Planners.Cost, Runtimes.Default)
@@ -277,7 +277,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   }
 
-  private val updateConfiguration: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Interpreted) +
+  private val updateConfiguration: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted)) +
     TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
     TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default) +
     TestScenario(V3_3, Planners.Cost, Runtimes.Default)

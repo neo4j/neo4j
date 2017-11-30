@@ -45,12 +45,6 @@ public class StoreFileChannel implements StoreChannel
     }
 
     @Override
-    public int write( ByteBuffer src, long position ) throws IOException
-    {
-        return channel.write( src, position );
-    }
-
-    @Override
     public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
     {
         return channel.write( srcs, offset, length );
@@ -62,7 +56,7 @@ public class StoreFileChannel implements StoreChannel
         long filePosition = position;
         long expectedEndPosition = filePosition + src.limit() - src.position();
         int bytesWritten;
-        while ( (filePosition += bytesWritten = write( src, filePosition )) < expectedEndPosition )
+        while ( (filePosition += bytesWritten = channel.write( src, filePosition )) < expectedEndPosition )
         {
             if ( bytesWritten < 0 )
             {
@@ -103,6 +97,19 @@ public class StoreFileChannel implements StoreChannel
     public int read( ByteBuffer dst, long position ) throws IOException
     {
         return channel.read( dst, position );
+    }
+
+    @Override
+    public void readAll( ByteBuffer dst ) throws IOException
+    {
+        while ( dst.hasRemaining() )
+        {
+            int bytesRead = channel.read( dst );
+            if ( bytesRead < 0 )
+            {
+                throw new IllegalStateException( "Channel has reached end-of-stream." );
+            }
+        }
     }
 
     @Override

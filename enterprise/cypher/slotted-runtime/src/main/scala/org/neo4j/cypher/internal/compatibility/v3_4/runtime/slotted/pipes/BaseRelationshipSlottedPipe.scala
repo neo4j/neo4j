@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap, m
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
 abstract class BaseRelationshipSlottedPipe(src: Pipe,
@@ -84,7 +85,7 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe,
 
   private def setProperty(relId: Long, key: String, value: AnyValue, qtx: QueryContext) {
     //do not set properties for null values
-    if (value == null) {
+    if (value == Values.NO_VALUE) {
       handleNull(key: String)
     } else {
       val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)

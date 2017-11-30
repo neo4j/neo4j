@@ -360,7 +360,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         ByteBuffer buffer = ByteBuffer.allocate( 16 );
         try ( StoreChannel channel = fs.open( file( fileName ), OpenMode.READ ) )
         {
-            channel.read( buffer );
+            channel.readAll( buffer );
         }
         buffer.flip();
         return  buffer;

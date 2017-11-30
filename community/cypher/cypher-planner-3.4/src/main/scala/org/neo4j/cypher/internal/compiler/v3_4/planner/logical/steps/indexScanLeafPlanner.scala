@@ -81,7 +81,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
   type PlanProducer = (IdName, LabelToken, PropertyKeyToken, Seq[Expression], Option[UsingIndexHint], Set[IdName]) => LogicalPlan
 
-  private def produce(variableName: String, propertyKeyName: String, qg: QueryGraph, property: Property,
+  private def produce(variableName: String, propertyKeyName: String, qg: QueryGraph, property: LogicalProperty,
                       predicate: Expression, planProducer: PlanProducer)
                      (implicit context: LogicalPlanningContext, semanticTable: SemanticTable): Set[LogicalPlan] = {
     val labelPredicates: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates

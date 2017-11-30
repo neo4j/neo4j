@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.CastSupport
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
@@ -34,7 +34,7 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
       val item = row.get(variable).get
-      if (item != Values.NO_VALUE) removeLabels(row, state, CastSupport.castOrFail[NodeValue](item).id)
+      if (item != Values.NO_VALUE) removeLabels(row, state, CastSupport.castOrFail[VirtualNodeValue](item).id)
       row
     }
   }

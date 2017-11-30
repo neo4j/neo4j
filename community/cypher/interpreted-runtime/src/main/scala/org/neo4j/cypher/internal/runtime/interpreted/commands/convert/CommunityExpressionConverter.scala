@@ -309,7 +309,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
 
   private def toCommandParameter(e: ast.Parameter) = commandexpressions.ParameterExpression(e.name)
 
-  private def toCommandProperty(e: ast.Property, self: ExpressionConverters): commandexpressions.Property =
+  private def toCommandProperty(e: ast.LogicalProperty, self: ExpressionConverters): commandexpressions.Property =
     commandexpressions.Property(self.toCommandExpression(e.map), PropertyKey(e.propertyKey.name))
 
   private def toCommandExpression(expression: Option[ast.Expression], self: ExpressionConverters): Option[CommandExpression] =
@@ -318,7 +318,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
   private def toCommandExpression(expressions: Seq[ast.Expression], self: ExpressionConverters): Seq[CommandExpression] =
     expressions.map(self.toCommandExpression)
 
-  private def variable(e: ast.Variable) = commands.expressions.Variable(e.name)
+  private def variable(e: ast.LogicalVariable) = commands.expressions.Variable(e.name)
 
   private def inequalityExpression(original: ast.InequalityExpression, self: ExpressionConverters): predicates.ComparablePredicate = original match {
     case e: ast.LessThan => predicates.LessThan(self.toCommandExpression(e.lhs), self.toCommandExpression(e.rhs))
