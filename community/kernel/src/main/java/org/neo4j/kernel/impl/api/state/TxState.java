@@ -731,7 +731,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState )
     {
-        return propertyContainerState.hasChanges() ?
+        return propertyContainerState.hasPropertyChanges() ?
                 propertyCursor.get().init( cursor, propertyContainerState ) : cursor;
     }
 
@@ -739,7 +739,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState, int propertyKeyId )
     {
-        return propertyContainerState.hasChanges() ?
+        return propertyContainerState.hasPropertyChanges() ?
                 singlePropertyCursor.get().init( cursor, propertyContainerState, propertyKeyId ) : cursor;
     }
 
@@ -767,7 +767,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             NodeState nodeState,
             Direction direction )
     {
-        return nodeState.hasChanges()
+        return nodeState.hasPropertyChanges() || nodeState.hasRelationshipChanges()
                ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction ) )
                : cursor;
     }
@@ -777,7 +777,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             Direction direction,
             int[] relTypes )
     {
-        return nodeState.hasChanges()
+        return nodeState.hasPropertyChanges() || nodeState.hasRelationshipChanges()
                ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction, relTypes ) )
                : cursor;
     }

@@ -26,8 +26,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.Direction;
 
-import static java.util.Collections.emptyIterator;
-
 /**
  * Represents the transactional changes to a node:
  * <ul>
@@ -61,4 +59,5 @@ public interface NodeState extends PropertyContainerState
 
     PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
 
+    boolean hasRelationshipChanges();
 }

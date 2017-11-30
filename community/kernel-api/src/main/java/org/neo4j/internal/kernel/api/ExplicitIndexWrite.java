@@ -78,7 +78,7 @@ public interface ExplicitIndexWrite
      *
      * @param indexName The name of the index
      * @param relationship The id of the relationship to add
-     * @param key The key to associate with the node
+     * @param key The key to associate with the relationship
      * @param value The value to associate with the relationship and key
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
@@ -90,7 +90,7 @@ public interface ExplicitIndexWrite
      *
      * @param indexName The name of the index
      * @param relationship The id of the relationship to remove
-     * @param key The key to associate with the node
+     * @param key The key to associate with the relationship
      * @param value The value to associate with the relationship and key
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
@@ -102,7 +102,7 @@ public interface ExplicitIndexWrite
      *
      * @param indexName The name of the index
      * @param relationship The id of the relationship to remove
-     * @param key The key to associate with the node
+     * @param key The key to associate with the relationship
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )

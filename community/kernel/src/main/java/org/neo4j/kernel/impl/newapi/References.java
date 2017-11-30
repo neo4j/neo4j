@@ -157,13 +157,13 @@ class References
     /**
      * Checks if the property reference really is a node reference
      *
-     * @param reference The reference to check
+     * @param nodeReference The reference to check
      * @return <tt>true</tt>if the reference refers to a node otherwise <tt>false</tt>
      */
-    static boolean hasNodeFlag( long reference )
+    static boolean hasNodeFlag( long nodeReference )
     {
-        assert reference != NO_ID;
-        return (reference & NODE_MARKER) != 0L;
+        assert nodeReference != NO_ID;
+        return (nodeReference & NODE_MARKER) != 0L;
     }
 
     /**
@@ -171,12 +171,12 @@ class References
      *
      * This allows us to encode a relationship reference as a property reference so that we can do lookups of changes in the
      * transaction state.
-     * @param reference the reference to encode
+     * @param relationshipReference the reference to encode
      * @return The encoded reference
      */
-    static long setRelationshipFlag( long reference )
+    static long setRelationshipFlag( long relationshipReference )
     {
-        return reference | RELATIONSHIP_MARKER | FLAG_MARKER;
+        return relationshipReference | RELATIONSHIP_MARKER | FLAG_MARKER;
     }
 
     /**

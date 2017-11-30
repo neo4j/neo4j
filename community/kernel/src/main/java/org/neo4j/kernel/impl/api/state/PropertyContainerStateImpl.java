@@ -203,12 +203,6 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     }
 
     @Override
-    public boolean hasChanges()
-    {
-        return hasPropertyChanges();
-    }
-
-    @Override
     public boolean hasPropertyChanges()
     {
         return addedProperties != null || removedProperties != null || changedProperties != null;

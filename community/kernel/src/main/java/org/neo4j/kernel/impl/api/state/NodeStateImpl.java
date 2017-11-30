@@ -212,9 +212,9 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     }
 
     @Override
-    public boolean hasChanges()
+    public boolean hasRelationshipChanges()
     {
-        return super.hasChanges() || hasAddedRelationships() || hasRemovedRelationships();
+        return hasAddedRelationships() || hasRemovedRelationships();
     }
 
     @Override
@@ -318,13 +318,13 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             }
 
             @Override
-            public boolean hasChanges()
+            public boolean hasPropertyChanges()
             {
                 return false;
             }
 
             @Override
-            public boolean hasPropertyChanges()
+            public boolean hasRelationshipChanges()
             {
                 return false;
             }
@@ -364,6 +364,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             {
                 return null;
             }
+
         };
     }
 }

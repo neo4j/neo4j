@@ -55,8 +55,6 @@ public interface PropertyContainerState
                 Iterator<Integer> removed ) throws ConstraintValidationException;
     }
 
-    boolean hasChanges();
-
     boolean hasPropertyChanges();
 
     StorageProperty getChangedProperty( int propertyKeyId );
@@ -104,12 +102,6 @@ public interface PropertyContainerState
         @Override
         public void accept( Visitor visitor ) throws ConstraintValidationException
         {
-        }
-
-        @Override
-        public boolean hasChanges()
-        {
-            return false;
         }
 
         @Override
