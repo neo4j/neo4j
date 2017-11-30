@@ -62,7 +62,10 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.next = 0;
         this.highMark = read.nodeHighMark();
         this.read = read;
-        this.labelCursor = read.labelCursor();
+        if ( labelCursor != null )
+        {
+            labelCursor = read.labelCursor();
+        }
     }
 
     void single( long reference, Read read )
@@ -79,7 +82,10 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         //This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
         this.read = read;
-        this.labelCursor = read.labelCursor();
+        if ( labelCursor != null )
+        {
+            labelCursor = read.labelCursor();
+        }
     }
 
     @Override
@@ -274,8 +280,11 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             pageCursor = null;
         }
         read = null;
-        labelCursor = null;
-
+        if ( labelCursor != null )
+        {
+            labelCursor.close();
+            labelCursor = null;
+        }
         reset();
     }
 
