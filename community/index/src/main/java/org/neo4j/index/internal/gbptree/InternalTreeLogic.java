@@ -1071,7 +1071,7 @@ class InternalTreeLogic<KEY,VALUE>
     private int simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, int childPos )
     {
         // Remove key and child
-        bTreeNode.removeKeyAt( cursor, keyPos, keyCount );
+        bTreeNode.removeKeyAt( cursor, keyPos, keyCount, INTERNAL );
         bTreeNode.removeChildAt( cursor, childPos, keyCount );
 
         // Decrease key count
@@ -1315,7 +1315,7 @@ class InternalTreeLogic<KEY,VALUE>
     private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos )
     {
         // Remove key/value
-        bTreeNode.removeKeyAt( cursor, pos, keyCount );
+        bTreeNode.removeKeyAt( cursor, pos, keyCount, LEAF );
         bTreeNode.valueAt( cursor, into, pos );
         bTreeNode.removeValueAt( cursor, pos, keyCount );
 

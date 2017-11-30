@@ -198,7 +198,7 @@ public class TreeNodeTest
         node.insertKeyAt( cursor, key, 2, 2, type );
 
         // WHEN
-        node.removeKeyAt( cursor, 1, 3 );
+        node.removeKeyAt( cursor, 1, 3, type );
 
         // THEN
         assertEquals( firstKey, node.keyAt( cursor, key, 0, type ).longValue() );
@@ -473,7 +473,7 @@ public class TreeNodeTest
                 {   // there are things to remove
                     int position = random.nextInt( expectedKeyCount );
                     node.keyAt( cursor, key, position, LEAF );
-                    node.removeKeyAt( cursor, position, expectedKeyCount );
+                    node.removeKeyAt( cursor, position, expectedKeyCount, LEAF );
                     long expectedKey = remove( expectedKeys, expectedKeyCount, position );
                     assertEquals( expectedKey, key.longValue() );
 

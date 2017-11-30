@@ -1019,7 +1019,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer remove rightmost key
             // [0 1 ... maxKeyCount-2]
-            removeAtPos( maxKeyCount - 1 );
+            removeAtPos( maxKeyCount - 1, LEAF );
             this.cursor.forceRetry();
 
             while ( cursor.next() )
@@ -1101,7 +1101,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer remove rightmost key
             // [1 ... maxKeyCount-1]
-            removeAtPos( 0 );
+            removeAtPos( 0, LEAF );
             seekCursor.forceRetry();
 
             while ( cursor.next() )
@@ -2304,10 +2304,10 @@ public class SeekCursorTest
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
-    private void removeAtPos( int pos )
+    private void removeAtPos( int pos, TreeNode.Type type )
     {
         int keyCount = TreeNode.keyCount( cursor );
-        node.removeKeyAt( cursor, pos, keyCount );
+        node.removeKeyAt( cursor, pos, keyCount, type );
         node.removeValueAt( cursor, pos, keyCount );
         TreeNode.setKeyCount( cursor, keyCount - 1 );
     }

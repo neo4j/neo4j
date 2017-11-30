@@ -254,7 +254,7 @@ class TreeNode<KEY,VALUE>
         layout.writeKey( cursor, key );
     }
 
-    void removeKeyAt( PageCursor cursor, int pos, int keyCount )
+    void removeKeyAt( PageCursor cursor, int pos, int keyCount, Type type )
     {
         removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
     }
