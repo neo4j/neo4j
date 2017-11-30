@@ -283,7 +283,7 @@ public class LogFilesBuilder
         }
         if ( transactionIdStore != null )
         {
-            return () -> transactionIdStore.getLastCommittedTransactionId();
+            return transactionIdStore::getLastCommittedTransactionId;
         }
         if ( fileBasedOperationsOnly )
         {
@@ -314,7 +314,7 @@ public class LogFilesBuilder
     {
         if ( transactionIdStore != null )
         {
-            return () -> transactionIdStore.committingTransactionId();
+            return transactionIdStore::committingTransactionId;
         }
         if ( fileBasedOperationsOnly )
         {
