@@ -157,7 +157,12 @@ object LogicalPlanConverter {
       before._1 match {
         case plan: LogicalPlanV3_3 =>
           // TODO the 3.3 plan might actually have not been assigned an ID
-          rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
+          try {
+            rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
+          } catch {
+            case (e:frontendV3_3.InternalException) =>
+              // ProcedureOrSchema plans have no assigned IDs. That's ok.
+          }
         // Save Mapping from 3.3 expression to 3.4 expression
         case e: ExpressionV3_3 if isImportant(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[ExpressionV3_4]))
         case _ =>
