@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.bolt.transport.TransportThrottle;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageBoundaryHook;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
@@ -45,6 +47,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     private final int bufferSize;
     private final int maxChunkSize;
     private final AtomicBoolean closed = new AtomicBoolean( false );
+    private final TransportThrottleGroup throttleGroup;
 
     private ByteBuf buffer;
     private Channel channel;
@@ -55,10 +58,16 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
 
     public ChunkedOutput( Channel ch, int bufferSize )
     {
+        this( ch, bufferSize, null );
+    }
+
+    public ChunkedOutput( Channel ch, int bufferSize, TransportThrottleGroup throttleGroup )
+    {
         this.channel = ch;
         this.bufferSize = max( 16, bufferSize );
         this.maxChunkSize = this.bufferSize - CHUNK_HEADER_SIZE;
         this.buffer = channel.alloc().buffer( this.bufferSize, this.bufferSize );
+        this.throttleGroup = throttleGroup;
     }
 
     //Flush can be called from a separate thread, we therefor need to synchronize
@@ -69,6 +78,12 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         if ( buffer != null && buffer.readableBytes() > 0 )
         {
             closeChunkIfOpen();
+
+            // check for and apply write throttles
+            if ( throttleGroup != null )
+            {
+                throttleGroup.writeThrottle().acquire( channel );
+            }
 
             // Local copy and clear the buffer field. This ensures that the buffer is not re-released if the flush call fails
             ByteBuf out = this.buffer;
@@ -84,7 +99,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     @Override
     public synchronized PackOutput writeByte( byte value ) throws IOException
     {
-        ensure(1);
+        ensure( 1 );
         buffer.writeByte( value );
         return this;
     }
@@ -92,7 +107,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     @Override
     public synchronized PackOutput writeShort( short value ) throws IOException
     {
-        ensure(2);
+        ensure( 2 );
         buffer.writeShort( value );
         return this;
     }
@@ -100,7 +115,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     @Override
     public synchronized PackOutput writeInt( int value ) throws IOException
     {
-        ensure(4);
+        ensure( 4 );
         buffer.writeInt( value );
         return this;
     }
@@ -108,7 +123,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     @Override
     public synchronized PackOutput writeLong( long value ) throws IOException
     {
-        ensure(8);
+        ensure( 8 );
         buffer.writeLong( value );
         return this;
     }
@@ -116,7 +131,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     @Override
     public synchronized PackOutput writeDouble( double value ) throws IOException
     {
-        ensure(8);
+        ensure( 8 );
         buffer.writeDouble( value );
         return this;
     }
@@ -151,8 +166,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     {
         if ( offset + length > data.length )
         {
-            throw new IOException( "Asked to write " + length + " bytes, but there is only " +
-                                   ( data.length - offset ) + " bytes available in data provided." );
+            throw new IOException( "Asked to write " + length + " bytes, but there is only " + (data.length - offset) + " bytes available in data provided." );
         }
         return writeBytes( ByteBuffer.wrap( data, offset, length ) );
     }
@@ -163,8 +177,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
         if ( closed.get() )
         {
-            throw new PackOutputClosedException( "Network channel towards " + channel.remoteAddress() + " is closed. " +
-                                                 "Client has probably been stopped." );
+            throw new PackOutputClosedException( "Network channel towards " + channel.remoteAddress() + " is closed. " + "Client has probably been stopped." );
         }
         int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
         synchronized ( this )

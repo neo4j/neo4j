@@ -33,10 +33,10 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 
 class FulltextTransactionEventUpdater implements TransactionEventHandler<FulltextTransactionEventUpdater.FulltextTransactionContext>
 {
-    private final FulltextProvider fulltextProvider;
+    private final FulltextProviderImpl fulltextProvider;
     private final FulltextUpdateApplier applier;
 
-    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider, FulltextUpdateApplier applier )
+    FulltextTransactionEventUpdater( FulltextProviderImpl fulltextProvider, FulltextUpdateApplier applier )
     {
         this.fulltextProvider = fulltextProvider;
         this.applier = applier;

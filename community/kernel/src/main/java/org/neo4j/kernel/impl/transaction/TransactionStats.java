@@ -53,7 +53,6 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
         else
         {
             incrementCounter( rolledBackReadTransactionCount, rolledBackWriteTransactionCount, write );
-
         }
     }
 

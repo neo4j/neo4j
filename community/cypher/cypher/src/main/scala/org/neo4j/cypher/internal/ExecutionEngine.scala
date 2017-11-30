@@ -66,8 +66,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val log = logProvider.getLog( getClass )
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   kernelMonitors.addMonitorListener( new StringCacheMonitor {
-    override def cacheDiscard(ignored: String, query: String) {
-      log.info(s"Discarded stale query from the query cache: $query")
+    override def cacheDiscard(ignored: String, query: String, secondsSinceReplan: Int) {
+      log.info(s"Discarded stale query from the query cache after ${secondsSinceReplan} seconds: $query")
     }
   })
 

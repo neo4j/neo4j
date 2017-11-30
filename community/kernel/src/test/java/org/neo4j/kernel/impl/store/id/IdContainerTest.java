@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import java.io.File;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -171,8 +176,61 @@ public class IdContainerTest
         assertTrue( idContainer.init() );
     }
 
+    @Test
+    public void idContainerReadWriteBySingleByte() throws IOException
+    {
+        SingleByteFileSystemAbstraction fileSystem = new SingleByteFileSystemAbstraction();
+        IdContainer idContainer = new IdContainer( fileSystem, file, 100, false );
+        idContainer.init();
+        idContainer.close( 100 );
+
+        idContainer = new IdContainer( fileSystem, file, 100, false );
+        idContainer.init();
+        assertEquals( 100, idContainer.getInitialHighId() );
+        fileSystem.close();
+    }
+
     private void createEmptyFile()
     {
         IdContainer.createEmptyIdFile( fs, file, 42, false );
+    }
+
+    private static class SingleByteFileSystemAbstraction extends DefaultFileSystemAbstraction
+    {
+        @Override
+        public StoreFileChannel open( File fileName, OpenMode mode ) throws IOException
+        {
+            return new SingleByteBufferChannel( super.open( fileName, mode ) );
+        }
+    }
+
+    private static class SingleByteBufferChannel extends StoreFileChannel
+    {
+
+        SingleByteBufferChannel( StoreFileChannel channel )
+        {
+            super( channel );
+        }
+
+        @Override
+        public int write( ByteBuffer src ) throws IOException
+        {
+            byte b = src.get();
+            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[]{b} );
+            return super.write( byteBuffer );
+        }
+
+        @Override
+        public int read( ByteBuffer dst ) throws IOException
+        {
+            ByteBuffer byteBuffer = ByteBuffer.allocate( 1 );
+            int read = super.read( byteBuffer );
+            if ( read > 0 )
+            {
+                byteBuffer.flip();
+                dst.put( byteBuffer.get() );
+            }
+            return read;
+        }
     }
 }

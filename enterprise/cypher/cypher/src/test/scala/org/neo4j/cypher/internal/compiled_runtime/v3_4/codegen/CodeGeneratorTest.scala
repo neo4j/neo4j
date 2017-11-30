@@ -26,7 +26,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.collection.primitive.{PrimitiveLongIterator, PrimitiveLongResourceIterator}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
@@ -1668,7 +1668,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     override def answer(invocationOnMock: InvocationOnMock): AnyRef = toObjectConverter(invocationOnMock.getArguments()(0))
   })
   when(transactionalContext.readOperations).thenReturn(ro)
-  when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
+  when(queryContext.entityAccessor).thenReturn(nodeManager)
   when(ro.nodeGetProperty(anyLong(), anyInt())).thenAnswer(new Answer[Value] {
     override def answer(invocationOnMock: InvocationOnMock): Value = {
       val id = invocationOnMock.getArguments()(0).asInstanceOf[Long]
@@ -1691,14 +1691,14 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       relTokens(label)
     }
   })
-  when(ro.nodesGetForLabel(anyInt())).thenAnswer(new Answer[PrimitiveLongIterator] {
-    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = {
+  when(ro.nodesGetForLabel(anyInt())).thenAnswer(new Answer[PrimitiveLongResourceIterator] {
+    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongResourceIterator = {
       val labelToken = invocationOnMock.getArguments.apply(0).asInstanceOf[Int]
       val (label, _) = labelTokens.find {
         case (l, t) => t == labelToken
       }.get
       val nodeIds = nodesForLabel(label).map(_.getId)
-      primitiveIterator(nodeIds)
+      primitiveResourceIterator(null, nodeIds)
     }
   })
   when(ro.nodeGetRelationships(anyLong(), any[Direction])).thenAnswer(new Answer[PrimitiveLongIterator] {
@@ -1787,6 +1787,20 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     override def next(): Long = inner.next()
 
     override def hasNext: Boolean = inner.hasNext
+  }
+
+  private def primitiveResourceIterator(resource: Resource, longs: Seq[Long]) = new PrimitiveLongResourceIterator {
+    val inner = longs.toIterator
+
+    override def next(): Long = inner.next()
+
+    override def hasNext: Boolean = inner.hasNext
+
+    override def close() = {
+      if (resource != null) {
+        resource.close()
+      }
+    }
   }
 
   private def relationshipIterator(longs: Seq[Long]) = new RelationshipIterator {

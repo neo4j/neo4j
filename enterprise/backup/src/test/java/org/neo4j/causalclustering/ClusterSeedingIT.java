@@ -37,6 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
@@ -67,10 +68,12 @@ public class ClusterSeedingIT
         fsa = fileSystemRule.get();
 
         backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME,
+                IpFamily.IPV4, false, new Monitors() );
 
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME,
+                IpFamily.IPV4, false, new Monitors() );
 
         baseBackupDir = testDir.directory( "backups" );
     }
@@ -129,7 +132,8 @@ public class ClusterSeedingIT
     {
         // given
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME,
+                IpFamily.IPV4, false, new Monitors() );
         cluster.start();
 
         // when: creating a backup
@@ -150,7 +154,8 @@ public class ClusterSeedingIT
     {
         // given
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME,
+                IpFamily.IPV4, false, new Monitors() );
 
         cluster.start();
         createEmptyNodes( cluster, 100 );

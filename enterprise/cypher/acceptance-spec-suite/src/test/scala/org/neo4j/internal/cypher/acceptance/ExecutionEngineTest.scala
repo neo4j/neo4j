@@ -382,7 +382,7 @@ order by a.COL1""".format(a, b))
   test("shouldAllowAllPredicateOnArrayProperty") {
     val a = createNode("array" -> Array(1, 2, 3, 4))
 
-    val result = executeWith(Configs.CommunityInterpreted, "match (a) where id(a) = 0 and any(x in a.array where x = 2) return a")
+    val result = executeWith(Configs.Interpreted, "match (a) where id(a) = 0 and any(x in a.array where x = 2) return a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -390,7 +390,7 @@ order by a.COL1""".format(a, b))
   test("shouldAllowStringComparisonsInArray") {
     val a = createNode("array" -> Array("Cypher duck", "Gremlin orange", "I like the snow"))
 
-    val result = executeWith(Configs.CommunityInterpreted, "match (a) where id(a) = 0 and single(x in a.array where x =~ '.*the.*') return a")
+    val result = executeWith(Configs.Interpreted, "match (a) where id(a) = 0 and single(x in a.array where x =~ '.*the.*') return a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -611,7 +611,7 @@ order by a.COL1""".format(a, b))
   test("extract string from node collection") {
     createNode("name"->"a")
 
-    val result = executeWith(Configs.CommunityInterpreted, """match (n) where id(n) = 0 with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
+    val result = executeWith(Configs.Interpreted, """match (n) where id(n) = 0 with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
 
     result.toList should equal(List(Map("test" -> "atest")))
   }

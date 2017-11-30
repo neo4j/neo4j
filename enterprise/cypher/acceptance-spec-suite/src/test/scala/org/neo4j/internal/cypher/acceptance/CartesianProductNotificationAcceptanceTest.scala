@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, devNullLogger}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, StatsDivergenceCalculator, devNullLogger}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -115,8 +115,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
   }
   private val configuration = CypherCompilerConfiguration(
     queryCacheSize = 128,
-    statsDivergenceThreshold = 0.5,
-    queryPlanTTL = 1000L,
+    statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
     useErrorsOverWarnings = false,
     idpMaxTableSize = 128,
     idpIterationDuration = 1000,

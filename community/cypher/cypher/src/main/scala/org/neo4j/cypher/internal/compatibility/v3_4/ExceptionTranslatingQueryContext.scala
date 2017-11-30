@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.EdgeValue
@@ -37,9 +38,8 @@ import org.neo4j.values.virtual.EdgeValue
 import scala.collection.Iterator
 
 class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
-  override type EntityAccessor = inner.EntityAccessor
 
-  override def entityAccessor: EntityAccessor = inner.entityAccessor
+  override def entityAccessor: NodeManager = inner.entityAccessor
 
   override def transactionalContext =
     new ExceptionTranslatingTransactionalContext(inner.transactionalContext)

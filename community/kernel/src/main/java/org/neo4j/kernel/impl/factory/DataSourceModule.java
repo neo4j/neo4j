@@ -34,6 +34,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -308,6 +308,12 @@ public class DataSourceModule
             public Statement statement()
             {
                 return threadToStatementContextBridge.get();
+            }
+
+            @Override
+            public KernelTransaction kernelTransaction()
+            {
+                return threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true );
             }
 
             @Override

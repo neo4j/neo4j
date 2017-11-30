@@ -543,25 +543,6 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldKillTransactionsOnShutdown() throws Throwable
-    {
-        // Given
-        assumeThat(kernel, instanceOf( Kernel.class ));
-
-        // Then
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ) )
-        {
-            ((Kernel)kernel).stop();
-            tx.acquireStatement().readOperations().nodeExists( 0L );
-            fail("Should have been terminated.");
-        }
-        catch ( TransactionTerminatedException e )
-        {
-            // Success
-        }
-    }
-
-    @Test
     public void txReturnsCorrectIdWhenCommitted() throws Exception
     {
         executeDummyTxs( db, 42 );

@@ -34,6 +34,7 @@ import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.SocketTransportHandler;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
@@ -205,7 +206,7 @@ public class SocketTransportHandlerTest
         Map<Long,Function<BoltChannel, BoltMessagingProtocolHandler>> availableVersions = new HashMap<>();
         availableVersions.put( (long) BoltMessagingProtocolV1Handler.VERSION,
                 boltChannel -> new BoltMessagingProtocolV1Handler( boltChannel, new SynchronousBoltWorker( machine ),
-                        NullLogService.getInstance() )
+                        TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() )
         );
 
         return new BoltHandshakeProtocolHandler( availableVersions, false, true );

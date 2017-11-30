@@ -53,12 +53,12 @@ class Appending
             return;
         }
 
-        outcome.renewElectionTimeout();
+        outcome.setPreElection( false );
         outcome.setNextTerm( request.leaderTerm() );
         outcome.setLeader( request.from() );
         outcome.setLeaderCommit( request.leaderCommit() );
 
-        if ( !Follower.logHistoryMatches( state, request.prevLogIndex(), request.prevLogTerm(), log ) )
+        if ( !Follower.logHistoryMatches( state, request.prevLogIndex(), request.prevLogTerm() ) )
         {
             assert request.prevLogIndex() > -1 && request.prevLogTerm() > -1;
             RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(

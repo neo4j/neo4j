@@ -50,12 +50,14 @@ public class ComparableRaftState implements ReadableRaftState
     private long leaderCommit = -1;
     private MemberId votedFor;
     private Set<MemberId> votesForMe = new HashSet<>();
+    private Set<MemberId> preVotesForMe = new HashSet<>();
     private Set<MemberId> heartbeatResponses = new HashSet<>();
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     protected final RaftLog entryLog;
     private final InFlightCache inFlightCache;
     private long commitIndex = -1;
+    private boolean isPreElection;
 
     ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers,
                          RaftLog entryLog, InFlightCache inFlightCache, LogProvider logProvider )
@@ -152,6 +154,24 @@ public class ComparableRaftState implements ReadableRaftState
         return commitIndex;
     }
 
+    @Override
+    public boolean supportPreVoting()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isPreElection()
+    {
+        return isPreElection;
+    }
+
+    @Override
+    public Set<MemberId> preVotesForMe()
+    {
+        return preVotesForMe;
+    }
+
     public void update( Outcome outcome ) throws IOException
     {
         term = outcome.getTerm();
@@ -160,6 +180,7 @@ public class ComparableRaftState implements ReadableRaftState
         votesForMe = outcome.getVotesForMe();
         lastLogIndexBeforeWeBecameLeader = outcome.getLastLogIndexBeforeWeBecameLeader();
         followerStates = outcome.getFollowerStates();
+        isPreElection = outcome.isPreElection();
 
         for ( RaftLogCommand logCommand : outcome.getLogCommands() )
         {

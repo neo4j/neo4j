@@ -39,6 +39,8 @@ public interface TransactionalContext
 
     DbmsOperations dbmsOperations();
 
+    KernelTransaction kernelTransaction();
+
     boolean isTopLevelTx();
 
     /**

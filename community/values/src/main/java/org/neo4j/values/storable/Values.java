@@ -289,6 +289,20 @@ public final class Values
 
     public static Value of( Object value, boolean allowNull )
     {
+        Value of = unsafeOf( value, allowNull );
+        if ( of != null )
+        {
+            return of;
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+        }
+    }
+
+    public static Value unsafeOf( Object value, boolean allowNull )
+    {
         if ( value instanceof String )
         {
             return stringValue( (String) value );
@@ -356,8 +370,7 @@ public final class Values
         }
 
         // otherwise fail
-        throw new IllegalArgumentException(
-                format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+       return null;
     }
 
     /**
@@ -428,9 +441,8 @@ public final class Values
         {
             return shortArray( copy( value, new short[value.length] ) );
         }
-        throw new IllegalArgumentException(
-                format( "%s[] is not a supported property value type",
-                        value.getClass().getComponentType().getName() ) );
+
+        return null;
     }
 
     private static <T> T copy( Object[] value, T target )

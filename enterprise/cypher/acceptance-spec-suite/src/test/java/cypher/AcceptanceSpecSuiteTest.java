@@ -153,22 +153,22 @@ public class AcceptanceSpecSuiteTest
     {
     }
 
-    @RunWith( Cucumber.class )
-    @CucumberOptions(
-            plugin = {
-                    DB_CONFIG + "cost-morsel.json",
-                    HTML_REPORT + SUITE_NAME + "/cost-morsel",
-                    JSON_REPORT + SUITE_NAME + "/cost-morsel",
-                    BLACKLIST_PLUGIN + "cost-morsel.txt"
-            },
-            glue = { GLUE_PATH },
-            features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
-            strict = true
-    )
-    public static class CostMorsel extends Base
-    {
-    }
+//    @RunWith( Cucumber.class )
+//    @CucumberOptions(
+//            plugin = {
+//                    DB_CONFIG + "cost-morsel.json",
+//                    HTML_REPORT + SUITE_NAME + "/cost-morsel",
+//                    JSON_REPORT + SUITE_NAME + "/cost-morsel",
+//                    BLACKLIST_PLUGIN + "cost-morsel.txt"
+//            },
+//            glue = { GLUE_PATH },
+//            features = { FEATURE_PATH + FEATURE_TO_RUN },
+//            tags = { "~@pending" },
+//            strict = true
+//    )
+//    public static class CostMorsel extends Base
+//    {
+//    }
 
     @RunWith( Cucumber.class )
     @CucumberOptions(

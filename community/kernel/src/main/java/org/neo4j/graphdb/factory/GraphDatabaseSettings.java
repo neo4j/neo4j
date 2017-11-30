@@ -213,12 +213,25 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static Setting<Integer> query_cache_size =
             buildSetting( "dbms.query_cache_size", INTEGER, "1000" ).constraint( min( 0 ) ).build();
 
-    @Description( "The threshold when a plan is considered stale. If any of the underlying" +
-                  " statistics used to create the plan has changed more than this value, " +
-                  "the plan is considered stale and will be replanned. " +
-                  "A value of 0 means always replan, and 1 means never replan." )
-    public static Setting<Double> query_statistics_divergence_threshold = buildSetting(
-            "cypher.statistics_divergence_threshold", DOUBLE, "0.75" ).constraint( range( 0.0, 1.0 ) ).build();
+    @Description( "The threshold when a plan is considered stale. If any of the underlying " +
+                  "statistics used to create the plan have changed more than this value, " +
+                  "the plan will be considered stale and will be replanned. Change is calculated as " +
+                  "abs(a-b)/max(a,b). This means that a value of 0.75 requires the database to approximately " +
+                  "quadruple in size. A value of 0 means always replan, and 1 means never replan." )
+    public static Setting<Double> query_statistics_divergence_threshold =
+            buildSetting( "cypher.statistics_divergence_threshold", DOUBLE, "0.75" ).constraint( range( 0.0, 1.0 ) ).build();
+
+    @Description( "Large databases might change slowly, and so to prevent queries from never being replanned " +
+                  "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
+                  "shrink over time. " +
+                  "The algorithm used to manage this change is set by cypher.statistics_divergence_algorithm " +
+                  "and will cause the threshold to reach the value set here once the time since the previous " +
+                  "replanning has reached unsupported.cypher.target_replan_interval. " +
+                  "Setting this value to higher than the cypher.statistics_divergence_threshold will cause the " +
+                  "threshold to not decay over time." )
+    @Internal
+    public static Setting<Double> query_statistics_divergence_target =
+            buildSetting( "unsupported.cypher.statistics_divergence_target", DOUBLE, "0.10" ).constraint( range( 0.0, 1.0 ) ).build();
 
     @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
                   "where the label has no index" )
@@ -240,8 +253,33 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static Setting<Long> cypher_idp_solver_duration_threshold = buildSetting(
             "unsupported.cypher.idp_solver_duration_threshold", LONG, "1000" ).constraint( min( 10L ) ).build();
 
-    @Description( "The minimum lifetime of a query plan before a query is considered for replanning" )
+    @Description( "The minimum time between possible cypher query replanning events. After this time, the graph " +
+            "statistics will be evaluated, and if they have changed by more than the value set by " +
+            "cypher.statistics_divergence_threshold, the query will be replanned. If the statistics have " +
+            "not changed sufficiently, the same interval will need to pass before the statistics will be " +
+            "evaluated again." )
     public static Setting<Duration> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
+
+    @Description( "Large databases might change slowly, and to prevent queries from never being replanned " +
+                  "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
+                  "shrink over time. The algorithm used to manage this change is set by " +
+                  "unsupported.cypher.statistics_divergence_algorithm and will cause the threshold to reach " +
+                  "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
+                  "previous replanning has reached the value set here. Setting this value to less than the " +
+                  "value of cypher.min_replan_interval will cause the threshold to not decay over time." )
+    @Internal
+    public static Setting<Duration> cypher_replan_interval_target =
+            setting( "unsupported.cypher.target_replan_interval", DURATION, "7h" );
+
+    @Description( "Large databases might change slowly, and to prevent queries from never being replanned " +
+                  "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
+                  "shrink over time using the algorithm set here. This will cause the threshold to reach " +
+                  "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
+                  "previous replanning has reached the value set in unsupported.cypher.target_replan_interval. " +
+                  "Setting the algorithm to 'none' will cause the threshold to not decay over time." )
+    @Internal
+    public static Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
+            options( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
@@ -714,6 +752,25 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<File> bolt_log_filename = derivedSetting( "unsupported.dbms.logs.bolt.path",
             GraphDatabaseSettings.logs_directory, logsDir -> new File( logsDir, "bolt.log" ), PATH );
+
+    @Description( "Whether to apply network level write throttling" )
+    @Internal
+    public static final Setting<Boolean> bolt_write_throttle = setting( "unsupported.dbms.bolt.write_throttle", BOOLEAN, TRUE );
+
+    @Description( "When the size (in bytes) of write buffers, used by bolt's network layer, " +
+            "grows beyond this value bolt channel will advertise itself as unwritable and bolt worker " +
+            "threads will block until it becomes writable again." )
+    @Internal
+    public static final Setting<Integer> bolt_write_buffer_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
+                    range( (int) ByteUnit.kibiBytes( 64 ), Integer.MAX_VALUE ) ).build();
+
+    @Description( "When the size (in bytes) of write buffers, previously advertised as unwritable, " +
+            "gets below this value bolt channel will re-advertise itself as writable and blocked bolt worker " + "threads will resume execution." )
+    @Internal
+    public static final Setting<Integer> bolt_write_buffer_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
+                    range( (int) ByteUnit.kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal

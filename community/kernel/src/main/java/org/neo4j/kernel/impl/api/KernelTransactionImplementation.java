@@ -34,13 +34,15 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -51,18 +53,20 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -117,6 +121,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final StoreReadLayer storeLayer;
     private final Clock clock;
+    private final AccessCapability accessCapability;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -164,7 +169,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
             Pool<KernelTransactionImplementation> pool, Clock clock, CpuClock cpuClock, HeapAllocation heapAllocation,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability )
+            StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing,
+            ExplicitIndexStore explicitIndexStore )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -183,9 +189,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
                 procedures, accessCapability, lockTracer, statementOperations );
+        this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
-        this.operations = new Operations( storageEngine, storageStatement, this, explicitIndexTxStateSupplier );
+        this.operations =
+                new Operations( storageEngine, storageStatement, this, cursors, autoIndexing, explicitIndexStore );
     }
 
     /**
@@ -678,13 +686,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Read dataRead()
     {
+        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
         return operations;
     }
 
     @Override
-    public Write dataWrite()
+    public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        accessCapability.assertCanWrite();
+        currentStatement.assertAllows( AccessMode::allowsWrites, "Write" );
+        upgradeToDataWrites();
+        return operations;
     }
 
     @Override
@@ -696,7 +708,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public ExplicitIndexWrite indexWrite()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+       return operations;
     }
 
     @Override
@@ -712,9 +724,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Locks locks()
+    public StatementLocks locks()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+       return statementLocks;
+    }
+
+    public LockTracer lockTracer()
+    {
+        return currentStatement.lockTracer();
     }
 
     private void afterCommit( long txId )
@@ -874,7 +891,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return locks == null ? Stream.empty() : locks.activeLocks();
     }
 
-    public long userTransactionId()
+    long userTransactionId()
     {
         return userTransactionId;
     }
@@ -914,7 +931,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * Returns number of allocated bytes by current transaction.
          * @return number of allocated bytes by the thread.
          */
-        public long heapAllocateBytes()
+        long heapAllocateBytes()
         {
             return heapAllocation.allocatedBytes( transactionThreadId ) - heapAllocatedBytesWhenQueryStarted;
         }
@@ -933,7 +950,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * Return total number of page cache hits that current transaction performed
          * @return total page cache hits
          */
-        public long totalTransactionPageCacheHits()
+        long totalTransactionPageCacheHits()
         {
             return pageCursorTracer.accumulatedHits();
         }
@@ -942,7 +959,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * Return total number of page cache faults that current transaction performed
          * @return total page cache faults
          */
-        public long totalTransactionPageCacheFaults()
+        long totalTransactionPageCacheFaults()
         {
             return pageCursorTracer.accumulatedFaults();
         }
@@ -963,7 +980,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * @return accumulated transaction waiting time
          * @param nowNanos current moment in nanoseconds
          */
-        public long getWaitingTimeNanos( long nowNanos )
+        long getWaitingTimeNanos( long nowNanos )
         {
             ExecutingQueryList queryList = transaction.executingQueries();
             long waitingTime = waitingTimeNanos;

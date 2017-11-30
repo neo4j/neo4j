@@ -187,7 +187,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
   }
 
   protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
-    override def cacheDiscard(key: StatementV3_3, userKey: String) {
+    override def cacheDiscard(key: StatementV3_3, userKey: String, secondsSinceReplan: Int) {
       log.info(s"Discarded stale query from the query cache: $userKey")
     }
   }
@@ -234,7 +234,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean =
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
 
     override val plannerInfo: PlannerInfo = {

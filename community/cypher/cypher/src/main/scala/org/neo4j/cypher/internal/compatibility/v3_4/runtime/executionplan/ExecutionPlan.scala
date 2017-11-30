@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.RuntimeName
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.cypher.internal.v3_4.logical.plans.IndexUsage
@@ -31,7 +32,7 @@ abstract class ExecutionPlan {
   def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult
   def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
-  def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
+  def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult
   def runtimeUsed: RuntimeName
   def notifications(planContext: PlanContext): Seq[InternalNotification]
   def plannedIndexUsage: Seq[IndexUsage] = Seq.empty

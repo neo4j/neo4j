@@ -24,12 +24,22 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.ResourceUtils;
 
 public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<V>
 {
+    /**
+     * @deprecated use {@link #newResourceIterator(Iterator, Resource...)}
+     */
+    @Deprecated
     public static <R> ResourceIterator<R> newResourceIterator( Resource resource, Iterator<R> iterator )
     {
-        return new ResourceClosingIterator<R,R>( resource, iterator )
+        return newResourceIterator( iterator, resource );
+    }
+
+    public static <R> ResourceIterator<R> newResourceIterator( Iterator<R> iterator, Resource... resources )
+    {
+        return new ResourceClosingIterator<R,R>( iterator, resources )
         {
             @Override
             public R map( R elem )
@@ -39,20 +49,23 @@ public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<
         };
     }
 
-    private Resource resource;
+    private Resource[] resources;
     private final Iterator<T> iterator;
 
-    ResourceClosingIterator( Resource resource, Iterator<T> iterator )
+    ResourceClosingIterator( Iterator<T> iterator, Resource... resources )
     {
-        this.resource = resource;
+        this.resources = resources;
         this.iterator = iterator;
     }
 
     @Override
     public void close()
     {
-        resource.close();
-        resource = Resource.EMPTY;
+        if ( resources != null )
+        {
+            ResourceUtils.closeAll( resources );
+            resources = null;
+        }
     }
 
     @Override

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeBui
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, StatsDivergenceCalculator, Transformer}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
@@ -48,8 +48,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     val config = CypherCompilerConfiguration(
       queryCacheSize,
-      statsDivergenceThreshold,
-      queryPlanTTL,
+      StatsDivergenceCalculator.divergenceNoDecayCalculator(statsDivergenceThreshold, queryPlanTTL),
       useErrorsOverWarnings = false,
       idpMaxTableSize = 128,
       idpIterationDuration = 1000,
@@ -80,7 +79,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def cacheDiscard(key: Statement, ignored: String): Unit = {
+    override def cacheDiscard(key: Statement, ignored: String, secondsSinceReplan: Int): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }
@@ -242,7 +241,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     // then
     logProvider.assertExactly(
-      inLog(logName).info( s"Discarded stale query from the query cache: $query" )
+      inLog(logName).info( s"Discarded stale query from the query cache after 0 seconds: $query" )
     )
   }
 

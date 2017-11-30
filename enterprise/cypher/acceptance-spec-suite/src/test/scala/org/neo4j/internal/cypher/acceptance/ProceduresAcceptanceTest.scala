@@ -22,15 +22,112 @@ package org.neo4j.internal.cypher.acceptance
 import java.util.Collections
 
 import org.junit.Assert.assertEquals
-import org.neo4j.cypher.{ExecutionEngineFunSuite}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.{GraphDatabaseService, Path, Result, Transaction}
 import org.neo4j.helpers.collection.Iterators
 import org.neo4j.kernel.impl.proc.Procedures
 
-class ApocAcceptanceTest extends ExecutionEngineFunSuite{
+class ProceduresAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("should complete APOC-like procedure using traversal API") {
-    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
+  test("should call cypher from procedure") {
+    registerTestProcedures()
+
+    graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
+
+    testResult(graph.getGraphDatabaseService,
+      "CALL org.neo4j.aNodeWithLabel( 'Cat' )",
+      result => {
+        val maps = Iterators.asList(result)
+        assertEquals(1, maps.size)
+      })
+  }
+
+  test("should recursively call cypher and procedure") {
+    registerTestProcedures()
+
+    graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
+
+    testResult(graph.getGraphDatabaseService,
+      "CALL org.neo4j.recurseN( 3 )",
+      result => {
+        val maps = Iterators.asList(result)
+        assertEquals(1, maps.size)
+      })
+  }
+
+  test("should call Core API") {
+    registerTestProcedures()
+
+    graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
+    graph.execute("UNWIND [1,2] AS i CREATE (a:Mouse)")
+
+    testResult(graph.getGraphDatabaseService,
+      "CALL org.neo4j.findNodesWithLabel( 'Cat' )",
+      result => {
+        val maps = Iterators.asList(result)
+        assertEquals(3, maps.size)
+      })
+  }
+
+  test("should call expand using Core API") {
+    registerTestProcedures()
+
+    graph.execute("CREATE (c:Cat) WITH c UNWIND [1,2,3] AS i CREATE (c)-[:HUNTS]->(m:Mouse)")
+
+    testResult(graph.getGraphDatabaseService,
+      "MATCH (c:Cat) CALL org.neo4j.expandNode( id( c ) ) YIELD node AS n RETURN n",
+      result => {
+        val maps = Iterators.asList(result)
+        assertEquals(3, maps.size)
+      })
+  }
+
+  test("should create node with loop using Core API") {
+    registerTestProcedures()
+
+    graph.execute("CALL org.neo4j.createNodeWithLoop( 'Node', 'Rel' )")
+
+    testResult(graph.getGraphDatabaseService,
+      "MATCH (n)-->(n) RETURN n",
+      result => {
+        val maps = Iterators.asList(result)
+        assertEquals(1, maps.size)
+      })
+  }
+
+  test("should find shortest path using Graph Algos Djikstra") {
+    registerTestProcedures()
+
+    graph.execute(
+      """
+        |CREATE (s:Start)
+        |CREATE (e:End)
+        |CREATE (n1)
+        |CREATE (n2)
+        |CREATE (n3)
+        |CREATE (n4)
+        |CREATE (n5)
+        |CREATE (s)-[:Rel {weight:5}]->(n1)
+        |CREATE (s)-[:Rel {weight:7}]->(n2)
+        |CREATE (s)-[:Rel {weight:1}]->(n3)
+        |CREATE (n1)-[:Rel {weight:2}]->(n2)
+        |CREATE (n1)-[:Rel {weight:6}]->(n4)
+        |CREATE (n3)-[:Rel {weight:1}]->(n4)
+        |CREATE (n4)-[:Rel {weight:1}]->(n5)
+        |CREATE (n5)-[:Rel {weight:1}]->(e)
+        |CREATE (n2)-[:Rel {weight:2}]->(e)
+        |""".stripMargin)
+
+    testResult(graph.getGraphDatabaseService,
+      "MATCH (s:Start),(e:End) CALL org.neo4j.graphAlgosDjikstra( s, e, 'Rel', 'weight' ) YIELD node RETURN node",
+      result => {
+        val maps = Iterators.asList(result)
+        assertEquals(5, maps.size) // s -> n3 -> n4 -> n5 -> e
+      })
+  }
+
+  test("should use traversal API") {
+    registerTestProcedures()
 
     graph.execute(movies)
 
@@ -53,6 +150,10 @@ class ApocAcceptanceTest extends ExecutionEngineFunSuite{
       onResult(db.execute(call, Collections.emptyMap[String, AnyRef]))
       tx.success()
     } finally if (tx != null) tx.close()
+  }
+
+  private def registerTestProcedures() = {
+    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerProcedure(classOf[TestProcedure])
   }
 
   val movies = """

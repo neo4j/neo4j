@@ -29,15 +29,10 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 class RelationshipExplicitIndexCursor extends IndexCursor
         implements org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor, ExplicitClient
 {
-    private final Read read;
+    private Read read;
     private int expectedSize;
     private long relationship;
     private float score;
-
-    RelationshipExplicitIndexCursor( Read read )
-    {
-        this.read = read;
-    }
 
     @Override
     public void initialize( IndexProgressor progressor, int expectedSize )
@@ -52,6 +47,11 @@ class RelationshipExplicitIndexCursor extends IndexCursor
         this.relationship = reference;
         this.score = score;
         return true;
+    }
+
+    public void setRead( Read read )
+    {
+        this.read = read;
     }
 
     @Override

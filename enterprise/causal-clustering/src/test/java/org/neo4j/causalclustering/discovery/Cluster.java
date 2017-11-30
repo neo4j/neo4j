@@ -80,6 +80,7 @@ public class Cluster
     private final Map<String,String> readReplicaParams;
     private final Map<String,IntFunction<String>> instanceReadReplicaParams;
     private final String recordFormat;
+    private final Monitors monitors;
     protected final DiscoveryServiceFactory discoveryServiceFactory;
     protected final String listenAddress;
     protected final String advertisedAddress;
@@ -91,7 +92,7 @@ public class Cluster
             DiscoveryServiceFactory discoveryServiceFactory,
             Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
             Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
-            String recordFormat, IpFamily ipFamily, boolean useWildcard )
+            String recordFormat, IpFamily ipFamily, boolean useWildcard, Monitors monitors )
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
@@ -100,6 +101,7 @@ public class Cluster
         this.readReplicaParams = readReplicaParams;
         this.instanceReadReplicaParams = instanceReadReplicaParams;
         this.recordFormat = recordFormat;
+        this.monitors = monitors;
         listenAddress = useWildcard ? ipFamily.wildcardAddress() : ipFamily.localhostAddress();
         advertisedAddress = ipFamily.localhostName();
         List<AdvertisedSocketAddress> initialHosts = initialHosts( noOfCoreMembers );
@@ -163,7 +165,8 @@ public class Cluster
                 initialHosts,
                 recordFormat,
                 extraParams,
-                instanceExtraParams
+                instanceExtraParams,
+                monitors
         );
 
         coreMembers.put( memberId, coreClusterMember );
@@ -201,21 +204,37 @@ public class Cluster
         return member;
     }
 
-    public void shutdown() throws ExecutionException, InterruptedException
+    public void shutdown()
     {
-        shutdownCoreMembers();
-        shutdownReadReplicas();
+        try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown cluster" ) )
+        {
+            shutdownCoreMembers( errorHandler );
+            shutdownReadReplicas( errorHandler );
+        }
     }
 
-    public void shutdownCoreMembers() throws InterruptedException, ExecutionException
+    private void shutdownCoreMembers( ErrorHandler errorHandler )
+    {
+        shutdownMembers( coreMembers(), errorHandler );
+    }
+
+    public void shutdownCoreMembers()
+    {
+        try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown core members" ) )
+        {
+            shutdownCoreMembers( errorHandler );
+        }
+    }
+
+    private void shutdownMembers( Collection<? extends ClusterMember> clusterMembers, ErrorHandler errorHandler )
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> memberShutdownSuppliers = new ArrayList<>();
-        for ( final CoreClusterMember coreClusterMember : coreMembers.values() )
+        for ( final ClusterMember clusterMember : clusterMembers )
         {
             memberShutdownSuppliers.add( () ->
             {
-                coreClusterMember.shutdown();
+                clusterMember.shutdown();
                 return null;
             } );
         }
@@ -223,6 +242,10 @@ public class Cluster
         try
         {
             combine( executor.invokeAll( memberShutdownSuppliers ) ).get();
+        }
+        catch ( Exception e )
+        {
+            errorHandler.add( e );
         }
         finally
         {
@@ -427,7 +450,8 @@ public class Cluster
                     initialHosts,
                     recordFormat,
                     extraParams,
-                    instanceExtraParams
+                    instanceExtraParams,
+                    monitors
             );
             coreMembers.put( i, coreClusterMember );
         }
@@ -439,7 +463,8 @@ public class Cluster
                                                        List<AdvertisedSocketAddress> initialHosts,
                                                        String recordFormat,
                                                        Map<String, String> extraParams,
-                                                       Map<String, IntFunction<String>> instanceExtraParams )
+                                                       Map<String, IntFunction<String>> instanceExtraParams,
+                                                       Monitors monitors )
     {
         int txPort = PortAuthority.allocatePort();
         int raftPort = PortAuthority.allocatePort();
@@ -463,7 +488,8 @@ public class Cluster
                 extraParams,
                 instanceExtraParams,
                 listenAddress,
-                advertisedAddress
+                advertisedAddress,
+                monitors
         );
     }
 
@@ -555,9 +581,9 @@ public class Cluster
         }
     }
 
-    private void shutdownReadReplicas()
+    private void shutdownReadReplicas( ErrorHandler errorHandler )
     {
-        readReplicas.values().forEach( ReadReplica::shutdown );
+        shutdownMembers( readReplicas(), errorHandler );
     }
 
     /**

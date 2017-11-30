@@ -19,4 +19,4 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
-case class ReferenceFromSlot(offset: Int) extends RuntimeExpression
+case class ReferenceFromSlot(offset: Int, override val name: String) extends RuntimeVariable(name = name)

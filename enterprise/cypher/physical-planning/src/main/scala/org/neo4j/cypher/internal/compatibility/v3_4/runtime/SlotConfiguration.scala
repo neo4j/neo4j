@@ -162,7 +162,6 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   def addAlias(newKey: String, existingKey: String): SlotConfiguration = {
     val slot = slots.getOrElse(existingKey,
       throw new SlotAllocationFailed(s"Tried to alias non-existing slot '$existingKey'  with alias '$newKey'"))
-    checkNotAlreadyTaken(newKey, slot)
     slots.put(newKey, slot)
     aliases.add(newKey)
     slotAliases.addBinding(slot, newKey)
@@ -189,21 +188,71 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     newPipeline
   }
 
+  private def replaceExistingSlot(key: String, existingSlot: Slot, modifiedSlot: Slot): Unit = {
+    slots.put(key, modifiedSlot)
+    val existingAliases = slotAliases.get(existingSlot).get
+    assert(existingAliases.contains(key))
+    slotAliases.put(modifiedSlot, existingAliases)
+    slotAliases.remove(existingSlot)
+  }
+
+  private def unifyTypeAndNullability(key: String, existingSlot: Slot, newSlot: Slot) = {
+    val updateNullable = !existingSlot.nullable && newSlot.nullable
+    val updateTyp = existingSlot.typ != newSlot.typ && !existingSlot.typ.isAssignableFrom(newSlot.typ)
+    assert(!updateTyp || newSlot.typ.isAssignableFrom(existingSlot.typ))
+    if (updateNullable || updateTyp) {
+      val modifiedSlot = (existingSlot, updateNullable, updateTyp) match {
+        // We are conservative about nullability and increase it to true
+        case ((LongSlot(offset, _, _), true, true)) =>
+          LongSlot(offset, true, newSlot.typ)
+        case ((RefSlot(offset, _, _), true, true)) =>
+          RefSlot(offset, true, newSlot.typ)
+        case ((LongSlot(offset, _, typ), true, false)) =>
+          LongSlot(offset, true, typ)
+        case ((RefSlot(offset, _, typ), true, false)) =>
+          RefSlot(offset, true, typ)
+        case ((LongSlot(offset, nullable, _), false, true)) =>
+          LongSlot(offset, nullable, newSlot.typ)
+        case ((RefSlot(offset, nullable, _), false, true)) =>
+          RefSlot(offset, nullable, newSlot.typ)
+      }
+      replaceExistingSlot(key, existingSlot, modifiedSlot);
+    }
+  }
+
   def newLong(key: String, nullable: Boolean, typ: CypherType): SlotConfiguration = {
     val slot = LongSlot(numberOfLongs, nullable, typ)
-    checkNotAlreadyTaken(key, slot)
-    slots.put(key, slot)
-    slotAliases.addBinding(slot, key)
-    numberOfLongs = numberOfLongs + 1
+    slots.get(key) match {
+      case Some(existingSlot) =>
+        if (!existingSlot.isTypeCompatibleWith(slot)) {
+          throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${existingSlot})")
+        }
+        // Reuse the existing (compatible) slot
+        unifyTypeAndNullability(key, existingSlot, slot)
+
+      case None =>
+        slots.put(key, slot)
+        slotAliases.addBinding(slot, key)
+        numberOfLongs = numberOfLongs + 1
+    }
     this
   }
 
   def newReference(key: String, nullable: Boolean, typ: CypherType): SlotConfiguration = {
     val slot = RefSlot(numberOfReferences, nullable, typ)
-    checkNotAlreadyTaken(key, slot)
-    slots.put(key, slot)
-    slotAliases.addBinding(slot, key)
-    numberOfReferences = numberOfReferences + 1
+    slots.get(key) match {
+      case Some(existingSlot) =>
+        if (!existingSlot.isTypeCompatibleWith(slot)) {
+          throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${existingSlot})")
+        }
+        // Reuse the existing (compatible) slot
+        unifyTypeAndNullability(key, existingSlot, slot)
+
+      case None =>
+        slots.put(key, slot)
+        slotAliases.addBinding(slot, key)
+        numberOfReferences = numberOfReferences + 1
+    }
     this
   }
 
@@ -230,6 +279,13 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   // NOTE: This will give duplicate slots when we have aliases
   def mapSlot[U](f: ((String,Slot)) => U): Iterable[U] = slots.map(f)
 
+  def partitionSlots(p: (String, Slot) => Boolean): (Seq[(String, Slot)], Seq[(String, Slot)]) = {
+    slots.toSeq.partition {
+      case (k, slot) =>
+        p(k, slot)
+    }
+  }
+
   def canEqual(other: Any): Boolean = other.isInstanceOf[SlotConfiguration]
 
   override def equals(other: Any): Boolean = other match {
@@ -247,10 +303,6 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   }
 
   override def toString = s"SlotConfiguration(longs=$numberOfLongs, refs=$numberOfReferences, slots=$slots)"
-
-  private def checkNotAlreadyTaken(key: String, slot: Slot): Unit =
-    if (slots.contains(key))
-      throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${slots(key)})")
 
   /**
     * NOTE: Only use for debugging

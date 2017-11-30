@@ -90,7 +90,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
         | ) > 0)
         | RETURN childD.id""".stripMargin
 
-    val result = executeWith(expectedToSucceedRestricted, query)
+    val result = executeWith(expectedToSucceedIncludingSlottedRestricted, query)
 
     result.toList should equal(
       List(
@@ -176,7 +176,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->(b) WHERE head([p IN ['foo'] | true ]) | p] AS list"
 
-    val result = executeWith(expectedToSucceedRestricted, query)
+    val result = executeWith(expectedToSucceedIncludingSlottedRestricted, query)
 
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
@@ -188,7 +188,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | {path: p, other: [p IN ['foo'] | true ]} ] AS list"
 
-    val result = executeWith(expectedToSucceed, query)
+    val result = executeWith(expectedToSucceedIncludingSlotted, query)
 
     result.toList should equal(List(Map("list" -> List(Map("path" -> PathImpl(n1, r, n2), "other" -> List(true))))))
   }

@@ -1,13 +1,5 @@
-Returning a CASE expression into pattern expression
-Returning a CASE expression into integer
-Returning a CASE expression with label predicates
-Using a CASE expression in a WITH, positive case
-Using a CASE expression in a WITH, negative case
-Using a CASE expression with label predicates in a WITH
-Using a CASE expression in a WHERE, with label predicate
 Shorthand case with filter should work as expected
 Add labels inside FOREACH
-Returning a CASE expression with a pattern expression alternative
 Merge using unique constraint should update existing node
 Merge using unique constraint should create missing node
 Should match on merge using multiple unique indexes if only found single node for both indexes
@@ -38,11 +30,6 @@ Using a longer pattern
 Using bound nodes in mid-pattern
 Using bound nodes in mid-pattern when pattern partly matches
 Introduce named paths
-Unbound pattern
-Returning an `extract()` expression
-Using an `extract()` expression in a WITH
-Using an `extract()` expression in a WHERE
-Using a pattern expression and a CASE expression in a WHERE
 Returning a pattern expression with bound nodes
 Using a variable-length pattern expression in a WITH
 Pattern expression inside list comprehension
@@ -68,7 +55,6 @@ In-query call to procedure with argument of type NUMBER accepts value of type IN
 In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
 In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
 In-query call to procedure with null argument
-Filter should work
 Find a shortest path among paths that fulfill a predicate on all nodes
 Find a shortest path among paths that fulfill a predicate on all relationships
 Find a shortest path among paths that fulfill a predicate on all relationships 2
@@ -89,12 +75,6 @@ Find a combination of a shortest path and a pattern expression
 //SkipLimitAcceptance.feature
 Using a optional match after aggregation and before an aggregation
 
-//VarLengthAcceptance.feature
-Handles checking properties on nodes in multistep path - using ALL() function on path node properties
-Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
-
 //MatchAcceptance.feature
-difficult to plan query number 1
-difficult to plan query number 2
 difficult to plan query number 3
 Variable length path with both sides already bound

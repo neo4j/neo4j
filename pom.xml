@@ -1157,6 +1157,12 @@
         <version>${findbugs.version}</version>
         <scope>provided</scope>
       </dependency>
+      <dependency>
+        <groupId>com.google.testing.compile</groupId>
+        <artifactId>compile-testing</artifactId>
+        <version>0.13</version>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>

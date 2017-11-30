@@ -526,6 +526,36 @@ public enum ShortArray
         }
 
         @Override
+        public void writeAll( Object array, byte[] result, int offset )
+        {
+            if ( isPrimitive( array ) )
+            {
+                float[] values = (float[]) array;
+                for ( int i = 0; i < values.length; i++ )
+                {
+                    writeFloat( values[i], result, offset + i * 4 );
+                }
+            }
+            else
+            {
+                Float[] values = (Float[]) array;
+                for ( int i = 0; i < values.length; i++ )
+                {
+                    writeFloat( values[i], result, offset + i * 4 );
+                }
+            }
+        }
+
+        private void writeFloat( float floaValue, byte[] result, int offset )
+        {
+            long value = Float.floatToIntBits( floaValue );
+            for ( int b = 0; b < 4; b++ )
+            {
+                result[offset + b] = (byte) ((value >> (b * 8)) & 0xFFL);
+            }
+        }
+
+        @Override
         public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
@@ -600,6 +630,35 @@ public enum ShortArray
                 {
                     result.put( Double.doubleToLongBits( value ), requiredBits );
                 }
+            }
+        }
+
+        public void writeAll( Object array, byte[] result, int offset )
+        {
+            if ( isPrimitive( array ) )
+            {
+                double[] values = (double[]) array;
+                for ( int i = 0; i < values.length; i++ )
+                {
+                    writeDouble( values[i], result, offset + i * 8 );
+                }
+            }
+            else
+            {
+                Double[] values = (Double[]) array;
+                for ( int i = 0; i < values.length; i++ )
+                {
+                    writeDouble( values[i], result, offset + i * 8 );
+                }
+            }
+        }
+
+        private void writeDouble( double doubleValue, byte[] result, int offset )
+        {
+            long value = Double.doubleToLongBits( doubleValue );
+            for ( int b = 0; b < 8; b++ )
+            {
+                result[offset + b] = (byte) ((value >> (b * 8)) & 0xFFL);
             }
         }
 
@@ -810,6 +869,11 @@ public enum ShortArray
     }
 
     public abstract void writeAll( Object array, int length, int requiredBits, Bits result );
+
+    public void writeAll( Object array, byte[] result, int offset )
+    {
+        throw new IllegalStateException( "Types that skip bit compaction should implement this method" );
+    }
 
     public abstract ArrayValue createEmptyArray();
 }

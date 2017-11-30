@@ -82,8 +82,12 @@ class SemanticTable(
   def addRelationship(expr: Variable) =
     copy(types = types.updated(expr, ExpressionTypeInfo(CTRelationship.invariant, None)))
 
-  def replaceVariables(replacements: (Variable, Variable)*): SemanticTable =
+  def replaceExpressions(rewriter: Rewriter): SemanticTable = {
+    val replacements = types.keys.toIndexedSeq.map { keyExpression =>
+      keyExpression -> keyExpression.endoRewrite(rewriter)
+    }
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
+  }
 
   def replaceNodes(replacements: (ASTNode, ASTNode)*): SemanticTable =
     copy(recordedScopes = recordedScopes.replaceKeys(replacements: _*))

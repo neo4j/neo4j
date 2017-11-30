@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.consensus;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
@@ -55,8 +56,9 @@ public class RaftMachineBuilder
     private int expectedClusterSize;
     private RaftGroup.Builder memberSetBuilder;
 
-    private StateStorage<TermState> termState = new InMemoryStateStorage<>( new TermState() );
-    private StateStorage<VoteState> voteState = new InMemoryStateStorage<>( new VoteState() );
+    private TermState termState = new TermState();
+    private StateStorage<TermState> termStateStorage = new InMemoryStateStorage<>( termState );
+    private StateStorage<VoteState> voteStateStorage = new InMemoryStateStorage<>( new VoteState() );
     private RaftLog raftLog = new InMemoryRaftLog();
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clocks.systemClock(),
             getInstance() );
@@ -68,8 +70,11 @@ public class RaftMachineBuilder
     private Clock clock = Clocks.systemClock();
     private Clock shippingClock = Clocks.systemClock();
 
+    private long term = termState.currentTerm();
+
     private long electionTimeout = 500;
     private long heartbeatInterval = 150;
+
     private long catchupTimeout = 30000;
     private long retryTimeMillis = electionTimeout / 2;
     private int catchupBatchSize = 64;
@@ -89,17 +94,20 @@ public class RaftMachineBuilder
 
     public RaftMachine build()
     {
+        termState.update( term );
+        LeaderAvailabilityTimers
+                leaderAvailabilityTimers = new LeaderAvailabilityTimers( Duration.ofMillis( electionTimeout ), Duration.ofMillis( heartbeatInterval ), clock,
+                renewableTimeoutService, logProvider );
         SendToMyself leaderOnlyReplicator = new SendToMyself( member, outbound );
         RaftMembershipManager membershipManager = new RaftMembershipManager( leaderOnlyReplicator,
-                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout,
+                memberSetBuilder, raftLog, logProvider, expectedClusterSize, leaderAvailabilityTimers.getElectionTimeout(), clock, catchupTimeout,
                 raftMembership );
         membershipManager.setRecoverFromIndexSupplier( () -> 0 );
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, shippingClock, member, membershipManager,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightCache );
-        RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTimeout,
-                heartbeatInterval, renewableTimeoutService, outbound, logProvider,
-                membershipManager, logShipping, inFlightCache, false, monitors, clock );
+        RaftMachine raft = new RaftMachine( member, termStateStorage, voteStateStorage, raftLog, leaderAvailabilityTimers, outbound, logProvider,
+                membershipManager, logShipping, inFlightCache, false, false, monitors );
         inbound.registerHandler( incomingMessage ->
         {
             try
@@ -182,6 +190,12 @@ public class RaftMachineBuilder
     RaftMachineBuilder monitors( Monitors monitors )
     {
         this.monitors = monitors;
+        return this;
+    }
+
+    public RaftMachineBuilder term( long term )
+    {
+        this.term = term;
         return this;
     }
 

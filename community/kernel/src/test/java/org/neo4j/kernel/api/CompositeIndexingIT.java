@@ -38,6 +38,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
@@ -45,17 +46,18 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
@@ -64,6 +66,7 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 public class CompositeIndexingIT
 {
     public static final int LABEL_ID = 1;
+    private final Cursors cursors = new Cursors();
 
     @ClassRule
     public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
@@ -240,7 +243,7 @@ public class CompositeIndexingIT
                 long nodeID3 = createNode();
                 PrimitiveLongIterator resultIterator = seek( statement );
                 Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
-                assertThat( result, contains( nodeID1, nodeID2, nodeID3 ) );
+                assertThat( result, containsInAnyOrder( nodeID1, nodeID2, nodeID3 ) );
             }
         }
     }
@@ -258,7 +261,7 @@ public class CompositeIndexingIT
             {
                 PrimitiveLongIterator resultIterator = seek( statement );
                 Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
-                assertThat( result, contains( nodeID1, nodeID2, nodeID3 ) );
+                assertThat( result, containsInAnyOrder( nodeID1, nodeID2, nodeID3 ) );
             }
         }
     }
@@ -324,5 +327,10 @@ public class CompositeIndexingIT
     private Statement statement()
     {
         return graphDatabaseAPI.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
+    }
+
+    private KernelTransaction ktx()
+    {
+        return graphDatabaseAPI.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 }

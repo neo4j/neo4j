@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.function.Supplier;
+
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
 
 /**
  * This is a temporary implementation of the Kernel API, used to enable early testing. The plan is to merge this
@@ -32,31 +35,50 @@ import org.neo4j.storageengine.api.StorageEngine;
  */
 public class NewKernel implements Kernel
 {
-    private final Cursors cursors;
     private final StorageEngine engine;
     private final InwardKernel kernel;
-    private final Read read;
 
-    public NewKernel( StorageEngine engine, KernelTransactions ktxs, InwardKernel kernel )
+    private StorageStatement statement;
+    private Cursors cursors;
+
+    private volatile boolean isRunning;
+
+    public NewKernel( StorageEngine engine, InwardKernel kernel )
     {
         this.engine = engine;
         this.kernel = kernel;
-        // This extra statement will be remove once we start adding tx-state. That is because
-        // by then we cannot use a global Read in the CursorFactory, but need to use transaction
-        // specific Read instances which are given to the Cursors on initialization.
-        this.read = new AllStoreHolder( engine, engine.storeReadLayer().newStatement(), ktxs.explicitIndexTxStateSupplier() );
-        this.cursors = new Cursors( read );
+        this.isRunning = false;
+        this.cursors = new Cursors(  );
     }
 
     @Override
     public CursorFactory cursors()
     {
+        assert isRunning : "kernel is not running, so it is not possible to use it";
         return cursors;
     }
 
     @Override
     public KernelSession beginSession( SecurityContext securityContext )
     {
+        assert isRunning : "kernel is not running, so it is not possible to use it";
         return new KernelSession( engine, kernel, securityContext );
+    }
+
+    public void start()
+    {
+        statement = engine.storeReadLayer().newStatement();
+        this.cursors = new Cursors();
+        isRunning = true;
+    }
+
+    public void stop()
+    {
+        if ( !isRunning )
+        {
+            throw new IllegalStateException( "kernel is not running, so it is not possible to stop it" );
+        }
+        statement.close();
+        isRunning = false;
     }
 }

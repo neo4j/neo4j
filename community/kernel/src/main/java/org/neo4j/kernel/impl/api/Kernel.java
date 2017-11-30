@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.api;
 
 
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.Permissions;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.newapi.NewKernel;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -87,7 +86,7 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.newKernel = new NewKernel( engine, transactions, this );
+        this.newKernel = new NewKernel( engine, this );
     }
 
     @Override
@@ -132,9 +131,15 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
+    public void start() throws Throwable
+    {
+        newKernel.start();
+    }
+
+    @Override
     public void stop() throws Throwable
     {
-        transactions.disposeAll();
+        newKernel.stop();
     }
 
     @Override

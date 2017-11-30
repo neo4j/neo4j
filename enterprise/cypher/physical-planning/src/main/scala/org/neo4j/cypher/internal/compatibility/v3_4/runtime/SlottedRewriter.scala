@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -46,33 +47,33 @@ class SlottedRewriter(tokenContext: TokenContext) {
     case _ => false
   }
 
-  def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlanId, SlotConfiguration]): LogicalPlan = {
-    val newPipelineInfo = mutable.HashMap[LogicalPlan, SlotConfiguration]()
+  def apply(in: LogicalPlan, slotConfigurations: Map[LogicalPlanId, SlotConfiguration]): LogicalPlan = {
+    val newSlotConfigurations = mutable.HashMap[LogicalPlan, SlotConfiguration]()
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*
       Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
       would just write to the row the data that is already in it, we can just skip them
        */
       case oldPlan@Projection(_, expressions) =>
-        val information = pipelineInformation(oldPlan.assignedId)
-        val rewriter = rewriteCreator(information, oldPlan)
+        val slotConfiguration = slotConfigurations(oldPlan.assignedId)
+        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations)
 
         val newExpressions = expressions collect {
           case (column, expression) => column -> expression.endoRewrite(rewriter)
         }
 
         val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)
-        newPipelineInfo += (newPlan -> information)
+        newSlotConfigurations += (newPlan -> slotConfiguration)
 
         newPlan
 
       case oldPlan: VarExpand =>
         /*
         The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
-        We need to use the incoming pipeline info for predicate rewriting
+        We need to use the incoming slot configuration for predicate rewriting
          */
-        val incomingPipeline = pipelineInformation(oldPlan.source.assignedId)
-        val rewriter = rewriteCreator(incomingPipeline, oldPlan)
+        val incomingSlotConfiguration = slotConfigurations(oldPlan.source.assignedId)
+        val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations)
 
         val newNodePredicate = oldPlan.nodePredicate.endoRewrite(rewriter)
         val newEdgePredicate = oldPlan.edgePredicate.endoRewrite(rewriter)
@@ -84,40 +85,40 @@ class SlottedRewriter(tokenContext: TokenContext) {
         )(oldPlan.solved)
 
         /*
-        Since the logical plan PipeInformation is about the output rows we still need to remember the
-        outgoing pipeline info here
+        Since the logical plan SlotConfiguration is about the output rows we still need to remember the
+        outgoing slot configuration here
          */
-        val outgoingPipeline = pipelineInformation(oldPlan.assignedId)
-        newPipelineInfo += (newPlan -> outgoingPipeline)
+        val outgoingSlotConfiguration = slotConfigurations(oldPlan.assignedId)
+        newSlotConfigurations += (newPlan -> outgoingSlotConfiguration)
 
         newPlan
 
       case plan@ValueHashJoin(lhs, rhs, e@Equals(lhsExp, rhsExp)) =>
-        val lhsRewriter = rewriteCreator(pipelineInformation(lhs.assignedId), plan)
-        val rhsRewriter = rewriteCreator(pipelineInformation(rhs.assignedId), plan)
+        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.assignedId), plan, slotConfigurations)
+        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.assignedId), plan, slotConfigurations)
         val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
         val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
         plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(plan.solved)
 
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))
-        val incomingPipeline = pipelineInformation(leftPlan.assignedId)
-        val rewriter = rewriteCreator(incomingPipeline, oldPlan)
+        val incomingSlotConfiguration = slotConfigurations(leftPlan.assignedId)
+        val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations)
         val newPlan = oldPlan.endoRewrite(rewriter)
 
         /*
-        Since the logical plan PipeInformation is about the output rows we still need to remember the
-        outgoing pipeline info here
+        Since the logical plan SlotConfiguration is about the output rows we still need to remember the
+        outgoing slot configuration here
          */
-        val outgoingPipeline = pipelineInformation(oldPlan.assignedId)
-        newPipelineInfo += (newPlan -> outgoingPipeline)
+        val outgoingSlotConfiguration = slotConfigurations(oldPlan.assignedId)
+        newSlotConfigurations += (newPlan -> outgoingSlotConfiguration)
         newPlan
 
       case oldPlan: LogicalPlan =>
-        val information = pipelineInformation(oldPlan.assignedId)
-        val rewriter = rewriteCreator(information, oldPlan)
+        val slotConfiguration = slotConfigurations(oldPlan.assignedId)
+        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations)
         val newPlan = oldPlan.endoRewrite(rewriter)
-        newPipelineInfo += (newPlan -> information)
+        newSlotConfigurations += (newPlan -> slotConfiguration)
 
         newPlan
     })
@@ -126,16 +127,25 @@ class SlottedRewriter(tokenContext: TokenContext) {
     val resultPlan = in.endoRewrite(rewritePlanWithSlots)
 
     // TODO: This should probably only run when -ea is enabled
-    resultPlan.findByAllClass[Variable].foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
+    resultPlan.findByAllClass[Variable].filter(!_.isInstanceOf[RuntimeVariable]).foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
 
     resultPlan
   }
 
-  private def rewriteCreator(pipelineInformation: SlotConfiguration, thisPlan: LogicalPlan): Rewriter = {
+  private def rewriteCreator(slotConfiguration: SlotConfiguration, thisPlan: LogicalPlan, slotConfigurations: Map[LogicalPlanId, SlotConfiguration]): Rewriter = {
     val innerRewriter = Rewriter.lift {
+      case e: NestedPlanExpression =>
+        // Rewrite expressions within the nested plan
+        val rewrittenPlan = this.apply(e.plan, slotConfigurations)
+        val slotConfiguration = slotConfigurations.getOrElse(e.plan.assignedId,
+          throw new InternalException(s"Missing slot configuration for plan with ${e.plan.assignedId}"))
+        val rewriter = rewriteCreator(slotConfiguration, thisPlan, slotConfigurations)
+        val rewrittenProjection = e.projection.endoRewrite(rewriter)
+        e.copy(plan = rewrittenPlan, projection = rewrittenProjection)(e.position)
+
       case prop@Property(Variable(key), PropertyKeyName(propKey)) =>
 
-        pipelineInformation(key) match {
+        slotConfiguration(key) match {
           case LongSlot(offset, nullable, typ) =>
             val maybeToken: Option[Int] = tokenContext.getOptPropertyKeyId(propKey)
 
@@ -151,17 +161,17 @@ class SlottedRewriter(tokenContext: TokenContext) {
             else
               propExpression
 
-          case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset))(prop.position)
+          case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset, key))(prop.position)
         }
 
       case e@Equals(Variable(k1), Variable(k2)) =>
-        primitiveEqualityChecks(pipelineInformation, e, k1, k2, positiveCheck = true)
+        primitiveEqualityChecks(slotConfiguration, e, k1, k2, positiveCheck = true)
 
       case Not(e@Equals(Variable(k1), Variable(k2))) =>
-        primitiveEqualityChecks(pipelineInformation, e, k1, k2, positiveCheck = false)
+        primitiveEqualityChecks(slotConfiguration, e, k1, k2, positiveCheck = false)
 
       case e@IsNull(Variable(key)) =>
-        val slot = pipelineInformation(key)
+        val slot = slotConfiguration(key)
         slot match {
           case LongSlot(offset, true, _) => IsPrimitiveNull(offset)
           case LongSlot(_, false, _) => False()(e.position)
@@ -170,31 +180,31 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
       case GetDegree(Variable(n), typ, direction) =>
         val maybeToken: Option[String] = typ.map(r => r.name)
-        pipelineInformation(n) match {
+        slotConfiguration(n) match {
           case LongSlot(offset, false, CTNode) => GetDegreePrimitive(offset, maybeToken, direction)
           case LongSlot(offset, true, CTNode) => NullCheck(offset, GetDegreePrimitive(offset, maybeToken, direction))
           case _ => throw new CantCompileQueryException(s"Invalid slot for GetDegree: $n")
         }
 
-      case Variable(k) =>
-        pipelineInformation.get(k) match {
+      case v @ Variable(k) if !v.isInstanceOf[RuntimeVariable] =>
+        slotConfiguration.get(k) match {
           case Some(slot) => slot match {
             case LongSlot(offset, false, CTNode) => NodeFromSlot(offset, k)
             case LongSlot(offset, true, CTNode) => NullCheck(offset, NodeFromSlot(offset, k))
             case LongSlot(offset, false, CTRelationship) => RelationshipFromSlot(offset, k)
             case LongSlot(offset, true, CTRelationship) => NullCheck(offset, RelationshipFromSlot(offset, k))
-            case RefSlot(offset, _, _) => ReferenceFromSlot(offset)
+            case RefSlot(offset, _, _) => ReferenceFromSlot(offset, k)
             case _ =>
-              throw new CantCompileQueryException("Unknown type for `" + k + "` in the pipeline information")
+              throw new CantCompileQueryException("Unknown type for `" + k + "` in the slot configuration")
           }
           case _ =>
-            throw new CantCompileQueryException("Did not find `" + k + "` in the pipeline information")
+            throw new CantCompileQueryException("Did not find `" + k + "` in the slot configuration")
         }
 
       case idFunction: FunctionInvocation if idFunction.function == frontendFunctions.Id =>
         idFunction.args.head match {
           case Variable(key) =>
-            val slot = pipelineInformation(key)
+            val slot = slotConfiguration(key)
             slot match {
               case LongSlot(offset, true, _) => NullCheck(offset, IdFromSlot(offset))
               case LongSlot(offset, false, _) => IdFromSlot(offset)
@@ -206,18 +216,21 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case idFunction: FunctionInvocation if idFunction.function == frontendFunctions.Exists =>
         idFunction.args.head match {
           case Property(Variable(key), PropertyKeyName(propKey)) =>
-            checkIfPropertyExists(pipelineInformation, key, propKey)
+            checkIfPropertyExists(slotConfiguration, key, propKey)
           case _ => idFunction // Don't know how to specialize this
         }
 
       case e@IsNull(Property(Variable(key), PropertyKeyName(propKey))) =>
-        Not(checkIfPropertyExists(pipelineInformation, key, propKey))(e.position)
+        Not(checkIfPropertyExists(slotConfiguration, key, propKey))(e.position)
+
+      case _: ReduceExpression =>
+        throw new CantCompileQueryException(s"Expressions with reduce are not yet supported in slot allocation")
+
+      case _: DesugaredMapProjection =>
+        throw new CantCompileQueryException(s"Expressions with map projections are not yet supported in slot allocation")
 
       case _: ShortestPathExpression =>
         throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in slot allocation")
-
-      case _: ScopeExpression | _: NestedPlanExpression =>
-        throw new CantCompileQueryException(s"Expressions with inner scope are not yet supported in slot allocation")
 
       case _: PatternExpression =>
         throw new CantCompileQueryException(s"Pattern expressions not yet supported in the slotted runtime")
@@ -281,8 +294,8 @@ class SlottedRewriter(tokenContext: TokenContext) {
         predicate))
   }
 
-  private def checkIfPropertyExists(pipelineInformation: SlotConfiguration, key: String, propKey: String) = {
-    val slot = pipelineInformation(key)
+  private def checkIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String) = {
+    val slot = slotConfiguration(key)
     val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
 
     val propExpression = (slot, maybeToken) match {

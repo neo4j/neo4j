@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship}
+import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 object PrimitiveExecutionContext {
   def empty = new PrimitiveExecutionContext(SlotConfiguration.empty)
@@ -51,17 +53,18 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     s.result
   }
 
-  override def copyTo(target: ExecutionContext, longOffset: Int = 0, refOffset: Int = 0): Unit = target match {
-    case other@PrimitiveExecutionContext(otherPipeline) =>
-      if (slots.numberOfLongs > otherPipeline.numberOfLongs ||
-        slots.numberOfReferences > otherPipeline.numberOfReferences)
-        throw new InternalException("Tried to copy more data into less.")
-      else {
-        System.arraycopy(longs, 0, other.longs, longOffset, slots.numberOfLongs)
-        System.arraycopy(refs, 0, other.refs, refOffset, slots.numberOfReferences)
-      }
-    case _ => fail()
-  }
+  override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit =
+    target match {
+      case other@PrimitiveExecutionContext(otherPipeline) =>
+        if (slots.numberOfLongs > otherPipeline.numberOfLongs ||
+          slots.numberOfReferences > otherPipeline.numberOfReferences)
+          throw new InternalException("Tried to copy more data into less.")
+        else {
+          System.arraycopy(longs, fromLongOffset, other.longs, toLongOffset, slots.numberOfLongs - fromLongOffset)
+          System.arraycopy(refs, fromRefOffset, other.refs, toRefOffset, slots.numberOfReferences - fromRefOffset)
+        }
+      case _ => fail()
+    }
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
@@ -99,7 +102,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     val longSlots = slots.getLongSlots
     val refSlots = slots.getRefSlots
     val longSlotValues = for { i <- 0 until longs.length }
-      yield (longSlots(i).toString, ValueUtils.of(longs(i)))
+      yield (longSlots(i).toString, Values.longValue(longs(i)))
     val refSlotValues = for { i <- 0 until refs.length }
       yield (refSlots(i).toString, refs(i))
     (longSlotValues ++ refSlotValues).iterator
@@ -107,7 +110,22 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
 
   private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
 
-  override def newWith1(key1: String, value1: AnyValue): ExecutionContext = fail()
+  // This method is called from ScopeExpressions. We should already have allocated a slot for the given
+  // key, so we just set the value in the existing slot instead of creating a new context like in
+  // the MapExecutionContext.
+  override def newWith1(key1: String, value1: AnyValue): ExecutionContext = {
+    setValue(key1, value1)
+    this
+  }
+
+  // This method is used instead of newWith1 from a ScopeExpression where the key in the new scope is overriding an existing key
+  // and it has to have the same name due to syntactic constraints. In this case we actually make a copy in order to not corrupt the existing slot.
+  override def newScopeWith1(key1: String, value1: AnyValue): ExecutionContext = {
+    val scopeContext = PrimitiveExecutionContext(slots)
+    copyTo(scopeContext)
+    scopeContext.asInstanceOf[PrimitiveExecutionContext].setValue(key1, value1)
+    scopeContext
+  }
 
   override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
 
@@ -118,4 +136,36 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
   override def createClone(): ExecutionContext = fail()
 
   override def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = fail()
+
+  private def setValue(key1: String, value1: AnyValue): Unit = {
+    (slots.get(key1), value1) match {
+      case (Some(RefSlot(offset, _, _)), _) =>
+        setRefAt(offset, value1)
+
+      case (Some(LongSlot(offset, false, CTNode)),
+            nodeVal: NodeProxyWrappingNodeValue) =>
+        setLongAt(offset, nodeVal.id())
+
+      case (Some(LongSlot(offset, false, CTRelationship)),
+            relVal: RelationshipProxyWrappingEdgeValue) =>
+        setLongAt(offset, relVal.id())
+
+      case (Some(LongSlot(offset, true, CTNode)), nodeVal) if nodeVal == Values.NO_VALUE =>
+        setLongAt(offset, -1L)
+
+      case (Some(LongSlot(offset, true, CTRelationship)), relVal) if relVal == Values.NO_VALUE =>
+        setLongAt(offset, -1L)
+
+      case (Some(LongSlot(offset, true, CTNode)),
+            nodeVal: NodeProxyWrappingNodeValue) =>
+        setLongAt(offset, nodeVal.id())
+
+      case (Some(LongSlot(offset, true, CTRelationship)),
+            relVal: RelationshipProxyWrappingEdgeValue) =>
+        setLongAt(offset, relVal.id())
+
+      case _ =>
+        throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: ${slots}")
+    }
+  }
 }

@@ -19,6 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
-case class RelationshipFromSlot(offset: Int, name: String) extends RuntimeExpression {
+case class RelationshipFromSlot(offset: Int, override val name: String) extends RuntimeVariable(name = name) {
   override def asCanonicalStringVal: String = name
 }

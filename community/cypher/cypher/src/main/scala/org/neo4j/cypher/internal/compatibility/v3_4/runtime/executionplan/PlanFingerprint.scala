@@ -21,25 +21,36 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CacheCheckResult, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, GraphStatisticsSnapshot}
 
-case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
+case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
-class PlanFingerprintReference(clock: Clock, minimalTimeToLive: Long, statsDivergenceThreshold : Double,
+class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculator,
                                private var fingerprint: Option[PlanFingerprint]) {
 
-  def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
-    fingerprint.fold(false) { f =>
+  def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = {
+    fingerprint.fold(CacheCheckResult.empty) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
-      f.creationTimeMillis + minimalTimeToLive <= currentTimeMillis &&
-      check(currentTxId != f.txId,
-        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }) &&
-      check(f.snapshot.diverges(f.snapshot.recompute(statistics), statsDivergenceThreshold),
-        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis, txId = currentTxId)) })
+      CacheCheckResult(divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
+        check(currentTxId != f.txId,
+          () => {
+            fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis))
+          }) &&
+        check(f.snapshot.diverges(f.snapshot.recompute(statistics), divergence.decay(currentTimeMillis - f.creationTimeMillis)),
+          () => {
+            fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId))
+          }),
+        ((currentTimeMillis - f.creationTimeMillis)/1000).toInt)
     }
   }
 
   private def check(test: => Boolean, ifFalse: () => Unit ) = if (test) { true } else { ifFalse() ; false }
+}
+
+object PlanFingerprint {
+  def apply(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot): PlanFingerprint =
+    PlanFingerprint(creationTimeMillis, creationTimeMillis, txId, snapshot)
 }

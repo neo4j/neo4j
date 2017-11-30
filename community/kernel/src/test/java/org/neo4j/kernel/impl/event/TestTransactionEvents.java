@@ -74,6 +74,8 @@ public class TestTransactionEvents
 {
     @Rule
     public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+    private static final TimeUnit AWAIT_INDEX_UNIT = TimeUnit.SECONDS;
+    private static final int AWAIT_INDEX_DURATION = 60;
 
     @Test
     public void testRegisterUnregisterHandlers()
@@ -709,7 +711,7 @@ public class TestTransactionEvents
         // When we create a node with the right label, but not the right property...
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            db.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
             Node node = db.createNode( label );
             node.setProperty( "random", 42 );
             tx.success();
@@ -754,7 +756,7 @@ public class TestTransactionEvents
         // When we create a node with the right property, but not the right label...
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            db.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
             Node node = db.createNode();
             node.setProperty( "indexed", "value" );
             node.setProperty( "random", 42 );

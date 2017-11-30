@@ -736,4 +736,26 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     allocations(plan.assignedId) should equal(
       SlotConfiguration(Map("A" -> RefSlot(0, nullable = true, CTAny)), 0, 1))
   }
+
+  test("should handle nested plan expression") {
+    val nestedPlan = AllNodesScan(x, Set.empty)(solved)
+    val nestedProjection = Expression
+    val argument = Argument()(solved)
+    val plan = Projection(argument, Map("z" -> NestedPlanExpression(nestedPlan, StringLiteral("foo")(pos))(pos)))(solved)
+    plan.assignIds()
+
+    // when
+    val physicalPlan = SlotAllocation.allocateSlots(plan)
+    val allocations = physicalPlan.slotConfigurations
+
+    // then
+    allocations should have size 3
+    allocations(plan.assignedId) should equal(
+      SlotConfiguration(Map("z" -> RefSlot(0, nullable = true, CTAny)), 0, 1)
+    )
+    allocations(argument.assignedId) should equal(allocations(plan.assignedId))
+    allocations(nestedPlan.assignedId) should equal(
+      SlotConfiguration(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0)
+    )
+  }
 }

@@ -44,18 +44,24 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
@@ -86,7 +92,7 @@ public class OnlineBackupCommandHaIT
     private static final String PROP_NAME = "name";
     private static final String PROP_RANDOM = "random";
 
-    private static DbRepresentation createSomeData( GraphDatabaseService db )
+    private static void createSomeData( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -95,7 +101,6 @@ public class OnlineBackupCommandHaIT
             db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
             tx.success();
         }
-        return DbRepresentation.of( db );
     }
 
     @Before
@@ -160,6 +165,25 @@ public class OnlineBackupCommandHaIT
         String ip = ":" + backupPort;
         assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" + recordFormat ) );
         db.shutdown();
+    }
+
+    @Test
+    public void backupDatabaseTransactionLogsStoredWithDatabase() throws Exception
+    {
+        int backupPort = PortAuthority.allocatePort();
+        startDb( backupPort );
+        String ip = ":" + backupPort;
+        String name = "backupWithTxLogs" + recordFormat;
+        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=" + name ) );
+        db.shutdown();
+
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        {
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( new File( backupDir, name ), fileSystem ).build();
+            assertTrue( logFiles.versionExists( 0 ) );
+            assertThat( logFiles.getLogFileForVersion( 0 ).length(), greaterThan( 50L ) );
+        }
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )

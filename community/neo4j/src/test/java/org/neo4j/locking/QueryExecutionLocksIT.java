@@ -37,14 +37,16 @@ import java.util.function.Function;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
-//import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -67,12 +69,10 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -267,6 +267,12 @@ public class QueryExecutionLocksIT
         }
 
         @Override
+        public KernelTransaction kernelTransaction()
+        {
+            return delegate.kernelTransaction();
+        }
+
+        @Override
         public boolean isTopLevelTx()
         {
             return delegate.isTopLevelTx();
@@ -450,13 +456,13 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public PrimitiveLongIterator nodesGetForLabel( int labelId )
+        public PrimitiveLongResourceIterator nodesGetForLabel( int labelId )
         {
             return readOperations.nodesGetForLabel( labelId );
         }
 
         @Override
-        public PrimitiveLongIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
+        public PrimitiveLongResourceIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
             return readOperations.indexQuery( index, predicates );

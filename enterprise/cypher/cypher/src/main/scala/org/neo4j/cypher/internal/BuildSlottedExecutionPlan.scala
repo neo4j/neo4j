@@ -20,28 +20,36 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
-import org.neo4j.cypher.internal.util.v3_4.CypherException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Monitors, Phase}
-import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CacheCheckResult, CompilationPhaseTracer, Monitors, Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext, interpreted}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan, LogicalPlanId}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
+import org.neo4j.cypher.internal.util.v3_4.CypherException
+import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
 
-object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
+object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] with DebugPrettyPrinter {
+  val ENABLE_DEBUG_PRINTS = false // NOTE: false toggles all debug prints off, overriding the individual settings below
+  val PRINT_PLAN_INFO_EARLY = true // Should we print query text and logical plan before any exception from runtime building?
+  override val PRINT_QUERY_TEXT = true
+  override val PRINT_LOGICAL_PLAN = true
+  override val PRINT_REWRITTEN_LOGICAL_PLAN = true
+  override val PRINT_PIPELINE_INFO = true
+  override val PRINT_FAILURE_STACK_TRACE = true
+
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
@@ -55,6 +63,9 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
   private def createSlottedRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
+      if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
+        printPlanInfo(from) // Print after execution to see exceptions first
+      }
       val (logicalPlan, physicalPlan) = rewritePlan(context, from.logicalPlan)
       val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
       val pipeBuilderFactory = EnterprisePipeBuilderFactory(physicalPlan)
@@ -76,9 +87,21 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
       val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
+
+      if (ENABLE_DEBUG_PRINTS && !PRINT_PLAN_INFO_EARLY) {
+        printPlanInfo(from)
+        printPipeInfo(logicalPlan, physicalPlan.slotConfigurations, pipeInfo)
+      }
+
       new CompilationState(from, Some(execPlan))
     } catch {
       case e: CypherException =>
+        if (ENABLE_DEBUG_PRINTS) {
+          printFailureStackTrace(e)
+          if (!PRINT_PLAN_INFO_EARLY) {
+            printPlanInfo(from)
+          }
+        }
         runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException(cause = e))
         new CompilationState(from, None)
     }
@@ -103,8 +126,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                      params: MapValue): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint
-      .isStale(lastTxId, statistics)
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = fingerprint.isStale(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = SlottedRuntimeName
 
@@ -125,5 +147,4 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       new SlottedPipeBuilder(fallback, expressionConverters, monitors, physicalPlan, readOnly, expressionToExpression)
     }
   }
-
 }

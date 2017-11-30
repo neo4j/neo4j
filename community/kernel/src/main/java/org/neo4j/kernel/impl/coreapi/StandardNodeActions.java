@@ -57,6 +57,12 @@ public class StandardNodeActions implements NodeProxy.NodeActions
     }
 
     @Override
+    public KernelTransaction kernelTransaction()
+    {
+        return currentTx.get();
+    }
+
+    @Override
     public GraphDatabaseService getGraphDatabase()
     {
         return gds;

@@ -46,7 +46,7 @@ import org.neo4j.values.storable.Values;
 public class PropertyCursor extends PropertyRecord implements org.neo4j.internal.kernel.api.PropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
-    private final Read read;
+    private Read read;
     private long next;
     private int block;
     ByteBuffer buffer;
@@ -54,13 +54,12 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     private PageCursor stringPage;
     private PageCursor arrayPage;
 
-    public PropertyCursor( Read read )
+    public PropertyCursor()
     {
         super( NO_ID );
-        this.read = read;
     }
 
-    void init( long reference )
+    void init( long reference, Read read )
     {
         if ( getId() != NO_ID )
         {
@@ -72,6 +71,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         {
             page = read.propertyPage( reference );
         }
+        this.read = read;
     }
 
     @Override

@@ -28,6 +28,8 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Caffeine cache
   ConcurrentLinkedHashMap
+  FindBugs-jsr305
+  Guava: Google Core Libraries for Java
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -44,9 +46,16 @@ BSD - Scala License
 BSD License
   ASM Core
   ASM Tree
+  JLine
   Scala Compiler
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
+
+MIT License
+  scallop
+
+Mozilla Public License, Version 2.0
+  kiama
 

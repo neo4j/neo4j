@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
-import org.neo4j.cypher.internal.v3_4.logical.plans.IndexUsage
+import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
 
 object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
@@ -56,24 +56,14 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
     val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory,
                                         context.notificationLogger, InterpretedRuntimeName)
-    val execPlan = new ExecutionPlan {
-      private val fingerprint = context.createFingerprintReference(fp)
 
-      override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
-        func(queryContext, planType, params)
-
-      override def isPeriodicCommit: Boolean = periodicCommitInfo.isDefined
-
-      override def plannerUsed: PlannerName = planner
-
-      override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
-
-      override def runtimeUsed = InterpretedRuntimeName
-
-      override def notifications(planContext: PlanContext): Seq[InternalNotification] = checkForNotifications(pipe, planContext, context.config)
-
-      override def plannedIndexUsage: Seq[IndexUsage] = logicalPlan.indexUsage
-    }
+    val execPlan: ExecutionPlan = new InterpretedExecutionPlan(func,
+      logicalPlan,
+      pipe,
+      periodicCommitInfo.isDefined,
+      planner,
+      context.createFingerprintReference(fp),
+      context.config)
 
     new CompilationState(from, Some(execPlan))
   }
@@ -111,4 +101,28 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
 
       builder.build(queryId, planType, params, notificationLogger, runtimeName)
     }
+
+  /**
+    * Executable plan for a single cypher query. Warning, this class will get cached! Do not leak transaction objects
+    * or other resources in here.
+    */
+  class InterpretedExecutionPlan(val executionPlanFunc: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
+                                 val logicalPlan: LogicalPlan,
+                                 val pipe: Pipe,
+                                 override val isPeriodicCommit: Boolean,
+                                 override val plannerUsed: PlannerName,
+                                 val fingerprint: PlanFingerprintReference,
+                                 val config: CypherCompilerConfiguration) extends ExecutionPlan {
+
+    override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
+      executionPlanFunc(queryContext, planType, params)
+
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
+
+    override def runtimeUsed: RuntimeName = InterpretedRuntimeName
+
+    override def notifications(planContext: PlanContext): Seq[InternalNotification] = checkForNotifications(pipe, planContext, config)
+
+    override def plannedIndexUsage: Seq[IndexUsage] = logicalPlan.indexUsage
+  }
 }

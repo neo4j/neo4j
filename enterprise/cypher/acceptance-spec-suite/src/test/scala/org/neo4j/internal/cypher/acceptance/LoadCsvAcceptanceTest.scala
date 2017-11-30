@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.io.{File, PrintWriter}
 import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
+import java.nio.file.Files
 import java.util.Collections.emptyMap
 
 import org.neo4j.cypher._
@@ -121,6 +122,21 @@ class LoadCsvAcceptanceTest
       val result = executeWith(expectedToSucceed, s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
       assertStats(result, nodesCreated = 3, propertiesWritten = 3)
     }
+  }
+
+  test("make sure to release all possible locks/references on input files") {
+    val path = Files.createTempFile("file",".csv")
+
+    Files.write(path,"foo".getBytes)
+    assert(Files.exists(path))
+
+    val filePathForQuery = path.normalize().toUri
+    val result = execute(s"LOAD CSV FROM '$filePathForQuery' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
+
+    result.close()
+
+    assert(Files.deleteIfExists(path))
   }
 
   test("import three numbers") {

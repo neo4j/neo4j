@@ -35,9 +35,6 @@ Ignoring intermediate whitespace 1
 Ignoring intermediate whitespace 2
 Removing a label
 Removing a non-existent label
-Returning a list comprehension
-Using a list comprehension in a WITH
-Using a list comprehension in a WHERE
 Optionally matching named paths with single and variable length patterns
 Optionally matching named paths with variable length patterns
 Variable length relationship in OPTIONAL MATCH
@@ -58,7 +55,6 @@ Matching and optionally matching with unbound nodes and equality predicate in re
 Fail when using property access on primitive type
 Counting an empty graph
 Variable length pattern checking labels on endnodes
-Named path with undirected fixed variable length pattern
 Variable length patterns and nulls
 Failing on merging relationship with null property
 Failing on merging node with null property
@@ -103,35 +99,15 @@ Failing when performing property access on a non-map 2
 Bad arguments for `range()`
 Using `rand()` in aggregations
 `toBoolean()` on invalid types
-`toInteger()` handling mixed number types
-`toInteger()` handling Any type
-`toInteger()` on a list of strings
 `toInteger()` failing on invalid arguments
-`toFloat()` on mixed number types
-`toFloat()` handling Any type
-`toFloat()` on a list of strings
 `toFloat()` failing on invalid arguments
-`toString()` should work on Any type
-`toString()` on a list of integers
 `toString()` failing on invalid arguments
 Creating nodes from an unwound parameter list
 Unwind does not remove variables from scope
 Fail when asterisk operator is missing
 Fail on negative bound
-Handling a variable length relationship and a standard relationship in chain, zero length 1
-Handling a variable length relationship and a standard relationship in chain, zero length 2
-Handling a variable length relationship and a standard relationship in chain, single length 1
-Handling a variable length relationship and a standard relationship in chain, single length 2
-Handling a variable length relationship and a standard relationship in chain, longer 1
-Handling a variable length relationship and a standard relationship in chain, longer 2
-Handling a variable length relationship and a standard relationship in chain, longer 3
-Handling mixed relationship patterns and directions 1
-Handling mixed relationship patterns and directions 2
-Handling mixed relationship patterns 1
-Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 A simple pattern with one bound endpoint
-Connected components succeeding WITH
 Fail at compile time when attempting to index with a non-integer into a list
 `properties()` failing on an integer literal
 `properties()` failing on a string literal

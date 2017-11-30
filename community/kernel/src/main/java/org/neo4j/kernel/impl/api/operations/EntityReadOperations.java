@@ -23,13 +23,14 @@ import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -45,7 +46,7 @@ public interface EntityReadOperations
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
      */
-    PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
+    PrimitiveLongResourceIterator nodesGetForLabel( KernelStatement state, int labelId );
 
     /**
      * Queries the given index with the given index query.
@@ -56,7 +57,7 @@ public interface EntityReadOperations
      * @return ids of the matching nodes
      * @throws IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index, IndexQuery... predicates )
+    PrimitiveLongResourceIterator indexQuery( KernelStatement statement, IndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**

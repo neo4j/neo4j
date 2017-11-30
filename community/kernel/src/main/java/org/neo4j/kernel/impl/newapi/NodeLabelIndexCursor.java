@@ -29,14 +29,9 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 class NodeLabelIndexCursor extends IndexCursor
         implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor, NodeLabelClient
 {
-    private final Read read;
+    private Read read;
     private long node;
     private LabelSet labels;
-
-    NodeLabelIndexCursor( Read read )
-    {
-        this.read = read;
-    }
 
     @Override
     public void initialize( IndexProgressor progressor, boolean providesLabels )
@@ -50,6 +45,11 @@ class NodeLabelIndexCursor extends IndexCursor
         this.node = reference;
         this.labels = labels;
         return true;
+    }
+
+    public void setRead( Read read )
+    {
+        this.read = read;
     }
 
     @Override
