@@ -206,6 +206,23 @@ public class CompatibilitySpecSuiteTest
     {
     }
 
+    @RunWith( Cucumber.class )
+    @CucumberOptions(
+            plugin = {
+                    DB_CONFIG + "compatibility-33.json",
+                    HTML_REPORT + SUITE_NAME + "/compatibility-33",
+                    JSON_REPORT + SUITE_NAME + "/compatibility-33",
+                    BLACKLIST_PLUGIN + "compatibility-33.txt"
+            },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
+            strict = true
+    )
+    public static class Compatibility33 extends Base
+    {
+    }
+
     // constants for TCK configuration
 
     @SuppressWarnings( "WeakerAccess" )
