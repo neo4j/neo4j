@@ -139,7 +139,7 @@ public class FailureStorage
         try ( StoreChannel channel = fs.open( failureFile, OpenMode.READ ) )
         {
             byte[] data = new byte[(int) channel.size()];
-            channel.read( ByteBuffer.wrap( data ) );
+            channel.readAll( ByteBuffer.wrap( data ) );
             return UTF8.decode( withoutZeros( data ) );
         }
     }
