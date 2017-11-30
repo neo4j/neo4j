@@ -344,8 +344,7 @@ public class KernelTransactionTerminationTest
                     TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
                     mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock( Cursors.class ),
-                    AutoIndexing.UNSUPPORTED, mock(
-                            ExplicitIndexStore.class ) );
+                    AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
 
             this.monitor = monitor;
         }

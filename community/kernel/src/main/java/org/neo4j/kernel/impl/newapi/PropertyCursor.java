@@ -58,7 +58,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     private PageCursor stringPage;
     private PageCursor arrayPage;
     private PropertyContainerState propertiesState;
-    private Iterator<StorageProperty> changedProperties;
+    private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;
 
@@ -90,25 +90,25 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         if ( References.hasTxStateFlag( reference ) ) // both in tx-state and store
         {
             this.propertiesState = read.txState().getPropertiesState( reference );
-            this.changedProperties = this.propertiesState.addedAndChangedProperties();
+            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
             this.next = References.clearFlags( reference );
         }
         else if ( References.hasNodeFlag( reference ) ) // only in tx-state
         {
             this.propertiesState = read.txState().getNodeState( References.clearFlags( reference ) );
-            this.changedProperties = this.propertiesState.addedAndChangedProperties();
+            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
             this.next = NO_ID;
         }
         else if ( References.hasRelationshipFlag( reference ) ) // only in tx-state
         {
             this.propertiesState = read.txState().getRelationshipState( References.clearFlags( reference ) );
-            this.changedProperties = this.propertiesState.addedAndChangedProperties();
+            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
             this.next = NO_ID;
         }
         else
         {
             this.propertiesState = null;
-            this.changedProperties = null;
+            this.txStateChangedProperties = null;
             this.txStateValue = null;
             this.next = reference;
         }
@@ -117,16 +117,16 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     @Override
     public boolean next()
     {
-        if ( changedProperties != null )
+        if ( txStateChangedProperties != null )
         {
-            if ( changedProperties.hasNext() )
+            if ( txStateChangedProperties.hasNext() )
             {
-                txStateValue = changedProperties.next();
+                txStateValue = txStateChangedProperties.next();
                 return true;
             }
             else
             {
-                changedProperties = null;
+                txStateChangedProperties = null;
                 txStateValue = null;
             }
         }
@@ -194,7 +194,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
             arrayPage = null;
         }
         propertiesState = null;
-        changedProperties = null;
+        txStateChangedProperties = null;
         txStateValue = null;
         read = null;
         clear();

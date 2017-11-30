@@ -189,10 +189,10 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
                     //Mark the reference so that property cursor checks both
                     //tx state as well as disk.
                     ref = References.setTxStateFlag( propertiesReference );
+                    //stores the node state mapped to the current property
+                    //reference so that property cursor is able to retrieve the state later.
+                    txState.registerProperties( ref, nodeState );
                 }
-                //stores the node state mapped to the current property
-                //reference so that property cursor is able to retrieve the state later.
-                txState.registerProperties( ref, nodeState );
                 return ref;
             }
         }
