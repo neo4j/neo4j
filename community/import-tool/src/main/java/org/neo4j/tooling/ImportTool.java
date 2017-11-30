@@ -47,6 +47,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.impl.util.Validator;
@@ -71,6 +72,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -79,6 +81,7 @@ import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
+import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -479,7 +482,7 @@ public class ImportTool
         }
     }
 
-    private static Long parseMaxMemory( String maxMemoryString )
+    static Long parseMaxMemory( String maxMemoryString )
     {
         if ( maxMemoryString != null )
         {
@@ -517,10 +520,13 @@ public class ImportTool
         life.start();
         BatchImporter importer = new ParallelBatchImporter( storeDir,
                 fs,
+                null, // no external page cache
                 configuration,
                 logService,
                 ExecutionMonitors.defaultVisible(),
-                dbConfig );
+                EMPTY,
+                dbConfig,
+                RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ) );
         printOverview( storeDir, nodesFiles, relationshipsFiles, configuration, out );
         success = false;
         try
@@ -605,7 +611,7 @@ public class ImportTool
         return file != null && file.exists() ? Config.defaults( MapUtil.load( file ) ) : Config.defaults();
     }
 
-    private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
+    static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
             Collection<Option<File[]>> relationshipsFiles,
             org.neo4j.unsafe.impl.batchimport.Configuration configuration, PrintStream out )
     {

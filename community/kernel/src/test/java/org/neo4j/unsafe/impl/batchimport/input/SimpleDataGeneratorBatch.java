@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.Random;
+
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Randoms;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;

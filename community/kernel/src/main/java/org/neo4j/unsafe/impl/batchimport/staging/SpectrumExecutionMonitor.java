@@ -70,7 +70,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     @Override
     public void start( StageExecution execution )
     {
-        out.println( execution.getStageName() + ", started " + date() );
+        out.println( execution.name() + ", started " + date() );
         lastProgress = 0;
     }
 

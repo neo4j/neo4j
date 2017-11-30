@@ -35,14 +35,9 @@ public class Stage
     private final List<Step<?>> pipeline = new ArrayList<>();
     private final StageExecution execution;
 
-    public Stage( String name, Configuration config )
+    public Stage( String name, String part, Configuration config, int orderingGuarantees )
     {
-        this( name, config, 0 /*no ordering guarantees*/ );
-    }
-
-    public Stage( String name, Configuration config, int orderingGuarantees )
-    {
-        this.execution = new StageExecution( name, config, pipeline, orderingGuarantees );
+        this.execution = new StageExecution( name, part, config, pipeline, orderingGuarantees );
     }
 
     protected StageControl control()

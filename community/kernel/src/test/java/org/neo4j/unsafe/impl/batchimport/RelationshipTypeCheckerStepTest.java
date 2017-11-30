@@ -19,18 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
 import java.util.TreeSet;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -38,7 +34,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -81,9 +76,9 @@ public class RelationshipTypeCheckerStepTest
 
         // THEN
         InOrder inOrder = inOrder( repository );
-        for ( Entry<Object,MutableLong> type : reverse( step.getDistribution() ) )
+        for ( Pair<Object,Long> type : reverse( step.getDistribution() ) )
         {
-            inOrder.verify( repository ).getOrCreateId( type.getKey() );
+            inOrder.verify( repository ).getOrCreateId( type.first() );
         }
         inOrder.verifyNoMoreInteractions();
     }
@@ -104,11 +99,11 @@ public class RelationshipTypeCheckerStepTest
 
         // THEN
         TreeSet<Integer> expected = idsOf( relationships );
-        Iterator<Entry<Object,MutableLong>> processed = step.getDistribution().iterator();
+        Iterator<Pair<Object,Long>> processed = step.getDistribution().iterator();
         for ( Object expectedType : loop( expected.descendingIterator() ) )
         {
-            Entry<Object,MutableLong> entry = processed.next();
-            assertEquals( expectedType, entry.getKey() );
+            Pair<Object,Long> entry = processed.next();
+            assertEquals( expectedType, entry.first() );
         }
     }
 
@@ -135,12 +130,5 @@ public class RelationshipTypeCheckerStepTest
                     typeIds ? typeId : null );
         }
         return new Batch<>( relationships );
-    }
-
-    private Object[] reversed( Object[] objects )
-    {
-        List<Object> list = new ArrayList<>( asList( objects ) );
-        Collections.reverse( list );
-        return list.toArray();
     }
 }

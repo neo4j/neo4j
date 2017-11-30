@@ -34,8 +34,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.tracers.TimerTransactionTracer;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
@@ -46,6 +48,7 @@ import static java.lang.System.getProperty;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
 import static org.neo4j.kernel.stresstests.transaction.checkpoint.mutation.RandomMutationFactory.defaultRandomMutation;
+import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 /**
@@ -74,8 +77,10 @@ public class CheckPointingLogRotationStressTesting
         System.out.println( "1/6\tBuilding initial store..." );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), fileSystem, DEFAULT,
-                    NullLogService.getInstance(), ExecutionMonitors.defaultVisible(), Config.defaults() )
+            Config dbConfig = Config.defaults();
+            new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), fileSystem, null, DEFAULT,
+                    NullLogService.getInstance(), ExecutionMonitors.defaultVisible(), EMPTY, dbConfig,
+                    RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ) )
                     .doImport( new NodeCountInputs( nodeCount ) );
         }
 
