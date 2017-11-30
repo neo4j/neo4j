@@ -41,8 +41,7 @@ class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosit
                               override val clock: Clock)
   extends CompilerContext(exceptionCreator, tracer,
                           notificationLogger, planContext, monitors, metrics,
-                          config, queryGraphSolver, updateStrategy, debugOptions, clock) {
-}
+                          config, queryGraphSolver, updateStrategy, debugOptions, clock)
 
 object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeContext] {
 
