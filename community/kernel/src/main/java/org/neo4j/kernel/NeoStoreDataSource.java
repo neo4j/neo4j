@@ -631,7 +631,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         LogPruneStrategy logPruneStrategy = fromConfigValue( fs, logFileInformation, logFiles, pruningConf );
 
-        final LogPruning logPruning = new LogPruningImpl( logPruneStrategy, logProvider );
+        final LogPruning logPruning = new LogPruningImpl( fs, logPruneStrategy, logFiles, logProvider );
 
         final LogRotation logRotation =
                 new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFile, databaseHealth );
