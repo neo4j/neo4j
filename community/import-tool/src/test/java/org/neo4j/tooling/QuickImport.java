@@ -22,7 +22,6 @@ package org.neo4j.tooling;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractors;
@@ -45,6 +44,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.lang.System.currentTimeMillis;
+import static java.util.Collections.emptyList;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
@@ -139,7 +139,7 @@ public class QuickImport
             @Override
             public long maxMemoryUsage()
             {
-                String custom = args.get( ImportTool.Options.MAX_MEMORY.key(), null );
+                String custom = args.get( ImportTool.Options.MAX_MEMORY.key(), (String) ImportTool.Options.MAX_MEMORY.defaultValue() );
                 return custom != null ? ImportTool.parseMaxMemory( custom ) : DEFAULT.maxMemoryUsage();
             }
         };
@@ -166,6 +166,7 @@ public class QuickImport
                 consumer = new ParallelBatchImporter( dir, fileSystem, null, importConfig,
                         new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, sysoutLogProvider ) );
+                ImportTool.printOverview( dir, emptyList(), emptyList(), importConfig, System.out );
             }
             consumer.doImport( input );
         }

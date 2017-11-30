@@ -28,7 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
-import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.SILENT_UNCAUGHT_EXCEPTION_HANDLER;
+import static org.neo4j.helpers.Exceptions.SILENT_UNCAUGHT_EXCEPTION_HANDLER;
 
 /**
  * Step that generally sits first in a {@link Stage} and produces batches that will flow downstream

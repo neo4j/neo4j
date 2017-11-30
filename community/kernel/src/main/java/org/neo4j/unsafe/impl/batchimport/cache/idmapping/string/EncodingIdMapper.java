@@ -29,7 +29,6 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
-import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -827,21 +826,6 @@ public class EncodingIdMapper implements IdMapper
             }
         }
         return lowestFound;
-    }
-
-    static boolean compareDataCache( LongArray dataCache, IntArray tracker, int a, int b, CompareType compareType )
-    {
-        int indexA = tracker.get( a );
-        int indexB = tracker.get( b );
-        if ( indexA == ID_NOT_FOUND || indexB == ID_NOT_FOUND )
-        {
-            return false;
-        }
-
-        return unsignedCompare(
-                clearCollision( dataCache.get( indexA ) ),
-                clearCollision( dataCache.get( indexB ) ),
-                compareType );
     }
 
     @Override

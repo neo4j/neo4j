@@ -120,9 +120,6 @@ public class ImportLogic implements Closeable
     private long availableMemoryForLinking;
 
     /**
-     * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
-     * a constructor with fewer arguments instead.
-     *
      * @param storeDir directory which the db will be created in.
      * @param fileSystem {@link FileSystemAbstraction} that the {@code storeDir} lives in.
      * @param neoStore {@link BatchingNeoStores} to import into.
@@ -369,6 +366,20 @@ public class ImportLogic implements Closeable
     }
 
     /**
+     * Links relationships of all types, potentially doing multiple passes, each pass calling {@link #linkRelationships(int)}
+     * with a type range.
+     */
+    public void linkRelationshipsOfAllTypes()
+    {
+        int type = 0;
+        do
+        {
+            type = linkRelationships( type );
+        }
+        while ( type != -1 );
+    }
+
+    /**
      * Convenience method (for code reading) to have a zero-based value become one based (for printing/logging).
      */
     private static int oneBased( int value )
@@ -461,7 +472,6 @@ public class ImportLogic implements Closeable
             idMapper.close();
         }
         inputCache.close();
-        // TODO close badCollector here instead of in import tool?
     }
 
     private void updatePeakMemoryUsage()

@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.executor;
 
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -32,6 +31,8 @@ import org.neo4j.function.Suppliers;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import static org.neo4j.helpers.Exceptions.SILENT_UNCAUGHT_EXCEPTION_HANDLER;
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
@@ -192,10 +193,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     {
         parkStrategy.park( Thread.currentThread() );
     }
-
-    public static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = ( t, e ) ->
-    {   // Don't print about it
-    };
 
     private class Processor extends Thread
     {
