@@ -60,7 +60,7 @@ object RewindableExecutionResult {
     }
 
   private def compatibility(inner: v2_3.executionplan.InternalExecutionResult, planner: v2_3.PlannerName,
-                            runtime: v2_3.RuntimeName): InternalExecutionResult = {
+                            runtime: v2_3.RuntimeName, preParsingNotification: Set[org.neo4j.graphdb.Notification]): InternalExecutionResult = {
     val result: v2_3.executionplan.InternalExecutionResult = inner match {
       case other: v2_3.PipeExecutionResult =>
         exceptionHandlerFor2_3.runSafely {
@@ -82,11 +82,11 @@ object RewindableExecutionResult {
       case _ =>
         inner
     }
-    InternalExecutionResultCompatibilityWrapperFor2_3(result)
+    InternalExecutionResultCompatibilityWrapperFor2_3(result, preParsingNotification)
   }
 
   private def compatibility(inner: v3_1.executionplan.InternalExecutionResult, planner: v3_1.PlannerName,
-                            runtime: v3_1.RuntimeName): InternalExecutionResult = {
+                            runtime: v3_1.RuntimeName, preParsingNotification: Set[org.neo4j.graphdb.Notification]): InternalExecutionResult = {
     val result: v3_1.executionplan.InternalExecutionResult = inner match {
       case other: v3_1.PipeExecutionResult =>
         exceptionHandlerFor3_1.runSafely {
@@ -108,7 +108,7 @@ object RewindableExecutionResult {
       case _ =>
         inner
     }
-    InternalExecutionResultCompatibilityWrapperFor3_1(result)
+    InternalExecutionResultCompatibilityWrapperFor3_1(result, preParsingNotification)
   }
 
   def apply(in: Result): InternalExecutionResult = {
@@ -119,15 +119,16 @@ object RewindableExecutionResult {
 
   def apply(internal: InternalExecutionResult) : InternalExecutionResult = {
     internal match {
-      case ExecutionResultWrapperFor3_1(inner, planner, runtime) =>
-        exceptionHandlerFor3_1.runSafely(compatibility(inner, planner, runtime))
-      case ExecutionResultWrapperFor2_3(inner, planner, runtime) =>
-        exceptionHandlerFor2_3.runSafely(compatibility(inner, planner, runtime))
+      case ExecutionResultWrapperFor3_1(inner, planner, runtime, preParsingNotification) =>
+        exceptionHandlerFor3_1.runSafely(compatibility(inner, planner, runtime, preParsingNotification))
+      case ExecutionResultWrapperFor2_3(inner, planner, runtime, preParsingNotification) =>
+        exceptionHandlerFor2_3.runSafely(compatibility(inner, planner, runtime, preParsingNotification))
       case _ => exceptionHandler.runSafely(current(internal))
     }
   }
 
-  private case class InternalExecutionResultCompatibilityWrapperFor2_3(inner: v2_3.executionplan.InternalExecutionResult)
+  private case class InternalExecutionResultCompatibilityWrapperFor2_3(inner: v2_3.executionplan.InternalExecutionResult,
+                                                                       preParsingNotification: Set[org.neo4j.graphdb.Notification])
     extends InternalExecutionResult {
 
     private val cache = inner.toList
@@ -229,7 +230,7 @@ object RewindableExecutionResult {
     override def close(): Unit = inner.close()
 
     override def notifications: Iterable[Notification] =
-      inner.notifications.map(org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification(None))
+      inner.notifications.map(org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification(None)) ++ preParsingNotification
 
     override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
 
@@ -242,7 +243,8 @@ object RewindableExecutionResult {
     override def executionPlanString(): String = inner.executionPlanDescription().toString
   }
 
-  private case class InternalExecutionResultCompatibilityWrapperFor3_1(inner: v3_1.executionplan.InternalExecutionResult)
+  private case class InternalExecutionResultCompatibilityWrapperFor3_1(inner: v3_1.executionplan.InternalExecutionResult,
+                                                                       preParsingNotification: Set[org.neo4j.graphdb.Notification])
     extends InternalExecutionResult {
 
     private val cache = inner.toList
@@ -354,7 +356,7 @@ object RewindableExecutionResult {
     override def close(): Unit = inner.close()
 
     override def notifications: Iterable[Notification] = inner.notifications
-      .map(org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification(None))
+      .map(org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification(None)) ++ preParsingNotification
 
     private def lift(position: frontend.v3_1.InputPosition): InputPosition = {
       InputPosition.apply(position.offset, position.line, position.column)
