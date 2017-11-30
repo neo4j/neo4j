@@ -80,8 +80,7 @@ object TransactionBoundGraphStatistics {
         Cardinality(count)
     }
 
-    // TODO uncomment once you update to 3.3.1 and get a compilation error here
-    //override def nodesAllCardinality(): Cardinality = atLeastOne(operations.countsForNodeWithoutTxState(-1))
+    override def nodesAllCardinality(): Cardinality = atLeastOne(operations.countsForNodeWithoutTxState(-1))
   }
 }
 

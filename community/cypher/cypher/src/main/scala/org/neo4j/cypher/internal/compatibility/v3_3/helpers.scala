@@ -27,10 +27,12 @@ import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, Upd
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracer3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.{phases => phasesV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, PlannerName => PlannerNameV3_3, ast => astV3_3, notification => nfV3_3}
 import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast => astV3_4, notification => nfV3_4}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.{phases => phasesV3_4}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, ProcedurePlannerName}
@@ -43,11 +45,11 @@ object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
     monitor.endFailure(tc.executingQuery(), t)
   }
-  def as3_3(config: CypherCompilerConfiguration) =
+
+  def as3_3(config: CypherCompilerConfiguration): CypherCompilerConfiguration3_3 =
     CypherCompilerConfiguration3_3(
       config.queryCacheSize,
-      config.statsDivergenceCalculator.initialThreshold,
-      config.statsDivergenceCalculator.initialMillis,
+      as3_3(config.statsDivergenceCalculator),
       config.useErrorsOverWarnings,
       config.idpMaxTableSize,
       config.idpIterationDuration,
@@ -78,6 +80,15 @@ object helpers {
         }
       }
     }
+  }
+
+  def as3_3(calc: phasesV3_4.StatsDivergenceCalculator): phasesV3_3.StatsDivergenceCalculator = calc match {
+    case phasesV3_4.StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
+      phasesV3_3.StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
+    case phasesV3_4.StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
+      phasesV3_3.StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
+    case phasesV3_4.StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis) =>
+      phasesV3_3.StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
   }
 
   def as3_3(pos: InputPosition): InputPositionV3_3 = InputPositionV3_3(pos.offset, pos.line, pos.column)

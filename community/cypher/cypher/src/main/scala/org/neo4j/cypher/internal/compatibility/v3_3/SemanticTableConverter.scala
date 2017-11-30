@@ -72,7 +72,7 @@ object SemanticTableConverter {
   }
 
   private def convert(specified: frontendV3_3.symbols.TypeSpec): utilV3_4.symbols.TypeSpec = {
-      new utilV3_4.symbols.TypeSpec(???) // TODO use specified.ranges.map(convert _) as soon as 3.3.1 is in
+      new utilV3_4.symbols.TypeSpec(specified.ranges.map(convert _))
   }
 
   private def convert(range: frontendV3_3.symbols.TypeRange): utilV3_4.symbols.TypeRange = range match {
