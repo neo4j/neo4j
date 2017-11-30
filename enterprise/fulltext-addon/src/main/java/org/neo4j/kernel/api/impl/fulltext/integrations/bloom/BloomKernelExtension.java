@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.kernel.api.impl.fulltext.FulltextProviderImpl;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -78,14 +79,18 @@ class BloomKernelExtension extends LifecycleAdapter
         {
             String analyzer = config.get( BloomFulltextConfig.bloom_default_analyzer );
 
-            Log log = logService.getInternalLog( FulltextProvider.class );
-            provider = new FulltextProvider( db, log, availabilityGuard, scheduler, transactionIdStore.get(),
+            Log log = logService.getInternalLog( FulltextProviderImpl.class );
+            provider = new FulltextProviderImpl( db, log, availabilityGuard, scheduler, transactionIdStore.get(),
                     fileSystem, storeDir, analyzer );
             provider.openIndex( BLOOM_NODES, NODES );
             provider.openIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
             provider.registerTransactionEventHandler();
 
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );
+        }
+        else
+        {
+            procedures.registerComponent( FulltextProvider.class, context -> FulltextProvider.NULL_PROVIDER, true );
         }
     }
 

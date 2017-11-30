@@ -722,7 +722,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToDropAndReaddIndex() throws Exception
     {
-        try ( FulltextProvider provider = createProvider() )
+        try ( FulltextProviderImpl provider = createProvider() )
         {
             provider.createIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.registerTransactionEventHandler();
