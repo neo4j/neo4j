@@ -34,6 +34,11 @@ public class Distribution<T>
         this.items = items;
     }
 
+    public int length()
+    {
+        return items.length;
+    }
+
     public T random( Random random )
     {
         float value = random.nextFloat();

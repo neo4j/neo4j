@@ -32,25 +32,33 @@ import static java.lang.Math.toIntExact;
  * Contains state and is designed for multiple uses from a single thread only.
  * Does actual encoding of property values, dry-run style.
  */
-class PropertyValueRecordSizeCalculator implements ToIntFunction<Value[]>
+public class PropertyValueRecordSizeCalculator implements ToIntFunction<Value[]>
 {
     private final BatchingIdSequence stringRecordIds = new BatchingIdSequence();
     private final DynamicRecordAllocator stringRecordCounter;
     private final BatchingIdSequence arrayRecordIds = new BatchingIdSequence();
     private final DynamicRecordAllocator arrayRecordCounter;
-    private final DynamicStringStore stringStore;
-    private final DynamicArrayStore arrayStore;
-    private final PropertyStore propertyStore;
-    private final boolean allowStorePoints;
 
-    PropertyValueRecordSizeCalculator( PropertyStore propertyStore )
+    private final int propertyRecordSize;
+    private final int stringRecordSize;
+    private final int arrayRecordSize;
+
+    public PropertyValueRecordSizeCalculator( PropertyStore propertyStore )
     {
-        this.propertyStore = propertyStore;
-        this.stringStore = propertyStore.getStringStore();
-        this.stringRecordCounter = new StandardDynamicRecordAllocator( stringRecordIds, stringStore.getRecordDataSize() );
-        this.arrayStore = propertyStore.getArrayStore();
-        this.arrayRecordCounter = new StandardDynamicRecordAllocator( arrayRecordIds, arrayStore.getRecordDataSize() );
-        this.allowStorePoints = propertyStore.allowStorePoints();
+        this( propertyStore.getRecordSize(),
+                propertyStore.getStringStore().getRecordSize(), propertyStore.getStringStore().getRecordDataSize(),
+                propertyStore.getArrayStore().getRecordSize(), propertyStore.getArrayStore().getRecordDataSize() );
+    }
+
+    public PropertyValueRecordSizeCalculator( int propertyRecordSize,
+            int stringRecordSize, int stringRecordDataSize,
+            int arrayRecordSize, int arrayRecordDataSize )
+    {
+        this.propertyRecordSize = propertyRecordSize;
+        this.stringRecordSize = stringRecordSize;
+        this.arrayRecordSize = arrayRecordSize;
+        this.stringRecordCounter = new StandardDynamicRecordAllocator( stringRecordIds, stringRecordDataSize );
+        this.arrayRecordCounter = new StandardDynamicRecordAllocator( arrayRecordIds, arrayRecordDataSize );
     }
 
     @Override
@@ -64,7 +72,7 @@ class PropertyValueRecordSizeCalculator implements ToIntFunction<Value[]>
         for ( Value value : values )
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, 0 /*doesn't matter*/, value, stringRecordCounter, arrayRecordCounter, allowStorePoints );
+            PropertyStore.encodeValue( block, 0 /*doesn't matter*/, value, stringRecordCounter, arrayRecordCounter, true );
             if ( block.getValueBlocks().length > freeBlocksInCurrentRecord )
             {
                 propertyRecordsUsed++;
@@ -73,9 +81,9 @@ class PropertyValueRecordSizeCalculator implements ToIntFunction<Value[]>
             freeBlocksInCurrentRecord -= block.getValueBlocks().length;
         }
 
-        int size = propertyRecordsUsed * propertyStore.getRecordSize();
-        size += toIntExact( stringRecordIds.peek() ) * stringStore.getRecordSize();
-        size += toIntExact( arrayRecordIds.peek() ) * arrayStore.getRecordSize();
+        int size = propertyRecordsUsed * propertyRecordSize;
+        size += toIntExact( stringRecordIds.peek() ) * stringRecordSize;
+        size += toIntExact( arrayRecordIds.peek() ) * arrayRecordSize;
         return size;
     }
 }

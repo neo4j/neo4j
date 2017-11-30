@@ -40,6 +40,7 @@ import org.neo4j.csv.reader.Readables;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -48,11 +49,9 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-
 import static java.lang.Runtime.getRuntime;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -68,6 +67,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.union;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -92,6 +92,8 @@ public class CsvInputTest
         return asList( Boolean.TRUE, Boolean.FALSE );
     }
 
+    @Rule
+    public final RandomRule random = new RandomRule();
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     private final Extractors extractors = new Extractors( ',' );
@@ -997,17 +999,6 @@ public class CsvInputTest
                 return arrayDelimiter;
             }
         } );
-    }
-
-    private static <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharReadable data )
-    {
-        return config -> dataItem( data, InputEntityDecorators.noDecorator() );
-    }
-
-    private static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final CharReadable data,
-            final Decorator<ENTITY> decorator )
-    {
-        return config -> dataItem( data, decorator );
     }
 
     private static <ENTITY extends InputEntity> Data<ENTITY> dataItem( final CharReadable data,

@@ -133,7 +133,7 @@ public class Readables
 
     public static CharReadable wrap( String data )
     {
-        return wrap( new StringReader( data ), data.length() * 2 );
+        return wrap( new StringReader( data ), data.length() );
     }
 
     /**

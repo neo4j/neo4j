@@ -29,6 +29,9 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static org.neo4j.helpers.ArrayUtil.array;
 
+/**
+ * Able to provide {@link Keys#progress}. Mutable and thread-safe, use {@link #add(long)} to move progress forwards.
+ */
 public class RelationshipLinkingProgress implements StatsProvider, Stat
 {
     private final Key[] keys = array( Keys.progress );

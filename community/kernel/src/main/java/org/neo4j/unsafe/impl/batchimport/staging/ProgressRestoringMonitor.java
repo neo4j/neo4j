@@ -21,6 +21,12 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.Monitor;
 
+/**
+ * Monitor connecting a {@link HumanUnderstandableExecutionMonitor} and {@link OnDemandDetailsExecutionMonitor},
+ * their monitors at least for the sole purpose of notifying {@link HumanUnderstandableExecutionMonitor} about when
+ * there are other output interfering with it's nice progress printing. If something else gets printed it can restore its
+ * progress from 0..current.
+ */
 public class ProgressRestoringMonitor implements Monitor, org.neo4j.unsafe.impl.batchimport.staging.OnDemandDetailsExecutionMonitor.Monitor
 {
     private volatile boolean detailsPrinted;
