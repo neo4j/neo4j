@@ -268,7 +268,7 @@ class TreeNode<KEY,VALUE>
         }
     }
 
-    void setKeyAt( PageCursor cursor, KEY key, int pos )
+    void setKeyAt( PageCursor cursor, KEY key, int pos, Type type )
     {
         cursor.setOffset( keyOffset( pos ) );
         layout.writeKey( cursor, key );

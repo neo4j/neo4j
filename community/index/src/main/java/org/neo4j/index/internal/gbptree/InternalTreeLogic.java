@@ -904,7 +904,7 @@ class InternalTreeLogic<KEY,VALUE>
                 case REPLACE:
                     createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                             stableGeneration, unstableGeneration );
-                    bTreeNode.setKeyAt( cursor, structurePropagation.leftKey, pos - 1 );
+                    bTreeNode.setKeyAt( cursor, structurePropagation.leftKey, pos - 1, INTERNAL );
                     break;
                 case BUBBLE:
                     replaceKeyByBubbleRightmostFromSubtree( cursor, structurePropagation, pos - 1,
@@ -925,7 +925,7 @@ class InternalTreeLogic<KEY,VALUE>
                 case REPLACE:
                     createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                             stableGeneration, unstableGeneration );
-                    bTreeNode.setKeyAt( cursor, structurePropagation.rightKey, pos );
+                    bTreeNode.setKeyAt( cursor, structurePropagation.rightKey, pos, INTERNAL );
                     break;
                 case BUBBLE:
                     replaceKeyByBubbleRightmostFromSubtree( cursor, structurePropagation, pos,
@@ -1000,7 +1000,7 @@ class InternalTreeLogic<KEY,VALUE>
             // It's in structurePropagation.leftKey and should be inserted in subtreePosition.
             createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                     stableGeneration, unstableGeneration );
-            bTreeNode.setKeyAt( cursor, structurePropagation.bubbleKey, subtreePosition );
+            bTreeNode.setKeyAt( cursor, structurePropagation.bubbleKey, subtreePosition, INTERNAL );
         }
         else
         {
