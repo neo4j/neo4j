@@ -26,6 +26,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_policy;
@@ -78,7 +79,8 @@ public interface CheckPointThreshold
     /**
      * Create and configure a {@link CheckPointThreshold} based on the given configurations.
      */
-    static CheckPointThreshold createThreshold( Config config, Clock clock, LogProvider logProvider )
+    static CheckPointThreshold createThreshold(
+            Config config, Clock clock, LogPruning logPruning, LogProvider logProvider )
     {
         String policyName = config.get( check_point_policy );
         CheckPointThresholdPolicy policy;
@@ -93,7 +95,7 @@ public interface CheckPointThreshold
                     "Using default policy instead.", e );
             policy = new PeriodicThresholdPolicy();
         }
-        return policy.createThreshold( config, clock, logProvider );
+        return policy.createThreshold( config, clock, logPruning, logProvider );
     }
 
     /**

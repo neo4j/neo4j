@@ -23,7 +23,7 @@ import java.util.stream.LongStream;
 
 class ContinuousCheckPointThreshold extends AbstractCheckPointThreshold
 {
-    public ContinuousCheckPointThreshold()
+    ContinuousCheckPointThreshold()
     {
         super( "continuous threshold" );
     }

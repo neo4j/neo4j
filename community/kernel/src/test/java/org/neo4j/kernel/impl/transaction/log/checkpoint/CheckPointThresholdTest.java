@@ -19,84 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import java.time.Duration;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Consumer;
-
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class CheckPointThresholdTest
+public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
 {
-    private Config config;
-    private FakeClock clock;
-    private LogProvider logProvider;
-    private Integer intervalTx;
-    private Duration intervalTime;
-    private Consumer<String> notTriggered;
-    private BlockingQueue<String> triggerConsumer;
-    private Consumer<String> triggered;
-
-    @Before
-    public void setUp()
-    {
-        config = Config.empty();
-        clock = Clocks.fakeClock();
-        logProvider = NullLogProvider.getInstance();
-        intervalTx = config.get( GraphDatabaseSettings.check_point_interval_tx );
-        intervalTime = config.get( GraphDatabaseSettings.check_point_interval_time );
-        triggerConsumer = new LinkedBlockingQueue<>();
-        triggered = triggerConsumer::offer;
-        notTriggered = s -> fail( "Should not have triggered: " + s );
-    }
-
-    private void withPolicy( String policy )
-    {
-        config.augment( stringMap( GraphDatabaseSettings.check_point_policy.name(), policy ) );
-    }
-
-    private void withIntervalTime( String time )
-    {
-        config.augment( stringMap( GraphDatabaseSettings.check_point_interval_time.name(), time ) );
-    }
-
-    private void withIntervalTx( int count )
-    {
-        config.augment( stringMap( GraphDatabaseSettings.check_point_interval_tx.name(), String.valueOf( count ) ) );
-    }
-
-    private CheckPointThreshold createThreshold()
-    {
-        return CheckPointThreshold.createThreshold( config, clock, logProvider );
-    }
-
-    private void verifyTriggered( String reason )
-    {
-        assertThat( triggerConsumer.poll(), containsString( reason ) );
-    }
-
-    private void verifyNoMoreTriggers()
-    {
-        assertTrue( triggerConsumer.isEmpty() );
-    }
-
     @Test
     public void mustCreateThresholdThatTriggersAfterTransactionCount() throws Exception
     {
