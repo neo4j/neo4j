@@ -37,4 +37,18 @@ public interface LogPruning
      * Otherwise {@code false} if we are pretty sure that we don't need to prune any logs right now.
      */
     boolean mightHaveLogsToPrune();
+
+    LogPruning NO_PRUNING = new LogPruning()
+    {
+        @Override
+        public void pruneLogs( long currentVersion )
+        {
+        }
+
+        @Override
+        public boolean mightHaveLogsToPrune()
+        {
+            return false;
+        }
+    };
 }

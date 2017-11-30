@@ -642,7 +642,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
 
-        CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logProvider );
+        CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
                 transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,

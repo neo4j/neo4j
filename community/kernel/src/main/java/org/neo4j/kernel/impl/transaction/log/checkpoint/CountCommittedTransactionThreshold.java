@@ -25,7 +25,7 @@ class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
 
     private volatile long nextTransactionIdTarget;
 
-    public CountCommittedTransactionThreshold( int notificationThreshold )
+    CountCommittedTransactionThreshold( int notificationThreshold )
     {
         super( "tx count threshold" );
         this.notificationThreshold = notificationThreshold;

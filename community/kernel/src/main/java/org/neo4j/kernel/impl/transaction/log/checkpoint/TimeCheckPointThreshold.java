@@ -31,7 +31,7 @@ class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     private final long timeMillisThreshold;
     private final Clock clock;
 
-    public TimeCheckPointThreshold( long thresholdMillis, Clock clock )
+    TimeCheckPointThreshold( long thresholdMillis, Clock clock )
     {
         super( "time threshold" );
         this.timeMillisThreshold = thresholdMillis;

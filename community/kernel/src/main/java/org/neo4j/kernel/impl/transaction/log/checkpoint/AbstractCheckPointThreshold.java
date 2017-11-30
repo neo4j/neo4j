@@ -26,7 +26,7 @@ import java.util.stream.LongStream;
  * Abstract class that implement common logic for making the consumer to consume the description of this
  * threshold if {@link #thresholdReached(long)} is true.
  */
-abstract class AbstractCheckPointThreshold implements CheckPointThreshold
+public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
 {
     private final String description;
 
