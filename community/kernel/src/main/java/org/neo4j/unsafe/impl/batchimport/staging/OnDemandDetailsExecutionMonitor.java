@@ -65,18 +65,10 @@ import static org.neo4j.helpers.Format.duration;
  */
 public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
 {
-    public interface Monitor
+    interface Monitor
     {
-        public void detailsPrinted();
+        void detailsPrinted();
     }
-
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
-        @Override
-        public void detailsPrinted()
-        {   // ignored
-        }
-    };
 
     private final List<StageDetails> details = new ArrayList<>();
     private final PrintStream out;

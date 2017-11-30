@@ -23,8 +23,6 @@ import java.lang.reflect.Array;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 /**
