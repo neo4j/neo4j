@@ -177,14 +177,8 @@ public class IndexProviderStore
         buf.putLong( time ).putLong( identifier ).putLong( version ).putLong( lastCommittedTxId ).putLong( indexVersion );
         buf.flip();
 
-        int written = channel.write( buf, 0 );
+        channel.writeAll( buf, 0 );
         channel.force( true );
-
-        int expectedLength = RECORD_COUNT * RECORD_SIZE;
-        if ( written != expectedLength )
-        {
-            throw new RuntimeException( "Expected to write " + expectedLength + " bytes, but wrote " + written );
-        }
     }
 
     public File getFile()

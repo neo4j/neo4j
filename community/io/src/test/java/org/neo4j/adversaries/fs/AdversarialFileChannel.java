@@ -60,19 +60,6 @@ public class AdversarialFileChannel extends StoreFileChannel
     }
 
     @Override
-    public int write( ByteBuffer src, long position ) throws IOException
-    {
-        if ( adversary.injectFailureOrMischief( IOException.class ) )
-        {
-            int oldLimit = mischiefLimit( src );
-            int written = delegate.write( src, position );
-            src.limit( oldLimit );
-            return written;
-        }
-        return delegate.write( src, position );
-    }
-
-    @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
         adversary.injectFailure( IOException.class );

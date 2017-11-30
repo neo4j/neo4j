@@ -138,7 +138,7 @@ class FileSender implements ChunkedInput<FileChunk>
                 break;
             }
         }
-        while ( byteBuffer.remaining() > 0 );
+        while ( byteBuffer.hasRemaining() );
 
         if ( byteBuffer.position() > 0 )
         {

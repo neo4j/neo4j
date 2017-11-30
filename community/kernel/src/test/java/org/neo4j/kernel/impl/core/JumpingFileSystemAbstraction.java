@@ -152,7 +152,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     {
         private final int recordSize;
 
-        public JumpingFileChannel( StoreFileChannel actual, int recordSize )
+        JumpingFileChannel( StoreFileChannel actual, int recordSize )
         {
             super( actual );
             this.recordSize = recordSize;
@@ -249,12 +249,6 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         public int read( ByteBuffer dst, long position ) throws IOException
         {
             return super.read( dst, translateIncoming( position ) );
-        }
-
-        @Override
-        public int write( ByteBuffer src, long position ) throws IOException
-        {
-            return super.write( src, translateIncoming( position ) );
         }
     }
 }
