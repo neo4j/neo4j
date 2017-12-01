@@ -103,14 +103,19 @@ public class TestArrayStore
     }
 
     @Test
-    public void doubleArrayPropertiesShouldBeBitPacked() throws Exception
+    public void doubleArrayPropertiesShouldNotBeBitPacked() throws Exception
     {
+        //TODO Enabling right-trim would allow doubles that are integers, like 42.0, to pack well
+        //While enabling the default left-trim would only allow some extreme doubles to pack, like Double.longBitsToDouble( 0x1L )
+
+        // Test doubles that pack well with right-trim
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
-                new double[]{Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L )},
-                PropertyType.DOUBLE, 3 );
+                new double[]{0.0, -100.0, 100.0, 0.5},
+                PropertyType.DOUBLE, 64 );
+        // Test doubles that pack well with left-trim
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
                 new double[]{Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x8L )},
-                PropertyType.DOUBLE, 4 );
+                PropertyType.DOUBLE, 64 );
     }
 
     @Test
@@ -146,13 +151,9 @@ public class TestArrayStore
     public void pointArraysOfWgs84() throws Exception
     {
         PointValue[] array = new PointValue[]{
-                Values.pointValue( CoordinateReferenceSystem.WGS84,
-                        Double.longBitsToDouble( 0x1L ),
-                        Double.longBitsToDouble( 0x7L ) ),
-                        Values.pointValue( CoordinateReferenceSystem.WGS84,
-                                Double.longBitsToDouble( 0x1L ),
-                                Double.longBitsToDouble( 0x1L ) )};
-        int numberOfBitsUsedForDoubles = 3;
+                Values.pointValue( CoordinateReferenceSystem.WGS84, -45.0, -45.0 ),
+                Values.pointValue( CoordinateReferenceSystem.WGS84, 12.8, 56.3 )};
+        int numberOfBitsUsedForDoubles = 64;
 
         assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
     }
@@ -160,15 +161,10 @@ public class TestArrayStore
     @Test
     public void pointArraysOfCartesian() throws Exception
     {
-        PointValue[] array =
-                new PointValue[]{
-                Values.pointValue( CoordinateReferenceSystem.Cartesian,
-                        Double.longBitsToDouble( 0x1L ),
-                        Double.longBitsToDouble( 0x7L ) ),
-                        Values.pointValue( CoordinateReferenceSystem.Cartesian,
-                                Double.longBitsToDouble( 0x1L ),
-                                Double.longBitsToDouble( 0x1L ) )};
-        int numberOfBitsUsedForDoubles = 3;
+        PointValue[] array = new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.Cartesian, -100.0, -100.0 ),
+                Values.pointValue( CoordinateReferenceSystem.Cartesian, 25.0, 50.5 )};
+        int numberOfBitsUsedForDoubles = 64;
 
         assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
     }
