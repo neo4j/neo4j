@@ -524,12 +524,14 @@ object CypherComparisonSupport {
 
     def Interpreted: TestConfiguration =
       TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default) +
+        TestConfiguration(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def CommunityInterpreted: TestConfiguration =
       TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
@@ -548,28 +550,26 @@ object CypherComparisonSupport {
 
     def Rule3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default)
 
-    def Rule3_2: TestConfiguration = TestScenario(Versions.V3_2, Planners.Rule, Runtimes.Default)
-
-    def CurrentRulePlanner: TestConfiguration = TestScenario(Versions.latest, Planners.Rule, Runtimes.Default)
-
     def Version2_3: TestConfiguration = TestConfiguration(Versions.V2_3, Planners.all, Runtimes.Default)
 
     def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
 
-    def Version3_2: TestConfiguration = TestConfiguration(Versions.V3_2, Planners.all, Runtimes.Default)
+    def Version3_2: TestConfiguration = TestConfiguration(Versions.V3_2, Planners.Cost, Runtimes.Default)
 
     def Version3_3: TestConfiguration =
       TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
-    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.V3_2, Versions.Default), Planners.Rule, Runtimes.Default)
+    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
 
     def Cost: TestConfiguration =
       TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Cost, Runtimes.Default)
 
-    def BackwardsCompatibility: TestConfiguration = TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default)
+    def BackwardsCompatibility: TestConfiguration =
+      TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default)
 
     def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
 
@@ -580,19 +580,22 @@ object CypherComparisonSupport {
     def All: TestConfiguration =
       TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def AllExceptSlotted: TestConfiguration =
       TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes.Interpreted) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def AbsolutelyAll: TestConfiguration =
       TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.ProcedureOrSchema)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def Empty: TestConfiguration = TestConfiguration.empty
