@@ -186,9 +186,7 @@ object topDown {
     }
 
     @tailrec
-    private def rec(
-        stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]
-    ): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -230,9 +228,7 @@ object bottomUp {
     }
 
     @tailrec
-    private def rec(
-        stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]
-    ): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -275,9 +271,7 @@ object bottomUpWithArgs {
     }
 
     @tailrec
-    private def rec(
-                     stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]
-                   ): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
