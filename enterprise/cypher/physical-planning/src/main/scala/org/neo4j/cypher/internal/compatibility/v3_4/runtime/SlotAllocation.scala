@@ -458,17 +458,17 @@ object SlotAllocation {
 
       case ProjectEndpoints(_, _, start, startInScope, end, endInScope, _, _, _) =>
         if (!startInScope)
-          source.newLong(start.name, nullable = false, CTNode)
+          source.newLong(start.name, nullable, CTNode)
         if (!endInScope)
-          source.newLong(end.name, nullable = false, CTNode)
+          source.newLong(end.name, nullable, CTNode)
         source
 
       case LoadCSV(_, _, variableName, NoHeaders, _, _) =>
-        source.newReference(variableName.name, false, CTList(CTAny))
+        source.newReference(variableName.name, nullable, CTList(CTAny))
         source
 
       case LoadCSV(_, _, variableName, HasHeaders, _, _) =>
-        source.newReference(variableName.name, false, CTMap)
+        source.newReference(variableName.name, nullable, CTMap)
         source
 
       case ProcedureCall(_, ResolvedCall(_, _, callResults, _, _)) =>
