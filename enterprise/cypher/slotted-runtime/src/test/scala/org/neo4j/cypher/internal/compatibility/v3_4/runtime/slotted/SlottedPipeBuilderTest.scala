@@ -70,6 +70,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   private val x = IdName("x")
   private val z = IdName("z")
   private val r = IdName("r")
+  private val r2 = IdName("r2")
   private val LABEL = LabelName("label1")(pos)
   private val X_NODE_SLOTS = SlotConfiguration.empty.newLong("x", false, CTNode)
 
@@ -403,6 +404,66 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       tempNodeSlot.offset, tempRelSlot.offset,
       commands.predicates.True(), commands.predicates.True(), Size(1, 0)
     )())
+  }
+
+  test("single node with varlength expand into") {
+    // given
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val expand = Expand(allNodesScan, x, SemanticDirection.OUTGOING, Seq.empty, z, r, ExpandAll)(solved)
+    val varLength = VarPatternLength(1, Some(15))
+    val tempNode = IdName("r_NODES")
+    val tempEdge = IdName("r_EDGES")
+    val varExpand = VarExpand(expand, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty,
+      z, r2, varLength, ExpandInto, tempNode, tempEdge, True()(pos), True()(pos), Seq())(solved)
+
+    // when
+    val pipe = build(varExpand)
+
+    // then
+    val xNodeSlot = LongSlot(0, nullable = false, CTNode)
+    val rRelSlot = LongSlot(1, nullable = false, CTRelationship)
+    val zNodeSlot = LongSlot(2, nullable = false, CTNode)
+    val tempNodeSlot = LongSlot(3, nullable = false, CTNode)
+    val tempRelSlot = LongSlot(4, nullable = false, CTRelationship)
+    val r2RelSlot = RefSlot(0, nullable = false, CTList(CTRelationship))
+
+    val allNodeScanSlots =
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode)),
+        numberOfLongs = 1, numberOfReferences = 0)
+
+    val expandSlots =
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "r" -> LongSlot(1, nullable = false, CTRelationship),
+        "z" -> LongSlot(2, nullable = false, CTNode),
+        "r_NODES" -> LongSlot(3, nullable = false, CTNode),
+        "r_EDGES" -> LongSlot(4, nullable = false, CTRelationship)),
+        numberOfLongs = 5, numberOfReferences = 0)
+
+    val varExpandSlots =
+      SlotConfiguration(Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "r" -> LongSlot(1, nullable = false, CTRelationship),
+      "z" -> LongSlot(2, nullable = false, CTNode),
+      "r2" -> RefSlot(0, nullable = false, CTList(CTRelationship))),
+      numberOfLongs = 3, numberOfReferences = 1)
+
+    pipe should equal(
+      VarLengthExpandSlottedPipe(
+        ExpandAllSlottedPipe(
+          AllNodesScanSlottedPipe("x", allNodeScanSlots, Size.zero)(),
+          xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+          SemanticDirection.OUTGOING,
+          LazyTypes.empty,
+          expandSlots)(),
+        xNodeSlot.offset, r2RelSlot.offset, zNodeSlot.offset,
+        SemanticDirection.INCOMING, SemanticDirection.INCOMING,
+        LazyTypes.empty, varLength.min, varLength.max, shouldExpandAll = false,
+        varExpandSlots,
+        tempNodeSlot.offset, tempRelSlot.offset,
+        commands.predicates.True(), commands.predicates.True(), Size(3, 0))()
+    )
   }
 
   test("single node with varlength expand and a predicate") {

@@ -370,7 +370,7 @@ object SlotAllocation {
                        IdName(to),
                        IdName(edge),
                        _,
-                       ExpandAll,
+                       expansionMode,
                        IdName(tempNode),
                        IdName(tempEdge),
                        _,
@@ -384,7 +384,9 @@ object SlotAllocation {
         source.newLong(tempNode, nullable = false, CTNode)
         source.newLong(tempEdge, nullable = false, CTRelationship)
 
-        result.newLong(to, nullable, CTNode)
+        if (expansionMode == ExpandAll) {
+          result.newLong(to, nullable, CTNode)
+        }
         result.newReference(edge, nullable, CTList(CTRelationship))
         result
 

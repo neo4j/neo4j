@@ -37,6 +37,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   private val z = IdName("z")
   private val LABEL = LabelName("label")(pos)
   private val r = IdName("r")
+  private val r2 = IdName("r2")
   private val semanticTable = SemanticTable()
 
   test("only single allnodes scan") {
@@ -216,8 +217,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
     // then we'll end up with two pipelines
     allocations should have size 2
-    val labelScanAllocations = allocations(allNodesScan.assignedId)
-    labelScanAllocations should equal(
+    val allNodeScanAllocations = allocations(allNodesScan.assignedId)
+    allNodeScanAllocations should equal(
       SlotConfiguration(Map(
         "x" -> LongSlot(0, nullable = false, CTNode),
         "r_NODES" -> LongSlot(1, nullable = false, CTNode),
@@ -230,6 +231,48 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
         "x" -> LongSlot(0, nullable = false, CTNode),
         "r" -> RefSlot(0, nullable = false, CTList(CTRelationship)),
         "z" -> LongSlot(1, nullable = false, CTNode)), numberOfLongs = 2, numberOfReferences = 1))
+  }
+
+  test("single node with var length expand into") {
+    // given
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val expand = Expand(allNodesScan, x, SemanticDirection.OUTGOING, Seq.empty, y, r, ExpandAll)(solved)
+    val varLength = VarPatternLength(1, Some(15))
+    val tempNode = IdName("r_NODES")
+    val tempEdge = IdName("r_EDGES")
+    val varExpand = VarExpand(expand, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty, y, r2,
+      varLength, ExpandInto, tempNode, tempEdge, True()(pos), True()(pos), Seq.empty)(solved)
+    varExpand.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(varExpand, semanticTable).slotConfigurations
+
+    // then we'll end up with three pipelines
+    allocations should have size 3
+    val allNodeScanAllocations = allocations(allNodesScan.assignedId)
+    allNodeScanAllocations should equal(
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode)),
+        numberOfLongs = 1, numberOfReferences = 0))
+
+    val expandAllocations = allocations(expand.assignedId)
+    expandAllocations should equal(
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "r" -> LongSlot(1, nullable = false, CTRelationship),
+        "y" -> LongSlot(2, nullable = false, CTNode),
+        "r_NODES" -> LongSlot(3, nullable = false, CTNode),
+        "r_EDGES" -> LongSlot(4, nullable = false, CTRelationship)),
+        numberOfLongs = 5, numberOfReferences = 0))
+
+    val varExpandAllocations = allocations(varExpand.assignedId)
+    varExpandAllocations should equal(
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "r" -> LongSlot(1, nullable = false, CTRelationship),
+        "y" -> LongSlot(2, nullable = false, CTNode),
+        "r2" -> RefSlot(0, nullable = false, CTList(CTRelationship))),
+        numberOfLongs = 3, numberOfReferences = 1))
   }
 
   test("let's skip this one") {

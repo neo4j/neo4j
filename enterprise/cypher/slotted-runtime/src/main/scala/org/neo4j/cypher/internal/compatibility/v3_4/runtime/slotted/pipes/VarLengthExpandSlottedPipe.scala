@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyTypes, Pipe, PipeWithSource, QueryState}
@@ -31,6 +32,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{EdgeValue, VirtualValues}
+import org.neo4j.values.storable.Values
 
 import scala.collection.mutable
 
@@ -111,7 +113,7 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
     input.flatMap {
       inputRow =>
         val fromNode = inputRow.getLongAt(fromOffset)
-        if (fromNode == -1) {
+        if (entityIsNull(fromNode)) {
           val resultRow = PrimitiveExecutionContext(slots)
           resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
           resultRow.setRefAt(relOffset, Values.NO_VALUE)
