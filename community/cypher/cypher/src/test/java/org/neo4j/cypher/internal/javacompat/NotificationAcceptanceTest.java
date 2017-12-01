@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
@@ -50,6 +51,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
@@ -82,33 +84,35 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_3() throws Exception
+    public void shouldFailWhenSpecifyingCypher3_3ForTheRulePlanner() throws Exception
     {
-        // when
-        Result result = db().execute( "CYPHER 3.3 planner=rule RETURN 1" );
-        InputPosition position = new InputPosition( 24, 1, 25 );
-
-        // then
-        assertThat( result.getNotifications(), Matchers.contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
-        assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
-        result.close();
+        try
+        {
+            // when
+            db().execute( "CYPHER 3.3 planner=rule RETURN 1" );
+            fail();
+        }
+        catch ( QueryExecutionException e )
+        {
+            // then
+            assertThat( e.getMessage(), equalTo( "Unsupported PLANNER - VERSION combination: rule - 3.3" ) );
+        }
     }
 
     @Test
-    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_2() throws Exception
+    public void shouldFailWhenSpecifyingCypher3_2ForTheRulePlanner() throws Exception
     {
-        // when
-        Result result = db().execute( "CYPHER 3.2 planner=rule RETURN 1" );
-        InputPosition position = new InputPosition( 24, 1, 25 );
-
-        // then
-        assertThat( result.getNotifications(), Matchers.contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
-        assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
-        result.close();
+        try
+        {
+            // when
+            db().execute( "CYPHER 3.2 planner=rule RETURN 1" );
+            fail();
+        }
+        catch ( QueryExecutionException e )
+        {
+            // then
+            assertThat( e.getMessage(), equalTo( "Unsupported PLANNER - VERSION combination: rule - 3.2" ) );
+        }
     }
 
     @Test
