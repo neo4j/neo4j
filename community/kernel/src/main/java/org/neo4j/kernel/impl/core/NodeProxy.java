@@ -434,7 +434,7 @@ public class NodeProxy implements Node
                 String key = keys[i];
                 if ( key == null )
                 {
-                    throw new NullPointerException( String.format( "Key %d was null", i + 1 ) );
+                    throw new NullPointerException( String.format( "Key %d was null", i ) );
                 }
                 propertyIds[i] = token.propertyKey( key );
             }

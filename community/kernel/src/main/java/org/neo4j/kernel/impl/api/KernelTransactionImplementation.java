@@ -823,8 +823,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             userMetaData = Collections.emptyMap();
             userTransactionId = 0;
             statistics.reset();
-            pool.release( this );
             operations.release();
+            pool.release( this );
         }
         finally
         {

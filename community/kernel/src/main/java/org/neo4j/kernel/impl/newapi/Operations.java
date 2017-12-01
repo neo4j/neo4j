@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -442,7 +441,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         acquireExclusiveNodeLock( node );
         assertOpen();
 
-        Value existingValue = readProperty( node, propertyKey );
+        Value existingValue = readNodeProperty( node, propertyKey );
 
         if ( existingValue == NO_VALUE )
         {
@@ -471,7 +470,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     {
         acquireExclusiveNodeLock( node );
         assertOpen();
-        Value existingValue = readProperty( node, propertyKey );
+        Value existingValue = readNodeProperty( node, propertyKey );
 
         if ( existingValue != NO_VALUE )
         {
@@ -601,7 +600,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         allStoreHolder.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
-    private Value readProperty( long node, int propertyKey ) throws EntityNotFoundException
+    private Value readNodeProperty( long node, int propertyKey ) throws EntityNotFoundException
     {
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
