@@ -344,13 +344,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Configures the general policy for when check-points should occur. The default policy is to " +
                   "check-point 'periodically', as specified by the 'dbms.checkpoint.interval.tx' and " +
                   "'dbms.checkpoint.interval.time' settings. " +
-                  "There are two alternative policies: " +
+                  "The Neo4j Enterprise Edition provides two alternative policies: " +
                   "The first is to check-point 'continuously', which will ignore those settings and run the " +
                   "check-point process all the time. " +
-                  "The second (Enterprise only) alternative policy is the 'volumetric' policy, which makes a " +
-                  "best-effort at check-pointing often enough so that the database doesn't get too far behind on " +
-                  "deleting old transaction logs in accordance with the 'dbms.tx_log.rotation.retention_policy' " +
-                  "setting." )
+                  "The second is the 'volumetric' policy, which makes a best-effort at check-pointing often enough " +
+                  "so that the database doesn't get too far behind on deleting old transaction logs in accordance " +
+                  "with the 'dbms.tx_log.rotation.retention_policy' setting." )
     public static final Setting<String> check_point_policy = setting( "dbms.checkpoint", STRING, "periodically" );
 
     @Description( "Configures the transaction interval between check-points. The database will not check-point more " +

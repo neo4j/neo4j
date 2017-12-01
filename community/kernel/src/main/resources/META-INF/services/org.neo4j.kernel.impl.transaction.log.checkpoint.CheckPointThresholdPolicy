@@ -1,2 +1,1 @@
 org.neo4j.kernel.impl.transaction.log.checkpoint.PeriodicThresholdPolicy
-org.neo4j.kernel.impl.transaction.log.checkpoint.ContinuousThresholdPolicy

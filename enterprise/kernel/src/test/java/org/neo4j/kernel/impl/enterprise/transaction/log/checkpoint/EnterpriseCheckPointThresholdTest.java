@@ -26,11 +26,13 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholdTestSupport;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class VolumetricCheckPointThresholdTest extends CheckPointThresholdTestSupport
+public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSupport
 {
     private boolean haveLogsToPrune;
 
@@ -75,6 +77,26 @@ public class VolumetricCheckPointThresholdTest extends CheckPointThresholdTestSu
         CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
         assertFalse( threshold.isCheckPointingNeeded( 2, notTriggered ) );
+        verifyNoMoreTriggers();
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    @Test
+    public void continuousPolicyMustAlwaysTriggerCheckPoints() throws Exception
+    {
+        withPolicy( "continuously" );
+        CheckPointThreshold threshold = createThreshold();
+        threshold.initialize( 2 );
+
+        assertThat( threshold.checkFrequencyMillis().min().getAsLong(), is( 0L ) );
+
+        assertTrue( threshold.isCheckPointingNeeded( 2, triggered ) );
+        threshold.checkPointHappened( 3 );
+        assertTrue( threshold.isCheckPointingNeeded( 3, triggered ) );
+        assertTrue( threshold.isCheckPointingNeeded( 3, triggered ) );
+        verifyTriggered( "continuous" );
+        verifyTriggered( "continuous" );
+        verifyTriggered( "continuous" );
         verifyNoMoreTriggers();
     }
 }
