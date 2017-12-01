@@ -317,7 +317,6 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
                 throw new UnsupportedOperationException( "id not defined" );
             }
 
-
             @Override
             public boolean hasPropertyChanges()
             {
