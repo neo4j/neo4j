@@ -464,10 +464,11 @@ public class BuiltInProcedures
 
     @Description( "Get or create a node explicit index - YIELD type,name,config" )
     @Procedure( name = "db.index.explicit.forNodes", mode = WRITE )
-    public Stream<ExplicitIndexInfo> nodeManualIndex( @Name( "indexName" ) String explicitIndexName )
+    public Stream<ExplicitIndexInfo> nodeManualIndex( @Name( "indexName" ) String explicitIndexName,
+            @Name( value = "config", defaultValue = "" ) Map<String,String> config )
     {
         IndexManager mgr = graphDatabaseAPI.index();
-        Index<Node> index = mgr.forNodes( explicitIndexName );
+        Index<Node> index = mgr.forNodes( explicitIndexName, config );
         return Stream.of( new ExplicitIndexInfo( "NODE", explicitIndexName, mgr.getConfiguration( index ) ) );
     }
 

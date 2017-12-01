@@ -471,6 +471,47 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     }
   }
 
+  test("cannot get an index with a different type if it exists already") {
+    //Given
+    graph.inTx {
+      graph.index().existsForNodes("usernames") should be(false)
+    }
+
+    //Then
+    val result1 = execute("CALL db.index.explicit.forNodes('usernames', {type: 'exact', provider: 'lucene'}) YIELD type, name, config").toList
+    result1.head("config").asInstanceOf[Map[String, String]] should contain("type" -> "exact")
+    result1.head("config").asInstanceOf[Map[String, String]] should contain("provider" -> "lucene")
+    intercept[Exception] {
+      execute("CALL db.index.explicit.forNodes('usernames', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
+    }.getMessage should be(
+      """Failed to invoke procedure `db.index.explicit.forNodes`: Caused by: java.lang.IllegalArgumentException: Supplied index configuration:
+        |{type=fulltext, provider=lucene}
+        |doesn't match stored config in a valid way:
+        |{type=explicit, provider=lucene}
+        |for 'usernames'""".stripMargin)
+
+    //And Then
+    graph.inTx {
+      graph.index().existsForNodes("usernames") should be(true)
+    }
+  }
+
+  test("configuring a fulltext index should enable fulltext querying") {
+    //Given
+    graph.inTx {
+      graph.index().existsForNodes("usernames") should be(false)
+    }
+
+    execute("CALL db.index.explicit.forNodes('usernames', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
+    graph.inTx {
+      graph.index().existsForNodes("usernames") should be(true)
+    }
+
+    execute("CREATE (n {prop:'x'}) WITH n CALL db.index.explicit.addNode('usernames',n,'username','A Satia be') YIELD success RETURN success").toList
+    // will only find the node with fulltext index, not with exact
+    execute("CALL db.index.explicit.searchNodes('usernames', 'username:Satia') YIELD node RETURN node.prop").columnAs("node.prop").toList should be(List("x"))
+  }
+
   test("should be able to get or create a relationship index") {
     //Given
     graph.inTx {

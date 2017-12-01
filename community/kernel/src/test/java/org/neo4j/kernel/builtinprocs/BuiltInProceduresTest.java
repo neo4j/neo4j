@@ -280,7 +280,7 @@ public class BuiltInProceduresTest
                         "(type :: STRING?, name :: STRING?, config :: MAP?)",
                         "Remove an explicit index - YIELD type,name,config"),
                 record( "db.index.explicit.forNodes",
-                        "db.index.explicit.forNodes(indexName :: STRING?) :: " +
+                        "db.index.explicit.forNodes(indexName :: STRING?, config = {} :: MAP?) :: " +
                         "(type :: STRING?, name :: STRING?, config :: MAP?)",
                         "Get or create a node explicit index - YIELD type,name,config"),
                 record( "db.index.explicit.forRelationships",
