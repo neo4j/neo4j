@@ -512,6 +512,13 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     execute("CALL db.index.explicit.searchNodes('usernames', 'username:Satia') YIELD node RETURN node.prop").columnAs("node.prop").toList should be(List("x"))
   }
 
+  test("wrong index type does not lead to null-pointer-exception") {
+    val e = intercept[Exception](
+      execute("CALL db.index.explicit.forNodes('usernames', {type: 'does not exist', provider: 'lucene'}) YIELD type, name, config").toList
+    )
+    e.getCause.getCause.getMessage should equal("The given type was not recognized: does not exist. Known types are 'fulltext' and 'exact'")
+  }
+
   test("should be able to get or create a relationship index") {
     //Given
     graph.inTx {
