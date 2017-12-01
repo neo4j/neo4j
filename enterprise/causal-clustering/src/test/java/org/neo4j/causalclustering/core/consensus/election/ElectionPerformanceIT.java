@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.election;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
@@ -94,6 +95,7 @@ public class ElectionPerformanceIT
     }
 
     @Test
+    @Ignore( "This should be moved to a benchmarking suite" )
     public void electionPerformance_RapidConditions() throws Throwable
     {
         // given parameters

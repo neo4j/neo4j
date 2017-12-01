@@ -20,12 +20,10 @@
 package org.neo4j.causalclustering.core.consensus.schedule;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -49,14 +47,15 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
  */
 public class DelayedRenewableTimeoutService extends LifecycleAdapter implements Runnable, RenewableTimeoutService
 {
-    private static final int TIMER_RESOLUTION = 1;
+    private static final int TIMER_RESOLUTION = 100;
     private static final TimeUnit TIMER_RESOLUTION_UNIT = TimeUnit.MILLISECONDS;
 
     /**
      * Sorted by next-to-trigger.
      */
-    private final SortedSet<ScheduledRenewableTimeout> timeouts = new TreeSet<>();
+    private final Collection<ScheduledRenewableTimeout> timeouts = new ArrayList<>();
     private final Queue<ScheduledRenewableTimeout> pendingRenewals = new ConcurrentLinkedDeque<>();
+    private final Collection<ScheduledRenewableTimeout> triggered = new ArrayList<>();
     private final Clock clock;
     private final Log log;
     private final Random random;
@@ -104,6 +103,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
         synchronized ( timeouts )
         {
             timeouts.remove( timeout );
+            pendingRenewals.remove( timeout );
         }
     }
 
@@ -116,9 +116,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     @Override
     public synchronized void run()
     {
-
         long now = clock.millis();
-        Collection<ScheduledRenewableTimeout> triggered = new LinkedList<>();
 
         synchronized ( timeouts )
         {
@@ -137,12 +135,6 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
                 if ( timeout.shouldTrigger( now ) )
                 {
                     triggered.add( timeout );
-                }
-                else
-                {
-                    // Since the timeouts are sorted, the first timeout we hit that should not be triggered means
-                    // there are no others that should either, so we bail.
-                    break;
                 }
             }
         }
@@ -163,6 +155,8 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
         {
             timeouts.removeAll( triggered );
         }
+
+        triggered.clear();
     }
 
     @Override
@@ -186,7 +180,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
         scheduler.shutdown();
     }
 
-    static class ScheduledRenewableTimeout implements RenewableTimeout, Comparable<ScheduledRenewableTimeout>
+    static class ScheduledRenewableTimeout implements RenewableTimeout
     {
         private static final AtomicLong idGen = new AtomicLong();
         private final long id = idGen.getAndIncrement();
@@ -231,19 +225,6 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
         void setTimeoutTimestamp( long newTimestamp )
         {
             this.timeoutTimestampMillis = newTimestamp;
-        }
-
-        @Override
-        public int compareTo( ScheduledRenewableTimeout renewableTimeout )
-        {
-            if ( timeoutTimestampMillis == renewableTimeout.timeoutTimestampMillis )
-            {
-                // Timeouts are set to trigger at the same time.
-                // Order them by id instead.
-                return (int) (id - renewableTimeout.id);
-            }
-
-            return (int) (timeoutTimestampMillis - renewableTimeout.timeoutTimestampMillis);
         }
 
         @Override
