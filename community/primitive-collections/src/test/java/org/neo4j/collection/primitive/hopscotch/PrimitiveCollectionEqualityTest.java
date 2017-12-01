@@ -302,6 +302,13 @@ public class PrimitiveCollectionEqualityTest
     public static Factory<PrimitiveLongIntMap> longIntMapWithCapacity = () -> Primitive.longIntMap( randomCapacity() );
 
     @DataPoint
+    public static Factory<PrimitiveLongLongMap> longLongMap = Primitive::longLongMap;
+
+    @DataPoint
+    public static Factory<PrimitiveLongLongMap> longLongMapWithCapacity =
+            () -> Primitive.longLongMap( randomCapacity() );
+
+    @DataPoint
     public static Factory<PrimitiveLongLongMap> offheapLongLongMap = Primitive::offHeapLongLongMap;
 
     @DataPoint
