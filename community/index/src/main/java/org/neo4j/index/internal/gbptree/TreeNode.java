@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.NO_LOGICAL_POS;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
 /**
  * Methods to manipulate single tree node such as set and get header fields,
@@ -393,12 +394,12 @@ class TreeNode<KEY,VALUE>
 
     // HELPERS
 
-    int keyOffset( int pos )
+    private int keyOffset( int pos )
     {
         return HEADER_LENGTH + pos * keySize;
     }
 
-    int valueOffset( int pos )
+    private int valueOffset( int pos )
     {
         return HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
     }
@@ -413,17 +414,17 @@ class TreeNode<KEY,VALUE>
         return GenerationSafePointerPair.pointer( node ) != NO_NODE_FLAG;
     }
 
-    int keySize()
+    private int keySize()
     {
         return keySize;
     }
 
-    int valueSize()
+    private int valueSize()
     {
         return valueSize;
     }
 
-    static int childSize()
+    private static int childSize()
     {
         return SIZE_PAGE_REFERENCE;
     }
@@ -444,5 +445,158 @@ class TreeNode<KEY,VALUE>
     {
         return "TreeNode[pageSize:" + pageSize + ", internalMax:" + internalMaxKeyCount +
                 ", leafMax:" + leafMaxKeyCount + ", keySize:" + keySize + ", valueSize:" + valueSize + "]";
+    }
+
+    /* SPLIT, MERGE AND REBALANCE */
+
+    /**
+     * Performs the entry moving part of split in leaf.
+     *
+     * Keys and values from left are divide between left and right and the new key and value is inserted where it belongs.
+     *
+     * Key count is updated.
+     */
+    void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int insertPos, KEY newKey,
+            VALUE newValue, int middlePos )
+    {
+        if ( insertPos < middlePos )
+        {
+            //                  v-------v       copy
+            // before _,_,_,_,_,_,_,_,_,_
+            // insert _,_,_,X,_,_,_,_,_,_,_
+            // middle           ^
+            copyKeysAndValues( leftCursor, middlePos - 1, rightCursor, 0, rightKeyCount );
+            insertKeyValueAt( leftCursor, newKey, newValue, insertPos, middlePos - 1 );
+        }
+        else
+        {
+            //                  v---v           first copy
+            //                        v-v       second copy
+            // before _,_,_,_,_,_,_,_,_,_
+            // insert _,_,_,_,_,_,_,_,X,_,_
+            // middle           ^
+            int countBeforePos = insertPos - middlePos;
+            if ( countBeforePos > 0 )
+            {
+                // first copy
+                copyKeysAndValues( leftCursor, middlePos, rightCursor, 0, countBeforePos );
+            }
+            insertKeyValueAt( rightCursor, newKey, newValue, countBeforePos, countBeforePos );
+            int countAfterPos = leftKeyCount - insertPos;
+            if ( countAfterPos > 0 )
+            {
+                // second copy
+                copyKeysAndValues( leftCursor, insertPos, rightCursor, countBeforePos + 1, countAfterPos );
+            }
+        }
+        TreeNode.setKeyCount( leftCursor, middlePos );
+        TreeNode.setKeyCount( rightCursor, rightKeyCount );
+    }
+
+    /**
+     * Performs the entry moving part of split in internal.
+     *
+     * Keys and children from left is divided between left and right and the new key and child is inserted where it belongs.
+     *
+     * Key count is updated.
+     */
+    void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int insertPos, KEY newKey,
+            long newRightChild, int middlePos, long stableGeneration, long unstableGeneration )
+    {
+        if ( insertPos < middlePos )
+        {
+            //                         v-------v       copy
+            // before key    _,_,_,_,_,_,_,_,_,_
+            // before child -,-,-,-,-,-,-,-,-,-,-
+            // insert key    _,_,X,_,_,_,_,_,_,_,_
+            // insert child -,-,-,x,-,-,-,-,-,-,-,-
+            // middle key              ^
+
+            leftCursor.copyTo( keyOffset( middlePos ), rightCursor, keyOffset( 0 ), rightKeyCount * keySize() );
+            leftCursor.copyTo( childOffset( middlePos ), rightCursor, childOffset( 0 ), (rightKeyCount + 1) * childSize() );
+            insertKeyAt( leftCursor, newKey, insertPos, middlePos - 1, INTERNAL );
+            insertChildAt( leftCursor, newRightChild, insertPos + 1, middlePos - 1, stableGeneration, unstableGeneration );
+        }
+        else
+        {
+            // pos > middlePos
+            //                         v-v          first copy
+            //                             v-v-v    second copy
+            // before key    _,_,_,_,_,_,_,_,_,_
+            // before child -,-,-,-,-,-,-,-,-,-,-
+            // insert key    _,_,_,_,_,_,_,X,_,_,_
+            // insert child -,-,-,-,-,-,-,-,x,-,-,-
+            // middle key              ^
+
+            // pos == middlePos
+            //                                      first copy
+            //                         v-v-v-v-v    second copy
+            // before key    _,_,_,_,_,_,_,_,_,_
+            // before child -,-,-,-,-,-,-,-,-,-,-
+            // insert key    _,_,_,_,_,X,_,_,_,_,_
+            // insert child -,-,-,-,-,-,x,-,-,-,-,-
+            // middle key              ^
+
+            // Keys
+            int countBeforePos = insertPos - (middlePos + 1);
+            // ... first copy
+            if ( countBeforePos > 0 )
+            {
+                leftCursor.copyTo( keyOffset( middlePos + 1 ), rightCursor, keyOffset( 0 ), countBeforePos * keySize() );
+            }
+            // ... insert
+            if ( countBeforePos >= 0 )
+            {
+                insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos, INTERNAL );
+            }
+            // ... second copy
+            int countAfterPos = leftKeyCount - insertPos;
+            if ( countAfterPos > 0 )
+            {
+                leftCursor.copyTo( keyOffset( insertPos ), rightCursor, keyOffset( countBeforePos + 1 ), countAfterPos * keySize() );
+            }
+
+            // Children
+            countBeforePos = insertPos - middlePos;
+            // ... first copy
+            if ( countBeforePos > 0 )
+            {
+                // first copy
+                leftCursor.copyTo( childOffset( middlePos + 1 ), rightCursor, childOffset( 0 ), countBeforePos * childSize() );
+            }
+            // ... insert
+            insertChildAt( rightCursor, newRightChild, countBeforePos, countBeforePos, stableGeneration, unstableGeneration );
+            // ... second copy
+            if ( countAfterPos > 0 )
+            {
+                leftCursor.copyTo( childOffset( insertPos + 1 ), rightCursor, childOffset( countBeforePos + 1 ),
+                        countAfterPos * childSize() );
+            }
+        }
+        TreeNode.setKeyCount( leftCursor, middlePos );
+        TreeNode.setKeyCount( rightCursor, rightKeyCount );
+    }
+
+    /**
+     * Move all rightmost keys and values in left node from given position to right node.
+     *
+     * Key count is NOT updated.
+     */
+    void moveKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
+            int fromPosInLeftNode )
+    {
+        int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
+
+        // Push keys and values in right sibling to the right
+        insertKeyValueSlotsAt( rightCursor, 0, numberOfKeysToMove, rightKeyCount );
+
+        // Move keys and values from left sibling to right sibling
+        copyKeysAndValues( leftCursor, fromPosInLeftNode, rightCursor, 0, numberOfKeysToMove );
+    }
+
+    private void copyKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
+    {
+        fromCursor.copyTo( keyOffset( fromPos ), toCursor, keyOffset( toPos ), count * keySize() );
+        fromCursor.copyTo( valueOffset( fromPos ), toCursor, valueOffset( toPos ),count * valueSize() );
     }
 }
