@@ -31,7 +31,7 @@ public class IntKeyLongValueTable extends IntArrayBasedKeyTable<long[]>
     @Override
     public long key( int index )
     {
-        return table[index( index )];
+        return table[address( index )];
     }
 
     @Override
@@ -44,14 +44,14 @@ public class IntKeyLongValueTable extends IntArrayBasedKeyTable<long[]>
     @Override
     public long[] value( int index )
     {
-        singleValue[0] = getLong( index( index ) + 1 );
+        singleValue[0] = getLong( address( index ) + 1 );
         return singleValue;
     }
 
     @Override
     public long[] putValue( int index, long[] value )
     {
-        singleValue[0] = putLong( index( index ) + 1, value[0] );
+        singleValue[0] = putLong( address( index ) + 1, value[0] );
         return singleValue;
     }
 
