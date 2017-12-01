@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, AnyValueWriter}
@@ -90,6 +91,15 @@ object CastSupport {
       case (_: FloatValue, _: NumberValue) => a
       case (_: DoubleValue, _: NumberValue) => a
 
+      case (p1: PointValue, p2: PointValue) =>
+        if (p1.getCoordinateReferenceSystem != p2.getCoordinateReferenceSystem) {
+          throw new CypherTypeException("Collections containing point values with different CRS can not be stored in properties.");
+        } else if(p1.coordinate().length != p2.coordinate().length) {
+          throw new CypherTypeException("Collections containing point values with different dimensions can not be stored in properties.");
+        } else {
+          p1
+        }
+
       case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE => throw new CypherTypeException(
         "Collections containing null values can not be stored in properties.")
 
@@ -123,6 +133,10 @@ object CastSupport {
       transform(new ArrayConverterWriter(classOf[Float], a => Values.floatArray(a.asInstanceOf[Array[Float]]))))
     case _: DoubleValue => Converter(
       transform(new ArrayConverterWriter(classOf[Double], a => Values.doubleArray(a.asInstanceOf[Array[Double]]))))
+    case _: PointValue => Converter(
+      transform(new ArrayConverterWriter(classOf[PointValue], a => Values.pointArray(a.asInstanceOf[Array[PointValue]]))))
+    case _: Point => Converter(
+      transform(new ArrayConverterWriter(classOf[Point], a => Values.pointArray(a.asInstanceOf[Array[Point]]))))
     case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
 
@@ -171,10 +185,6 @@ object CastSupport {
     override def writePath(nodes: Array[NodeValue],
                            edges: Array[EdgeValue]): Unit = fail()
 
-    override def beginPoint(coordinateReferenceSystem: CoordinateReferenceSystem): Unit = fail()
-
-    override def endPoint(): Unit = fail()
-
     override def writeNull(): Unit = fail()
 
     override def writeBoolean(value: Boolean): Unit = write(value)
@@ -195,9 +205,6 @@ object CastSupport {
 
     override def writeString(value: Char): Unit = write(value)
 
-    override def writeString(value: Array[Char], offset: Int, length: Int): Unit = write(
-      new String(value, offset, length))
-
     override def beginArray(size: Int, arrayType: ValueWriter.ArrayType): Unit = fail()
 
     override def endArray(): Unit = fail()
@@ -205,6 +212,9 @@ object CastSupport {
     override def writeByteArray(value: Array[Byte]): Unit = {
       _array = value
     }
+
+    override def writePoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Unit =
+      write(Values.pointValue(crs, coordinate: _*))
   }
 
 }

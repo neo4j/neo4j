@@ -195,7 +195,7 @@ public class PropertyLoaderTest
     private static PropertyBlock newSingleIntPropertyBlock( int value )
     {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, PROP_KEY_ID, Values.intValue( value ), null, null );
+        PropertyStore.encodeValue( block, PROP_KEY_ID, Values.intValue( value ), null, null, true );
         block.setKeyIndexId( PROP_KEY_ID );
         return block;
     }

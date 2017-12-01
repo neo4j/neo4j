@@ -33,6 +33,7 @@ import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.internal.Version;
@@ -75,6 +76,7 @@ public class StoreUpgrader
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final Log log;
+    private final LogProvider logProvider;
 
     public StoreUpgrader( UpgradableDatabase upgradableDatabase, MigrationProgressMonitor progressMonitor, Config
             config, FileSystemAbstraction fileSystem, PageCache pageCache, LogProvider logProvider )
@@ -84,6 +86,7 @@ public class StoreUpgrader
         this.fileSystem = fileSystem;
         this.config = config;
         this.pageCache = pageCache;
+        this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -115,11 +118,18 @@ public class StoreUpgrader
             return;
         }
 
-        if ( !isUpgradeAllowed() )
+        if ( isUpgradeAllowed() )
+        {
+            migrateStore( storeDirectory, migrationDirectory, migrationStateFile );
+        }
+        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, storeDirectory, fileSystem, pageCache, logProvider ) )
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }
+    }
 
+    private void migrateStore( File storeDirectory, File migrationDirectory, File migrationStateFile )
+    {
         // One or more participants would like to do migration
         progressMonitor.started( participants.size() );
 
@@ -273,29 +283,29 @@ public class StoreUpgrader
             super( message, cause );
         }
 
-        public UnableToUpgradeException( String message )
+        UnableToUpgradeException( String message )
         {
             super( message );
         }
     }
 
-    public static class UpgradeMissingStoreFilesException extends UnableToUpgradeException
+    static class UpgradeMissingStoreFilesException extends UnableToUpgradeException
     {
         private static final String MESSAGE = "Missing required store file '%s'.";
 
-        public UpgradeMissingStoreFilesException( String filenameExpectedToExist )
+        UpgradeMissingStoreFilesException( String filenameExpectedToExist )
         {
             super( String.format( MESSAGE, filenameExpectedToExist ) );
         }
     }
 
-    public static class UpgradingStoreVersionNotFoundException extends UnableToUpgradeException
+    static class UpgradingStoreVersionNotFoundException extends UnableToUpgradeException
     {
         private static final String MESSAGE =
                 "'%s' does not contain a store version, please ensure that the original database was shut down in a " +
                 "clean state.";
 
-        public UpgradingStoreVersionNotFoundException( String filenameWithoutStoreVersion )
+        UpgradingStoreVersionNotFoundException( String filenameWithoutStoreVersion )
         {
             super( String.format( MESSAGE, filenameWithoutStoreVersion ) );
         }
@@ -303,10 +313,10 @@ public class StoreUpgrader
 
     public static class UnexpectedUpgradingStoreVersionException extends UnableToUpgradeException
     {
-        protected static final String MESSAGE =
+        static final String MESSAGE =
                 "Not possible to upgrade a store with version '%s' to current store version `%s` (Neo4j %s).";
 
-        public UnexpectedUpgradingStoreVersionException( String fileVersion, String currentVersion )
+        UnexpectedUpgradingStoreVersionException( String fileVersion, String currentVersion )
         {
             super( String.format( MESSAGE, fileVersion, currentVersion, Version.getNeo4jVersion() ) );
         }
@@ -314,9 +324,9 @@ public class StoreUpgrader
 
     public static class AttemptedDowngradeException extends UnableToUpgradeException
     {
-        protected static final String MESSAGE = "Downgrading stores are not supported.";
+        static final String MESSAGE = "Downgrading stores are not supported.";
 
-        public AttemptedDowngradeException()
+        AttemptedDowngradeException()
         {
             super( MESSAGE );
         }
@@ -327,19 +337,19 @@ public class StoreUpgrader
         protected static final String MESSAGE =
                 "This is an enterprise-only store. Please configure '%s' to open.";
 
-        public UnexpectedUpgradingStoreFormatException()
+        UnexpectedUpgradingStoreFormatException()
         {
             super( String.format( MESSAGE, GraphDatabaseSettings.record_format.name() ) );
         }
     }
 
-    public static class DatabaseNotCleanlyShutDownException extends UnableToUpgradeException
+    static class DatabaseNotCleanlyShutDownException extends UnableToUpgradeException
     {
         private static final String MESSAGE =
                 "The database is not cleanly shutdown. The database needs recovery, in order to recover the database, "
                 + "please run the old version of the database on this store.";
 
-        public DatabaseNotCleanlyShutDownException()
+        DatabaseNotCleanlyShutDownException()
         {
             super( MESSAGE );
         }

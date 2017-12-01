@@ -47,7 +47,7 @@ public final class Coordinate
     {
         if ( coordinate.length < 2 )
         {
-            throw new IllegalArgumentException( "A coordinate must at least two elements" );
+            throw new IllegalArgumentException( "A coordinate must have at least two elements" );
         }
         this.coordinate = coordinate;
     }

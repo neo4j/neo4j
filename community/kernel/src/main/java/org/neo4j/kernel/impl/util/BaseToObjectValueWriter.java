@@ -40,7 +40,7 @@ import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
@@ -69,10 +69,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
 
     protected abstract Relationship newRelationshipProxyById( long id );
 
-    protected abstract Point newGeographicPoint( double longitude, double latitude, String name, int code,
-            String href );
-
-    protected abstract Point newCartesianPoint( double x, double y, String name, int code, String href );
+    protected abstract Point newPoint( CoordinateReferenceSystem crs, double[] coordinate );
 
     public Object value()
     {
@@ -319,16 +316,9 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws RuntimeException
+    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
     {
-        stack.push( new PointWriter( coordinateReferenceSystem ) );
-    }
-
-    @Override
-    public void endPoint() throws RuntimeException
-    {
-        assert !stack.isEmpty();
-        writeValue( stack.pop().value() );
+        writeValue( newPoint( crs, coordinate ) );
     }
 
     @Override
@@ -389,12 +379,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     public void writeString( char value ) throws RuntimeException
     {
         writeValue( value );
-    }
-
-    @Override
-    public void writeString( char[] value, int offset, int length ) throws RuntimeException
-    {
-        writeValue( new String( value, offset, length ) );
     }
 
     @Override
@@ -546,42 +530,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         public Object value()
         {
             return list;
-        }
-    }
-
-    private class PointWriter implements Writer
-    {
-        //TODO it is quite silly that the point writer doesn't give me the whole thing at once
-        private final double[] coordinates = new double[2];
-        private int index;
-        private final CoordinateReferenceSystem crs;
-
-        PointWriter( CoordinateReferenceSystem crs )
-        {
-            this.crs = crs;
-        }
-
-        @Override
-        public void write( Object value )
-        {
-            coordinates[index++] = (double) value;
-        }
-
-        @Override
-        public Object value()
-        {
-            if ( crs.code() == CoordinateReferenceSystem.WGS84.code() )
-            {
-                return newGeographicPoint( coordinates[0], coordinates[1], crs.name, crs.code, crs.href );
-            }
-            else if ( crs.code() == CoordinateReferenceSystem.Cartesian.code() )
-            {
-                return newCartesianPoint( coordinates[0], coordinates[1], crs.name, crs.code, crs.href );
-            }
-            else
-            {
-                throw new IllegalArgumentException( crs + " is not a supported coordinate reference system" );
-            }
         }
     }
 }

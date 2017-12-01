@@ -40,19 +40,21 @@ public class PropertyCreator
     private final DynamicRecordAllocator arrayRecordAllocator;
     private final IdSequence propertyRecordIdGenerator;
     private final PropertyTraverser traverser;
+    private final boolean allowStorePoints;
 
     public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser )
     {
-        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser );
+        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePoints() );
     }
 
-    public PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator,
-            IdSequence propertyRecordIdGenerator, PropertyTraverser traverser )
+    public PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator, IdSequence propertyRecordIdGenerator,
+            PropertyTraverser traverser, boolean allowStorePoints )
     {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
         this.propertyRecordIdGenerator = propertyRecordIdGenerator;
         this.traverser = traverser;
+        this.allowStorePoints = allowStorePoints;
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
@@ -192,7 +194,8 @@ public class PropertyCreator
 
     public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
-        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator );
+        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator,
+                allowStorePoints );
         return block;
     }
 

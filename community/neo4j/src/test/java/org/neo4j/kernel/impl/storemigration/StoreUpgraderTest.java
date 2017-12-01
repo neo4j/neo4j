@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -106,27 +105,26 @@ public class StoreUpgraderTest
 
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = fileSystemRule.get();
-    private final String version;
+    private final RecordFormats formats;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
-    private AssertableLogProvider logProvider = new AssertableLogProvider( true );
-    private SimpleLogService logService = new SimpleLogService( logProvider );
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
-    public StoreUpgraderTest( String version )
+    public StoreUpgraderTest( RecordFormats formats )
     {
-        this.version = version;
+        this.formats = formats;
     }
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<String> versions()
+    public static Collection<RecordFormats> versions()
     {
-        return Collections.singletonList( StandardV2_3.STORE_VERSION );
+        return Collections.singletonList( StandardV2_3.RECORD_FORMATS );
     }
 
     @Before
     public void prepareDb() throws IOException
     {
+        String version = formats.storeVersion();
         dbDirectory = directory.directory( "db_" + version );
         File prepareDirectory = directory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, dbDirectory, prepareDirectory );
@@ -137,6 +135,7 @@ public class StoreUpgraderTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         Config deniedMigrationConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "false" );
+        deniedMigrationConfig.augment( GraphDatabaseSettings.record_format, Standard.LATEST_NAME );
 
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 

@@ -42,7 +42,7 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -294,17 +294,11 @@ public class Neo4jPack
         }
 
         @Override
-        public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws IOException
+        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
         {
             error = new Error( Status.Request.Invalid,
                     "Point is not yet supported as a return type in Bolt" );
             packNull();
-        }
-
-        @Override
-        public void endPoint() throws IOException
-        {
-            //Do nothing
         }
 
         @Override
@@ -371,12 +365,6 @@ public class Neo4jPack
         public void writeString( char value ) throws IOException
         {
             pack( value );
-        }
-
-        @Override
-        public void writeString( char[] value, int offset, int length ) throws IOException
-        {
-            pack( String.valueOf( value, offset, length ) );
         }
 
         @Override
@@ -664,13 +652,7 @@ public class Neo4jPack
         }
 
         @Override
-        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
-        {
-            throw new UnsupportedOperationException( "Cannot unpack points" );
-        }
-
-        @Override
-        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
         {
             throw new UnsupportedOperationException( "Cannot unpack points" );
         }

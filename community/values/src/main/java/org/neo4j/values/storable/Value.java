@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
@@ -62,6 +63,8 @@ public abstract class Value extends AnyValue
     public abstract boolean equals( char[] x );
 
     public abstract boolean equals( String[] x );
+
+    public abstract boolean equals( Geometry[] x );
 
     @Override
     public Boolean ternaryEquals( AnyValue other )

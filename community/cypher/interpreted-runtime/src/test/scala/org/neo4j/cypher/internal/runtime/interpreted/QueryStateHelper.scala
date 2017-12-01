@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -88,11 +89,7 @@ object QueryStateHelper {
     val writer = new BaseToObjectValueWriter[RuntimeException] {
       override protected def newNodeProxyById(id: Long): Node = ???
       override protected def newRelationshipProxyById(id: Long): Relationship = ???
-      override protected def newGeographicPoint(longitude: Double, latitude: Double, name: String,
-                                                code: Int,
-                                                href: String): Point = ???
-      override protected def newCartesianPoint(x: Double, y: Double, name: String, code: Int,
-                                               href: String): Point = ???
+      override protected def newPoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Point = ???
     }
     any.writeTo(writer)
     writer.value()

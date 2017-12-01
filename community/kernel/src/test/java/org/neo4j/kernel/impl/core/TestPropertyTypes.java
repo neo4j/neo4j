@@ -21,15 +21,20 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -38,6 +43,9 @@ import static org.junit.Assert.assertTrue;
 public class TestPropertyTypes extends AbstractNeo4jTestCase
 {
     private Node node1;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void createInitialNode()
@@ -261,6 +269,65 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         newTransaction();
 
         assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
+    public void testPointType()
+    {
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
+        String key = "location";
+        node1.setProperty( key, point );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( point, property );
+    }
+
+    @Test
+    public void testPointTypeWithOneOtherProperty()
+    {
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
+        String key = "location";
+        node1.setProperty( "prop1", 1 );
+        node1.setProperty( key, point );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( point, property );
+    }
+
+    @Test
+    public void testPointTypeWithTwoOtherProperties()
+    {
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
+        String key = "location";
+        node1.setProperty( "prop1", 1 );
+        node1.setProperty( "prop2", 2 );
+        node1.setProperty( key, point );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( point, property );
+    }
+
+    @Test
+    public void test3DPointType()
+    {
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1 );
+        String key = "location";
+        node1.setProperty( key, point );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( point, property );
+    }
+
+    @Test
+    public void test4DPointType()
+    {
+        thrown.expect(Exception.class);
+        node1.setProperty( "location", Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1, 1 ) );
+        newTransaction();
     }
 
     @Test

@@ -30,7 +30,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.BeginArray;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.EndArray;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.WriteByteArray;
-import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.WriteCharArray;
 
 public class BufferValueWriter implements ValueWriter<RuntimeException>
 {
@@ -153,12 +152,6 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeString( char[] value, int offset, int length )
-    {
-        buffer.add( Specials.charArray( value, offset, length ) );
-    }
-
-    @Override
     public void beginArray( int size, ArrayType arrayType )
     {
         buffer.add( Specials.beginArray( size, arrayType ) );
@@ -171,6 +164,12 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     }
 
     @Override
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
+    {
+        buffer.add( new PointValue( crs, coordinate ) );
+    }
+
+    @Override
     public void writeByteArray( byte[] value ) throws RuntimeException
     {
         buffer.add( Specials.byteArray( value ) );
@@ -179,11 +178,6 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     @SuppressWarnings( "WeakerAccess" )
     public static class Specials
     {
-        public static Special charArray( char[] value, int offset, int length )
-        {
-            return new Special( WriteCharArray, format( "%d %d %d", Arrays.hashCode( value ), offset, length ) );
-        }
-
         public static Special byteArray( byte[] value )
         {
             return new Special( WriteByteArray, Arrays.hashCode( value ) );

@@ -38,6 +38,7 @@ public class StandardV2_3 extends BaseRecordFormats
 {
     public static final String STORE_VERSION = StoreVersion.STANDARD_V2_3.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV2_3();
+    public static final String NAME = "standardV2_3_0";
 
     public StandardV2_3()
     {
@@ -97,5 +98,11 @@ public class StandardV2_3 extends BaseRecordFormats
     public FormatFamily getFormatFamily()
     {
         return StandardFormatFamily.INSTANCE;
+    }
+
+    @Override
+    public String name()
+    {
+        return NAME;
     }
 }

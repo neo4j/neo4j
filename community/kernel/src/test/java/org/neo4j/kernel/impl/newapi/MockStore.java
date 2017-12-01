@@ -297,7 +297,7 @@ public class MockStore extends Read implements TestRule
     public static PropertyBlock block( int key, Value value )
     {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, key, value, NO_DYNAMIC_RECORDS, NO_DYNAMIC_RECORDS );
+        PropertyStore.encodeValue( block, key, value, NO_DYNAMIC_RECORDS, NO_DYNAMIC_RECORDS, true );
         return block;
     }
 

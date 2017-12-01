@@ -41,7 +41,8 @@ public interface ValueWriter<E extends Exception>
         DOUBLE,
         BOOLEAN,
         STRING,
-        CHAR
+        CHAR,
+        POINT
     }
 
     void writeNull() throws E;
@@ -69,18 +70,13 @@ public interface ValueWriter<E extends Exception>
         writeString( new String( bytes, offset, length, StandardCharsets.UTF_8 ) );
     }
 
-    default void writeString( char[] value ) throws E
-    {
-        writeString( value, 0, value.length );
-    }
-
-    void writeString( char[] value, int offset, int length ) throws E;
-
     void beginArray( int size, ArrayType arrayType ) throws E;
 
     void endArray() throws E;
 
     void writeByteArray( byte[] value ) throws E;
+
+    void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E;
 
     class Adapter<E extends Exception> implements ValueWriter<E>
     {
@@ -135,11 +131,6 @@ public interface ValueWriter<E extends Exception>
         }
 
         @Override
-        public void writeString( char[] value, int offset, int length ) throws E
-        {   // no-op
-        }
-
-        @Override
         public void beginArray( int size, ArrayType arrayType ) throws E
         {   // no-op
         }
@@ -151,6 +142,11 @@ public interface ValueWriter<E extends Exception>
 
         @Override
         public void writeByteArray( byte[] value ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
         {   // no-op
         }
     }

@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.PrettyPrinter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
@@ -157,13 +158,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
         }
 
         @Override
-        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
-        {
-            throw exception;
-        }
-
-        @Override
-        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
         {
             throw exception;
         }

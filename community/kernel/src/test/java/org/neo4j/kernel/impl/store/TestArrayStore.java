@@ -44,6 +44,9 @@ import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -100,6 +103,22 @@ public class TestArrayStore
     }
 
     @Test
+    public void doubleArrayPropertiesShouldNotBeBitPacked() throws Exception
+    {
+        //TODO Enabling right-trim would allow doubles that are integers, like 42.0, to pack well
+        //While enabling the default left-trim would only allow some extreme doubles to pack, like Double.longBitsToDouble( 0x1L )
+
+        // Test doubles that pack well with right-trim
+        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
+                new double[]{0.0, -100.0, 100.0, 0.5},
+                PropertyType.DOUBLE, 64 );
+        // Test doubles that pack well with left-trim
+        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
+                new double[]{Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x8L )},
+                PropertyType.DOUBLE, 64 );
+    }
+
+    @Test
     public void byteArrayPropertiesShouldNotBeBitPacked() throws Exception
     {
         /* Byte arrays are always stored unpacked. For two reasons:
@@ -128,10 +147,96 @@ public class TestArrayStore
         }
     }
 
+    @Test
+    public void pointArraysOfWgs84() throws Exception
+    {
+        PointValue[] array = new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.WGS84, -45.0, -45.0 ),
+                Values.pointValue( CoordinateReferenceSystem.WGS84, 12.8, 56.3 )};
+        int numberOfBitsUsedForDoubles = 64;
+
+        assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
+    }
+
+    @Test
+    public void pointArraysOfCartesian() throws Exception
+    {
+        PointValue[] array = new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.Cartesian, -100.0, -100.0 ),
+                Values.pointValue( CoordinateReferenceSystem.Cartesian, 25.0, 50.5 )};
+        int numberOfBitsUsedForDoubles = 64;
+
+        assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void pointArraysOfMixedCRS() throws Exception
+    {
+        PointValue[] array =
+                new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                        Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
+                        Values.pointValue( CoordinateReferenceSystem.WGS84,
+                                Double.longBitsToDouble( 0x1L ),
+                                Double.longBitsToDouble( 0x1L ) )};
+
+        Collection<DynamicRecord> records = new ArrayList<>();
+        arrayStore.allocateRecords( records, array );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void pointArraysOfMixedDimension() throws Exception
+    {
+        PointValue[] array =
+                new PointValue[]{
+                Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                        Double.longBitsToDouble( 0x1L ),
+                        Double.longBitsToDouble( 0x7L ) ),
+                        Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                                Double.longBitsToDouble( 0x1L ),
+                                Double.longBitsToDouble( 0x1L ),
+                                Double.longBitsToDouble( 0x4L ) )};
+
+        Collection<DynamicRecord> records = new ArrayList<>();
+        arrayStore.allocateRecords( records, array );
+    }
+
+    private void assertPointArrayHasCorrectFormat( PointValue[] array, int numberOfBitsUsedForDoubles )
+    {
+        Collection<DynamicRecord> records = new ArrayList<>();
+        arrayStore.allocateRecords( records, array );
+        Pair<byte[],byte[]> loaded = loadArray( records );
+        assertGeometryHeader( loaded.first(),
+                GeometryType.GEOMETRY_POINT.getGtype(),
+                2,
+                array[0].getCoordinateReferenceSystem().getTable().getTableId(),
+                array[0].getCoordinateReferenceSystem().getCode() );
+
+        final int dimension = array[0].coordinate().length;
+        double[] pointDoubles = new double[array.length * dimension];
+        for ( int i = 0; i < pointDoubles.length; i++ )
+        {
+            pointDoubles[i] = array[i / dimension].coordinate()[i % dimension];
+        }
+
+        byte[] doubleHeader = Arrays.copyOf( loaded.other(), DynamicArrayStore.NUMBER_HEADER_SIZE );
+        byte[] doubleBody = Arrays.copyOfRange( loaded.other(), DynamicArrayStore.NUMBER_HEADER_SIZE, loaded.other().length );
+        assertNumericArrayHeaderAndContent( pointDoubles, PropertyType.DOUBLE, numberOfBitsUsedForDoubles, Pair.of( doubleHeader, doubleBody ) );
+    }
+
     private void assertStringHeader( byte[] header, int itemCount )
     {
         assertEquals( PropertyType.STRING.byteValue(), header[0] );
         assertEquals( itemCount, ByteBuffer.wrap( header, 1, 4 ).getInt() );
+    }
+
+    private void assertGeometryHeader( byte[] header, int geometryTpe, int dimension, int crsTableId, int crsCode )
+    {
+        assertEquals( PropertyType.GEOMETRY.byteValue(), header[0] );
+        assertEquals( geometryTpe, header[1] );
+        assertEquals( dimension, header[2] );
+        assertEquals( crsTableId, header[3] );
+        assertEquals( crsCode, ByteBuffer.wrap( header, 4, 2 ).getShort() );
     }
 
     private void assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( Object array, PropertyType type,
@@ -139,12 +244,24 @@ public class TestArrayStore
     {
         Collection<DynamicRecord> records = storeArray( array );
         Pair<byte[], byte[]> asBytes = loadArray( records );
-        assertArrayHeader( asBytes.first(), type, expectedBitsUsedPerItem );
-        Bits bits = Bits.bitsFromBytes( asBytes.other() );
+        assertNumericArrayHeaderAndContent( array, type, expectedBitsUsedPerItem, asBytes );
+    }
+
+    private void assertNumericArrayHeaderAndContent( Object array, PropertyType type, int expectedBitsUsedPerItem, Pair<byte[],byte[]> loadedBytesFromStore )
+    {
+        assertArrayHeader( loadedBytesFromStore.first(), type, expectedBitsUsedPerItem );
+        Bits bits = Bits.bitsFromBytes( loadedBytesFromStore.other() );
         int length = Array.getLength( array );
         for ( int i = 0; i < length; i++ )
         {
-            assertEquals( ((Number)Array.get( array, i )).longValue(), bits.getLong( expectedBitsUsedPerItem ) );
+            if ( array instanceof double[] )
+            {
+                assertEquals( Double.doubleToLongBits( Array.getDouble( array, i ) ), bits.getLong( expectedBitsUsedPerItem ) );
+            }
+            else
+            {
+                assertEquals( Array.getLong( array, i ), bits.getLong( expectedBitsUsedPerItem ) );
+            }
         }
     }
 

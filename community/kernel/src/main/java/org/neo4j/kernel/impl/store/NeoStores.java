@@ -533,7 +533,7 @@ public class NeoStores implements AutoCloseable
         }
         File storeFile = getStoreFile( storeName );
         return initialize( new DynamicArrayStore( storeFile, config, idType, idGeneratorFactory, pageCache,
-                logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions ) );
+                logProvider, blockSize, recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createNodeStore( String storeName )
@@ -666,5 +666,10 @@ public class NeoStores implements AutoCloseable
     {
         assert type.isRecordStore();
         return (RecordStore<RECORD>) getStore( type );
+    }
+
+    public RecordFormats getRecordFormats()
+    {
+        return recordFormats;
     }
 }

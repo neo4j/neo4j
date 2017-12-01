@@ -28,9 +28,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.VirtualValueTestUtil;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
@@ -43,8 +45,6 @@ import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.node;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
-import static org.neo4j.values.virtual.VirtualValues.pointCartesian;
-import static org.neo4j.values.virtual.VirtualValues.pointGeographic;
 
 public class AnyValueComparatorTest
 {
@@ -117,19 +117,8 @@ public class AnyValueComparatorTest
             path( nodes( 4L, 5L ), edges( 2L ) ),
             path( nodes( 5L, 4L ), edges( 2L ) ),
 
-            // SCALARS AND POINTS
-
-            // Point
-            pointCartesian( -1.0, -1.0 ),
-            pointCartesian( 1.0, 1.0 ),
-            pointCartesian( 1.0, 2.0 ),
-            pointCartesian( 2.0, 1.0 ),
-            pointGeographic( -1.0, -1.0 ),
-            pointGeographic( 1.0, 1.0 ),
-            pointGeographic( 1.0, 2.0 ),
-            pointGeographic( 2.0, 1.0 ),
-
-            // Scalars
+            // SCALARS
+            pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 ),
             "hello",
             true,
             1L,

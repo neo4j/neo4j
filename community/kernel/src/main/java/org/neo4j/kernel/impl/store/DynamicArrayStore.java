@@ -28,27 +28,70 @@ import java.util.Collection;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.storable.CRSTable;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.System.arraycopy;
 
 /**
- * Dynamic store that stores strings.
+ * Dynamic store that stores arrays.
+ *
+ * Arrays are uniform collections of the same type. They can contain primitives, strings or Geometries.
+ * <ul>
+ *     <li>
+ *         Primitive arrays are stored using a 3 byte header followed by a byte[] of bit-compacted data. The header defines the format of the byte[]:
+ *         <ul>
+ *             <li>Byte 0: The type of the primitive being stored. See {@link PropertyType}</li>
+ *             <li>Byte 1: The number of bits used in the last byte</li>
+ *             <li>Byte 2: The number of bits required for each element of the data array (after compaction)</li>
+ *         </ul>
+ *         The total number of elements can be calculated by combining the information about the individual element size
+ *         (bits required - 3rd byte) with the length of the data specified in the DynamicRecordFormat.
+ *     </li>
+ *     <li>
+ *         Arrays of strings are stored using a 5 byte header:
+ *         <ul>
+ *             <li>Byte 0: PropertyType.STRING</li>
+ *             <li>Bytes 1 to 4: 32bit Int length of string array</li>
+ *         </ul>
+ *         This is followed by a byte[] composed of a 4 byte header containing the length of the byte[] representstion of the string, and then those bytes.
+ *     </li>
+ *     <li>
+ *         Arrays of Geometries starting with a 6 byte header:
+ *         <ul>
+ *             <li>Byte 0: PropertyType.GEOMETRY</li>
+ *             <li>Byte 1: GeometryType, currently only POINT is supported</li>
+ *             <li>Byte 2: The dimension of the geometry (currently only 2 or 3 dimensions are supported)</li>
+ *             <li>Byte 3: Coordinate Reference System Table id: {@link CRSTable}</li>
+ *             <li>Bytes 4-5: 16bit short Coordinate Reference System code: {@link CoordinateReferenceSystem}</li>
+ *         </ul>
+ *         The format of the body is specific to the type of Geometry being stored:
+ *         <ul>
+ *             <li>Points: Stored as double[] using the same format as primitive arrays above, starting with the 3 byte header (see above)</li>
+ *         </ul>
+ *     </li>
+ * </ul>
  */
 public class DynamicArrayStore extends AbstractDynamicStore
 {
     public static final int NUMBER_HEADER_SIZE = 3;
     public static final int STRING_HEADER_SIZE = 5;
+    public static final int GEOMETRY_HEADER_SIZE = 6;   // This should match contents of GeometryType.GeometryHeader
 
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
+    private final boolean allowStorePoints;
 
     public DynamicArrayStore(
             File fileName,
@@ -58,12 +101,12 @@ public class DynamicArrayStore extends AbstractDynamicStore
             PageCache pageCache,
             LogProvider logProvider,
             int dataSizeFromConfiguration,
-            RecordFormat<DynamicRecord> recordFormat,
-            String storeVersion,
+            RecordFormats recordFormats,
             OpenOption... openOptions )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, openOptions );
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
+        allowStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
     }
 
     @Override
@@ -73,8 +116,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         processor.processArray( this, record );
     }
 
-    public static void allocateFromNumbers( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator )
+    public static byte[] encodeFromNumbers( Object array, int offsetBytes )
     {
         ShortArray type = ShortArray.typeOf( array );
         if ( type == null )
@@ -85,15 +127,15 @@ public class DynamicArrayStore extends AbstractDynamicStore
         if ( type == ShortArray.DOUBLE || type == ShortArray.FLOAT )
         {
             // Skip array compaction for floating point numbers where compaction makes very little difference
-            allocateRecordsFromBytes( target, createUncompactedArray( type, array ), recordAllocator );
+            return createUncompactedArray( type, array, offsetBytes );
         }
         else
         {
-            allocateRecordsFromBytes( target, createBitCompactedArray( type, array ), recordAllocator );
+            return createBitCompactedArray( type, array, offsetBytes );
         }
     }
 
-    private static byte[] createBitCompactedArray( ShortArray type, Object array )
+    private static byte[] createBitCompactedArray( ShortArray type, Object array, int offsetBytes )
     {
         Class<?> componentType = array.getClass().getComponentType();
         boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
@@ -105,7 +147,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
         if ( isByteArray )
         {
-            return createBitCompactedByteArray( type, isPrimitiveByteArray, array, bitsUsedInLastByte, requiredBits );
+            return createBitCompactedByteArray( type, isPrimitiveByteArray, array, bitsUsedInLastByte, requiredBits, offsetBytes );
         }
         else
         {
@@ -116,43 +158,64 @@ public class DynamicArrayStore extends AbstractDynamicStore
             bits.put( (byte) bitsUsedInLastByte );
             bits.put( (byte) requiredBits );
             type.writeAll( array, arrayLength, requiredBits, bits );
-            return bits.asBytes();
+            return bits.asBytes( offsetBytes );
         }
     }
 
     private static byte[] createBitCompactedByteArray( ShortArray type, boolean isPrimitiveByteArray, Object array,
-            int bitsUsedInLastByte, int requiredBits )
+            int bitsUsedInLastByte, int requiredBits, int offsetBytes )
     {
         int arrayLength = Array.getLength( array );
-        byte[] bytes = new byte[NUMBER_HEADER_SIZE + arrayLength];
-        bytes[0] = (byte) type.intValue();
-        bytes[1] = (byte) bitsUsedInLastByte;
-        bytes[2] = (byte) requiredBits;
+        byte[] bytes = new byte[NUMBER_HEADER_SIZE + arrayLength + offsetBytes];
+        bytes[offsetBytes + 0] = (byte) type.intValue();
+        bytes[offsetBytes + 1] = (byte) bitsUsedInLastByte;
+        bytes[offsetBytes + 2] = (byte) requiredBits;
         if ( isPrimitiveByteArray )
         {
-            arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE, arrayLength );
+            arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE + offsetBytes, arrayLength );
         }
         else
         {
             Byte[] source = (Byte[]) array;
             for ( int i = 0; i < source.length; i++ )
             {
-                bytes[NUMBER_HEADER_SIZE + i] = source[i];
+                bytes[NUMBER_HEADER_SIZE + offsetBytes + i] = source[i];
             }
         }
         return bytes;
     }
 
-    private static byte[] createUncompactedArray( ShortArray type, Object array )
+    private static byte[] createUncompactedArray( ShortArray type, Object array, int offsetBytes )
     {
         int arrayLength = Array.getLength( array );
         int bytesPerElement = type.maxBits / 8;
-        byte[] bytes = new byte[NUMBER_HEADER_SIZE + bytesPerElement * arrayLength];
-        bytes[0] = (byte) type.intValue();
-        bytes[1] = (byte) 8;
-        bytes[2] = (byte) type.maxBits;
-        type.writeAll( array, bytes, NUMBER_HEADER_SIZE );
+        byte[] bytes = new byte[NUMBER_HEADER_SIZE + bytesPerElement * arrayLength + offsetBytes];
+        bytes[offsetBytes + 0] = (byte) type.intValue();
+        bytes[offsetBytes + 1] = (byte) 8;
+        bytes[offsetBytes + 2] = (byte) type.maxBits;
+        type.writeAll( array, bytes, NUMBER_HEADER_SIZE + offsetBytes );
         return bytes;
+    }
+
+    public static void allocateFromNumbers( Collection<DynamicRecord> target, Object array,
+            DynamicRecordAllocator recordAllocator )
+    {
+        byte[] bytes = encodeFromNumbers( array, 0 );
+        allocateRecordsFromBytes( target, bytes, recordAllocator );
+    }
+
+    public static void allocateFromPoints( Collection<DynamicRecord> target, PointValue[] array,
+            DynamicRecordAllocator recordAllocator, boolean allowStorePoints )
+    {
+        if ( allowStorePoints )
+        {
+            byte[] bytes = GeometryType.encodePointArray( array );
+            allocateRecordsFromBytes( target, bytes, recordAllocator );
+        }
+        else
+        {
+            throw new UnsupportedFormatCapabilityException( Capability.POINT_PROPERTIES );
+        }
     }
 
     private static void allocateFromString( Collection<DynamicRecord> target, String[] array,
@@ -181,11 +244,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public void allocateRecords( Collection<DynamicRecord> target, Object array )
     {
-        allocateRecords( target, array, this );
+        allocateRecords( target, array, this, allowStorePoints );
     }
 
     public static void allocateRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator )
+            DynamicRecordAllocator recordAllocator, boolean allowStorePoints )
     {
         if ( !array.getClass().isArray() )
         {
@@ -196,6 +259,10 @@ public class DynamicArrayStore extends AbstractDynamicStore
         if ( type.equals( String.class ) )
         {
             allocateFromString( target, (String[]) array, recordAllocator );
+        }
+        else if ( type.equals( PointValue.class ) )
+        {
+            allocateFromPoints( target, (PointValue[]) array, recordAllocator, allowStorePoints );
         }
         else
         {
@@ -223,6 +290,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 result[i] = PropertyStore.decodeString( stringByteArray );
             }
             return Values.stringArray( result );
+        }
+        else if ( typeId == PropertyType.GEOMETRY.intValue() )
+        {
+            GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes(header);
+            return GeometryType.decodeGeometryArray( geometryHeader, bArray );
         }
         else
         {

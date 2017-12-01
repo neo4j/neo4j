@@ -17,36 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.virtual;
+package org.neo4j.kernel.impl.store.format;
 
-public enum CoordinateReferenceSystem
+import static java.lang.String.format;
+
+public class UnsupportedFormatCapabilityException extends RuntimeException
 {
-    Cartesian( "cartesian", 7203, "http://spatialreference.org/ref/sr-org/7203/" ),
-    WGS84( "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/" );
-
-    public final String name;
-    public final int code;
-    public final String href;
-
-    CoordinateReferenceSystem( String name, int code, String href )
+    public UnsupportedFormatCapabilityException( Capability capability )
     {
-        this.name = name;
-        this.code = code;
-        this.href = href;
-    }
-
-    public int code()
-    {
-        return code;
-    }
-
-    public String type()
-    {
-        return name;
-    }
-
-    public String href()
-    {
-        return href;
+        super( format( "Current record format does not support %s. " +
+                        "Please upgrade your store to the format that support requested capability.",
+                capability.name() ) );
     }
 }

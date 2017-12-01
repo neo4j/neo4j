@@ -24,10 +24,12 @@ import org.junit.Test;
 import java.util.HashMap;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.virtual.EdgeReference;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
@@ -35,7 +37,6 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeReference;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.PointValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -284,7 +285,7 @@ public class PrettyPrinterTest
     public void shouldHandlePoints()
     {
         // Given
-        PointValue pointValue = VirtualValues.pointCartesian( 11d, 12d );
+        PointValue pointValue = Values.pointValue( CoordinateReferenceSystem.Cartesian, 11d, 12d );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
