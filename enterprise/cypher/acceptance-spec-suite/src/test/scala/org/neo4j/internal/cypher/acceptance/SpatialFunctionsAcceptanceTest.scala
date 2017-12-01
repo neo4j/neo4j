@@ -309,7 +309,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.SlottedInterpreted - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
+    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
     val result = executeWith(config, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
@@ -340,7 +340,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.SlottedInterpreted - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
+    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
     val query =
       """
         |UNWIND [1,2,3] as num
@@ -418,7 +418,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.SlottedInterpreted - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
+    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
     val query =
       """
         |WITH [point({x: 1, y: 2}), point({latitude: 1, longitude: 2})] as points
