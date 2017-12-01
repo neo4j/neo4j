@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -348,7 +349,7 @@ public class NodeProxy implements Node
         try ( Statement ignore = actions.statement() )
         {
             KernelTransaction transaction = actions.kernelTransaction();
-            int propertyKey = transaction.token().propertyKey( key );
+            int propertyKey = transaction.tokenRead().propertyKey( key );
             if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return defaultValue;
@@ -390,7 +391,7 @@ public class NodeProxy implements Node
         )
         {
             transaction.dataRead().singleNode( nodeId, nodes );
-            Token token = transaction.token();
+            TokenRead token = transaction.tokenRead();
             if ( !nodes.next() )
             {
                 throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
@@ -424,7 +425,7 @@ public class NodeProxy implements Node
             CursorFactory cursors = transaction.cursors();
             int itemsToReturn = keys.length;
             Map<String,Object> properties = new HashMap<>( itemsToReturn );
-            Token token = transaction.token();
+            TokenRead token = transaction.tokenRead();
 
             //Find ids, note we are betting on that the number of keys
             //is small enough not to use a set here.
@@ -481,7 +482,7 @@ public class NodeProxy implements Node
               NodeCursor nodes = cursors.allocateNodeCursor();
               PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
         {
-            Token token = transaction.token();
+            TokenRead token = transaction.tokenRead();
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )
             {
@@ -515,7 +516,7 @@ public class NodeProxy implements Node
               Statement ignore = actions.statement()
         )
         {
-            int propertyKey = transaction.token().propertyKey( key );
+            int propertyKey = transaction.tokenRead().propertyKey( key );
             if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new NotFoundException( format( "No such property, '%s'.", key ) );
@@ -556,7 +557,7 @@ public class NodeProxy implements Node
               Statement ignore = actions.statement()
         )
         {
-            int propertyKey = transaction.token().propertyKey( key );
+            int propertyKey = transaction.tokenRead().propertyKey( key );
             if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                return false;

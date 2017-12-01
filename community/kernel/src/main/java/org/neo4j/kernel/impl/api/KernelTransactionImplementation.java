@@ -41,6 +41,8 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -721,7 +723,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Token token()
+    public TokenWrite tokenWrite()
+    {
+        currentStatement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+        accessCapability.assertCanWrite();
+
+        return operations.token();
+    }
+
+    @Override
+    public TokenRead tokenRead()
     {
         return operations.token();
     }

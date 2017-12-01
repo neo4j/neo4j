@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
@@ -102,7 +103,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   private def writes() = transactionalContext.kernelTransaction.dataWrite()
   private def reads() = transactionalContext.kernelTransaction.dataRead()
   private def cursors = transactionalContext.kernelTransaction.cursors()
-  private def token = transactionalContext.kernelTransaction.token()
+  private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
+  private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = {
     if (transactionalContext.isOpen) {
@@ -147,7 +149,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       val labelArray = new Array[TextValue](labelSet.numberOfLabels())
       var i = 0
       while (i < labelSet.numberOfLabels()) {
-        labelArray(i) = Values.stringValue(token.labelGetName(labelSet.label(i)))
+        labelArray(i) = Values.stringValue(tokenRead.labelGetName(labelSet.label(i)))
         i += 1
       }
       VirtualValues.list(labelArray: _*)
@@ -175,7 +177,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def getOrCreateLabelId(labelName: String): Int = token.labelGetOrCreateForName(labelName)
+  override def getOrCreateLabelId(labelName: String): Int = {
+    val id = tokenRead.labelGetForName(labelName)
+    if (id != KeyReadOperations.NO_SUCH_LABEL) id
+    else tokenWrite.labelGetOrCreateForName(labelName)
+  }
 
   def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[EdgeValue] = {
     val relationships = types match {

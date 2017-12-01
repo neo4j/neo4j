@@ -29,6 +29,8 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -89,7 +91,13 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public Token token()
+    public TokenRead tokenRead()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public TokenWrite tokenWrite()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

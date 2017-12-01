@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.Mockito
+import org.mockito.{ArgumentMatchers, Matchers, Mockito}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
@@ -37,7 +39,10 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val id = 17
     val node = nodeProxy(17)
     val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[NodeValue]]
-    when(nodeOps.getByIdIfExists(17)).thenReturn(Some(fromNodeProxy(node)))
+    when(nodeOps.getByIdIfExists(17)).thenAnswer(new Answer[Option[NodeValue]] {
+      override def answer(invocation: InvocationOnMock): Option[NodeValue] = Some(fromNodeProxy(node))
+    })
+
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
@@ -56,9 +61,15 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val node3 = nodeProxy(11)
     val nodeOps = mock[Operations[NodeValue]]
 
-    when(nodeOps.getByIdIfExists(42)).thenReturn(Some(fromNodeProxy(node1)))
-    when(nodeOps.getByIdIfExists(21)).thenReturn(Some(fromNodeProxy(node2)))
-    when(nodeOps.getByIdIfExists(11)).thenReturn(Some(fromNodeProxy(node3)))
+    when(nodeOps.getByIdIfExists(ArgumentMatchers.anyLong())).thenAnswer(new Answer[Option[NodeValue]] {
+      override def answer(invocation: InvocationOnMock): Option[NodeValue] = invocation.getArgument[Long](0) match {
+        case 42 => Some(fromNodeProxy(node1))
+        case 21 => Some(fromNodeProxy(node2))
+        case 11 => Some(fromNodeProxy(node3))
+        case _ => fail()
+      }
+    })
+
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]

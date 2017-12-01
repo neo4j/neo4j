@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -152,7 +153,7 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
-       return storeReadLayer.labelGetOrCreateForName( labelName );
+        return storeReadLayer.labelGetOrCreateForName( checkValidTokenName( labelName ) );
     }
 
     @Override
@@ -177,6 +178,12 @@ public class AllStoreHolder extends Read implements Token
     public String labelGetName( int token ) throws LabelNotFoundKernelException
     {
         return storeReadLayer.labelGetName( token );
+    }
+
+    @Override
+    public int labelGetForName( String name ) throws LabelNotFoundKernelException
+    {
+        return storeReadLayer.labelGetForName( name );
     }
 
     @Override
@@ -324,5 +331,14 @@ public class AllStoreHolder extends Read implements Token
     void getOrCreateRelationshipIndexConfig( String indexName, Map<String,String> customConfig )
     {
         explicitIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
+    }
+
+    private String checkValidTokenName( String name ) throws IllegalTokenNameException
+    {
+        if ( name == null || name.isEmpty() )
+        {
+            throw new IllegalTokenNameException( name );
+        }
+        return name;
     }
 }

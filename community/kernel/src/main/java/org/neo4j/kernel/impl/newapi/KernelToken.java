@@ -66,6 +66,12 @@ public class KernelToken implements Token
     }
 
     @Override
+    public int labelGetForName( String name ) throws LabelNotFoundKernelException
+    {
+        return store.labelGetForName( name );
+    }
+
+    @Override
     public void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
