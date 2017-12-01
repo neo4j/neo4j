@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -43,6 +44,8 @@ import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.refuse_to_be_leader;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
 import static org.neo4j.helpers.SocketAddressParser.socketAddress;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
@@ -141,25 +144,36 @@ public class HazelcastClusterTopology
 
     private static Map<MemberId,ReadReplicaInfo> readReplicas( HazelcastInstance hazelcastInstance )
     {
+        Map<MemberId,ReadReplicaInfo> result = new HashMap<>();
+
         IMap<String/*uuid*/,String/*boltAddress*/> clientAddressMap =
                 hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME );
-
         IMap<String,String> txServerMap = hazelcastInstance.getMap( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME );
         IMap<String,String> memberIdMap = hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP_NAME );
         MultiMap<String,String> serverGroups = hazelcastInstance.getMultiMap( SERVER_GROUPS_MULTIMAP_NAME );
 
-        Map<MemberId,ReadReplicaInfo> result = new HashMap<>();
+        if ( of( clientAddressMap, txServerMap, memberIdMap, serverGroups ).anyMatch( Objects::isNull ) )
+        {
+            return result;
+        }
 
         for ( String hzUUID : clientAddressMap.keySet() )
         {
-            ClientConnectorAddresses clientConnectorAddresses =
-                    ClientConnectorAddresses.fromString( clientAddressMap.get( hzUUID ) );
-            AdvertisedSocketAddress catchupAddress =
-                    socketAddress( txServerMap.get( hzUUID ), AdvertisedSocketAddress::new );
+            String sAddresses = clientAddressMap.get( hzUUID );
+            String sCatchupAddress = txServerMap.get( hzUUID );
+            String sMemberId = memberIdMap.get( hzUUID );
+            Collection<String> sServerGroups = serverGroups.get( hzUUID );
 
-            result.put( new MemberId( UUID.fromString( memberIdMap.get( hzUUID ) ) ),
-                    new ReadReplicaInfo( clientConnectorAddresses, catchupAddress,
-                            asSet( serverGroups.get( hzUUID ) ) ) );
+            if ( concat( of( sServerGroups ), of( sAddresses, sCatchupAddress, sMemberId ) ).anyMatch( Objects::isNull ) )
+            {
+                continue;
+            }
+
+            ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.fromString( sAddresses );
+            AdvertisedSocketAddress catchupAddress = socketAddress( sCatchupAddress, AdvertisedSocketAddress::new );
+
+            ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( clientConnectorAddresses, catchupAddress, asSet( sServerGroups ) );
+            result.put( new MemberId( UUID.fromString( sMemberId ) ), readReplicaInfo );
         }
         return result;
     }
