@@ -215,8 +215,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 throw new IllegalStateException( state.name() );
             }
 
-            long result = delegate.nextId();
-            return result;
+            return delegate.nextId();
         }
 
         @Override
