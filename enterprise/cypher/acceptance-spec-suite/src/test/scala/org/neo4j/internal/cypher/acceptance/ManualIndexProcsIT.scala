@@ -31,6 +31,12 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     GraphDatabaseSettings.relationship_auto_indexing -> "true",
     GraphDatabaseSettings.relationship_keys_indexable -> "weight")
 
+  private def assertIndexExists(indexName: String, doesit: Boolean) = {
+    graph.inTx {
+      graph.index().existsForNodes(indexName) should be(doesit)
+    }
+  }
+
   test("Node from exact key value match") {
     val node = createNode()
     graph.inTx {
@@ -457,25 +463,19 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
   test("should be able to get or create a node index") {
     //Given
-    graph.inTx {
-      graph.index().existsForNodes("usernames") should be(false)
-    }
+    assertIndexExists("usernames", false)
 
     //When
     val result = execute("CALL db.index.explicit.forNodes('usernames') YIELD type, name").toList
     result should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
 
     //Then
-    graph.inTx {
-      graph.index().existsForNodes("usernames") should be(true)
-    }
+    assertIndexExists("usernames", true)
   }
 
   test("cannot get an index with a different type if it exists already") {
     //Given
-    graph.inTx {
-      graph.index().existsForNodes("usernames") should be(false)
-    }
+    assertIndexExists("usernames", false)
 
     //Then
     val result1 = execute("CALL db.index.explicit.forNodes('usernames', {type: 'exact', provider: 'lucene'}) YIELD type, name, config").toList
@@ -491,21 +491,15 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
         |for 'usernames'""".stripMargin)
 
     //And Then
-    graph.inTx {
-      graph.index().existsForNodes("usernames") should be(true)
-    }
+    assertIndexExists("usernames", true)
   }
 
   test("configuring a fulltext index should enable fulltext querying") {
     //Given
-    graph.inTx {
-      graph.index().existsForNodes("usernames") should be(false)
-    }
+    assertIndexExists("usernames", false)
 
     execute("CALL db.index.explicit.forNodes('usernames', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
-    graph.inTx {
-      graph.index().existsForNodes("usernames") should be(true)
-    }
+    assertIndexExists("usernames", true)
 
     execute("CREATE (n {prop:'x'}) WITH n CALL db.index.explicit.addNode('usernames',n,'username','A Satia be') YIELD success RETURN success").toList
     // will only find the node with fulltext index, not with exact
