@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.compatibility.{ExceptionHandler, _}
 import org.neo4j.cypher.internal.frontend.v3_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException => InternalCypherExceptionV3_3}
@@ -105,8 +106,4 @@ object runSafely extends RunSafely {
         throw e
     }
   }
-}
-
-trait RunSafely {
-  def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T
 }

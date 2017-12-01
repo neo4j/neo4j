@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, StatsDivergenceCalculator, Transformer}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.PreParsedQuery
+import org.neo4j.cypher.internal.compatibility.{AstCacheMonitor, CacheAccessor}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -66,7 +67,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
   }
 
-  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends AstCacheMonitor {
+  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends AstCacheMonitor[Statement] {
     override def cacheHit(key: Statement) {
       counts = counts.copy(hits = counts.hits + 1)
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4
 
+import org.neo4j.cypher.internal.compatibility.LFUCache
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class LFUCacheTest extends CypherFunSuite {
