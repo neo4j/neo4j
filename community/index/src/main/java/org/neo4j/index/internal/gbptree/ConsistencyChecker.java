@@ -263,7 +263,7 @@ class ConsistencyChecker<KEY>
             successorGeneration = node.pointerGeneration( cursor, successor );
 
             keyCount = TreeNode.keyCount( cursor );
-            if ( keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount() )
+            if ( !node.reasonableKeyCount( keyCount ) )
             {
                 cursor.setCursorException( "Unexpected keyCount:" + keyCount );
                 continue;

@@ -319,12 +319,12 @@ class TreeNode<KEY,VALUE>
         writeChild( cursor, child, stableGeneration, unstableGeneration );
     }
 
-    static void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration )
+    private static void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration )
     {
         GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
     }
 
-    void insertKeyValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    private void insertKeyValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
     {
         insertKeySlotsAt( cursor, pos, numberOfSlots, keyCount );
         insertValueSlotsAt( cursor, pos, numberOfSlots, keyCount );
@@ -393,6 +393,11 @@ class TreeNode<KEY,VALUE>
     }
 
     // HELPERS
+
+    boolean reasonableKeyCount( int keyCount )
+    {
+        return keyCount >= 0 && keyCount <= Math.max( internalMaxKeyCount(), leafMaxKeyCount() );
+    }
 
     private int keyOffset( int pos )
     {

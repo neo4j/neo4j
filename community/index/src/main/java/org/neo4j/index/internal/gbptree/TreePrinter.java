@@ -160,7 +160,7 @@ public class TreePrinter<KEY, VALUE>
         {
             isLeaf = TreeNode.isLeaf( cursor );
             keyCount = TreeNode.keyCount( cursor );
-            if ( keyCount < 0 || (keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount()) )
+            if ( !node.reasonableKeyCount( keyCount ) )
             {
                 cursor.setCursorException( "Unexpected keyCount " + keyCount );
             }
