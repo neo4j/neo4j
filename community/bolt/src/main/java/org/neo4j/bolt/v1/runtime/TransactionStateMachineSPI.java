@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
@@ -100,6 +101,13 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     public KernelTransaction beginTransaction( SecurityContext securityContext )
     {
         db.beginTransaction( KernelTransaction.Type.explicit, securityContext );
+        return txBridge.getKernelTransactionBoundToThisThread( false );
+    }
+
+    @Override
+    public KernelTransaction beginTransaction( SecurityContext securityContext, long timeout, TimeUnit timeUnit )
+    {
+        db.beginTransaction( KernelTransaction.Type.explicit, securityContext, timeout, timeUnit );
         return txBridge.getKernelTransactionBoundToThisThread( false );
     }
 

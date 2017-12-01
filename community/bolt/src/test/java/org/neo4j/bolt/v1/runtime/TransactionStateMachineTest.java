@@ -22,32 +22,29 @@ package org.neo4j.bolt.v1.runtime;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.util.ValueUtils;
-import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.time.FakeClock;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -422,6 +419,32 @@ public class TransactionStateMachineTest
         {
             fail( "expected TransactionTerminated but got " + t.getMessage() );
         }
+    }
+
+    @Test
+    public void shouldBeginTxWithTimeoutIfProvided() throws Throwable
+    {
+        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        // start an explicit transaction
+        stateMachine.run( "BEGIN", map("txTimeout", 1234L ) );
+        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+
+        verify( stateMachineSPI, times( 1 ) ).beginTransaction( any(), eq(1234L), eq(TimeUnit.MILLISECONDS) );
+    }
+
+    @Test
+    public void shouldBeginTxWithoutTimeoutIfNotPresent() throws Throwable
+    {
+        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        // start an explicit transaction
+        stateMachine.run( "BEGIN", map("no timeout provided", 1234L ) );
+        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+
+        verify( stateMachineSPI, times( 1 ) ).beginTransaction( any() );
     }
 
     private static KernelTransaction newTransaction()
