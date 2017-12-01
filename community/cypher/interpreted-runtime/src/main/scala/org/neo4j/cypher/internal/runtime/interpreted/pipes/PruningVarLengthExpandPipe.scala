@@ -276,7 +276,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
           case Some(node: NodeValue) =>
             nextState(row, node)
           case Some(nodeRef: NodeReference) =>
-            val node = ValueUtils.fromNodeProxy(state.query.nodeOps.getById(nodeRef.id()))
+            val node = state.query.nodeOps.getById(nodeRef.id())
             nextState(row, node)
           case Some(x: Value) if x == Values.NO_VALUE =>
             (Empty, null)

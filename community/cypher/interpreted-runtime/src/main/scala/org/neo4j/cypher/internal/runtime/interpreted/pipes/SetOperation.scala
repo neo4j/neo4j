@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
@@ -74,7 +73,7 @@ object SetOperation {
 
 abstract class AbstractSetPropertyOperation extends SetOperation {
 
-  protected def setProperty[T <: PropertyContainer](context: ExecutionContext, state: QueryState, ops: Operations[T],
+  protected def setProperty[T](context: ExecutionContext, state: QueryState, ops: Operations[T],
                                                     itemId: Long, propertyKey: LazyPropertyKey,
                                                     expression: Expression) = {
     val queryContext = state.query
@@ -91,7 +90,7 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
   }
 }
 
-abstract class SetEntityPropertyOperation[T <: PropertyContainer](itemName: String, propertyKey: LazyPropertyKey,
+abstract class SetEntityPropertyOperation[T](itemName: String, propertyKey: LazyPropertyKey,
                                                                   expression: Expression)
   extends AbstractSetPropertyOperation {
 
@@ -161,10 +160,10 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
   override def needsExclusiveLock = true
 }
 
-abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: String, expression: Expression,
+abstract class SetPropertyFromMapOperation[T](itemName: String, expression: Expression,
                                                                    removeOtherProps: Boolean) extends SetOperation {
   override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val item = executionContext.get(itemName).get
+    val item = executionContext(itemName)
     if (item != Values.NO_VALUE) {
       val ops = operations(state.query)
       val itemId = id(item)
