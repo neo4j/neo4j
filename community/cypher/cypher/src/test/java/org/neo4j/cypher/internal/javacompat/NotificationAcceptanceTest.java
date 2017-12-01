@@ -83,37 +83,6 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_4() throws Exception
-    {
-        // when
-        Result result = db().execute( "CYPHER 3.4 planner=rule RETURN 1" );
-        InputPosition position = new InputPosition( 24, 1, 25 );
-
-        // then
-        assertThat( result.getNotifications(), Matchers.contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
-        assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
-        result.close();
-    }
-
-    //TODO unignore when support for 3.3 is added
-    @Ignore
-    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_3() throws Exception
-    {
-        // when
-        Result result = db().execute( "CYPHER 3.3 planner=rule RETURN 1" );
-        InputPosition position = new InputPosition( 24, 1, 25 );
-
-        // then
-        assertThat( result.getNotifications(), Matchers.contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
-        assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
-        result.close();
-    }
-
-    @Test
     public void shouldWarnWhenRequestingCompiledRuntimeOnUnsupportedQuery() throws Exception
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach(

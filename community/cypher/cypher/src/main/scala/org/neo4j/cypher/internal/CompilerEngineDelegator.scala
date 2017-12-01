@@ -102,7 +102,8 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
   )
 
-  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled))
+  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled), (CypherPlanner.rule, CypherRuntime.slotted))
+  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlanner, CypherVersion)] = Set((CypherPlanner.rule, CypherVersion.v3_3), (CypherPlanner.rule, CypherVersion.v3_4))
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = exceptionHandler.runSafely {
@@ -117,7 +118,11 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     val pickedRuntime = pick(runtime, CypherRuntime, if (cypherVersion == configuredVersion) Some(configuredRuntime) else None)
     val pickedUpdateStrategy = pick(updateStrategy, CypherUpdateStrategy, None)
 
-    assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
+    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((pickedPlanner, pickedRuntime)))
+      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${pickedPlanner.name} - ${pickedRuntime.name}")
+    // Only disallow using rule if incompatible version is explicitly requested
+    if (version.isDefined && ILLEGAL_PLANNER_VERSION_COMBINATIONS((pickedPlanner, cypherVersion)))
+      throw new InvalidArgumentException(s"Unsupported PLANNER - VERSION combination: ${pickedPlanner.name} - ${cypherVersion.name}")
 
     PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode,
       pickedPlanner, pickedRuntime, pickedUpdateStrategy, debugOptions)(offset)
@@ -126,13 +131,6 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   private def pick[O <: CypherOption](candidate: Option[O], companion: CypherOptionCompanion[O], configured: Option[O]): O = {
     val specified = candidate.getOrElse(companion.default)
     if (specified == companion.default) configured.getOrElse(specified) else specified
-  }
-
-  private def assertValidOptions(statementWithOption: CypherStatementWithOptions,
-                                 cypherVersion: CypherVersion, executionMode: CypherExecutionMode,
-                                 planner: CypherPlanner, runtime: CypherRuntime) {
-    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner, runtime)))
-      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${planner.name} - ${runtime.name}")
   }
 
   @throws(classOf[SyntaxException])
