@@ -64,7 +64,7 @@ public class InternalTreeLogicTest
 
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( pageSize, layout );
+    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( pageSize, layout );
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
 
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
@@ -1531,7 +1531,7 @@ public class InternalTreeLogicTest
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );
-        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration ).printTree( cursor, cursor, System.out, true, true, true );
+        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration ).printTree( cursor, cursor, System.out, false, false, false );
         cursor.next( currentPageId );
     }
 

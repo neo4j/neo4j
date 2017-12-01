@@ -77,7 +77,7 @@ public class ConsistencyCheckerTest
         // GIVEN
         int pageSize = 256;
         Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-        TreeNode<MutableLong,MutableLong> node = new TreeNode<>( pageSize, layout );
+        TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( pageSize, layout );
         long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;
         SimpleIdProvider idProvider = new SimpleIdProvider();

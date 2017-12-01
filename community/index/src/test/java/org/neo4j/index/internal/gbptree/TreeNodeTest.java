@@ -49,7 +49,7 @@ public class TreeNodeTest
     private static final int PAGE_SIZE = 512;
     private final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
+    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( PAGE_SIZE, layout );
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -528,7 +528,7 @@ public class TreeNodeTest
         // WHEN
         try
         {
-            new TreeNode<>( TreeNode.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
+            new TreeNodeFixedSize<>( TreeNode.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )
