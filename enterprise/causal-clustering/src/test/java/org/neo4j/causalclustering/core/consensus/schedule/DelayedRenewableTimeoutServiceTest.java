@@ -220,7 +220,8 @@ public class DelayedRenewableTimeoutServiceTest
                 NullLogProvider.getInstance() );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, t -> {
+        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, t ->
+        {
             t.renew();
             timeoutCount.incrementAndGet();
             try
