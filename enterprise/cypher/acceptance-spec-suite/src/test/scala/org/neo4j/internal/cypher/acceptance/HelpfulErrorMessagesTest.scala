@@ -56,6 +56,10 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
     intercept[Exception](graph.execute("CYPHER 3.3 planner=rule RETURN 1")).getMessage should be("Unsupported PLANNER - VERSION combination: rule - 3.3")
   }
 
+  test("should provide sensible error message for 3.2 rule planner") {
+    intercept[Exception](graph.execute("CYPHER 3.2 planner=rule RETURN 1")).getMessage should be("Unsupported PLANNER - VERSION combination: rule - 3.2")
+  }
+
   test("should not fail for specifying rule planner if no version specified") {
     graph.execute("CYPHER planner=rule RETURN 1") // should not fail
   }
