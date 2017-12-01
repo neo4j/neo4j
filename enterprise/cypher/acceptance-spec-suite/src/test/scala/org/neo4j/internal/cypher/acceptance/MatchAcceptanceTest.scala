@@ -851,8 +851,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |  RETURN DISTINCT req.eid, y.eid
       """.stripMargin
 
-    // Fixed in 3.2.8
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost3_2, query)
+    val result = executeWith(Configs.CommunityInterpreted, query)
 
     result.toList should equal(List(Map("req.eid" -> null, "y.eid" -> null)))
   }
