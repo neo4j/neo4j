@@ -32,7 +32,7 @@ public class LongKeyLongValueTable
     @Override
     public long key( int index )
     {
-        return getLong( index( index ) );
+        return getLong( address( index ) );
     }
 
     @Override
@@ -45,7 +45,7 @@ public class LongKeyLongValueTable
     @Override
     public long[] putValue( int index, long[] value )
     {
-        int actualValueIndex = index( index ) + 2;
+        int actualValueIndex = address( index ) + 2;
         long previous = getLong( actualValueIndex );
         putLong( actualValueIndex, value[0] );
         return pack( previous );
@@ -54,7 +54,7 @@ public class LongKeyLongValueTable
     @Override
     public long[] value( int index )
     {
-        return pack( getLong( index( index ) + 2 ) );
+        return pack( getLong( address( index ) + 2 ) );
     }
 
     @Override
