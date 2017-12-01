@@ -46,8 +46,8 @@ public interface ExplicitIndexWrite
      *
      * @param indexName The name of the index
      * @param node The id of the node to remove
-     * @param key The key to associate with the node
-     * @param value The value to associate with the node and key
+     * @param key The key associated with the node
+     * @param value The value associated with the node and key
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
@@ -58,7 +58,7 @@ public interface ExplicitIndexWrite
      *
      * @param indexName The name of the index
      * @param node The id of the node to remove
-     * @param key The key to associate with the node
+     * @param key The key associated with the node
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void nodeRemoveFromExplicitIndex( String indexName, long node, String key ) throws
@@ -90,8 +90,8 @@ public interface ExplicitIndexWrite
      *
      * @param indexName The name of the index
      * @param relationship The id of the relationship to remove
-     * @param key The key to associate with the relationship
-     * @param value The value to associate with the relationship and key
+     * @param key The key associated with the relationship
+     * @param value The value associated with the relationship and key
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
@@ -102,7 +102,7 @@ public interface ExplicitIndexWrite
      *
      * @param indexName The name of the index
      * @param relationship The id of the relationship to remove
-     * @param key The key to associate with the relationship
+     * @param key The key associated with the relationship
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )

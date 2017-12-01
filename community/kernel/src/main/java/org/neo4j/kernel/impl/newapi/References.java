@@ -146,24 +146,24 @@ class References
      *
      * This allows us to encode a node reference as a property reference so that we can do lookups of changes in the
      * transaction state.
-     * @param reference the reference to encode
+     * @param nodeReference the reference to encode
      * @return The encoded reference
      */
-    static long setNodeFlag( long reference )
+    static long setNodeFlag( long nodeReference )
     {
-        return reference | NODE_MARKER | FLAG_MARKER;
+        return nodeReference | NODE_MARKER | FLAG_MARKER;
     }
 
     /**
      * Checks if the property reference really is a node reference
      *
-     * @param nodeReference The reference to check
+     * @param reference The reference to check
      * @return <tt>true</tt>if the reference refers to a node otherwise <tt>false</tt>
      */
-    static boolean hasNodeFlag( long nodeReference )
+    static boolean hasNodeFlag( long reference )
     {
-        assert nodeReference != NO_ID;
-        return (nodeReference & NODE_MARKER) != 0L;
+        assert reference != NO_ID;
+        return (reference & NODE_MARKER) != 0L;
     }
 
     /**
