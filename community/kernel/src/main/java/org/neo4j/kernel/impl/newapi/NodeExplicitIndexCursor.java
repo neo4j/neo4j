@@ -97,4 +97,18 @@ class NodeExplicitIndexCursor extends IndexCursor
     {
         return super.isClosed();
     }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "NodeExplicitIndexCursor[closed state]";
+        }
+        else
+        {
+            return "NodeExplicitIndexCursor[node=" + node + ", expectedSize=" + expectedSize + ", score=" + score +
+                    " ,underlying record=" + super.toString() + " ]";
+        }
+    }
 }

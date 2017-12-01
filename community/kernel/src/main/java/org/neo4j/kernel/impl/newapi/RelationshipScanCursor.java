@@ -125,4 +125,18 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
     {
         return pageCursor == null;
     }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "RelationshipScanCursor[closed state]";
+        }
+        else
+        {
+            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", label=" + label +
+                    ", underlying record=" + super.toString() + " ]";
+        }
+    }
 }

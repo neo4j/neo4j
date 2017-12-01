@@ -22,7 +22,11 @@ package org.neo4j.internal.kernel.api;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import java.io.IOException;
 
@@ -44,6 +48,27 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 @SuppressWarnings( "WeakerAccess" )
 public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
 {
+    public class ConditionalTeardown implements TestRule
+    {
+        public Statement apply( Statement base, Description description )
+        {
+            return statement( base, description );
+        }
+
+        private Statement statement( final Statement base, final Description description )
+        {
+            return new Statement()
+            {
+                @Override
+                public void evaluate() throws Throwable
+                {
+                    base.evaluate();
+                    checkCursors();  // only done if test succeeds
+                }
+            };
+        }
+    }
+
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIReadTestSupport testSupport;
     private Session session;
@@ -86,12 +111,19 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         schemaRead = tx.schemaRead();
     }
 
+    @Rule
+    public ConditionalTeardown conditionalTeardown = new ConditionalTeardown();
+
     @After
     public void closeTransaction() throws Exception
     {
         tx.success();
         tx.close();
         session.close();
+    }
+
+    public void checkCursors()
+    {
         cursors.assertAllClosedAndReset();
     }
 

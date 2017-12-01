@@ -123,4 +123,18 @@ class RelationshipExplicitIndexCursor extends IndexCursor
     {
         return super.isClosed();
     }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "RelationshipExplicitIndexCursor[closed state]";
+        }
+        else
+        {
+            return "RelationshipExplicitIndexCursor[relationship=" + relationship + ", expectedSize=" + expectedSize + ", score=" + score +
+                    " ,underlying record=" + super.toString() + " ]";
+        }
+    }
 }

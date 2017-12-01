@@ -287,6 +287,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             pageCursor = null;
         }
         read = null;
+
         if ( labelCursor != null )
         {
             labelCursor.close();
@@ -351,5 +352,18 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private boolean isSingle()
     {
         return highMark == NO_ID;
+    }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "NodeCursor[closed state]";
+        }
+        else
+        {
+            return "NodeCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", underlying record=" + super.toString() + " ]";
+        }
     }
 }
