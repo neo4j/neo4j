@@ -416,27 +416,27 @@ class InternalTreeLogic<KEY,VALUE>
     {
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
-        if ( keyCount < bTreeNode.internalMaxKeyCount() )
+
+        if ( bTreeNode.internalOverflow( keyCount + 1 ) )
         {
-            // No overflow
-            int pos = positionOf( search( cursor, INTERNAL, primKey, readKey, keyCount ) );
-
-            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, INTERNAL );
-            // NOTE pos+1 since we never insert a new child before child(0) because its key is really
-            // the one from the parent.
-            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, stableGeneration, unstableGeneration );
-
-            // Increase key count
-            TreeNode.setKeyCount( cursor, keyCount + 1 );
-
+            // Overflow
+            // We will overwrite rightKey in structurePropagation, so copy it over to a place holder
+            layout.copyKey( structurePropagation.rightKey, newKeyPlaceHolder );
+            splitInternal( cursor, structurePropagation, newKeyPlaceHolder, rightChild, keyCount,
+                    stableGeneration, unstableGeneration );
             return;
         }
 
-        // Overflow
-        // We will overwrite rightKey in structurePropagation, so copy it over to a place holder
-        layout.copyKey( structurePropagation.rightKey, newKeyPlaceHolder );
-        splitInternal( cursor, structurePropagation, newKeyPlaceHolder, rightChild, keyCount,
-                stableGeneration, unstableGeneration );
+        // No overflow
+        int pos = positionOf( search( cursor, INTERNAL, primKey, readKey, keyCount ) );
+
+        bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, INTERNAL );
+        // NOTE pos+1 since we never insert a new child before child(0) because its key is really
+        // the one from the parent.
+        bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, stableGeneration, unstableGeneration );
+
+        // Increase key count
+        TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
     /**
@@ -548,16 +548,16 @@ class InternalTreeLogic<KEY,VALUE>
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
 
-        if ( keyCount < bTreeNode.leafMaxKeyCount() )
+        if ( bTreeNode.leafOverflow( keyCount + 1 ) )
         {
-            // No overflow, insert key and value
-            bTreeNode.insertKeyValueAt( cursor, key, value, pos, keyCount );
-            TreeNode.setKeyCount( cursor, keyCount + 1 );
-
-            return; // No split has occurred
+            // Overflow, split leaf
+            splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGeneration, unstableGeneration );
+            return;
         }
-        // Overflow, split leaf
-        splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGeneration, unstableGeneration );
+
+        // No overflow, insert key and value
+        bTreeNode.insertKeyValueAt( cursor, key, value, pos, keyCount );
+        TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
     /**
@@ -1010,7 +1010,7 @@ class InternalTreeLogic<KEY,VALUE>
                 stableGeneration, unstableGeneration );
         keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos );
 
-        if ( keyCount < (bTreeNode.leafMaxKeyCount() + 1) / 2 )
+        if ( bTreeNode.leafUnderflow( keyCount ) )
         {
             // Underflow
             underflowInLeaf( cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration );
@@ -1035,7 +1035,7 @@ class InternalTreeLogic<KEY,VALUE>
                 leftSiblingCursor.next();
                 int leftSiblingKeyCount = TreeNode.keyCount( leftSiblingCursor );
 
-                if ( keyCount + leftSiblingKeyCount >= bTreeNode.leafMaxKeyCount() )
+                if ( bTreeNode.canRebalanceLeaves( leftSiblingKeyCount, keyCount ) )
                 {
                     createSuccessorIfNeeded( leftSiblingCursor, structurePropagation,
                             StructurePropagation.UPDATE_LEFT_CHILD, stableGeneration, unstableGeneration );
@@ -1058,7 +1058,7 @@ class InternalTreeLogic<KEY,VALUE>
                 rightSiblingCursor.next();
                 int rightSiblingKeyCount = TreeNode.keyCount( rightSiblingCursor );
 
-                if ( keyCount + rightSiblingKeyCount <= bTreeNode.leafMaxKeyCount() )
+                if ( bTreeNode.canMergeLeaves( keyCount, rightSiblingKeyCount ) )
                 {
                     createSuccessorIfNeeded( rightSiblingCursor, structurePropagation, UPDATE_RIGHT_CHILD,
                             stableGeneration, unstableGeneration );

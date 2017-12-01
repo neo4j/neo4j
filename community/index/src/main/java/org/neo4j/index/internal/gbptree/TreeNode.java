@@ -449,6 +449,31 @@ class TreeNode<KEY,VALUE>
 
     /* SPLIT, MERGE AND REBALANCE */
 
+    boolean internalOverflow( int keyCount )
+    {
+        return keyCount > internalMaxKeyCount();
+    }
+
+    boolean leafOverflow( int keyCount )
+    {
+        return keyCount > leafMaxKeyCount();
+    }
+
+    boolean leafUnderflow( int keyCount )
+    {
+        return keyCount < (leafMaxKeyCount() + 1) / 2;
+    }
+
+    boolean canRebalanceLeaves( int leftKeyCount, int rightKeyCount )
+    {
+        return leftKeyCount + rightKeyCount >= leafMaxKeyCount();
+    }
+
+    boolean canMergeLeaves( int leftKeyCount, int rightKeyCount )
+    {
+        return leftKeyCount + rightKeyCount <= leafMaxKeyCount();
+    }
+
     /**
      * Performs the entry moving part of split in leaf.
      *
