@@ -155,7 +155,6 @@ public class PhysicalLogicalTransactionStoreTest
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 100 );
-        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2;
         int authorId = 1;
@@ -296,7 +295,6 @@ public class PhysicalLogicalTransactionStoreTest
     public void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound() throws Exception
     {
         // GIVEN
-        LogFile logFile = mock( LogFile.class );
         LogFiles logFiles = mock( LogFiles.class );
         TransactionMetadataCache cache = new TransactionMetadataCache( 10 );
 
@@ -455,7 +453,7 @@ public class PhysicalLogicalTransactionStoreTest
             return false;
         }
 
-        public int getVisitedTransactions()
+        int getVisitedTransactions()
         {
             return visitedTransactions;
         }

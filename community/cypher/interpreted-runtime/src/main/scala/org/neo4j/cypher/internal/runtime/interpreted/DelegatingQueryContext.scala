@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
@@ -43,11 +46,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits[A](value: RelationshipIterator): RelationshipIterator = value
   protected def manyDbHits(count: Int): Int = count
 
-  type EntityAccessor = inner.EntityAccessor
 
   override def transactionalContext: QueryTransactionalContext = inner.transactionalContext
 
-  override def entityAccessor: EntityAccessor = inner.entityAccessor
+  override def entityAccessor: NodeManager = inner.entityAccessor
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.setLabelsOnNode(node, labelIds))
@@ -278,13 +280,9 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
 
-  override type ReadOps = inner.ReadOps
+  override def readOperations: ReadOperations = inner.readOperations
 
-  override type DbmsOps = inner.DbmsOps
-
-  override def readOperations: ReadOps = inner.readOperations
-
-  override def dbmsOperations: DbmsOps = inner.dbmsOperations
+  override def dbmsOperations: DbmsOperations = inner.dbmsOperations
 
   override def commitAndRestartTx() { inner.commitAndRestartTx() }
 

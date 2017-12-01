@@ -24,7 +24,7 @@ import java.util.UUID
 import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
 import org.neo4j.cypher.internal.util.v3_4.ParameterNotFoundException
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MutableMaps}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.values.AnyValue
@@ -37,7 +37,7 @@ class QueryState(val query: QueryContext,
                  val params: MapValue,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val timeReader: TimeReader = new TimeReader,
-                 var initialContext: Option[ExecutionContext] = None,
+                 val initialContext: Option[ExecutionContext] = None,
                  val queryId: AnyRef = UUID.randomUUID().toString,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
@@ -45,7 +45,8 @@ class QueryState(val query: QueryContext,
                    new SingleThreadedLRUCache(maxSize = 16)) {
   private var _pathValueBuilder: PathValueBuilder = _
 
-  def createOrGetInitialContext(): ExecutionContext = initialContext.getOrElse(ExecutionContext.empty)
+  def createOrGetInitialContext(factory: ExecutionContextFactory): ExecutionContext =
+    initialContext.getOrElse(ExecutionContext.empty)
 
   def clearPathValueBuilder: PathValueBuilder = {
     if (_pathValueBuilder == null) {
@@ -87,4 +88,16 @@ object QueryState {
 
 class TimeReader {
   lazy val getTime: Long = System.currentTimeMillis()
+}
+
+trait ExecutionContextFactory {
+  def newExecutionContext(m: mutable.Map[String, AnyValue] = MutableMaps.empty): ExecutionContext
+  def newExecutionContext(): ExecutionContext
+}
+
+case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
+  override def newExecutionContext(m: mutable.Map[String, AnyValue] = MutableMaps.empty): ExecutionContext =
+    ExecutionContext(m)
+
+  override def newExecutionContext(): ExecutionContext = ExecutionContext.empty
 }

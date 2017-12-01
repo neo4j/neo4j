@@ -18,34 +18,15 @@ package org.neo4j.cypher.internal.v3_4.expressions
 
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 
-class Variable(val name: String)(val position: InputPosition) extends Expression {
+case class Variable(name: String)(val position: InputPosition) extends LogicalVariable {
 
-  def copyId: Variable = copy()(position)
+  override def copyId = copy()(position)
 
-  def renameId(newName: String): Variable = copy(name = newName)(position)
+  override def renameId(newName: String) = copy(name = newName)(position)
 
-  def bumpId: Variable = copy()(position.bumped())
+  override def bumpId = copy()(position.bumped())
 
   override def asCanonicalStringVal: String = name
-
-  //--------------------------------------------------------------------------------------------------
-  // The methods below are what we would get automatically if this was a case class
-  //--------------------------------------------------------------------------------------------------
-  def copy(name: String = this.name)(position: InputPosition): Variable = new Variable(name)(position)
-
-  override def productElement(n: Int) =
-    if (n == 0) name
-    else throw new java.lang.IndexOutOfBoundsException(n.toString)
-
-  override def productArity = 1
-
-  override def canEqual(that: Any) = that.isInstanceOf[Variable]
-
-  override def toString: String = s"Variable($name)"
-
-  override def hashCode(): Int = runtime.ScalaRunTime._hashCode(Variable.this)
-
-  override def equals(obj: scala.Any): Boolean = runtime.ScalaRunTime._equals(Variable.this, obj)
 }
 
 object Variable {
@@ -53,8 +34,4 @@ object Variable {
     Ordering.by { (variable: Variable) =>
       (variable.name, variable.position)
     }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
-
-  def apply(name: String)(position: InputPosition) = new Variable(name)(position)
-
-  def unapply(arg: Variable): Option[String] = Some(arg.name)
 }

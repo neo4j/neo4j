@@ -30,11 +30,11 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
   val identA = varFor("a")
   val astNull: Null = Null()_
 
-  val mapN = Map(identN -> astNull)
-  val mapM = Map(identM -> astNull)
-  val mapA = Map(identA -> astNull)
+  val mapN = Map[LogicalVariable, Expression](identN -> astNull)
+  val mapM = Map[LogicalVariable, Expression](identM -> astNull)
+  val mapA = Map[LogicalVariable, Expression](identA -> astNull)
 
-  val mapAtoN = Map(identA -> identN)
+  val mapAtoN = Map[LogicalVariable, Expression](identA -> identN)
 
   test("update projections on enterQueryPart") {
     val ctx = InliningContext(mapM).enterQueryPart(mapN)

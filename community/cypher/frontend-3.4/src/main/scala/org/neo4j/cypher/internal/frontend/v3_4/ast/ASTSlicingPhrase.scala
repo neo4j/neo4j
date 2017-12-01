@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v3_4.expressions._
 trait ASTSlicingPhrase extends SemanticCheckable with SemanticAnalysisTooling {
   self: ASTNode =>
   def name: String
-  def dependencies: Set[Variable] = expression.dependencies
+  def dependencies: Set[LogicalVariable] = expression.dependencies
   def expression: Expression
 
   def semanticCheck: SemanticCheck =

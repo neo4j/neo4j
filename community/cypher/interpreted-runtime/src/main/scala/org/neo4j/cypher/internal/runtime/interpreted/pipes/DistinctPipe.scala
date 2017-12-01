@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.util.v3_4.Eagerly
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
@@ -40,7 +40,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
     // Run the return item expressions, and replace the execution context's with their values
     val result = input.map(ctx => {
       val newMap = Eagerly.mutableMapValues(expressions, (expression: Expression) => expression(ctx, state))
-      MapExecutionContext(newMap)
+      executionContextFactory.newExecutionContext(newMap)
     })
 
     /*

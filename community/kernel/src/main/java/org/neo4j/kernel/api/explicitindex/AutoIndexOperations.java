@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.explicitindex;
 
 import java.util.Set;
 
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.values.storable.Value;
@@ -44,7 +46,10 @@ public interface AutoIndexOperations
     void propertyRemoved( DataWriteOperations ops, long entityId, int propertyKey )
         throws AutoIndexingKernelException;
 
+    //TODO this method should be removed once fully migrated
     void entityRemoved( DataWriteOperations ops, long entityId ) throws AutoIndexingKernelException;
+
+    void entityRemoved( ExplicitIndexWrite write, long entityId ) throws KernelException;
 
     boolean enabled();
     void enabled( boolean enabled );
@@ -82,6 +87,12 @@ public interface AutoIndexOperations
 
         @Override
         public void entityRemoved( DataWriteOperations ops, long entityId ) throws AutoIndexingKernelException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void entityRemoved( ExplicitIndexWrite write, long entityId ) throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }

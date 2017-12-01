@@ -28,12 +28,7 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
     private long highMark;
     private PageCursor pageCursor;
 
-    RelationshipScanCursor( Read read )
-    {
-        super( read );
-    }
-
-    void scan( int label )
+    void scan( int label, Read read )
     {
         if ( getId() != NO_ID )
         {
@@ -46,9 +41,10 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
         next = 0;
         this.label = label;
         highMark = read.relationshipHighMark();
+        this.read = read;
     }
 
-    void single( long reference )
+    void single( long reference, Read read )
     {
         if ( getId() != NO_ID )
         {
@@ -61,6 +57,7 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
         next = reference;
         label = -1;
         highMark = NO_ID;
+        this.read = read;
     }
 
     @Override

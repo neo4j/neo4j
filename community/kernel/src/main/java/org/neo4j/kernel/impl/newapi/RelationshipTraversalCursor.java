@@ -90,29 +90,29 @@ class RelationshipTraversalCursor extends RelationshipCursor
     private FilterState filterState;
     private int filterType = NO_ID;
 
-    RelationshipTraversalCursor( Read read )
+    RelationshipTraversalCursor( RelationshipGroupCursor group )
     {
-        super( read );
-        this.group = new RelationshipGroupCursor( read );
+        this.group = group;
     }
 
     /*
      * Cursor being called as a group, use the buffered records in Record
      * instead.
      */
-    void buffered( long nodeReference, Record record )
+    void buffered( long nodeReference, Record record, Read read )
     {
         this.originNodeReference = nodeReference;
         this.buffer = Record.initialize( record );
         this.groupState = GroupState.NONE;
         this.filterState = FilterState.NONE;
         this.filterType = NO_ID;
+        this.read = read;
     }
 
     /*
      * Normal traversal.
      */
-    void chain( long nodeReference, long reference )
+    void chain( long nodeReference, long reference, Read read )
     {
         if ( pageCursor == null )
         {
@@ -124,12 +124,13 @@ class RelationshipTraversalCursor extends RelationshipCursor
         filterType = NO_ID;
         originNodeReference = nodeReference;
         next = reference;
+        this.read = read;
     }
 
     /*
      * Reference to a group record
      */
-    void groups( long nodeReference, long groupReference )
+    void groups( long nodeReference, long groupReference, Read read )
     {
         setId( NO_ID );
         next = NO_ID;
@@ -138,9 +139,10 @@ class RelationshipTraversalCursor extends RelationshipCursor
         filterType = NO_ID;
         originNodeReference = nodeReference;
         read.relationshipGroups( nodeReference, groupReference, group );
+        this.read = read;
     }
 
-    void filtered( long nodeReference, long reference )
+    void filtered( long nodeReference, long reference, Read read )
     {
         if ( pageCursor == null )
         {
@@ -151,6 +153,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
         filterState = FilterState.NOT_INITIALIZED;
         originNodeReference = nodeReference;
         next = reference;
+        this.read = read;
     }
 
     @Override

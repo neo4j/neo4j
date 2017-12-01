@@ -56,7 +56,7 @@ public class BatchingNeoStoresIT
                 .batchingNeoStores( fileSystem, storeDir, RecordFormatSelector.defaultFormat(), Configuration.DEFAULT,
                         logService, AdditionalInitialIds.EMPTY, config ) )
         {
-            // empty block
+            batchingNeoStores.createNew();
         }
         provider.assertNone( AssertableLogProvider.inLog( MetricsExtension.class ).any() );
     }

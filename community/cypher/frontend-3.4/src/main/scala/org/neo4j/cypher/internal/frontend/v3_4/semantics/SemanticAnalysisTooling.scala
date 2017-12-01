@@ -167,14 +167,14 @@ trait SemanticAnalysisTooling {
       case e:java.lang.NumberFormatException => false
     }
 
-  def ensureDefined(v:Variable): (SemanticState) => Either[SemanticError, SemanticState] =
+  def ensureDefined(v:LogicalVariable): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).ensureVariableDefined(v)
 
-  def declareVariable(v:Variable, possibleTypes: TypeSpec): (SemanticState) => Either[SemanticError, SemanticState] =
+  def declareVariable(v:LogicalVariable, possibleTypes: TypeSpec): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).declareVariable(v, possibleTypes)
 
   def declareVariable(
-                       v:Variable,
+                       v:LogicalVariable,
                        typeGen: TypeGenerator,
                        positions: Set[InputPosition] = Set.empty
                      ): (SemanticState) => Either[SemanticError, SemanticState] =

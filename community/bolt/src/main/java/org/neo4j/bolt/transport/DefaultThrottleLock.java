@@ -17,35 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.bolt.transport;
 
-import java.util.Random;
+import io.netty.channel.Channel;
 
-/**
- * Distributes the given items so that item[0] converges towards being returned 1/2 of the times,
- * the next item, item[1] 1/4 of the times, item[2] 1/8 and so on.
- */
-public class Distribution<T>
+public class DefaultThrottleLock implements ThrottleLock
 {
-    private final T[] items;
+    private final Object syncObject = new Object();
 
-    public Distribution( T[] items )
+    @Override
+    public void lock( Channel channel, long timeout ) throws InterruptedException
     {
-        this.items = items;
+        synchronized ( syncObject )
+        {
+            syncObject.wait( timeout );
+        }
     }
 
-    public T random( Random random )
+    @Override
+    public void unlock( Channel channel )
     {
-        float value = random.nextFloat();
-        float comparison = 0.5f;
-        for ( int i = 0; i < items.length; i++ )
+        synchronized ( syncObject )
         {
-            if ( value >= comparison )
-            {
-                return items[i];
-            }
-            comparison /= 2f;
+            syncObject.notifyAll();
         }
-        return items[items.length - 1];
     }
 }

@@ -110,12 +110,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> parameters()
+    public static Collection<SchemaIndexProvider.Descriptor> parameters()
     {
-        return asList(
-                new Object[]{LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR},
-                new Object[]{NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR},
-                new Object[]{InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR} );
+        return asList( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR,
+                NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR,
+                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
     }
 
     @Parameterized.Parameter( 0 )

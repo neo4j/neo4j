@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.LongSupplier;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -237,10 +238,13 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
      * but the incremented log version changed hadn't made it to persistent storage.
      *
      * @param forVersion log version for the file/channel to create.
+     * @param mode mode in which open log file
+     * @param lastTransactionIdSupplier supplier of last transaction id that was written into previous log file
      * @return {@link PhysicalLogVersionedStoreChannel} for newly created/opened log file.
      * @throws IOException if there's any I/O related error.
      */
-    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, OpenMode mode ) throws IOException
+    PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, OpenMode mode,
+            LongSupplier lastTransactionIdSupplier ) throws IOException
     {
         File toOpen = getLogFileForVersion( forVersion );
         StoreChannel storeChannel = fileSystem.open( toOpen, mode );
@@ -249,7 +253,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         if ( header == null )
         {
             // Either the header is not there in full or the file was new. Don't care
-            long lastTxId = logFilesContext.getLastCommittedTransactionId();
+            long lastTxId = lastTransactionIdSupplier.getAsLong();
             writeLogHeader( headerBuffer, forVersion, lastTxId );
             logHeaderCache.putHeader( forVersion, lastTxId );
             storeChannel.writeAll( headerBuffer );

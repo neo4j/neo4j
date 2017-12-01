@@ -582,7 +582,7 @@ public class StateHandlingStatementOperations implements
         state.txState().indexDoDrop( descriptor );
     }
 
-    private IndexBackedConstraintDescriptor indexBackedConstraintCreate( KernelStatement state, IndexBackedConstraintDescriptor constraint )
+    private void indexBackedConstraintCreate( KernelStatement state, IndexBackedConstraintDescriptor constraint )
             throws CreateConstraintFailureException
     {
         LabelSchemaDescriptor descriptor = constraint.schema();
@@ -604,13 +604,13 @@ public class StateHandlingStatementOperations implements
                 {
                     if ( it.next().equals( constraint ) )
                     {
-                        return constraint;
+                        return;
                     }
                 }
                 long indexId = constraintIndexCreator.createUniquenessConstraintIndex( state, this, descriptor );
                 state.txState().constraintDoAdd( constraint, indexId );
             }
-            return constraint;
+            return;
         }
         catch ( UniquePropertyValueValidationException |
                 DropIndexFailureException |

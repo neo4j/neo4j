@@ -118,51 +118,82 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public static byte[] encodeFromNumbers( Object array, int offsetBytes )
     {
-        Class<?> componentType = array.getClass().getComponentType();
-        boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
-        boolean isByteArray = componentType.equals( Byte.class ) || isPrimitiveByteArray;
         ShortArray type = ShortArray.typeOf( array );
         if ( type == null )
         {
             throw new IllegalArgumentException( array + " not a valid array type." );
         }
 
-        int arrayLength = Array.getLength( array );
-        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array, arrayLength );
-        int totalBits = requiredBits * arrayLength;
-        int numberOfBytes = (totalBits - 1) / 8 + 1;
-        int bitsUsedInLastByte = totalBits % 8;
-        bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
-        numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
-        byte[] bytes;
-        if ( isByteArray )
+        if ( type == ShortArray.DOUBLE || type == ShortArray.FLOAT )
         {
-            bytes = new byte[NUMBER_HEADER_SIZE + arrayLength + offsetBytes];
-            bytes[offsetBytes + 0] = (byte) type.intValue();
-            bytes[offsetBytes + 1] = (byte) bitsUsedInLastByte;
-            bytes[offsetBytes + 2] = (byte) requiredBits;
-            if ( isPrimitiveByteArray )
-            {
-                arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE + offsetBytes, arrayLength );
-            }
-            else
-            {
-                Byte[] source = (Byte[]) array;
-                for ( int i = 0; i < source.length; i++ )
-                {
-                    bytes[NUMBER_HEADER_SIZE + offsetBytes + i] = source[i];
-                }
-            }
+            // Skip array compaction for floating point numbers where compaction makes very little difference
+            return createUncompactedArray( type, array, offsetBytes );
         }
         else
         {
+            return createBitCompactedArray( type, array, offsetBytes );
+        }
+    }
+
+    private static byte[] createBitCompactedArray( ShortArray type, Object array, int offsetBytes )
+    {
+        Class<?> componentType = array.getClass().getComponentType();
+        boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
+        boolean isByteArray = componentType.equals( Byte.class ) || isPrimitiveByteArray;
+        int arrayLength = Array.getLength( array );
+        int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array, arrayLength );
+        int totalBits = requiredBits * arrayLength;
+        int bitsUsedInLastByte = totalBits % 8;
+        bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
+        if ( isByteArray )
+        {
+            return createBitCompactedByteArray( type, isPrimitiveByteArray, array, bitsUsedInLastByte, requiredBits, offsetBytes );
+        }
+        else
+        {
+            int numberOfBytes = (totalBits - 1) / 8 + 1;
+            numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
             Bits bits = Bits.bits( numberOfBytes );
             bits.put( (byte) type.intValue() );
             bits.put( (byte) bitsUsedInLastByte );
             bits.put( (byte) requiredBits );
             type.writeAll( array, arrayLength, requiredBits, bits );
-            bytes = bits.asBytes( offsetBytes );
+            return bits.asBytes( offsetBytes );
         }
+    }
+
+    private static byte[] createBitCompactedByteArray( ShortArray type, boolean isPrimitiveByteArray, Object array,
+            int bitsUsedInLastByte, int requiredBits, int offsetBytes )
+    {
+        int arrayLength = Array.getLength( array );
+        byte[] bytes = new byte[NUMBER_HEADER_SIZE + arrayLength + offsetBytes];
+        bytes[offsetBytes + 0] = (byte) type.intValue();
+        bytes[offsetBytes + 1] = (byte) bitsUsedInLastByte;
+        bytes[offsetBytes + 2] = (byte) requiredBits;
+        if ( isPrimitiveByteArray )
+        {
+            arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE + offsetBytes, arrayLength );
+        }
+        else
+        {
+            Byte[] source = (Byte[]) array;
+            for ( int i = 0; i < source.length; i++ )
+            {
+                bytes[NUMBER_HEADER_SIZE + offsetBytes + i] = source[i];
+            }
+        }
+        return bytes;
+    }
+
+    private static byte[] createUncompactedArray( ShortArray type, Object array, int offsetBytes )
+    {
+        int arrayLength = Array.getLength( array );
+        int bytesPerElement = type.maxBits / 8;
+        byte[] bytes = new byte[NUMBER_HEADER_SIZE + bytesPerElement * arrayLength + offsetBytes];
+        bytes[offsetBytes + 0] = (byte) type.intValue();
+        bytes[offsetBytes + 1] = (byte) 8;
+        bytes[offsetBytes + 2] = (byte) type.maxBits;
+        type.writeAll( array, bytes, NUMBER_HEADER_SIZE + offsetBytes );
         return bytes;
     }
 

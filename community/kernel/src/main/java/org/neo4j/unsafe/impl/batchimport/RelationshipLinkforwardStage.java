@@ -33,11 +33,13 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
 
 public class RelationshipLinkforwardStage extends Stage
 {
+    public static final String NAME = "Relationship --> Relationship";
+
     public RelationshipLinkforwardStage( String topic, Configuration config, RelationshipStore store,
             NodeRelationshipCache cache, Predicate<RelationshipRecord> readFilter,
             Predicate<RelationshipRecord> denseChangeFilter, int nodeTypes )
     {
-        super( "Relationship --> Relationship " + topic, config, ORDER_SEND_DOWNSTREAM );
+        super( NAME, topic, config, ORDER_SEND_DOWNSTREAM );
         add( new BatchFeedStep( control(), config, forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, store, readFilter ) );
         add( new RelationshipLinkforwardStep( control(), config, cache, denseChangeFilter, nodeTypes ) );

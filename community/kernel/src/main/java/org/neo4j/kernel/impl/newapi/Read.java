@@ -25,13 +25,15 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -52,11 +54,20 @@ import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
 import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-abstract class Read implements
+abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
         org.neo4j.internal.kernel.api.ExplicitIndexRead,
         org.neo4j.internal.kernel.api.SchemaRead
 {
+    private final Cursors cursors;
+    private final TxStateHolder txStateHolder;
+
+    Read( Cursors cursors, TxStateHolder txStateHolder )
+    {
+        this.cursors = cursors;
+        this.txStateHolder = txStateHolder;
+    }
+
     @Override
     public final void nodeIndexSeek(
             org.neo4j.internal.kernel.api.IndexReference index,
@@ -64,6 +75,7 @@ abstract class Read implements
             IndexOrder indexOrder,
             IndexQuery... query ) throws KernelException
     {
+        ((NodeValueIndexCursor) cursor).setRead( this );
         IndexProgressor.NodeValueClient target = (NodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index );
         if ( !reader.hasFullNumberPrecision( query ) )
@@ -97,7 +109,7 @@ abstract class Read implements
             if ( j > 0 )
             {
                 filters = Arrays.copyOf( filters, j );
-                target = new NodeValueClientFilter( target, new NodeCursor( this ), new PropertyCursor( this ), filters );
+                target = new NodeValueClientFilter( target, cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), this, filters );
             }
         }
         reader.query( target, indexOrder, query );
@@ -111,24 +123,28 @@ abstract class Read implements
     {
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
+        ((NodeValueIndexCursor) cursor).setRead( this );
         indexReader( index ).query( (NodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
     }
 
     @Override
     public final void nodeLabelScan( int label, org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor )
     {
+        ((NodeLabelIndexCursor) cursor).setRead( this );
         labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithLabel( label ) );
     }
 
     @Override
     public void nodeLabelUnionScan( org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor, int... labels )
     {
+        ((NodeLabelIndexCursor) cursor).setRead( this );
         labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAnyOfLabels( labels ) );
     }
 
     @Override
     public void nodeLabelIntersectionScan( org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor, int... labels )
     {
+        ((NodeLabelIndexCursor) cursor).setRead( this );
         labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
     }
 
@@ -146,7 +162,7 @@ abstract class Read implements
     @Override
     public final void allNodesScan( org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
-        ((NodeCursor) cursor).scan();
+        ((NodeCursor) cursor).scan(this);
     }
 
     @Override
@@ -158,19 +174,19 @@ abstract class Read implements
     @Override
     public final void singleNode( long reference, org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
-        ((NodeCursor) cursor).single( reference );
+        ((NodeCursor) cursor).single( reference, this );
     }
 
     @Override
     public final void singleRelationship( long reference, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        ((RelationshipScanCursor) cursor).single( reference );
+        ((RelationshipScanCursor) cursor).single( reference, this );
     }
 
     @Override
     public final void allRelationshipsScan( org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/ );
+        ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/, this );
     }
 
     @Override
@@ -182,7 +198,7 @@ abstract class Read implements
     @Override
     public final void relationshipLabelScan( int label, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        ((RelationshipScanCursor) cursor).scan( label );
+        ((RelationshipScanCursor) cursor).scan( label, this );
     }
 
     @Override
@@ -201,11 +217,11 @@ abstract class Read implements
         }
         else if ( hasDirectFlag( reference ) ) // the relationships for this node are not grouped
         {
-            ((RelationshipGroupCursor) cursor).buffer( nodeReference, clearFlags( reference ) );
+            ((RelationshipGroupCursor) cursor).buffer( nodeReference, clearFlags( reference ), this );
         }
         else // this is a normal group reference.
         {
-            ((RelationshipGroupCursor) cursor).direct( nodeReference, reference );
+            ((RelationshipGroupCursor) cursor).direct( nodeReference, reference, this );
         }
     }
 
@@ -246,57 +262,60 @@ abstract class Read implements
         }
         else if ( hasGroupFlag( reference ) ) // this reference is actually to a group record
         {
-            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearFlags( reference ) );
+            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearFlags( reference ), this );
         }
         else if ( hasFilterFlag( reference ) ) // this relationship chain need to be filtered
         {
-            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearFlags( reference ) );
+            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearFlags( reference ), this );
         }
         else // this is a normal relationship reference
         {
-            ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference );
+            ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference, this );
         }
     }
 
     @Override
     public final void nodeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
-        ((PropertyCursor) cursor).init( reference );
+        ((PropertyCursor) cursor).init( reference, this );
     }
 
     @Override
     public final void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
-        ((PropertyCursor) cursor).init( reference );
+        ((PropertyCursor) cursor).init( reference, this );
     }
 
     @Override
     public final void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
-        ((PropertyCursor) cursor).init( graphPropertiesReference() );
+        ((PropertyCursor) cursor).init( graphPropertiesReference(), this );
     }
 
     abstract long graphPropertiesReference();
 
     @Override
     public final void nodeExplicitIndexLookup(
-            NodeExplicitIndexCursor cursor, String index, String key, Value value ) throws KernelException
+            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, String key, Value value ) throws KernelException
     {
+        ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).get( key, value.asObject() ) );
     }
 
     @Override
     public final void nodeExplicitIndexQuery(
-            NodeExplicitIndexCursor cursor, String index, Object query ) throws KernelException
+            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, Object query ) throws KernelException
     {
+        ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
                 query instanceof Value ? ((Value) query).asObject() : query ) );
     }
 
     @Override
     public final void nodeExplicitIndexQuery(
-            NodeExplicitIndexCursor cursor, String index, String key, Object query ) throws KernelException
+            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, String key, Object query ) throws KernelException
     {
+        ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
                 key, query instanceof Value ? ((Value) query).asObject() : query ) );
     }
@@ -310,6 +329,7 @@ abstract class Read implements
             long source,
             long target ) throws KernelException
     {
+        ((org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor,
                 explicitRelationshipIndex( index ).get( key, value.asObject(), source, target ) );
@@ -323,6 +343,7 @@ abstract class Read implements
             long source,
             long target ) throws KernelException
     {
+        ((org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor,
                 explicitRelationshipIndex( index )
@@ -338,6 +359,7 @@ abstract class Read implements
             long source,
             long target ) throws KernelException
     {
+        ((org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (org.neo4j.kernel.impl.newapi.RelationshipExplicitIndexCursor) cursor,
                 explicitRelationshipIndex( index ).query(
@@ -409,4 +431,22 @@ abstract class Read implements
     abstract TextValue string( PropertyCursor cursor, long reference, PageCursor page );
 
     abstract ArrayValue array( PropertyCursor cursor, long reference, PageCursor page );
+
+    @Override
+    public TransactionState txState()
+    {
+        return txStateHolder.txState();
+    }
+
+    @Override
+    public ExplicitIndexTransactionState explicitIndexTxState()
+    {
+        return txStateHolder.explicitIndexTxState();
+    }
+
+    @Override
+    public boolean hasTxStateWithChanges()
+    {
+        return txStateHolder.hasTxStateWithChanges();
+    }
 }

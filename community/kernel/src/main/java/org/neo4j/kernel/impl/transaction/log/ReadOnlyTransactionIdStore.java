@@ -66,6 +66,12 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
+    public long committingTransactionId()
+    {
+        throw new UnsupportedOperationException( "Read-only transaction ID store" );
+    }
+
+    @Override
     public void transactionCommitted( long transactionId, long checksum, long commitTimestamp )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );

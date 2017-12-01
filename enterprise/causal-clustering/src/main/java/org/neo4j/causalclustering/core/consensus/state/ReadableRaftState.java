@@ -52,4 +52,10 @@ public interface ReadableRaftState
     ReadableRaftLog entryLog();
 
     long commitIndex();
+
+    boolean supportPreVoting();
+
+    boolean isPreElection();
+
+    Set<MemberId> preVotesForMe();
 }

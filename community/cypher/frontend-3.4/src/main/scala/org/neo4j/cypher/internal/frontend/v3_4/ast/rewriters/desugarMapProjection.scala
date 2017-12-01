@@ -60,7 +60,7 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
 }
 
 case class DesugaredMapProjection(
-                                   name: Variable,
+                                   name: LogicalVariable,
                                    items: Seq[LiteralEntry],
                                    includeAllProps: Boolean
                                  )(val position: InputPosition) extends Expression

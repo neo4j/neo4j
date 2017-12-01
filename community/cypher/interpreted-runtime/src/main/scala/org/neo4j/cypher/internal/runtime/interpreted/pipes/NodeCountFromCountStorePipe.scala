@@ -28,7 +28,7 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
                                       (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val baseContext = state.createOrGetInitialContext()
+    val baseContext = state.createOrGetInitialContext(executionContextFactory)
     var count = 1L
     val it = labels.iterator
     while (it.hasNext) {

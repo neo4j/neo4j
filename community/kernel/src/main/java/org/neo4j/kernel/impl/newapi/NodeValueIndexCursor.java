@@ -29,15 +29,10 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 class NodeValueIndexCursor extends IndexCursor
         implements org.neo4j.internal.kernel.api.NodeValueIndexCursor, NodeValueClient
 {
-    private final Read read;
+    private Read read;
     private long node;
     private int[] keys;
     private Value[] values;
-
-    NodeValueIndexCursor( Read read )
-    {
-        this.read = read;
-    }
 
     @Override
     public void initialize( IndexProgressor progressor, int[] propertyIds )
@@ -52,6 +47,11 @@ class NodeValueIndexCursor extends IndexCursor
         this.node = reference;
         this.values = values;
         return true;
+    }
+
+    public void setRead( Read read )
+    {
+        this.read = read;
     }
 
     @Override

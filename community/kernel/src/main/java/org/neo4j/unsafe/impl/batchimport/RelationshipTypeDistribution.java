@@ -19,26 +19,28 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Set;
+
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.Pair;
 
 /**
  * Keeps data about how relationships are distributed between different types.
  */
-public class RelationshipTypeDistribution implements Iterable<Map.Entry<Object,MutableLong>>
+public class RelationshipTypeDistribution implements Iterable<Pair<Object,Long>>
 {
-    private final Map.Entry<Object,MutableLong>[] sortedTypes;
+    // keys can be either String or Integer
+    private final Pair<Object,Long>[] sortedTypes;
 
-    public RelationshipTypeDistribution( Map.Entry<Object,MutableLong>[] sortedTypes )
+    public RelationshipTypeDistribution( Pair<Object,Long>[] sortedTypes )
     {
         this.sortedTypes = sortedTypes;
     }
 
     @Override
-    public Iterator<Map.Entry<Object,MutableLong>> iterator()
+    public Iterator<Pair<Object,Long>> iterator()
     {
         return Iterators.iterator( sortedTypes );
     }
@@ -46,5 +48,20 @@ public class RelationshipTypeDistribution implements Iterable<Map.Entry<Object,M
     public int getNumberOfRelationshipTypes()
     {
         return sortedTypes.length;
+    }
+
+    public Pair<Object,Long> get( int index )
+    {
+        return sortedTypes[index];
+    }
+
+    public Set<Object> types( int startingFromType, int upToType )
+    {
+        Set<Object> types = new HashSet<>();
+        for ( int i = startingFromType; i < upToType; i++ )
+        {
+            types.add( get( i ).first() );
+        }
+        return types;
     }
 }

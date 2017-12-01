@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
@@ -56,9 +57,9 @@ public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHand
 
     private final Log internalLog;
 
-    public BoltMessagingProtocolV1Handler( BoltChannel boltChannel, BoltWorker worker, LogService logging )
+    public BoltMessagingProtocolV1Handler( BoltChannel boltChannel, BoltWorker worker, TransportThrottleGroup throttleGroup, LogService logging )
     {
-        this.chunkedOutput = new ChunkedOutput( boltChannel.rawChannel(), DEFAULT_OUTPUT_BUFFER_SIZE );
+        this.chunkedOutput = new ChunkedOutput( boltChannel.rawChannel(), DEFAULT_OUTPUT_BUFFER_SIZE, throttleGroup );
         this.packer = new BoltResponseMessageWriter(
                 new Neo4jPack.Packer( chunkedOutput ), chunkedOutput, boltChannel.log() );
         this.worker = worker;

@@ -345,9 +345,10 @@ public final class UnsafeUtil
     }
 
     /**
-     * Allocate a slab of memory of the given size in bytes, and return a pointer to that memory.
+     * Allocate a block of memory of the given size in bytes, and return a pointer to that memory.
      * <p>
-     * The memory is aligned such that it can be used for any data type. The memory is cleared, so all bytes are zero.
+     * The memory is aligned such that it can be used for any data type.
+     * The memory is uninitialised, so it may contain random garbage, or it may not.
      */
     public static long allocateMemory( long sizeInBytes )
     {

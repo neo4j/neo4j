@@ -20,9 +20,6 @@
 package org.neo4j.causalclustering.core.consensus.roles;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -38,7 +35,6 @@ import org.neo4j.causalclustering.core.consensus.membership.RaftTestGroup;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.state.RaftState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -55,7 +51,6 @@ import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.r
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-@RunWith( MockitoJUnitRunner.class )
 public class FollowerTest
 {
     private MemberId myself = member( 0 );
@@ -63,9 +58,6 @@ public class FollowerTest
     /* A few members that we use at will in tests. */
     private MemberId member1 = member( 1 );
     private MemberId member2 = member( 2 );
-
-    @Mock
-    private Inbound inbound;
 
     @Test
     public void followerShouldTransitToCandidateAndInstigateAnElectionAfterTimeout() throws Exception
@@ -239,24 +231,6 @@ public class FollowerTest
         // then
         // The local commit index must be brought as far along as possible
         assertEquals( 3, state.commitIndex() );
-    }
-
-    @Test
-    public void shouldRenewElectionTimeoutOnReceiptOfHeartbeatInCurrentOrHigherTerm() throws Exception
-    {
-        // given
-        RaftState state = raftState()
-                .myself( myself )
-                .term(0)
-                .build();
-
-        Follower follower = new Follower();
-
-        Outcome outcome = follower.handle( new RaftMessages.Heartbeat( myself, 1, 1, 1 ),
-                state, log() );
-
-        // then
-        assertTrue( outcome.electionTimeoutRenewed() );
     }
 
     @Test

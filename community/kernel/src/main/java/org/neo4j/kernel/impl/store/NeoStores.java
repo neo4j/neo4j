@@ -661,8 +661,10 @@ public class NeoStores implements AutoCloseable
         diagnosticsManager.registerAll( NeoStoresDiagnostics.class, this );
     }
 
+    @SuppressWarnings( "unchecked" )
     public <RECORD extends AbstractBaseRecord> RecordStore<RECORD> getRecordStore( StoreType type )
     {
+        assert type.isRecordStore();
         return (RecordStore<RECORD>) getStore( type );
     }
 

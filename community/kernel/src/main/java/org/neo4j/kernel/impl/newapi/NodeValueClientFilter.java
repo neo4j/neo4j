@@ -71,17 +71,19 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     private final NodeCursor node;
     private final PropertyCursor property;
     private final IndexQuery[] filters;
+    private final Read read;
     private int[] keys;
     private IndexProgressor progressor;
 
     NodeValueClientFilter(
             NodeValueClient target,
-            NodeCursor node, PropertyCursor property, IndexQuery... filters )
+            NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
     {
         this.target = target;
         this.node = node;
         this.property = property;
         this.filters = filters;
+        this.read = read;
         Arrays.sort( filters, ASCENDING_BY_KEY );
     }
 
@@ -102,7 +104,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
         }
         else
         {
-            node.single( reference );
+            node.single( reference, read );
             if ( node.next() )
             {
                 node.properties( property );

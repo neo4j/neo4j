@@ -45,4 +45,17 @@ class Labels implements LabelSet
     {
         return (int) labels[offset];
     }
+
+    @Override
+    public boolean contains( int labelToken )
+    {
+        for ( long label : labels )
+        {
+            if ( label == labelToken )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

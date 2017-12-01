@@ -25,7 +25,7 @@ import java.util.Comparator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.VirtualValue;
 
-abstract class VirtualEdgeValue extends VirtualValue
+public abstract class VirtualEdgeValue extends VirtualValue
 {
     public abstract long id();
 

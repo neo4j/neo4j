@@ -73,7 +73,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("OPTIONAL MATCH, DISTINCT and DELETE in an unfortunate combination") {
     val start = createLabeledNode("Start")
     createLabeledNode("End")
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3,
       """
         |MATCH (start:Start),(end:End)
         |OPTIONAL MATCH (start)-[rel]->(end)
@@ -119,7 +119,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode(Map("x" -> "Zzing"))
     createNode(Map("x" -> 'Ä'))
 
-    val result = executeWith(Configs.CommunityInterpreted, s"match (n) where n.x < 'Z' AND n.x < 'z' return n")
+    val result = executeWith(Configs.Interpreted, s"match (n) where n.x < 'Z' AND n.x < 'z' return n")
 
     result.columnAs("n").toList should equal(List(n1, n2))
   }
@@ -355,8 +355,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("should be able to set properties with a literal map twice in the same transaction") {
     val node = createLabeledNode("FOO")
 
-    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { first: 'value' }")
-    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { second: 'value' }")
+    executeWith(Configs.Interpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { first: 'value' }")
+    executeWith(Configs.Interpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { second: 'value' }")
 
     graph.inTx {
       node.getProperty("first", null) should equal(null)

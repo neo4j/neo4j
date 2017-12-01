@@ -34,20 +34,18 @@ import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 
 class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.NodeCursor
 {
-    private final Read read;
-    private final RecordCursor<DynamicRecord> labelCursor;
+    private Read read;
+    private RecordCursor<DynamicRecord> labelCursor;
     private PageCursor pageCursor;
     private long next;
     private long highMark;
 
-    NodeCursor( Read read )
+    NodeCursor()
     {
         super( NO_ID );
-        this.read = read;
-        this.labelCursor = read.labelCursor();
     }
 
-    void scan()
+    void scan( Read read )
     {
         if ( getId() != NO_ID )
         {
@@ -59,9 +57,11 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         }
         this.next = 0;
         this.highMark = read.nodeHighMark();
+        this.read = read;
+        this.labelCursor = read.labelCursor();
     }
 
-    void single( long reference )
+    void single( long reference, Read read )
     {
         if ( getId() != NO_ID )
         {
@@ -73,6 +73,8 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         }
         this.next = reference;
         this.highMark = NO_ID;
+        this.read = read;
+        this.labelCursor = read.labelCursor();
     }
 
     @Override

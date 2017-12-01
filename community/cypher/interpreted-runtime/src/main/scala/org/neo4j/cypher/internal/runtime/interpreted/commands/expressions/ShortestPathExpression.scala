@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.graphdb.{Path, PropertyContainer, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{NodeReference, NodeValue, VirtualValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -44,8 +44,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     if (anyStartpointsContainNull(ctx)) {
       Values.NO_VALUE
     } else {
-      val start = getEndPoint(ctx, shortestPathPattern.left)
-      val end = getEndPoint(ctx, shortestPathPattern.right)
+      val start = getEndPoint(ctx, state, shortestPathPattern.left)
+      val end = getEndPoint(ctx, state, shortestPathPattern.right)
       if (!shortestPathPattern.allowZeroLength && disallowSameNode && start
         .equals(end)) throw new ShortestPathCommonEndNodesForbiddenException
       getMatches(ctx, start, end, state)
@@ -90,10 +90,13 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
       } && (!withFallBack || ShortestPathExpression.noDuplicates(path.relationships.asScala))
     }
 
-  private def getEndPoint(m: Map[String, AnyValue], start: SingleNode): NodeValue = m.getOrElse(start.name,
-                                                                                                throw new SyntaxException(
-                                                                                                  s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`"))
-    .asInstanceOf[NodeValue]
+  private def getEndPoint(m: Map[String, AnyValue], state: QueryState, start: SingleNode): NodeValue =
+    m.getOrElse(start.name,
+      throw new SyntaxException(
+        s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`")) match {
+      case node: NodeValue => node
+      case node: NodeReference => ValueUtils.fromNodeProxy(state.query.nodeOps.getById(node.id()))
+    }
 
   private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
     m(shortestPathPattern.left.name) == Values.NO_VALUE || m(shortestPathPattern.right.name) == Values.NO_VALUE

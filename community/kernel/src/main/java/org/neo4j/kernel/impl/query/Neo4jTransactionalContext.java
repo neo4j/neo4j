@@ -107,6 +107,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public KernelTransaction kernelTransaction()
+    {
+        return txBridge.getKernelTransactionBoundToThisThread( true );
+    }
+
+    @Override
     public boolean isTopLevelTx()
     {
         return transaction.transactionType() == KernelTransaction.Type.implicit;

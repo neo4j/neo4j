@@ -87,7 +87,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     @Override
     public void writeNodeReference( long nodeId ) throws RuntimeException
     {
-        writeValue( newNodeProxyById( nodeId ) );
+        throw new UnsupportedOperationException( "Cannot write a raw node reference" );
     }
 
     @Override
@@ -108,7 +108,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     @Override
     public void writeEdgeReference( long edgeId ) throws RuntimeException
     {
-        writeValue( newRelationshipProxyById( edgeId ) );
+        throw new UnsupportedOperationException( "Cannot write a raw edge reference" );
     }
 
     @Override

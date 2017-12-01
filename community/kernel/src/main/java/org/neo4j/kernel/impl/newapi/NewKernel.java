@@ -37,20 +37,18 @@ public class NewKernel implements Kernel
 {
     private final StorageEngine engine;
     private final InwardKernel kernel;
-    private final Supplier<ExplicitIndexTransactionState> explicitIndexes;
 
     private StorageStatement statement;
-    private Read read;
     private Cursors cursors;
 
     private volatile boolean isRunning;
 
-    public NewKernel( StorageEngine engine, Supplier<ExplicitIndexTransactionState> explicitIndexes, InwardKernel kernel )
+    public NewKernel( StorageEngine engine, InwardKernel kernel )
     {
         this.engine = engine;
-        this.explicitIndexes = explicitIndexes;
         this.kernel = kernel;
         this.isRunning = false;
+        this.cursors = new Cursors(  );
     }
 
     @Override
@@ -69,14 +67,9 @@ public class NewKernel implements Kernel
 
     public void start()
     {
-        // This extra statement will be remove once we start adding tx-state. That is because
-        // by then we cannot use a global Read in the CursorFactory, but need to use transaction
-        // specific Read instances which are given to the Cursors on initialization.
         statement = engine.storeReadLayer().newStatement();
-        this.read = new AllStoreHolder( engine, statement, explicitIndexes );
-        this.cursors = new Cursors( read );
+        this.cursors = new Cursors();
         isRunning = true;
-
     }
 
     public void stop()

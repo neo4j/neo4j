@@ -45,9 +45,13 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -325,6 +329,68 @@ public class LeaderTest
     }
 
     @Test
+    public void shouldSendCompactionInfoIfFailureWithNoEarlierEntries() throws Exception
+    {
+        // given
+        Leader leader = new Leader();
+        long term = 1;
+        long leaderPrevIndex = 3;
+        long followerIndex = leaderPrevIndex - 1;
+
+        InMemoryRaftLog raftLog = new InMemoryRaftLog();
+        raftLog.skip( leaderPrevIndex, term );
+
+        RaftState state = raftState()
+                .term( term )
+                .entryLog( raftLog )
+                .build();
+
+        RaftMessages.AppendEntries.Response incomingResponse = appendEntriesResponse()
+                .failure()
+                .term( term )
+                .appendIndex( followerIndex )
+                .from( member1 ).build();
+
+        // when
+        Outcome outcome = leader.handle( incomingResponse, state, log() );
+
+        // then
+        RaftMessages.RaftMessage outgoingMessage = messageFor( outcome, member1 );
+        assertThat( outgoingMessage, instanceOf( RaftMessages.LogCompactionInfo.class ) );
+
+        RaftMessages.LogCompactionInfo typedOutgoingMessage = (RaftMessages.LogCompactionInfo) outgoingMessage;
+        assertThat( typedOutgoingMessage.prevIndex(), equalTo( leaderPrevIndex ) );
+    }
+
+    @Test
+    public void shouldIgnoreAppendResponsesFromOldTerms() throws Exception
+    {
+        // given
+        Leader leader = new Leader();
+        long leaderTerm = 5;
+        long followerTerm = 3;
+
+        RaftState state = raftState()
+                .term( leaderTerm )
+                .build();
+
+                RaftMessages.AppendEntries.Response incomingResponse = appendEntriesResponse()
+                .failure()
+                .term( followerTerm )
+                .from( member1 ).build();
+
+        // when
+        Outcome outcome = leader.handle( incomingResponse, state, log() );
+
+        // then
+        assertThat( outcome.getTerm(), equalTo( leaderTerm ) );
+        assertThat( outcome.getRole(), equalTo( LEADER ) );
+
+        assertThat( outcome.getOutgoingMessages(), empty() );
+        assertThat( outcome.getShipCommands(), empty() );
+    }
+
+    @Test
     public void leaderShouldRejectAppendEntriesResponseWithNewerTermAndBecomeAFollower() throws Exception
     {
         // given
@@ -556,6 +622,169 @@ public class LeaderTest
 
         // then
         assertEquals( 2, state.commitIndex() );
+    }
+
+    @Test
+    public void shouldSendNegativeResponseForVoteRequestFromTermNotGreaterThanLeader() throws Exception
+    {
+        // given
+        long leaderTerm = 5;
+        long leaderCommitIndex = 10;
+        long rivalTerm = leaderTerm - 1;
+
+        Leader leader = new Leader();
+        RaftState state = raftState()
+                .term( leaderTerm )
+                .commitIndex( leaderCommitIndex )
+                .build();
+
+        // when
+        Outcome outcome = leader.handle( new RaftMessages.Vote.Request( member1, rivalTerm, member1, leaderCommitIndex, leaderTerm ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), equalTo( LEADER) );
+        assertThat( outcome.getTerm(), equalTo( leaderTerm ) );
+
+        RaftMessages.RaftMessage response = messageFor( outcome, member1 );
+        assertThat( response, instanceOf( RaftMessages.Vote.Response.class ) );
+        RaftMessages.Vote.Response typedResponse = (RaftMessages.Vote.Response) response;
+        assertThat( typedResponse.voteGranted(), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldStepDownIfReceiveVoteRequestFromGreaterTermThanLeader() throws Exception
+    {
+        // given
+        long leaderTerm = 1;
+        long leaderCommitIndex = 10;
+        long rivalTerm = leaderTerm + 1;
+
+        Leader leader = new Leader();
+        RaftState state = raftState()
+                .term( leaderTerm )
+                .commitIndex( leaderCommitIndex )
+                .build();
+
+        // when
+        Outcome outcome = leader.handle( new RaftMessages.Vote.Request( member1, rivalTerm, member1, leaderCommitIndex, leaderTerm ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), equalTo( FOLLOWER ) );
+        assertThat( outcome.getLeader(), nullValue() );
+        assertThat( outcome.getTerm(), equalTo( rivalTerm ) );
+
+        RaftMessages.RaftMessage response = messageFor( outcome, member1 );
+        assertThat( response, instanceOf( RaftMessages.Vote.Response.class ) );
+        RaftMessages.Vote.Response typedResponse = (RaftMessages.Vote.Response) response;
+        assertThat( typedResponse.voteGranted(), equalTo( true ) );
+    }
+
+    @Test
+    public void shouldIgnoreHeartbeatFromOlderTerm() throws Exception
+    {
+        // given
+        long leaderTerm = 5;
+        long leaderCommitIndex = 10;
+        long rivalTerm = leaderTerm - 1;
+
+        Leader leader = new Leader();
+        RaftState state = raftState()
+                .term( leaderTerm )
+                .commitIndex( leaderCommitIndex )
+                .build();
+
+        // when
+        Outcome outcome = leader.handle( new RaftMessages.Heartbeat( member1, rivalTerm, leaderCommitIndex, leaderTerm ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), equalTo( LEADER) );
+        assertThat( outcome.getTerm(), equalTo( leaderTerm ) );
+    }
+
+    @Test
+    public void shouldStepDownIfHeartbeatReceivedWithGreaterOrEqualTerm() throws Exception
+    {
+        // given
+        long leaderTerm = 1;
+        long leaderCommitIndex = 10;
+        long rivalTerm = leaderTerm + 1;
+
+        Leader leader = new Leader();
+        RaftState state = raftState()
+                .term( leaderTerm )
+                .commitIndex( leaderCommitIndex )
+                .build();
+
+        // when
+        Outcome outcome = leader.handle( new RaftMessages.Heartbeat( member1, rivalTerm, leaderCommitIndex, leaderTerm ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), equalTo( FOLLOWER ) );
+        assertThat( outcome.getLeader(), equalTo( member1 ) );
+        assertThat( outcome.getTerm(), equalTo( rivalTerm ) );
+    }
+
+    @Test
+    public void shouldRespondNegativelyToAppendEntriesRequestFromEarlierTerm() throws Exception
+    {
+        // given
+        long leaderTerm = 5;
+        long leaderCommitIndex = 10;
+        long rivalTerm = leaderTerm - 1;
+        long logIndex = 20;
+        RaftLogEntry[] entries = { new RaftLogEntry( rivalTerm, ReplicatedInteger.valueOf( 99 ) ) };
+
+        Leader leader = new Leader();
+        RaftState state = raftState()
+                .term( leaderTerm )
+                .commitIndex( leaderCommitIndex )
+                .build();
+
+        // when
+        Outcome outcome =
+                leader.handle( new RaftMessages.AppendEntries.Request( member1, rivalTerm, logIndex, leaderTerm, entries, leaderCommitIndex ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), equalTo( LEADER) );
+        assertThat( outcome.getTerm(), equalTo( leaderTerm ) );
+
+        RaftMessages.RaftMessage response = messageFor( outcome, member1 );
+        assertThat( response, instanceOf( RaftMessages.AppendEntries.Response.class ) );
+        RaftMessages.AppendEntries.Response typedResponse = (RaftMessages.AppendEntries.Response) response;
+        assertThat( typedResponse.term(), equalTo( leaderTerm ) );
+        assertThat( typedResponse.success(), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldStepDownIfAppendEntriesRequestFromLaterTerm() throws Exception
+    {
+        // given
+        long leaderTerm = 1;
+        long leaderCommitIndex = 10;
+        long rivalTerm = leaderTerm + 1;
+        long logIndex = 20;
+        RaftLogEntry[] entries = { new RaftLogEntry( rivalTerm, ReplicatedInteger.valueOf( 99 ) ) };
+
+        Leader leader = new Leader();
+        RaftState state = raftState()
+                .term( leaderTerm )
+                .commitIndex( leaderCommitIndex )
+                .build();
+
+        // when
+        Outcome outcome =
+                leader.handle( new RaftMessages.AppendEntries.Request( member1, rivalTerm, logIndex, leaderTerm, entries, leaderCommitIndex ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), equalTo( FOLLOWER ) );
+        assertThat( outcome.getLeader(), equalTo( member1 ) );
+        assertThat( outcome.getTerm(), equalTo( rivalTerm ) );
+
+        RaftMessages.RaftMessage response = messageFor( outcome, member1 );
+        assertThat( response, instanceOf( RaftMessages.AppendEntries.Response.class ) );
+        RaftMessages.AppendEntries.Response typedResponse = (RaftMessages.AppendEntries.Response) response;
+        assertThat( typedResponse.term(), equalTo( rivalTerm ) );
+        // Not checking success or failure of append
     }
 
     private Log log()

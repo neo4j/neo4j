@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,14 +36,12 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
 
 import static java.lang.Math.max;
-import static java.lang.Math.toIntExact;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -481,52 +477,6 @@ public class NodeRelationshipCacheTest
 
         // THEN
         assertEquals( typeCount, visitCount.get() );
-    }
-
-    @Test
-    public void shouldSplitUpRelationshipTypesInBatches() throws Exception
-    {
-        // GIVEN
-        int denseNodeThreshold = 5;
-        int numberOfNodes = 100;
-        int numberOfTypes = 10;
-        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, denseNodeThreshold );
-        cache.setHighNodeId( numberOfNodes + 1 );
-        Direction[] directions = Direction.values();
-        for ( int i = 0; i < numberOfNodes; i++ )
-        {
-            int count = random.nextInt( 1, denseNodeThreshold * 2 );
-            cache.setCount( i, count, random.nextInt( numberOfTypes ), random.among( directions ) );
-        }
-        int numberOfDenseNodes = toIntExact( cache.calculateNumberOfDenseNodes() );
-        Map<Object,MutableLong> types = new HashMap<>();
-        for ( int i = 0; i < numberOfTypes; i++ )
-        {
-            types.put( "TYPE" + i, new MutableLong( random.nextInt( 1, 1_000 ) ) );
-        }
-
-        // WHEN enough memory for all types
-        {
-            long memory = numberOfDenseNodes * numberOfTypes * NodeRelationshipCache.GROUP_ENTRY_SIZE;
-            Collection<Object> fits =
-                    Iterators.single( cache.splitRelationshipTypesIntoRounds( types.entrySet().iterator(), memory ) );
-            // THEN
-            assertEquals( types.size(), fits.size() );
-        }
-
-        // and WHEN less than enough memory for all types
-        {
-            int memory = numberOfDenseNodes * numberOfTypes / 5 * NodeRelationshipCache.GROUP_ENTRY_SIZE;
-            int total = 0;
-            Iterator<Collection<Object>> rounds =
-                    cache.splitRelationshipTypesIntoRounds( types.entrySet().iterator(), memory );
-            while ( rounds.hasNext() )
-            {
-                Collection<Object> round = rounds.next();
-                total += round.size();
-            }
-            assertEquals( types.size(), total );
-        }
     }
 
     @Test

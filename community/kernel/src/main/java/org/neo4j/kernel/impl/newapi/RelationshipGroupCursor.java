@@ -31,19 +31,18 @@ import static org.neo4j.kernel.impl.newapi.References.setFilterFlag;
 class RelationshipGroupCursor extends RelationshipGroupRecord
         implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
 {
-    private final Read read;
+    private Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
     private Group current;
     private PageCursor page;
     private PageCursor edgePage;
 
-    RelationshipGroupCursor( Read read )
+    RelationshipGroupCursor( )
     {
-        super( -1 );
-        this.read = read;
+        super( NO_ID );
     }
 
-    void buffer( long nodeReference, long relationshipReference )
+    void buffer( long nodeReference, long relationshipReference, Read read )
     {
         setOwningNode( nodeReference );
         setId( NO_ID );
@@ -86,10 +85,11 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
                 }
             }
             this.current = new Group( edge, current ); // we need a dummy before the first to denote the initial pos
+            this.read = read;
         }
     }
 
-    void direct( long nodeReference, long reference )
+    void direct( long nodeReference, long reference, Read read )
     {
         setOwningNode( nodeReference );
         current = null;
@@ -99,6 +99,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         {
             page = read.groupPage( reference );
         }
+        this.read = read;
     }
 
     @Override
@@ -218,7 +219,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     {
         if ( current != null && cursor instanceof RelationshipTraversalCursor )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.outgoing );
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.outgoing, read );
         }
         else
         {
@@ -231,7 +232,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     {
         if ( current != null && cursor instanceof RelationshipTraversalCursor )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.incoming );
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.incoming, read );
         }
         else
         {
@@ -244,7 +245,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     {
         if ( current != null && cursor instanceof RelationshipTraversalCursor )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.loops );
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.loops, read );
         }
         else
         {

@@ -36,6 +36,7 @@ import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
@@ -149,6 +150,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
         ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
+        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config );
+
         Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
                 .collect( Collectors.toMap( Function.identity(), connConfig ->
                 {
@@ -185,9 +188,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     }
 
                     final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers =
-                            getProtocolHandlers( logService, workerFactory );
+                            getProtocolHandlers( logService, workerFactory, throttleGroup );
                     return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                            boltLogging, protocolHandlers );
+                            boltLogging, throttleGroup, protocolHandlers );
                 } ) );
 
         if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )
@@ -229,13 +232,13 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     private Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> getProtocolHandlers(
-            LogService logging, WorkerFactory workerFactory )
+            LogService logging, WorkerFactory workerFactory, TransportThrottleGroup throttleGroup )
     {
         Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers = new HashMap<>();
         protocolHandlers.put(
                 (long) BoltMessagingProtocolV1Handler.VERSION,
                 boltChannel ->
-                        new BoltMessagingProtocolV1Handler( boltChannel, workerFactory.newWorker( boltChannel ), logging )
+                        new BoltMessagingProtocolV1Handler( boltChannel, workerFactory.newWorker( boltChannel ), throttleGroup, logging )
         );
         return protocolHandlers;
     }

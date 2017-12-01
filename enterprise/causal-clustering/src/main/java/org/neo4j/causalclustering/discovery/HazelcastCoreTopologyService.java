@@ -135,12 +135,14 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         {
             log.info( "Cluster discovery service starting" );
             hazelcastInstance = createHazelcastInstance();
-            // We may be interrupted by the stop method after hazelcast returns. This is courtesy and not really necessary
+            // We may be interrupted by the stop method after hazelcast returns. This is courtesy and not really
+            // necessary
             if ( Thread.currentThread().isInterrupted() )
             {
                 return;
             }
-            membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
+            membershipRegistrationId =
+                    hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
             refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod,
                     HazelcastCoreTopologyService.this::refreshTopology );
             log.info( "Cluster discovery service started" );
@@ -163,7 +165,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         if ( refreshJob != null )
         {
-            scheduler.cancelAndWaitTermination( refreshJob );
+            refreshJob.cancel( true );
         }
 
         if ( hazelcastInstance != null && membershipRegistrationId != null )
@@ -245,15 +247,16 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         c.setNetworkConfig( networkConfig );
 
-        MemberAttributeConfig memberAttributeConfig = HazelcastClusterTopology.buildMemberAttributesForCore( myself, config );
+        MemberAttributeConfig memberAttributeConfig =
+                HazelcastClusterTopology.buildMemberAttributesForCore( myself, config );
 
         c.setMemberAttributeConfig( memberAttributeConfig );
         logConnectionInfo( initialMembers );
 
         JobScheduler.JobHandle logJob = scheduler.schedule( "HazelcastHealth", HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
                 () -> log.warn( "The server has not been able to connect in a timely fashion to the " +
-                        "cluster. Please consult the logs for more details. Rebooting the server may " +
-                        "solve the problem." ) );
+                                "cluster. Please consult the logs for more details. Rebooting the server may " +
+                                "solve the problem." ) );
 
         try
         {
@@ -283,8 +286,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )
     {
         userLog.info( "My connection info: " + "[\n\tDiscovery:   listen=%s, advertised=%s," +
-                        "\n\tTransaction: listen=%s, advertised=%s, " + "\n\tRaft:        listen=%s, advertised=%s, " +
-                        "\n\tClient Connector Addresses: %s" + "\n]", config.get( discovery_listen_address ),
+                      "\n\tTransaction: listen=%s, advertised=%s, " + "\n\tRaft:        listen=%s, advertised=%s, " +
+                      "\n\tClient Connector Addresses: %s" + "\n]", config.get( discovery_listen_address ),
                 config.get( CausalClusteringSettings.discovery_advertised_address ),
                 config.get( CausalClusteringSettings.transaction_listen_address ),
                 config.get( CausalClusteringSettings.transaction_advertised_address ),

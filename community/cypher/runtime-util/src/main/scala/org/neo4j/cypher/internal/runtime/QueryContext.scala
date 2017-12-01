@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescri
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
@@ -50,9 +53,7 @@ trait QueryContext extends TokenContext {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
 
-  type EntityAccessor
-
-  def entityAccessor: EntityAccessor
+  def entityAccessor: NodeManager
 
   def transactionalContext: QueryTransactionalContext
 
@@ -238,12 +239,9 @@ trait Operations[T <: PropertyContainer] {
 
 trait QueryTransactionalContext {
 
-  type ReadOps
-  type DbmsOps
+  def readOperations: ReadOperations
 
-  def readOperations: ReadOps
-
-  def dbmsOperations: DbmsOps
+  def dbmsOperations: DbmsOperations
 
   def isTopLevelTx: Boolean
 

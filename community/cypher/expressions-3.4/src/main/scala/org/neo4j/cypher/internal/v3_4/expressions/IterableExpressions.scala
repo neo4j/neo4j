@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.util.v3_4.InputPosition
 
 trait FilteringExpression extends Expression {
   def name: String
-  def variable: Variable
+  def variable: LogicalVariable
   def expression: Expression
   def innerPredicate: Option[Expression]
 
@@ -74,18 +74,18 @@ object ListComprehension {
     ListComprehension(ExtractScope(variable, innerPredicate, extractExpression)(position), expression)(position)
 }
 
-case class PatternComprehension(namedPath: Option[Variable], pattern: RelationshipsPattern,
+case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: RelationshipsPattern,
                                 predicate: Option[Expression], projection: Expression,
-                                outerScope: Set[Variable] = Set.empty)
+                                outerScope: Set[LogicalVariable] = Set.empty)
                                (val position: InputPosition)
   extends ScopeExpression {
 
   self =>
 
-  def withOuterScope(outerScope: Set[Variable]) =
+  def withOuterScope(outerScope: Set[LogicalVariable]) =
     copy(outerScope = outerScope)(position)
 
-  override val introducedVariables: Set[Variable] = {
+  override val introducedVariables: Set[LogicalVariable] = {
     val introducedInternally = namedPath.toSet ++ pattern.element.allVariables
     val introducedExternally = introducedInternally -- outerScope
     introducedExternally
@@ -95,7 +95,7 @@ case class PatternComprehension(namedPath: Option[Variable], pattern: Relationsh
 sealed trait IterablePredicateExpression extends FilteringExpression {
 
   def scope: FilterScope
-  def variable: Variable = scope.variable
+  def variable: LogicalVariable = scope.variable
   def innerPredicate: Option[Expression] = scope.innerPredicate
 
   override def asCanonicalStringVal: String = {

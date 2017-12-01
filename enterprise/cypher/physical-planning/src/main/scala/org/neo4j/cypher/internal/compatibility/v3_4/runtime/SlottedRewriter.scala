@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
+import org.neo4j.cypher.internal.util.v3_4.AssertionUtils.ifAssertionsEnabled
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter, topDown}
@@ -125,8 +127,10 @@ class SlottedRewriter(tokenContext: TokenContext) {
     // Rewrite plan and note which logical plans are rewritten to something else
     val resultPlan = in.endoRewrite(rewritePlanWithSlots)
 
-    // TODO: This should probably only run when -ea is enabled
-    resultPlan.findByAllClass[Variable].filter(!_.isInstanceOf[RuntimeVariable]).foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
+    // Verify that we could rewrite all instances of Variable (only under -ea)
+    ifAssertionsEnabled {
+      resultPlan.findByAllClass[Variable].foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
+    }
 
     resultPlan
   }
@@ -149,18 +153,19 @@ class SlottedRewriter(tokenContext: TokenContext) {
             val maybeToken: Option[Int] = tokenContext.getOptPropertyKeyId(propKey)
 
             val propExpression = (typ, maybeToken) match {
-              case (CTNode, Some(token)) => NodeProperty(offset, token, s"$key.$propKey")
-              case (CTNode, None) => NodePropertyLate(offset, propKey, s"$key.$propKey")
-              case (CTRelationship, Some(token)) => RelationshipProperty(offset, token, s"$key.$propKey")
-              case (CTRelationship, None) => RelationshipPropertyLate(offset, propKey, s"$key.$propKey")
+              case (CTNode, Some(token)) => NodeProperty(offset, token, s"$key.$propKey")(prop)
+              case (CTNode, None) => NodePropertyLate(offset, propKey, s"$key.$propKey")(prop)
+              case (CTRelationship, Some(token)) => RelationshipProperty(offset, token, s"$key.$propKey")(prop)
+              case (CTRelationship, None) => RelationshipPropertyLate(offset, propKey, s"$key.$propKey")(prop)
               case _ => throw new InternalException(s"Expressions on object other then nodes and relationships are not yet supported")
             }
             if (nullable)
-              NullCheck(offset, propExpression)
+              NullCheckProperty(offset, propExpression)
             else
               propExpression
 
-          case RefSlot(offset, _, _) => prop.copy(map = ReferenceFromSlot(offset, key))(prop.position)
+          case RefSlot(offset, _, _) =>
+            prop.copy(map = ReferenceFromSlot(offset, key))(prop.position)
         }
 
       case e@Equals(Variable(k1), Variable(k2)) =>
@@ -185,13 +190,13 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case _ => throw new CantCompileQueryException(s"Invalid slot for GetDegree: $n")
         }
 
-      case v @ Variable(k) if !v.isInstanceOf[RuntimeVariable] =>
+      case v @ Variable(k) =>
         slotConfiguration.get(k) match {
           case Some(slot) => slot match {
             case LongSlot(offset, false, CTNode) => NodeFromSlot(offset, k)
-            case LongSlot(offset, true, CTNode) => NullCheck(offset, NodeFromSlot(offset, k))
+            case LongSlot(offset, true, CTNode) => NullCheckVariable(offset, NodeFromSlot(offset, k))
             case LongSlot(offset, false, CTRelationship) => RelationshipFromSlot(offset, k)
-            case LongSlot(offset, true, CTRelationship) => NullCheck(offset, RelationshipFromSlot(offset, k))
+            case LongSlot(offset, true, CTRelationship) => NullCheckVariable(offset, RelationshipFromSlot(offset, k))
             case RefSlot(offset, _, _) => ReferenceFromSlot(offset, k)
             case _ =>
               throw new CantCompileQueryException("Unknown type for `" + k + "` in the slot configuration")
@@ -214,13 +219,19 @@ class SlottedRewriter(tokenContext: TokenContext) {
 
       case idFunction: FunctionInvocation if idFunction.function == frontendFunctions.Exists =>
         idFunction.args.head match {
-          case Property(Variable(key), PropertyKeyName(propKey)) =>
-            checkIfPropertyExists(slotConfiguration, key, propKey)
+          case prop @ Property(Variable(key), PropertyKeyName(propKey)) =>
+            checkIfPropertyExists(slotConfiguration, key, propKey, prop)
           case _ => idFunction // Don't know how to specialize this
         }
 
-      case e@IsNull(Property(Variable(key), PropertyKeyName(propKey))) =>
-        Not(checkIfPropertyExists(slotConfiguration, key, propKey))(e.position)
+      case e @ IsNull(prop @ Property(Variable(key), PropertyKeyName(propKey))) =>
+        Not(checkIfPropertyExists(slotConfiguration, key, propKey, prop))(e.position)
+
+      case _: ReduceExpression =>
+        throw new CantCompileQueryException(s"Expressions with reduce are not yet supported in slot allocation")
+
+      case _: DesugaredMapProjection =>
+        throw new CantCompileQueryException(s"Expressions with map projections are not yet supported in slot allocation")
 
       case _: ShortestPathExpression =>
         throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in slot allocation")
@@ -287,33 +298,43 @@ class SlottedRewriter(tokenContext: TokenContext) {
         predicate))
   }
 
-  private def checkIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String) = {
+  private def checkIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String, prop: Property) = {
     val slot = slotConfiguration(key)
     val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
 
     val propExpression = (slot, maybeToken) match {
       case (LongSlot(offset, _, typ), Some(token)) if typ == CTNode =>
-        NodePropertyExists(offset, token, s"$key.$propKey")
+        NodePropertyExists(offset, token, s"$key.$propKey")(prop)
 
       case (LongSlot(offset, _, typ), None) if typ == CTNode =>
-        NodePropertyExistsLate(offset, propKey, s"$key.$propKey")
+        NodePropertyExistsLate(offset, propKey, s"$key.$propKey")(prop)
 
       case (LongSlot(offset, _, typ), Some(token)) if typ == CTRelationship =>
-        RelationshipPropertyExists(offset, token, s"$key.$propKey")
+        RelationshipPropertyExists(offset, token, s"$key.$propKey")(prop)
 
       case (LongSlot(offset, _, typ), None) if typ == CTRelationship =>
-        RelationshipPropertyExistsLate(offset, propKey, s"$key.$propKey")
+        RelationshipPropertyExistsLate(offset, propKey, s"$key.$propKey")(prop)
 
       case _ => throw new CantCompileQueryException(s"Expressions on object other then nodes and relationships are not yet supported")
     }
 
     if (slot.nullable)
-      NullCheck(slot.offset, propExpression)
+      NullCheckProperty(slot.offset, propExpression)
     else
       propExpression
   }
 
-  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {
-    lp => lp.isInstanceOf[LogicalPlan] && lp != thisPlan
+  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = { lp =>
+    lp match {
+      case _: LogicalPlan =>
+        lp != thisPlan
+
+      // Do not traverse into slotted runtime variables or properties
+      case _: RuntimeVariable | _: RuntimeProperty =>
+        true
+
+      case _ =>
+        false
+    }
   }
 }

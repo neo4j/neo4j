@@ -110,7 +110,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
         try ( StoreChannel r = fs.open( indexFile, OpenMode.READ ) )
         {
             byte[] firstBytes = new byte[someBytes.length];
-            r.read( ByteBuffer.wrap( firstBytes ) );
+            r.readAll( ByteBuffer.wrap( firstBytes ) );
             assertNotEquals( "Expected previous file content to have been cleared but was still there",
                     someBytes, firstBytes );
         }

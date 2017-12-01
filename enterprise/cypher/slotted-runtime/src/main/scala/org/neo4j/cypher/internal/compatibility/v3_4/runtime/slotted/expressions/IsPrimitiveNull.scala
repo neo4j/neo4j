@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -28,5 +28,5 @@ import org.neo4j.values.storable.Values.booleanValue
 
 case class IsPrimitiveNull(offset: Int) extends Expression with SlottedExpression {
   override def apply(ctx: ExecutionContext, state: QueryState): BooleanValue =
-    booleanValue(nodeIsNull(ctx.getLongAt(offset)))
+    booleanValue(entityIsNull(ctx.getLongAt(offset)))
 }

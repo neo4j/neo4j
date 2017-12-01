@@ -152,7 +152,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3,
+      executeWith(Configs.Interpreted - Configs.Cost2_3,
         "PROFILE MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name",
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           // THEN
@@ -171,7 +171,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
       val query = "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name"
       //WHEN
-      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, params = Map("coll" -> List("Jacob")),
+      executeWith(Configs.Interpreted - Configs.Cost2_3, query, params = Map("coll" -> List("Jacob")),
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           //THEN
           plan shouldNot useOperators("NodeIndexSeek")

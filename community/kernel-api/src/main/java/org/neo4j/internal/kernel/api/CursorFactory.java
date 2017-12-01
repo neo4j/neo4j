@@ -47,9 +47,9 @@ public interface CursorFactory
 
     NodeLabelIndexCursor allocateNodeLabelIndexCursor();
 
-    // manual indexes
+    // explicit indexes
 
-    NodeExplicitIndexCursor allocateNodeManualIndexCursor();
+    NodeExplicitIndexCursor allocateNodeExplicitIndexCursor();
 
-    RelationshipExplicitIndexCursor allocateRelationshipManualIndexCursor();
+    RelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor();
 }

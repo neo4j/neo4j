@@ -40,15 +40,18 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 public class StageExecution implements StageControl
 {
     private final String stageName;
+    private final String part;
     private final Configuration config;
     private final Collection<Step<?>> pipeline;
     private long startTime;
     private final int orderingGuarantees;
     private volatile Throwable panic;
 
-    public StageExecution( String stageName, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees )
+    public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline,
+            int orderingGuarantees )
     {
         this.stageName = stageName;
+        this.part = part;
         this.config = config;
         this.pipeline = pipeline;
         this.orderingGuarantees = orderingGuarantees;
@@ -83,6 +86,11 @@ public class StageExecution implements StageControl
     public String getStageName()
     {
         return stageName;
+    }
+
+    public String name()
+    {
+        return stageName + (part != null ? part : "");
     }
 
     public Configuration getConfig()
@@ -180,6 +188,6 @@ public class StageExecution implements StageControl
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + stageName + "]";
+        return getClass().getSimpleName() + "[" + name() + "]";
     }
 }

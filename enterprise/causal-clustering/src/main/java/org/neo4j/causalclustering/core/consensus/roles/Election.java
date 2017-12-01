@@ -34,7 +34,7 @@ public class Election
     {
     }
 
-    public static boolean start( ReadableRaftState ctx, Outcome outcome, Log log ) throws IOException
+    public static boolean startRealElection( ReadableRaftState ctx, Outcome outcome, Log log ) throws IOException
     {
         Set<MemberId> currentMembers = ctx.votingMembers();
         if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )
@@ -56,6 +56,28 @@ public class Election
 
         outcome.setVotedFor( ctx.myself() );
         log.info( "Election started with vote request: %s and members: %s", voteForMe, currentMembers );
+        return true;
+    }
+
+    public static boolean startPreElection( ReadableRaftState ctx, Outcome outcome, Log log ) throws IOException
+    {
+        Set<MemberId> currentMembers = ctx.votingMembers();
+        if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )
+        {
+            log.info( "Pre-election attempted but not started, current members are %s, I am %s",
+                    currentMembers, ctx.myself()  );
+            return false;
+        }
+
+        RaftMessages.PreVote.Request preVoteForMe =
+                new RaftMessages.PreVote.Request( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
+                        .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
+
+        currentMembers.stream().filter( member -> !member.equals( ctx.myself() ) ).forEach( member ->
+                outcome.addOutgoingMessage( new RaftMessages.Directed( member, preVoteForMe ) )
+        );
+
+        log.info( "Pre-election started with: %s and members: %s", preVoteForMe, currentMembers );
         return true;
     }
 }

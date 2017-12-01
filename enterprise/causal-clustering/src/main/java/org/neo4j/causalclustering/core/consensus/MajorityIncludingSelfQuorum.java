@@ -19,12 +19,19 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
+import java.util.Collection;
+
 public class MajorityIncludingSelfQuorum
 {
     private static final int MIN_QUORUM = 2;
 
     private MajorityIncludingSelfQuorum()
     {
+    }
+
+    public static boolean isQuorum( Collection<?> cluster, Collection<?> countNotIncludingMyself )
+    {
+        return isQuorum( cluster.size(), countNotIncludingMyself.size() );
     }
 
     public static boolean isQuorum( int clusterSize, int countNotIncludingSelf )
