@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherPlanner
+import org.neo4j.cypher.internal.compatibility.v3_4.Compatibility
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContextCreator
-import org.neo4j.cypher.internal.compatibility.v3_4.{Compatibility, CostCompatibility}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{ParallelDispatcher, SingleThreadedExecutor}
@@ -62,7 +62,7 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
 
             new ParallelDispatcher(morselSize, numberOfThreads, executorService)
           }
-        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, logProvider.getLog(getClass),
+        Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, logProvider.getLog(getClass),
                           spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder,
                           EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher))
     }

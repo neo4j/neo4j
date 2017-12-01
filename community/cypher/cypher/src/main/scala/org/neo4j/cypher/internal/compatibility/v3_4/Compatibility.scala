@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 
 import java.time.Clock
 
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
-import org.neo4j.cypher.{CypherExecutionMode, exceptionHandler}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.IndexUsage.{explicitIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.query.PlannerInfo
@@ -55,21 +55,39 @@ import org.neo4j.values.virtual.MapValue
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-trait Compatibility[CONTEXT <: CommunityRuntimeContext,
-                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]] {
-  val kernelMonitors: KernelMonitors
-  val clock: Clock
-  val monitors: Monitors
-  val config: CypherCompilerConfiguration
-  val logger: InfoLogger
-  val runtimeBuilder: RuntimeBuilder[T]
-  val contextCreator: ContextCreator[CONTEXT]
-  val maybePlannerName: Option[CostBasedPlannerName]
-  val maybeRuntimeName: Option[RuntimeName]
-  val maybeUpdateStrategy: Option[UpdateStrategy]
-  val cacheMonitor: AstCacheMonitor
-  val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan_v3_4]
+case class Compatibility[CONTEXT <: CommunityRuntimeContext,
+                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](config: CypherCompilerConfiguration,
+                                                                                   clock: Clock,
+                                                                                   kernelMonitors: KernelMonitors,
+                                                                                   log: Log,
+                                                                                   planner: CypherPlanner,
+                                                                                   runtime: CypherRuntime,
+                                                                                   updateStrategy: CypherUpdateStrategy,
+                                                                                   runtimeBuilder: RuntimeBuilder[T],
+                                                                                   contextCreator: ContextCreator[CONTEXT]) {
+
+  val monitors: Monitors = WrappedMonitors(kernelMonitors)
+  val logger: InfoLogger = new StringInfoLogger(log)
+  val cacheMonitor: AstCacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+  val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[Statement, ExecutionPlan_v3_4](cacheMonitor)
   val monitorTag = "cypher3.4"
+  val maybePlannerName: Option[CostBasedPlannerName] = planner match {
+    case CypherPlanner.default => None
+    case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
+    case CypherPlanner.dp => Some(DPPlannerName)
+    case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
+  }
+  val maybeRuntimeName: Option[RuntimeName] = runtime match {
+    case CypherRuntime.default => None
+    case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
+    case CypherRuntime.slotted => Some(SlottedRuntimeName)
+    case CypherRuntime.morsel => Some(MorselRuntimeName)
+    case CypherRuntime.compiled => Some(CompiledRuntimeName)
+  }
+  val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
+    case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
+    case _ => None
+  }
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import RewriterStepSequencer._
@@ -78,7 +96,13 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_4.CypherCompiler[CONTEXT]
+  protected val compiler: v3_4.CypherCompiler[CONTEXT] = {
+
+    val monitors = WrappedMonitors(kernelMonitors)
+
+    new CypherCompilerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
+      maybePlannerName, maybeUpdateStrategy, contextCreator)
+  }
 
   private def queryGraphSolver = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(CostBasedPlannerName.default), monitors, config)
 
@@ -92,6 +116,9 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
   private val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_4](config.queryCacheSize)
 
   implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+
+  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
+
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))

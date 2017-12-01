@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.util.v3_4.InvalidArgumentException
 import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorV3_4}
-import org.neo4j.cypher.internal.compatibility.v3_4.{Compatibility, CostCompatibility}
-import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compatibility.v3_3.{CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorV3_3}
+import org.neo4j.cypher.internal.compatibility.v3_4.Compatibility
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorV3_4}
+import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.util.v3_4.InvalidArgumentException
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -75,7 +75,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
       case (CypherPlanner.rule, _) =>
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.3. If you need to use it, please select compatibility mode Cypher 3.1")
       case _ =>
-        v3_3compat.CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
+        v3_3compat.Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
           CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorV3_4)
     }
@@ -85,7 +85,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
       case (CypherPlanner.rule, _) =>
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.4. If you need to use it, please select compatibility mode Cypher 3.1")
       case _ =>
-        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
+        Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
                           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
                           CommunityRuntimeContextCreatorV3_4)
     }

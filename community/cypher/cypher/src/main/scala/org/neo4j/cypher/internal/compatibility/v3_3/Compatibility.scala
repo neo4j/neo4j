@@ -21,20 +21,20 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.time.Clock
 
-import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.exceptionHandler.{runSafely => runtimeRunSafely}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_3
-import org.neo4j.cypher.internal.compatibility.v3_4._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_4}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4, _}
+import org.neo4j.cypher.internal.compatibility.v3_4.{CacheAccessor, CypherCacheFlushingMonitor, CypherCacheMonitor, ExceptionTranslatingQueryContext, LFUCache, MonitoringCacheAccessor, QueryCache, ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4, WrappedMonitors => WrappedMonitorsV3_4}
 import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{idp => idpV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.{logical => logicalV3_3}
+import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerFactory, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, 
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3, TransactionalContextWrapper => TransactionalContextWrapperV3_3}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
+import org.neo4j.cypher.{CypherExecutionMode, CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.IndexUsage.{explicitIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.query.PlannerInfo
@@ -62,36 +63,60 @@ import org.neo4j.values.virtual.MapValue
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-trait Compatibility[CONTEXT3_3 <: v3_3.phases.CompilerContext,
+case class Compatibility[CONTEXT3_3 <: v3_3.phases.CompilerContext,
 CONTEXT3_4 <: CommunityRuntimeContextV3_4,
-T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
-  val kernelMonitors: KernelMonitors
-  val clock: Clock
-  val monitorsV3_3: MonitorsV3_3
-  val monitorsV3_4: Monitors
-  val configV3_4: CypherCompilerConfiguration
-  val logger: InfoLogger
-  val runtimeBuilder: RuntimeBuilder[T]
-  val contextCreatorV3_3: v3_3.ContextCreator[CONTEXT3_3]
-  val contextCreatorV3_4: ContextCreator[CONTEXT3_4]
-  val maybePlannerName: Option[v3_3.CostBasedPlannerName]
-  val maybeRuntimeName: Option[RuntimeName]
-  val maybeUpdateStrategy: Option[v3_3.UpdateStrategy]
-  val cacheMonitor: AstCacheMonitor
-  val cacheAccessor: MonitoringCacheAccessor[StatementV3_3, ExecutionPlan_v3_4]
-  val monitorTag = "cypher3.3"
+T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](configV3_4: CypherCompilerConfiguration,
+                                                                  clock: Clock,
+                                                                  kernelMonitors: KernelMonitors,
+                                                                  log: Log,
+                                                                  planner: CypherPlanner,
+                                                                  runtime: CypherRuntime,
+                                                                  updateStrategy: CypherUpdateStrategy,
+                                                                  runtimeBuilder: RuntimeBuilder[T],
+                                                                  contextCreatorV3_3: v3_3.ContextCreator[CONTEXT3_3],
+                                                                  contextCreatorV3_4: ContextCreator[CONTEXT3_4]) {
 
-  protected val rewriterSequencer: (String) => RewriterStepSequencer = {
+  val monitorsV3_3: MonitorsV3_3 = WrappedMonitors(kernelMonitors)
+  val monitorsV3_4: Monitors = WrappedMonitorsV3_4(kernelMonitors)
+  val logger: InfoLogger = new StringInfoLogger(log)
+  val cacheMonitor: AstCacheMonitor = monitorsV3_3.newMonitor[AstCacheMonitor](monitorTag)
+  val cacheAccessor: MonitoringCacheAccessor[StatementV3_3, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[StatementV3_3, ExecutionPlan_v3_4](cacheMonitor)
+  val monitorTag = "cypher3.3"
+  val configV3_3 = helpers.as3_3(configV3_4)
+  val planCacheFactory = () => new LFUCache[StatementV3_3, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
+  val maybePlannerName: Option[v3_3.CostBasedPlannerName] = planner match {
+    case CypherPlanner.default => None
+    case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerNameV3_3)
+    case CypherPlanner.dp => Some(DPPlannerNameV3_3)
+    case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
+  }
+  val maybeRuntimeName: Option[RuntimeName] = runtime match {
+    case CypherRuntime.default => None
+    case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
+    case CypherRuntime.slotted => Some(SlottedRuntimeName)
+    case CypherRuntime.morsel => Some(MorselRuntimeName)
+    case CypherRuntime.compiled => Some(CompiledRuntimeName)
+  }
+  val maybeUpdateStrategy: Option[v3_3.UpdateStrategy] = updateStrategy match {
+    case CypherUpdateStrategy.eager => Some(v3_3.eagerUpdateStrategy)
+    case _ => None
+  }
+  val rewriterSequencer: (String) => RewriterStepSequencer = {
     import RewriterStepSequencer._
     import org.neo4j.helpers.Assertion._
 
     if (assertionsEnabled()) newValidating else newPlain
   }
+  val compiler: v3_3.CypherCompiler[CONTEXT3_3] = {
 
-  protected val compiler: v3_3.CypherCompiler[CONTEXT3_3]
+    val monitors: MonitorsV3_3 = WrappedMonitors(kernelMonitors)
+    new CypherCompilerFactory().costBasedCompiler(configV3_3, clock, monitors, rewriterSequencer,
+      maybePlannerName, maybeUpdateStrategy, contextCreatorV3_3)
+  }
 
-  protected val configV3_3 = helpers.as3_3(configV3_4)
+  implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
+  monitorsV3_3.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
 
   private def queryGraphSolverV3_3 = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(v3_3.CostBasedPlannerName.default), monitorsV3_3, configV3_3)
   private def queryGraphSolverV3_4 = compatibility.v3_4.Compatibility.createQueryGraphSolver(
@@ -106,9 +131,6 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
       )
   }
 
-  private val planCacheFactory = () => new LFUCache[StatementV3_3, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
-
-  implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
@@ -134,7 +156,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]] {
         val tcV3_3 = TransactionalContextWrapperV3_3(transactionalContext.tc)
         val tcV3_4 = TransactionalContextWrapper(transactionalContext.tc)
         val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(new TransactionBoundPlanContextV3_3(tcV3_3, notificationLoggerV3_3))
-        val planContextV3_4 = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4))
+        val planContextV3_4 = new ExceptionTranslatingPlanContextV3_4(new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4))
 
         // Only used during planning
         def simpleExpressionEvaluatorV3_3 = new logicalV3_3.ExpressionEvaluator {
