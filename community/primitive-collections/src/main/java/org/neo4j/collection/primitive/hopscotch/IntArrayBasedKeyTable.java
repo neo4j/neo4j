@@ -35,11 +35,6 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     protected final VALUE singleValue;
     private final int itemsPerEntry;
 
-    protected IntArrayBasedKeyTable( int itemsPerEntry, int h, VALUE singleValue )
-    {
-        this( baseCapacity( h ), itemsPerEntry, h, singleValue );
-    }
-
     protected IntArrayBasedKeyTable( int capacity, int itemsPerEntry, int h, VALUE singleValue )
     {
         super( capacity, h );
