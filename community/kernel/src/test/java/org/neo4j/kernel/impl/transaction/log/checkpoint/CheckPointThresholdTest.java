@@ -209,24 +209,4 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
         withIntervalTime( "100ms" );
         assertThat( createThreshold().checkFrequencyMillis().min().getAsLong(), is( 100L ) );
     }
-
-    @SuppressWarnings( "ConstantConditions" )
-    @Test
-    public void continuousPolicyMustAlwaysTriggerCheckPoints() throws Exception
-    {
-        withPolicy( "continuously" );
-        CheckPointThreshold threshold = createThreshold();
-        threshold.initialize( 2 );
-
-        assertThat( threshold.checkFrequencyMillis().min().getAsLong(), is( 0L ) );
-
-        assertTrue( threshold.isCheckPointingNeeded( 2, triggered ) );
-        threshold.checkPointHappened( 3 );
-        assertTrue( threshold.isCheckPointingNeeded( 3, triggered ) );
-        assertTrue( threshold.isCheckPointingNeeded( 3, triggered ) );
-        verifyTriggered( "continuous" );
-        verifyTriggered( "continuous" );
-        verifyTriggered( "continuous" );
-        verifyNoMoreTriggers();
-    }
 }
