@@ -86,14 +86,23 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     }
 
     def fixArgumentIdsOnMerge(plannerQuery: PlannerQuery): PlannerQuery = {
-      val mergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph
-      val newMergeMatchGraph = mergeMatchGraph.map {
+      val newMergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph.map {
         qg =>
           val nodesAndRels = QueryGraph.coveredIdsForPatterns(qg.patternNodes, qg.patternRelationships)
-          val requiredArguments = nodesAndRels intersect qg.argumentIds
-          qg.withArgumentIds(requiredArguments)
+          val predicateDependencies = qg.withoutArguments().dependencies
+          val requiredArguments = nodesAndRels ++ predicateDependencies
+          val availableArguments = qg.argumentIds
+          qg.withArgumentIds(requiredArguments intersect availableArguments)
       }
-      plannerQuery.amendQueryGraph(qg => newMergeMatchGraph.map(qg.withMergeMatch).getOrElse(qg)).updateTail(fixArgumentIdsOnMerge)
+
+      val updatePQ = newMergeMatchGraph match {
+        case None =>
+          plannerQuery
+        case Some(qg) =>
+          plannerQuery.amendQueryGraph(_.withMergeMatch(qg))
+      }
+
+      updatePQ.updateTail(fixArgumentIdsOnMerge)
     }
 
     def fixQueriesWithOnlyRelationshipIndex(plannerQuery: PlannerQuery): PlannerQuery = {
