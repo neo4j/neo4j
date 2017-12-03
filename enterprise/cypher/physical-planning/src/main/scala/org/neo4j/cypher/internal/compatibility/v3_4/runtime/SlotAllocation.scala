@@ -514,8 +514,8 @@ object SlotAllocation {
                                 (semanticTable: SemanticTable): SlotConfiguration =
     plan match {
       case ForeachApply(_, _, variableName, listExpression) =>
-        // TODO: Because the ForeachApplyPipe calls newWith1() on the lhs context unfortunately we have to add it also on lhs
-        //       This should not be needed when we have ForeachApplySlottedPipe
+        // The slot for the iteration variable of foreach needs to be available as an argument on the rhs of the apply
+        // so we allocate it on the lhs (even though its value will not be needed after the foreach is done)
         val typeSpec = semanticTable.getActualTypeFor(listExpression)
         if (typeSpec.contains(ListType(CTNode))) {
           lhs.newLong(variableName, true, CTNode)

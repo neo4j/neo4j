@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
 import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -759,5 +760,77 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     allocations(nestedPlan.assignedId) should equal(
       SlotConfiguration(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0)
     )
+  }
+
+  test("foreach allocates on left hand side with integer list") {
+    // given
+    val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
+    val label = LabelToken("label2", LabelId(0))
+    val argument = Argument()(solved)()
+    val list = literalIntList(1, 2, 3)
+    val rhs = CreateNode(argument, z, Seq.empty, None)(solved)
+    val foreach = ForeachApply(lhs, rhs, "i", list)(solved)
+    foreach.assignIds()
+
+    val semanticTableWithList = SemanticTable(ASTAnnotationMap(list -> ExpressionTypeInfo(ListType(CTInteger), Some(ListType(CTAny)))))
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(foreach, semanticTableWithList).slotConfigurations
+
+    // then
+    allocations should have size 4
+
+    val lhsSlots = allocations(lhs.assignedId)
+    lhsSlots should equal(
+      SlotConfiguration.empty
+        .newLong("x", nullable = false, CTNode)
+        .newReference("i", nullable = true, CTAny)
+    )
+
+    val rhsSlots = allocations(rhs.assignedId)
+    rhsSlots should equal(
+      SlotConfiguration.empty
+        .newLong("x", nullable = false, CTNode)
+        .newLong("z", nullable = false, CTNode)
+        .newReference("i", nullable = true, CTAny)
+    )
+
+    allocations(foreach.assignedId) shouldBe theSameInstanceAs(lhsSlots)
+  }
+
+  test("foreach allocates on left hand side with node list") {
+    // given
+    val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
+    val label = LabelToken("label2", LabelId(0))
+    val argument = Argument()(solved)()
+    val list = literalList(Variable("x")(pos))
+    val rhs = CreateNode(argument, z, Seq.empty, None)(solved)
+    val foreach = ForeachApply(lhs, rhs, "i", list)(solved)
+    foreach.assignIds()
+
+    val semanticTableWithList = SemanticTable(ASTAnnotationMap(list -> ExpressionTypeInfo(ListType(CTNode), Some(ListType(CTNode)))))
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(foreach, semanticTableWithList).slotConfigurations
+
+    // then
+    allocations should have size 4
+
+    val lhsSlots = allocations(lhs.assignedId)
+    lhsSlots should equal(
+      SlotConfiguration.empty
+        .newLong("x", nullable = false, CTNode)
+        .newLong("i", nullable = true, CTNode)
+    )
+
+    val rhsSlots = allocations(rhs.assignedId)
+    rhsSlots should equal(
+      SlotConfiguration.empty
+        .newLong("x", nullable = false, CTNode)
+        .newLong("i", nullable = true, CTNode)
+        .newLong("z", nullable = false, CTNode)
+    )
+
+    allocations(foreach.assignedId) shouldBe theSameInstanceAs(lhsSlots)
   }
 }
