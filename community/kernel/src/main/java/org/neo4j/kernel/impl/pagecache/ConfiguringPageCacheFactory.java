@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.pagecache;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -79,14 +80,24 @@ public class ConfiguringPageCacheFactory
     protected PageCache createPageCache()
     {
         checkPageSize( config );
-        int maxPages = calculateMaxPages( config );
-        return new MuninnPageCache( swapperFactory, maxPages, pageCacheTracer, pageCursorTracerSupplier );
+        MemoryAllocator memoryAllocator = buildMemoryAllocator( config );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, pageCursorTracerSupplier );
     }
 
-    private int calculateMaxPages( Config config )
+    private MemoryAllocator buildMemoryAllocator( Config config )
     {
-        Long pageCacheMemorySetting = config.get( pagecache_memory );
-        long pageCacheMemory = interpretMemorySetting( pageCacheMemorySetting );
+        String pageCacheMemorySetting = config.get( pagecache_memory );
+        if ( pageCacheMemorySetting == null )
+        {
+            long heuristic = defaultHeuristicPageCacheMemory();
+            log.warn( "The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this " +
+                      "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
+                      "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " );
+            pageCacheMemorySetting = "" + heuristic;
+        }
+
+        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( pageCacheMemorySetting );
+        long pageCacheMemory = memoryAllocator.availableMemory();
         long maxHeap = Runtime.getRuntime().maxMemory();
         if ( pageCacheMemory / maxHeap > 100 )
         {
@@ -94,21 +105,8 @@ public class ConfiguringPageCacheFactory
                       "10 KiB of heap memory, for every 1 MiB of page cache memory. The current configuration is " +
                       "allocating %s bytes for the page cache, and %s bytes for the heap.", pageCacheMemory, maxHeap );
         }
-        long pageCount = pageCacheMemory / PageCache.PAGE_SIZE;
-        return (int) Math.min( Integer.MAX_VALUE - 2000, pageCount );
-    }
 
-    private long interpretMemorySetting( Long pageCacheMemorySetting )
-    {
-        if ( pageCacheMemorySetting != null )
-        {
-            return pageCacheMemorySetting;
-        }
-        long heuristic = defaultHeuristicPageCacheMemory();
-        log.warn( "The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this " +
-                  "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
-                  "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " );
-        return heuristic;
+        return memoryAllocator;
     }
 
     public static long defaultHeuristicPageCacheMemory()
@@ -146,8 +144,7 @@ public class ConfiguringPageCacheFactory
                     // the per page overhead, 8192 / 72 ~= 114, plus leaving some extra room on the heap for the rest
                     // of the system. This means that we won't heuristically try to create a page cache that is too
                     // large to fit on the heap.
-                    long memory = Math.min( max, Math.max( min, heuristic ) );
-                    return memory;
+                    return Math.min( max, Math.max( min, heuristic ) );
                 }
             }
             catch ( Exception ignore )
@@ -170,15 +167,14 @@ public class ConfiguringPageCacheFactory
     public void dumpConfiguration()
     {
         checkPageSize( config );
-        long maxPages = calculateMaxPages( config );
+        String pageCacheMemory = config.get( pagecache_memory );
         long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
         String totalPhysicalMemMb = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)
                                     ? "?" : "" + ByteUnit.Byte.toMebiBytes( totalPhysicalMemory );
         long maxVmUsageMb = ByteUnit.Byte.toMebiBytes( Runtime.getRuntime().maxMemory() );
-        long pageCacheMb = ByteUnit.Byte.toMebiBytes( maxPages * PageCache.PAGE_SIZE );
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
                      " Heap size: " + maxVmUsageMb + " MiB," +
-                     " Page cache size: " + pageCacheMb + " MiB.";
+                     " Page cache: " + pageCacheMemory + ".";
 
         log.info( msg );
     }
