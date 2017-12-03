@@ -144,7 +144,7 @@ public class ConsensusModule
         raftMachine = new RaftMachine( myself, termState, voteState, raftLog, leaderAvailabilityTimers,
                 outbound, logProvider, raftMembershipManager, logShipping, inFlightCache,
                 RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config, logProvider.getLog( getClass() ) ),
-               supportsPreVoting, platformModule.monitors );
+                supportsPreVoting, platformModule.monitors );
 
         life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
 

@@ -33,6 +33,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -205,5 +206,49 @@ public class DelayedRenewableTimeoutServiceTest
         // cleanup
         latch.countDown();
         cancelThread.interrupt();
+    }
+
+    @Test
+    public void shouldCancelPendingRenewals() throws Throwable
+    {
+        // given
+        final AtomicLong timeoutCount = new AtomicLong();
+
+        FakeClock clock = Clocks.fakeClock();
+
+        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock,
+                NullLogProvider.getInstance() );
+
+        CountDownLatch latch = new CountDownLatch( 1 );
+        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, t ->
+        {
+            t.renew();
+            timeoutCount.incrementAndGet();
+            try
+            {
+                latch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                e.printStackTrace();
+            }
+        } );
+
+        life.add( timeoutService );
+
+        clock.forward( TIMEOUT_MS, MILLISECONDS );
+        Predicates.await( timeoutCount::get, count -> count == 1, LONG_TIME_MS, MILLISECONDS, 1, MILLISECONDS );
+        timeout.cancel();
+        latch.countDown();
+
+        // when
+        for ( int i = 0; i < 10; i++ )
+        {
+            clock.forward( TIMEOUT_MS, MILLISECONDS );
+            timeoutService.run();
+        }
+
+        // then
+        assertEquals( 1, timeoutCount.get() );
     }
 }

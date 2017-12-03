@@ -59,7 +59,7 @@ public class RaftState implements ReadableRaftState
     private long leaderCommit = -1;
     private long commitIndex = -1;
     private long lastLogIndexBeforeWeBecameLeader = -1;
-    private boolean isPreElection = true; // Needed to form a cluster
+    private boolean isPreElection;
 
     public RaftState( MemberId myself,
                       StateStorage<TermState> termStorage,
@@ -76,6 +76,8 @@ public class RaftState implements ReadableRaftState
         this.inFlightCache = inFlightCache;
         this.supportPreVoting = supportPreVoting;
         this.log = logProvider.getLog( getClass() );
+        // Initial state
+        this.isPreElection = supportPreVoting;
     }
 
     @Override
