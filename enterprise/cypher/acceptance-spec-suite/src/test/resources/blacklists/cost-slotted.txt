@@ -5,14 +5,6 @@ Should fail on merge using multiple unique indexes if it found a node matching s
 Should fail on merge using multiple unique indexes and labels if found different nodes
 Merge with uniqueness constraints must properly handle multiple labels
 Failing when creation would violate constraint
-Explanation of in-query procedure call
-In-query call to procedure that takes no arguments
-Calling the same procedure twice using the same outputs in each call
-In-query call to procedure with explicit arguments
-In-query call to procedure with argument of type NUMBER accepts value of type INTEGER
-In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
-In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
-In-query call to procedure with null argument
 
 //SkipLimitAcceptance.feature
 Using a optional match after aggregation and before an aggregation

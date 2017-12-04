@@ -310,7 +310,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (x), (y) CALL user.expand(x, y) YIELD relId RETURN x, y, relId"
 
     // Correct! No eagerization necessary
-    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Version2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
     result.size should equal(2)

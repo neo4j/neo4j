@@ -77,17 +77,11 @@ Fail when trying to create using an undirected relationship pattern
 Many CREATE clauses
 
 `labels()` failing on invalid arguments
-In-query call to procedure that takes no arguments
-Calling the same procedure twice using the same outputs in each call
 In-query call to procedure that takes no arguments and yields no results
 In-query call to procedure with explicit arguments
 In-query call to procedure with explicit arguments that drops all result fields
-In-query call to procedure with argument of type NUMBER accepts value of type INTEGER
-In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
-In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
 Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
 In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
-In-query call to procedure with null argument
 
 // TCK side effects are incorrectly specified -- need update
 Standalone call to procedure with explicit arguments
