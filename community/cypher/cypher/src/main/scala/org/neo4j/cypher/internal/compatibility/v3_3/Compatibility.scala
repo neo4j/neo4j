@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Execu
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4, _}
-import org.neo4j.cypher.internal.compatibility.v3_4.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4, WrappedMonitors => WrappedMonitorsV3_4}
+import org.neo4j.cypher.internal.compatibility.v3_4.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4}
 import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{idp => idpV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.{logical => logicalV3_3}
@@ -44,7 +44,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3,
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3, TransactionalContextWrapper => TransactionalContextWrapperV3_3}
+import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -69,7 +69,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
   val cacheMonitor: AstCacheMonitor[StatementV3_3] = monitorsV3_3.newMonitor[AstCacheMonitor[StatementV3_3]]("cypher3.3")
   monitorsV3_3.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.3")
 
-  val configV3_3 = helpers.as3_3(configV3_4)
+  val configV3_3: v3_3.CypherCompilerConfiguration = helpers.as3_3(configV3_4)
   val maybePlannerName: Option[v3_3.CostBasedPlannerName] = planner match {
     case CypherPlanner.default => None
     case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerNameV3_3)
@@ -116,10 +116,11 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
         val syntacticQuery = preparedSyntacticQueryForV_3_3.get
 
         //Context used for db communication during planning
-        val tcV3_3 = TransactionalContextWrapperV3_3(transactionalContext.tc)
         val tcV3_4 = TransactionalContextWrapper(transactionalContext.tc)
-        val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(new TransactionBoundPlanContextV3_3(tcV3_3, notificationLoggerV3_3))
-        val planContextV3_4 = new ExceptionTranslatingPlanContextV3_4(new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4))
+        val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(
+          new TransactionBoundPlanContextV3_3(() => transactionalContext.tc.readOperations(), notificationLoggerV3_3))
+        val planContextV3_4 = new ExceptionTranslatingPlanContextV3_4(
+          new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4))
 
         // Only used during planning
         def simpleExpressionEvaluatorV3_3 = new logicalV3_3.ExpressionEvaluator {
@@ -143,8 +144,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_3)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContextV3_3, planCacheFactory)
-        val statisticsV3_4 = GraphStatisticsWrapper(planContextV3_3.statistics)
-        val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContextV3_3.txIdProvider, statisticsV3_4)
+        val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContextV3_4.txIdProvider, planContextV3_4.statistics)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
         def createPlan(): ExecutionPlan_v3_4 = {
@@ -167,7 +167,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
         (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
       }
 
-      override protected val trier = preparedSyntacticQueryForV_3_3
+      override protected val trier: Try[phases.BaseState] = preparedSyntacticQueryForV_3_3
     }
   }
 

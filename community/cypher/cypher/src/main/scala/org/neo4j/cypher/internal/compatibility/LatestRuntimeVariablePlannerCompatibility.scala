@@ -75,8 +75,8 @@ STATEMENT <: AnyRef] {
   // concrete stuff
   val monitorsV3_4: Monitors = WrappedMonitorsV3_4(kernelMonitors)
   val logger: InfoLogger = new StringInfoLogger(log)
-  val cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4](cacheMonitor)
-  val planCacheFactory = () => new LFUCache[STATEMENT, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
+  lazy val cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4](cacheMonitor)
+  val planCacheFactory: () => LFUCache[STATEMENT, ExecutionPlan_v3_4] = () => new LFUCache[STATEMENT, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
   val maybeRuntimeName: Option[RuntimeName] = runtime match {
     case CypherRuntime.default => None
     case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
@@ -85,7 +85,7 @@ STATEMENT <: AnyRef] {
     case CypherRuntime.compiled => Some(CompiledRuntimeName)
   }
   implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
-  val queryGraphSolverV3_4 = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
+  lazy val queryGraphSolverV3_4: QueryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
     maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default),
     monitorsV3_4,
     configV3_4)
@@ -99,7 +99,7 @@ STATEMENT <: AnyRef] {
 
   protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor[STATEMENT] {
     override def cacheDiscard(key: STATEMENT, userKey: String, secondsSinceReplan: Int) {
-      log.info(s"Discarded stale query from the query cache: $userKey")
+      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds: $userKey")
     }
   }
 

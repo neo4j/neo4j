@@ -44,10 +44,8 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def checkNodeIndex(idxName: String): Unit =
     translateException(inner.checkNodeIndex(idxName))
 
-  override def txIdProvider: () => Long = {
-    val innerTxProvider = translateException(inner.txIdProvider)
-    () => translateException(innerTxProvider())
-  }
+  // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_3/Compatibility
+  override def txIdProvider: () => Long = ???
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature =
     translateException(inner.procedureSignature(name))

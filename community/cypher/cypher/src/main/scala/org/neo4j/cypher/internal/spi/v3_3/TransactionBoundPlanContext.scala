@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherExecutionException, symbols}
-import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
@@ -40,24 +40,24 @@ import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
+class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, logger: InternalNotificationLogger)
+  extends TransactionBoundTokenContext(readOperationsSupplier) with PlanContext with IndexDescriptorCompatibility {
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    readOperationsSupplier().indexesGetForLabel(labelId).asScala
       .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
       .flatMap(getOnlineIndex)
   }
 
   def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(descriptor))
+    getOnlineIndex(readOperationsSupplier().indexGetForSchema(descriptor))
   }
 
   def indexExistsForLabel(labelName: String): Boolean = {
     try {
       val labelId = getLabelId(labelName)
-      val onlineIndexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+      val onlineIndexDescriptors = readOperationsSupplier().indexesGetForLabel(labelId).asScala
         .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
         .flatMap(getOnlineIndex)
 
@@ -68,14 +68,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    readOperationsSupplier().indexesGetForLabel(labelId).asScala
       .filter(_.`type`() == KernelIndexDescriptor.Type.UNIQUE)
       .flatMap(getOnlineIndex)
   }
 
   def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(descriptor))
+    getOnlineIndex(readOperationsSupplier().indexGetForSchema(descriptor))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
@@ -86,7 +86,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
-    tc.statement.readOperations().indexGetState(descriptor) match {
+    readOperationsSupplier().indexGetState(descriptor) match {
       case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds))
       case _ => None
     }
@@ -96,40 +96,41 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
+      readOperationsSupplier().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
     }
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!tc.statement.readOperations().nodeExplicitIndexesGetAll().contains(idxName)) {
+    if (!readOperationsSupplier().nodeExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String) {
-    if (!tc.statement.readOperations().relationshipExplicitIndexesGetAll().contains(idxName)) {
+    if (!readOperationsSupplier().relationshipExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
     val javaCreator = new java.util.function.Function[Any, T]() {
-      def apply(key: Any) = f
+      def apply(key: Any): T = f
     }
-    tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
+    readOperationsSupplier().schemaStateGetOrCreate(key, javaCreator)
   }
 
   val statistics: GraphStatistics =
-    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations),
+    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(readOperationsSupplier()),
       new MutableGraphStatisticsSnapshot())
 
-  val txIdProvider = LastCommittedTxIdProvider(tc.graph)
+  // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_3/Compatibility
+  lazy val txIdProvider: () => Long = ???
 
-  override def procedureSignature(name: QualifiedName) = {
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val ks = tc.statement.readOperations().procedureGet(kn)
+    val ks = readOperationsSupplier().procedureGet(kn)
     val input = ks.inputSignature().asScala
       .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
       .toIndexedSeq
@@ -145,9 +146,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val maybeFunction = tc.statement.readOperations().functionGet(kn)
+    val maybeFunction = readOperationsSupplier().functionGet(kn)
     val (fcn, aggregation) = if (maybeFunction.isPresent) (Some(maybeFunction.get), false)
-    else (asOption(tc.statement.readOperations().aggregationFunctionGet(kn)), true)
+    else (asOption(readOperationsSupplier().aggregationFunctionGet(kn)), true)
     fcn.map(f => {
       val input = f.inputSignature().asScala
         .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
