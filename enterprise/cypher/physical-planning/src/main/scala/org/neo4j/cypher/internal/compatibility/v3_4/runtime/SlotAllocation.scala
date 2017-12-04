@@ -646,16 +646,20 @@ object SlotAllocation {
         lhs
     }
 
-  private def addGroupingMap(groupingExpressions: Map[String, Expression],
-                             source: SlotConfiguration,
-                             target: SlotConfiguration): Unit =
+  private def addGroupingMap(groupingExpressions: Map[String, Expression], incoming: SlotConfiguration, outgoing: SlotConfiguration) = {
     groupingExpressions foreach {
       case (key, parserAst.Variable(ident)) =>
-        val slotInfo = source(ident)
-        target.newReference(key, slotInfo.nullable, slotInfo.typ)
+        val slotInfo = incoming(ident)
+        slotInfo.typ match {
+          case CTNode | CTRelationship =>
+            outgoing.newLong(key, slotInfo.nullable, slotInfo.typ)
+          case _ =>
+            outgoing.newReference(key, slotInfo.nullable, slotInfo.typ)
+        }
       case (key, _) =>
-        target.newReference(key, nullable = true, CTAny)
+        outgoing.newReference(key, nullable = true, CTAny)
     }
+  }
 
   private def isAnApplyPlan(current: LogicalPlan): Boolean = current match {
     case _: AntiConditionalApply |

@@ -200,7 +200,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Aggregation(_, groupingExpressions, aggregationExpression) =>
         val grouping = groupingExpressions.map {
           case (key, expression) =>
-            slots.getReferenceOffsetFor(key) -> convertExpressions(expression)
+            slots(key) -> convertExpressions(expression)
         }
         val aggregation = aggregationExpression.map {
           case (key, expression) =>
@@ -212,9 +212,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Distinct(_, groupingExpressions) =>
         val grouping = groupingExpressions.map {
           case (key, expression) =>
-            slots.getReferenceOffsetFor(key) -> convertExpressions(expression)
+            slots(key) -> convertExpressions(expression)
         }
-
         DistinctSlottedPipe(source, slots, grouping)(id)
 
       case CreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
