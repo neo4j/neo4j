@@ -1916,6 +1916,7 @@ public class SeekCursorTest
         // given
         long generation = TreeNode.generation( cursor );
         MutableBoolean triggered = new MutableBoolean( false );
+        long rightChild = 999; // We don't care
 
         // a newer leaf
         long leftChild = cursor.getCurrentPageId();
@@ -1927,7 +1928,7 @@ public class SeekCursorTest
         TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
-        node.insertKeyAt( cursor, insertKey, 0, 0, INTERNAL );
+        node.insertKeyAndRightChildAt( cursor, insertKey, rightChild, 0, 0, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of child node)
         node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
@@ -1956,7 +1957,8 @@ public class SeekCursorTest
         // when
         from.setValue( 1L );
         to.setValue( 2L );
-        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
+        //noinspection EmptyTryBlock
+        try ( SeekCursor<MutableLong,MutableLong> ignored = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
                 exceptionDecorator ) )
         {
@@ -1972,6 +1974,7 @@ public class SeekCursorTest
     {
         // given
         MutableBoolean triggered = new MutableBoolean( false );
+        long oldRightChild = 666; // We don't care
 
         // a newer right leaf
         long rightChild = cursor.getCurrentPageId();
@@ -2004,7 +2007,7 @@ public class SeekCursorTest
         TreeNode.initializeInternal( cursor, stableGeneration - 1, unstableGeneration - 1 );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
-        node.insertKeyAt( cursor, insertKey, 0, 0, INTERNAL );
+        node.insertKeyAndRightChildAt( cursor, insertKey, oldRightChild, 0, 0, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of internal node)
         node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
@@ -2037,7 +2040,8 @@ public class SeekCursorTest
         cursor.putInt( keyCount ); // Bad key count
 
         // THEN
-        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, Long.MAX_VALUE ) )
+        //noinspection EmptyTryBlock
+        try ( SeekCursor<MutableLong,MutableLong> ignored = seekCursor( 0L, Long.MAX_VALUE ) )
         {
             // Do nothing
         }
@@ -2071,6 +2075,7 @@ public class SeekCursorTest
         // THEN
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, Long.MAX_VALUE ) )
         {
+            //noinspection StatementWithEmptyBody
             while ( seek.next() )
             {
                 // Do nothing
@@ -2143,10 +2148,9 @@ public class SeekCursorTest
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
         cursor.next( rootId );
         TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-        node.insertKeyAt( cursor, split.rightKey, 0, 0, INTERNAL );
-        TreeNode.setKeyCount( cursor, 1 );
         node.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
-        node.setChildAt( cursor, split.rightChild, 1, stableGeneration, unstableGeneration );
+        node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration );
+        TreeNode.setKeyCount( cursor, 1 );
         split.hasRightKeyInsert = false;
         numberOfRootSplits++;
         updateRoot();
@@ -2280,7 +2284,6 @@ public class SeekCursorTest
 
     private void append( long k )
     {
-        TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
         int keyCount = TreeNode.keyCount( cursor );
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
@@ -2297,7 +2300,6 @@ public class SeekCursorTest
         }
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
-        TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
         node.insertKeyValueAt( cursor, insertKey, insertValue, pos, keyCount );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }

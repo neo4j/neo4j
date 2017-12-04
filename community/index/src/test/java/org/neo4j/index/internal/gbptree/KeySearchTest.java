@@ -47,6 +47,7 @@ public class KeySearchTest
     private final MutableLong readKey = layout.newKey();
     private final MutableLong searchKey = layout.newKey();
     private final MutableLong insertKey = layout.newKey();
+    private final MutableLong dummyValue = layout.newValue();
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -460,7 +461,7 @@ public class KeySearchTest
         {
             keys[i] = currentKey;
             key.setValue( currentKey );
-            node.insertKeyAt( cursor, key, i, i, LEAF );
+            node.insertKeyValueAt( cursor, key, dummyValue, i, i );
             currentKey += random.nextInt( 100 ) + 10;
         }
         TreeNode.setKeyCount( cursor, keyCount );
@@ -512,8 +513,15 @@ public class KeySearchTest
     {
         insertKey.setValue( key );
         int keyCount = TreeNode.keyCount( cursor );
-        TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
-        node.insertKeyAt( cursor, insertKey, keyCount, keyCount, type );
+        if ( TreeNode.isInternal( cursor ) )
+        {
+            long dummyChild = 10;
+            node.insertKeyAndRightChildAt( cursor, insertKey, dummyChild, keyCount, keyCount, STABLE_GENERATION, UNSTABLE_GENERATION );
+        }
+        else
+        {
+            node.insertKeyValueAt( cursor, insertKey, dummyValue, keyCount, keyCount );
+        }
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
@@ -531,7 +539,7 @@ public class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            node.insertKeyAt( cursor, key, i, i, LEAF );
+            node.insertKeyValueAt( cursor, key, dummyValue, i, i );
         }
         TreeNode.setKeyCount( cursor, KEY_COUNT );
     }

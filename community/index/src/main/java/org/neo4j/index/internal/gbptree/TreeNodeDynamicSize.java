@@ -35,7 +35,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Type type )
+    void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount, long stableGeneration,
+            long unstableGeneration )
     {
         throw new UnsupportedOperationException( "Implement me" );
     }
@@ -54,6 +55,18 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void removeKeyValueAt( PageCursor cursor, int pos, int keyCount )
+    {
+        throw new UnsupportedOperationException( "Implement me" );
+    }
+
+    @Override
+    void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount )
+    {
+        throw new UnsupportedOperationException( "Implement me" );
+    }
+
+    @Override
+    void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount )
     {
         throw new UnsupportedOperationException( "Implement me" );
     }
@@ -78,18 +91,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
-    {
-        throw new UnsupportedOperationException( "Implement me" );
-    }
-
-    @Override
-    void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, long stableGeneration, long unstableGeneration )
-    {
-        throw new UnsupportedOperationException( "Implement me" );
-    }
-
-    @Override
-    void removeChildAt( PageCursor cursor, int pos, int keyCount )
     {
         throw new UnsupportedOperationException( "Implement me" );
     }

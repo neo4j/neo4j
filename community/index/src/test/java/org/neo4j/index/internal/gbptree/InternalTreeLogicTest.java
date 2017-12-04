@@ -1546,10 +1546,9 @@ public class InternalTreeLogicTest
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
         goTo( cursor, rootId );
         TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-        node.insertKeyAt( cursor, split.rightKey, 0, 0, INTERNAL );
-        TreeNode.setKeyCount( cursor, 1 );
         node.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
-        node.setChildAt( cursor, split.rightChild, 1, stableGeneration, unstableGeneration );
+        node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration );
+        TreeNode.setKeyCount( cursor, 1 );
         split.hasRightKeyInsert = false;
         updateRoot();
     }

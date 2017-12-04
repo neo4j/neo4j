@@ -220,9 +220,8 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract KEY keyAt( PageCursor cursor, KEY into, int pos, Type type );
 
-    // Insert key without associated value.
-    // Useful for internal nodes and testing.
-    abstract void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount, Type type );
+    abstract void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount,
+            long stableGeneration, long unstableGeneration );
 
     abstract void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount );
 
@@ -232,6 +231,10 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract void removeKeyValueAt( PageCursor cursor, int pos, int keyCount );
 
+    abstract void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount );
+
+    abstract void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount );
+
     abstract void setKeyAt( PageCursor cursor, KEY key, int pos, Type type );
 
     abstract VALUE valueAt( PageCursor cursor, VALUE value, int pos );
@@ -239,11 +242,6 @@ abstract class TreeNode<KEY,VALUE>
     abstract void setValueAt( PageCursor cursor, VALUE value, int pos );
 
     abstract long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration );
-
-    abstract void insertChildAt( PageCursor cursor, long child, int pos, int keyCount,
-            long stableGeneration, long unstableGeneration );
-
-    abstract void removeChildAt( PageCursor cursor, int pos, int keyCount );
 
     abstract void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration );
 

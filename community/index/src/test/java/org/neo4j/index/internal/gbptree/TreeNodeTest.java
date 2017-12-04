@@ -144,89 +144,8 @@ public class TreeNodeTest
         }
     }
 
-    private void shouldSetAndGetKey( TreeNode.Type type ) throws Exception
-    {
-        // GIVEN
-        MutableLong key = layout.newKey();
-
-        // WHEN
-        long firstKey = 10;
-        key.setValue( firstKey );
-        node.insertKeyAt( cursor, key, 0, 0, type );
-
-        long otherKey = 19;
-        key.setValue( otherKey );
-        node.insertKeyAt( cursor, key, 1, 1, type );
-
-        // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0, type ).longValue() );
-        assertEquals( otherKey, node.keyAt( cursor, key, 1, type ).longValue() );
-    }
-
     @Test
-    public void shouldSetAndGetKeyInLeaf() throws Exception
-    {
-        // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-
-        // THEN
-        shouldSetAndGetKey( INTERNAL );
-    }
-
-    @Test
-    public void shouldSetAndGetKeyInInternal() throws Exception
-    {
-        // GIVEN
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-
-        // THEN
-        shouldSetAndGetKey( INTERNAL );
-    }
-
-    private void shouldRemoveKey( TreeNode.Type type ) throws Exception
-    {
-        // GIVEN
-        MutableLong key = layout.newKey();
-        long firstKey = 10;
-        key.setValue( firstKey );
-        node.insertKeyAt( cursor, key, 0, 0, type );
-        long otherKey = 19;
-        key.setValue( otherKey );
-        node.insertKeyAt( cursor, key, 1, 1, type );
-        long thirdKey = 123;
-        key.setValue( thirdKey );
-        node.insertKeyAt( cursor, key, 2, 2, type );
-
-        // WHEN
-        node.removeKeyAt( cursor, 1, 3, type );
-
-        // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0, type ).longValue() );
-        assertEquals( thirdKey, node.keyAt( cursor, key, 1, type ).longValue() );
-    }
-
-    @Test
-    public void shouldRemoveKeyInLeaf() throws Exception
-    {
-        // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-
-        // THEN
-        shouldRemoveKey( LEAF );
-    }
-
-    @Test
-    public void shouldRemoveKeyInInternal() throws Exception
-    {
-        // GIVEN
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-
-        // THEN
-        shouldRemoveKey( INTERNAL );
-    }
-
-    @Test
-    public void shouldSetAndGetKeyValue() throws Exception
+    public void keyValueOperationsInLeaf() throws Exception
     {
         // GIVEN
         TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -234,110 +153,144 @@ public class TreeNodeTest
         MutableLong value = layout.newValue();
 
         // WHEN
-        long firstKey = 24680;
+        long firstKey = 10;
+        long firstValue = 100;
         key.setValue( firstKey );
-        long firstValue = 123456789;
         value.setValue( firstValue );
-        node.insertKeyValueAt( cursor, key , value, 0, 0 );
+        node.insertKeyValueAt( cursor, key, value, 0, 0 );
 
-        long otherKey = 13579;
-        key.setValue( otherKey );
-        long otherValue = 987654321;
-        value.setValue( otherValue );
+        // THEN
+        assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
+        assertEquals( firstValue, node.valueAt( cursor, key, 0 ).longValue() );
+
+        // WHEN
+        long secondKey = 19;
+        long secondValue = 190;
+        key.setValue( secondKey );
+        value.setValue( secondValue );
         node.insertKeyValueAt( cursor, key, value, 1, 1 );
 
         // THEN
         assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( otherKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
-        assertEquals( firstValue, node.valueAt( cursor, value, 0 ).longValue() );
-        assertEquals( otherValue, node.valueAt( cursor, value, 1 ).longValue() );
-    }
+        assertEquals( firstValue, node.valueAt( cursor, key, 0 ).longValue() );
+        assertEquals( secondKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
+        assertEquals( secondValue, node.valueAt( cursor, key, 1 ).longValue() );
 
-    @Test
-    public void shouldRemoveValue() throws Exception
-    {
-        // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        MutableLong key = layout.newKey();
-        MutableLong value = layout.newValue();
-        long firstKey = 24680;
-        key.setValue( firstKey );
-        long firstValue = 123456789;
-        value.setValue( firstValue );
-        node.insertKeyValueAt( cursor, key, value, 0, 0 );
-        long otherKey = 13579;
-        key.setValue( otherKey );
-        long otherValue = 987654321;
-        value.setValue( otherValue );
-        node.insertKeyValueAt( cursor, key, value, 1, 1 );
-        long thirdKey = 1029384756;
-        key.setValue( thirdKey );
-        long thirdValue = 49756;
-        value.setValue( thirdValue );
-        node.insertKeyValueAt( cursor, key, value, 2, 2 );
+        // WHEN
+        long removedKey = 15;
+        long removedValue = 150;
+        key.setValue( removedKey );
+        value.setValue( removedValue );
+        node.insertKeyValueAt( cursor, key, value, 1, 2 );
+
+        // THEN
+        assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
+        assertEquals( firstValue, node.valueAt( cursor, key, 0 ).longValue() );
+        assertEquals( removedKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
+        assertEquals( removedValue, node.valueAt( cursor, key, 1 ).longValue() );
+        assertEquals( secondKey, node.keyAt( cursor, key, 2, LEAF ).longValue() );
+        assertEquals( secondValue, node.valueAt( cursor, key, 2 ).longValue() );
 
         // WHEN
         node.removeKeyValueAt( cursor, 1, 3 );
 
         // THEN
         assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( thirdKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
-        assertEquals( firstValue, node.valueAt( cursor, value, 0 ).longValue() );
-        assertEquals( thirdValue, node.valueAt( cursor, value, 1 ).longValue() );
-    }
-
-    @Test
-    public void shouldOverwriteValue() throws Exception
-    {
-        // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        MutableLong key = layout.newKey();
-        MutableLong value = layout.newValue();
-        key.setValue( 10 );
-        value.setValue( 1 );
-        node.insertKeyValueAt( cursor, key, value, 0, 0 );
+        assertEquals( firstValue, node.valueAt( cursor, key, 0 ).longValue() );
+        assertEquals( secondKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
+        assertEquals( secondValue, node.valueAt( cursor, key, 1 ).longValue() );
 
         // WHEN
-        long overwrittenValue = 2;
-        value.setValue( overwrittenValue );
+        long overwriteValue = 666;
+        value.setValue( overwriteValue );
         node.setValueAt( cursor, value, 0 );
 
         // THEN
-        assertEquals( overwrittenValue, node.valueAt( cursor, value, 0 ).longValue() );
+        assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
+        assertEquals( overwriteValue, node.valueAt( cursor, key, 0 ).longValue() );
+        assertEquals( secondKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
+        assertEquals( secondValue, node.valueAt( cursor, key, 1 ).longValue() );
+    }
+
+    private void assertKeysAndChildren( long stable, long unstable, long... keysAndChildren )
+    {
+        MutableLong key = new MutableLong();
+        int pos;
+        for ( int i = 0; i < keysAndChildren.length; i++ )
+        {
+            pos = i / 2;
+            if ( i % 2 == 0 )
+            {
+                assertEquals( keysAndChildren[i], GenerationSafePointerPair.pointer( node.childAt( cursor, pos, stable, unstable ) ) );
+            }
+            else
+            {
+                assertEquals( keysAndChildren[i], node.keyAt( cursor, key, pos, INTERNAL ).longValue() );
+            }
+        }
     }
 
     @Test
-    public void shouldSetAndGetChild() throws Exception
+    public void shouldInsertAndRemoveKeyAndChildInInternal() throws Exception
     {
         // GIVEN
         TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        MutableLong key = layout.newKey();
+        long stable = 3;
+        long unstable = 4;
+        long zeroChild = 5;
 
         // WHEN
-        long firstChild = 123456789;
-        node.insertChildAt( cursor, firstChild, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
-
-        long otherChild = 987654321;
-        node.insertChildAt( cursor, otherChild, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.setChildAt( cursor, zeroChild, 0, stable, unstable );
 
         // THEN
-        assertEquals( firstChild, childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( otherChild, childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-    }
-
-    @Test
-    public void shouldOverwriteChild() throws Exception
-    {
-        // GIVEN
-        long child = GenerationSafePointer.MIN_POINTER;
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, child, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        assertKeysAndChildren( stable, unstable, zeroChild );
 
         // WHEN
-        long overwrittenChild = child + 1;
-        node.setChildAt( cursor, overwrittenChild, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
+        long firstKey = 10;
+        long firstChild = 100;
+        key.setValue( firstKey );
+        node.insertKeyAndRightChildAt( cursor, key, firstChild, 0, 0, stable, unstable );
 
         // THEN
-        assertEquals( overwrittenChild, childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild );
+
+        // WHEN
+        long secondKey = 19;
+        long secondChild = 190;
+        key.setValue( secondKey );
+        node.insertKeyAndRightChildAt( cursor, key, secondChild, 1, 1, stable, unstable );
+
+        // THEN
+        assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, secondKey, secondChild );
+
+        // WHEN
+        long removedKey = 20;
+        long removedChild = 200;
+        key.setValue( removedKey );
+        node.insertKeyAndRightChildAt( cursor, key, removedChild, 1, 2, stable, unstable );
+
+        // THEN
+        assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, removedKey, removedChild, secondKey, secondChild );
+
+        // WHEN
+        node.removeKeyAndRightChildAt( cursor, 1, 3 );
+
+        // THEN
+        assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, secondKey, secondChild );
+
+        // WHEN
+        node.removeKeyAndLeftChildAt( cursor, 0, 2 );
+
+        // THEN
+        assertKeysAndChildren( stable, unstable, firstChild, secondKey, secondChild );
+
+        // WHEN
+        long overwriteChild = 666;
+        node.setChildAt( cursor, overwriteChild, 0, stable, unstable );
+
+        // THEN
+        assertKeysAndChildren( stable, unstable, overwriteChild, secondKey, secondChild );
     }
 
     @Test
@@ -381,75 +334,6 @@ public class TreeNodeTest
 
         // THEN
         assertEquals( 123, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-    }
-
-    @Test
-    public void shouldReadAndInsertKeys() throws Exception
-    {
-        // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        MutableLong key = layout.newKey();
-        key.setValue( 1 );
-        node.insertKeyAt( cursor, key, 0, 0, LEAF );
-        key.setValue( 3 );
-        node.insertKeyAt( cursor, key, 1, 1, LEAF );
-
-        // WHEN
-        key.setValue( 2 );
-        node.insertKeyAt( cursor, key, 1, 2, LEAF );
-
-        // THEN
-        assertEquals( 1, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( 2, node.keyAt( cursor, key, 1, LEAF ).longValue() );
-        assertEquals( 3, node.keyAt( cursor, key, 2, LEAF ).longValue() );
-    }
-
-    @Test
-    public void shouldReadAndInsertKeyValues() throws Exception
-    {
-        // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        MutableLong key = layout.newKey();
-        MutableLong value = layout.newValue();
-        key.setValue( 1 );
-        value.setValue( 1 );
-        node.insertKeyValueAt( cursor, key, value, 0, 0 );
-        key.setValue( 3 );
-        value.setValue( 3 );
-        node.insertKeyValueAt( cursor, key, value, 1, 1 );
-
-        // WHEN
-        key.setValue( 2 );
-        value.setValue( 2 );
-        node.insertKeyValueAt( cursor, key, value, 1, 2 );
-
-        // THEN
-        assertEquals( 1, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( 2, node.keyAt( cursor, key, 1, LEAF ).longValue() );
-        assertEquals( 3, node.keyAt( cursor, key, 2, LEAF ).longValue() );
-        assertEquals( 1, node.valueAt( cursor, value, 0 ).longValue() );
-        assertEquals( 2, node.valueAt( cursor, value, 1 ).longValue() );
-        assertEquals( 3, node.valueAt( cursor, value, 2 ).longValue() );
-    }
-
-    @Test
-    public void shouldReadAndInsertChildren() throws Exception
-    {
-        // GIVEN
-        long firstChild = GenerationSafePointer.MIN_POINTER;
-        long secondChild = firstChild + 1;
-        long thirdChild = secondChild + 1;
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, firstChild, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
-        node.insertChildAt( cursor, thirdChild, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
-
-        // WHEN
-        node.insertChildAt( cursor, secondChild, 1, 2, STABLE_GENERATION, UNSTABLE_GENERATION );
-
-        // THEN
-        assertEquals( firstChild, childAt( cursor, 0, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( secondChild, childAt( cursor, 1, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( thirdChild, childAt( cursor, 2, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -735,11 +619,6 @@ public class TreeNodeTest
             }
         }
         return false;
-    }
-
-    private long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
-    {
-        return pointer( node.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
     }
 
     private long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )

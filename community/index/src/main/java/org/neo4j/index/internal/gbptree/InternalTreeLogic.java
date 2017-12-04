@@ -429,12 +429,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         // No overflow
         int pos = positionOf( search( cursor, INTERNAL, primKey, readKey, keyCount ) );
-
-        bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount, INTERNAL );
-        // NOTE pos+1 since we never insert a new child before child(0) because its key is really
-        // the one from the parent.
-        bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, stableGeneration, unstableGeneration );
-
+        bTreeNode.insertKeyAndRightChildAt( cursor, primKey, rightChild, pos, keyCount, stableGeneration, unstableGeneration );
         // Increase key count
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
@@ -877,7 +872,7 @@ class InternalTreeLogic<KEY,VALUE>
             createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                     stableGeneration, unstableGeneration);
             int keyCount = TreeNode.keyCount( cursor );
-            simplyRemoveFromInternal( cursor, keyCount, subtreePosition, subtreePosition );
+            simplyRemoveFromInternal( cursor, keyCount, subtreePosition, true );
         }
     }
 
@@ -925,7 +920,7 @@ class InternalTreeLogic<KEY,VALUE>
             // Create new version of node, save rightmost key in structurePropagation, remove rightmost key and child
             createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration );
             bTreeNode.keyAt( cursor, structurePropagation.bubbleKey, keyCount - 1, INTERNAL );
-            simplyRemoveFromInternal( cursor, keyCount, keyCount - 1, keyCount );
+            simplyRemoveFromInternal( cursor, keyCount, keyCount - 1, false );
 
             return true;
         }
@@ -935,11 +930,17 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    private int simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, int childPos )
+    private int simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, boolean leftChild )
     {
         // Remove key and child
-        bTreeNode.removeKeyAt( cursor, keyPos, keyCount, INTERNAL );
-        bTreeNode.removeChildAt( cursor, childPos, keyCount );
+        if ( leftChild )
+        {
+            bTreeNode.removeKeyAndLeftChildAt(  cursor, keyPos, keyCount );
+        }
+        else
+        {
+            bTreeNode.removeKeyAndRightChildAt( cursor, keyPos, keyCount );
+        }
 
         // Decrease key count
         int newKeyCount = keyCount - 1;

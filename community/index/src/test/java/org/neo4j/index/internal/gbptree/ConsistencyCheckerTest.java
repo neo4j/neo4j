@@ -32,7 +32,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
 public class ConsistencyCheckerTest
 {
@@ -101,11 +100,10 @@ public class ConsistencyCheckerTest
                     goTo( cursor, "new root",
                             idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
                     TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                    node.insertKeyAt( cursor, structure.rightKey, 0, 0, INTERNAL );
-                    TreeNode.setKeyCount( cursor, 1 );
                     node.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
-                    node.setChildAt( cursor, structure.rightChild, 1,
+                    node.insertKeyAndRightChildAt( cursor, structure.rightKey, structure.rightChild, 0, 0,
                             stableGeneration, unstableGeneration );
+                    TreeNode.setKeyCount( cursor, 1 );
                     logic.initialize( cursor );
                 }
                 if ( structure.hasMidChildUpdate )
