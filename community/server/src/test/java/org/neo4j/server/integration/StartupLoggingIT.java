@@ -22,26 +22,25 @@ package org.neo4j.server.integration;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityBootstrapper;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -56,14 +55,8 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    @Before
-    public void setUp() throws IOException
-    {
-        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( GraphDatabaseSettings.data_directory ) );
-    }
-
     @Rule
-    public TestDirectory homeDir = TestDirectory.testDirectory();
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
     public void shouldLogHelpfulStartupMessages() throws Throwable
@@ -71,7 +64,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         CommunityBootstrapper boot = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();
 
-        boot.start( homeDir.directory(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
+        boot.start( testDir.directory(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
         URI uri = boot.getServer().baseUri();
         boot.stop();
 
@@ -89,28 +82,30 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
 
     private Map<String,String> getPropertyPairs() throws IOException
     {
-        Map<String,String> relativeProperties = ServerTestUtils.getDefaultRelativeProperties();
+        Map<String,String> properties = new HashMap<>();
 
-        relativeProperties.put( GraphDatabaseSettings.allow_upgrade.name(), Settings.TRUE);
+        properties.put( GraphDatabaseSettings.data_directory.name(), testDir.graphDbDir().toString() );
+        properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.graphDbDir().toString() );
+        properties.put( LegacySslPolicyConfig.certificates_directory.name(), testDir.graphDbDir().toString() );
+        properties.put( GraphDatabaseSettings.allow_upgrade.name(), Settings.TRUE );
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
-        relativeProperties.put( http.type.name(), "HTTP" );
-        relativeProperties.put( http.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
-        relativeProperties.put( http.enabled.name(), Settings.TRUE );
+        properties.put( http.type.name(), "HTTP" );
+        properties.put( http.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( http.enabled.name(), Settings.TRUE );
 
         HttpConnector https = new HttpConnector( "https", Encryption.TLS );
-        relativeProperties.put( https.type.name(), "HTTP" );
-        relativeProperties.put( https.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
-        relativeProperties.put( https.enabled.name(), Settings.TRUE );
+        properties.put( https.type.name(), "HTTP" );
+        properties.put( https.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( https.enabled.name(), Settings.TRUE );
 
         BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
-        relativeProperties.put( bolt.type.name(), "BOLT" );
-        relativeProperties.put( bolt.enabled.name(), "true" );
-        relativeProperties.put( bolt.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( bolt.type.name(), "BOLT" );
+        properties.put( bolt.enabled.name(), "true" );
+        properties.put( bolt.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
 
-        relativeProperties.put( GraphDatabaseSettings.database_path.name(),
-                homeDir.absolutePath().getAbsolutePath() );
-        return relativeProperties;
+        properties.put( GraphDatabaseSettings.database_path.name(), testDir.absolutePath().getAbsolutePath() );
+        return properties;
     }
 
     @SafeVarargs
