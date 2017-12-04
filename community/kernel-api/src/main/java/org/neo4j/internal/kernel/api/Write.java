@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -38,7 +39,7 @@ public interface Write
      * @param node the internal id of the node to delete
      * @return returns true if it deleted a node or false if no node was found for this id
      */
-    boolean nodeDelete( long node ) throws KernelException;
+    boolean nodeDelete( long node ) throws AutoIndexingKernelException;
 
     /**
      * Create a relationship between two nodes.
@@ -78,7 +79,8 @@ public interface Write
      * @param value the value to set
      * @return The replaced value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeSetProperty( long node, int propertyKey, Value value );
+    Value nodeSetProperty( long node, int propertyKey, Value value )
+            throws KernelException;
 
     /**
      * Remove a property from a node
@@ -86,7 +88,7 @@ public interface Write
      * @param propertyKey the property key id
      * @return The removed value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeRemoveProperty( long node, int propertyKey );
+    Value nodeRemoveProperty( long node, int propertyKey ) throws KernelException;
 
     /**
      * Set a property on a relationship

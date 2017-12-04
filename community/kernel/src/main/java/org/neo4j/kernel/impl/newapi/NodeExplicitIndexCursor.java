@@ -89,6 +89,7 @@ class NodeExplicitIndexCursor extends IndexCursor
         node = NO_ID;
         score = 0;
         expectedSize = 0;
+        read = null;
     }
 
     @Override

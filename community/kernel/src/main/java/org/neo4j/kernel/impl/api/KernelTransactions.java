@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -115,6 +116,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             new GlobalKernelTransactionPool( allTransactions, factory );
     // Pool of unused transactions.
     private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
+    private final KernelToken token;
 
     /**
      * Kernel transactions component status. True when stopped, false when started.
@@ -159,6 +161,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.clock = clock;
         blockNewTransactions();
         this.cursors = cursors;
+        this.token = new KernelToken( storageEngine );
     }
 
     public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()

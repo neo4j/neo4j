@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.function.Supplier;
-
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 
@@ -48,7 +45,6 @@ public class NewKernel implements Kernel
         this.engine = engine;
         this.kernel = kernel;
         this.isRunning = false;
-        this.cursors = new Cursors(  );
     }
 
     @Override
@@ -80,5 +76,6 @@ public class NewKernel implements Kernel
         }
         statement.close();
         isRunning = false;
+        this.cursors = null;
     }
 }

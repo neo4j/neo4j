@@ -46,7 +46,10 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -1468,6 +1471,36 @@ public class TxStateTest
             assertTrue( "Augmented cursor didn't return some expected relationships: " + expectedRelationships,
                     expectedRelationships.isEmpty() );
         }
+    }
+
+    @Test
+    public void shouldGetNodeStateFromPropertyReference() throws Exception
+    {
+        // GIVEN
+        state.nodeDoCreate( 1337L );
+        NodeState nodeState = state.getNodeState( 1337L );
+        state.registerProperties( 42L, nodeState );
+
+        // WHEN
+        PropertyContainerState propertiesState = state.getPropertiesState( 42L );
+
+        // Then
+        assertThat( propertiesState, equalTo( nodeState ) );
+    }
+
+    @Test
+    public void shouldGetRelationshipStateFromPropertyReference() throws Exception
+    {
+        // GIVEN
+        state.relationshipDoCreate( 1337L, 0, 1L, 2L );
+        RelationshipState relState = state.getRelationshipState( 1337L );
+        state.registerProperties( 42L, relState );
+
+        // WHEN
+        PropertyContainerState propertiesState = state.getPropertiesState( 42L );
+
+        // Then
+        assertThat( propertiesState, equalTo( relState ) );
     }
 
     private Map<Long,RelationshipItem> relationshipsForNode( long nodeId, Map<Long,RelationshipItem> allRelationships,

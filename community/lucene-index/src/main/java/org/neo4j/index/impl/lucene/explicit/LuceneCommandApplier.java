@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;

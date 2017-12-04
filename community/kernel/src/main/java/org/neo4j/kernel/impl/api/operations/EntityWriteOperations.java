@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.values.storable.Value;

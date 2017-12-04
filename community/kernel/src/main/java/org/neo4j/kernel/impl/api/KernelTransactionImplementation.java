@@ -34,12 +34,15 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -47,7 +50,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -66,7 +68,9 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -163,7 +167,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
+    public KernelTransactionImplementation( StatementOperationParts statementOperations,
+            SchemaWriteGuard schemaWriteGuard,
             TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess,
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
@@ -192,8 +197,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
+        AllStoreHolder allStoreHolder =
+                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore,
+                        this::assertOpen );
         this.operations =
-                new Operations( storageEngine, storageStatement, this, cursors, autoIndexing, explicitIndexStore );
+                new Operations(
+                        allStoreHolder,
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
+                        storageStatement, this, cursors, autoIndexing );
     }
 
     /**
@@ -225,6 +236,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
         this.statistics.init( Thread.currentThread().getId(), pageCursorTracer );
         this.currentStatement.initialize( statementLocks, pageCursorTracer );
+        this.operations.initialize();
         return this;
     }
 
@@ -447,6 +459,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( closed )
         {
             throw new IllegalStateException( "This transaction has already been completed." );
+        }
+    }
+
+    private void assertOpen()
+    {
+        Optional<Status> terminationReason = getReasonIfTerminated();
+        if ( terminationReason.isPresent() )
+        {
+            throw new TransactionTerminatedException( terminationReason.get() );
         }
     }
 
@@ -700,6 +721,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public Token token()
+    {
+        return operations.token();
+    }
+
+    @Override
     public ExplicitIndexRead indexRead()
     {
         return operations;
@@ -727,6 +754,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public StatementLocks locks()
     {
        return statementLocks;
+    }
+
+    @Override
+    public CursorFactory cursors()
+    {
+        return operations.cursors();
     }
 
     public LockTracer lockTracer()
@@ -790,6 +823,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             userMetaData = Collections.emptyMap();
             userTransactionId = 0;
             statistics.reset();
+            operations.release();
             pool.release( this );
         }
         finally

@@ -17,16 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.internal.kernel.api.exceptions.explicitindex;
 
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
-public interface SchemaWriteGuard
+public class AutoIndexingKernelException extends KernelException
 {
-    SchemaWriteGuard ALLOW_ALL_WRITES = () ->
+    public AutoIndexingKernelException( KernelException cause )
     {
-        // allow all writes
-    };
-
-    void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException;
+        super( cause.status(), cause, cause.getMessage() );
+    }
 }

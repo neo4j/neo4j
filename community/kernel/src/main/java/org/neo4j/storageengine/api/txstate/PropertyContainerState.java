@@ -55,11 +55,13 @@ public interface PropertyContainerState
                 Iterator<Integer> removed ) throws ConstraintValidationException;
     }
 
-    boolean hasChanges();
+    boolean hasPropertyChanges();
 
     StorageProperty getChangedProperty( int propertyKeyId );
 
     StorageProperty getAddedProperty( int propertyKeyId );
+
+    boolean isPropertyChangedOrRemoved( int propertyKey );
 
     boolean isPropertyRemoved( int propertyKeyId );
 
@@ -103,7 +105,7 @@ public interface PropertyContainerState
         }
 
         @Override
-        public boolean hasChanges()
+        public boolean hasPropertyChanges()
         {
             return false;
         }
@@ -118,6 +120,12 @@ public interface PropertyContainerState
         public StorageProperty getAddedProperty( int propertyKeyId )
         {
             return null;
+        }
+
+        @Override
+        public boolean isPropertyChangedOrRemoved( int propertyKey )
+        {
+            return false;
         }
 
         @Override

@@ -25,6 +25,7 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_1.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
@@ -39,7 +40,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
@@ -48,15 +48,15 @@ import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.storable.Values
@@ -111,7 +111,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   override def getLabelsForNode(node: Long) = try {
     JavaConversionSupport.asScala(txContext.statement.readOperations().nodeGetLabels(node))
   } catch {
-    case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+    case e: exceptions.EntityNotFoundException =>
       if (nodeOps.isDeletedInThisTx(node))
         throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction", e)
       else
@@ -307,7 +307,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       txContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
     } catch {
-      case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+      case e: exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
         else
@@ -382,7 +382,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       txContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
     } catch {
-      case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+      case e: exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction", e)
         else
