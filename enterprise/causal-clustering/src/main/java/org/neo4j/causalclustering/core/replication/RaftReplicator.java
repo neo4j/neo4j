@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.replication;
 
+import java.time.Clock;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
@@ -52,11 +53,11 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final TimeoutStrategy leaderTimeoutStrategy;
     private final Log log;
     private final Throttler throttler;
+    private final Clock clock;
 
-    public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
-            Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
+    public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, TimeoutStrategy leaderTimeoutStrategy,
-            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit )
+            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit, Clock clock )
     {
         this.me = me;
         this.outbound = outbound;
@@ -67,6 +68,7 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         this.availabilityGuard = availabilityGuard;
         this.throttler = new Throttler( replicationLimit );
         this.leaderLocator = leaderLocator;
+        this.clock = clock;
         leaderLocator.registerListener( this );
         log = logProvider.getLog( getClass() );
     }

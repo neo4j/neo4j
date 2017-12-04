@@ -34,6 +34,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
 import java.net.BindException;
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.VersionDecoder;
@@ -58,7 +59,7 @@ import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
 
-public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.ClusterIdAwareMessage>
+public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
     private static final Setting<ListenSocketAddress> setting = CausalClusteringSettings.raft_listen_address;
     private final ChannelMarshal<ReplicatedContent> marshal;
@@ -68,15 +69,16 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     private final Log log;
     private final Log userLog;
     private final Monitors monitors;
+    private final Clock clock;
 
-    private MessageHandler<RaftMessages.ClusterIdAwareMessage> messageHandler;
+    private MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
-    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, SslPolicy sslPolicy, Config config,
-            LogProvider logProvider, LogProvider userLogProvider, Monitors monitors )
+    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, SslPolicy sslPolicy, Config config, LogProvider logProvider, LogProvider userLogProvider,
+            Monitors monitors, Clock clock )
     {
         this.marshal = marshal;
         this.sslPolicy = sslPolicy;
@@ -85,6 +87,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         this.log = logProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
         this.monitors = monitors;
+        this.clock = clock;
     }
 
     @Override
@@ -142,7 +145,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
                         pipeline.addLast( new VersionDecoder( logProvider ) );
                         pipeline.addLast( new VersionPrepender() );
 
-                        pipeline.addLast( new RaftMessageDecoder( marshal ) );
+                        pipeline.addLast( new RaftMessageDecoder( marshal, clock ) );
                         pipeline.addLast( new RaftMessageHandler() );
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
@@ -171,24 +174,24 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     }
 
     @Override
-    public void registerHandler( Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> handler )
+    public void registerHandler( Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler )
     {
         this.messageHandler = handler;
     }
 
-    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.ClusterIdAwareMessage>
+    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
     {
         @Override
         protected void channelRead0( ChannelHandlerContext channelHandlerContext,
-                                     RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage ) throws Exception
+                                     RaftMessages.ReceivedInstantClusterIdAwareMessage incomingMessage ) throws Exception
         {
             try
             {
-                messageHandler.handle( clusterIdAwareMessage );
+                messageHandler.handle( incomingMessage );
             }
             catch ( Exception e )
             {
-                log.error( format( "Failed to process message %s", clusterIdAwareMessage ), e );
+                log.error( format( "Failed to process message %s", incomingMessage ), e );
             }
         }
     }

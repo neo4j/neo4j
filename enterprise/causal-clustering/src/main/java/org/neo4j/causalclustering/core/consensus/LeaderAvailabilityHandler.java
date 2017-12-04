@@ -27,15 +27,15 @@ import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class LeaderAvailabilityHandler implements Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage>
+public class LeaderAvailabilityHandler implements Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
-    private final Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler;
+    private final Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler;
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private final LongSupplier term;
     private final Log log;
     private volatile ClusterId boundClusterId;
 
-    public LeaderAvailabilityHandler( Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler, LeaderAvailabilityTimers leaderAvailabilityTimers,
+    public LeaderAvailabilityHandler( Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler, LeaderAvailabilityTimers leaderAvailabilityTimers,
             LongSupplier term, LogProvider logProvider )
     {
         this.delegateHandler = delegateHandler;
@@ -55,7 +55,7 @@ public class LeaderAvailabilityHandler implements Inbound.MessageHandler<RaftMes
     }
 
     @Override
-    public void handle( RaftMessages.ClusterIdAwareMessage message )
+    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
     {
         if ( Objects.isNull( boundClusterId ) )
         {
@@ -74,7 +74,7 @@ public class LeaderAvailabilityHandler implements Inbound.MessageHandler<RaftMes
         }
     }
 
-    private void handleTimeouts( RaftMessages.ClusterIdAwareMessage message )
+    private void handleTimeouts( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
     {
         if ( shouldRenewElectionTimeout( message.message() ) )
         {

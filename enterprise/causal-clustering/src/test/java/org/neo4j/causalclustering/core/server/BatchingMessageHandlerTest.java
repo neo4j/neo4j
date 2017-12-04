@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.core.server;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Supplier;
 
 import org.junit.Test;
 
@@ -43,26 +43,26 @@ public class BatchingMessageHandlerTest
 {
     private static final int MAX_BATCH = 16;
     private static final int QUEUE_SIZE = 64;
-    private MessageHandler<RaftMessages.ClusterIdAwareMessage> raftStateMachine = mock( MessageHandler.class );
+    private final Instant now = Instant.now();
+    private MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> downstreamHandler = mock( MessageHandler.class );
     private ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
 
     @Test
     public void shouldInvokeInnerHandlerWhenRun() throws Exception
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                raftStateMachine, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
 
-        RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage(
-                localClusterId, new RaftMessages.NewEntry.Request( null, null ) );
+        RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
+                now, localClusterId, new RaftMessages.NewEntry.Request( null, null ) );
         batchHandler.handle( message );
-        verifyZeroInteractions( raftStateMachine );
+        verifyZeroInteractions( downstreamHandler );
 
         // when
         batchHandler.run();
 
         // then
-        verify( raftStateMachine ).handle( message );
+        verify( downstreamHandler ).handle( message );
     }
 
     @Test
@@ -70,8 +70,8 @@ public class BatchingMessageHandlerTest
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                raftStateMachine, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
-        RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage( localClusterId,
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+        RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
                 new RaftMessages.NewEntry.Request( null, null ) );
 
         ExecutorService executor = Executors.newCachedThreadPool();
@@ -88,7 +88,7 @@ public class BatchingMessageHandlerTest
 
         // then
         future.get();
-        verify( raftStateMachine ).handle( message );
+        verify( downstreamHandler ).handle( message );
     }
 
     @Test
@@ -96,15 +96,15 @@ public class BatchingMessageHandlerTest
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                raftStateMachine, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentB = new ReplicatedString( "B" );
         RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( null, contentA );
         RaftMessages.NewEntry.Request messageB = new RaftMessages.NewEntry.Request( null, contentB );
 
-        batchHandler.handle( new RaftMessages.ClusterIdAwareMessage( localClusterId, messageA ) );
-        batchHandler.handle( new RaftMessages.ClusterIdAwareMessage( localClusterId, messageB ) );
-        verifyZeroInteractions( raftStateMachine );
+        batchHandler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId, messageA ) );
+        batchHandler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId, messageB ) );
+        verifyZeroInteractions( downstreamHandler );
 
         // when
         batchHandler.run();
@@ -113,7 +113,32 @@ public class BatchingMessageHandlerTest
         RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
         batchRequest.add( contentA );
         batchRequest.add( contentB );
-        verify( raftStateMachine ).handle( new RaftMessages.ClusterIdAwareMessage( localClusterId, batchRequest ) );
+        verify( downstreamHandler ).handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId, batchRequest ) );
+    }
+
+    @Test
+    public void shouldBatchUsingReceivedInstantOfFirstReceivedMessage() throws Exception
+    {
+        // given
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+        ReplicatedString content = new ReplicatedString( "A" );
+        RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( null, content );
+
+        Instant firstReceived = Instant.ofEpochMilli( 1L );
+        Instant secondReceived = firstReceived.plusMillis( 1L );
+
+        batchHandler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( firstReceived, localClusterId, messageA ) );
+        batchHandler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( secondReceived, localClusterId, messageA ) );
+
+        // when
+        batchHandler.run();
+
+        // then
+        RaftMessages.NewEntry.BatchRequest batchRequest = new RaftMessages.NewEntry.BatchRequest( 2 );
+        batchRequest.add( content );
+        batchRequest.add( content );
+        verify( downstreamHandler ).handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( firstReceived, localClusterId, batchRequest ) );
     }
 
     @Test
@@ -121,25 +146,25 @@ public class BatchingMessageHandlerTest
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                raftStateMachine, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
 
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentC = new ReplicatedString( "C" );
 
-        RaftMessages.ClusterIdAwareMessage messageA = new RaftMessages.ClusterIdAwareMessage( localClusterId,
+        RaftMessages.ReceivedInstantClusterIdAwareMessage messageA = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
                 new RaftMessages.NewEntry.Request( null, contentA ) );
-        RaftMessages.ClusterIdAwareMessage messageB = new RaftMessages.ClusterIdAwareMessage( localClusterId,
+        RaftMessages.ReceivedInstantClusterIdAwareMessage messageB = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
                 new RaftMessages.Heartbeat( null, 0, 0, 0 ) );
-        RaftMessages.ClusterIdAwareMessage messageC = new RaftMessages.ClusterIdAwareMessage( localClusterId,
+        RaftMessages.ReceivedInstantClusterIdAwareMessage messageC = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
                 new RaftMessages.NewEntry.Request( null, contentC ) );
-        RaftMessages.ClusterIdAwareMessage messageD = new RaftMessages.ClusterIdAwareMessage( localClusterId,
+        RaftMessages.ReceivedInstantClusterIdAwareMessage messageD = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
                 new RaftMessages.Heartbeat( null, 1, 1, 1 ) );
 
         batchHandler.handle( messageA );
         batchHandler.handle( messageB );
         batchHandler.handle( messageC );
         batchHandler.handle( messageD );
-        verifyZeroInteractions( raftStateMachine );
+        verifyZeroInteractions( downstreamHandler );
 
         // when
         batchHandler.run();
@@ -149,9 +174,9 @@ public class BatchingMessageHandlerTest
         batchRequest.add( contentA );
         batchRequest.add( contentC );
 
-        verify( raftStateMachine ).handle( new RaftMessages.ClusterIdAwareMessage( localClusterId, batchRequest ) );
-        verify( raftStateMachine ).handle( messageB );
-        verify( raftStateMachine ).handle( messageD );
+        verify( downstreamHandler ).handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId, batchRequest ) );
+        verify( downstreamHandler ).handle( messageB );
+        verify( downstreamHandler ).handle( messageD );
     }
 
     @Test
@@ -160,9 +185,9 @@ public class BatchingMessageHandlerTest
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                raftStateMachine, QUEUE_SIZE, MAX_BATCH, logProvider );
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, logProvider );
 
-        RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage(
+        RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now,
                 localClusterId, new RaftMessages.NewEntry.Request( null, null ) );
         batchHandler.stop();
 
@@ -171,7 +196,7 @@ public class BatchingMessageHandlerTest
         batchHandler.run();
 
         // then
-        verifyZeroInteractions( raftStateMachine );
+        verifyZeroInteractions( downstreamHandler );
         logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( BatchingMessageHandler.class )
                 .debug( "This handler has been stopped, dropping the message: %s", message ) );
     }
@@ -182,8 +207,8 @@ public class BatchingMessageHandlerTest
         // given
         int queueSize = 1;
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                raftStateMachine, queueSize, MAX_BATCH, NullLogProvider.getInstance() );
-        RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage( localClusterId,
+                downstreamHandler, queueSize, MAX_BATCH, NullLogProvider.getInstance() );
+        RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
                 new RaftMessages.NewEntry.Request( null, null ) );
         batchHandler.handle( message ); // fill the queue
 

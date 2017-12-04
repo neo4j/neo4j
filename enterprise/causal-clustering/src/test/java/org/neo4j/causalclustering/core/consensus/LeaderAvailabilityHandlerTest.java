@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.consensus;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.function.LongSupplier;
 
@@ -34,7 +35,7 @@ import org.neo4j.logging.NullLogProvider;
 public class LeaderAvailabilityHandlerTest
 {
     @SuppressWarnings( "unchecked" )
-    private Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegate = Mockito.mock( Inbound.MessageHandler.class );
+    private Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate = Mockito.mock( Inbound.MessageHandler.class );
     private LeaderAvailabilityTimers leaderAvailabilityTimers = Mockito.mock( LeaderAvailabilityTimers.class );
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
     private LongSupplier term = () -> 3;
@@ -42,14 +43,14 @@ public class LeaderAvailabilityHandlerTest
     private LeaderAvailabilityHandler handler = new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term, NullLogProvider.getInstance() );
 
     private MemberId leader = new MemberId( UUID.randomUUID() );
-    private RaftMessages.ClusterIdAwareMessage heartbeat =
-            new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Heartbeat( leader, term.getAsLong(), 0, 0 ) );
-    private RaftMessages.ClusterIdAwareMessage appendEntries =
-            new RaftMessages.ClusterIdAwareMessage( clusterId,
+    private RaftMessages.ReceivedInstantClusterIdAwareMessage heartbeat =
+            RaftMessages.ReceivedInstantClusterIdAwareMessage.of( Instant.now(), clusterId, new RaftMessages.Heartbeat( leader, term.getAsLong(), 0, 0 ) );
+    private RaftMessages.ReceivedInstantClusterIdAwareMessage appendEntries =
+            RaftMessages.ReceivedInstantClusterIdAwareMessage.of( Instant.now(), clusterId,
                     new RaftMessages.AppendEntries.Request( leader, term.getAsLong(), 0, 0, RaftLogEntry.empty, 0 )
             );
-    private RaftMessages.ClusterIdAwareMessage voteResponse =
-            new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Vote.Response( leader, term.getAsLong(), false ) );
+    private RaftMessages.ReceivedInstantClusterIdAwareMessage voteResponse =
+            RaftMessages.ReceivedInstantClusterIdAwareMessage.of( Instant.now(), clusterId, new RaftMessages.Vote.Response( leader, term.getAsLong(), false ) );
 
     @Test
     public void shouldDropMessagesIfHasNotBeenStarted() throws Exception
@@ -82,8 +83,8 @@ public class LeaderAvailabilityHandlerTest
         handler.start( clusterId );
 
         // when
-        handler.handle( new RaftMessages.ClusterIdAwareMessage(
-                new ClusterId( UUID.randomUUID() ), new RaftMessages.Heartbeat( leader, term.getAsLong(), 0, 0 )
+        handler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
+                Instant.now(), new ClusterId( UUID.randomUUID() ), new RaftMessages.Heartbeat( leader, term.getAsLong(), 0, 0 )
         ) );
 
         // then
@@ -146,8 +147,8 @@ public class LeaderAvailabilityHandlerTest
     public void shouldNotRenewElectionTimeoutsForHeartbeatsFromEarlierTerm() throws Exception
     {
         // given
-        RaftMessages.ClusterIdAwareMessage heartbeat =
-                new RaftMessages.ClusterIdAwareMessage( clusterId, new RaftMessages.Heartbeat( leader, term.getAsLong() - 1, 0, 0 ) );
+        RaftMessages.ReceivedInstantClusterIdAwareMessage heartbeat =  RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
+                Instant.now(), clusterId, new RaftMessages.Heartbeat( leader, term.getAsLong() - 1, 0, 0 ) );
 
         handler.start( clusterId );
 
@@ -161,10 +162,11 @@ public class LeaderAvailabilityHandlerTest
     @Test
     public void shouldNotRenewElectionTimeoutsForAppendEntriesRequestsFromEarlierTerms() throws Exception
     {
-        RaftMessages.ClusterIdAwareMessage appendEntries =
-                new RaftMessages.ClusterIdAwareMessage( clusterId,
-                        new RaftMessages.AppendEntries.Request( leader, term.getAsLong() - 1, 0, 0, RaftLogEntry.empty, 0 )
-                );
+        RaftMessages.ReceivedInstantClusterIdAwareMessage appendEntries = RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
+                Instant.now(), clusterId,
+                new RaftMessages.AppendEntries.Request(
+                        leader, term.getAsLong() - 1, 0, 0, RaftLogEntry.empty, 0 )
+        );
 
         handler.start( clusterId );
 

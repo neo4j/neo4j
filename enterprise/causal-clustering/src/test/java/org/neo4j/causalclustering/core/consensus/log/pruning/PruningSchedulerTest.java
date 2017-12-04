@@ -34,6 +34,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.raftLogPruning;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -135,7 +136,7 @@ public class PruningSchedulerTest
         final AtomicReference<Throwable> ex = new AtomicReference<>();
         final AtomicBoolean stoppedCompleted = new AtomicBoolean();
         final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
-        RaftLogPruner logPruner = new RaftLogPruner( null, null )
+        RaftLogPruner logPruner = new RaftLogPruner( null, null, Clock.systemUTC() )
         {
             @Override
             public void prune() throws IOException

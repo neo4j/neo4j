@@ -39,8 +39,9 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.IdentityModule;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
-import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
+import org.neo4j.causalclustering.core.consensus.RaftMessageMonitoringHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
 import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.consensus.log.pruning.PruningScheduler;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipWaiter;
@@ -119,9 +120,9 @@ public class CoreServerModule
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
         RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), sslPolicy, config, logProvider,
-                userLogProvider, monitors );
+                userLogProvider, monitors, platformModule.clock );
 
-        LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
+        LoggingInbound<RaftMessages.ReceivedInstantClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
                 messageLogger, identityModule.myself() );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
@@ -189,10 +190,12 @@ public class CoreServerModule
         RaftMessageHandler messageHandler = new RaftMessageHandler( localDatabase, logProvider,
                 consensusModule.raftMachine(), downloadService, commandApplicationProcess );
 
+        RaftMessageMonitoringHandler monitoringHandler = new RaftMessageMonitoringHandler( messageHandler, platformModule.clock, monitors );
+
         int queueSize = config.get( CausalClusteringSettings.raft_in_queue_size );
         int maxBatch = config.get( CausalClusteringSettings.raft_in_queue_max_batch );
 
-        BatchingMessageHandler batchingMessageHandler = new BatchingMessageHandler( messageHandler, queueSize, maxBatch,
+        BatchingMessageHandler batchingMessageHandler = new BatchingMessageHandler( monitoringHandler, queueSize, maxBatch,
                 logProvider );
 
         LeaderAvailabilityHandler leaderAvailabilityHandler = new LeaderAvailabilityHandler( batchingMessageHandler, consensusModule.getLeaderAvailabilityTimers(),
@@ -219,7 +222,7 @@ public class CoreServerModule
                 new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
                 platformModule.storeCopyCheckPointMutex, sslPolicy );
 
-        RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess );
+        RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
         dependencies.satisfyDependency( raftLogPruner );
 
         life.add( new PruningScheduler( raftLogPruner, jobScheduler,

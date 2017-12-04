@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -434,8 +435,7 @@ public interface RaftMessages
             private RaftLogEntry[] entries;
             private long leaderCommit;
 
-            public Request( MemberId from, long leaderTerm, long prevLogIndex, long prevLogTerm,
-                            RaftLogEntry[] entries, long leaderCommit )
+            public Request( MemberId from, long leaderTerm, long prevLogIndex, long prevLogTerm, RaftLogEntry[] entries, long leaderCommit )
             {
                 super( from, Type.APPEND_ENTRIES_REQUEST );
                 Objects.requireNonNull( entries );
@@ -906,12 +906,42 @@ public interface RaftMessages
         }
     }
 
-    class ClusterIdAwareMessage implements RaftMessage
+    interface ClusterIdAwareMessage extends RaftMessage
+    {
+        ClusterId clusterId();
+        RaftMessage message();
+
+        static ClusterIdAwareMessage of( ClusterId clusterId, RaftMessage message )
+        {
+            return new ClusterIdAwareMessageImpl( clusterId, message );
+        }
+    }
+
+    interface ReceivedInstantAwareMessage extends RaftMessage
+    {
+        Instant receivedAt();
+        RaftMessage message();
+
+        static ReceivedInstantAwareMessage of( Instant receivedAt, RaftMessage message )
+        {
+            return new ReceivedInstantAwareMessageImpl( receivedAt, message );
+        }
+    }
+
+    interface ReceivedInstantClusterIdAwareMessage extends ReceivedInstantAwareMessage, ClusterIdAwareMessage
+    {
+        static ReceivedInstantClusterIdAwareMessage of( Instant receivedAt, ClusterId clusterId, RaftMessage message )
+        {
+            return new ReceivedInstantClusterIdAwareMessageImpl( receivedAt, clusterId, message );
+        }
+    }
+
+    class ClusterIdAwareMessageImpl implements ClusterIdAwareMessage
     {
         private final ClusterId clusterId;
         private final RaftMessage message;
 
-        public ClusterIdAwareMessage( ClusterId clusterId, RaftMessage message )
+        private ClusterIdAwareMessageImpl( ClusterId clusterId, RaftMessage message )
         {
             Objects.requireNonNull( message );
             this.clusterId = clusterId;
@@ -921,11 +951,6 @@ public interface RaftMessages
         public ClusterId clusterId()
         {
             return clusterId;
-        }
-
-        public RaftMessage message()
-        {
-            return message;
         }
 
         @Override
@@ -939,38 +964,192 @@ public interface RaftMessages
             {
                 return false;
             }
-            ClusterIdAwareMessage that = (ClusterIdAwareMessage) o;
-            return Objects.equals( clusterId, that.clusterId ) && Objects.equals( message, that.message );
+            ClusterIdAwareMessageImpl that = (ClusterIdAwareMessageImpl) o;
+            return Objects.equals( clusterId, that.clusterId ) && Objects.equals( message(), that.message() );
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( clusterId, message );
+            return Objects.hash( clusterId, message() );
         }
 
         @Override
         public String toString()
         {
-            return format( "{clusterId: %s, message: %s}", clusterId, message );
+            return format( "{clusterId: %s, message: %s}", clusterId, message() );
         }
 
         @Override
         public MemberId from()
         {
-            return message.from();
+            return message().from();
         }
 
         @Override
         public Type type()
         {
-            return message.type();
+            return message().type();
+        }
+
+        @Override
+        public RaftMessage message()
+        {
+            return message;
         }
 
         @Override
         public <T, E extends Exception> T dispatch( Handler<T,E> visitor ) throws E
         {
-            return message.dispatch( visitor );
+            return message().dispatch( visitor );
+        }
+    }
+
+    class ReceivedInstantAwareMessageImpl implements ReceivedInstantAwareMessage
+    {
+        private final Instant receivedAt;
+        private final RaftMessage message;
+
+        private ReceivedInstantAwareMessageImpl( Instant receivedAt, RaftMessage message )
+        {
+            Objects.requireNonNull( message );
+            this.receivedAt = receivedAt;
+            this.message = message;
+        }
+
+        @Override
+        public Instant receivedAt()
+        {
+            return receivedAt;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            ReceivedInstantAwareMessageImpl that = (ReceivedInstantAwareMessageImpl) o;
+            return Objects.equals( receivedAt, that.receivedAt ) && Objects.equals( message(), that.message() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( receivedAt, message() );
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "{receivedAt: %s, message: %s}", receivedAt, message() );
+        }
+
+        @Override
+        public MemberId from()
+        {
+            return message().from();
+        }
+
+        @Override
+        public Type type()
+        {
+            return message().type();
+        }
+
+        @Override
+        public RaftMessage message()
+        {
+            return message;
+        }
+
+        @Override
+        public <T, E extends Exception> T dispatch( Handler<T,E> visitor ) throws E
+        {
+            return message().dispatch( visitor );
+        }
+    }
+
+    class ReceivedInstantClusterIdAwareMessageImpl implements ReceivedInstantClusterIdAwareMessage
+    {
+        private final Instant receivedAt;
+        private final ClusterId clusterId;
+        private final RaftMessage message;
+
+        private ReceivedInstantClusterIdAwareMessageImpl( Instant receivedAt, ClusterId clusterId, RaftMessage message )
+        {
+            Objects.requireNonNull( message );
+            this.clusterId = clusterId;
+            this.receivedAt = receivedAt;
+            this.message = message;
+        }
+
+        @Override
+        public Instant receivedAt()
+        {
+            return receivedAt;
+        }
+
+        @Override
+        public ClusterId clusterId()
+        {
+            return clusterId;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            ReceivedInstantClusterIdAwareMessageImpl that = (ReceivedInstantClusterIdAwareMessageImpl) o;
+            return Objects.equals( receivedAt, that.receivedAt ) && Objects.equals( clusterId, that.clusterId ) && Objects.equals( message(), that.message() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( receivedAt, clusterId, message() );
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "{clusterId: %s, receivedAt: %s, message: %s}", clusterId, receivedAt, message() );
+        }
+
+        @Override
+        public MemberId from()
+        {
+            return message().from();
+        }
+
+        @Override
+        public Type type()
+        {
+            return message().type();
+        }
+
+        @Override
+        public RaftMessage message()
+        {
+            return message;
+        }
+
+        @Override
+        public <T, E extends Exception> T dispatch( Handler<T,E> visitor ) throws E
+        {
+            return message().dispatch( visitor );
         }
     }
 
@@ -1017,8 +1196,8 @@ public interface RaftMessages
 
     abstract class BaseRaftMessage implements RaftMessage
     {
-        protected MemberId from;
-        private Type type;
+        protected final MemberId from;
+        private final Type type;
 
         BaseRaftMessage( MemberId from, Type type )
         {
