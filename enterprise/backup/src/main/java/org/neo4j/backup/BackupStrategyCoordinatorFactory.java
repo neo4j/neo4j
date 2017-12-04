@@ -22,6 +22,7 @@ package org.neo4j.backup;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -29,32 +30,39 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
-/**
- * Backup flows are iterate through backup strategies and make sure at least one of them is a valid backup. Handles
- * cases when that isn't possible.
- * This factory helps in the construction of them.
+/*
+ * Backup strategy coordinators iterate through backup strategies and make sure at least one of them can perform a valid backup.
+ * Handles cases when individual backups aren't  possible.
  */
-class BackupFlowFactory
+class BackupStrategyCoordinatorFactory
 {
     private final LogProvider logProvider;
     private final ConsistencyCheckService consistencyCheckService;
     private final AddressResolver addressResolver;
-    private final BackupCopyService backupCopyService;
     private final OutsideWorld outsideWorld;
 
-    BackupFlowFactory( BackupModule backupModule )
+    BackupStrategyCoordinatorFactory( BackupModule backupModule )
     {
         this.logProvider = backupModule.getLogProvider();
         this.outsideWorld = backupModule.getOutsideWorld();
-        this.backupCopyService = backupModule.getBackupCopyService();
 
         this.consistencyCheckService = new ConsistencyCheckService();
         this.addressResolver = new AddressResolver();
     }
 
-    BackupFlow backupFlow( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService,
-                           BackupDelegator backupDelegator, PageCache pageCache )
+    /**
+     * Construct a wrapper of supported backup strategies
+     *
+     * @param onlineBackupContext the input of the backup tool, such as CLI arguments, config etc.
+     * @param backupProtocolService the underlying backup implementation for HA and single node instances
+     * @param backupDelegator the backup implementation used for CC backups
+     * @param pageCache the page cache used moving files
+     * @return strategy coordinator that handles the which backup strategies are tried and establishes if a backup was successful or not
+     */
+    BackupStrategyCoordinator backupStrategyCoordinator( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService,
+            BackupDelegator backupDelegator, PageCache pageCache )
     {
+        BackupCopyService copyService = new BackupCopyService( pageCache, new FileMoveProvider( pageCache ) );
         ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.textual( outsideWorld.errorStream() );
         BackupRecoveryService recoveryService = new BackupRecoveryService();
         long timeout = onlineBackupContext.getRequiredArguments().getTimeout();
@@ -64,15 +72,15 @@ class BackupFlowFactory
         BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, timeout );
 
         List<BackupStrategyWrapper> strategies = Arrays.asList(
-                wrap( ccStrategy, pageCache, config, recoveryService ),
-                wrap( haStrategy, pageCache, config, recoveryService ) );
+                wrap( ccStrategy, copyService, pageCache, config, recoveryService ),
+                wrap( haStrategy, copyService, pageCache, config, recoveryService ) );
 
-        return new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );
+        return new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );
     }
 
-    private BackupStrategyWrapper wrap( BackupStrategy strategy, PageCache pageCache, Config config,
-                                        BackupRecoveryService recoveryService )
+    private BackupStrategyWrapper wrap( BackupStrategy strategy, BackupCopyService copyService, PageCache pageCache,
+                                        Config config, BackupRecoveryService recoveryService )
     {
-        return new BackupStrategyWrapper( strategy, backupCopyService, pageCache, config, recoveryService ) ;
+        return new BackupStrategyWrapper( strategy, copyService, pageCache, config, recoveryService, logProvider ) ;
     }
 }

@@ -30,7 +30,7 @@ class OnlineBackupCommand implements AdminCommand
 {
     private final OutsideWorld outsideWorld;
     private final OnlineBackupContextBuilder contextBuilder;
-    private final BackupFlowFactory backupFlowFactory;
+    private final BackupStrategyCoordinatorFactory backupStrategyCoordinatorFactory;
     private final BackupSupportingClassesFactory backupSupportingClassesFactory;
 
     /**
@@ -39,15 +39,16 @@ class OnlineBackupCommand implements AdminCommand
      * @param outsideWorld provides a way to interact with the filesystem and output streams
      * @param contextBuilder helper class to validate, process and return a grouped result of processing the command line arguments
      * @param backupSupportingClassesFactory necessary for constructing the strategy for backing up over the causal clustering transaction protocol
-     * @param backupFlowFactory class that actually handles the logic of performing a backup
+     * @param backupStrategyCoordinatorFactory class that actually handles the logic of performing a backup
      */
     OnlineBackupCommand( OutsideWorld outsideWorld, OnlineBackupContextBuilder contextBuilder,
-                         BackupSupportingClassesFactory backupSupportingClassesFactory, BackupFlowFactory backupFlowFactory )
+                         BackupSupportingClassesFactory backupSupportingClassesFactory,
+                         BackupStrategyCoordinatorFactory backupStrategyCoordinatorFactory )
     {
         this.outsideWorld = outsideWorld;
         this.contextBuilder = contextBuilder;
         this.backupSupportingClassesFactory = backupSupportingClassesFactory;
-        this.backupFlowFactory = backupFlowFactory;
+        this.backupStrategyCoordinatorFactory = backupStrategyCoordinatorFactory;
     }
 
     @Override
@@ -61,13 +62,13 @@ class OnlineBackupCommand implements AdminCommand
         checkDestination( onlineBackupContext.getRequiredArguments().getFolder() );
         checkDestination( onlineBackupContext.getRequiredArguments().getReportDir() );
 
-        BackupFlow backupFlow = backupFlowFactory.backupFlow(
+        BackupStrategyCoordinator backupStrategyCoordinator = backupStrategyCoordinatorFactory.backupStrategyCoordinator(
                 onlineBackupContext,
                 backupSupportingClasses.getBackupProtocolService(),
                 backupSupportingClasses.getBackupDelegator(),
                 backupSupportingClasses.getPageCache() );
 
-        backupFlow.performBackup( onlineBackupContext );
+        backupStrategyCoordinator.performBackup( onlineBackupContext );
         outsideWorld.stdOutLine( "Backup complete." );
     }
 

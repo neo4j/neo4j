@@ -41,7 +41,7 @@ import static java.lang.String.format;
  * when none of the backups worked.
  * Also handles the consistency check
  */
-class BackupFlow
+class BackupStrategyCoordinator
 {
     private static final int STATUS_CC_ERROR = 2;
     private static final int STATUS_CC_INCONSISTENT = 3;
@@ -52,7 +52,7 @@ class BackupFlow
     private final ProgressMonitorFactory progressMonitorFactory;
     private final List<BackupStrategyWrapper> strategies;
 
-    BackupFlow( ConsistencyCheckService consistencyCheckService, OutsideWorld outsideWorld, LogProvider logProvider,
+    BackupStrategyCoordinator( ConsistencyCheckService consistencyCheckService, OutsideWorld outsideWorld, LogProvider logProvider,
             ProgressMonitorFactory progressMonitorFactory, List<BackupStrategyWrapper> strategies )
     {
         this.consistencyCheckService = consistencyCheckService;
@@ -69,7 +69,7 @@ class BackupFlow
      * @param onlineBackupContext filesystem, command arguments and configuration
      * @throws CommandFailed when backup failed or there were issues with consistency checks
      */
-    void performBackup( OnlineBackupContext onlineBackupContext ) throws CommandFailed
+    public void performBackup( OnlineBackupContext onlineBackupContext ) throws CommandFailed
     {
         // Convenience
         OnlineBackupRequiredArguments requiredArgs = onlineBackupContext.getRequiredArguments();

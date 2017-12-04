@@ -95,9 +95,7 @@ public class DumpCommand implements AdminCommand
         }
         catch ( CannotWriteException e )
         {
-            throw new CommandFailed(
-                    "you do not have permission to dump the database -- is Neo4j running as a " + "different user?",
-                    e );
+            throw new CommandFailed( "you do not have permission to dump the database -- is Neo4j running as a different user?", e );
         }
     }
 

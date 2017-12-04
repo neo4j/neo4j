@@ -35,7 +35,6 @@ class BackupModule
     private final Monitors monitors;
     private final Clock clock;
     private final TransactionLogCatchUpFactory transactionLogCatchUpFactory;
-    private final BackupCopyService backupCopyService;
 
     /**
      * Dependencies that can be resolved immediately after launching the backup tool
@@ -52,7 +51,6 @@ class BackupModule
         this.clock = Clock.systemDefaultZone();
         this.transactionLogCatchUpFactory = new TransactionLogCatchUpFactory();
         this.fileSystemAbstraction = outsideWorld.fileSystem();
-        this.backupCopyService = new BackupCopyService();
     }
 
     public LogProvider getLogProvider()
@@ -83,10 +81,5 @@ class BackupModule
     public OutsideWorld getOutsideWorld()
     {
         return outsideWorld;
-    }
-
-    public BackupCopyService getBackupCopyService()
-    {
-        return backupCopyService;
     }
 }

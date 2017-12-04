@@ -26,24 +26,32 @@ import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
+/**
+ * Individual backup strategies can perform incremental backups and full backups. The logic of how and when to perform full/incremental is identical.
+ * This class describes the behaviour of a single strategy and is used to wrap an interface providing incremental/full backup functionality
+ */
 class BackupStrategyWrapper
 {
     private final BackupStrategy backupStrategy;
     private final BackupCopyService backupCopyService;
     private final BackupRecoveryService backupRecoveryService;
+    private final Log log;
 
     private final PageCache pageCache;
     private final Config config;
 
     BackupStrategyWrapper( BackupStrategy backupStrategy, BackupCopyService backupCopyService, PageCache pageCache, Config config,
-            BackupRecoveryService backupRecoveryService )
+            BackupRecoveryService backupRecoveryService, LogProvider logProvider )
     {
         this.backupStrategy = backupStrategy;
         this.backupCopyService = backupCopyService;
         this.pageCache = pageCache;
         this.config = config;
         this.backupRecoveryService = backupRecoveryService;
+        this.log = logProvider.getLog( BackupStrategyWrapper.class );
     }
 
     /**
@@ -71,8 +79,10 @@ class BackupStrategyWrapper
         OptionalHostnamePort userSpecifiedAddress = onlineBackupContext.getRequiredArguments().getAddress();
         Config config = onlineBackupContext.getConfig();
 
-        if ( backupCopyService.backupExists( backupLocation ) )
+        boolean previousBackupExists = backupCopyService.backupExists( backupLocation );
+        if ( previousBackupExists )
         {
+            log.info( "Previous backup found, trying incremental backup." );
             Fallible<BackupStageOutcome> state =
                     backupStrategy.performIncrementalBackup( userSpecifiedBackupLocation, config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );
@@ -80,6 +90,7 @@ class BackupStrategyWrapper
 
             if ( fullBackupWontWork || incrementalWasSuccessful )
             {
+                backupCopyService.clearLogs( backupLocation );
                 return describeOutcome( state );
             }
             if ( !onlineBackupContext.getRequiredArguments().isFallbackToFull() )
@@ -87,9 +98,28 @@ class BackupStrategyWrapper
                 return describeOutcome( state );
             }
         }
-        return describeOutcome( fullBackupWithTemporaryFolderResolutions( onlineBackupContext ) );
+        if ( onlineBackupContext.getRequiredArguments().isFallbackToFull() )
+        {
+            if ( !previousBackupExists )
+            {
+                log.info( "Previous backup not found, a new full backup will be performed." );
+            }
+            return describeOutcome( fullBackupWithTemporaryFolderResolutions( onlineBackupContext ) );
+        }
+        return new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null );
     }
 
+    /**
+     * This will perform a full backup with some directory renaming if necessary.
+     * <p>
+     * If there is no existing backup, then no renaming will occur.
+     * Otherwise the full backup will be done into a temporary directory and renaming
+     * will occur if everything was successful.
+     * </p>
+     *
+     * @param onlineBackupContext command line arguments, config etc.
+     * @return outcome of full backup
+     */
     private Fallible<BackupStageOutcome> fullBackupWithTemporaryFolderResolutions(
             OnlineBackupContext onlineBackupContext )
     {
@@ -104,7 +134,7 @@ class BackupStrategyWrapper
             return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
         }
 
-        Config config = onlineBackupContext.getConfig();
+//        Config config = onlineBackupContext.getConfig();
         OptionalHostnamePort address = onlineBackupContext.getRequiredArguments().getAddress();
         Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, config, address );
 
@@ -113,7 +143,7 @@ class BackupStrategyWrapper
 
         if ( BackupStageOutcome.SUCCESS.equals( state.getState() ) )
         {
-            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation, pageCache, this.config );
+            backupRecoveryService.recoverWithDatabase( temporaryFullBackupLocation, pageCache, config );
             if ( !aBackupAlreadyExisted )
             {
                 try
@@ -125,6 +155,7 @@ class BackupStrategyWrapper
                     return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
                 }
             }
+            backupCopyService.clearLogs( userSpecifiedBackupLocation );
         }
         return state;
     }

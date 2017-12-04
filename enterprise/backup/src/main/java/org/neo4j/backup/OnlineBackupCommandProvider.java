@@ -91,10 +91,10 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
                 getProvidersByPriority().findFirst().orElseThrow( noProviderException() );
         BackupSupportingClassesFactory supportingClassesFactory =
                 classesFactoryProvider.getFactory( backupModule );
-        BackupFlowFactory backupFlowFactory = new BackupFlowFactory( backupModule );
+        BackupStrategyCoordinatorFactory coordinatorFactory = new BackupStrategyCoordinatorFactory( backupModule );
 
         return new OnlineBackupCommand(
-                outsideWorld, contextBuilder, supportingClassesFactory, backupFlowFactory );
+                outsideWorld, contextBuilder, supportingClassesFactory, coordinatorFactory );
     }
 
     private static Supplier<IllegalStateException> noProviderException()

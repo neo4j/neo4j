@@ -68,7 +68,7 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 
     public boolean isMaster()
     {
-        return HighAvailabilityModeSwitcher.MASTER.equals( role() );
+        return HighAvailabilityModeSwitcher.MASTER.equalsIgnoreCase( role() );
     }
 
     public File getStoreDirectory()

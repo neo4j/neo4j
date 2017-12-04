@@ -51,11 +51,11 @@ public class OnlineBackupCommandTest
 
     // Dependencies
     private OutsideWorld outsideWorld = mock( OutsideWorld.class );
-    private BackupFlowFactory backupFlowFactory = mock( BackupFlowFactory.class );
+    private BackupStrategyCoordinatorFactory backupStrategyCoordinatorFactory = mock( BackupStrategyCoordinatorFactory.class );
 
     // Behaviour dependencies
     private FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
-    private BackupFlow backupFlow = mock( BackupFlow.class );
+    private BackupStrategyCoordinator backupStrategyCoordinator = mock( BackupStrategyCoordinator.class );
 
     // Parameters and helpers
     private final Config config = mock( Config.class );
@@ -65,8 +65,8 @@ public class OnlineBackupCommandTest
 
     private Path backupDirectory = Paths.get( "backupDirectory/" );
     private Path reportDirectory = Paths.get( "reportDirectory/" );
-    private BackupSupportingClassesFactory
-            backupSupportingClassesFactory = mock( BackupSupportingClassesFactory.class );
+    private BackupSupportingClassesFactory backupSupportingClassesFactory =
+            mock( BackupSupportingClassesFactory.class );
 
     private OnlineBackupCommand subject;
 
@@ -84,9 +84,10 @@ public class OnlineBackupCommandTest
         when( requiredArguments.getFolder() ).thenReturn( backupDirectory );
         when( requiredArguments.getReportDir() ).thenReturn( reportDirectory );
         when( requiredArguments.getName() ).thenReturn( "backup name" );
-        when( backupFlowFactory.backupFlow( any(), any(), any(), any() ) ).thenReturn( backupFlow );
+        when( backupStrategyCoordinatorFactory.backupStrategyCoordinator( any(), any(), any(), any() ) ).thenReturn( backupStrategyCoordinator );
 
-        subject = new OnlineBackupCommand( outsideWorld, contextBuilder, backupSupportingClassesFactory, backupFlowFactory );
+        subject = new OnlineBackupCommand(
+                outsideWorld, contextBuilder, backupSupportingClassesFactory, backupStrategyCoordinatorFactory );
     }
 
     @Test

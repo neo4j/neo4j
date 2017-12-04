@@ -19,26 +19,50 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.neo4j.com.storecopy.FileMoveAction;
+import org.neo4j.com.storecopy.FileMoveProvider;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
+
 import static java.lang.String.format;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 
 class BackupCopyService
 {
     private static final int MAX_OLD_BACKUPS = 1000;
 
+    private final PageCache pageCache;
+
+    private final FileMoveProvider fileMoveProvider;
+
+    BackupCopyService( PageCache pageCache, FileMoveProvider fileMoveProvider )
+    {
+        this.pageCache = pageCache;
+        this.fileMoveProvider = fileMoveProvider;
+    }
+
     public void moveBackupLocation( Path oldLocation, Path newLocation ) throws IOException
     {
         try
         {
-            Files.move( oldLocation, newLocation );
+            File source = oldLocation.toFile();
+            File target = newLocation.toFile();
+            Iterator<FileMoveAction> moves = fileMoveProvider.traverseForMoving( source ).iterator();
+            while ( moves.hasNext() )
+            {
+                moves.next().move( target );
+            }
         }
         catch ( IOException e )
         {
@@ -46,21 +70,16 @@ class BackupCopyService
         }
     }
 
+    public void clearLogs( Path neo4jHome )
+    {
+        File logsDirectory = Config.defaults( logs_directory, neo4jHome.toString() ).get( store_internal_log_path );
+        logsDirectory.delete();
+    }
+
     boolean backupExists( Path destination )
     {
-        try
-        {
-            if ( Files.notExists( destination ) )
-            {
-                Files.createDirectories( destination );
-                return false;
-            }
-            return Files.list( destination ).count() > 0;
-        }
-        catch ( IOException e )
-        {
-            return true; // Let's not use this directory
-        }
+        File[] listFiles = pageCache.getCachedFileSystem().listFiles( destination.toFile() );
+        return listFiles != null && listFiles.length > 0;
     }
 
     Path findNewBackupLocationForBrokenExisting( Path existingBackup ) throws IOException
@@ -73,6 +92,13 @@ class BackupCopyService
         return findAnAvailableBackupLocation( desiredBackupLocation, "%s.temp.%d" );
     }
 
+    /**
+     * Given a desired file name, find an available name that is similar to the given one that doesn't conflict with already existing backups
+     *
+     * @param file desired ideal file name
+     * @param pattern pattern to follow if desired name is taken (requires %s for original name, and %d for iteration)
+     * @return the resolved file name which can be the original desired, or a variation that matches the pattern
+     */
     private Path findAnAvailableBackupLocation( Path file, String pattern ) throws IOException
     {
         if ( backupExists( file ) )
