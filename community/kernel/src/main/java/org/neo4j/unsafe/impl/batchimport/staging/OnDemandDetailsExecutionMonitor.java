@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -72,6 +73,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
 
     private final List<StageDetails> details = new ArrayList<>();
     private final PrintStream out;
+    private final InputStream in;
     private final Map<String,Pair<String,Runnable>> actions = new HashMap<>();
     private final CollectingMonitor gcBlockTime = new CollectingMonitor();
     private final MeasureDoNothing gcMonitor;
@@ -80,9 +82,10 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     private StageDetails current;
     private boolean printDetailsOnDone;
 
-    public OnDemandDetailsExecutionMonitor( PrintStream out, Monitor monitor )
+    public OnDemandDetailsExecutionMonitor( PrintStream out, InputStream in, Monitor monitor )
     {
         this.out = out;
+        this.in = in;
         this.monitor = monitor;
         this.actions.put( "i", Pair.of( "Print more detailed information", this::printDetails ) );
         this.actions.put( "c", Pair.of( "Print more detailed information about current stage", this::printDetailsForCurrentStage ) );
@@ -188,7 +191,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     {
         try
         {
-            if ( System.in.available() > 0 )
+            if ( in.available() > 0 )
             {
                 // don't close this read, since we really don't want to close the underlying System.in
                 BufferedReader reader = new BufferedReader( new InputStreamReader( System.in ) );

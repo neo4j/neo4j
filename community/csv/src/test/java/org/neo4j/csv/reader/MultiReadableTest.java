@@ -29,7 +29,6 @@ import org.neo4j.collection.RawIterator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 
 public class MultiReadableTest
@@ -104,6 +103,33 @@ public class MultiReadableTest
         assertEquals( 23 + 30, reader.position() );
         reader.read( buffer, buffer.front() );
         assertFalse( buffer.hasAvailable() );
+    }
+
+    @Test
+    public void shouldNotCrossSourcesInOneRead() throws Exception
+    {
+        // given
+        String source1 = "abcdefghijklm";
+        String source2 = "nopqrstuvwxyz";
+        String[][] data = new String[][] { {source1}, {source2} };
+        CharReadable readable = new MultiReadable( readerIteratorFromStrings( data, '\n' ) );
+
+        // when
+        char[] target = new char[source1.length() + source2.length() / 2];
+        int read = readable.read( target, 0, target.length );
+
+        // then
+        assertEquals( source1.length() + 1/*added newline-char*/, read );
+
+        // and when
+        target = new char[source2.length()];
+        read = readable.read( target, 0, target.length );
+
+        // then
+        assertEquals( source2.length(), read );
+
+        read = readable.read( target, 0, target.length );
+        assertEquals( 1/*added newline-char*/, read );
     }
 
     private static final Configuration CONFIG = new Configuration.Overridden( Configuration.DEFAULT )

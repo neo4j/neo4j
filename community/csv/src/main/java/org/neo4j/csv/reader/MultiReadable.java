@@ -139,6 +139,14 @@ public class MultiReadable implements CharReadable
             int read = current.read( into, offset + totalRead, length - totalRead );
             if ( read == -1 )
             {
+                if ( totalRead > 0 )
+                {
+                    // Something has been read, but we couldn't fulfill the request with the current source.
+                    // Return what we've read so far so that we don't mix multiple sources into the same read,
+                    // for source traceability reasons.
+                    return totalRead;
+                }
+
                 if ( !goToNextSource() )
                 {
                     break;
@@ -151,13 +159,10 @@ public class MultiReadable implements CharReadable
                     requiresNewLine = false;
                 }
             }
-            else
+            else if ( read > 0 )
             {
                 totalRead += read;
-                if ( read > 0 )
-                {
-                    checkNewLineRequirement( into, offset + totalRead - 1 );
-                }
+                checkNewLineRequirement( into, offset + totalRead - 1 );
             }
         }
         return totalRead;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.io.InputStream;
+
 /**
  * Common {@link ExecutionMonitor} implementations.
  */
@@ -31,10 +33,15 @@ public class ExecutionMonitors
 
     public static ExecutionMonitor defaultVisible()
     {
+        return defaultVisible( System.in );
+    }
+
+    public static ExecutionMonitor defaultVisible( InputStream in )
+    {
         ProgressRestoringMonitor monitor = new ProgressRestoringMonitor();
         return new MultiExecutionMonitor(
                 new HumanUnderstandableExecutionMonitor( System.out, monitor ),
-                new OnDemandDetailsExecutionMonitor( System.out, monitor ) );
+                new OnDemandDetailsExecutionMonitor( System.out, in, monitor ) );
     }
 
     private static final ExecutionMonitor INVISIBLE = new ExecutionMonitor()
