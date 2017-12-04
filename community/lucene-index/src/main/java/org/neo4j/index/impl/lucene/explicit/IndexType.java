@@ -209,9 +209,11 @@ public abstract class IndexType
                                LuceneDataSource.WHITESPACE_ANALYZER;
                 }
                 result = new CustomType( analyzer, toLowerCase, similarity );
-            } else {
+            }
+            else
+            {
                 throw new IllegalArgumentException( "The given type was not recognized: " + type +
-                        ". Known types are 'fulltext' and 'exact'");
+                        ". Known types are 'fulltext' and 'exact'" );
             }
         }
         else
