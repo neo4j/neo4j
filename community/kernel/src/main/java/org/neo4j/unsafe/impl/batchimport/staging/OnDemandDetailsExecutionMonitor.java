@@ -89,7 +89,6 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         this.monitor = monitor;
         this.actions.put( "i", Pair.of( "Print more detailed information", this::printDetails ) );
         this.actions.put( "c", Pair.of( "Print more detailed information about current stage", this::printDetailsForCurrentStage ) );
-        this.actions.put( "gc", Pair.of( "Trigger GC", this::triggerGC ) );
         this.gcMonitor = new MeasureDoNothing( "Importer GC monitor", gcBlockTime, 100, 200 );
     }
 
@@ -180,11 +179,6 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     private static void printIndented( PrintStream out, String string )
     {
         out.println( "\t" + string );
-    }
-
-    private void triggerGC()
-    {
-        System.gc();
     }
 
     private void reactToUserInput()

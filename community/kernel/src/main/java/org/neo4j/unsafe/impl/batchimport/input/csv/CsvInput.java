@@ -280,8 +280,7 @@ public class CsvInput implements Input
             while ( dataItems.hasNext() )
             {
                 CharReadable stream = dataItems.next();
-                // TODO for now only a single 1MB chunk from the start of each file is sampled.
-                //      more samples from other places in each file could also be sampled.
+                // A maximum of 1MB chunk from the start of each file is sampled.
                 try ( CharSeeker dataStream = charSeeker( stream, config, true ) ) // sample it
                 {
                     if ( header == null )

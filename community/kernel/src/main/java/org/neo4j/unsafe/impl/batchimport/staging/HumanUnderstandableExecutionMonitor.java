@@ -60,7 +60,37 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 {
     public interface Monitor
     {
+        void progress( ImportStage stage, int percent );
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void progress( ImportStage stage, int percent )
+        {   // empty
+        }
+    };
+
+    public interface ExternalMonitor
+    {
         boolean somethingElseBrokeMyNiceOutput();
+    }
+
+    public static final ExternalMonitor NO_EXTERNAL_MONITOR = new ExternalMonitor()
+    {
+        @Override
+        public boolean somethingElseBrokeMyNiceOutput()
+        {
+            return false;
+        }
+    };
+
+    enum ImportStage
+    {
+        nodeImport,
+        relationshipImport,
+        linking,
+        postProcessing;
     }
 
     private static final String ESTIMATED_REQUIRED_MEMORY_USAGE = "Estimated required memory usage";
@@ -76,17 +106,20 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     // assigned later on
     private final PrintStream out;
     private final Monitor monitor;
+    private final ExternalMonitor externalMonitor;
     private DependencyResolver dependencyResolver;
 
     // progress of current stage
     private long goal;
     private long stashedProgress;
     private long progress;
+    private ImportStage currentStage;
 
-    public HumanUnderstandableExecutionMonitor( PrintStream out, Monitor monitor )
+    public HumanUnderstandableExecutionMonitor( PrintStream out, Monitor monitor, ExternalMonitor externalMonitor )
     {
         this.out = out;
         this.monitor = monitor;
+        this.externalMonitor = externalMonitor;
     }
 
     @Override
@@ -216,7 +249,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         long goal = idMapper.needsPreparation()
                 ? (long) (numberOfNodes + weighted( IdMapperPreparationStage.NAME, numberOfNodes * 4 ))
                 : numberOfNodes;
-        initializeProgress( goal );
+        initializeProgress( goal, ImportStage.nodeImport );
     }
 
     private void initializeRelationshipImport( Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
@@ -230,7 +263,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
                         baselineMemoryRequirement( neoStores ) +
                         totalMemoryUsageOf( idMapper ) ) );
-        initializeProgress( numberOfRelationships );
+        initializeProgress( numberOfRelationships, ImportStage.relationshipImport );
     }
 
     private void initializeLinking( BatchingNeoStores neoStores,
@@ -249,7 +282,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         initializeProgress(
                 relationshipRecordIdCount +   // node degrees
                 actualRelationshipCount * 2 + // start/end forwards, see RelationshipLinkingProgress
-                actualRelationshipCount * 2   // start/end backwards, see RelationshipLinkingProgress
+                actualRelationshipCount * 2,  // start/end backwards, see RelationshipLinkingProgress
+                ImportStage.linking
                 );
     }
 
@@ -267,7 +301,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 groupCount +                 // Write groups
                 groupCount +                 // Node --> Group
                 actualNodeCount +            // Node counts
-                relationshipRecordIdCount ); // Relationship counts
+                relationshipRecordIdCount,   // Relationship counts
+                ImportStage.postProcessing
+                );
     }
 
     private static long defensivelyPadMemoryEstimate( long bytes )
@@ -275,11 +311,12 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         return (long) (bytes * 1.1);
     }
 
-    private void initializeProgress( long goal )
+    private void initializeProgress( long goal, ImportStage stage )
     {
         this.goal = goal;
         this.stashedProgress = 0;
         this.progress = 0;
+        this.currentStage = stage;
     }
 
     private void updateProgress( long progress )
@@ -304,7 +341,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
             if ( currentLine < line || currentDotOnLine == dotsPerLine() )
             {
-                out.println( format( " %s", linePercentage( currentLine ) ) );
+                int percentage = percentage( currentLine );
+                out.println( format( " %s%%", percentage ) );
+                monitor.progress( currentStage, percentage );
                 currentLine++;
                 if ( currentLine == lines() )
                 {
@@ -318,10 +357,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         this.progress = max( this.progress, progress );
     }
 
-    private static String linePercentage( int line )
+    private static int percentage( int line )
     {
-        int percentage = (line + 1) * PERCENTAGES_PER_LINE;
-        return percentage + "%";
+        return (line + 1) * PERCENTAGES_PER_LINE;
     }
 
     private void printDots( int from, int target )
@@ -401,7 +439,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private void reprintProgressIfNecessary()
     {
-        if ( monitor.somethingElseBrokeMyNiceOutput() )
+        if ( externalMonitor.somethingElseBrokeMyNiceOutput() )
         {
             long prevProgress = this.progress;
             long prevStashedProgress = this.stashedProgress;

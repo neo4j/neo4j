@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.io.InputStream;
 
+import static org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.NO_MONITOR;
+
 /**
  * Common {@link ExecutionMonitor} implementations.
  */
@@ -40,7 +42,7 @@ public class ExecutionMonitors
     {
         ProgressRestoringMonitor monitor = new ProgressRestoringMonitor();
         return new MultiExecutionMonitor(
-                new HumanUnderstandableExecutionMonitor( System.out, monitor ),
+                new HumanUnderstandableExecutionMonitor( System.out, NO_MONITOR, monitor ),
                 new OnDemandDetailsExecutionMonitor( System.out, in, monitor ) );
     }
 

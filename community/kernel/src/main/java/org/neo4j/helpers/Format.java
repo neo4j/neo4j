@@ -37,7 +37,7 @@ public class Format
     public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
 
     private static final String[] BYTE_SIZES = { "B", "kB", "MB", "GB" };
-    private static final String[] COUNT_SIZES = { "", "k", "M", "bn", "tr" };
+    private static final String[] COUNT_SIZES = { "", "k", "M", "G", "T" };
 
     public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
     public static final String TIME_FORMAT = "HH:mm:ss.SSS";

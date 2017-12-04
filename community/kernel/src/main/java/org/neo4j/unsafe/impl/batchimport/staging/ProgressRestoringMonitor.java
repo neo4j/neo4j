@@ -19,7 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.Monitor;
+import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.ExternalMonitor;
+import org.neo4j.unsafe.impl.batchimport.staging.OnDemandDetailsExecutionMonitor.Monitor;
 
 /**
  * Monitor connecting a {@link HumanUnderstandableExecutionMonitor} and {@link OnDemandDetailsExecutionMonitor},
@@ -27,7 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMon
  * there are other output interfering with it's nice progress printing. If something else gets printed it can restore its
  * progress from 0..current.
  */
-public class ProgressRestoringMonitor implements Monitor, org.neo4j.unsafe.impl.batchimport.staging.OnDemandDetailsExecutionMonitor.Monitor
+public class ProgressRestoringMonitor implements ExternalMonitor, Monitor
 {
     private volatile boolean detailsPrinted;
 
