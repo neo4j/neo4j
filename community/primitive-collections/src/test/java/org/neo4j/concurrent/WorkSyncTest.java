@@ -205,8 +205,8 @@ public class WorkSyncTest
             @Override
             public void apply( Adder adder )
             {
-                startLatch.release();
                 super.apply( adder );
+                startLatch.release();
                 blockLatch.await();
             }
         } ) );
