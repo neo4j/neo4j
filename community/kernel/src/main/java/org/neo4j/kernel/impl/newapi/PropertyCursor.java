@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
@@ -292,9 +293,16 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
             return readLongString();
         case ARRAY:
             return readLongArray();
+        case GEOMETRY:
+            return geometryValue();
         default:
             throw new IllegalStateException( "Unsupported PropertyType: " + type.name() );
         }
+    }
+
+    Value geometryValue()
+    {
+        return GeometryType.decode( getBlocks(), block );
     }
 
     private ArrayValue readLongArray()
