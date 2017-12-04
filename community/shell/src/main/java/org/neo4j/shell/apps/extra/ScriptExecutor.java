@@ -31,7 +31,7 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
-import static org.neo4j.shell.TextUtil.tokenizeStringWithQuotes;
+import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
 
 /**
  * Executes groovy scripts purely via reflection
