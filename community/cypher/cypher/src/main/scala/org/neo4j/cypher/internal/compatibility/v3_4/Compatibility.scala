@@ -77,15 +77,13 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_4.CypherCompiler[CONTEXT] = {
-
-    val monitors = WrappedMonitors(kernelMonitors)
-
+  protected val compiler: v3_4.CypherCompiler[CONTEXT] =
     new CypherCompilerFactory().costBasedCompiler(configV3_4, clock, monitors, rewriterSequencer,
       maybePlannerNameV3_4, maybeUpdateStrategy, contextCreatorV3_4)
-  }
 
-  private def queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default), monitors, configV3_4)
+
+  private def queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.
+    createQueryGraphSolver(maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default), monitors, configV3_4)
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
@@ -99,7 +97,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                               Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
-        (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
+        (ExecutionPlan, Map[String, Any]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_4.get
 
         //Context used for db communication during planning

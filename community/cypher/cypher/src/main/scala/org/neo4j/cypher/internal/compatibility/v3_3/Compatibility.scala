@@ -87,14 +87,13 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
 
     if (assertionsEnabled()) newValidating else newPlain
   }
-  val compiler: v3_3.CypherCompiler[CONTEXT3_3] = {
-
-    val monitors: MonitorsV3_3 = WrappedMonitors(kernelMonitors)
-    new CypherCompilerFactory().costBasedCompiler(configV3_3, clock, monitors, rewriterSequencer,
+  val compiler: v3_3.CypherCompiler[CONTEXT3_3] =
+    new CypherCompilerFactory().costBasedCompiler(configV3_3, clock, monitorsV3_3, rewriterSequencer,
       maybePlannerName, maybeUpdateStrategy, contextCreatorV3_3)
-  }
 
-  private def queryGraphSolverV3_3 = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(v3_3.CostBasedPlannerName.default), monitorsV3_3, configV3_3)
+
+  private def queryGraphSolverV3_3 = Compatibility.
+    createQueryGraphSolver(maybePlannerName.getOrElse(v3_3.CostBasedPlannerName.default), monitorsV3_3, configV3_3)
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
@@ -105,7 +104,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
 
     val tracerV3_3 = as3_3(tracer)
 
-    val preparedSyntacticQueryForV_3_3: Try[phases.BaseState] =
+    val preparedSyntacticQueryForV_3_3 =
       Try(compiler.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLoggerV3_3, preParsedQuery.planner.name,
