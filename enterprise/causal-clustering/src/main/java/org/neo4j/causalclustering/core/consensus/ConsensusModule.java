@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSetBuilder;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipState;
-import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.shipping.RaftLogShippingManager;
 import org.neo4j.causalclustering.core.consensus.term.MonitoredTermStateStorage;
 import org.neo4j.causalclustering.core.consensus.term.TermState;
@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.catchup_batch_size;
@@ -70,7 +69,6 @@ public class ConsensusModule
 
     private final MonitoredRaftLog raftLog;
     private final RaftMachine raftMachine;
-    private final DelayedRenewableTimeoutService raftTimeoutService;
     private final RaftMembershipManager raftMembershipManager;
     private final InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
 
@@ -125,16 +123,15 @@ public class ConsensusModule
                 raftMembershipStorage );
 
         life.add( raftMembershipManager );
+        TimerService timerService = new TimerService( platformModule.jobScheduler, logProvider );
 
         RaftLogShippingManager logShipping =
-                new RaftLogShippingManager( outbound, logProvider, raftLog, systemClock(), myself,
+                new RaftLogShippingManager( outbound, logProvider, raftLog, timerService, systemClock(), myself,
                         raftMembershipManager, electionTimeout, config.get( catchup_batch_size ),
                         config.get( log_shipping_max_lag ), inFlightMap );
 
-        raftTimeoutService = new DelayedRenewableTimeoutService( systemClock(), logProvider );
-
         raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
-                raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightMap,
+                timerService, outbound, logProvider, raftMembershipManager, logShipping, inFlightMap,
                 config.get( CausalClusteringSettings.refuse_to_be_leader ), platformModule.monitors, systemClock() );
 
         life.add( new RaftDiscoveryServiceConnector( coreTopologyService, raftMachine ) );
@@ -181,11 +178,6 @@ public class ConsensusModule
     public RaftMachine raftMachine()
     {
         return raftMachine;
-    }
-
-    public Lifecycle raftTimeoutService()
-    {
-        return raftTimeoutService;
     }
 
     public RaftMembershipManager raftMembershipManager()

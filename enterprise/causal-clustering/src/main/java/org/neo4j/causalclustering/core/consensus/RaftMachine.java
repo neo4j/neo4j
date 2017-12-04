@@ -35,8 +35,9 @@ import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManage
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutHandler;
+import org.neo4j.causalclustering.core.consensus.schedule.TimeoutHandler;
+import org.neo4j.causalclustering.core.consensus.schedule.Timer;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.shipping.RaftLogShippingManager;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.core.consensus.state.RaftState;
@@ -54,7 +55,11 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
+import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
+import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.uniformRandomTimeout;
+import static org.neo4j.kernel.impl.util.JobScheduler.*;
 
 /**
  * Implements the Raft Consensus Algorithm.
@@ -64,9 +69,9 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 public class RaftMachine implements LeaderLocator, CoreMetaData
 {
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
-    private RenewableTimeoutService.RenewableTimeout heartbeatTimer;
+    private Timer heartbeatTimer;
 
-    public enum Timeouts implements RenewableTimeoutService.TimeoutName
+    public enum Timeouts implements TimerService.TimerName
     {
         ELECTION,
         HEARTBEAT
@@ -75,9 +80,9 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     private final RaftState state;
     private final MemberId myself;
 
-    private final RenewableTimeoutService renewableTimeoutService;
+    private final TimerService timerService;
     private final long heartbeatInterval;
-    private RenewableTimeoutService.RenewableTimeout electionTimer;
+    private Timer electionTimer;
     private RaftMembershipManager membershipManager;
     private final boolean refuseToBecomeLeader;
     private final Clock clock;
@@ -95,7 +100,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage,
             RaftLog entryLog, long electionTimeout, long heartbeatInterval,
-            RenewableTimeoutService renewableTimeoutService, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
+            TimerService timerService, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
             InFlightMap<RaftLogEntry> inFlightMap, boolean refuseToBecomeLeader, Monitors monitors, Clock clock )
     {
@@ -103,7 +108,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         this.electionTimeout = electionTimeout;
         this.heartbeatInterval = heartbeatInterval;
 
-        this.renewableTimeoutService = renewableTimeoutService;
+        this.timerService = timerService;
 
         this.outbound = outbound;
         this.logShipping = logShipping;
@@ -124,10 +129,12 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         if ( !refuseToBecomeLeader )
         {
             lastElectionRenewalMillis = clock.millis();
-            electionTimer = renewableTimeoutService.create( Timeouts.ELECTION, electionTimeout, randomTimeoutRange(),
-                    renewing( this::electionTimeout ) );
-            heartbeatTimer = renewableTimeoutService.create( Timeouts.HEARTBEAT, heartbeatInterval, 0,
-                    renewing( () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) ) );
+
+            electionTimer = timerService.create( Timeouts.ELECTION, Groups.raft, renewing( this::electionTimeout ) );
+            electionTimer.set( uniformRandomTimeout( electionTimeout, electionTimeout * 2, MILLISECONDS ) );
+
+            heartbeatTimer = timerService.create( Timeouts.HEARTBEAT, Groups.raft, renewing( () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) ) );
+            heartbeatTimer.set( fixedTimeout( heartbeatInterval, MILLISECONDS ) );
         }
     }
 
@@ -135,17 +142,17 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         if ( electionTimer != null )
         {
-            electionTimer.cancel();
+            electionTimer.cancel( true, true );
         }
         if ( heartbeatTimer != null )
         {
-            heartbeatTimer.cancel();
+            heartbeatTimer.cancel( true, true );
         }
     }
 
     private TimeoutHandler renewing( ThrowingAction<Exception> action )
     {
-        return timeout ->
+        return timer ->
         {
             try
             {
@@ -155,7 +162,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
             {
                 log.error( "Failed to process timeout.", e );
             }
-            timeout.renew();
+            timer.reset();
         };
     }
 
@@ -334,7 +341,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
             lastElectionRenewalMillis = clock.millis();
             if ( electionTimer != null )
             {
-                electionTimer.renew();
+                electionTimer.reset();
             }
         }
     }
@@ -392,11 +399,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     public long term()
     {
         return state.term();
-    }
-
-    private long randomTimeoutRange()
-    {
-        return electionTimeout;
     }
 
     public Set<MemberId> votingMembers()

@@ -37,7 +37,7 @@ import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
@@ -186,8 +186,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 dependencies.provideDependency( TransactionIdStore.class ),
                 writableCommitProcess, platformModule.monitors, logProvider );
 
-        DelayedRenewableTimeoutService catchupTimeoutService =
-                new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
+        TimerService timerService = new TimerService( platformModule.jobScheduler, logProvider );
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new StoreFiles( fileSystem ),
@@ -238,7 +237,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy,
-                        catchUpClient, new ConnectToRandomCoreMember( discoveryService ), catchupTimeoutService,
+                        catchUpClient, new ConnectToRandomCoreMember( discoveryService ), timerService,
                         config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier,
                         platformModule.monitors, storeCopyProcess, databaseHealthSupplier );
 
@@ -246,7 +245,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         txPulling.add( batchingTxApplier );
         txPulling.add( catchupProcess );
-        txPulling.add( catchupTimeoutService );
         txPulling.add( new WaitForUpToDateStore( catchupProcess, logProvider ) );
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
