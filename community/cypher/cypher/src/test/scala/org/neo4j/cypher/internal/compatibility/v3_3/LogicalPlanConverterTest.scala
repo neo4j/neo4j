@@ -400,9 +400,9 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
           }
         }
         planV3_3 match {
-          case Success(planV3_3) =>
-            planV3_3.assignIds()
-            val rewritten = LogicalPlanConverter.convertLogicalPlan[plansV3_4.LogicalPlan](planV3_3)._1
+          case Success(plan) =>
+            plan.assignIds()
+            val rewritten = LogicalPlanConverter.convertLogicalPlan[plansV3_4.LogicalPlan](plan)._1
             rewritten shouldBe an[plansV3_4.LogicalPlan]
           case Failure(e: InstantiationException) => fail(s"could not instantiate 3.4 logical plan: ${subType.getSimpleName} with arguments ${paramTypes.toList}", e)
           case Failure(e) => fail(s"Converting ${subType.getName} failed", e)
@@ -431,7 +431,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "Namespace" => astV3_3.Namespace()(pos3_3)
       case "FunctionName" => astV3_3.FunctionName("a")(pos3_3)
       case "SemanticDirection" => frontendV3_3.SemanticDirection.OUTGOING
-      case "ShortestPaths" => astV3_3.ShortestPaths(argumentProvider(classOf[astV3_3.PatternElement]), true)(pos3_3)
+      case "ShortestPaths" => astV3_3.ShortestPaths(argumentProvider(classOf[astV3_3.PatternElement]), single = true)(pos3_3)
       case "CypherType" => symbolsV3_3.CTBoolean
       case "Scope" => frontendV3_3.Scope.empty
       case "Equals" => astV3_3.Equals(variable, variable)(pos3_3)
@@ -455,9 +455,9 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "QueryExpression" => plansV3_3.ScanQueryExpression(variable)
       case "SeekableArgs" => plansV3_3.SingleSeekableArg(variable)
       case "ExpansionMode" => plansV3_3.ExpandAll
-      case "ShortestPathPattern" => irV3_3.ShortestPathPattern(None, argumentProvider(classOf[irV3_3.PatternRelationship]), true)(argumentProvider(classOf[astV3_3.ShortestPaths]))
+      case "ShortestPathPattern" => irV3_3.ShortestPathPattern(None, argumentProvider(classOf[irV3_3.PatternRelationship]), single = true)(argumentProvider(classOf[astV3_3.ShortestPaths]))
       case "PatternRelationship" => irV3_3.PatternRelationship(IdNameV3_3("n"), (IdNameV3_3("n"), IdNameV3_3("n")), frontendV3_3.SemanticDirection.OUTGOING, Seq.empty, irV3_3.SimplePatternLength)
-      case "ShortestPaths" => astV3_3.ShortestPaths(argumentProvider(classOf[astV3_3.PatternElement]), true)(pos3_3)
+      case "ShortestPaths" => astV3_3.ShortestPaths(argumentProvider(classOf[astV3_3.PatternElement]), single = true)(pos3_3)
       case "PatternLength" => irV3_3.SimplePatternLength
       case "Ties" => plansV3_3.IncludeTies
       case "CSVFormat" => irV3_3.HasHeaders

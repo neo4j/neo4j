@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 import java.time.Clock
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.exceptionHandler.runSafely
+import org.neo4j.cypher.exceptionHandler.{RunSafely, runSafely}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
@@ -145,6 +145,6 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
       new QueryCache(cacheAccessor, lRUCache)
     })
 
-  override val runSafelyDuringPlanning = runSafely
-  override val runSafelyDuringRuntime = runSafely
+  override val runSafelyDuringPlanning: RunSafely = runSafely
+  override val runSafelyDuringRuntime: RunSafely = runSafely
 }

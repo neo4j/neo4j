@@ -90,7 +90,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 }
 
 object runSafely extends RunSafely {
-  override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default) = {
+  override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T = {
     try {
       body
     }

@@ -60,14 +60,15 @@ object LogicalPlanConverter {
         case (plan: plansV3_3.SingleRow, _) =>
           plansV3_4.Argument()(new PlannerQueryWrapper(plan.solved))
         case (_: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
-          plansV3_4.ProduceResult(children(1).asInstanceOf[LogicalPlanV3_4], children(0).asInstanceOf[Seq[String]])
+          plansV3_4.ProduceResult(source = children(1).asInstanceOf[LogicalPlanV3_4],
+            columns = children(0).asInstanceOf[Seq[String]])
         case (plan: plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>
-          plansV3_4.TriadicSelection(children(1).asInstanceOf[LogicalPlanV3_4],
-            children(5).asInstanceOf[LogicalPlanV3_4],
-            children(0).asInstanceOf[Boolean],
-            children(2).asInstanceOf[IdNameV3_4],
-            children(3).asInstanceOf[IdNameV3_4],
-            children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))
+          plansV3_4.TriadicSelection(left = children(1).asInstanceOf[LogicalPlanV3_4],
+            right = children(5).asInstanceOf[LogicalPlanV3_4],
+            positivePredicate = children(0).asInstanceOf[Boolean],
+            sourceId = children(2).asInstanceOf[IdNameV3_4],
+            seenId = children(3).asInstanceOf[IdNameV3_4],
+            targetId = children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery])
 

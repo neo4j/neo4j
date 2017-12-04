@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.time.Clock
 
-import org.neo4j.cypher.exceptionHandler.{runSafely => runtimeRunSafely}
+import org.neo4j.cypher.exceptionHandler.{RunSafely, runSafely => runtimeRunSafely}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_3
@@ -137,7 +137,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
           syntacticQuery.queryText, preParsedQuery.debugOptions,
           Some(inputPositionV3_4), monitorsV3_4,
           CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolverV3_4,
-          configV3_4, maybeUpdateStrategy.map(helpers.as3_4 _).getOrElse(defaultUpdateStrategy),
+          configV3_4, maybeUpdateStrategy.map(helpers.as3_4).getOrElse(defaultUpdateStrategy),
           clock, simpleExpressionEvaluator)
 
         //Prepare query for caching
@@ -181,8 +181,8 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
       new QueryCache(cacheAccessor, lRUCache)
     })
 
-  override val runSafelyDuringPlanning = runSafely
-  override val runSafelyDuringRuntime = runtimeRunSafely
+  override val runSafelyDuringPlanning : RunSafely = runSafely
+  override val runSafelyDuringRuntime : RunSafely = runtimeRunSafely
 }
 
 object Compatibility {
