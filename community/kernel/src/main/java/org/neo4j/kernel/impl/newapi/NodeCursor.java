@@ -76,6 +76,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             pageCursor = read.nodePage( reference );
         }
         this.next = reference;
+        //This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
         this.read = read;
         this.labelCursor = read.labelCursor();
@@ -229,14 +230,15 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             }
             if ( next > highMark )
             {
-                if ( highMark == NO_ID )
+                if ( isSingle() )
                 {
-                    //we are using single
+                    //we are a "single cursor"
                     next = NO_ID;
                     return inUse();
                 }
                 else
                 {
+                    //we are a "scan cursor"
                     //Check if there is a new high mark
                     highMark = read.nodeHighMark();
                     if ( next > highMark )
@@ -287,5 +289,10 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     {
         next = NO_ID;
         setId( NO_ID );
+    }
+
+    private boolean isSingle()
+    {
+        return highMark == NO_ID;
     }
 }

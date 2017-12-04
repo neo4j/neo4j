@@ -265,6 +265,8 @@ public class AllStoreHolder extends Read implements Token
     @Override
     void property( PropertyRecord record, long reference, PageCursor pageCursor )
     {
+        //We need to load forcefully here since otherwise we can have inconsistent reads
+        //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
         properties.loadRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 

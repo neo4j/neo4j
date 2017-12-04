@@ -465,6 +465,8 @@ public class StoreStatement implements StorageStatement
         DynamicRecord record = store.newRecord();
         do
         {
+            //We need to load forcefully here since otherwise we can have inconsistent reads
+            //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
             store.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
             reference = record.getNextBlock();
             byte[] data = record.getData();
