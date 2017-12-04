@@ -474,10 +474,11 @@ public class BuiltInProcedures
 
     @Description( "Get or create a relationship explicit index - YIELD type,name,config" )
     @Procedure( name = "db.index.explicit.forRelationships", mode = WRITE )
-    public Stream<ExplicitIndexInfo> relationshipManualIndex( @Name( "indexName" ) String explicitIndexName )
+    public Stream<ExplicitIndexInfo> relationshipManualIndex( @Name( "indexName" ) String explicitIndexName,
+            @Name( value = "config", defaultValue = "" ) Map<String,String> config )
     {
         IndexManager mgr = graphDatabaseAPI.index();
-        Index<Relationship> index = mgr.forRelationships( explicitIndexName );
+        Index<Relationship> index = mgr.forRelationships( explicitIndexName, config );
         return Stream.of( new ExplicitIndexInfo( "RELATIONSHIP", explicitIndexName, mgr.getConfiguration( index ) ) );
     }
 

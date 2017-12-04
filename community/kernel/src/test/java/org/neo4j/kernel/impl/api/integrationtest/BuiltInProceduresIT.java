@@ -218,7 +218,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "(type :: STRING?, name :: STRING?, config :: MAP?)",
                         "Get or create a node explicit index - YIELD type,name,config"} ),
                 equalTo( new Object[]{ "db.index.explicit.forRelationships",
-                        "db.index.explicit.forRelationships(indexName :: STRING?) :: " +
+                        "db.index.explicit.forRelationships(indexName :: STRING?, config = {} :: MAP?) :: " +
                         "(type :: STRING?, name :: STRING?, config :: MAP?)",
                         "Get or create a relationship explicit index - YIELD type,name,config"} ),
                 equalTo( new Object[]{ "db.index.explicit.existsForNodes",
