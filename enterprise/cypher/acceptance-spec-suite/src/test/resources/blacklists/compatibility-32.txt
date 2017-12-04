@@ -1,15 +1,5 @@
-//MatchAcceptance.feature
-Variable length path with both sides already bound
-
-// should be fixed on next 3.2.x
-Handle filtering with empty properties map
-
 //AggregationAcceptance.feature
 max() over mixed values
 min() over mixed values
 max() over list values
 min() over list values
-
-equality with boolean lists
-
-optional equality with boolean lists
