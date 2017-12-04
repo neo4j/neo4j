@@ -46,7 +46,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIWriteTestSupport testSupport;
     protected Session session;
-    protected CursorFactory cursors;
+    protected ManagedTestCursors cursors;
     protected static GraphDatabaseService graphDb;
 
     /**
@@ -67,13 +67,14 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         testSupport.clearGraph();
         Kernel kernel = testSupport.kernelToTest();
         session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
-        cursors = kernel.cursors();
+        cursors = new ManagedTestCursors( kernel.cursors() );
     }
 
     @After
     public void closeSession()
     {
         session.close();
+        cursors.assertAllClosedAndReset();
     }
 
     @AfterClass

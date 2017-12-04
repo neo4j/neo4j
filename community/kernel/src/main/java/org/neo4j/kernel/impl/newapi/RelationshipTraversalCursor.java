@@ -437,6 +437,12 @@ class RelationshipTraversalCursor extends RelationshipCursor
         buffer = null;
     }
 
+    @Override
+    public boolean isClosed()
+    {
+        return pageCursor == null;
+    }
+
     private boolean hasBufferedData()
     {
         return buffer != null;

@@ -118,4 +118,10 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
     {
         setId( next = NO_ID );
     }
+
+    @Override
+    public boolean isClosed()
+    {
+        return pageCursor == null;
+    }
 }
