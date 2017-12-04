@@ -514,7 +514,7 @@ order by a.COL1""".format(a, b))
 
     val q = "match (n)-[f]->() where id(n)= 0 with n, max(f.age) as age match (n)-[f]->(m) where f.age = age return m"
 
-    executeWith(Configs.CommunityInterpreted, q).toList should equal(List(Map("m" -> c)))
+    executeWith(Configs.Interpreted, q).toList should equal(List(Map("m" -> c)))
   }
 
   test("issue 432") {
@@ -832,7 +832,7 @@ order by a.COL1""".format(a, b))
     val n = createNode("n")
     val m = createNode("m")
     relate(n,m,"link")
-    val result = executeWith(Configs.CommunityInterpreted, "match (n) where id(n) = 0 with coalesce(n,n) as n match (n)--() return n")
+    val result = executeWith(Configs.Interpreted, "match (n) where id(n) = 0 with coalesce(n,n) as n match (n)--() return n")
 
     result.toList should equal(List(Map("n" -> n)))
   }

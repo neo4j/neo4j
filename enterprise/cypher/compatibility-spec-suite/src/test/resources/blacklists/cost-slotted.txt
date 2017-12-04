@@ -4,36 +4,17 @@ Fail at runtime when trying to index into a map with a non-string
 Fail at runtime when attempting to index with a String into a Collection
 Fail at runtime when trying to index into a list with a list
 Fail at runtime when trying to index something which is not a map or collection
-Functions should return null if they get path containing unbound
-`exists()` with literal maps
-IS NOT NULL with literal maps
 `percentileCont()` failing on bad arguments
 `percentileDisc()` failing on bad arguments
 `percentileDisc()` failing in more involved query
 `type()` failing on invalid arguments
-Optionally matching named paths with single and variable length patterns
-Optionally matching named paths with variable length patterns
-Variable length relationship in OPTIONAL MATCH
-Matching and optionally matching with bound nodes in reverse direction
-Matching and optionally matching with unbound nodes and equality predicate in reverse direction
 Fail when using property access on primitive type
-Variable length pattern checking labels on endnodes
-Variable length patterns and nulls
 Failing on merging node with null property
 Failing when setting a list of maps as a property
-MATCH after OPTIONAL MATCH
-Variable length optional relationships
-Variable length optional relationships with length predicates
-Variable length optional relationships with bound nodes
-Variable length optional relationships with bound nodes, no matches
-Returning a pattern comprehension with bound nodes
-Using a variable-length pattern comprehension in a WITH
-Pattern comprehension inside list comprehension
 Fail when returning properties of deleted nodes
 Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
 Fail when sorting on variable removed by DISTINCT
-Arithmetic expressions inside aggregation
 Concatenating and returning the size of literal lists
 Failing when performing property access on a non-map 1
 Failing when performing property access on a non-map 2
@@ -44,7 +25,6 @@ Using `rand()` in aggregations
 `toFloat()` failing on invalid arguments
 `toString()` failing on invalid arguments
 Creating nodes from an unwound parameter list
-Unwind does not remove variables from scope
 Fail when asterisk operator is missing
 Fail on negative bound
 Fail at compile time when attempting to index with a non-integer into a list

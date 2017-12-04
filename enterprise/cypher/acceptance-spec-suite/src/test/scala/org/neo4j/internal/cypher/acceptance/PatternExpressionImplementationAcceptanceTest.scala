@@ -295,11 +295,12 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val b = createLabeledNode("End")
     relate(a, b)
 
-    executeWith(Configs.CommunityInterpreted, "match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c",
+    executeWith(Configs.Interpreted, "match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
   }
 
+  // FAIL: <default version> <default planner> runtime=slotted returned different results than <default version> <default planner> runtime=interpreted List() did not contain the same elements as List(Map("r" -> (20000)-[T,0]->(20001)))
   test("should not use a label scan as starting point when statistics are bad") {
     graph.inTx {
       (1 to 10000).foreach { i =>

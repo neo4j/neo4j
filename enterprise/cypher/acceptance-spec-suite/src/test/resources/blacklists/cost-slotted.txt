@@ -1,4 +1,3 @@
-Shorthand case with filter should work as expected
 Should fail on merge using multiple unique indexes using same key if found different nodes
 Should fail on merge using multiple unique indexes if found different nodes
 Should fail on merge using multiple unique indexes if it found a node matching single property only
@@ -7,11 +6,6 @@ Should fail on merge using multiple unique indexes and labels if found different
 Merge with uniqueness constraints must properly handle multiple labels
 Failing when creation would violate constraint
 Explanation of in-query procedure call
-Returning a pattern expression with bound nodes
-Using a variable-length pattern expression in a WITH
-Pattern expression inside list comprehension
-Using a pattern predicate after aggregation 1
-Using a pattern predicate after aggregation 2
 In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call
 In-query call to procedure with explicit arguments
@@ -19,17 +13,6 @@ In-query call to procedure with argument of type NUMBER accepts value of type IN
 In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
 In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
 In-query call to procedure with null argument
-Find a shortest path among paths that fulfill a predicate on all nodes
-Find a shortest path among paths that fulfill a predicate on all relationships
-Find a shortest path among paths that fulfill a predicate
-Find a shortest path without loosing context information at runtime
-Optionally finds shortest path
-Optionally finds shortest path using previously bound nodes
-Returns null when not finding a shortest path during an OPTIONAL MATCH
-Find a combination of a shortest path and a pattern expression
 
 //SkipLimitAcceptance.feature
 Using a optional match after aggregation and before an aggregation
-
-//MatchAcceptance.feature
-Variable length path with both sides already bound

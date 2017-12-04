@@ -646,7 +646,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         relate(anotherNode, createNode(), "HAS_CATEGORY")
 
         // WHEN
-        val result = profileWithExecute(Configs.CommunityInterpreted,
+        val result = profileWithExecute(Configs.Interpreted,
           """MATCH (cat:Category)
             |WITH collect(cat) as categories
             |MATCH (m:Entity)

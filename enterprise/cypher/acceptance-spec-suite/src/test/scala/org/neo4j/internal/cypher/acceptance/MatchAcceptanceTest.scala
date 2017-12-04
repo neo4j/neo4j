@@ -247,7 +247,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = executeWith(Configs.CommunityInterpreted,
+    val result = executeWith(Configs.Interpreted,
       """
     match (a {name:'A'}), (x) where x.name in ['B', 'C']
     optional match p = shortestPath((a)-[*]->(x))
@@ -749,7 +749,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // When
     val res =
-      executeWith(Configs.AllExceptSlotted, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", params = Map("p" -> List(node1, node2)))
+      executeWith(Configs.All, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", params = Map("p" -> List(node1, node2)))
 
     //Then
     res.toList should equal(List(Map("c" -> 2)))
@@ -766,7 +766,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // When
     val res =
-      executeWith(Configs.AllExceptSlotted,
+      executeWith(Configs.All,
         """UNWIND {p1} AS n1
           |UNWIND {p2} AS n2
           |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,

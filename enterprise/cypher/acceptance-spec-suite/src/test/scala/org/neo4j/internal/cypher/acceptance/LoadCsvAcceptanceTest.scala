@@ -218,7 +218,7 @@ class LoadCsvAcceptanceTest
         writer.println("5,'Emerald',")
     })
     for (url <- urls) {
-      val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, s"LOAD CSV WITH HEADERS FROM '$url' AS line WITH line WHERE line.x IS NOT NULL RETURN line.name")
+      val result = executeWith(expectedToSucceed + Configs.SlottedInterpreted, s"LOAD CSV WITH HEADERS FROM '$url' AS line WITH line WHERE line.x IS NOT NULL RETURN line.name")
       assert(result.toList === List(
         Map("line.name" -> "'Aardvark'"),
         Map("line.name" -> "'Cash'"),

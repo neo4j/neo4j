@@ -730,7 +730,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |RETURN count(p)
         |""".stripMargin
 
-    executeWith(Configs.CommunityInterpreted  - Configs.Cost3_1 - Configs.Cost2_3, query,
+    executeWith(Configs.Interpreted  - Configs.Cost3_1 - Configs.Cost2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "k")
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "t")
