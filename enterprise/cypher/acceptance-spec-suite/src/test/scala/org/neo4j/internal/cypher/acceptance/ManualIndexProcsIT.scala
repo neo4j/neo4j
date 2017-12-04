@@ -479,6 +479,32 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     assertNodeIndexExists("usernames", true)
   }
 
+  test("should be able to get an existing node index without specifying a configuration") {
+    //Given
+    assertNodeIndexExists("usernames", false)
+    execute("CALL db.index.explicit.forNodes('usernames') YIELD type, name").toList
+
+    //When
+    val result = execute("CALL db.index.explicit.forNodes('usernames') YIELD type, name").toList
+    result should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
+
+    //Then
+    assertNodeIndexExists("usernames", true)
+  }
+
+  test("should be able to get an existing node index with specifying a configuration") {
+    //Given
+    assertNodeIndexExists("usernames", false)
+    execute("CALL db.index.explicit.forNodes('usernames') YIELD type, name").toList
+
+    //When
+    val result = execute("CALL db.index.explicit.forNodes('usernames', {type: 'exact', provider: 'lucene'}) YIELD type, name").toList
+    result should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
+
+    //Then
+    assertNodeIndexExists("usernames", true)
+  }
+
   test("cannot get a node index with a different type if it exists already") {
     //Given
     assertNodeIndexExists("usernames", false)
@@ -525,6 +551,32 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
     //When
     val result = execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+    result should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
+
+    //Then
+    assertRelationshipIndexExists("relIndex", true)
+  }
+
+  test("should be able to get an existing relationship index without specifying a configuration") {
+    //Given
+    assertRelationshipIndexExists("relIndex", false)
+    execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+
+    //When
+    val result = execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+    result should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
+
+    //Then
+    assertRelationshipIndexExists("relIndex", true)
+  }
+
+  test("should be able to get an existing relationship index with specifying a configuration") {
+    //Given
+    assertRelationshipIndexExists("relIndex", false)
+    execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+
+    //When
+    val result = execute("CALL db.index.explicit.forRelationships('relIndex', {type: 'exact', provider: 'lucene'}) YIELD type, name").toList
     result should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
 
     //Then

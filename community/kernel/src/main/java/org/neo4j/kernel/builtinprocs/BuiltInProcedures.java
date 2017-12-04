@@ -468,7 +468,15 @@ public class BuiltInProcedures
             @Name( value = "config", defaultValue = "" ) Map<String,String> config )
     {
         IndexManager mgr = graphDatabaseAPI.index();
-        Index<Node> index = mgr.forNodes( explicitIndexName, config );
+        Index<Node> index;
+        if ( config.isEmpty() )
+        {
+            index = mgr.forNodes( explicitIndexName );
+        }
+        else
+        {
+            index = mgr.forNodes( explicitIndexName, config );
+        }
         return Stream.of( new ExplicitIndexInfo( "NODE", explicitIndexName, mgr.getConfiguration( index ) ) );
     }
 
@@ -478,7 +486,15 @@ public class BuiltInProcedures
             @Name( value = "config", defaultValue = "" ) Map<String,String> config )
     {
         IndexManager mgr = graphDatabaseAPI.index();
-        Index<Relationship> index = mgr.forRelationships( explicitIndexName, config );
+        Index<Relationship> index;
+        if ( config.isEmpty() )
+        {
+            index = mgr.forRelationships( explicitIndexName );
+        }
+        else
+        {
+            index = mgr.forRelationships( explicitIndexName, config );
+        }
         return Stream.of( new ExplicitIndexInfo( "RELATIONSHIP", explicitIndexName, mgr.getConfiguration( index ) ) );
     }
 
