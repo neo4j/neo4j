@@ -85,11 +85,19 @@ public class IndexTxStateUpdaterTest
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );
-        when( storeReadLayer.indexesGetForLabel(anyInt() ) )
-                .thenAnswer( x -> filter( hasLabel( x.getArgument( 0 ) ), indexes.iterator() ) );
+        when( storeReadLayer.indexesGetForLabel( anyInt() ) )
+                .thenAnswer( x ->
+                {
+                    Integer argument = x.getArgument( 0 );
+                    return filter( hasLabel( argument ), indexes.iterator() );
+                } );
 
         when( storeReadLayer.indexesGetRelatedToProperty( anyInt() ) )
-                .thenAnswer( x -> filter( hasProperty( x.getArgument( 0 ) ), indexes.iterator() ) );
+                .thenAnswer( x ->
+                {
+                    Integer argument = x.getArgument( 0 );
+                    return filter( hasProperty( argument ), indexes.iterator() );
+                } );
 
         HashMap<Integer,Value> map = new HashMap<>();
         map.put( propId1, Values.of( "hi1" ) );
