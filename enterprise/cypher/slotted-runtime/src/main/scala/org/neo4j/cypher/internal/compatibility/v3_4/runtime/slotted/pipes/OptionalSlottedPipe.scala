@@ -33,7 +33,10 @@ case class OptionalSlottedPipe(source: Pipe,
                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with Pipe {
 
-  val setNullableSlotToNullFunctions =
+  //===========================================================================
+  // Compile-time initializations
+  //===========================================================================
+  private val setNullableSlotToNullFunctions =
     nullableSlots.map {
       case LongSlot(offset, _, _) =>
         (context: ExecutionContext) => context.setLongAt(offset, -1L)
@@ -41,7 +44,10 @@ case class OptionalSlottedPipe(source: Pipe,
         (context: ExecutionContext) => context.setRefAt(offset, Values.NO_VALUE)
     }
 
-  def setNullableSlotsToNull(context: ExecutionContext) =
+  //===========================================================================
+  // Runtime code
+  //===========================================================================
+  private def setNullableSlotsToNull(context: ExecutionContext) =
     setNullableSlotToNullFunctions.foreach { f =>
       f(context)
     }

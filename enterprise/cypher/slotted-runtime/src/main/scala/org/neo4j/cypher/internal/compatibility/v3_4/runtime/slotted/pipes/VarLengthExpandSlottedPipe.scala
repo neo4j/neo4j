@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyTypes, Pipe, PipeWithSource, QueryState}
@@ -37,9 +38,9 @@ import org.neo4j.values.storable.Values
 import scala.collection.mutable
 
 case class VarLengthExpandSlottedPipe(source: Pipe,
-                                      fromOffset: Int,
+                                      fromSlot: Slot,
                                       relOffset: Int,
-                                      toOffset: Int,
+                                      toSlot: Slot,
                                       dir: SemanticDirection,
                                       projectedDir: SemanticDirection,
                                       types: LazyTypes,
@@ -54,6 +55,19 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
                                       argumentSize: SlotConfiguration.Size)
                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
   type LNode = Long
+
+  //===========================================================================
+  // Compile-time initializations
+  //===========================================================================
+  private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(fromSlot)
+  private val getToNodeFunction =
+    if (shouldExpandAll) null // We only need this getter in the ExpanInto case
+    else makeGetPrimitiveNodeFromSlotFunctionFor(toSlot)
+  private val toOffset = toSlot.offset
+
+  //===========================================================================
+  // Runtime code
+  //===========================================================================
 
   private def varLengthExpand(node: LNode,
                               state: QueryState,
@@ -112,7 +126,7 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
       inputRow =>
-        val fromNode = inputRow.getLongAt(fromOffset)
+        val fromNode = getFromNodeFunction(inputRow)
         if (entityIsNull(fromNode)) {
           val resultRow = PrimitiveExecutionContext(slots)
           resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
@@ -147,5 +161,5 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
 
 
   private def isToNodeValid(row: ExecutionContext, node: LNode): Boolean =
-    shouldExpandAll || row.getLongAt(toOffset) == node
+    shouldExpandAll || getToNodeFunction(row) == node
 }

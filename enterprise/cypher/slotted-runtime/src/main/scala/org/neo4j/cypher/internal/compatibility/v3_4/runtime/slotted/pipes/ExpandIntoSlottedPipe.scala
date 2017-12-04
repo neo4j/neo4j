@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
@@ -39,25 +40,34 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
   * This pipe also caches relationship information between nodes for the duration of the query
   */
 case class ExpandIntoSlottedPipe(source: Pipe,
-                                 fromOffset: Int,
+                                 fromSlot: Slot,
                                  relOffset: Int,
-                                 toOffset: Int,
+                                 toSlot: Slot,
                                  dir: SemanticDirection,
                                  lazyTypes: LazyTypes,
                                  slots: SlotConfiguration)
                                 (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with PrimitiveCachingExpandInto {
   self =>
-  private final val CACHE_SIZE = 100000
 
+  //===========================================================================
+  // Compile-time initializations
+  //===========================================================================
+  private final val CACHE_SIZE = 100000
+  private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(fromSlot)
+  private val getToNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(toSlot)
+
+  //===========================================================================
+  // Runtime code
+  //===========================================================================
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //cache of known connected nodes
     val relCache = new PrimitiveRelationshipsCache(CACHE_SIZE)
 
     input.flatMap {
       inputRow =>
-        val fromNode = inputRow.getLongAt(fromOffset)
-        val toNode = inputRow.getLongAt(toOffset)
+        val fromNode = getFromNodeFunction(inputRow)
+        val toNode = getToNodeFunction(inputRow)
 
         if (entityIsNull(fromNode) || entityIsNull(toNode))
           Iterator.empty

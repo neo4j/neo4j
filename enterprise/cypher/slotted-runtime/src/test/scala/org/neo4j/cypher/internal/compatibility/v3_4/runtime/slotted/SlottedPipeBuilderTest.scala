@@ -197,7 +197,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val zNodeSlot = LongSlot(2, nullable = false, CTNode)
     pipe should equal(ExpandAllSlottedPipe(
       AllNodesScanSlottedPipe("x", X_NODE_SLOTS, Size.zero)(),
-      xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+      xNodeSlot, rRelSlot.offset, zNodeSlot.offset,
       SemanticDirection.INCOMING,
       LazyTypes.empty,
       SlotConfiguration(Map(
@@ -220,7 +220,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val relSlot = LongSlot(1, nullable = false, CTRelationship)
     pipe should equal(ExpandIntoSlottedPipe(
       AllNodesScanSlottedPipe("x", X_NODE_SLOTS, Size.zero)(),
-      nodeSlot.offset, relSlot.offset, nodeSlot.offset, SemanticDirection.INCOMING, LazyTypes.empty,
+      nodeSlot, relSlot.offset, nodeSlot, SemanticDirection.INCOMING, LazyTypes.empty,
       SlotConfiguration(Map("x" -> nodeSlot, "r" -> relSlot), numberOfLongs = 2, numberOfReferences = 0)
     )())
   }
@@ -252,7 +252,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
           allNodeScanSlots,
           Size.zero
         )(),
-        xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+        xNodeSlot, rRelSlot.offset, zNodeSlot.offset,
         SemanticDirection.INCOMING,
         LazyTypes.empty,
         expandSlots
@@ -282,7 +282,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
           allNodeScanSlots,
           Size.zero
         )(),
-        nodeSlot.offset, relSlot.offset, nodeSlot.offset, SemanticDirection.INCOMING, LazyTypes.empty,
+        nodeSlot, relSlot.offset, nodeSlot, SemanticDirection.INCOMING, LazyTypes.empty,
         expandSlots)()
     )
   }
@@ -340,7 +340,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     pipe should equal(OptionalExpandAllSlottedPipe(
       AllNodesScanSlottedPipe("x", X_NODE_SLOTS, Size.zero)(),
-      0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, predicates.True(),
+      X_NODE_SLOTS("x"), 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, predicates.True(),
       SlotConfiguration(Map(
         "x" -> LongSlot(0, nullable = false, CTNode),
         "r" -> LongSlot(1, nullable = true, CTRelationship),
@@ -359,7 +359,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     pipe should equal(OptionalExpandIntoSlottedPipe(
       AllNodesScanSlottedPipe("x", X_NODE_SLOTS, Size.zero)(),
-      0, 1, 0, SemanticDirection.INCOMING, LazyTypes.empty, predicates.True(),
+      X_NODE_SLOTS("x"), 1, X_NODE_SLOTS("x"), SemanticDirection.INCOMING, LazyTypes.empty, predicates.True(),
       SlotConfiguration(Map(
         "x" -> LongSlot(0, nullable = false, CTNode),
         "r" -> LongSlot(1, nullable = true, CTRelationship)), numberOfLongs = 2, numberOfReferences = 0)
@@ -397,7 +397,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     pipe should equal(VarLengthExpandSlottedPipe(
       AllNodesScanSlottedPipe("x", allNodeScanSlots, Size.zero)(),
-      xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+      xNodeSlot, rRelSlot.offset, zNodeSlot,
       SemanticDirection.INCOMING, SemanticDirection.INCOMING,
       LazyTypes.empty, varLength.min, varLength.max, shouldExpandAll = true,
       varExpandSlots,
@@ -453,11 +453,11 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       VarLengthExpandSlottedPipe(
         ExpandAllSlottedPipe(
           AllNodesScanSlottedPipe("x", allNodeScanSlots, Size.zero)(),
-          xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+          xNodeSlot, rRelSlot.offset, zNodeSlot.offset,
           SemanticDirection.OUTGOING,
           LazyTypes.empty,
           expandSlots)(),
-        xNodeSlot.offset, r2RelSlot.offset, zNodeSlot.offset,
+        xNodeSlot, r2RelSlot.offset, zNodeSlot,
         SemanticDirection.INCOMING, SemanticDirection.INCOMING,
         LazyTypes.empty, varLength.min, varLength.max, shouldExpandAll = false,
         varExpandSlots,
@@ -500,7 +500,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     pipe should equal(VarLengthExpandSlottedPipe(
       AllNodesScanSlottedPipe("x", allNodeScanSlots, Size.zero)(),
-      xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+      xNodeSlot, rRelSlot.offset, zNodeSlot,
       SemanticDirection.INCOMING, SemanticDirection.INCOMING,
       LazyTypes.empty, varLength.min, varLength.max, shouldExpandAll = true,
       varExpandSlots,
@@ -694,7 +694,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
       NodesByLabelScanSlottedPipe("x", LazyLabel(LABEL), lhsSlots, Size.zero)(),
       ExpandAllSlottedPipe(
         ArgumentSlottedPipe(lhsSlots, Size(1, 0))(),
-        0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, rhsSlots
+        rhsSlots("x"), 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, rhsSlots
       )()
     )())
   }

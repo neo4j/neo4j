@@ -106,51 +106,50 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ProduceResultSlottedPipe(source, runtimeColumns)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
-        val fromSlot = slots.getLongOffsetFor(from)
-        val relSlot = slots.getLongOffsetFor(relName)
-        val toSlot = slots.getLongOffsetFor(to)
-        ExpandAllSlottedPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types.toArray), slots)(id)
-
-      case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
-        val fromOffset = slots.getLongOffsetFor(from)
+        val fromSlot = slots(from)
         val relOffset = slots.getLongOffsetFor(relName)
         val toOffset = slots.getLongOffsetFor(to)
-        ExpandIntoSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types.toArray), slots)(id)
+        ExpandAllSlottedPipe(source, fromSlot, relOffset, toOffset, dir, LazyTypes(types.toArray), slots)(id)
+
+      case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
+        val fromSlot = slots(from)
+        val relOffset = slots.getLongOffsetFor(relName)
+        val toSlot = slots(to)
+        ExpandIntoSlottedPipe(source, fromSlot, relOffset, toSlot, dir, LazyTypes(types.toArray), slots)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
-        val fromOffset = slots.getLongOffsetFor(fromName)
+        val fromSlot = slots(fromName)
         val relOffset = slots.getLongOffsetFor(relName)
         val toOffset = slots.getLongOffsetFor(toName)
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandAllSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types.toArray), predicate,
-                                      slots)(id)
+        OptionalExpandAllSlottedPipe(source, fromSlot, relOffset, toOffset, dir, LazyTypes(types.toArray), predicate,
+          slots)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
-        val fromOffset = slots.getLongOffsetFor(fromName)
+        val fromSlot = slots(fromName)
         val relOffset = slots.getLongOffsetFor(relName)
-        val toOffset = slots.getLongOffsetFor(toName)
+        val toSlot = slots(toName)
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandIntoSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types.toArray), predicate,
-                                       slots)(id)
+        OptionalExpandIntoSlottedPipe(source, fromSlot, relOffset, toSlot, dir, LazyTypes(types.toArray), predicate,
+          slots)(id)
 
       case VarExpand(sourcePlan, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName),
                      VarPatternLength(min, max), expansionMode, IdName(tempNode), IdName(tempEdge), nodePredicate,
                      edgePredicate, _) =>
-
         val shouldExpandAll = expansionMode match {
           case ExpandAll => true
           case ExpandInto => false
         }
-        val fromOffset = slots.getLongOffsetFor(fromName)
-        val toOffset = slots.getLongOffsetFor(toName)
+        val fromSlot = slots(fromName)
         val relOffset = slots.getReferenceOffsetFor(relName)
+        val toSlot = slots(toName)
 
         // The node/edge predicates are evaluated on the source pipeline, not the produced one
         val sourceSlots = physicalPlan.slotConfigurations(sourcePlan.assignedId)
         val tempNodeOffset = sourceSlots.getLongOffsetFor(tempNode)
         val tempEdgeOffset = sourceSlots.getLongOffsetFor(tempEdge)
         val argumentSize = SlotConfiguration.Size(sourceSlots.numberOfLongs - 2, sourceSlots.numberOfReferences)
-        VarLengthExpandSlottedPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir, LazyTypes(types.toArray), min,
+        VarLengthExpandSlottedPipe(source, fromSlot, relOffset, toSlot, dir, projectedDir, LazyTypes(types.toArray), min,
                                     max, shouldExpandAll, slots,
                                     tempNodeOffset = tempNodeOffset,
                                     tempEdgeOffset = tempEdgeOffset,
@@ -219,16 +218,16 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         DistinctSlottedPipe(source, slots, grouping)(id)
 
       case CreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
-        val fromOffset = slots.getLongOffsetFor(startNode)
-        val endOffset = slots.getLongOffsetFor(endNode)
-        CreateRelationshipSlottedPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,
-                                       slots, props.map(convertExpressions))(id = id)
+        val fromSlot = slots(startNode)
+        val toSlot = slots(endNode)
+        CreateRelationshipSlottedPipe(source, idName.name, fromSlot, LazyType(typ)(context.semanticTable), toSlot,
+          slots, props.map(convertExpressions))(id = id)
 
       case MergeCreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
-        val fromOffset = slots.getLongOffsetFor(startNode)
-        val endOffset = slots.getLongOffsetFor(endNode)
-        MergeCreateRelationshipSlottedPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable),
-                                            endOffset, slots, props.map(convertExpressions))(id = id)
+        val fromSlot = slots(startNode)
+        val toSlot = slots(endNode)
+        MergeCreateRelationshipSlottedPipe(source, idName.name, fromSlot, LazyType(typ)(context.semanticTable),
+          toSlot, slots, props.map(convertExpressions))(id = id)
 
       case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
         Top1SlottedPipe(source, sortItems.map(translateColumnOrder(slots, _)).toList)(id = id)
