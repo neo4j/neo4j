@@ -393,7 +393,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     * checking that the correct query has been solved.
     */
   override def equals(in: scala.Any): Boolean = in match {
-    case other: QueryGraph =>
+    case other: QueryGraph if other canEqual this =>
 
       val optionals = if (optionalMatches.isEmpty) {
         true
@@ -413,6 +413,8 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     case _ =>
       false
   }
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[QueryGraph]
 
   override def hashCode(): Int = {
     val optionals = if(optionalMatches.nonEmpty && containsIndependentOptionalMatches)

@@ -29,7 +29,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("should not fail") {
+  test("should not fail when planning independent optional matches") {
     // Should plan without throwing exception
     innerExecute(
       """MATCH (study:Study {UUID:$studyUUID})
