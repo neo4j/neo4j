@@ -51,6 +51,9 @@ class SemanticTable(
       throw new InternalException(s"Did not find any type information for variable $s", e)
   }
 
+  def getActualTypeFor(expr: Expression): TypeSpec =
+    types.getOrElse(expr, throw new InternalException(s"Did not find any type information for expression $expr")).actual
+
   def containsNode(expr: String): Boolean = types.exists {
     case (v@Variable(name), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
     case _ => false

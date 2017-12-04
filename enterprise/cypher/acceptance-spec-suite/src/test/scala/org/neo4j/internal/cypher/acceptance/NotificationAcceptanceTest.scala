@@ -131,11 +131,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   test("Warn unsupported runtime with explain and runtime=slotted") {
     val result = innerExecuteDeprecated(
       """explain cypher runtime=slotted
-         MATCH (b:B)
-         MERGE (a)-[r1:TYPE]->(b)<-[r2:TYPE]-(c)
-         WITH r1, r2, collect(b) as b_nodes
-         FOREACH (n in b_nodes | SET n.prop = 1)
-         RETURN type(r1), type(r2)""", Map.empty)
+         RETURN reduce(y=0, x IN [0] | x) AS z""", Map.empty)
 
     result.notifications.toList should equal(List(
       RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)))

@@ -2417,7 +2417,7 @@ class EagerizationAcceptanceTest
     //val query = "UNWIND [0] as u MATCH (a), (b) FOREACH(i in range(0, 1) | DELETE a) RETURN count(*)"
     val query = "MATCH (a), (b) FOREACH(i in range(0, 1) | DELETE a) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesDeleted = 2)
@@ -2436,7 +2436,7 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(2)
     assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 8)
@@ -2460,7 +2460,7 @@ class EagerizationAcceptanceTest
         |RETURN count(*)
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     assertStats(result, nodesCreated = 2, nodesDeleted = 2, propertiesWritten = 6, labelsAdded = 2)
     result.columnAs[Long]("count(*)").next shouldBe 2
@@ -2481,7 +2481,7 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next() should equal(2)
     assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 6)
@@ -2503,7 +2503,7 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.AllRulePlanners))
     result.columnAs[Long]("count(*)").next() should equal(2)
     assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesWritten = 24)
@@ -2523,7 +2523,7 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next() should equal(1)
     assertStats(result, nodesCreated = 4, labelsAdded = 4)

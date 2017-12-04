@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{ExperimentalFeatureNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
@@ -55,7 +56,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
-      val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
+      val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan, from.semanticTable())
       val converters: ExpressionConverters = new ExpressionConverters(SlottedExpressionConverters,
                                                                       CommunityExpressionConverter)
       val operatorBuilder = new PipelineBuilder(pipelines, converters)
@@ -79,8 +80,8 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
     }
   }
 
-  private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite)
+  private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable) = {
+    val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, semanticTable)
     val slottedRewriter = new SlottedRewriter(context.planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
     (logicalPlan, physicalPlan.slotConfigurations)
