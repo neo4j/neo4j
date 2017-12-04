@@ -26,11 +26,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.IntFunction;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.causalclustering.catchup.tx.PullRequestMonitor;
@@ -51,9 +49,9 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.causalclustering.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
@@ -138,15 +136,19 @@ public class ClusterSeedingIT
         DbRepresentation before = DbRepresentation.of( backupDir, config );
 
         // when
-        fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 0 ).storeDir() );
-        fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 1 ).storeDir() );
-        fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 2 ).storeDir() );
+        for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
+        {
+            String databaseName = coreClusterMember
+                    .getMemberConfig().get( GraphDatabaseSettings.active_database );
+            new RestoreDatabaseCommand( fsa, backupDir, coreClusterMember.getMemberConfig(), databaseName, true )
+                    .execute();
+        }
         cluster.start();
 
         // then
         dataMatchesEventually( before, cluster.coreMembers() );
         assertFalse( detectFileCopyMonitor.fileCopyDetected.get() );
-        assertEquals( 4, pullRequestMonitor.numberOfRequests() );
+        assertTrue( pullRequestMonitor.numberOfRequests() >= 2 );
     }
 
     @Test
@@ -174,7 +176,6 @@ public class ClusterSeedingIT
         dataMatchesEventually( DbRepresentation.of( newMember.database() ), cluster.coreMembers() );
         assertFalse( detectFileCopyMonitor.fileCopyDetected.get() );
         assertEquals( 1, pullRequestMonitor.numberOfRequests() );
-        assertEquals( 1, pullRequestMonitor.lastRequestedTxId() );
     }
 
     @Test
