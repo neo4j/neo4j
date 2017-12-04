@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, ParameterWrongTypeException}
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship}
-import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue, VirtualValues}
 
 object PrimitiveExecutionContext {
   def empty = new PrimitiveExecutionContext(SlotConfiguration.empty)
@@ -41,7 +40,7 @@ object PrimitiveExecutionContext {
 case class PrimitiveExecutionContext(slots: SlotConfiguration) extends ExecutionContext {
 
   override val longs = new Array[Long](slots.numberOfLongs)
-  //java.util.Arrays.fill(longs, -2L) // Uncomment this to check for uninitialized long slots
+  //java.util.Arrays.fill(longs, -2L) // When debugging long slot issues you can uncomment this to check for uninitialized long slots (also in getLongAt below)
   override val refs = new Array[AnyValue](slots.numberOfReferences)
 
   override def toString(): String = {
@@ -85,7 +84,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
 
   override def getLongAt(offset: Int): Long =
     longs(offset)
-    // Uncomment and replace with this to check for uninitialized long slots
+    // When debugging long slot issues you can uncomment and replace with this to check for uninitialized long slots
     //  {
     //    val value = longs(offset)
     //    if (value == -2L)
@@ -121,8 +120,14 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
   //-----------------------------------------------------------------------------------------------------------
   // Compatibility implementations of the old ExecutionContext API used by Community interpreted runtime pipes
   //-----------------------------------------------------------------------------------------------------------
+  // TODO: As an optimization we can create a map from string key to precompiled getter/setter methods in the SlotConfiguration and use below
+  // to avoid matching and unapplys
+
   override def get(key: String): Option[AnyValue] = {
     slots.get(key) match {
+      case Some(RefSlot(offset, _, _)) =>
+        Some(getRefAt(offset))
+
       case Some(LongSlot(offset, false, CTNode)) =>
         Some(VirtualValues.node(getLongAt(offset)))
 
@@ -143,19 +148,13 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
         else
           Some(VirtualValues.edge(relId))
 
-      case Some(RefSlot(offset, _, _)) =>
-        Some(getRefAt(offset))
-
       case _ =>
         None
     }
   }
 
   override def +=(kv: (String, AnyValue)): this.type = {
-    // NOTE: Here we assume the slot has been allocated as a RefSlot
-    // If we aim for always using LongSlots internally we sho
-    val offset = slots.getReferenceOffsetFor(kv._1)
-    setRefAt(offset, kv._2)
+    setValue(kv._1, kv._2)
     this
   }
 
@@ -197,7 +196,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
   override def newScopeWith1(key1: String, value1: AnyValue): ExecutionContext = {
     val scopeContext = PrimitiveExecutionContext(slots)
     copyTo(scopeContext)
-    scopeContext.asInstanceOf[PrimitiveExecutionContext].setValue(key1, value1)
+    scopeContext.setValue(key1, value1)
     scopeContext
   }
 
@@ -207,11 +206,11 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
         setRefAt(offset, value1)
 
       case (Some(LongSlot(offset, false, CTNode)),
-            nodeVal: NodeProxyWrappingNodeValue) =>
+            nodeVal: VirtualNodeValue) =>
         setLongAt(offset, nodeVal.id())
 
       case (Some(LongSlot(offset, false, CTRelationship)),
-            relVal: RelationshipProxyWrappingEdgeValue) =>
+            relVal: VirtualEdgeValue) =>
         setLongAt(offset, relVal.id())
 
       case (Some(LongSlot(offset, true, CTNode)), nodeVal) if nodeVal == Values.NO_VALUE =>
@@ -221,12 +220,18 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
         setLongAt(offset, -1L)
 
       case (Some(LongSlot(offset, true, CTNode)),
-            nodeVal: NodeProxyWrappingNodeValue) =>
+            nodeVal: VirtualNodeValue) =>
         setLongAt(offset, nodeVal.id())
 
       case (Some(LongSlot(offset, true, CTRelationship)),
-            relVal: RelationshipProxyWrappingEdgeValue) =>
+            relVal: VirtualEdgeValue) =>
         setLongAt(offset, relVal.id())
+
+      case (Some(LongSlot(offset, _, CTNode)), value) =>
+        throw new ParameterWrongTypeException(s"Expected to find a node at long slot $offset but found $value instead")
+
+      case (Some(LongSlot(offset, _, CTRelationship)), value) =>
+        throw new ParameterWrongTypeException(s"Expected to find a relationship at long slot $offset but found $value instead")
 
       case _ =>
         throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: ${slots}")
