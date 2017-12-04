@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.AssertionUtils.ifAssertionsEnabled
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter, topDown}
-import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId, NestedPlanExpression, Projection, VarExpand, _}
 import org.neo4j.cypher.internal.v3_4.{expressions, functions => frontendFunctions}
 
@@ -216,15 +216,21 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case _ => idFunction // Don't know how to specialize this
         }
 
-      case idFunction: FunctionInvocation if idFunction.function == frontendFunctions.Exists =>
-        idFunction.args.head match {
+      case existsFunction: FunctionInvocation if existsFunction.function == frontendFunctions.Exists =>
+        existsFunction.args.head match {
           case prop @ Property(Variable(key), PropertyKeyName(propKey)) =>
-            checkIfPropertyExists(slotConfiguration, key, propKey, prop)
-          case _ => idFunction // Don't know how to specialize this
+            val maybeSpecializedExpression = specializeCheckIfPropertyExists(slotConfiguration, key, propKey, prop)
+            maybeSpecializedExpression.getOrElse(existsFunction)
+
+          case _ => existsFunction // Don't know how to specialize this
         }
 
       case e @ IsNull(prop @ Property(Variable(key), PropertyKeyName(propKey))) =>
-        Not(checkIfPropertyExists(slotConfiguration, key, propKey, prop))(e.position)
+        val maybeSpecializedExpression = specializeCheckIfPropertyExists(slotConfiguration, key, propKey, prop)
+        if (maybeSpecializedExpression.isDefined)
+          Not(maybeSpecializedExpression.get)(e.position)
+        else
+          e
 
 //      case _: ReduceExpression =>
 //        throw new CantCompileQueryException(s"Expressions with reduce are not yet supported in slot allocation")
@@ -297,28 +303,30 @@ class SlottedRewriter(tokenContext: TokenContext) {
         predicate))
   }
 
-  private def checkIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String, prop: Property) = {
+  private def specializeCheckIfPropertyExists(slotConfiguration: SlotConfiguration, key: String, propKey: String, prop: Property) = {
     val slot = slotConfiguration(key)
     val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
 
     val propExpression = (slot, maybeToken) match {
       case (LongSlot(offset, _, typ), Some(token)) if typ == CTNode =>
-        NodePropertyExists(offset, token, s"$key.$propKey")(prop)
+        Some(NodePropertyExists(offset, token, s"$key.$propKey")(prop))
 
       case (LongSlot(offset, _, typ), None) if typ == CTNode =>
-        NodePropertyExistsLate(offset, propKey, s"$key.$propKey")(prop)
+        Some(NodePropertyExistsLate(offset, propKey, s"$key.$propKey")(prop))
 
       case (LongSlot(offset, _, typ), Some(token)) if typ == CTRelationship =>
-        RelationshipPropertyExists(offset, token, s"$key.$propKey")(prop)
+        Some(RelationshipPropertyExists(offset, token, s"$key.$propKey")(prop))
 
       case (LongSlot(offset, _, typ), None) if typ == CTRelationship =>
-        RelationshipPropertyExistsLate(offset, propKey, s"$key.$propKey")(prop)
+        Some(RelationshipPropertyExistsLate(offset, propKey, s"$key.$propKey")(prop))
 
-      case _ => throw new CantCompileQueryException(s"Expressions on object other then nodes and relationships are not yet supported")
+      case _ =>
+        None // Let the normal expression conversion work this out
     }
 
-    if (slot.nullable)
-      NullCheckProperty(slot.offset, propExpression)
+    if (slot.nullable && propExpression.isDefined && propExpression.get.isInstanceOf[LogicalProperty]) {
+      Some(NullCheckProperty(slot.offset, propExpression.get.asInstanceOf[LogicalProperty]))
+    }
     else
       propExpression
   }
