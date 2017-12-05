@@ -855,7 +855,6 @@ public class BufferedCharSeekerTest
         private final StringReader reader;
         private final int maxBytesPerRead;
         private final String data;
-        private int position;
 
         ControlledCharReadable( String data, int maxBytesPerRead )
         {
@@ -881,7 +880,7 @@ public class BufferedCharSeekerTest
         @Override
         public long position()
         {
-            return position;
+            return 0;
         }
 
         @Override
