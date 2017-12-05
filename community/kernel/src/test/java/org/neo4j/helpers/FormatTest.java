@@ -109,6 +109,17 @@ public class FormatTest
 
         // then
         assertTrue( format.startsWith( "2" ) );
-        assertTrue( format.endsWith( "bn" ) );
+        assertTrue( format.endsWith( "G" ) );
+    }
+
+    @Test
+    public void shouldDisplayTrillionCount() throws Exception
+    {
+        // when
+        String format = Format.count( 4_000_000_000_000L );
+
+        // then
+        assertTrue( format.startsWith( "4" ) );
+        assertTrue( format.endsWith( "T" ) );
     }
 }
