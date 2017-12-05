@@ -111,6 +111,7 @@ public class Recovery extends LifecycleAdapter
                     recoveryToPosition = transactionsToRecover.position();
                     reportProgress();
                 }
+                recoveryToPosition = transactionsToRecover.position();
             }
         }
         catch ( Throwable t )

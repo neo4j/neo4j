@@ -44,6 +44,7 @@ public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareCh
     public PhysicalTransactionCursor( T channel, LogEntryReader<T> entryReader ) throws IOException
     {
         this.channel = channel;
+        channel.getCurrentPosition( lastGoodPositionMarker );
         this.logEntryCursor =
                 new LogEntryCursor( (LogEntryReader<ReadableClosablePositionAwareChannel>) entryReader, channel );
     }
