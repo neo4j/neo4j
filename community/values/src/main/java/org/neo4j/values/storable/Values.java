@@ -64,6 +64,8 @@ public final class Values
 {
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
+    public static final Value MIN_POINT = Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY );
+    public static final Value MAX_POINT = Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY );
     public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
     public static final Value ZERO_INT = Values.longValue( 0 );
     public static final Value MIN_STRING = StringValue.EMTPY;
@@ -112,6 +114,11 @@ public final class Values
     public static boolean isArrayValue( Value value )
     {
         return value instanceof ArrayValue;
+    }
+
+    public static boolean isGeometryValue( Value value )
+    {
+        return value instanceof PointValue;
     }
 
     public static double coerceToDouble( Value value )
@@ -317,6 +324,21 @@ public final class Values
             values[i] = Values.point( points[i] );
         }
         return new PointArray( values );
+    }
+
+    public static PointArray pointArray( Value[] maybePoints )
+    {
+        PointValue[] values = new PointValue[maybePoints.length];
+        for ( int i = 0; i < maybePoints.length; i++ )
+        {
+            Value maybePoint = maybePoints[i];
+            if ( !(maybePoint instanceof PointValue) )
+            {
+                throw new IllegalArgumentException( format( "[%s:%s] is not a supported point value", maybePoint, maybePoint.getClass().getName() ) );
+            }
+            values[i] = Values.point( (PointValue) maybePoint );
+        }
+        return new PointArray.Direct( values );
     }
 
     public static PointArray pointArray( PointValue[] points )

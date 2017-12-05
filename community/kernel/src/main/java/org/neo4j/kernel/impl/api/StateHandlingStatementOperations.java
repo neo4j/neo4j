@@ -100,6 +100,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -873,6 +874,12 @@ public class StateHandlingStatementOperations implements
             return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
                     numPred.fromInclusive(), numPred.to(), numPred.toInclusive(), exactMatches );
 
+        case rangeGeometric:
+            assertSinglePredicate( predicates );
+            IndexQuery.GeometryRangePredicate geomPred = (IndexQuery.GeometryRangePredicate) firstPredicate;
+            return filterIndexStateChangesForRangeSeekByGeometry( state, index, geomPred.from(),
+                    geomPred.fromInclusive(), geomPred.to(), geomPred.toInclusive(), exactMatches );
+
         case rangeString:
         {
             assertSinglePredicate( predicates );
@@ -981,6 +988,26 @@ public class StateHandlingStatementOperations implements
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForNumber.augment( nodeIds ) );
+        }
+        return nodeIds;
+
+    }
+
+    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByGeometry( KernelStatement state,
+            IndexDescriptor index,
+            PointValue lower, boolean includeLower,
+            PointValue upper, boolean includeUpper,
+            PrimitiveLongResourceIterator nodeIds )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            TransactionState txState = state.txState();
+            PrimitiveLongReadableDiffSets labelPropertyChangesForGeometry =
+                    txState.indexUpdatesForRangeSeekByGeometry( index, lower, includeLower, upper, includeUpper );
+            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
+
+            // Apply to actual index lookup
+            return nodes.augmentWithRemovals( labelPropertyChangesForGeometry.augment( nodeIds ) );
         }
         return nodeIds;
 

@@ -28,7 +28,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.CypherOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
+import org.neo4j.cypher.internal.runtime.interpreted.CypherOrdering.{BY_NUMBER, BY_STRING, BY_VALUE, BY_POINT}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
@@ -64,7 +64,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.{AnyValue, ValueMapper}
-import org.neo4j.values.storable.{TextValue, Value, Values}
+import org.neo4j.values.storable.{PointValue, TextValue, Value, Values}
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 
 import scala.collection.Iterator
@@ -246,12 +246,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         case n: Number => classOf[Number]
         case s: String => classOf[String]
         case c: Character => classOf[String]
+        case p: PointValue => classOf[PointValue]
         case _ => classOf[Any]
       }
     }
 
-    val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
-    val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
+    val optNumericRange: Option[InequalitySeekRange[Number]] = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
+    val optStringRange: Option[InequalitySeekRange[String]] = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
+    val optGeometricRange = groupedRanges.get(classOf[PointValue]).map(_.asInstanceOf[InequalitySeekRange[PointValue]])
     val anyRange = groupedRanges.get(classOf[Any])
 
     if (anyRange.nonEmpty) {
@@ -261,11 +263,15 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
           "Cannot compare a property against values that are neither strings nor numbers.")
       }.getOrElse(Iterator.empty)
     } else {
-      (optNumericRange, optStringRange) match {
-        case (Some(numericRange), None) => indexSeekByNumericalRange(index, numericRange)
-        case (None, Some(stringRange)) => indexSeekByStringRange(index, stringRange)
+      (optNumericRange, optStringRange, optGeometricRange) match {
+        case (Some(numericRange), None, None) => indexSeekByNumericalRange(index, numericRange)
+        case (None, Some(stringRange), None) => indexSeekByStringRange(index, stringRange)
+        case (None, None, Some(geometricRange)) => indexSeekByGeometryRange(index, geometricRange)
+        case (None, None, None) =>
+          // If we get here, the non-empty list of range bounds was partitioned into two empty ones
+          throw new IllegalStateException("Failed to partition range bounds")
 
-        case (Some(numericRange), Some(stringRange)) =>
+        case (_, _, _) =>
           // Consider MATCH (n:Person) WHERE n.prop < 1 AND n.prop > "London":
           // The order of predicate evaluation is unspecified, i.e.
           // LabelScan fby Filter(n.prop < 1) fby Filter(n.prop > "London") is a valid plan
@@ -275,17 +281,17 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
           //
           // Below we simulate this behaviour:
           //
-          if (indexSeekByNumericalRange(index, numericRange).isEmpty
-            || indexSeekByStringRange(index, stringRange).isEmpty) {
+          if(Seq(optNumericRange, optStringRange, optGeometricRange).exists({
+            case Some(x:InequalitySeekRange[Number]) => indexSeekByNumericalRange(index, x).isEmpty
+            case Some(x:InequalitySeekRange[String]) => indexSeekByStringRange(index, x).isEmpty
+            case Some(x:InequalitySeekRange[PointValue]) => indexSeekByGeometryRange(index, x).isEmpty
+          })) {
             Iterator.empty
           } else {
             throw new IllegalArgumentException(
-              s"Cannot compare a property against both numbers and strings. They are incomparable.")
+              s"Cannot compare a property against combinations of numbers, strings and geometries. They are incomparable.")
           }
 
-        case (None, None) =>
-          // If we get here, the non-empty list of range bounds was partitioned into two empty ones
-          throw new IllegalStateException("Failed to partition range bounds")
       }
     }
   }
@@ -339,6 +345,33 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
             .range(index.properties()(0), greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
                    lessThanLimit.endPoint,
                    lessThanLimit.isInclusive)
+          seek(index, rangePredicate)
+        }
+      }
+  }).getOrElse(Iterator.empty)
+
+  private def indexSeekByGeometryRange(index: IndexReference,
+                                        range: InequalitySeekRange[PointValue]): scala.Iterator[NodeValue] = (range match {
+
+    case rangeLessThan: RangeLessThan[PointValue] =>
+      rangeLessThan.limit(BY_POINT).map { limit =>
+        val rangePredicate = IndexQuery.range(index.properties()(0), null, false, limit.endPoint, limit.isInclusive)
+        seek(index, rangePredicate)
+      }
+
+    case rangeGreaterThan: RangeGreaterThan[PointValue] =>
+      rangeGreaterThan.limit(BY_POINT).map { limit =>
+        val rangePredicate = IndexQuery.range(index.properties()(0), limit.endPoint, limit.isInclusive, null, false)
+        seek(index, rangePredicate)
+      }
+
+    case RangeBetween(rangeGreaterThan, rangeLessThan) =>
+      rangeGreaterThan.limit(BY_POINT).flatMap { greaterThanLimit =>
+        rangeLessThan.limit(BY_POINT).map { lessThanLimit =>
+          val rangePredicate = IndexQuery
+            .range(index.properties()(0), greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
+              lessThanLimit.endPoint,
+              lessThanLimit.isInclusive)
           seek(index, rangePredicate)
         }
       }

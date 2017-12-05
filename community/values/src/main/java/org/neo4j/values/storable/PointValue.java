@@ -103,11 +103,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     @Override
     public boolean eq( Object other )
     {
-        return other != null &&
-               (
-                       (other instanceof Value && equals( (Value) other )) ||
-                       (other instanceof Point && equals( (Point) other ))
-               );
+        return other != null && ((other instanceof Value && equals( (Value) other )) || (other instanceof Point && equals( (Point) other )));
     }
 
     public int compareTo( PointValue other )
@@ -188,5 +184,41 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     public CRS getCRS()
     {
         return crs;
+    }
+
+    public boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
+    {
+        if ( lower != null && this.crs.getCode() != lower.crs.getCode() )
+        {
+            return false;
+        }
+        if ( upper != null && this.crs.getCode() != upper.crs.getCode() )
+        {
+            return false;
+        }
+
+        if ( lower != null && this.coordinate.length != lower.coordinate.length )
+        {
+            return false;
+        }
+        if ( upper != null && this.coordinate.length != upper.coordinate.length )
+        {
+            return false;
+        }
+
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            int compareLower = Double.compare( this.coordinate[i], lower.coordinate[i] );
+            if ( compareLower < 0 || compareLower == 0 && !includeLower )
+            {
+                return false;
+            }
+            int compareUpper = Double.compare( this.coordinate[i], upper.coordinate[i] );
+            if ( compareUpper > 0 || compareUpper == 0 && !includeUpper )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

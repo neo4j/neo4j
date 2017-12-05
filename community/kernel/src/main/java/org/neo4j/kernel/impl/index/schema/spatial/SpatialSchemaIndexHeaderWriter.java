@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,21 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.kernel.impl.index.schema.spatial;
 
-import org.apache.commons.lang3.StringUtils;
+import java.util.function.Consumer;
 
-import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.io.pagecache.PageCursor;
 
 /**
- * Utilities for implementing {@link IndexSampler sampling}.
+ * Writes index state in the {@link GBPTree} header.
  */
-public class SamplingUtil
+class SpatialSchemaIndexHeaderWriter implements Consumer<PageCursor>
 {
-    private static final String DELIMITER = "\u001F";
+    private final byte state;
 
-    public static String encodedStringValuesForSampling( Object... values )
+    SpatialSchemaIndexHeaderWriter( byte state )
     {
-        return StringUtils.join( values, DELIMITER );
+        this.state = state;
+    }
+
+    @Override
+    public void accept( PageCursor cursor )
+    {
+        cursor.putByte( state );
     }
 }

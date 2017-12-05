@@ -74,6 +74,7 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -1045,6 +1046,73 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         Collection<PrimitiveLongDiffSets> inRange =
                 sortedUpdates.subMap( selectedLower, selectedIncludeLower,
                                       selectedUpper, selectedIncludeUpper ).values();
+        for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
+        {
+            diffs.addAll( diffForSpecificValue.getAdded().iterator() );
+            diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
+        }
+        return diffs;
+    }
+
+    @Override
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor descriptor,
+                                                                    PointValue lower, boolean includeLower,
+                                                                    PointValue upper, boolean includeUpper )
+    {
+        TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        if ( sortedUpdates == null )
+        {
+            return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
+        }
+
+        ValueTuple selectedLower;
+        boolean selectedIncludeLower;
+
+        ValueTuple selectedUpper;
+        boolean selectedIncludeUpper;
+
+        if ( lower == null )
+        {
+            //TODO define min and max with correct CRS from lower or upper
+            selectedLower = ValueTuple.of( Values.MIN_POINT );
+            selectedIncludeLower = true;
+        }
+        else
+        {
+            selectedLower = ValueTuple.of( lower );
+            selectedIncludeLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            selectedUpper = ValueTuple.of( Values.MAX_POINT );
+            selectedIncludeUpper = true;
+        }
+        else
+        {
+            selectedUpper = ValueTuple.of( upper );
+            selectedIncludeUpper = includeUpper;
+        }
+
+//        TODO this is the old way, the new one doesn't use withinRange
+//        DiffSets<Long> diffs = new DiffSets<>();
+//
+//        Collection<Map.Entry<ValueTuple, DiffSets<Long>>> inRange =
+//                sortedUpdates.subMap( selectedLower, selectedIncludeLower,
+//                        selectedUpper, selectedIncludeUpper ).entrySet();
+//        for ( Map.Entry<ValueTuple, DiffSets<Long>> entry : inRange )
+//        {
+//            if(((PointValue)entry.getKey().valueAt( 0 )).withinRange(lower, includeLower, upper, includeUpper)){
+//                DiffSets<Long> diffForSpecificValue = entry.getValue();
+//                diffs.addAll( diffForSpecificValue.getAdded().iterator() );
+//                diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
+//            }
+//        }
+        PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
+
+        Collection<PrimitiveLongDiffSets> inRange =
+                sortedUpdates.subMap( selectedLower, selectedIncludeLower,
+                        selectedUpper, selectedIncludeUpper ).values();
         for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
         {
             diffs.addAll( diffForSpecificValue.getAdded().iterator() );
