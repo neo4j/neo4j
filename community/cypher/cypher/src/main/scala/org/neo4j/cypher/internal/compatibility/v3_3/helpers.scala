@@ -145,10 +145,10 @@ object helpers {
   }
 
   def as3_4(logicalPlan: LogicalPlanStateV3_3) : LogicalPlanState = {
-    val startPosition = logicalPlan.startPosition.map(as3_4 _)
+    val startPosition = logicalPlan.startPosition.map(as3_4)
     val plannerName = as3_4(logicalPlan.plannerName)
 
-    def isImportant(expression: ExpressionV3_3) : Boolean = logicalPlan.maybeSemanticTable.map(_.seen(expression)).getOrElse(false)
+    def isImportant(expression: ExpressionV3_3) : Boolean = logicalPlan.maybeSemanticTable.exists(_.seen(expression))
 
     val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, isImportant)
 

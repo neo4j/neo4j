@@ -295,7 +295,6 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     }
   }
 
-
   test("Should be able to delete node constrained with node key constraint") {
     // Given
     graph.execute("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname, n.surname) IS NODE KEY".fixNewLines)

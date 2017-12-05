@@ -46,7 +46,6 @@ object SemanticTableConverter {
       convert(table.resolvedRelTypeNames))
   }
 
-
   private def convert(types: astV3_3.ASTAnnotationMap[astV3_3.Expression, frontendV3_3.ExpressionTypeInfo], expressionMapping: ExpressionMapping3To4):
   astV3_4.ASTAnnotationMap[expressionsV3_4.Expression, frontendV3_4.semantics.ExpressionTypeInfo] = {
     val result: Map[ExpressionV3_4, ExpressionTypeInfo] = types.filter {
@@ -65,19 +64,18 @@ object SemanticTableConverter {
     res
   }
 
-
   private def convert(typeInfoV3_3: frontendV3_3.ExpressionTypeInfo): frontendV3_4.semantics.ExpressionTypeInfo = typeInfoV3_3 match {
     case frontendV3_3.ExpressionTypeInfo(specified, expected) =>
-      frontendV3_4.semantics.ExpressionTypeInfo(convert(specified), expected.map(convert _))
+      frontendV3_4.semantics.ExpressionTypeInfo(convert(specified), expected.map(convert))
   }
 
   private def convert(specified: frontendV3_3.symbols.TypeSpec): utilV3_4.symbols.TypeSpec = {
-      new utilV3_4.symbols.TypeSpec(specified.ranges.map(convert _))
+      new utilV3_4.symbols.TypeSpec(specified.ranges.map(convert))
   }
 
   private def convert(range: frontendV3_3.symbols.TypeRange): utilV3_4.symbols.TypeRange = range match {
     case frontendV3_3.symbols.TypeRange(lower, upper) =>
-      utilV3_4.symbols.TypeRange(convert(lower), upper.map(convert _))
+      utilV3_4.symbols.TypeRange(convert(lower), upper.map(convert))
   }
 
   private def convert(cypherType: frontendV3_3.symbols.CypherType): utilV3_4.symbols.CypherType = cypherType match {

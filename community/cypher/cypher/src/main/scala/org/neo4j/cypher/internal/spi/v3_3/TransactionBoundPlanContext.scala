@@ -125,6 +125,7 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
     InstrumentedGraphStatistics(TransactionBoundGraphStatistics(readOperationsSupplier()),
       new MutableGraphStatisticsSnapshot())
 
+  // FIXME
   // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_3/Compatibility
   lazy val txIdProvider: () => Long = ???
 

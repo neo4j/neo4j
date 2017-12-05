@@ -75,6 +75,7 @@ STATEMENT <: AnyRef] {
   // concrete stuff
   val monitorsV3_4: Monitors = WrappedMonitorsV3_4(kernelMonitors)
   val logger: InfoLogger = new StringInfoLogger(log)
+  // FIXME
   lazy val cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4](cacheMonitor)
   val planCacheFactory: () => LFUCache[STATEMENT, ExecutionPlan_v3_4] = () => new LFUCache[STATEMENT, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
   val maybeRuntimeName: Option[RuntimeName] = runtime match {
@@ -84,6 +85,7 @@ STATEMENT <: AnyRef] {
     case CypherRuntime.morsel => Some(MorselRuntimeName)
     case CypherRuntime.compiled => Some(CompiledRuntimeName)
   }
+  // FIXME x2
   implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
   lazy val queryGraphSolverV3_4: QueryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
     maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default),
@@ -147,7 +149,6 @@ STATEMENT <: AnyRef] {
       }.asJava)
     }
   }
-
 
 }
 

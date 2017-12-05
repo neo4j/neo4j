@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Statement => Sta
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
-import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{RecordingNotificationLogger => RecordingNotificationLoggerV3_4, CompilationPhaseTracer, Transformer}
 import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
@@ -100,7 +100,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
     val inputPositionV3_3 = helpers.as3_3(preParsedQuery.offset)
     val inputPositionV3_4 = preParsedQuery.offset
     val notificationLoggerV3_3 = new RecordingNotificationLoggerV3_3(Some(inputPositionV3_3))
-    val notificationLoggerV3_4 = new RecordingNotificationLogger(Some(inputPositionV3_4))
+    val notificationLoggerV3_4 = new RecordingNotificationLoggerV3_4(Some(inputPositionV3_4))
 
     val tracerV3_3 = as3_3(tracer)
 
