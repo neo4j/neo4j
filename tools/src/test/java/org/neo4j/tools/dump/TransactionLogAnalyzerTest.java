@@ -27,13 +27,12 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.collection.primitive.PrimitiveLongArrayQueue;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -272,12 +271,12 @@ public class TransactionLogAnalyzerTest
         private int checkpoints;
         private int logFiles;
         private long nextExpectedTxId = BASE_TX_ID + 1;
-        private final Deque<Long> expectedCheckpointsAt = new ArrayDeque<>();
+        private final PrimitiveLongArrayQueue expectedCheckpointsAt = new PrimitiveLongArrayQueue();
         private long nextExpectedLogVersion = BASE_TX_LOG_VERSION;
 
         void expectCheckpointAfter( long txId )
         {
-            expectedCheckpointsAt.addLast( txId );
+            expectedCheckpointsAt.enqueue( txId );
         }
 
         @Override
@@ -298,7 +297,7 @@ public class TransactionLogAnalyzerTest
         public void checkpoint( CheckPoint checkpoint, LogPosition checkpointEntryPosition )
         {
             checkpoints++;
-            Long expected = expectedCheckpointsAt.poll();
+            Long expected = expectedCheckpointsAt.dequeue();
             assertNotNull( "Unexpected checkpoint", expected );
             assertEquals( expected.longValue(), nextExpectedTxId - 1 );
         }
