@@ -56,7 +56,7 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public int valueSize()
+    public int valueSize( SchemaNumberValue value )
     {
         return NativeSchemaValue.SIZE;
     }

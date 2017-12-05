@@ -36,7 +36,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     {
         super( pageSize, layout );
         this.keySize = layout.keySize( null );
-        this.valueSize = layout.valueSize();
+        this.valueSize = layout.valueSize( null );
         this.internalMaxKeyCount = Math.floorDiv( pageSize - (BASE_HEADER_LENGTH + SIZE_PAGE_REFERENCE),
                 keySize + SIZE_PAGE_REFERENCE);
         this.leafMaxKeyCount = Math.floorDiv( pageSize - BASE_HEADER_LENGTH, keySize + valueSize );
@@ -89,10 +89,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         insertValueAt( cursor, value, pos, keyCount );
     }
 
-    // Remove key without removing associated value.
-    // Useful for internal nodes and testing.
-    @Override
-    void removeKeyAt( PageCursor cursor, int pos, int keyCount, Type type )
+    private void removeKeyAt( PageCursor cursor, int pos, int keyCount, Type type )
     {
         removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
     }

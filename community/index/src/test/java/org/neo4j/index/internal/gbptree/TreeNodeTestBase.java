@@ -19,12 +19,16 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
@@ -39,7 +43,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
-public class TreeNodeTest
+public abstract class TreeNodeTestBase<KEY,VALUE>
 {
     private static final int STABLE_GENERATION = 1;
     private static final int CRASH_GENERATION = 2;
@@ -48,8 +52,9 @@ public class TreeNodeTest
 
     private static final int PAGE_SIZE = 512;
     private final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
-    private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( PAGE_SIZE, layout );
+
+    private Layout<KEY,VALUE> layout;
+    private TreeNode<KEY,VALUE> node;
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -58,7 +63,19 @@ public class TreeNodeTest
     public void prepareCursor() throws IOException
     {
         cursor.next();
+        layout = getLayout();
+        node = getNode( PAGE_SIZE, layout );
     }
+
+    protected abstract Layout<KEY,VALUE> getLayout();
+
+    protected abstract TreeNode<KEY,VALUE> getNode( int pageSize, Layout<KEY,VALUE> layout );
+
+    protected abstract KEY key( long sortOrder );
+
+    protected abstract VALUE value( long someValue );
+
+    abstract boolean valuesEqual( VALUE firstValue, VALUE secondValue );
 
     @Test
     public void shouldInitializeLeaf() throws Exception
@@ -149,72 +166,65 @@ public class TreeNodeTest
     {
         // GIVEN
         TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        MutableLong key = layout.newKey();
-        MutableLong value = layout.newValue();
+        KEY readKey = layout.newKey();
+        VALUE readValue = layout.newValue();
 
         // WHEN
-        long firstKey = 10;
-        long firstValue = 100;
-        key.setValue( firstKey );
-        value.setValue( firstValue );
-        node.insertKeyValueAt( cursor, key, value, 0, 0 );
+        KEY firstKey = key( 1 );
+        VALUE firstValue = value( 1 );
+        node.insertKeyValueAt( cursor, firstKey, firstValue, 0, 0 );
 
         // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( firstValue, node.valueAt( cursor, key, 0 ).longValue() );
+        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( firstValue, node.valueAt( cursor, readValue, 0 ) ) );
 
         // WHEN
-        long secondKey = 19;
-        long secondValue = 190;
-        key.setValue( secondKey );
-        value.setValue( secondValue );
-        node.insertKeyValueAt( cursor, key, value, 1, 1 );
+        KEY secondKey = key( 3 );
+        VALUE secondValue = value( 3 );
+        node.insertKeyValueAt( cursor, secondKey, secondValue, 1, 1 );
 
         // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( firstValue, node.valueAt( cursor, key, 0 ).longValue() );
-        assertEquals( secondKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
-        assertEquals( secondValue, node.valueAt( cursor, key, 1 ).longValue() );
+        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( firstValue, node.valueAt( cursor, readValue, 0 ) ) );
+        assertTrue( layout.compare( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( secondValue, node.valueAt( cursor, readValue, 1 ) ) );
 
         // WHEN
-        long removedKey = 15;
-        long removedValue = 150;
-        key.setValue( removedKey );
-        value.setValue( removedValue );
-        node.insertKeyValueAt( cursor, key, value, 1, 2 );
+        KEY removedKey = key( 2 );
+        VALUE removedValue = value( 2 );
+        node.insertKeyValueAt( cursor, removedKey, removedValue, 1, 2 );
 
         // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( firstValue, node.valueAt( cursor, key, 0 ).longValue() );
-        assertEquals( removedKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
-        assertEquals( removedValue, node.valueAt( cursor, key, 1 ).longValue() );
-        assertEquals( secondKey, node.keyAt( cursor, key, 2, LEAF ).longValue() );
-        assertEquals( secondValue, node.valueAt( cursor, key, 2 ).longValue() );
+        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( firstValue, node.valueAt( cursor, readValue, 0 ) ) );
+        assertTrue( layout.compare( removedKey, node.keyAt( cursor, readKey, 1, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( removedValue, node.valueAt( cursor, readValue, 1 ) ) );
+        assertTrue( layout.compare( secondKey, node.keyAt( cursor, readKey, 2, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( secondValue, node.valueAt( cursor, readValue, 2 ) ) );
 
         // WHEN
         node.removeKeyValueAt( cursor, 1, 3 );
 
         // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( firstValue, node.valueAt( cursor, key, 0 ).longValue() );
-        assertEquals( secondKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
-        assertEquals( secondValue, node.valueAt( cursor, key, 1 ).longValue() );
+        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( firstValue, node.valueAt( cursor, readValue, 0 ) ) );
+        assertTrue( layout.compare( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( secondValue, node.valueAt( cursor, readValue, 1 ) ) );
 
         // WHEN
-        long overwriteValue = 666;
-        value.setValue( overwriteValue );
-        node.setValueAt( cursor, value, 0 );
+        VALUE overwriteValue = value( 666 );
+        node.setValueAt( cursor, overwriteValue, 0 );
 
         // THEN
-        assertEquals( firstKey, node.keyAt( cursor, key, 0, LEAF ).longValue() );
-        assertEquals( overwriteValue, node.valueAt( cursor, key, 0 ).longValue() );
-        assertEquals( secondKey, node.keyAt( cursor, key, 1, LEAF ).longValue() );
-        assertEquals( secondValue, node.valueAt( cursor, key, 1 ).longValue() );
+        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( overwriteValue, node.valueAt( cursor, readValue, 0 ) ) );
+        assertTrue( layout.compare( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) ) == 0 );
+        assertTrue( valuesEqual( secondValue, node.valueAt( cursor, readValue, 1 ) ) );
     }
 
     private void assertKeysAndChildren( long stable, long unstable, long... keysAndChildren )
     {
-        MutableLong key = new MutableLong();
+        KEY actualKey = layout.newKey();
         int pos;
         for ( int i = 0; i < keysAndChildren.length; i++ )
         {
@@ -225,7 +235,9 @@ public class TreeNodeTest
             }
             else
             {
-                assertEquals( keysAndChildren[i], node.keyAt( cursor, key, pos, INTERNAL ).longValue() );
+                KEY expectedKey = key( keysAndChildren[i] );
+                node.keyAt( cursor, actualKey, pos, INTERNAL );
+                assertTrue( layout.compare( expectedKey, actualKey ) == 0 );
             }
         }
     }
@@ -235,7 +247,7 @@ public class TreeNodeTest
     {
         // GIVEN
         TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        MutableLong key = layout.newKey();
+        KEY readKey = layout.newKey();
         long stable = 3;
         long unstable = 4;
         long zeroChild = 5;
@@ -247,28 +259,25 @@ public class TreeNodeTest
         assertKeysAndChildren( stable, unstable, zeroChild );
 
         // WHEN
-        long firstKey = 10;
-        long firstChild = 100;
-        key.setValue( firstKey );
-        node.insertKeyAndRightChildAt( cursor, key, firstChild, 0, 0, stable, unstable );
+        long firstKey = 1;
+        long firstChild = 10;
+        node.insertKeyAndRightChildAt( cursor, key( firstKey ), firstChild, 0, 0, stable, unstable );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild );
 
         // WHEN
-        long secondKey = 19;
-        long secondChild = 190;
-        key.setValue( secondKey );
-        node.insertKeyAndRightChildAt( cursor, key, secondChild, 1, 1, stable, unstable );
+        long secondKey = 3;
+        long secondChild = 30;
+        node.insertKeyAndRightChildAt( cursor, key( secondKey ), secondChild, 1, 1, stable, unstable );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, secondKey, secondChild );
 
         // WHEN
-        long removedKey = 20;
-        long removedChild = 200;
-        key.setValue( removedKey );
-        node.insertKeyAndRightChildAt( cursor, key, removedChild, 1, 2, stable, unstable );
+        long removedKey = 2;
+        long removedChild = 20;
+        node.insertKeyAndRightChildAt( cursor, key( removedKey ), removedChild, 1, 2, stable, unstable );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, removedKey, removedChild, secondKey, secondChild );
@@ -337,6 +346,7 @@ public class TreeNodeTest
     }
 
     @Test
+    @RandomRule.Seed( 1512460065516L )
     public void shouldInsertAndRemoveRandomKeysAndValues() throws Exception
     {
         // This test doesn't care about sorting, that's an aspect that lies outside of TreeNode, really
@@ -345,11 +355,11 @@ public class TreeNodeTest
         TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         int maxKeyCount = node.leafMaxKeyCount();
         // add +1 to these to simplify some array logic in the test itself
-        long[] expectedKeys = new long[maxKeyCount + 1];
-        long[] expectedValues = new long[maxKeyCount + 1];
+        List<KEY> expectedKeys = new ArrayList<>();
+        List<VALUE> expectedValues = new ArrayList<>();
         int expectedKeyCount = 0;
-        MutableLong key = layout.newKey();
-        MutableLong value = layout.newValue();
+        KEY readKey = layout.newKey();
+        VALUE readValue = layout.newValue();
 
         // WHEN/THEN
         for ( int i = 0; i < 1000; i++ )
@@ -360,16 +370,17 @@ public class TreeNodeTest
                 {   // there's room
                     int position = expectedKeyCount == 0 ? 0 : random.nextInt( expectedKeyCount );
                     // ensure unique
+                    KEY newKey;
                     do
                     {
-                        key.setValue( random.nextLong() );
+                        newKey = key( random.nextLong() );
                     }
-                    while ( contains( expectedKeys, 0, expectedKeyCount, key.longValue() ) );
+                    while ( contains( expectedKeys, newKey, layout ) );
 
-                    value.setValue( random.nextLong() );
-                    node.insertKeyValueAt( cursor, key, value, position, expectedKeyCount );
-                    insert( expectedKeys, expectedKeyCount, key.longValue(), position );
-                    insert( expectedValues, expectedKeyCount, value.longValue(), position );
+                    VALUE newValue = value( random.nextLong() );
+                    node.insertKeyValueAt( cursor, newKey, newValue, position, expectedKeyCount );
+                    expectedKeys.add( position, newKey );
+                    expectedValues.add( position, newValue );
 
                     TreeNode.setKeyCount( cursor, ++expectedKeyCount );
                 }
@@ -379,13 +390,15 @@ public class TreeNodeTest
                 if ( expectedKeyCount > 0 )
                 {   // there are things to remove
                     int position = random.nextInt( expectedKeyCount );
-                    node.keyAt( cursor, key, position, LEAF );
-                    node.valueAt( cursor, value, position );
+                    node.keyAt( cursor, readKey, position, LEAF );
+                    node.valueAt( cursor, readValue, position );
                     node.removeKeyValueAt( cursor, position, expectedKeyCount );
-                    long expectedKey = remove( expectedKeys, expectedKeyCount, position );
-                    long expectedValue = remove( expectedValues, expectedKeyCount, position );
-                    assertEquals( expectedKey, key.longValue() );
-                    assertEquals( expectedValue, value.longValue() );
+                    KEY expectedKey = expectedKeys.remove( position );
+                    VALUE expectedValue = expectedValues.remove( position );
+                    assertTrue( "Key differ with expected, key=" + readKey + ", expectedKey=" + expectedKey,
+                            layout.compare( expectedKey, readKey ) == 0 );
+                    assertTrue( "Value differ with expected, value=" + readValue + ", expectedValue=" + expectedValue,
+                            valuesEqual( expectedValue, readValue ) );
 
                     TreeNode.setKeyCount( cursor, --expectedKeyCount );
                 }
@@ -393,17 +406,38 @@ public class TreeNodeTest
         }
 
         // THEN
+        assertContent( expectedKeys, expectedValues, expectedKeyCount );
+    }
+
+    private void assertContent( List<KEY> expectedKeys, List<VALUE> expectedValues, int expectedKeyCount )
+    {
+        KEY actualKey = layout.newKey();
+        VALUE actualValue = layout.newValue();
         assertEquals( expectedKeyCount, TreeNode.keyCount( cursor ) );
         for ( int i = 0; i < expectedKeyCount; i++ )
         {
-            long expectedKey = expectedKeys[i];
-            node.keyAt( cursor, key, i, LEAF );
-            assertEquals( expectedKey, key.longValue() );
+            KEY expectedKey = expectedKeys.get( i );
+            node.keyAt( cursor, actualKey, i, LEAF );
+            assertTrue( "Key differ with expected, actualKey=" + actualKey + ", expectedKey=" + expectedKey,
+                    layout.compare( expectedKey, actualKey ) == 0 );
 
-            long expectedValue = expectedValues[i];
-            node.valueAt( cursor, value, i );
-            assertEquals( "For key " + key.longValue(), expectedValue, value.longValue() );
+            VALUE expectedValue = expectedValues.get( i );
+            node.valueAt( cursor, actualValue, i );
+            assertTrue( "Value differ with expected, actualValue=" + actualValue + ", expectedValue=" + expectedValue,
+                    valuesEqual( expectedValue, actualValue ) );
         }
+    }
+
+    private boolean contains( List<KEY> expectedKeys, KEY key, Layout<KEY,?> layout )
+    {
+        return expectedKeys.stream()
+                .map( bind( layout::compare, key ) )
+                .anyMatch( Predicate.isEqual( 0 ) );
+    }
+
+    public static <T, U, R> Function<U,R> bind( BiFunction<T,U,R> f, T t )
+    {
+        return u -> f.apply( t, u );
     }
 
     @Test
@@ -412,7 +446,7 @@ public class TreeNodeTest
         // WHEN
         try
         {
-            new TreeNodeFixedSize<>( TreeNode.BASE_HEADER_LENGTH + layout.keySize( null ) + layout.valueSize(), layout );
+            new TreeNodeFixedSize<>( TreeNode.BASE_HEADER_LENGTH + layout.keySize( null ) + layout.valueSize( null ), layout );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )

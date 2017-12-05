@@ -79,7 +79,7 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     }
 
     @Override
-    public int valueSize()
+    public int valueSize( MutableLong value )
     {
         return Long.BYTES;
     }

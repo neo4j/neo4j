@@ -85,7 +85,7 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public int valueSize()
+    public int valueSize( LabelScanValue value )
     {
         return LabelScanValue.RANGE_SIZE_BYTES;
     }

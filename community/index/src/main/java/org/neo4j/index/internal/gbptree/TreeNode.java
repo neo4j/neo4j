@@ -249,10 +249,6 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount );
 
-    // Remove key without removing associated value.
-    // Useful for internal nodes and testing.
-    abstract void removeKeyAt( PageCursor cursor, int pos, int keyCount, Type type );
-
     abstract void removeKeyValueAt( PageCursor cursor, int pos, int keyCount );
 
     abstract void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount );

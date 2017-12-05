@@ -68,9 +68,10 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     int keySize( KEY key );
 
     /**
-     * @return size, in bytes, of a value.
+     * @param value for which to give size.
+     * @return size, in bytes, of given value.
      */
-    int valueSize();
+    int valueSize( VALUE value );
 
     /**
      * Writes contents of {@code key} into {@code cursor} at its current offset.
@@ -205,7 +206,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         {
             return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d]",
                     getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(),
-                    keySize( null ), valueSize() );
+                    keySize( null ), valueSize( null ) );
         }
 
         @Override
@@ -247,7 +248,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public int valueSize()
+        public int valueSize( Object value )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
