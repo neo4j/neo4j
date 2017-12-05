@@ -24,11 +24,12 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) =
     value match {
-      case IsMap(mapValue) => mapValue(state.query)
+      case IsMap(mapValue) => VirtualValues.copy(mapValue(state.query))
       case v =>
         throw new CypherTypeException(s"Expected a Node, Relationship, or Map, got: $v")
     }

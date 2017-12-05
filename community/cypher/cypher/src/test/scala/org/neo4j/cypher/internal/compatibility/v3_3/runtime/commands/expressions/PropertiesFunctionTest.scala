@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import java.util
 
+import org.mockito.Matchers.any
 import org.mockito.Mockito
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
@@ -63,7 +66,9 @@ class PropertiesFunctionTest extends CypherFunSuite {
   test("should map nodes to maps") {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
-    when(nodeOps.propertyKeyIds(0)).thenReturn(List(0,1).iterator)
+    when(nodeOps.propertyKeyIds(any())).thenAnswer(new Answer[Iterator[Int]] {
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[Int] = List(0,1).iterator
+    })
     when(query.getPropertyKeyName(0)).thenReturn("a")
     when(query.getPropertyKeyName(1)).thenReturn("b")
     when(nodeOps.getProperty(0, 0)).thenReturn(stringValue("x"))
@@ -76,7 +81,9 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     when(rel.getId).thenReturn(0)
-    when(relOps.propertyKeyIds(0)).thenReturn(List(0,1).iterator)
+    when(relOps.propertyKeyIds(any())).thenAnswer(new Answer[Iterator[Int]] {
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[Int] = List(0,1).iterator
+    })
     when(query.getPropertyKeyName(0)).thenReturn("a")
     when(query.getPropertyKeyName(1)).thenReturn("b")
     when(relOps.getProperty(0, 0)).thenReturn(stringValue("x"))

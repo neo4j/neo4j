@@ -117,3 +117,6 @@ difficult to plan query number 1
 difficult to plan query number 2
 difficult to plan query number 3
 Variable length path with both sides already bound
+
+//DeleteAcceptance.feature
+Return properties from deleted node
