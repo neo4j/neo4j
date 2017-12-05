@@ -8,7 +8,6 @@ Remove multiple relationship properties
 Absolute function
 Return collection size
 Setting and returning the size of a list property
-Setting and returning the size of a list property
 Arithmetic expressions inside aggregation
 Concatenating and returning the size of literal lists
 
@@ -48,7 +47,6 @@ LIMIT with an expression that does not depend on variables
 `type()` handling Any type
 `type()` failing on invalid arguments
 `labels()` should accept type Any
-`labels()` should accept type Any
 Handling property access on the Any type
 Failing when performing property access on a non-map 1
 `toFloat()` handling Any type
@@ -86,7 +84,6 @@ IN should work with literal list slices
 
 // new parameter syntax $
 Delete node from a list
-Delete node from a list
 Delete relationship from a list
 Use dynamic property lookup based on parameters when there is no type information
 Use dynamic property lookup based on parameters when there is lhs type information
@@ -100,9 +97,6 @@ Fail at runtime when trying to index into a list with a list
 Fail at runtime when trying to index something which is not a map or collection
 `percentileDisc()`
 `percentileCont()`
-`percentileCont()` failing on bad arguments
-`percentileDisc()` failing on bad arguments
-`percentileDisc()` failing in more involved query
 Using `keys()` on a parameter map
 Use params in pattern matching predicates
 Matching with many predicates and larger pattern
@@ -186,8 +180,6 @@ Comparing across types yields null, except numbers
 Combine MATCH, WITH and CREATE
 
 // TCK side effects are incorrectly specified -- need update
-In-query call to procedure with explicit arguments
-Standalone call to procedure with explicit arguments
 Detach deleting connected nodes and relationships
 Detach deleting paths
 Create and delete in same query
@@ -205,16 +197,11 @@ Merge must properly handle multiple labels
 UNWIND with multiple merges
 Do not match on deleted entities
 Do not match on deleted relationships
-In-query call to procedure with explicit arguments
-In-query call to procedure with explicit arguments that drops all result fields
-Standalone call to procedure with explicit arguments
 Set a property
 Set a property to an expression
 Concatenate elements onto a list property
 Concatenate elements in reverse onto a list property
 Overwrite values when using +=
 Non-existent values in a property map are removed with SET =
-Creating nodes from an unwound parameter list
-Unwind with merge
 Should be able to merge using property from match
 Merges should not be able to match on deleted nodes
