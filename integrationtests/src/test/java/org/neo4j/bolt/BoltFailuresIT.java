@@ -54,7 +54,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -88,7 +88,7 @@ public class BoltFailuresIT
     public void throwsWhenWorkerCreationFails()
     {
         WorkerFactory workerFactory = mock( WorkerFactory.class );
-        when( workerFactory.newWorker( anyObject() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
+        when( workerFactory.newWorker( any() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
 
         BoltKernelExtension extension = new BoltKernelExtensionWithWorkerFactory( workerFactory );
 

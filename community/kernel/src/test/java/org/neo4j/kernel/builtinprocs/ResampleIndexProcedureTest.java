@@ -36,7 +36,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -89,7 +88,7 @@ public class ResampleIndexProcedureTest
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
-        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( index );
+        when( operations.indexGetForSchema( any() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 
@@ -138,7 +137,7 @@ public class ResampleIndexProcedureTest
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
-        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( index );
+        when( operations.indexGetForSchema( any() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 

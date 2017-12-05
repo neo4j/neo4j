@@ -59,7 +59,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
 
   when(inner.createUniqueConstraint(any())).thenReturn(true)
 
-  when(inner.createNodeKeyConstraint(anyObject())).thenReturn(true)
+  when(inner.createNodeKeyConstraint(any())).thenReturn(true)
 
   when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
