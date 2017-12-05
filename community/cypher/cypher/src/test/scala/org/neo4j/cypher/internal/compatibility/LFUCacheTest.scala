@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.internal.compatibility.LFUCache
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class LFUCacheTest extends CypherFunSuite {
