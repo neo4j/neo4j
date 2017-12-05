@@ -332,7 +332,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         }
 
         KernelTransaction ktx = spi.currentTransaction();
-        try ( Statement ignore = spi.currentStatement())
+        try ( Statement ignore = spi.currentStatement() )
         {
             if ( !ktx.dataRead().nodeExists( id ) )
             {

@@ -505,7 +505,7 @@ public class NodeProxy implements Node
         }
         NodeCursor nodes = transaction.nodeCursor();
         PropertyCursor properties = transaction.propertyCursor();
-        try ( Statement ignore = actions.statement())
+        try ( Statement ignore = actions.statement() )
         {
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )

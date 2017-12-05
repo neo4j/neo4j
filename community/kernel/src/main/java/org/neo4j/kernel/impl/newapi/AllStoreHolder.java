@@ -152,6 +152,7 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public CapableIndexReference index( int label, int... properties )
     {
+        assertOpen.assertOpen();
         IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
         if ( indexDescriptor == null )
         {
