@@ -10,7 +10,6 @@ Remove multiple relationship properties
 Absolute function
 Return collection size
 Setting and returning the size of a list property
-Setting and returning the size of a list property
 Arithmetic expressions inside aggregation
 Concatenating and returning the size of literal lists
 
@@ -50,7 +49,6 @@ LIMIT with an expression that does not depend on variables
 `type()` handling Any type
 `type()` failing on invalid arguments
 `labels()` should accept type Any
-`labels()` should accept type Any
 Handling property access on the Any type
 Failing when performing property access on a non-map 1
 `toFloat()` handling Any type
@@ -89,7 +87,6 @@ IN should work with literal list slices
 
 // new parameter syntax $
 Delete node from a list
-Delete node from a list
 Delete relationship from a list
 Use dynamic property lookup based on parameters when there is no type information
 Use dynamic property lookup based on parameters when there is lhs type information
@@ -103,9 +100,6 @@ Fail at runtime when trying to index into a list with a list
 Fail at runtime when trying to index something which is not a map or collection
 `percentileDisc()`
 `percentileCont()`
-`percentileCont()` failing on bad arguments
-`percentileDisc()` failing on bad arguments
-`percentileDisc()` failing in more involved query
 Using `keys()` on a parameter map
 Use params in pattern matching predicates
 Matching with many predicates and larger pattern

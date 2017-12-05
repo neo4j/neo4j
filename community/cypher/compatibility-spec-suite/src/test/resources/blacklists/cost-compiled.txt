@@ -82,8 +82,6 @@ IS NOT NULL with literal maps
 `type()` handling Any type
 `type()` failing on invalid arguments
 `labels()` should accept type Any
-`labels()` should accept type Any
-`labels()` should accept type Any
 `exists()` is case insensitive
 Find friends of others
 Should only join when matching
@@ -258,7 +256,6 @@ Remove multiple labels
 Remove a single node property
 Remove multiple node properties
 Remove a single relationship property
-Remove a single relationship property
 Remove multiple relationship properties
 Remove a missing property should be a valid operation
 Start the result from the second row
@@ -281,12 +278,10 @@ Ordering with aggregation
 DISTINCT on nullable values
 Return all variables
 Setting and returning the size of a list property
-Setting and returning the size of a list property
 `sqrt()` returning float values
 Arithmetic expressions inside aggregation
 Matching and disregarding output, then matching again
 Returning an expression
-Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
 Limiting amount of rows when there are fewer left than the LIMIT argument
 `substring()` with default second argument
@@ -518,7 +513,6 @@ Delete optionally matched relationship
 Delete on null node
 Detach delete on null node
 Delete on null path
-Delete node from a list
 Delete node from a list
 Delete relationship from a list
 Delete nodes from a map
