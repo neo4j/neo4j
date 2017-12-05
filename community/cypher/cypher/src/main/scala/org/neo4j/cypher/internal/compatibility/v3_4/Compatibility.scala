@@ -53,7 +53,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                                                    updateStrategy: CypherUpdateStrategy,
                                                                                    runtimeBuilder: RuntimeBuilder[T],
                                                                                    contextCreatorV3_4: ContextCreator[CONTEXT])
-  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement]{
+  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](configV3_4, clock, kernelMonitors, log, planner, runtime, updateStrategy, runtimeBuilder, contextCreatorV3_4) {
 
   val monitors: Monitors = WrappedMonitors(kernelMonitors)
   val cacheMonitor: AstCacheMonitor[Statement] = monitors.newMonitor[AstCacheMonitor[Statement]]("cypher3.4")
@@ -111,7 +111,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                         clock, simpleExpressionEvaluator)
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
-        val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
+        val cache = provideCache(cacheAccessor, cacheMonitor, planContext, () => planCacheFactory)
         val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContext.txIdProvider, planContext.statistics)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan

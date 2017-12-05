@@ -63,7 +63,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](configV3_4: Cy
                                                                   runtimeBuilder: RuntimeBuilder[T],
                                                                   contextCreatorV3_3: v3_3.ContextCreator[CONTEXT3_3],
                                                                   contextCreatorV3_4: ContextCreator[CONTEXT3_4])
-extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] {
+extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](configV3_4, clock, kernelMonitors, log, planner, runtime, updateStrategy, runtimeBuilder, contextCreatorV3_4) {
 
   val monitorsV3_3: MonitorsV3_3 = WrappedMonitors(kernelMonitors)
   val cacheMonitor: AstCacheMonitor[StatementV3_3] = monitorsV3_3.newMonitor[AstCacheMonitor[StatementV3_3]]("cypher3.3")
@@ -143,7 +143,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3] 
 
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_3)
-        val cache = provideCache(cacheAccessor, cacheMonitor, planContextV3_3, planCacheFactory)
+        val cache = provideCache(cacheAccessor, cacheMonitor, planContextV3_3, () => planCacheFactory)
         val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContextV3_4.txIdProvider, planContextV3_4.statistics)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan

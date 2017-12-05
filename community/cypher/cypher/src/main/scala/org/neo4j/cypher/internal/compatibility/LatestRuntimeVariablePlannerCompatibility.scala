@@ -51,52 +51,53 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
 
-trait LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4 <: CommunityRuntimeContextV3_4,
+abstract class LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4 <: CommunityRuntimeContextV3_4,
 T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState],
-STATEMENT <: AnyRef] {
+STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
+                     clock: Clock,
+                     kernelMonitors: KernelMonitors,
+                     log: Log,
+                     planner: CypherPlanner,
+                     runtime: CypherRuntime,
+                     updateStrategy: CypherUpdateStrategy,
+                     runtimeBuilder: RuntimeBuilder[T],
+                     contextCreatorV3_4: ContextCreator[CONTEXT3_4]) {
 
   // abstract stuff
-  val configV3_4: CypherCompilerConfiguration
-  val clock: Clock
-  val kernelMonitors: KernelMonitors
-  val log: Log
-  val planner: CypherPlanner
-  val runtime: CypherRuntime
-  val updateStrategy: CypherUpdateStrategy
-  val runtimeBuilder: RuntimeBuilder[T]
-  val contextCreatorV3_4: ContextCreator[CONTEXT3_4]
-  val cacheMonitor: AstCacheMonitor[STATEMENT]
-  val maybePlannerNameV3_4: Option[CostBasedPlannerName]
-  val runSafelyDuringPlanning: RunSafely
-  val runSafelyDuringRuntime: RunSafely
+  protected val cacheMonitor: AstCacheMonitor[STATEMENT]
+  protected val maybePlannerNameV3_4: Option[CostBasedPlannerName]
+  protected val runSafelyDuringPlanning: RunSafely
+  protected val runSafelyDuringRuntime: RunSafely
+
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery
 
   // concrete stuff
-  val monitorsV3_4: Monitors = WrappedMonitorsV3_4(kernelMonitors)
-  val logger: InfoLogger = new StringInfoLogger(log)
-  // FIXME
-  lazy val cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4](cacheMonitor)
-  val planCacheFactory: () => LFUCache[STATEMENT, ExecutionPlan_v3_4] = () => new LFUCache[STATEMENT, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
-  val maybeRuntimeName: Option[RuntimeName] = runtime match {
-    case CypherRuntime.default => None
-    case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
-    case CypherRuntime.slotted => Some(SlottedRuntimeName)
-    case CypherRuntime.morsel => Some(MorselRuntimeName)
-    case CypherRuntime.compiled => Some(CompiledRuntimeName)
-  }
-  // FIXME x2
-  implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
-  lazy val queryGraphSolverV3_4: QueryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
+  protected val monitorsV3_4: Monitors = WrappedMonitorsV3_4(kernelMonitors)
+
+  protected def planCacheFactory: LFUCache[STATEMENT, ExecutionPlan_v3_4] = new LFUCache[STATEMENT, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
+
+  protected def logger: InfoLogger = new StringInfoLogger(log)
+
+  protected def cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4](cacheMonitor)
+
+  protected def queryGraphSolverV3_4: QueryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
     maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default),
     monitorsV3_4,
     configV3_4)
 
   protected def createExecPlan: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState] = {
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
-      If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
+      If((s: CompilationState) => s.maybeExecutionPlan.isEmpty) {
+        val maybeRuntimeName: Option[RuntimeName] = runtime match {
+          case CypherRuntime.default => None
+          case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
+          case CypherRuntime.slotted => Some(SlottedRuntimeName)
+          case CypherRuntime.morsel => Some(MorselRuntimeName)
+          case CypherRuntime.compiled => Some(CompiledRuntimeName)
+        }
         runtimeBuilder.create(maybeRuntimeName, configV3_4.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_4])
-      )
+      }
   }
 
   protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor[STATEMENT] {
@@ -131,7 +132,7 @@ STATEMENT <: AnyRef] {
           transactionalContext.tc.executingQuery(),
           innerResult.withNotifications(preParsingNotifications.toSeq: _*),
           runSafelyDuringRuntime
-        ))
+        )(kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])))
       }
     }
 
