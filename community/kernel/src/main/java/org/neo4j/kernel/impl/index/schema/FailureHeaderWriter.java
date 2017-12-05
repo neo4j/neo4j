@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * Writes a failure message to a header in a {@link GBPTree}.
  */
-class FailureHeaderWriter implements Consumer<PageCursor>
+public class FailureHeaderWriter implements Consumer<PageCursor>
 {
     /**
      * The {@code short} length field containing the length (number of bytes) of the failure message.
@@ -37,7 +37,7 @@ class FailureHeaderWriter implements Consumer<PageCursor>
 
     private final byte[] failureBytes;
 
-    FailureHeaderWriter( byte[] failureBytes )
+    public FailureHeaderWriter( byte[] failureBytes )
     {
         this.failureBytes = failureBytes;
     }

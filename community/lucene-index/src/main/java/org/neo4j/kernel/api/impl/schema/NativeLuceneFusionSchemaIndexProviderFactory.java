@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.NumberSchemaIndexProvider;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
+import org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -87,12 +88,14 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         boolean readOnly = isReadOnly( config, operationalMode );
         NumberSchemaIndexProvider nativeProvider =
                 new NumberSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        SpatialSchemaIndexProvider spatialProvider =
+                new SpatialSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
                 operationalMode );
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;
         return new FusionSchemaIndexProvider( nativeProvider,
-                luceneProvider, new NativeSelector(), DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
+                spatialProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )

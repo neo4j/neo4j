@@ -33,5 +33,6 @@ object CypherOrdering {
   val BY_VALUE = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]))
   val BY_NUMBER = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_NUMBERS))
   val BY_STRING = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_STRINGS))
+  val BY_POINT = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_POINTS))
 }
 

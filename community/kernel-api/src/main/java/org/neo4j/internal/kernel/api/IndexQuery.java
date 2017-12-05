@@ -24,6 +24,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -66,9 +67,25 @@ public abstract class IndexQuery
      * @return an {@link IndexQuery} instance to be used for querying an index.
      */
     public static NumberRangePredicate range( int propertyKeyId, Number from, boolean fromInclusive, Number to,
-                                              boolean toInclusive )
+            boolean toInclusive )
     {
         return new NumberRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
+    }
+
+    /**
+     * Searches the index for geometry values between {@code from} and {@code to}.
+     *
+     * @param propertyKeyId the property ID to match.
+     * @param from the lower bound of the property value. In 2D this means lower-left corner of search envelope.
+     * @param fromInclusive the lower bound is inclusive if true.
+     * @param to the upper bound of the property value. In 2D this means upper-right corner of search envelope.
+     * @param toInclusive the upper bound is inclusive if true.
+     * @return an {@link IndexQuery} instance to be used for querying an index.
+     */
+    public static GeometryRangePredicate range( int propertyKeyId, PointValue from, boolean fromInclusive, PointValue to,
+            boolean toInclusive )
+    {
+        return new GeometryRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
     }
 
     /**
@@ -187,6 +204,7 @@ public abstract class IndexQuery
         exact,
         rangeString,
         rangeNumeric,
+        rangeGeometric,
         stringPrefix,
         stringSuffix,
         stringContains
@@ -332,6 +350,88 @@ public abstract class IndexQuery
         }
 
         public Value toAsValue()
+        {
+            return to;
+        }
+
+        public boolean fromInclusive()
+        {
+            return fromInclusive;
+        }
+
+        public boolean toInclusive()
+        {
+            return toInclusive;
+        }
+    }
+
+    public static final class GeometryRangePredicate extends IndexQuery
+    {
+        private final PointValue from;
+        private final boolean fromInclusive;
+        private final PointValue to;
+        private final boolean toInclusive;
+
+        GeometryRangePredicate( int propertyKeyId, PointValue from, boolean fromInclusive, PointValue to, boolean toInclusive )
+        {
+            super( propertyKeyId );
+            this.from = from;
+            this.fromInclusive = fromInclusive;
+            this.to = to;
+            this.toInclusive = toInclusive;
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.rangeGeometric;
+        }
+
+        @Override
+        public boolean acceptsValue( Value value )
+        {
+            if ( value == null )
+            {
+                return false;
+            }
+            //TODO Deal with other Geometries
+            if ( value instanceof PointValue )
+            {
+                PointValue point = (PointValue) value;
+                //TODO Use Hilbert Space Filling Curves for comparison
+                if ( from != Values.NO_VALUE )
+                {
+                    int compare = point.compareTo( from );
+                    if ( compare < 0 || !fromInclusive && compare == 0 )
+                    {
+                        return false;
+                    }
+                }
+                if ( to != Values.NO_VALUE )
+                {
+                    int compare = point.compareTo( to );
+                    if ( compare > 0 || !toInclusive && compare == 0 )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public ValueGroup valueGroup()
+        {
+            return ValueGroup.GEOMETRY;
+        }
+
+        public PointValue from()
+        {
+            return from;
+        }
+
+        public PointValue to()
         {
             return to;
         }
