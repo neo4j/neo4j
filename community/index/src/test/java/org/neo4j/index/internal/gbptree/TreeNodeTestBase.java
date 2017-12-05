@@ -45,16 +45,15 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 public abstract class TreeNodeTestBase<KEY,VALUE>
 {
-    private static final int STABLE_GENERATION = 1;
-    private static final int CRASH_GENERATION = 2;
-    private static final int UNSTABLE_GENERATION = 3;
+    static final int STABLE_GENERATION = 1;
+    static final int UNSTABLE_GENERATION = 3;
     private static final int HIGH_GENERATION = 4;
 
     private static final int PAGE_SIZE = 512;
-    private final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+    final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
 
-    private Layout<KEY,VALUE> layout;
-    private TreeNode<KEY,VALUE> node;
+    Layout<KEY,VALUE> layout;
+    TreeNode<KEY,VALUE> node;
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -77,11 +76,13 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
     abstract boolean valuesEqual( VALUE firstValue, VALUE secondValue );
 
+    abstract void assertAdditionalHeader( PageCursor cursor, TreeNode<KEY,VALUE> node, int pageSize );
+
     @Test
     public void shouldInitializeLeaf() throws Exception
     {
         // WHEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         assertEquals( TreeNode.NODE_TYPE_TREE_NODE, TreeNode.nodeType( cursor ) );
@@ -92,13 +93,14 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         assertEquals( NO_NODE_FLAG, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertAdditionalHeader( cursor, node, PAGE_SIZE );
     }
 
     @Test
     public void shouldInitializeInternal() throws Exception
     {
         // WHEN
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         assertEquals( TreeNode.NODE_TYPE_TREE_NODE, TreeNode.nodeType( cursor ) );
@@ -109,13 +111,14 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         assertEquals( NO_NODE_FLAG, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertAdditionalHeader( cursor, node, PAGE_SIZE );
     }
 
     @Test
     public void shouldWriteAndReadMaxGeneration() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
         TreeNode.setGeneration( cursor, GenerationSafePointer.MAX_GENERATION );
@@ -129,7 +132,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     public void shouldThrowIfWriteTooLargeGeneration() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         try
@@ -147,7 +150,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     public void shouldThrowIfWriteTooSmallGeneration() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         try
@@ -165,7 +168,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     public void keyValueOperationsInLeaf() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         KEY readKey = layout.newKey();
         VALUE readValue = layout.newValue();
 
@@ -173,6 +176,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         KEY firstKey = key( 1 );
         VALUE firstValue = value( 1 );
         node.insertKeyValueAt( cursor, firstKey, firstValue, 0, 0 );
+        TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
         assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
@@ -182,6 +186,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         KEY secondKey = key( 3 );
         VALUE secondValue = value( 3 );
         node.insertKeyValueAt( cursor, secondKey, secondValue, 1, 1 );
+        TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
         assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
@@ -193,6 +198,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         KEY removedKey = key( 2 );
         VALUE removedValue = value( 2 );
         node.insertKeyValueAt( cursor, removedKey, removedValue, 1, 2 );
+        TreeNode.setKeyCount( cursor, 3 );
 
         // THEN
         assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
@@ -204,6 +210,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // WHEN
         node.removeKeyValueAt( cursor, 1, 3 );
+        TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
         assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
@@ -246,8 +253,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     public void shouldInsertAndRemoveKeyAndChildInInternal() throws Exception
     {
         // GIVEN
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        KEY readKey = layout.newKey();
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         long stable = 3;
         long unstable = 4;
         long zeroChild = 5;
@@ -262,6 +268,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         long firstKey = 1;
         long firstChild = 10;
         node.insertKeyAndRightChildAt( cursor, key( firstKey ), firstChild, 0, 0, stable, unstable );
+        TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild );
@@ -270,6 +277,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         long secondKey = 3;
         long secondChild = 30;
         node.insertKeyAndRightChildAt( cursor, key( secondKey ), secondChild, 1, 1, stable, unstable );
+        TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, secondKey, secondChild );
@@ -278,18 +286,21 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         long removedKey = 2;
         long removedChild = 20;
         node.insertKeyAndRightChildAt( cursor, key( removedKey ), removedChild, 1, 2, stable, unstable );
+        TreeNode.setKeyCount( cursor, 3 );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, removedKey, removedChild, secondKey, secondChild );
 
         // WHEN
         node.removeKeyAndRightChildAt( cursor, 1, 3 );
+        TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
         assertKeysAndChildren( stable, unstable, zeroChild, firstKey, firstChild, secondKey, secondChild );
 
         // WHEN
         node.removeKeyAndLeftChildAt( cursor, 0, 2 );
+        TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
         assertKeysAndChildren( stable, unstable, firstChild, secondKey, secondChild );
@@ -306,7 +317,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     public void shouldSetAndGetKeyCount() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         assertEquals( 0, TreeNode.keyCount( cursor ) );
 
         // WHEN
@@ -321,7 +332,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     public void shouldSetAndGetSiblings() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
         TreeNode.setLeftSibling( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -336,7 +347,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     public void shouldSetAndGetSuccessor() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
         TreeNode.setSuccessor( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -352,7 +363,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         // This test doesn't care about sorting, that's an aspect that lies outside of TreeNode, really
 
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         int maxKeyCount = node.leafMaxKeyCount();
         // add +1 to these to simplify some array logic in the test itself
         List<KEY> expectedKeys = new ArrayList<>();
@@ -622,37 +633,6 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // THEN
         assertTrue( GenerationSafePointerPair.isLogicalPos( result ) );
-    }
-
-    private static long remove( long[] from, int length, int position )
-    {
-        long result = from[position];
-        for ( int i = position; i < length; i++ )
-        {
-            from[i] = from[i + 1];
-        }
-        return result;
-    }
-
-    private static void insert( long[] into, int length, long value, int position )
-    {
-        for ( int i = length - 1; i >= position; i-- )
-        {
-            into[i + 1] = into[i];
-        }
-        into[position] = value;
-    }
-
-    private static boolean contains( long[] array, int offset, int length, long value )
-    {
-        for ( int i = 0; i < length; i++ )
-        {
-            if ( array[offset + i] == value )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )

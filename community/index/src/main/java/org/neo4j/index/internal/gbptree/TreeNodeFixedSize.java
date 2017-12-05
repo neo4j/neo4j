@@ -23,6 +23,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
+import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_VALUE;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
 class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
@@ -52,6 +53,11 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
             throw new MetadataMismatchException( "A page size of %d would only fit leaf keys, minimum is 2",
                     pageSize, leafMaxKeyCount );
         }
+    }
+
+    @Override
+    void writeAdditionalHeader( PageCursor cursor )
+    {   // no-op
     }
 
     private static int childSize()
@@ -126,7 +132,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     VALUE valueAt( PageCursor cursor, VALUE value, int pos )
     {
         cursor.setOffset( valueOffset( pos ) );
-        layout.readValue( cursor, value );
+        layout.readValue( cursor, value, FIXED_SIZE_VALUE );
         return value;
     }
 
@@ -229,12 +235,6 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     int childOffset( int pos )
     {
         return BASE_HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
-    }
-
-    @Override
-    String additionalToString()
-    {
-        return "keySize:" + keySize() + ", valueSize:" + valueSize;
     }
 
     private int keySize()
@@ -410,5 +410,12 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     {
         fromCursor.copyTo( keyOffset( fromPos ), toCursor, keyOffset( toPos ), count * keySize() );
         fromCursor.copyTo( valueOffset( fromPos ), toCursor, valueOffset( toPos ),count * valueSize() );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "TreeNodeFixedSize[pageSize:" + pageSize + ", internalMax:" + internalMaxKeyCount() + ", leafMax:" + leafMaxKeyCount() + ", " +
+                "keySize:" + keySize() + ", valueSize:" + valueSize + "]";
     }
 }

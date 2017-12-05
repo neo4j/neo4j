@@ -1473,7 +1473,7 @@ public class InternalTreeLogicTest
 
     private void initialize()
     {
-        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+        node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         updateRoot();
     }
 
@@ -1545,7 +1545,7 @@ public class InternalTreeLogicTest
         assertTrue( split.hasRightKeyInsert );
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
         goTo( cursor, rootId );
-        TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+        node.initializeInternal( cursor, stableGeneration, unstableGeneration );
         node.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
         node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, 1 );

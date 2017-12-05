@@ -478,7 +478,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             long stableGeneration = stableGeneration( generation );
             long unstableGeneration = unstableGeneration( generation );
-            TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
             checkOutOfBounds( cursor );
         }
 
@@ -1190,7 +1190,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
                 PageCursorUtil.goTo( cursor, "new root", newRootId );
 
-                TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                 bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
                         stableGeneration, unstableGeneration );
                 bTreeNode.insertKeyAndRightChildAt( cursor, structurePropagation.rightKey, structurePropagation.rightChild, 0, 0,

@@ -61,14 +61,14 @@ public class CrashGenerationCleanerTest
 
     private PagedFile pagedFile;
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final CorruptableTreeNode corruptableTreeNode = new CorruptableTreeNode( PAGE_SIZE, layout );
+    private final CorruptibleTreeNode corruptibleTreeNode = new CorruptibleTreeNode( PAGE_SIZE, layout );
     private final int oldStableGeneration = 9;
     private final int stableGeneration = 10;
     private final int unstableGeneration = 12;
     private final int crashGeneration = 11;
     private final int firstChildPos = 0;
-    private final int middleChildPos = corruptableTreeNode.internalMaxKeyCount() / 2;
-    private final int lastChildPos = corruptableTreeNode.internalMaxKeyCount();
+    private final int middleChildPos = corruptibleTreeNode.internalMaxKeyCount() / 2;
+    private final int lastChildPos = corruptibleTreeNode.internalMaxKeyCount();
     private final List<PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
@@ -222,7 +222,7 @@ public class CrashGenerationCleanerTest
     private CrashGenerationCleaner crashGenerationCleaner( PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId,
             SimpleCleanupMonitor monitor )
     {
-        return new CrashGenerationCleaner( pagedFile, corruptableTreeNode, lowTreeNodeId, highTreeNodeId,
+        return new CrashGenerationCleaner( pagedFile, corruptibleTreeNode, lowTreeNodeId, highTreeNodeId,
                 stableGeneration, unstableGeneration, monitor );
     }
 
@@ -233,7 +233,7 @@ public class CrashGenerationCleanerTest
             for ( Page page : pages )
             {
                 cursor.next();
-                page.write( cursor, corruptableTreeNode, stableGeneration, unstableGeneration, crashGeneration );
+                page.write( cursor, corruptibleTreeNode, stableGeneration, unstableGeneration, crashGeneration );
             }
         }
     }
@@ -317,7 +317,7 @@ public class CrashGenerationCleanerTest
             this.pageCorruptions = pageCorruptions;
         }
 
-        private void write( PageCursor cursor, CorruptableTreeNode node, int stableGeneration, int unstableGeneration,
+        private void write( PageCursor cursor, CorruptibleTreeNode node, int stableGeneration, int unstableGeneration,
                 int crashGeneration ) throws IOException
         {
             type.write( cursor, node, oldStableGeneration, stableGeneration );
@@ -331,31 +331,31 @@ public class CrashGenerationCleanerTest
         LEAF
                 {
                     @Override
-                    void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
+                    void write( PageCursor cursor, CorruptibleTreeNode corruptibleTreeNode, int stableGeneration,
                             int unstableGeneration )
                     {
-                        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+                        corruptibleTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
                     }
                 },
         INTERNAL
                 {
                     @Override
-                    void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
+                    void write( PageCursor cursor, CorruptibleTreeNode corruptibleTreeNode, int stableGeneration,
                             int unstableGeneration )
                     {
-                        TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                        int maxKeyCount = corruptableTreeNode.internalMaxKeyCount();
+                        corruptibleTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                        int maxKeyCount = corruptibleTreeNode.internalMaxKeyCount();
                         long base = IdSpace.MIN_TREE_NODE_ID;
                         for ( int i = 0; i <= maxKeyCount; i++ )
                         {
                             long child = base + i;
-                            corruptableTreeNode.setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
+                            corruptibleTreeNode.setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
                         }
                         TreeNode.setKeyCount( cursor, maxKeyCount );
                     }
                 };
 
-        abstract void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode,
+        abstract void write( PageCursor cursor, CorruptibleTreeNode corruptibleTreeNode,
                 int stableGeneration, int unstableGeneration );
     }
 
@@ -427,13 +427,13 @@ public class CrashGenerationCleanerTest
 
     private interface PageCorruption
     {
-        void corrupt( PageCursor pageCursor, CorruptableTreeNode node, int stableGeneration,
+        void corrupt( PageCursor pageCursor, CorruptibleTreeNode node, int stableGeneration,
                 int unstableGeneration, int crashGeneration );
     }
 
-    class CorruptableTreeNode extends TreeNodeFixedSize<MutableLong,MutableLong>
+    class CorruptibleTreeNode extends TreeNodeFixedSize<MutableLong,MutableLong>
     {
-        CorruptableTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
+        CorruptibleTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
         {
             super( pageSize, layout );
         }

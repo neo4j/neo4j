@@ -124,7 +124,7 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public void readValue( PageCursor cursor, LabelScanValue into )
+    public void readValue( PageCursor cursor, LabelScanValue into, int valueSize )
     {
         into.bits = cursor.getLong();
     }

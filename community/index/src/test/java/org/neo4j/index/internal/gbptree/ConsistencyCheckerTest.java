@@ -48,7 +48,7 @@ public class ConsistencyCheckerTest
         long pointer = 123;
 
         cursor.next( 0 );
-        TreeNode.initializeInternal( cursor, stableGeneration, crashGeneration );
+        new TreeNodeFixedSize<>( pageSize, new SimpleLongLayout() ).initializeInternal( cursor, stableGeneration, crashGeneration );
         TreeNode.setSuccessor( cursor, pointer, stableGeneration, crashGeneration );
 
         // WHEN
@@ -83,7 +83,7 @@ public class ConsistencyCheckerTest
         InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout );
         PageCursor cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
-        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+        node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         logic.initialize( cursor );
         StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey(), layout.newKey(),
                 layout.newKey() );
@@ -99,7 +99,7 @@ public class ConsistencyCheckerTest
                 {
                     goTo( cursor, "new root",
                             idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
-                    TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                    node.initializeInternal( cursor, stableGeneration, unstableGeneration );
                     node.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
                     node.insertKeyAndRightChildAt( cursor, structure.rightKey, structure.rightChild, 0, 0,
                             stableGeneration, unstableGeneration );

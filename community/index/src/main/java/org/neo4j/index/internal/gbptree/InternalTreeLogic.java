@@ -477,7 +477,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // Initialize new right
             TreeNode.goTo( rightCursor, "new right sibling in split", newRight );
-            TreeNode.initializeInternal( rightCursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeInternal( rightCursor, stableGeneration, unstableGeneration );
             TreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
             int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
@@ -650,7 +650,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // Initialize new right
             TreeNode.goTo( rightCursor, "new right sibling in split", newRight );
-            TreeNode.initializeLeaf( rightCursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( rightCursor, stableGeneration, unstableGeneration );
             TreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
             int rightKeyCount = keyCountAfterInsert - middlePos;

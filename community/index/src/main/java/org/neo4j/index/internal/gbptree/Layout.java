@@ -40,7 +40,8 @@ import static java.lang.String.format;
  */
 public interface Layout<KEY, VALUE> extends Comparator<KEY>
 {
-    int FIXED_SIZE_KEY = 0;
+    int FIXED_SIZE_KEY = -1;
+    int FIXED_SIZE_VALUE = -1;
 
     /**
      * @return new key instance.
@@ -91,19 +92,19 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
 
     /**
      * Reads key contents at {@code cursor} at its current offset into {@code key}.
-     *  @param cursor {@link PageCursor} to read from, at current offset.
+     * @param cursor {@link PageCursor} to read from, at current offset.
      * @param into key instances to read into.
-     * @param keySize
+     * @param keySize size of key to read or {@link #FIXED_SIZE_KEY} if key is fixed size.
      */
     void readKey( PageCursor cursor, KEY into, int keySize );
 
     /**
      * Reads value contents at {@code cursor} at its current offset into {@code value}.
-     *
      * @param cursor {@link PageCursor} to read from, at current offset.
      * @param into value instances to read into.
+     * @param valueSize size of key to read or {@link #FIXED_SIZE_VALUE} if value is fixed size.
      */
-    void readValue( PageCursor cursor, VALUE into );
+    void readValue( PageCursor cursor, VALUE into, int valueSize );
 
     /**
      * Used as verification when loading an index after creation, to verify that the same layout is used,
@@ -272,7 +273,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public void readValue( PageCursor cursor, Object into )
+        public void readValue( PageCursor cursor, Object into, int valueSize )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }

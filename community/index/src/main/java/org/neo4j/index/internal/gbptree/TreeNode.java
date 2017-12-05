@@ -104,7 +104,7 @@ abstract class TreeNode<KEY,VALUE>
         return cursor.getByte( BYTE_POS_NODE_TYPE );
     }
 
-    private static void initialize( PageCursor cursor, byte type, long stableGeneration, long unstableGeneration )
+    private static void writeBaseHeader( PageCursor cursor, byte type, long stableGeneration, long unstableGeneration )
     {
         cursor.putByte( BYTE_POS_NODE_TYPE, NODE_TYPE_TREE_NODE );
         cursor.putByte( BYTE_POS_TYPE, type );
@@ -115,15 +115,23 @@ abstract class TreeNode<KEY,VALUE>
         setSuccessor( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
     }
 
-    static void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        initialize( cursor, LEAF_FLAG, stableGeneration, unstableGeneration );
+        writeBaseHeader( cursor, LEAF_FLAG, stableGeneration, unstableGeneration );
+        writeAdditionalHeader( cursor );
     }
 
-    static void initializeInternal( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    void initializeInternal( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        initialize( cursor, INTERNAL_FLAG, stableGeneration, unstableGeneration );
+        writeBaseHeader( cursor, INTERNAL_FLAG, stableGeneration, unstableGeneration );
+        writeAdditionalHeader( cursor );
     }
+
+    /**
+     * Write additional header. When called, cursor should be located directly after base header.
+     * Meaning at {@link #BASE_HEADER_LENGTH}.
+     */
+    abstract void writeAdditionalHeader( PageCursor cursor );
 
     // HEADER METHODS
 
@@ -295,15 +303,6 @@ abstract class TreeNode<KEY,VALUE>
     {
         PageCursorUtil.goTo( cursor, messageOnError, GenerationSafePointerPair.pointer( nodeId ) );
     }
-
-    @Override
-    public String toString()
-    {
-        return "TreeNode[pageSize:" + pageSize + ", internalMax:" + internalMaxKeyCount() + ", leafMax:" + leafMaxKeyCount() + ", " +
-                additionalToString() + "]";
-    }
-
-    abstract String additionalToString();
 
     /* SPLIT, MERGE AND REBALANCE */
 
