@@ -43,6 +43,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -69,6 +70,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -1163,6 +1165,29 @@ public class ProcedureIT
         db.execute( "CALL org.neo4j.procedure.guardMe" );
     }
 
+    @Test
+    public void shouldHandleDeletingProcedures()
+    {
+        // Given
+        try(Transaction tx = db.beginTx())
+        {
+            Node node = db.createNode();
+            node.setProperty( "name", "test" );
+            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "REL" ) );
+            tx.success();
+        }
+
+        // When
+        db.execute("MATCH (n) WHERE n.name = 'test' " +
+                   "CALL org.neo4j.procedure.deleteWithRelType(n, 'REL') RETURN 1337" ).next();
+
+        // Then
+        try ( Transaction ignore = db.beginTx() )
+        {
+            assertThat( db.getAllNodes(), emptyIterable() );
+        }
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -1668,6 +1693,18 @@ public class ProcedureIT
                         onCloseCalled[(int) index] = true;
                     } );
 
+        }
+
+        @Procedure(mode = Mode.WRITE)
+        public void deleteWithRelType(@Name("node") Node node, @Name("relType") String relType) {
+
+            Iterable<Relationship> rels = node.getRelationships(RelationshipType.withName(relType), Direction.OUTGOING);
+            for (Relationship rel: rels) {
+                Node endNode = rel.getEndNode();
+                rel.delete();
+                endNode.delete();
+            }
+            node.delete();
         }
     }
 
