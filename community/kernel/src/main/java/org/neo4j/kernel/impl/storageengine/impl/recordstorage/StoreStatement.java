@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.api.store.StoreSingleRelationshipCursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -95,6 +97,8 @@ public class StoreStatement implements StorageStatement
     private final RecordCursors recordCursors;
     private final Supplier<LabelScanReader> labelScanStore;
     private final RecordStorageCommandCreationContext commandCreationContext;
+    private final DynamicArrayStore propertyArrayStore;
+    private final DynamicStringStore propertyStringStore;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -120,6 +124,8 @@ public class StoreStatement implements StorageStatement
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.propertyStore = neoStores.getPropertyStore();
+        this.propertyArrayStore = propertyStore.getArrayStore();
+        this.propertyStringStore = propertyStore.getStringStore();
         this.recordCursors = new RecordCursors( neoStores );
 
         singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
@@ -432,13 +438,13 @@ public class StoreStatement implements StorageStatement
         @Override
         public PageCursor openStringPageCursor( long reference )
         {
-            return propertyStore.getStringStore().openPageCursorForReading( reference );
+            return propertyStringStore.openPageCursorForReading( reference );
         }
 
         @Override
         public PageCursor openArrayPageCursor( long reference )
         {
-            return propertyStore.getArrayStore().openPageCursorForReading( reference );
+            return propertyArrayStore.openPageCursorForReading( reference );
         }
 
         @Override
