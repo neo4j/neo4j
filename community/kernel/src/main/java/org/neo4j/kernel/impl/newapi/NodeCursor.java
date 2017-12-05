@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Set;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -44,6 +46,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private long next;
     private long highMark;
     private HasChanges hasChanges = HasChanges.MAYBE;
+    private Set<Long> addedNodes;
 
     private enum HasChanges
     {
@@ -76,6 +79,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         }
         this.labelCursor = read.labelCursor();
         this.hasChanges = HasChanges.MAYBE;
+        this.addedNodes = null;
     }
 
     void single( long reference, Read read )
@@ -97,6 +101,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             labelCursor = read.labelCursor();
         }
         this.hasChanges = HasChanges.MAYBE;
+        this.addedNodes = null;
     }
 
     @Override
@@ -231,7 +236,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         TransactionState txs = hasChanges ? read.txState() : null;
         do
         {
-            if ( hasChanges && txs.nodeIsAddedInThisTx( next ) )
+            if ( hasChanges && addedNodes.contains( next ) )
             {
                 setId( next++ );
                 setInUse( true );
@@ -297,7 +302,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             labelCursor = null;
         }
         hasChanges = HasChanges.MAYBE;
-
+        addedNodes = null;
         reset();
     }
 
@@ -319,6 +324,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             boolean changes = read.hasTxStateWithChanges();
             if ( changes )
             {
+                addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
                 hasChanges = HasChanges.YES;
             }
             else
