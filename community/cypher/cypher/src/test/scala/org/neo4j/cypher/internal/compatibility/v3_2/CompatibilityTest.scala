@@ -59,7 +59,7 @@ class CompatibilityTest extends CypherFunSuite {
     txClosed = true
 
     // then does not fail
-    executionPlanWrapper.plannerInfo
+    executionPlanWrapper.plannerInfo should not be null
   }
 
 }
