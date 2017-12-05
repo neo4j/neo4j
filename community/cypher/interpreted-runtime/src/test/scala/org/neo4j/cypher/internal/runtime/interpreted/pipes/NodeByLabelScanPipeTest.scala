@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
 
 class NodeByLabelScanPipeTest extends CypherFunSuite {
 
@@ -48,9 +49,5 @@ class NodeByLabelScanPipeTest extends CypherFunSuite {
     result.map(_("a")).toList should equal(List(nodeValue(1), nodeValue(2)))
   }
 
-  private def nodeValue(id: Long) = {
-    val node = mock[NodeValue]
-    when(node.id()).thenReturn(id)
-    node
-  }
+  private def nodeValue(id: Long) = VirtualValues.nodeValue(id, Values.EMPTY_TEXT_ARRAY, VirtualValues.EMPTY_MAP)
 }
