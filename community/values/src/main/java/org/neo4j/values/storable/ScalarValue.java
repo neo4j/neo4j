@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.graphdb.spatial.Geometry;
+
 /**
  * Single instance of one of the storable primitives.
  */
@@ -74,6 +76,12 @@ abstract class ScalarValue extends Value
 
     @Override
     public boolean equals( String[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( Geometry[] x )
     {
         return false;
     }

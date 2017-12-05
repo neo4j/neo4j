@@ -22,6 +22,10 @@ package org.neo4j.values.storable;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Point;
 
 import static java.lang.String.format;
 
@@ -59,6 +63,7 @@ public final class Values
     public static final ArrayValue EMPTY_LONG_ARRAY = Values.longArray( new long[0] );
     public static final ArrayValue EMPTY_FLOAT_ARRAY = Values.floatArray( new float[0] );
     public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
+    public static final ArrayValue EMPTY_POINT_ARRAY = Values.pointArray( new PointValue[0] );
     public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
     private Values()
@@ -268,6 +273,44 @@ public final class Values
         return new ShortArray.Direct( value );
     }
 
+    public static PointValue pointValue( CoordinateReferenceSystem crs, double... coordinate )
+    {
+        return new PointValue( crs, coordinate );
+    }
+
+    public static PointValue point( Point point )
+    {
+        // An optimization could be to do an instanceof PointValue check here
+        // and in that case just return the casted argument.
+        List<Double> coordinate = point.getCoordinate().getCoordinate();
+        double[] coords = new double[coordinate.size()];
+        for ( int i = 0; i < coords.length; i++ )
+        {
+            coords[i] = coordinate.get( i );
+        }
+        return new PointValue( crs( point.getCRS() ), coords );
+    }
+
+    public static PointArray pointArray( Point[] points )
+    {
+        PointValue[] values = new PointValue[points.length];
+        for ( int i = 0; i < points.length; i++ )
+        {
+            values[i] = Values.point( points[i] );
+        }
+        return new PointArray.Direct( values );
+    }
+
+    public static PointArray pointArray( PointValue[] points )
+    {
+        return new PointArray.Direct( points );
+    }
+
+    public static CoordinateReferenceSystem crs( CRS crs )
+    {
+        return CoordinateReferenceSystem.get( crs );
+    }
+
     // BOXED FACTORY METHODS
 
     /**
@@ -363,6 +406,10 @@ public final class Values
             }
             throw new IllegalArgumentException( "[null] is not a supported property value" );
         }
+        if ( value instanceof Point )
+        {
+            return Values.point( (Point) value );
+        }
         if ( value instanceof Value )
         {
             throw new UnsupportedOperationException(
@@ -441,7 +488,14 @@ public final class Values
         {
             return shortArray( copy( value, new short[value.length] ) );
         }
-
+        if ( value instanceof PointValue[] )
+        {
+            return pointArray( copy( value, new PointValue[value.length] ) );
+        }
+        if ( value instanceof Point[] )
+        {
+            return pointArray( copy( value, new Point[value.length] ) );
+        }
         return null;
     }
 

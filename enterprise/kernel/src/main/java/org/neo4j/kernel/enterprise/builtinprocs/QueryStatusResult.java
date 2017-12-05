@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.virtual.MapValue;
 
@@ -153,18 +154,7 @@ public class QueryStatusResult
         }
 
         @Override
-        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
-        {
-            return point( longitude, latitude, name, code, href );
-        }
-
-        @Override
-        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
-        {
-            return point( x, y, name, code, href );
-        }
-
-        private Point point( double x, double y, String name, int code, String href )
+        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
         {
             return new Point()
             {
@@ -177,32 +167,13 @@ public class QueryStatusResult
                 @Override
                 public List<Coordinate> getCoordinates()
                 {
-                    return singletonList( new Coordinate( x, y ) );
+                    return singletonList( new Coordinate( coordinate ) );
                 }
 
                 @Override
                 public CRS getCRS()
                 {
-                    return new CRS()
-                    {
-                        @Override
-                        public int getCode()
-                        {
-                            return code;
-                        }
-
-                        @Override
-                        public String getType()
-                        {
-                            return name;
-                        }
-
-                        @Override
-                        public String getHref()
-                        {
-                            return href;
-                        }
-                    };
+                    return crs;
                 }
             };
         }

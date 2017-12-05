@@ -43,7 +43,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.RelationshipToNodeIterable;
 
-import static org.neo4j.shell.TextUtil.lastWordOrQuoteOf;
+import static org.neo4j.helpers.TextUtil.lastWordOrQuoteOf;
 
 /**
  * Mimics the POSIX application with the same name, i.e. traverses to a node.

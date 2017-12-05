@@ -67,6 +67,10 @@ public class ValueComparator implements Comparator<Value>
                         format( "Cannot handle ValueGroup id '%s' that is not Integral of FloatingPoint", id1 ) );
                 }
 
+            case GEOMETRY:
+                // Currently only Point
+                return ((PointValue) v1).compareTo( (PointValue) v2 );
+
             case TEXT:
                 return ((TextValue) v1).compareTo( (TextValue) v2 );
 
@@ -92,6 +96,10 @@ public class ValueComparator implements Comparator<Value>
 
             case BOOLEAN_ARRAY:
                 return ((BooleanArray) v1).compareTo( (BooleanArray) v2 );
+
+            case GEOMETRY_ARRAY:
+                // Currently just Points
+                return ((PointArray) v1).compareTo( (PointArray) v2);
 
             default:
                 throw new UnsupportedOperationException( format(

@@ -57,6 +57,8 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -64,7 +66,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -264,11 +265,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Node createNode()
     {
-        try
+        try ( Statement ignore = spi.currentStatement() )
         {
             return new NodeProxy( nodeActions, spi.currentTransaction().dataWrite().nodeCreate() );
         }
-        catch ( KernelException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -277,11 +278,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Long createNodeId()
     {
-        try
+        try ( Statement ignore = spi.currentStatement() )
         {
             return spi.currentTransaction().dataWrite().nodeCreate();
         }
-        catch ( KernelException e )
+        catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -329,14 +330,18 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             throw new NotFoundException( format( "Node %d not found", id ),
                     new EntityNotFoundException( EntityType.NODE, id ) );
         }
-        try ( Statement statement = spi.currentStatement() )
+
+        KernelTransaction ktx = spi.currentTransaction();
+        try ( Statement ignore = spi.currentStatement();
+              NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor()
+        )
         {
-            if ( !statement.readOperations().nodeExists( id ) )
+            ktx.dataRead().singleNode( id, nodeCursor );
+            if ( !nodeCursor.next() )
             {
                 throw new NotFoundException( format( "Node %d not found", id ),
                         new EntityNotFoundException( EntityType.NODE, id ) );
             }
-
             return new NodeProxy( nodeActions, id );
         }
     }
@@ -460,7 +465,32 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return () ->
         {
             Statement statement = spi.currentStatement();
-            return map2nodes( statement.readOperations().nodesGetAll(), statement );
+            KernelTransaction ktx = spi.currentTransaction();
+            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
+            ktx.dataRead().allNodesScan( cursor );
+            return new PrefetchingResourceIterator<Node>()
+            {
+                @Override
+                protected Node fetchNextOrNull()
+                {
+                    if ( cursor.next() )
+                    {
+                        return new NodeProxy( nodeActions, cursor.nodeReference() );
+                    }
+                    else
+                    {
+                        close();
+                        return null;
+                    }
+                }
+
+                @Override
+                public void close()
+                {
+                    statement.close();
+                    cursor.close();
+                }
+            };
         };
     }
 

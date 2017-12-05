@@ -52,4 +52,9 @@ abstract class IndexCursor
         }
         progressor = null;
     }
+
+    boolean isClosed()
+    {
+        return progressor == null;
+    }
 }

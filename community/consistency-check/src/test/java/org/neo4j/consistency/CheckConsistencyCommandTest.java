@@ -48,7 +48,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -77,7 +76,7 @@ public class CheckConsistencyCommandTest
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject(),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
@@ -85,7 +84,7 @@ public class CheckConsistencyCommandTest
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject(),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) );
     }
 
@@ -104,7 +103,7 @@ public class CheckConsistencyCommandTest
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), anyObject(),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
@@ -112,7 +111,7 @@ public class CheckConsistencyCommandTest
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), anyObject(),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) );
     }
 
@@ -130,7 +129,7 @@ public class CheckConsistencyCommandTest
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), anyObject(),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ) ) );
 
@@ -157,14 +156,14 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
+                any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(), anyBoolean(),
+                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
                         eq( new File( "." ).getCanonicalFile() ), any( ConsistencyFlags.class ) );
     }
 
@@ -181,14 +180,14 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
+                any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=some-dir-or-other"} );
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
+                .runFullConsistencyCheck( any(), any(), any(), any(), any(),
                         anyBoolean(), eq( new File( "some-dir-or-other" ).getCanonicalFile() ),
                         any( ConsistencyFlags.class ) );
     }
@@ -206,14 +205,14 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
+                any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=" + Paths.get( "..", "bar" )} );
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
+                .runFullConsistencyCheck( any(), any(), any(), any(), any(),
                         anyBoolean(), eq( new File( "../bar" ).getCanonicalFile() ),
                         any( ConsistencyFlags.class ) );
     }
@@ -230,16 +229,16 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
+                any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--check-graph=false",
                 "--check-indexes=false", "--check-label-scan-store=false", "--check-property-owners=true"} );
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(), anyBoolean(),
-                        anyObject(), eq( new ConsistencyFlags( false, false, false, true ) ) );
+                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
+                        any(), eq( new ConsistencyFlags( false, false, false, true ) ) );
     }
 
     @Test
@@ -253,8 +252,8 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-        when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), any( ConsistencyFlags.class ) ) )
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
+                any(), anyBoolean(), any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         expect.expect( IncorrectUsage.class );
@@ -297,7 +296,7 @@ public class CheckConsistencyCommandTest
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( backupDir.toFile() ), any( Config.class ),
                         any( ProgressMonitorFactory.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject(),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
@@ -306,7 +305,7 @@ public class CheckConsistencyCommandTest
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( backupDir.toFile() ), any( Config.class ),
                         any( ProgressMonitorFactory.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject(),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) );
     }
 

@@ -17,36 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.virtual;
+package org.neo4j.internal.kernel.api.exceptions.explicitindex;
 
-public enum CoordinateReferenceSystem
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class ExplicitIndexNotFoundKernelException extends KernelException
 {
-    Cartesian( "cartesian", 7203, "http://spatialreference.org/ref/sr-org/7203/" ),
-    WGS84( "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/" );
-
-    public final String name;
-    public final int code;
-    public final String href;
-
-    CoordinateReferenceSystem( String name, int code, String href )
+    public ExplicitIndexNotFoundKernelException( String message, Object... parameters )
     {
-        this.name = name;
-        this.code = code;
-        this.href = href;
-    }
-
-    public int code()
-    {
-        return code;
-    }
-
-    public String type()
-    {
-        return name;
-    }
-
-    public String href()
-    {
-        return href;
+        super( Status.LegacyIndex.LegacyIndexNotFound, message, parameters );
     }
 }

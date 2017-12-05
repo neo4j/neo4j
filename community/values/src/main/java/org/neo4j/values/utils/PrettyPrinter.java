@@ -20,12 +20,13 @@
 package org.neo4j.values.utils;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
@@ -152,16 +153,15 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem )
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
     {
-        stack.push( new PointWriter( coordinateReferenceSystem ) );
-    }
-
-    @Override
-    public void endPoint()
-    {
-        assert !stack.isEmpty();
-        append( stack.pop().done() );
+        append( "{geometry: {type: \"Point\", coordinates: " );
+        append( Arrays.toString(coordinate) );
+        append( ", crs: {type: link, properties: {href: \"" );
+        append( crs.getHref() );
+        append( "\", code: " );
+        append( Integer.toString( crs.getCode() ) );
+        append( "}}}}" );
     }
 
     @Override
@@ -222,12 +222,6 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     public void writeString( char value )
     {
         writeString( Character.toString( value ) );
-    }
-
-    @Override
-    public void writeString( char[] value, int offset, int length )
-    {
-        writeString( new String( value, offset, length ) );
     }
 
     @Override
@@ -372,38 +366,6 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         public String done()
         {
             return builder.append( "]" ).toString();
-        }
-    }
-
-    private class PointWriter extends BaseWriter
-    {
-        private int index;
-        private String[] coordinates = new String[2];
-        private final CoordinateReferenceSystem crs;
-
-        PointWriter( CoordinateReferenceSystem crs )
-        {
-            this.crs = crs;
-        }
-
-        @Override
-        public void append( String value )
-        {
-            coordinates[index++] = value;
-        }
-
-        @Override
-        public String done()
-        {
-            return format(
-                    "{geometry: " +
-                    "{type: \"Point\", coordinates: [%s, %s], crs: " +
-                    "{type: link, " +
-                    "properties: {href: \"%s\", code: %d}" +
-                    "}" +
-                    "}" +
-                    "}",
-                    coordinates[0], coordinates[1], crs.href(), crs.code() );
         }
     }
 }

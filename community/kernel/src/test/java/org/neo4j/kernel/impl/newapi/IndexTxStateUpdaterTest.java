@@ -85,11 +85,19 @@ public class IndexTxStateUpdaterTest
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );
-        when( storeReadLayer.indexesGetForLabel(anyInt() ) )
-                .thenAnswer( x -> filter( hasLabel( x.getArgument( 0 ) ), indexes.iterator() ) );
+        when( storeReadLayer.indexesGetForLabel( anyInt() ) )
+                .thenAnswer( x ->
+                {
+                    Integer argument = x.getArgument( 0 );
+                    return filter( hasLabel( argument ), indexes.iterator() );
+                } );
 
         when( storeReadLayer.indexesGetRelatedToProperty( anyInt() ) )
-                .thenAnswer( x -> filter( hasProperty( x.getArgument( 0 ) ), indexes.iterator() ) );
+                .thenAnswer( x ->
+                {
+                    Integer argument = x.getArgument( 0 );
+                    return filter( hasProperty( argument ), indexes.iterator() );
+                } );
 
         HashMap<Integer,Value> map = new HashMap<>();
         map.put( propId1, Values.of( "hi1" ) );
@@ -143,6 +151,54 @@ public class IndexTxStateUpdaterTest
         verify( txState, times( 1 ) ).indexDoUpdateEntry( any(), anyLong(), any(), isNull() );
     }
 
+    @Test
+    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty() throws EntityNotFoundException
+    {
+        // WHEN
+        indexTxUpdater.onPropertyAdd( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ) );
+        indexTxUpdater.onPropertyRemove( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ) );
+        indexTxUpdater.onPropertyChange( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ), Values.of( "whAt2" ) );
+
+        // THEN
+        verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+    }
+
+    @Test
+    public void shouldUpdateIndexesOnAddedProperty() throws EntityNotFoundException
+    {
+        // WHEN
+        indexTxUpdater.onPropertyAdd( node, propertyCursor, newPropId, Values.of( "newHi" ) );
+
+        // THEN
+        verifyIndexUpdate( indexOn2_new.schema(), node.nodeReference(), null, values( "newHi" ) );
+        verifyIndexUpdate( indexOn1_1_new.schema(), node.nodeReference(), null, values( "hi1", "newHi" ) );
+        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), isNull(), any() );
+    }
+
+    @Test
+    public void shouldUpdateIndexesOnRemovedProperty() throws EntityNotFoundException
+    {
+        // WHEN
+        indexTxUpdater.onPropertyRemove( node, propertyCursor, propId2, Values.of( "hi2" ) );
+
+        // THEN
+        verifyIndexUpdate( uniqueOn1_2.schema(), node.nodeReference(), values( "hi2" ), null );
+        verifyIndexUpdate( uniqueOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), null );
+        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), any(), isNull() );
+    }
+
+    @Test
+    public void shouldUpdateIndexesOnChangesProperty() throws EntityNotFoundException
+    {
+        // WHEN
+        indexTxUpdater.onPropertyChange( node, propertyCursor, propId2, Values.of( "hi2" ), Values.of( "new2" ) );
+
+        // THEN
+        verifyIndexUpdate( uniqueOn1_2.schema(), node.nodeReference(), values( "hi2" ), values( "new2" ) );
+        verifyIndexUpdate( uniqueOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), values( "new2", "hi3" ) );
+        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), any(), any() );
+    }
+
     private ValueTuple values( Object... values )
     {
         return ValueTuple.of( values );
@@ -153,5 +209,4 @@ public class IndexTxStateUpdaterTest
     {
         verify( txState ).indexDoUpdateEntry( eq( schema ), eq( nodeId ), eq( before ), eq( after ) );
     }
-
 }

@@ -213,6 +213,7 @@ public class ImportCommandTest
                             "                          [--array-delimiter=<array-delimiter-character>]%n" +
                             "                          [--quote=<quotation-character>]%n" +
                             "                          [--max-memory=<max-memory-that-importer-can-use>]%n" +
+                            "                          [--f=<File containing all arguments to this import>]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
@@ -274,9 +275,9 @@ public class ImportCommandTest
                             "  --multiline-fields=<true|false>%n" +
                             "      Whether or not fields from input source can span multiple lines, i.e.%n" +
                             "      contain newline characters. [default:false]%n" +
-                            "  --delimiter=<,>%n" +
+                            "  --delimiter=<delimiter-character>%n" +
                             "      Delimiter character between values in CSV data. [default:,]%n" +
-                            "  --array-delimiter=<,>%n" +
+                            "  --array-delimiter=<array-delimiter-character>%n" +
                             "      Delimiter character between array elements within a value in CSV data.%n" +
                             "      [default:;]%n" +
                             "  --quote=<quotation-character>%n" +
@@ -286,7 +287,13 @@ public class ImportCommandTest
                             "  --max-memory=<max-memory-that-importer-can-use>%n" +
                             "      Maximum memory that neo4j-admin can use for various data structures and%n" +
                             "      caching to improve performance. Values can be plain numbers, like 10000000%n" +
-                            "      or e.g. 20G for 20 gigabyte, or even e.g. 70%%. [default:90%%]%n"),
+                            "      or e.g. 20G for 20 gigabyte, or even e.g. 70%%. [default:90%%]%n" +
+                            "  --f=<File containing all arguments to this import>%n" +
+                            "      File containing all arguments, used as an alternative to supplying all%n" +
+                            "      arguments on the command line directly.Each argument can be on a separate%n" +
+                            "      line or multiple arguments per line separated by space.Arguments%n" +
+                            "      containing spaces needs to be quoted.Supplying other arguments in addition%n" +
+                            "      to this file argument is not supported. [default:]%n" ),
                     baos.toString() );
         }
     }

@@ -133,15 +133,19 @@ public final class Bits implements Cloneable
 
     public byte[] asBytes()
     {
+        return asBytes(0);
+    }
+
+    public byte[] asBytes( int offsetBytes )
+    {
         int readPositionBefore = readPosition;
         readPosition = 0;
         try
         {
-            byte[] result = new byte[numberOfBytes];
-            final int count = result.length;
-            for ( int i = 0; i < count; i++ )
+            byte[] result = new byte[numberOfBytes + offsetBytes];
+            for ( int i = 0; i < numberOfBytes; i++ )
             {
-                result[i] = getByte();
+                result[i + offsetBytes] = getByte();
             }
             return result;
         }

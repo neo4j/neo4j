@@ -89,6 +89,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.FileUtils.writeToFile;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
@@ -1903,6 +1904,57 @@ public class ImportToolTest
 
             List<String> errorLines = suppressOutput.getErrorVoice().lines();
             assertContains( errorLines, "Starting a database on these store files will likely fail or observe inconsistent records" );
+        }
+    }
+
+    @Test
+    public void shouldSupplyArgumentsAsFile() throws Exception
+    {
+        // given
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+        File argumentFile = file( "args" );
+        String arguments = format(
+                "--into %s%n" +
+                "--nodes %s --relationships %s",
+                dbRule.getStoreDirAbsolutePath(),
+                nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
+        writeToFile( argumentFile, arguments, false );
+
+        // when
+        importTool( "-f", argumentFile.getAbsolutePath() );
+
+        // then
+        verifyData();
+    }
+
+    @Test
+    public void shouldFailIfSupplyingBothFileArgumentAndAnyOtherArgument() throws Exception
+    {
+        // given
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+        File argumentFile = file( "args" );
+        String arguments = format(
+                "--into %s%n" +
+                "--nodes %s --relationships %s",
+                dbRule.getStoreDirAbsolutePath(),
+                nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
+        writeToFile( argumentFile, arguments, false );
+
+        try
+        {
+            // when
+            importTool( "-f", argumentFile.getAbsolutePath(), "--into", dbRule.getStoreDirAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // then good
+            assertThat( e.getMessage(), containsString( "in addition to" ) );
+            assertThat( e.getMessage(), containsString( ImportTool.Options.FILE.argument() ) );
         }
     }
 

@@ -45,7 +45,7 @@ import static org.mockito.Mockito.mock;
 public class PropertyCreatorTest
 {
     private final IdSequence idGenerator = new BatchingIdSequence();
-    private final PropertyCreator creator = new PropertyCreator( null, null, idGenerator, new PropertyTraverser() );
+    private final PropertyCreator creator = new PropertyCreator( null, null, idGenerator, new PropertyTraverser(), false );
 
     // The RecordAccess will take on the role of both store and tx state and the PropertyCreator
     // will know no difference
@@ -246,7 +246,7 @@ public class PropertyCreatorTest
         for ( ExpectedProperty initialProperty : initialRecord.properties )
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, initialProperty.key, initialProperty.value, null, null );
+            PropertyStore.encodeValue( block, initialProperty.key, initialProperty.value, null, null, true );
             record.addPropertyBlock( block );
         }
         assertTrue( record.size() <= PropertyType.getPayloadSize() );

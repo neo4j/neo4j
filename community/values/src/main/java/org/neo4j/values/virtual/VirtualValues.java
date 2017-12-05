@@ -178,16 +178,6 @@ public final class VirtualValues
         return new PathValue( nodes, edges );
     }
 
-    public static PointValue pointCartesian( double x, double y )
-    {
-        return new PointValue.CartesianPointValue( x, y );
-    }
-
-    public static PointValue pointGeographic( double longitude, double latitude )
-    {
-        return new PointValue.GeographicPointValue( longitude, latitude );
-    }
-
     public static NodeValue nodeValue( long id, TextArray labels, MapValue properties )
     {
         return new NodeValue.DirectNodeValue( id, labels, properties );

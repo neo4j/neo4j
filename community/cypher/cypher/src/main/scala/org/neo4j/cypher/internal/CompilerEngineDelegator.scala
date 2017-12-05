@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, S
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, exceptionHandler, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
+import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, RUNTIME_UNSUPPORTED, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
 import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
@@ -102,7 +102,8 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
   )
 
-  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled))
+  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled), (CypherPlanner.rule, CypherRuntime.slotted))
+  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlanner, CypherVersion)] = Set((CypherPlanner.rule, CypherVersion.v3_3), (CypherPlanner.rule, CypherVersion.v3_4))
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = exceptionHandler.runSafely {
@@ -117,7 +118,11 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     val pickedRuntime = pick(runtime, CypherRuntime, if (cypherVersion == configuredVersion) Some(configuredRuntime) else None)
     val pickedUpdateStrategy = pick(updateStrategy, CypherUpdateStrategy, None)
 
-    assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
+    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((pickedPlanner, pickedRuntime)))
+      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${pickedPlanner.name} - ${pickedRuntime.name}")
+    // Only disallow using rule if incompatible version is explicitly requested
+    if (version.isDefined && ILLEGAL_PLANNER_VERSION_COMBINATIONS((pickedPlanner, cypherVersion)))
+      throw new InvalidArgumentException(s"Unsupported PLANNER - VERSION combination: ${pickedPlanner.name} - ${cypherVersion.name}")
 
     PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode,
       pickedPlanner, pickedRuntime, pickedUpdateStrategy, debugOptions)(offset)
@@ -128,29 +133,30 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     if (specified == companion.default) configured.getOrElse(specified) else specified
   }
 
-  private def assertValidOptions(statementWithOption: CypherStatementWithOptions,
-                                 cypherVersion: CypherVersion, executionMode: CypherExecutionMode,
-                                 planner: CypherPlanner, runtime: CypherRuntime) {
-    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner, runtime)))
-      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${planner.name} - ${runtime.name}")
-  }
-
   @throws(classOf[SyntaxException])
-  def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
+  def parseQuery(preParsedQueryArg: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
     import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
     import org.neo4j.cypher.internal.compatibility.v3_3.helpers._
 
-    var version = preParsedQuery.version
-    val planner = preParsedQuery.planner
-    val runtime = preParsedQuery.runtime
-    val updateStrategy = preParsedQuery.updateStrategy
+    var preParsedQuery = preParsedQueryArg
+    val supportedRuntimes3_1 = Seq(CypherRuntime.interpreted, CypherRuntime.default)
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty
-    if ((version == CypherVersion.v3_3 || version == CypherVersion.v3_4) && planner == CypherPlanner.rule) {
-      val position = preParsedQuery.offset
-      preParsingNotifications = preParsingNotifications + rulePlannerUnavailableFallbackNotification(position)
-      version = CypherVersion.v3_1
+    if ((preParsedQuery.version == CypherVersion.v3_3 || preParsedQuery.version == CypherVersion.v3_4) && preParsedQuery.planner == CypherPlanner.rule) {
+      preParsingNotifications = preParsingNotifications + rulePlannerUnavailableFallbackNotification(preParsedQuery.offset)
+      preParsedQuery = preParsedQuery.copy(version = CypherVersion.v3_1)(preParsedQuery.offset)
+    }
+
+    def checkSupportedRuntime(ex: util.v3_4.SyntaxException) = {
+      if (!supportedRuntimes3_1.contains(preParsedQuery.runtime)) {
+        if (config.useErrorsOverWarnings) {
+          throw new InvalidArgumentException("The given query is not currently supported in the selected runtime")
+        } else {
+          preParsingNotifications += runtimeUnsupportedNotification(ex, preParsedQuery)
+          preParsedQuery = preParsedQuery.copy(runtime = CypherRuntime.interpreted)(preParsedQuery.offset)
+        }
+      }
     }
 
     def planForVersion(input: Either[CypherVersion, ParsedQuery]): Either[CypherVersion, ParsedQuery] = input match {
@@ -158,7 +164,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
       case Left(CypherVersion.v3_4) =>
         val parserQuery = compatibilityFactory.
-          create(PlannerSpec_v3_4(planner, runtime, updateStrategy), config).
+          create(PlannerSpec_v3_4(preParsedQuery.planner, preParsedQuery.runtime, preParsedQuery.updateStrategy), config).
           produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
 
         parserQuery.onError {
@@ -166,11 +172,13 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
           case ex: util.v3_4.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             preParsingNotifications = preParsingNotifications +
               createUniqueNotification(ex, preParsedQuery)
+            checkSupportedRuntime(ex)
             Left(CypherVersion.v3_1)
           case ex: util.v3_4.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
             preParsingNotifications = preParsingNotifications +
               createStartUnavailableNotification(ex, preParsedQuery) +
               createStartDeprecatedNotification(ex, preParsedQuery)
+            checkSupportedRuntime(ex)
             Left(CypherVersion.v3_1)
           case _ => Right(parserQuery)
         }.getOrElse(Right(parserQuery))
@@ -183,18 +191,18 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
       case Left(CypherVersion.v3_1) =>
         val parsedQuery = compatibilityFactory.
-          create(PlannerSpec_v3_1(planner, runtime, updateStrategy), config).
+          create(PlannerSpec_v3_1(preParsedQuery.planner, preParsedQuery.runtime, preParsedQuery.updateStrategy), config).
           produceParsedQuery(preParsedQuery, as3_1(tracer), preParsingNotifications)
         Right(parsedQuery)
 
       case Left(CypherVersion.v2_3) =>
         val parsedQuery = compatibilityFactory.
-          create(PlannerSpec_v2_3(planner, runtime), config).
+          create(PlannerSpec_v2_3(preParsedQuery.planner, preParsedQuery.runtime), config).
           produceParsedQuery(preParsedQuery, as2_3(tracer), preParsingNotifications)
         Right(parsedQuery)
     }
 
-    val result: Either[CypherVersion, ParsedQuery] = fixedPoint(planForVersion).apply(Left(version))
+    val result: Either[CypherVersion, ParsedQuery] = fixedPoint(planForVersion).apply(Left(preParsedQuery.version))
     result.right.get
   }
 
@@ -207,6 +215,11 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   private def createStartDeprecatedNotification(ex: util.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
     START_DEPRECATED.notification(pos, message("START", ex.getMessage))
+  }
+
+  private def runtimeUnsupportedNotification(ex: util.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {
+    val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
+    RUNTIME_UNSUPPORTED.notification(pos)
   }
 
   private def createUniqueNotification(ex: util.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {

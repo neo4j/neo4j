@@ -109,12 +109,16 @@ public class StoreMigratorTest
         Set<String> expectedVersions = new TreeSet<>(
                 Arrays.stream( StoreVersion.values() ).map( StoreVersion::versionString )
                         .collect( Collectors.toSet() ) );
+
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V2_3.versionString() ) );
         actualVersions.add( StoreVersion.STANDARD_V2_3.versionString() );
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V3_0.versionString() ) );
         actualVersions.add( StoreVersion.STANDARD_V3_0.versionString() );
         assertFalse( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V3_2.versionString() ) );
         actualVersions.add( StoreVersion.STANDARD_V3_2.versionString() );
+        assertFalse( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V3_4.versionString() ) );
+        actualVersions.add( StoreVersion.STANDARD_V3_4.versionString() );
+
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_0_0.versionString() ) );
         actualVersions.add( StoreVersion.HIGH_LIMIT_V3_0_0.versionString() );
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_0_6.versionString() ) );
@@ -123,6 +127,9 @@ public class StoreMigratorTest
         actualVersions.add( StoreVersion.HIGH_LIMIT_V3_1_0.versionString() );
         assertFalse( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_2_0.versionString() ) );
         actualVersions.add( StoreVersion.HIGH_LIMIT_V3_2_0.versionString() );
+        assertFalse( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_4_0.versionString() ) );
+        actualVersions.add( StoreVersion.HIGH_LIMIT_V3_4_0.versionString() );
+
         assertEquals( expectedVersions, actualVersions );
     }
 

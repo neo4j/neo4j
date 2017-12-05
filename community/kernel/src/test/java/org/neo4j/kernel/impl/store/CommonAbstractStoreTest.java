@@ -185,7 +185,7 @@ public class CommonAbstractStoreTest
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, config, IdType.NODE_LABELS,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(),
                 Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ),
-                recordFormats.dynamic(),recordFormats.storeVersion() ) )
+                recordFormats ) )
         {
             dynamicArrayStore.initialise( false );
         }

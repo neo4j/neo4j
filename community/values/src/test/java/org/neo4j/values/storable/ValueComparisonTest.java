@@ -30,6 +30,10 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.Values.pointValue;
+
 public class ValueComparisonTest
 {
     @Rule
@@ -39,6 +43,10 @@ public class ValueComparisonTest
 
     private Object[] objs = new Object[]{
             // ARRAYS
+            new PointValue[] {},
+            new PointValue[] { pointValue( WGS84, -1.0, -1.0 ) },
+            new PointValue[] { pointValue( WGS84, -1.0, -1.0 ), pointValue( WGS84, -1.0, -1.0 ) },
+            new PointValue[] { pointValue( WGS84, -1.0, -1.0 ), pointValue( Cartesian, 1.0, 2.0 ) },
             new String[]{},
             new String[]{"a"},
             new String[]{"a", "aa"},
@@ -54,6 +62,16 @@ public class ValueComparisonTest
             new float[]{2},
             new short[]{2, 3},
             new byte[]{3, -99, -99},
+
+            // POINTS
+            pointValue( WGS84, -1.0, -1.0 ),
+            pointValue( WGS84, 1.0, 1.0 ),
+            pointValue( WGS84, 1.0, 2.0 ),
+            pointValue( WGS84, 2.0, 1.0 ),
+            pointValue( Cartesian, -1.0, -1.0 ),
+            pointValue( Cartesian, 1.0, 1.0 ),
+            pointValue( Cartesian, 1.0, 2.0 ),
+            pointValue( Cartesian, 2.0, 1.0 ),
 
             // STRING
             "",

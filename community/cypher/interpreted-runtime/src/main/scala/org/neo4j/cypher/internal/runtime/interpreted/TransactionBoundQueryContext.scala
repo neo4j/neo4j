@@ -44,7 +44,6 @@ import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
@@ -52,6 +51,7 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -134,7 +134,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getLabelsForNode(node: Long) = try {
     JavaConversionSupport.asScala(transactionalContext.statement.readOperations().nodeGetLabels(node))
   } catch {
-    case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+    case e: exceptions.EntityNotFoundException =>
       if (nodeOps.isDeletedInThisTx(node))
         throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction", e)
       else
@@ -391,7 +391,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def getProperty(id: Long, propertyKeyId: Int): Value = try {
       transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId)
     } catch {
-      case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+      case e: exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
         else
@@ -481,7 +481,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def getProperty(id: Long, propertyKeyId: Int): Value = try {
       transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
     } catch {
-      case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+      case e: exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction", e)
         else

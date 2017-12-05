@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -167,8 +168,8 @@ public class NativeLabelScanStoreMigratorTest
     @Test
     public void populateNativeLabelScanIndexDuringMigration() throws IOException
     {
-        prepare32DatabaseWithNodes();
-        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        prepare34DatabaseWithNodes();
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_4.STORE_VERSION, StandardV3_4.STORE_VERSION );
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         try ( Lifespan lifespan = new Lifespan() )
@@ -190,8 +191,8 @@ public class NativeLabelScanStoreMigratorTest
     @Test
     public void reportProgressOnNativeIndexPopulation() throws IOException
     {
-        prepare32DatabaseWithNodes();
-        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        prepare34DatabaseWithNodes();
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_4.STORE_VERSION, StandardV3_4.STORE_VERSION );
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         verify( progressReporter ).start( 10 );
@@ -240,7 +241,7 @@ public class NativeLabelScanStoreMigratorTest
         return sourceBuffer;
     }
 
-    private void prepare32DatabaseWithNodes()
+    private void prepare34DatabaseWithNodes()
     {
         GraphDatabaseService embeddedDatabase = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try

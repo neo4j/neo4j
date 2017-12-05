@@ -58,6 +58,12 @@ public class StubPropertyCursor implements PropertyCursor
     }
 
     @Override
+    public boolean isClosed()
+    {
+        return false;
+    }
+
+    @Override
     public int propertyKey()
     {
         return keys[offset];
@@ -78,7 +84,7 @@ public class StubPropertyCursor implements PropertyCursor
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> target )
     {
-
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

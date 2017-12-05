@@ -28,7 +28,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
@@ -213,9 +212,9 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     }
 
     @Override
-    public boolean hasChanges()
+    public boolean hasRelationshipChanges()
     {
-        return super.hasChanges() || hasAddedRelationships() || hasRemovedRelationships();
+        return hasAddedRelationships() || hasRemovedRelationships();
     }
 
     @Override
@@ -319,7 +318,13 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             }
 
             @Override
-            public boolean hasChanges()
+            public boolean hasPropertyChanges()
+            {
+                return false;
+            }
+
+            @Override
+            public boolean hasRelationshipChanges()
             {
                 return false;
             }
@@ -334,6 +339,12 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             public StorageProperty getAddedProperty( int propertyKeyId )
             {
                 return null;
+            }
+
+            @Override
+            public boolean isPropertyChangedOrRemoved( int propertyKey )
+            {
+                return false;
             }
 
             @Override
@@ -353,6 +364,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             {
                 return null;
             }
+
         };
     }
 }

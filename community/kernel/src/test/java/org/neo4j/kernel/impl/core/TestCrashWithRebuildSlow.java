@@ -57,7 +57,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
@@ -67,7 +66,6 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
  */
 public class TestCrashWithRebuildSlow
 {
-    // for dumping data about failing build
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
     @Rule

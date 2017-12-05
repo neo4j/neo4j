@@ -425,6 +425,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
             pageCursor.close();
             pageCursor = null;
         }
+        read = null;
         reset();
     }
 
@@ -435,6 +436,12 @@ class RelationshipTraversalCursor extends RelationshipCursor
         filterState = FilterState.NONE;
         filterType = NO_ID;
         buffer = null;
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return pageCursor == null;
     }
 
     private boolean hasBufferedData()

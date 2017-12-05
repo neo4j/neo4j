@@ -34,6 +34,11 @@ class NodeValueIndexCursor extends IndexCursor
     private int[] keys;
     private Value[] values;
 
+    NodeValueIndexCursor()
+    {
+        node = NO_ID;
+    }
+
     @Override
     public void initialize( IndexProgressor progressor, int[] propertyIds )
     {
@@ -97,5 +102,12 @@ class NodeValueIndexCursor extends IndexCursor
         this.node = NO_ID;
         this.keys = null;
         this.values = null;
+        this.read = null;
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return super.isClosed();
     }
 }

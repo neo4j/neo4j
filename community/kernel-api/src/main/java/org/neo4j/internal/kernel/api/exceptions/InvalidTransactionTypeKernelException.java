@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.internal.kernel.api.exceptions;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
-public class PropertyKeyIdNotFoundKernelException extends KernelException
+public class InvalidTransactionTypeKernelException extends KernelException
 {
-    public PropertyKeyIdNotFoundKernelException( int propertyKeyId, Exception cause )
+    public InvalidTransactionTypeKernelException( String message )
     {
-        super( Status.Schema.PropertyKeyAccessFailed, cause, "Property key id '%s' not found", propertyKeyId );
+        super( Status.Transaction.ForbiddenDueToTransactionType, (Throwable) null, message );
     }
 }

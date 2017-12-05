@@ -59,6 +59,7 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -103,13 +104,7 @@ public class MessageMatchers
         }
 
         @Override
-        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
-        {
-            return null;
-        }
-
-        @Override
-        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
         {
             return null;
         }

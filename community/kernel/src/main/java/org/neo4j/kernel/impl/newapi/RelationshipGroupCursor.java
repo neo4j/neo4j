@@ -152,7 +152,14 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
             page.close();
             page = null;
         }
+
+        if ( edgePage != null )
+        {
+            edgePage.close();
+            edgePage = null;
+        }
         current = null;
+        read = null;
         setId( NO_ID );
         clear();
     }
@@ -269,6 +276,12 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     public long loopsReference()
     {
         return getFirstLoop();
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return page == null;
     }
 
     static class Group

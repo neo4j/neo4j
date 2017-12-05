@@ -23,12 +23,14 @@ import org.mockito.Answers;
 
 import java.util.Optional;
 
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -82,6 +84,12 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public Token token()
+    {
+        return null;
+    }
+
+    @Override
     public SchemaRead schemaRead()
     {
         return null;
@@ -95,6 +103,12 @@ class StubKernelTransaction implements KernelTransaction
 
     @Override
     public Locks locks()
+    {
+        return null;
+    }
+
+    @Override
+    public CursorFactory cursors()
     {
         return null;
     }

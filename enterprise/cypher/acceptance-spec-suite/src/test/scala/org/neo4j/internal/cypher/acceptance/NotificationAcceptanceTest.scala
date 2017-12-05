@@ -138,11 +138,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   test("Warn unsupported runtime with explain and runtime=slotted") {
     val result = innerExecuteDeprecated(
       """explain cypher runtime=slotted
-         MATCH (b:B)
-         MERGE (a)-[r1:TYPE]->(b)<-[r2:TYPE]-(c)
-         WITH r1, r2, collect(b) as b_nodes
-         FOREACH (n in b_nodes | SET n.prop = 1)
-         RETURN type(r1), type(r2)""", Map.empty)
+         RETURN reduce(y=0, x IN [0] | x) AS z""", Map.empty)
 
     result.notifications.toList should equal(List(
       RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)))
@@ -638,6 +634,21 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     result.notifications should contain(
       DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(33, 1, 34),
                                        deprecatedName("rels", "relationships")))
+  }
+
+  test("should warn when using START in newer runtimes") {
+    createNode()
+    val query = "EXPLAIN CYPHER runtime=slotted START n=node(0) RETURN n"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    val notifications = result.notifications
+    notifications should contain(RUNTIME_UNSUPPORTED.notification(new graphdb.InputPosition(31,1,32)))
+  }
+
+  test("should warn when using CREATE UNIQUE in newer runtimes") {
+    val query = "EXPLAIN CYPHER runtime=slotted MATCH (root { name: 'root' }) CREATE UNIQUE (root)-[:LOVES]-(someone) RETURN someone"
+    val result = innerExecuteDeprecated(query, Map.empty)
+    val notifications = result.notifications
+    notifications should contain(RUNTIME_UNSUPPORTED.notification(new graphdb.InputPosition(61,1,62)))
   }
 }
 

@@ -47,9 +47,9 @@ import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.storable.Values
@@ -300,7 +300,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
         override def next(): Int = try {
           inner.next()
         } catch {
-          case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+          case _: exceptions.EntityNotFoundException => null.asInstanceOf[Int]
         }
       }
     } catch {
@@ -310,25 +310,25 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     def getProperty(id: Long, propertyKeyId: Int): Any = try {
       tc.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
     } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+      case _: exceptions.EntityNotFoundException => null.asInstanceOf[Int]
     }
 
     def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       tc.statement.readOperations().nodeHasProperty(id, propertyKey)
     } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => false
+      case _: exceptions.EntityNotFoundException => false
     }
 
     def removeProperty(id: Long, propertyKeyId: Int): Unit = try {
       tc.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
     } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
+      case _: exceptions.EntityNotFoundException => //ignore
     }
 
     def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = try {
       tc.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value))
     } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
+      case _: exceptions.EntityNotFoundException => //ignore
     }
 
     override def getById(id: Long) = try {
@@ -370,7 +370,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
           override def next(): Int = try {
             inner.next()
           } catch {
-            case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+            case _: exceptions.EntityNotFoundException => null.asInstanceOf[Int]
           }
         }
       } catch {

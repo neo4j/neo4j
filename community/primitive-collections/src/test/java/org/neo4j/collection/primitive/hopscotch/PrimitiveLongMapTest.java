@@ -939,7 +939,7 @@ public class PrimitiveLongMapTest
     {
         // GIVEN
         PrimitiveLongLongVisitor<RuntimeException> visitor;
-        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        try ( PrimitiveLongLongMap map = Primitive.longLongMap() )
         {
             map.put( 1, 100 );
             map.put( 2, 200 );
@@ -959,6 +959,50 @@ public class PrimitiveLongMapTest
 
     @Test
     public void longLongEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    {
+        // GIVEN
+        AtomicInteger counter = new AtomicInteger();
+        try ( PrimitiveLongLongMap map = Primitive.longLongMap() )
+        {
+            map.put( 1, 100 );
+            map.put( 2, 200 );
+            map.put( 3, 300 );
+            map.put( 4, 400 );
+
+            // WHEN
+            map.visitEntries( ( key, value ) -> counter.incrementAndGet() > 2 );
+        }
+
+        // THEN
+        assertThat( counter.get(), is( 3 ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void longLongOffHeapEntryVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    {
+        // GIVEN
+        PrimitiveLongLongVisitor<RuntimeException> visitor;
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        {
+            map.put( 1, 100 );
+            map.put( 2, 200 );
+            map.put( 3, 300 );
+            visitor = mock( PrimitiveLongLongVisitor.class );
+
+            // WHEN
+            map.visitEntries( visitor );
+        }
+
+        // THEN
+        verify( visitor ).visited( 1, 100 );
+        verify( visitor ).visited( 2, 200 );
+        verify( visitor ).visited( 3, 300 );
+        verifyNoMoreInteractions( visitor );
+    }
+
+    @Test
+    public void longLongOffHeapEntryVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
@@ -1100,7 +1144,7 @@ public class PrimitiveLongMapTest
     {
         // GIVEN
         PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
-        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        try ( PrimitiveLongLongMap map = Primitive.longLongMap() )
         {
             map.put( 1, 100 );
             map.put( 2, 200 );
@@ -1119,6 +1163,49 @@ public class PrimitiveLongMapTest
 
     @Test
     public void longLongKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
+    {
+        // GIVEN
+        AtomicInteger counter = new AtomicInteger();
+        try ( PrimitiveLongLongMap map = Primitive.longLongMap() )
+        {
+            map.put( 1, 100 );
+            map.put( 2, 200 );
+            map.put( 3, 300 );
+            map.put( 4, 400 );
+
+            // WHEN
+            map.visitKeys( value -> counter.incrementAndGet() > 2 );
+        }
+
+        // THEN
+        assertThat( counter.get(), is( 3 ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void longLongOffHeapKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
+    {
+        // GIVEN
+        PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        {
+            map.put( 1, 100 );
+            map.put( 2, 200 );
+            map.put( 3, 300 );
+
+            // WHEN
+            map.visitKeys( visitor );
+        }
+
+        // THEN
+        verify( visitor ).visited( 1 );
+        verify( visitor ).visited( 2 );
+        verify( visitor ).visited( 3 );
+        verifyNoMoreInteractions( visitor );
+    }
+
+    @Test
+    public void longLongOffHeapKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();

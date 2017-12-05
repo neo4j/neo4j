@@ -24,9 +24,12 @@ import org.junit.Test;
 
 import java.util.function.Function;
 
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -91,6 +94,10 @@ public class ArrayEncoderTest
         assertEncoding( "Ztrue|false|", new boolean[]{true, false} );
         assertEncoding( "LYWxp|YXJl|eW91|b2s=|", new String[]{"ali", "are", "you", "ok"} );
         assertEncoding( "", new String[]{} );
+        PointValue a = Values.pointValue( CoordinateReferenceSystem.WGS84, 1.234, 2.567 );
+        PointValue b = Values.pointValue( CoordinateReferenceSystem.WGS84, 2.345, 5.678 );
+        PointValue c = Values.pointValue( CoordinateReferenceSystem.Cartesian, 3, 4, 5 );
+        assertEncoding( "P1:4326:1.234;2.567|1:4326:2.345;5.678|2:7203:3.0;4.0;5.0|", new Point[]{a, b, c} );
     }
 
     @Test

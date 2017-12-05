@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -56,6 +57,7 @@ object SlotAllocation {
     * @return the slot configurations of every operator.
     */
   def allocateSlots(lp: LogicalPlan,
+                    semanticTable: SemanticTable,
                     initialSlotsAndArgument: Option[SlotsAndArgument] = None): PhysicalPlan = {
 
     val allocations = new mutable.OpenHashMap[LogicalPlanId, SlotConfiguration]()
@@ -99,7 +101,7 @@ object SlotAllocation {
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
           recordArgument(current, argument)
-          val slotsIncludingExpressions = allocateExpressions(current, nullable, argument.slotConfiguration.copy(), allocations, arguments)
+          val slotsIncludingExpressions = allocateExpressions(current, nullable, argument.slotConfiguration.copy(), allocations, arguments)(semanticTable)
           val result = allocate(current, nullable, slotsIncludingExpressions)
           allocations += (current.assignedId -> result)
           resultStack.push(result)
@@ -108,7 +110,7 @@ object SlotAllocation {
           val sourceSlots = resultStack.pop()
           val argument = if (argumentStack.isEmpty) NO_ARGUMENT()
                          else argumentStack.top
-          val slotsIncludingExpressions = allocateExpressions(current, nullable, sourceSlots, allocations, arguments)
+          val slotsIncludingExpressions = allocateExpressions(current, nullable, sourceSlots, allocations, arguments)(semanticTable)
           val result = allocate(current, nullable, slotsIncludingExpressions, recordArgument(_, argument))
           allocations += (current.assignedId -> result)
           resultStack.push(result)
@@ -116,6 +118,7 @@ object SlotAllocation {
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
           planStack.push((nullable, current))
           val argumentSlots = resultStack.top
+          allocateLhsOfApply(current, nullable, argumentSlots)(semanticTable) // This never copies the slot configuration
           argumentStack.push(SlotsAndArgument(argumentSlots.copy(), argumentSlots.size()))
           populate(right, nullable)
 
@@ -130,8 +133,8 @@ object SlotAllocation {
                          else argumentStack.top
           // NOTE: If we introduce a two sourced logical plan with an expression that needs to be evaluated in a
           //       particular scope (lhs or rhs) we need to add handling of it to allocateExpressions.
-          val lhsSlotsIncludingExpressions = allocateExpressions(current, nullable, lhsSlots, allocations, arguments, shouldAllocateLhs = true)
-          val rhsSlotsIncludingExpressions = allocateExpressions(current, nullable, rhsSlots, allocations, arguments, shouldAllocateLhs = false)
+          val lhsSlotsIncludingExpressions = allocateExpressions(current, nullable, lhsSlots, allocations, arguments, shouldAllocateLhs = true)(semanticTable)
+          val rhsSlotsIncludingExpressions = allocateExpressions(current, nullable, rhsSlots, allocations, arguments, shouldAllocateLhs = false)(semanticTable)
           val result = allocate(current, nullable, lhsSlotsIncludingExpressions, rhsSlotsIncludingExpressions, recordArgument(_, argument))
           allocations += (current.assignedId -> result)
           if (isAnApplyPlan(current))
@@ -149,7 +152,8 @@ object SlotAllocation {
   private def allocateExpressions(lp: LogicalPlan, nullable: Boolean, slots: SlotConfiguration,
                                   slotConfigurations: mutable.Map[LogicalPlanId, SlotConfiguration],
                                   argumentSizes: mutable.Map[LogicalPlanId, Size],
-                                  shouldAllocateLhs: Boolean = true): SlotConfiguration = {
+                                  shouldAllocateLhs: Boolean = true)
+                                 (semanticTable: SemanticTable): SlotConfiguration = {
     case class Accumulator(slots: SlotConfiguration, doNotTraverseExpression: Option[Expression])
 
     val TRAVERSE_INTO_CHILDREN = Some((s: Accumulator) => s)
@@ -200,7 +204,7 @@ object SlotAllocation {
             val slotsAndArgument = SlotsAndArgument(argumentSlotConfiguration, Size(slots.numberOfLongs, slots.numberOfReferences))
 
             // Allocate slots for nested plan
-            val nestedPhysicalPlan = allocateSlots(e.plan, initialSlotsAndArgument = Some(slotsAndArgument))
+            val nestedPhysicalPlan = allocateSlots(e.plan, semanticTable, initialSlotsAndArgument = Some(slotsAndArgument))
 
             // Update the physical plan
             slotConfigurations ++= nestedPhysicalPlan.slotConfigurations
@@ -469,6 +473,9 @@ object SlotAllocation {
         lhs.newReference(collectionName.name, nullable, CTList(CTAny))
         lhs
 
+      case _: ForeachApply =>
+        lhs
+
       case _: Union  =>
         // The result slot configuration should only contain the variables we join on.
         // If both lhs and rhs has a long slot with the same type the result should
@@ -501,6 +508,30 @@ object SlotAllocation {
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
+  private def allocateLhsOfApply(plan: LogicalPlan,
+                                 nullable: Boolean,
+                                 lhs: SlotConfiguration)
+                                (semanticTable: SemanticTable): SlotConfiguration =
+    plan match {
+      case ForeachApply(_, _, variableName, listExpression) =>
+        // The slot for the iteration variable of foreach needs to be available as an argument on the rhs of the apply
+        // so we allocate it on the lhs (even though its value will not be needed after the foreach is done)
+        val typeSpec = semanticTable.getActualTypeFor(listExpression)
+        if (typeSpec.contains(ListType(CTNode))) {
+          lhs.newLong(variableName, true, CTNode)
+        }
+        else if (typeSpec.contains(ListType(CTRelationship))) {
+          lhs.newLong(variableName, true, CTRelationship)
+        }
+        else {
+          lhs.newReference(variableName, true, CTAny)
+        }
+        lhs
+
+      case _ =>
+        lhs
+    }
+
   private def addGroupingMap(groupingExpressions: Map[String, Expression],
                              source: SlotConfiguration,
                              target: SlotConfiguration): Unit =
@@ -518,9 +549,11 @@ object SlotAllocation {
          _: AbstractSemiApply |
          _: AbstractSelectOrSemiApply |
          _: AbstractLetSelectOrSemiApply |
+         _: AbstractLetSemiApply |
          _: ConditionalApply |
          _: ForeachApply |
-         _: RollUpApply => true
+         _: RollUpApply =>
+      true
 
     case _ => false
   }

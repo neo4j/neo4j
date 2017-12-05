@@ -27,11 +27,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
@@ -44,46 +43,31 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
         NODE
                 {
                     @Override
-                    public void add( DataWriteOperations ops, long entityId, String keyName, Object value )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                    public void add( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
+                            throws KernelException
                     {
                         ops.nodeAddToExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId, keyName, value );
                     }
 
                     @Override
-                    public void remove( DataWriteOperations ops, long entityId, String keyName, Object value )
+                    public void remove( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
                             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
                     {
                         ops.nodeRemoveFromExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId, keyName, value );
                     }
 
                     @Override
-                    public void remove( DataWriteOperations ops, long entityId, String keyName )
+                    public void remove( ExplicitIndexWrite ops, long entityId, String keyName )
                             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
                     {
                         ops.nodeRemoveFromExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId, keyName );
                     }
 
                     @Override
-                    public void remove( DataWriteOperations ops, long entityId )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
-                    {
-                        ops.nodeRemoveFromExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId );
-                    }
-
-                    @Override
                     public void remove( ExplicitIndexWrite ops, long entityId )
-                            throws KernelException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         ops.nodeRemoveFromExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId );
-                    }
-
-                    @Override
-                    public void ensureIndexExists( DataWriteOperations ops ) throws
-                            ExplicitIndexNotFoundKernelException, EntityNotFoundException
-
-                    {
-                        ops.nodeExplicitIndexCreateLazily( InternalAutoIndexing.NODE_AUTO_INDEX, null );
                     }
 
                     @Override
@@ -97,74 +81,55 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
         RELATIONSHIP
                 {
                     @Override
-                    public void add( DataWriteOperations ops, long entityId, String keyName, Object value )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                    public void add( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
+                            throws KernelException
                     {
                         ops.relationshipAddToExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, entityId,
                                 keyName, value );
                     }
 
                     @Override
-                    public void remove( DataWriteOperations ops, long entityId, String keyName, Object value )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                    public void remove( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
+                            throws KernelException
                     {
                         ops.relationshipRemoveFromExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX,
                                 entityId, keyName, value );
                     }
 
                     @Override
-                    public void remove( DataWriteOperations ops, long entityId, String keyName )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                    public void remove( ExplicitIndexWrite ops, long entityId, String keyName )
+                            throws KernelException
                     {
                         ops.relationshipRemoveFromExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX,
                                 entityId, keyName );
                     }
 
                     @Override
-                    public void remove( DataWriteOperations ops, long entityId )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                    public void remove( ExplicitIndexWrite ops, long entityId )
+                            throws KernelException
                     {
                         ops.relationshipRemoveFromExplicitIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, entityId );
                     }
 
                     @Override
-                    public void remove( ExplicitIndexWrite ops, long entityId )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
-                    {
-                        throw new UnsupportedOperationException( "not implemented yet" );
-                    }
-
-                    @Override
-                    public void ensureIndexExists( DataWriteOperations ops )
+                    public void ensureIndexExists( ExplicitIndexWrite ops )
                             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
                     {
                         ops.relationshipExplicitIndexCreateLazily( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, null );
                     }
-
-                    @Override
-                    public void ensureIndexExists( ExplicitIndexWrite write )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
-                    {
-                        throw new UnsupportedOperationException( "not implemented yet" );
-                    }
                 };
 
-        public abstract void add( DataWriteOperations ops, long entityId, String keyName, Object value )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+        public abstract void add( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
+                throws KernelException;
 
-        public abstract void remove( DataWriteOperations ops, long entityId, String keyName, Object value )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+        public abstract void remove( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
+                throws KernelException;
 
-        public abstract void remove( DataWriteOperations ops, long entityId, String keyName )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
-
-        public abstract void remove( DataWriteOperations ops, long entityId )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+        public abstract void remove( ExplicitIndexWrite ops, long entityId, String keyName )
+                throws KernelException;
 
         public abstract void remove( ExplicitIndexWrite ops, long entityId )
                 throws KernelException;
-        public abstract void ensureIndexExists( DataWriteOperations ops )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
         public abstract void ensureIndexExists( ExplicitIndexWrite write )
                 throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
@@ -185,7 +150,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     }
 
     @Override
-    public void propertyAdded( DataWriteOperations ops, long entityId, int propertyKeyId, Value value ) throws
+    public void propertyAdded( ExplicitIndexWrite ops, long entityId, int propertyKeyId, Value value ) throws
             AutoIndexingKernelException
     {
         if ( enabled )
@@ -199,7 +164,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                     type.add( ops, entityId, name, value.asObject() );
                 }
             }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
+            catch ( KernelException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -213,7 +178,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     }
 
     @Override
-    public void propertyChanged( DataWriteOperations ops, long entityId, int propertyKeyId, Value oldValue,
+    public void propertyChanged( ExplicitIndexWrite ops, long entityId, int propertyKeyId, Value oldValue,
             Value newValue )
             throws AutoIndexingKernelException
     {
@@ -229,7 +194,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                     type.add( ops, entityId, name, newValue.asObject() );
                 }
             }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
+            catch ( KernelException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -243,7 +208,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     }
 
     @Override
-    public void propertyRemoved( DataWriteOperations ops, long entityId, int propertyKey )
+    public void propertyRemoved( ExplicitIndexWrite ops, long entityId, int propertyKey )
             throws AutoIndexingKernelException
     {
         if ( enabled )
@@ -257,7 +222,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                     type.remove( ops, entityId, name );
                 }
             }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
+            catch ( KernelException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -271,7 +236,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     }
 
     @Override
-    public void entityRemoved( DataWriteOperations ops, long entityId ) throws AutoIndexingKernelException
+    public void entityRemoved( ExplicitIndexWrite ops, long entityId ) throws AutoIndexingKernelException
     {
         if ( enabled )
         {
@@ -280,24 +245,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                 ensureIndexExists( ops );
                 type.remove( ops, entityId );
             }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
-            {
-                throw new AutoIndexingKernelException( e );
-            }
-        }
-    }
-
-    @Override
-    public void entityRemoved( ExplicitIndexWrite ops, long entityId ) throws KernelException
-    {
-        if ( enabled )
-        {
-            try
-            {
-                ensureIndexExists( ops );
-                type.remove( ops, entityId );
-            }
-            catch ( ExplicitIndexNotFoundKernelException | EntityNotFoundException e )
+            catch ( KernelException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -352,18 +300,6 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     public Set<String> getAutoIndexedProperties()
     {
         return Collections.unmodifiableSet( propertyKeysToInclude.get() );
-    }
-
-    private void ensureIndexExists( DataWriteOperations ops ) throws ExplicitIndexNotFoundKernelException,
-            EntityNotFoundException
-    {
-        // Known racy, but this is safe because ensureIndexExists is concurrency safe, we just want to avoid calling it
-        // for every single write we make.
-        if ( !indexCreated )
-        {
-            type.ensureIndexExists( ops );
-            indexCreated = true;
-        }
     }
 
     private void ensureIndexExists( ExplicitIndexWrite ops ) throws ExplicitIndexNotFoundKernelException,

@@ -191,6 +191,12 @@ public class RecordFormatPropertyConfiguratorTest
         {
             return false;
         }
+
+        @Override
+        public String name()
+        {
+            return getClass().getName();
+        }
     }
 
     private class ResizableRecordFormat extends NoRecordFormat<DynamicRecord>

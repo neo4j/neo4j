@@ -39,11 +39,16 @@ case class ProjectionSlottedPipe(source: Pipe, introducedExpressions: Map[Int, E
         val result = expression(ctx, state)
         ctx.setRefAt(offset, result)
   }
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.map {
-      ctx =>
-        projectionFunctions.foreach(_(ctx, state))
-        ctx
+    if (projectionFunctions.isEmpty)
+      input
+    else {
+      input.map {
+        ctx =>
+          projectionFunctions.foreach(_ (ctx, state))
+          ctx
+      }
     }
   }
 }

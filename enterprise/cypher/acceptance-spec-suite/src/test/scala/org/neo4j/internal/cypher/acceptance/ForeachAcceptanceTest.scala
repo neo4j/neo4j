@@ -53,7 +53,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         | )
         |)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, nodesCreated = 110, relationshipsCreated = 110, propertiesWritten = 110, labelsAdded = 110)
@@ -68,7 +68,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     val query = "FOREACH( n in range( 0, 1 ) | CREATE (p:Person) )"
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators("Foreach", "CreateNode")
@@ -104,7 +104,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |RETURN e.foo, i.foo, p.foo""".stripMargin
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, labelsAdded = 2, propertiesWritten = 3)
@@ -140,7 +140,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
          |  MERGE (a)-[:FOO]->(b))""".stripMargin
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
@@ -171,7 +171,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |   MERGE (x)-[:FOOBAR]->(m) );""".stripMargin
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, relationshipsCreated = 1)
@@ -188,14 +188,14 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |FOREACH (x IN mixedTypeCollection | CREATE (n)-[:FOOBAR]->(x) );""".stripMargin
 
     // when
-    val explain = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, s"EXPLAIN $query")
+    val explain = executeWith(Configs.Interpreted - Configs.Version2_3, s"EXPLAIN $query")
 
     // then
     explain.executionPlanDescription().toString shouldNot include("CreateNode")
 
     // when
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.ProcedureOrSchema)) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.ProcedureOrSchema)) +
       TestConfiguration(Versions(Versions.V3_1, Versions.V3_3), Planners.Cost, Runtimes.Default)
-    failWithError(config, query, List("Expected to find a node at x but"))
+    failWithError(config, query, List("Expected to find a node at"))
   }
 }

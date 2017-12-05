@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.EdgeValue;
@@ -40,7 +41,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.PointValue;
+import org.neo4j.values.storable.PointValue;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,7 +66,6 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
-import static org.neo4j.values.virtual.VirtualValues.pointGeographic;
 
 public class ParameterConverterTest
 {
@@ -184,7 +184,7 @@ public class ParameterConverterTest
     public void shouldHandlePoints()
     {
         // Given
-        PointValue pointValue = pointGeographic( 1.0, 2.0 );
+        PointValue pointValue = Values.pointValue( CoordinateReferenceSystem.WGS84, 1.0, 2.0 );
 
         // When
         pointValue.writeTo( converter );

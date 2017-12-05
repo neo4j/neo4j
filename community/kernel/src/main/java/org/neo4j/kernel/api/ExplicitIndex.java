@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 
 /**
  * The main way to access an explicit index. Even pure reads will need to get a hold of an object of this class

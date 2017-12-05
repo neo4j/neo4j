@@ -42,7 +42,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -101,7 +100,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( descriptor.getLabelId() );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( descriptor.getPropertyId() );
-        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
+        when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
         procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
@@ -116,7 +115,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
+        when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( FAILED );
 
         try
@@ -157,7 +156,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
+        when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
@@ -189,7 +188,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
+        when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();

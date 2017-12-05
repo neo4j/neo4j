@@ -25,6 +25,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public final class ArrayEncoder
 {
@@ -130,9 +131,22 @@ public final class ArrayEncoder
         }
 
         @Override
-        public void writeString( char[] value, int offset, int length )
+        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
         {
-            builder.append( value, offset, length );
+            builder.append( crs.getTable().getTableId() );
+            builder.append( ':' );
+            builder.append( crs.getCode() );
+            builder.append( ':' );
+            int index = 0;
+            for ( double c : coordinate )
+            {
+                if ( index > 0 )
+                {
+                    builder.append( ';' );
+                }
+                builder.append( c );
+                index++;
+            }
             builder.append( '|' );
         }
 
@@ -174,6 +188,7 @@ public final class ArrayEncoder
             case DOUBLE: return 'D';
             case CHAR: return 'L';
             case STRING: return 'L';
+            case POINT: return 'P';
             default: throw new UnsupportedOperationException( "Not supported array type: " + arrayType );
             }
         }

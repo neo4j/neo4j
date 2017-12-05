@@ -115,4 +115,10 @@ public class HighLimitV3_1_0 extends BaseRecordFormats
     {
         return HighLimitFormatFamily.INSTANCE;
     }
+
+    @Override
+    public String name()
+    {
+        return NAME;
+    }
 }

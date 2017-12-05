@@ -28,8 +28,11 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
@@ -133,9 +136,9 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
     };
 
-    private Map<Integer/*Token ID*/, String> createdLabelTokens;
-    private Map<Integer/*Token ID*/, String> createdPropertyKeyTokens;
-    private Map<Integer/*Token ID*/, String> createdRelationshipTypeTokens;
+    private PrimitiveIntObjectMap<String> createdLabelTokens;
+    private PrimitiveIntObjectMap<String> createdPropertyKeyTokens;
+    private PrimitiveIntObjectMap<String> createdRelationshipTypeTokens;
 
     private GraphState graphState;
     private DiffSets<IndexDescriptor> indexChanges;
@@ -148,6 +151,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     // Tracks added and removed relationships, not modified relationships
     private RelationshipDiffSets<Long> relationships;
+
+    private PrimitiveLongObjectMap<PropertyContainerState> propertiesMap = Primitive.longObjectMap();
 
     /**
      * These two sets are needed because create-delete in same transaction is a no-op in {@link DiffSets}
@@ -267,26 +272,17 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( createdLabelTokens != null )
         {
-            for ( Map.Entry<Integer, String> entry : createdLabelTokens.entrySet() )
-            {
-                visitor.visitCreatedLabelToken( entry.getValue(), entry.getKey() );
-            }
+            createdLabelTokens.visitEntries( new LabelTokenStateVisitor( visitor ) );
         }
 
         if ( createdPropertyKeyTokens != null )
         {
-            for ( Map.Entry<Integer, String> entry : createdPropertyKeyTokens.entrySet() )
-            {
-                visitor.visitCreatedPropertyKeyToken( entry.getValue(), entry.getKey() );
-            }
+            createdPropertyKeyTokens.visitEntries( new PropertyKeyTokenStateVisitor( visitor ) );
         }
 
         if ( createdRelationshipTypeTokens != null )
         {
-            for ( Map.Entry<Integer, String> entry : createdRelationshipTypeTokens.entrySet() )
-            {
-                visitor.visitCreatedRelationshipTypeToken( entry.getValue(), entry.getKey() );
-            }
+            createdRelationshipTypeTokens.visitEntries( new RelationshipTypeTokenStateVisitor( visitor ) );
         }
     }
 
@@ -669,11 +665,17 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public void registerProperties( long ref, PropertyContainerState state )
+    {
+        propertiesMap.put( ref, state );
+    }
+
+    @Override
     public void labelDoCreateForName( String labelName, int id )
     {
         if ( createdLabelTokens == null )
         {
-            createdLabelTokens = new HashMap<>();
+            createdLabelTokens = Primitive.intObjectMap();
         }
         createdLabelTokens.put( id, labelName );
         changed();
@@ -684,7 +686,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdPropertyKeyTokens == null )
         {
-            createdPropertyKeyTokens = new HashMap<>();
+            createdPropertyKeyTokens = Primitive.intObjectMap();
         }
         createdPropertyKeyTokens.put( id, propertyKeyName );
         changed();
@@ -695,7 +697,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdRelationshipTypeTokens == null )
         {
-            createdRelationshipTypeTokens = new HashMap<>();
+            createdRelationshipTypeTokens = Primitive.intObjectMap();
         }
         createdRelationshipTypeTokens.put( id, labelName );
         changed();
@@ -714,6 +716,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public PropertyContainerState getPropertiesState( long reference )
+    {
+        return propertiesMap.get( reference );
+    }
+
+    @Override
     public Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId )
     {
         return hasChanges ? singleNodeCursor.get().init( cursor, nodeId ) : cursor;
@@ -723,7 +731,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState )
     {
-        return propertyContainerState.hasChanges() ?
+        return propertyContainerState.hasPropertyChanges() ?
                 propertyCursor.get().init( cursor, propertyContainerState ) : cursor;
     }
 
@@ -731,7 +739,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState, int propertyKeyId )
     {
-        return propertyContainerState.hasChanges() ?
+        return propertyContainerState.hasPropertyChanges() ?
                 singlePropertyCursor.get().init( cursor, propertyContainerState, propertyKeyId ) : cursor;
     }
 
@@ -759,7 +767,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             NodeState nodeState,
             Direction direction )
     {
-        return nodeState.hasChanges()
+        return nodeState.hasPropertyChanges() || nodeState.hasRelationshipChanges()
                ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction ) )
                : cursor;
     }
@@ -769,7 +777,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             Direction direction,
             int[] relTypes )
     {
-        return nodeState.hasChanges()
+        return nodeState.hasPropertyChanges() || nodeState.hasRelationshipChanges()
                ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction, relTypes ) )
                : cursor;
     }
@@ -1351,5 +1359,56 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             relationshipsDeletedInTx = Primitive.longSet();
         }
         relationshipsDeletedInTx.add( id );
+    }
+
+    private static class LabelTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
+    {
+        private final TxStateVisitor visitor;
+
+        LabelTokenStateVisitor( TxStateVisitor visitor )
+        {
+            this.visitor = visitor;
+        }
+
+        @Override
+        public boolean visited( int key, String value )
+        {
+            visitor.visitCreatedLabelToken( value, key );
+            return false;
+        }
+    }
+
+    private static class PropertyKeyTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
+    {
+        private final TxStateVisitor visitor;
+
+        PropertyKeyTokenStateVisitor( TxStateVisitor visitor )
+        {
+            this.visitor = visitor;
+        }
+
+        @Override
+        public boolean visited( int key, String value ) throws RuntimeException
+        {
+            visitor.visitCreatedPropertyKeyToken( value, key );
+            return false;
+        }
+    }
+
+    private static class RelationshipTypeTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
+    {
+        private final TxStateVisitor visitor;
+
+        RelationshipTypeTokenStateVisitor( TxStateVisitor visitor )
+        {
+            this.visitor = visitor;
+        }
+
+        @Override
+        public boolean visited( int key, String value ) throws RuntimeException
+        {
+            visitor.visitCreatedRelationshipTypeToken( value, key );
+            return false;
+        }
     }
 }

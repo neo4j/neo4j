@@ -64,6 +64,26 @@ public class TestBits
     }
 
     @Test
+    public void doubleAsBytesWithOffset() throws Exception
+    {
+        double[] array1 = new double[]{1.0, 2.0, 3.0, 4.0, 5.0};
+        Bits bits = Bits.bits( array1.length * 8 );
+        for ( double value : array1 )
+        {
+            bits.put( Double.doubleToRawLongBits( value ) );
+        }
+        int offset = 6;
+        byte[] asBytesOffset = bits.asBytes( offset );
+        byte[] asBytes = bits.asBytes();
+        assertEquals( asBytes.length, array1.length * 8 );
+        assertEquals( asBytesOffset.length, array1.length * 8 + offset );
+        for ( int i = 0; i < asBytes.length; i++ )
+        {
+            assertEquals( asBytesOffset[i + offset], asBytes[i] );
+        }
+    }
+
+    @Test
     public void writeAndRead() throws Exception
     {
         for ( int b = 5; b <= 8; b++ )

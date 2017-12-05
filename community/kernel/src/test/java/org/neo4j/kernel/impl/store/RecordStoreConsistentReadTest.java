@@ -447,7 +447,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             PropertyBlock block = new PropertyBlock();
             DynamicRecordAllocator stringAllocator = new ReusableRecordsAllocator( 64, new DynamicRecord( 7 ) );
             Value value = Values.of( "a string too large to fit in the property block itself" );
-            PropertyStore.encodeValue( block, 6, value, stringAllocator, null );
+            PropertyStore.encodeValue( block, 6, value, stringAllocator, null, true );
             if ( light )
             {
                 block.getValueRecords().clear();
