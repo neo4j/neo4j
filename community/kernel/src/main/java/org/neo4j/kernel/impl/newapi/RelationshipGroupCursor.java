@@ -33,7 +33,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
 {
     private Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
-    private Group current;
+    private BufferedGroup bufferedGroup;
     private PageCursor page;
     private PageCursor edgePage;
 
@@ -48,18 +48,18 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         setId( NO_ID );
         setNext( NO_ID );
         // TODO: read first record to get the required capacity (from the count value in the prev field)
-        try ( PrimitiveIntObjectMap<Group> buffer = Primitive.intObjectMap();
+        try ( PrimitiveIntObjectMap<BufferedGroup> buffer = Primitive.intObjectMap();
               PageCursor edgePage = read.relationshipPage( relationshipReference ) )
         {
-            Group current = null;
+            BufferedGroup current = null;
             while ( relationshipReference != NO_ID )
             {
                 read.relationship( edge, relationshipReference, edgePage );
                 // find the group
-                Group group = buffer.get( edge.getType() );
+                BufferedGroup group = buffer.get( edge.getType() );
                 if ( group == null )
                 {
-                    buffer.put( edge.getType(), current = group = new Group( edge, current ) );
+                    buffer.put( edge.getType(), current = group = new BufferedGroup( edge, current ) );
                 }
                 // buffer the relationship into the group
                 if ( edge.getFirstNode() == nodeReference ) // outgoing or loop
@@ -84,7 +84,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
                     throw new IllegalStateException( "not a part of the chain! TODO: better exception" );
                 }
             }
-            this.current = new Group( edge, current ); // we need a dummy before the first to denote the initial pos
+            this.bufferedGroup = new BufferedGroup( edge, current ); // we need a dummy before the first to denote the initial pos
             this.read = read;
         }
     }
@@ -92,7 +92,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     void direct( long nodeReference, long reference, Read read )
     {
         setOwningNode( nodeReference );
-        current = null;
+        bufferedGroup = null;
         clear();
         setNext( reference );
         if ( page == null )
@@ -117,17 +117,17 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public boolean next()
     {
-        if ( current != null )
+        if ( isBuffered() )
         {
-            current = current.next;
-            if ( current == null )
+            bufferedGroup = bufferedGroup.next;
+            if ( bufferedGroup == null )
             {
                 return false; // we never have both types of traversal, so terminate early
             }
-            setType( current.label );
-            setFirstOut( current.outgoing() );
-            setFirstIn( current.incoming() );
-            setFirstLoop( current.loops() );
+            setType( bufferedGroup.label );
+            setFirstOut( bufferedGroup.outgoing() );
+            setFirstIn( bufferedGroup.incoming() );
+            setFirstLoop( bufferedGroup.loops() );
             return true;
         }
         if ( getNext() == NO_ID )
@@ -158,7 +158,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
             edgePage.close();
             edgePage = null;
         }
-        current = null;
+        bufferedGroup = null;
         read = null;
         setId( NO_ID );
         clear();
@@ -173,9 +173,9 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public int outgoingCount()
     {
-        if ( current != null )
+        if ( isBuffered() )
         {
-            return current.outgoingCount;
+            return bufferedGroup.outgoingCount;
         }
         return count( outgoingReference() );
     }
@@ -183,9 +183,9 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public int incomingCount()
     {
-        if ( current != null )
+        if ( isBuffered() )
         {
-            return current.incomingCount;
+            return bufferedGroup.incomingCount;
         }
         return count( incomingReference() );
     }
@@ -193,9 +193,9 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public int loopCount()
     {
-        if ( current != null )
+        if ( isBuffered() )
         {
-            return current.loopsCount;
+            return bufferedGroup.loopsCount;
         }
         return count( loopsReference() );
     }
@@ -224,9 +224,9 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public void outgoing( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
-        if ( current != null && cursor instanceof RelationshipTraversalCursor )
+        if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.outgoing, read );
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), bufferedGroup.outgoing, read );
         }
         else
         {
@@ -237,9 +237,9 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public void incoming( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
-        if ( current != null && cursor instanceof RelationshipTraversalCursor )
+        if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.incoming, read );
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), bufferedGroup.incoming, read );
         }
         else
         {
@@ -250,9 +250,9 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public void loops( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
-        if ( current != null && cursor instanceof RelationshipTraversalCursor )
+        if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.loops, read );
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), bufferedGroup.loops, read );
         }
         else
         {
@@ -284,10 +284,15 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         return page == null;
     }
 
-    static class Group
+    private boolean isBuffered()
+    {
+        return bufferedGroup != null;
+    }
+
+    static class BufferedGroup
     {
         final int label;
-        final Group next;
+        final BufferedGroup next;
         Record outgoing;
         Record incoming;
         Record loops;
@@ -298,7 +303,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         int incomingCount;
         int loopsCount;
 
-        Group( RelationshipRecord edge, Group next )
+        BufferedGroup( RelationshipRecord edge, BufferedGroup next )
         {
             this.label = edge.getType();
             this.next = next;
