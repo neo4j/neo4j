@@ -200,6 +200,14 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     scopeContext
   }
 
+  override def newScopeWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
+    val scopeContext = PrimitiveExecutionContext(slots)
+    copyTo(scopeContext)
+    scopeContext.setValue(key1, value1)
+    scopeContext.setValue(key2, value2)
+    scopeContext
+  }
+
   private def setValue(key1: String, value1: AnyValue): Unit = {
     (slots.get(key1), value1) match {
       case (Some(RefSlot(offset, _, _)), _) =>

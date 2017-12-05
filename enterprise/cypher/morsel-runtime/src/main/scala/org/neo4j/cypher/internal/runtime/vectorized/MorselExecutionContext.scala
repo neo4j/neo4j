@@ -66,4 +66,6 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
   override def iterator: Iterator[(String, AnyValue)] = ???
 
   override def newScopeWith1(key1: String, value1: AnyValue) = ???
+
+  override def newScopeWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue) = ???
 }

@@ -87,8 +87,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case _ =>
         fallback.build(plan)
-        //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
-
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
