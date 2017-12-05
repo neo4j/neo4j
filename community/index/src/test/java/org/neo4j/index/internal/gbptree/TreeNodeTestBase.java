@@ -45,15 +45,15 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 public abstract class TreeNodeTestBase<KEY,VALUE>
 {
-    static final int STABLE_GENERATION = 1;
-    static final int UNSTABLE_GENERATION = 3;
+    private static final int STABLE_GENERATION = 1;
+    private static final int UNSTABLE_GENERATION = 3;
     private static final int HIGH_GENERATION = 4;
 
     private static final int PAGE_SIZE = 512;
     final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
 
-    Layout<KEY,VALUE> layout;
-    TreeNode<KEY,VALUE> node;
+    private Layout<KEY,VALUE> layout;
+    private TreeNode<KEY,VALUE> node;
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -250,7 +250,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldInsertAndRemoveKeyAndChildInInternal() throws Exception
+    public void keyChildOperationsInInternal() throws Exception
     {
         // GIVEN
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );

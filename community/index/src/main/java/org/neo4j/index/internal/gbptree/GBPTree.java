@@ -343,7 +343,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * {@link Consumer} to hand out to others who want to decorate information about this tree
      * to exceptions thrown out from its surface.
      */
-    private final Consumer<Throwable> exceptionDecorator = t -> appendTreeInformation( t );
+    private final Consumer<Throwable> exceptionDecorator = this::appendTreeInformation;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.

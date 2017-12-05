@@ -24,7 +24,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_VALUE;
-import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
 class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 {
@@ -73,13 +72,6 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         return into;
     }
 
-    private void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
-    {
-        insertKeySlotsAt( cursor, pos, 1, keyCount );
-        cursor.setOffset( keyOffset( pos ) );
-        layout.writeKey( cursor, key );
-    }
-
     @Override
     void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount, long stableGeneration,
             long unstableGeneration )
@@ -95,29 +87,24 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         insertValueAt( cursor, value, pos, keyCount );
     }
 
-    private void removeKeyAt( PageCursor cursor, int pos, int keyCount, Type type )
-    {
-        removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
-    }
-
     @Override
     void removeKeyValueAt( PageCursor cursor, int pos, int keyCount )
     {
-        removeKeyAt( cursor, pos, keyCount, Type.LEAF );
+        removeKeyAt( cursor, pos, keyCount );
         removeValueAt( cursor, pos, keyCount );
     }
 
     @Override
     void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount )
     {
-        removeKeyAt( cursor, keyPos, keyCount, INTERNAL );
+        removeKeyAt( cursor, keyPos, keyCount );
         removeChildAt( cursor, keyPos, keyCount );
     }
 
     @Override
     void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount )
     {
-        removeKeyAt( cursor, keyPos, keyCount, INTERNAL );
+        removeKeyAt( cursor, keyPos, keyCount );
         removeChildAt( cursor, keyPos + 1, keyCount );
     }
 
@@ -150,10 +137,53 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         return read( cursor, stableGeneration, unstableGeneration, pos );
     }
 
+    @Override
+    void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
+    {
+        cursor.setOffset( childOffset( pos ) );
+        writeChild( cursor, child, stableGeneration, unstableGeneration );
+    }
+
+    @Override
+    int internalMaxKeyCount()
+    {
+        return internalMaxKeyCount;
+    }
+
+    @Override
+    int leafMaxKeyCount()
+    {
+        return leafMaxKeyCount;
+    }
+
+    @Override
+    boolean reasonableKeyCount( int keyCount )
+    {
+        return keyCount >= 0 && keyCount <= Math.max( internalMaxKeyCount(), leafMaxKeyCount() );
+    }
+
+    @Override
+    int childOffset( int pos )
+    {
+        return BASE_HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
+    }
+
+    private void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
+    {
+        insertKeySlotsAt( cursor, pos, 1, keyCount );
+        cursor.setOffset( keyOffset( pos ) );
+        layout.writeKey( cursor, key );
+    }
+
+    private void removeKeyAt( PageCursor cursor, int pos, int keyCount )
+    {
+        removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
+    }
+
     private void insertChildAt( PageCursor cursor, long child, int pos, int keyCount,
             long stableGeneration, long unstableGeneration )
     {
-        insertChildSlotsAt( cursor, pos, 1, keyCount );
+        insertChildSlot( cursor, pos, keyCount );
         setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
     }
 
@@ -162,17 +192,10 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         removeSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), childSize() );
     }
 
-    @Override
-    void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
+    private void insertKeyValueSlots( PageCursor cursor, int numberOfSlots, int keyCount )
     {
-        cursor.setOffset( childOffset( pos ) );
-        writeChild( cursor, child, stableGeneration, unstableGeneration );
-    }
-
-    private void insertKeyValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
-    {
-        insertKeySlotsAt( cursor, pos, numberOfSlots, keyCount );
-        insertValueSlotsAt( cursor, pos, numberOfSlots, keyCount );
+        insertKeySlotsAt( cursor, 0, numberOfSlots, keyCount );
+        insertValueSlotsAt( cursor, 0, numberOfSlots, keyCount );
     }
 
     // Always insert together with key. Use insertKeyValueAt
@@ -198,27 +221,9 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         insertSlotsAt( cursor, pos, numberOfSlots, keyCount, valueOffset( 0 ), valueSize );
     }
 
-    private void insertChildSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    private void insertChildSlot( PageCursor cursor, int pos, int keyCount )
     {
-        insertSlotsAt( cursor, pos, numberOfSlots, keyCount + 1, childOffset( 0 ), childSize() );
-    }
-
-    @Override
-    int internalMaxKeyCount()
-    {
-        return internalMaxKeyCount;
-    }
-
-    @Override
-    int leafMaxKeyCount()
-    {
-        return leafMaxKeyCount;
-    }
-
-    @Override
-    boolean reasonableKeyCount( int keyCount )
-    {
-        return keyCount >= 0 && keyCount <= Math.max( internalMaxKeyCount(), leafMaxKeyCount() );
+        insertSlotsAt( cursor, pos, 1, keyCount + 1, childOffset( 0 ), childSize() );
     }
 
     private int keyOffset( int pos )
@@ -231,12 +236,6 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         return BASE_HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
     }
 
-    @Override
-    int childOffset( int pos )
-    {
-        return BASE_HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
-    }
-
     private int keySize()
     {
         return keySize;
@@ -246,6 +245,8 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     {
         return valueSize;
     }
+
+    /* SPLIT, MERGE and REBALANCE*/
 
     @Override
     boolean internalOverflow( int keyCount )
@@ -400,7 +401,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
 
         // Push keys and values in right sibling to the right
-        insertKeyValueSlotsAt( rightCursor, 0, numberOfKeysToMove, rightKeyCount );
+        insertKeyValueSlots( rightCursor, numberOfKeysToMove, rightKeyCount );
 
         // Move keys and values from left sibling to right sibling
         copyKeysAndValues( leftCursor, fromPosInLeftNode, rightCursor, 0, numberOfKeysToMove );
