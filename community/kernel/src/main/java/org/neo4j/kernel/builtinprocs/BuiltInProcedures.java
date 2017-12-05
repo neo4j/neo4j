@@ -464,19 +464,37 @@ public class BuiltInProcedures
 
     @Description( "Get or create a node explicit index - YIELD type,name,config" )
     @Procedure( name = "db.index.explicit.forNodes", mode = WRITE )
-    public Stream<ExplicitIndexInfo> nodeManualIndex( @Name( "indexName" ) String explicitIndexName )
+    public Stream<ExplicitIndexInfo> nodeManualIndex( @Name( "indexName" ) String explicitIndexName,
+            @Name( value = "config", defaultValue = "" ) Map<String,String> config )
     {
         IndexManager mgr = graphDatabaseAPI.index();
-        Index<Node> index = mgr.forNodes( explicitIndexName );
+        Index<Node> index;
+        if ( config.isEmpty() )
+        {
+            index = mgr.forNodes( explicitIndexName );
+        }
+        else
+        {
+            index = mgr.forNodes( explicitIndexName, config );
+        }
         return Stream.of( new ExplicitIndexInfo( "NODE", explicitIndexName, mgr.getConfiguration( index ) ) );
     }
 
     @Description( "Get or create a relationship explicit index - YIELD type,name,config" )
     @Procedure( name = "db.index.explicit.forRelationships", mode = WRITE )
-    public Stream<ExplicitIndexInfo> relationshipManualIndex( @Name( "indexName" ) String explicitIndexName )
+    public Stream<ExplicitIndexInfo> relationshipManualIndex( @Name( "indexName" ) String explicitIndexName,
+            @Name( value = "config", defaultValue = "" ) Map<String,String> config )
     {
         IndexManager mgr = graphDatabaseAPI.index();
-        Index<Relationship> index = mgr.forRelationships( explicitIndexName );
+        Index<Relationship> index;
+        if ( config.isEmpty() )
+        {
+            index = mgr.forRelationships( explicitIndexName );
+        }
+        else
+        {
+            index = mgr.forRelationships( explicitIndexName, config );
+        }
         return Stream.of( new ExplicitIndexInfo( "RELATIONSHIP", explicitIndexName, mgr.getConfiguration( index ) ) );
     }
 

@@ -31,6 +31,18 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     GraphDatabaseSettings.relationship_auto_indexing -> "true",
     GraphDatabaseSettings.relationship_keys_indexable -> "weight")
 
+  private def assertNodeIndexExists(indexName: String, doesit: Boolean) = {
+    graph.inTx {
+      graph.index().existsForNodes(indexName) should be(doesit)
+    }
+  }
+
+  private def assertRelationshipIndexExists(indexName: String, doesit: Boolean) = {
+    graph.inTx {
+      graph.index().existsForRelationships(indexName) should be(doesit)
+    }
+  }
+
   test("Node from exact key value match") {
     val node = createNode()
     graph.inTx {
@@ -457,34 +469,139 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
   test("should be able to get or create a node index") {
     //Given
-    graph.inTx {
-      graph.index().existsForNodes("usernames") should be(false)
-    }
+    assertNodeIndexExists("usernames", false)
 
     //When
     val result = execute("CALL db.index.explicit.forNodes('usernames') YIELD type, name").toList
     result should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
 
     //Then
-    graph.inTx {
-      graph.index().existsForNodes("usernames") should be(true)
-    }
+    assertNodeIndexExists("usernames", true)
+  }
+
+  test("should be able to get an existing node index without specifying a configuration") {
+    //Given
+    assertNodeIndexExists("usernames", false)
+    execute("CALL db.index.explicit.forNodes('usernames') YIELD type, name").toList
+
+    //When
+    val result = execute("CALL db.index.explicit.forNodes('usernames') YIELD type, name").toList
+    result should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
+
+    //Then
+    assertNodeIndexExists("usernames", true)
+  }
+
+  test("should be able to get an existing node index with specifying a configuration") {
+    //Given
+    assertNodeIndexExists("usernames", false)
+    execute("CALL db.index.explicit.forNodes('usernames') YIELD type, name").toList
+
+    //When
+    val result = execute("CALL db.index.explicit.forNodes('usernames', {type: 'exact', provider: 'lucene'}) YIELD type, name").toList
+    result should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
+
+    //Then
+    assertNodeIndexExists("usernames", true)
+  }
+
+  test("cannot get a node index with a different type if it exists already") {
+    //Given
+    assertNodeIndexExists("usernames", false)
+
+    //Then
+    val result1 = execute("CALL db.index.explicit.forNodes('usernames', {type: 'exact', provider: 'lucene'}) YIELD type, name, config").toList
+    result1.head("config").asInstanceOf[Map[String, String]] should contain("type" -> "exact")
+    result1.head("config").asInstanceOf[Map[String, String]] should contain("provider" -> "lucene")
+    intercept[Exception] {
+      execute("CALL db.index.explicit.forNodes('usernames', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
+    }.getMessage should be(
+      """Failed to invoke procedure `db.index.explicit.forNodes`: Caused by: java.lang.IllegalArgumentException: Supplied index configuration:
+        |{type=fulltext, provider=lucene}
+        |doesn't match stored config in a valid way:
+        |{type=exact, provider=lucene}
+        |for 'usernames'""".stripMargin)
+
+    //And Then
+    assertNodeIndexExists("usernames", true)
+  }
+
+  test("configuring a fulltext index should enable fulltext querying") {
+    //Given
+    assertNodeIndexExists("usernames", false)
+
+    execute("CALL db.index.explicit.forNodes('usernames', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
+    assertNodeIndexExists("usernames", true)
+
+    execute("CREATE (n {prop:'x'}) WITH n CALL db.index.explicit.addNode('usernames',n,'username','A Satia be') YIELD success RETURN success").toList
+    // will only find the node with fulltext index, not with exact
+    execute("CALL db.index.explicit.searchNodes('usernames', 'username:Satia') YIELD node RETURN node.prop").columnAs("node.prop").toList should be(List("x"))
+  }
+
+  test("wrong index type does not lead to null-pointer-exception") {
+    val e = intercept[Exception](
+      execute("CALL db.index.explicit.forNodes('usernames', {type: 'does not exist', provider: 'lucene'}) YIELD type, name, config").toList
+    )
+    e.getCause.getCause.getMessage should equal("The given type was not recognized: does not exist. Known types are 'fulltext' and 'exact'")
   }
 
   test("should be able to get or create a relationship index") {
     //Given
-    graph.inTx {
-      graph.index().existsForRelationships("relIndex") should be(false)
-    }
+    assertRelationshipIndexExists("relIndex", false)
 
     //When
     val result = execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
     result should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
 
     //Then
-    graph.inTx {
-      graph.index().existsForRelationships("relIndex") should be(true)
-    }
+    assertRelationshipIndexExists("relIndex", true)
+  }
+
+  test("should be able to get an existing relationship index without specifying a configuration") {
+    //Given
+    assertRelationshipIndexExists("relIndex", false)
+    execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+
+    //When
+    val result = execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+    result should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
+
+    //Then
+    assertRelationshipIndexExists("relIndex", true)
+  }
+
+  test("should be able to get an existing relationship index with specifying a configuration") {
+    //Given
+    assertRelationshipIndexExists("relIndex", false)
+    execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+
+    //When
+    val result = execute("CALL db.index.explicit.forRelationships('relIndex', {type: 'exact', provider: 'lucene'}) YIELD type, name").toList
+    result should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
+
+    //Then
+    assertRelationshipIndexExists("relIndex", true)
+  }
+
+  test("cannot get a relationship index with a different type if it exists already") {
+    //Given
+    assertRelationshipIndexExists("relIndex", false)
+
+    //Then
+    val result1 = execute("CALL db.index.explicit.forRelationships('relIndex', {type: 'exact', provider: 'lucene'}) YIELD type, name, config").toList
+    result1.head("config").asInstanceOf[Map[String, String]] should contain("type" -> "exact")
+    result1.head("config").asInstanceOf[Map[String, String]] should contain("provider" -> "lucene")
+    intercept[Exception] {
+      execute("CALL db.index.explicit.forRelationships('relIndex', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
+    }.getMessage should be(
+      """Failed to invoke procedure `db.index.explicit.forRelationships`: Caused by: java.lang.IllegalArgumentException: Supplied index configuration:
+        |{type=fulltext, provider=lucene}
+        |doesn't match stored config in a valid way:
+        |{type=exact, provider=lucene}
+        |for 'relIndex'""".stripMargin)
+
+    //And Then
+    assertRelationshipIndexExists("relIndex", true)
   }
 
   test("manual node index exists") {
