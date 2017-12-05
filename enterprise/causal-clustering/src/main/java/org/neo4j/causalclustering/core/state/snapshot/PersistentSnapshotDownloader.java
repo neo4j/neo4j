@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.core.state.snapshot;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
@@ -32,6 +31,8 @@ import org.neo4j.logging.Log;
 
 class PersistentSnapshotDownloader implements Runnable
 {
+    static final String OPERATION_NAME = "download of snapshot";
+
     private final CommandApplicationProcess applicationProcess;
     private final LeaderLocator leaderLocator;
     private final CoreStateDownloader downloader;
@@ -62,26 +63,26 @@ class PersistentSnapshotDownloader implements Runnable
     {
         INITIATED,
         RUNNING,
+        STOPPED,
         COMPLETED
     }
 
     @Override
     public void run()
     {
-        state = State.RUNNING;
+        if ( !initialStateOk() )
+        {
+            return;
+        }
         try
         {
-            applicationProcess.pauseApplier( CoreStateDownloaderService.OPERATION_NAME );
-            while ( true )
+            state = State.RUNNING;
+            applicationProcess.pauseApplier( OPERATION_NAME );
+            while ( state == State.RUNNING )
             {
-                if ( Thread.interrupted() )
-                {
-                    break;
-                }
                 try
                 {
                     downloader.downloadSnapshot( leaderLocator.getLeader() );
-                    applicationProcess.resumeApplier( CoreStateDownloaderService.OPERATION_NAME );
                     break;
                 }
                 catch ( StoreCopyFailedException e )
@@ -92,11 +93,52 @@ class PersistentSnapshotDownloader implements Runnable
                 {
                     log.warn( "No leader found. Retrying in {} ms.", timeout.getMillis() );
                 }
-                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( timeout.getMillis() ) );
+                Thread.sleep( timeout.getMillis() );
                 timeout.increment();
             }
         }
+        catch ( InterruptedException e )
+        {
+            log.error( "Persistent snapshot downloader was interrupted" );
+        }
         finally
+        {
+            applicationProcess.resumeApplier( OPERATION_NAME );
+            state = State.COMPLETED;
+        }
+    }
+
+    private boolean initialStateOk()
+    {
+        switch ( state )
+        {
+        case INITIATED:
+            return true;
+        case RUNNING:
+            log.error( "Persistent snapshot downloader is already running. " +
+                       "Illegal state '{}'. Expected '{}'", state, State.INITIATED );
+            return false;
+        case STOPPED:
+            log.info( "Persistent snapshot downloader was stopped before starting" );
+            return false;
+        case COMPLETED:
+            log.error( "Persistent snapshot downloader has already completed. " +
+                       "Illegal state '{}'. Expected '{}'", state, State.INITIATED );
+            return false;
+        default:
+            log.error( "Not a recognised state. " +
+                       "Illegal state '{}'. Expected '{}'", state, State.INITIATED );
+            return false;
+        }
+    }
+
+    void stop()
+    {
+        if ( state == State.RUNNING )
+        {
+            state = State.STOPPED;
+        }
+        else if ( state == State.INITIATED )
         {
             state = State.COMPLETED;
         }

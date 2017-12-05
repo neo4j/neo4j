@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
@@ -38,16 +39,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.startsWith;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
-import static org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService.OPERATION_NAME;
+import static org.neo4j.causalclustering.core.state.snapshot.PersistentSnapshotDownloader.OPERATION_NAME;
 
 public class PersistentSnapshotDownloaderTest
 {
@@ -76,7 +75,7 @@ public class PersistentSnapshotDownloaderTest
     }
 
     @Test
-    public void shouldNotResumeCommandApplicationProcessWhileDownloadIsFailing() throws Exception
+    public void shouldResumeCommandApplicationProcessIsInterruptedDownloadIsFailing() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -86,26 +85,15 @@ public class PersistentSnapshotDownloaderTest
         when( leaderLocator.getLeader() ).thenReturn( someMember );
 
         final Log log = mock( Log.class );
+        NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log );
+                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
+                        timeout );
 
         // when
         Thread thread = new Thread( persistentSnapshotDownloader );
         thread.start();
-
-        Predicates.await( () ->
-        {
-            try
-            {
-                verify( log, atLeast( 1 ) ).error( startsWith( "Failed to download snapshot. Retrying in" )
-                        , anyInt(), any( StoreCopyFailedException.class ) );
-                return true;
-            }
-            catch ( Throwable throwable )
-            {
-                return false;
-            }
-        }, 1, TimeUnit.SECONDS );
+        awaitOneIteration( timeout );
 
         // then
         assertTrue( persistentSnapshotDownloader.isRunning() );
@@ -115,11 +103,11 @@ public class PersistentSnapshotDownloaderTest
 
         // then
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
-        verify( applicationProcess, never() ).resumeApplier( OPERATION_NAME );
+        verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
     }
 
     @Test
-    public void shouldNotResumeCommandApplicationProcessIfNoLeaderIsFound() throws Exception
+    public void shouldResumeCommandApplicationProcessIfDownloadIsStopped() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -128,37 +116,27 @@ public class PersistentSnapshotDownloaderTest
         doThrow( NoLeaderFoundException.class ).when( leaderLocator ).getLeader();
 
         final Log log = mock( Log.class );
+        NoTimeout timeout = new
+                NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log );
+                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
+                        timeout );
 
         // when
         Thread thread = new Thread( persistentSnapshotDownloader );
         thread.start();
-
-        Predicates.await( () ->
-        {
-            try
-            {
-                verify( log, atLeast( 1 ) ).warn(
-                        startsWith( "No leader found. Retrying in" ),
-                        anyInt() );
-                return true;
-            }
-            catch ( Throwable throwable )
-            {
-                return false;
-            }
-        }, 1, TimeUnit.SECONDS );
+        awaitOneIteration( timeout );
 
         // then
         assertTrue( persistentSnapshotDownloader.isRunning() );
 
         // when
-        thread.stop();
+        persistentSnapshotDownloader.stop();
+        thread.join();
 
         // then
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
-        verify( applicationProcess, never() ).resumeApplier( OPERATION_NAME );
+        verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
     }
 
     @Test
@@ -183,7 +161,87 @@ public class PersistentSnapshotDownloaderTest
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
         assertEquals( 3, timeout.increments );
-        assertFalse(persistentSnapshotDownloader.isRunning());
+        assertFalse( persistentSnapshotDownloader.isRunning() );
+    }
+
+    @Test
+    public void shouldNotStartIfAlreadyCompleted() throws Exception
+    {
+        // given
+        CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
+        final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
+        when( leaderLocator.getLeader() ).thenReturn( someMember );
+
+        final Log log = mock( Log.class );
+        PersistentSnapshotDownloader persistentSnapshotDownloader =
+                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log );
+
+        persistentSnapshotDownloader.run();
+        persistentSnapshotDownloader.run();
+
+        verify( log, times( 1 ) )
+                .error( startsWith( "Persistent snapshot downloader has already completed." ), any(), any() );
+        verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
+        verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
+    }
+
+    @Test
+    public void shouldNotStartIfCurrentlyRunning() throws Exception
+    {
+        // given
+        CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
+        final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
+        doThrow( NoLeaderFoundException.class ).when( leaderLocator ).getLeader();
+
+        final Log log = mock( Log.class );
+        NoTimeout timeout = new NoTimeout();
+        PersistentSnapshotDownloader persistentSnapshotDownloader =
+                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
+                        timeout );
+
+        Thread thread = new Thread( persistentSnapshotDownloader );
+
+        // when
+        thread.start();
+        awaitOneIteration( timeout );
+        persistentSnapshotDownloader.run();
+        persistentSnapshotDownloader.stop();
+        thread.join();
+
+        verify( log, times( 1 ) )
+                .error( startsWith( "Persistent snapshot downloader is already running." ), any(), any() );
+        verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
+        verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
+    }
+
+    @Test
+    public void shouldNotStartIfStoppedBeforeRunning() throws Exception
+    {
+        // given
+        CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
+        final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
+        doThrow( NoLeaderFoundException.class ).when( leaderLocator ).getLeader();
+
+        final Log log = mock( Log.class );
+        PersistentSnapshotDownloader persistentSnapshotDownloader =
+                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log );
+
+        // when
+        persistentSnapshotDownloader.stop();
+        persistentSnapshotDownloader.run();
+
+        verify( log, times( 1 ) )
+                .error( startsWith( "Persistent snapshot downloader has already completed.") , any(), any() );
+        verify( applicationProcess, never() ).pauseApplier( OPERATION_NAME );
+        verify( applicationProcess, never() ).resumeApplier( OPERATION_NAME );
+    }
+
+    private void awaitOneIteration( NoTimeout timeout ) throws TimeoutException
+    {
+        Predicates.await( () -> timeout.increments > 0, 1, TimeUnit.SECONDS );
     }
 
     private class EventuallySuccessfulDownloader extends CoreStateDownloader

@@ -22,21 +22,19 @@ package org.neo4j.causalclustering.core.state.snapshot;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.downloadSnapshot;
 
-public class CoreStateDownloaderService
+public class CoreStateDownloaderService extends LifecycleAdapter
 {
-    static final String OPERATION_NAME = "download of snapshot";
-
     private final JobScheduler jobScheduler;
     private final CoreStateDownloader downloader;
     private final CommandApplicationProcess applicationProcess;
     private final Log log;
     private PersistentSnapshotDownloader currentJob = null;
-    private final JobScheduler.Group downloadSnapshotGroup;
 
     public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader,
             CommandApplicationProcess applicationProcess,
@@ -46,21 +44,23 @@ public class CoreStateDownloaderService
         this.downloader = downloader;
         this.applicationProcess = applicationProcess;
         this.log = logProvider.getLog( getClass() );
-        this.downloadSnapshotGroup = new JobScheduler.Group( "download snapshot", POOLED );
     }
 
-    public void scheduleDownload( LeaderLocator leaderLocator )
+    public synchronized void scheduleDownload( LeaderLocator leaderLocator )
     {
         if ( currentJob == null || currentJob.hasCompleted() )
         {
-            synchronized ( this )
-            {
-                if ( currentJob == null || currentJob.hasCompleted() )
-                {
-                    currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log );
-                    jobScheduler.schedule( downloadSnapshotGroup, currentJob );
-                }
-            }
+            currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log );
+            jobScheduler.schedule( downloadSnapshot, currentJob );
+        }
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        if (currentJob != null)
+        {
+            currentJob.stop();
         }
     }
 }

@@ -236,5 +236,6 @@ public class CoreServerModule
         life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         life.add( coreLife );
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
+        life.add( downloadService );
     }
 }

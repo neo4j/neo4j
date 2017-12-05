@@ -25,9 +25,11 @@ import org.junit.Test;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
@@ -41,11 +43,13 @@ import org.neo4j.logging.LogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
-import static org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService.OPERATION_NAME;
+import static org.neo4j.causalclustering.core.state.snapshot.PersistentSnapshotDownloader.OPERATION_NAME;
 
 public class CoreStateDownloaderServiceTest
 {
@@ -78,18 +82,7 @@ public class CoreStateDownloaderServiceTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( someMember );
         coreStateDownloaderService.scheduleDownload( leaderLocator );
-        Predicates.await( () ->
-        {
-            try
-            {
-                verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
-                return true;
-            }
-            catch ( Throwable t )
-            {
-                return false;
-            }
-        }, 1, TimeUnit.SECONDS );
+        waitForApplierToResume( applicationProcess );
 
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
@@ -99,7 +92,7 @@ public class CoreStateDownloaderServiceTest
     @Test
     public void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime() throws Exception
     {
-        AtomicInteger schedules = new AtomicInteger(  );
+        AtomicInteger schedules = new AtomicInteger();
         CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, neo4jJobScheduler );
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
@@ -119,7 +112,71 @@ public class CoreStateDownloaderServiceTest
 
         availableLeader.set( true );
 
-        assertEquals(1, schedules.get());
+        assertEquals( 1, schedules.get() );
+    }
+
+    @Test
+    public void shouldRunConcurrentDownloads() throws Throwable
+    {
+        // given
+        AtomicInteger schedules = new AtomicInteger();
+        CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, neo4jJobScheduler );
+        CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
+        doThrow( StoreCopyFailedException.class ).when( coreStateDownloader ).downloadSnapshot( someMember );
+        final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
+
+        final Log log = mock( Log.class );
+        CoreStateDownloaderService coreStateDownloaderService =
+                new CoreStateDownloaderService( countingJobScheduler, coreStateDownloader, applicationProcess,
+                        logProvider( log ) );
+
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
+        when( leaderLocator.getLeader() ).thenReturn( someMember );
+
+        // when
+        coreStateDownloaderService.scheduleDownload( leaderLocator );
+        Predicates.await( () ->
+        {
+            try
+            {
+                verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
+                return true;
+            }
+            catch ( Throwable t )
+            {
+                return false;
+            }
+        }, 1, TimeUnit.SECONDS );
+        coreStateDownloaderService.stop();
+
+        // then
+        waitForApplierToResume( applicationProcess );
+
+        // given
+        doNothing().when( coreStateDownloader ).downloadSnapshot( someMember );
+
+        // when
+        coreStateDownloaderService.scheduleDownload( leaderLocator );
+        waitForApplierToResume( applicationProcess );
+
+        //then
+        assertEquals( 2, schedules.get() );
+    }
+
+    private void waitForApplierToResume( CommandApplicationProcess applicationProcess ) throws TimeoutException
+    {
+        Predicates.await( () ->
+        {
+            try
+            {
+                verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
+                return true;
+            }
+            catch ( Throwable t )
+            {
+                return false;
+            }
+        }, 1, TimeUnit.SECONDS );
     }
 
     private class ControllableLeaderLocator implements LeaderLocator
