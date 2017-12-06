@@ -164,6 +164,13 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     }
 
     @Override
+    public boolean nodeExists( long id )
+    {
+        assertOpen();
+        return allStoreHolder.nodeExists( id );
+    }
+
+    @Override
     public void singleRelationship( long reference, RelationshipScanCursor cursor )
     {
         assertOpen();

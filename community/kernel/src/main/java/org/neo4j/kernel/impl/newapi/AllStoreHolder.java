@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
@@ -88,6 +89,24 @@ public class AllStoreHolder extends Read implements Token
         this.groups = statement.groups();
         this.properties = statement.properties();
         this.explicitIndexStore = explicitIndexStore;
+    }
+
+    @Override
+    public boolean nodeExists( long id )
+    {
+        if ( hasTxStateWithChanges() )
+        {
+            TransactionState txState = txState();
+            if ( txState.nodeIsDeletedInThisTx( id ) )
+            {
+                return false;
+            }
+            else if ( txState.nodeIsAddedInThisTx( id ) )
+            {
+                return true;
+            }
+        }
+        return storeReadLayer.nodeExists( id );
     }
 
     @Override

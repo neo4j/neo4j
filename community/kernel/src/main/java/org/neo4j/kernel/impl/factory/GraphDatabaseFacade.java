@@ -332,12 +332,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         }
 
         KernelTransaction ktx = spi.currentTransaction();
-        try ( Statement ignore = spi.currentStatement();
-              NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor()
-        )
+        try ( Statement ignore = spi.currentStatement())
         {
-            ktx.dataRead().singleNode( id, nodeCursor );
-            if ( !nodeCursor.next() )
+            if ( !ktx.dataRead().nodeExists( id ) )
             {
                 throw new NotFoundException( format( "Node %d not found", id ),
                         new EntityNotFoundException( EntityType.NODE, id ) );
