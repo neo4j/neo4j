@@ -26,7 +26,7 @@ import java.io.File;
 
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.OptionalHostnamePort;
+import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;

@@ -23,7 +23,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.OptionalHostnamePort;
+import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
@@ -45,12 +45,12 @@ class AddressResolutionHelper
 
     private HostnamePort readDefaultConfigAddressHA( Config config )
     {
-        return OnlineBackupSettings.online_backup_server.from( config );
+        return config.get( OnlineBackupSettings.online_backup_server );
     }
 
     private AdvertisedSocketAddress readDefaultConfigAddressCC( Config config )
     {
-        return advertisedFromListenAddress( CausalClusteringSettings.transaction_listen_address.from( config ) );
+        return advertisedFromListenAddress( config.get( CausalClusteringSettings.transaction_listen_address ) );
     }
 
     private AdvertisedSocketAddress advertisedFromListenAddress( ListenSocketAddress listenSocketAddress )
