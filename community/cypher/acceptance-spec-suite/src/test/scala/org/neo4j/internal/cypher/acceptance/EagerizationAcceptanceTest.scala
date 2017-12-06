@@ -172,7 +172,7 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
-  test("should not introduce extra eagerness after CALL of writing procedure") {
+  test("should introduce extra eagerness after CALL of writing procedure") {
     // Given
     registerProcedure("user.mkRel") { builder =>
       builder.in("x", Neo4jTypes.NTNode)
@@ -203,11 +203,10 @@ class EagerizationAcceptanceTest
     val result = executeWithCostPlannerOnly(query)
     result.size should equal(4)
 
-    // Correct! Eagerization happens as part of query context operation
-    assertNumberOfEagerness(query, 0)
+    assertNumberOfEagerness(query, 1)
   }
 
-  test("should not introduce extra eagerness after CALL of writing void procedure") {
+  test("should introduce extra eagerness after CALL of writing void procedure") {
     // Given
     var counter = Counter(0)
 
@@ -242,8 +241,7 @@ class EagerizationAcceptanceTest
     result.size should equal(4)
     counter.counted should equal(4)
 
-    // Correct! Eagerization happens as part of query context operation
-    assertNumberOfEagerness(query, 0)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce extra eagerness after CALL of reading procedure") {
