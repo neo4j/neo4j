@@ -146,12 +146,6 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    int internalMaxKeyCount()
-    {
-        return internalMaxKeyCount;
-    }
-
-    @Override
     int leafMaxKeyCount()
     {
         return leafMaxKeyCount;
@@ -164,9 +158,20 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
+    boolean reasonableChildCount( int childCount )
+    {
+        return childCount >= 0 && childCount <= internalMaxKeyCount();
+    }
+
+    @Override
     int childOffset( int pos )
     {
         return BASE_HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
+    }
+
+    private int internalMaxKeyCount()
+    {
+        return internalMaxKeyCount;
     }
 
     private void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
@@ -250,15 +255,15 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     /* SPLIT, MERGE and REBALANCE*/
 
     @Override
-    boolean internalOverflow( int keyCount )
+    boolean internalOverflow( int currentKeyCount )
     {
-        return keyCount > internalMaxKeyCount();
+        return currentKeyCount + 1 > internalMaxKeyCount();
     }
 
     @Override
-    boolean leafOverflow( int keyCount )
+    boolean leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue )
     {
-        return keyCount > leafMaxKeyCount();
+        return currentKeyCount + 1 > leafMaxKeyCount();
     }
 
     @Override

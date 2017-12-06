@@ -291,12 +291,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    int internalMaxKeyCount()
-    {
-        throw new UnsupportedOperationException( "Implement me" );
-    }
-
-    @Override
     int leafMaxKeyCount()
     {
         throw new UnsupportedOperationException( "Implement me" );
@@ -309,6 +303,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
+    boolean reasonableChildCount( int childCount )
+    {
+        throw new UnsupportedOperationException( "Implement me" );
+    }
+
+    @Override
     int childOffset( int pos )
     {
         // Child pointer to the left of key at pos
@@ -316,15 +316,26 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean internalOverflow( int keyCount )
+    boolean internalOverflow( int currentKeyCount )
     {
         throw new UnsupportedOperationException( "Implement me" );
     }
 
     @Override
-    boolean leafOverflow( int keyCount )
+    boolean leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        // How much space do we have?
+        int allocSpace = getAllocSpace( cursor );
+        int endOfOffsetArray = keyPosOffsetLeaf( currentKeyCount );
+        int freeSpace = allocSpace - endOfOffsetArray;
+
+        // How much space do we need?
+        int keySize = layout.keySize( newKey );
+        int valueSize = layout.valueSize( newValue );
+        int totalOverhead = keySize() + BYTE_SIZE_KEY_SIZE + BYTE_SIZE_VALUE_SIZE;
+
+        // There is your answer!
+        return freeSpace < keySize + valueSize + totalOverhead;
     }
 
     @Override

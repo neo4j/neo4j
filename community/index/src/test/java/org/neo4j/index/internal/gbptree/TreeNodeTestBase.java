@@ -26,9 +26,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
@@ -37,6 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
@@ -370,14 +368,12 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    @RandomRule.Seed( 1512460065516L )
     public void shouldInsertAndRemoveRandomKeysAndValues() throws Exception
     {
         // This test doesn't care about sorting, that's an aspect that lies outside of TreeNode, really
 
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        int maxKeyCount = node.leafMaxKeyCount();
         // add +1 to these to simplify some array logic in the test itself
         List<KEY> expectedKeys = new ArrayList<>();
         List<VALUE> expectedValues = new ArrayList<>();
@@ -390,18 +386,18 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         {
             if ( random.nextFloat() < 0.7 )
             {   // 70% insert
-                if ( expectedKeyCount < maxKeyCount )
+                KEY newKey;
+                do
+                {
+                    newKey = key( random.nextLong() );
+                }
+                while ( contains( expectedKeys, newKey, layout ) );
+                VALUE newValue = value( random.nextLong() );
+
+                if ( !node.leafOverflow( cursor, expectedKeyCount + 1, newKey, newValue ) )
                 {   // there's room
                     int position = expectedKeyCount == 0 ? 0 : random.nextInt( expectedKeyCount );
                     // ensure unique
-                    KEY newKey;
-                    do
-                    {
-                        newKey = key( random.nextLong() );
-                    }
-                    while ( contains( expectedKeys, newKey, layout ) );
-
-                    VALUE newValue = value( random.nextLong() );
                     node.insertKeyValueAt( cursor, newKey, newValue, position, expectedKeyCount );
                     expectedKeys.add( position, newKey );
                     expectedValues.add( position, newValue );
@@ -450,18 +446,6 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
             assertTrue( "Value differ with expected, actualValue=" + actualValue + ", expectedValue=" + expectedValue,
                     valuesEqual( expectedValue, actualValue ) );
         }
-    }
-
-    private boolean contains( List<KEY> expectedKeys, KEY key, Layout<KEY,?> layout )
-    {
-        return expectedKeys.stream()
-                .map( bind( layout::compare, key ) )
-                .anyMatch( Predicate.isEqual( 0 ) );
-    }
-
-    public static <T, U, R> Function<U,R> bind( BiFunction<T,U,R> f, T t )
-    {
-        return u -> f.apply( t, u );
     }
 
     @Test

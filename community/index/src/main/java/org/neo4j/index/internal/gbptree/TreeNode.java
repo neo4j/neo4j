@@ -282,13 +282,13 @@ abstract class TreeNode<KEY,VALUE>
         GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
     }
 
-    abstract int internalMaxKeyCount();
-
     abstract int leafMaxKeyCount();
 
     // HELPERS
 
     abstract boolean reasonableKeyCount( int keyCount );
+
+    abstract boolean reasonableChildCount( int childCount );
 
     abstract int childOffset( int pos );
 
@@ -310,9 +310,17 @@ abstract class TreeNode<KEY,VALUE>
 
     /* SPLIT, MERGE AND REBALANCE */
 
-    abstract boolean internalOverflow( int keyCount );
+    /**
+     * Will internal overflow if inserting one more key?
+     * @return true if leaf will overflow, else false.
+     */
+    abstract boolean internalOverflow( int currentKeyCount );
 
-    abstract boolean leafOverflow( int keyCount );
+    /**
+     * Will leaf overflow if inserting new key and value?
+     * @return true if leaf will overflow, else false.
+     */
+    abstract boolean leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue );
 
     abstract boolean leafUnderflow( int keyCount );
 

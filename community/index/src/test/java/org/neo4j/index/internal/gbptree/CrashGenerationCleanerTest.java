@@ -67,15 +67,15 @@ public class CrashGenerationCleanerTest
     private final int unstableGeneration = 12;
     private final int crashGeneration = 11;
     private final int firstChildPos = 0;
-    private final int middleChildPos = corruptibleTreeNode.internalMaxKeyCount() / 2;
-    private final int lastChildPos = corruptibleTreeNode.internalMaxKeyCount();
+    private final int secondChildPos = 1;
+    private final int thirdChildPos = 2;
     private final List<PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
             crashed( successor() ),
-            crashed( child( firstChildPos ) ),
-            crashed( child( middleChildPos ) ),
-            crashed( child( lastChildPos ) )
+            crashed( firstChild() ),
+            crashed( middleChild() ),
+            crashed( lastChild() )
     );
     private final List<PageCorruption> possibleCorruptionsInLeaf = Arrays.asList(
             crashed( leftSibling() ),
@@ -151,9 +151,9 @@ public class CrashGenerationCleanerTest
                 internalWith( crashed( successor() ) ),
 
                 /* child */
-                internalWith( crashed( child( firstChildPos ) ) ),
-                internalWith( crashed( child( middleChildPos ) ) ),
-                internalWith( crashed( child( lastChildPos ) ) )
+                internalWith( crashed( firstChild() ) ),
+                internalWith( crashed( middleChild() ) ),
+                internalWith( crashed( lastChild() ) )
         );
         initializeFile( pagedFile, pages );
 
@@ -179,9 +179,9 @@ public class CrashGenerationCleanerTest
                         crashed( leftSibling() ),
                         crashed( rightSibling() ),
                         crashed( successor() ),
-                        crashed( child( firstChildPos ) ),
-                        crashed( child( middleChildPos ) ),
-                        crashed( child( lastChildPos ) ) )
+                        crashed( firstChild() ),
+                        crashed( middleChild() ),
+                        crashed( lastChild() ) )
         );
         initializeFile( pagedFile, pages );
 
@@ -344,14 +344,14 @@ public class CrashGenerationCleanerTest
                             int unstableGeneration )
                     {
                         corruptibleTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                        int maxKeyCount = corruptibleTreeNode.internalMaxKeyCount();
                         long base = IdSpace.MIN_TREE_NODE_ID;
-                        for ( int i = 0; i <= maxKeyCount; i++ )
+                        int keyCount;
+                        for ( keyCount = 0; !corruptibleTreeNode.internalOverflow( keyCount ); keyCount++ )
                         {
-                            long child = base + i;
-                            corruptibleTreeNode.setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
+                            long child = base + keyCount;
+                            corruptibleTreeNode.setChildAt( cursor, child, keyCount, stableGeneration, unstableGeneration );
                         }
-                        TreeNode.setKeyCount( cursor, maxKeyCount );
+                        TreeNode.setKeyCount( cursor, keyCount );
                     }
                 };
 
@@ -375,14 +375,9 @@ public class CrashGenerationCleanerTest
         return SimpleGSPPType.SUCCESSOR;
     }
 
-    private GSPPType child( int pos )
-    {
-        return childGSPPType( pos );
-    }
-
     interface GSPPType
     {
-        int offset( TreeNode node );
+        int offset( PageCursor cursor, TreeNode node );
     }
 
     enum SimpleGSPPType implements GSPPType
@@ -390,7 +385,7 @@ public class CrashGenerationCleanerTest
         LEFT_SIBLING
                 {
                     @Override
-                    public int offset( TreeNode node )
+                    public int offset( PageCursor cursor, TreeNode node )
                     {
                         return TreeNode.BYTE_POS_LEFTSIBLING;
                     }
@@ -398,7 +393,7 @@ public class CrashGenerationCleanerTest
         RIGHT_SIBLING
                 {
                     @Override
-                    public int offset( TreeNode node )
+                    public int offset( PageCursor cursor, TreeNode node )
                     {
                         return TreeNode.BYTE_POS_RIGHTSIBLING;
                     }
@@ -406,23 +401,41 @@ public class CrashGenerationCleanerTest
         SUCCESSOR
                 {
                     @Override
-                    public int offset( TreeNode node )
+                    public int offset( PageCursor cursor, TreeNode node )
                     {
                         return TreeNode.BYTE_POS_SUCCESSOR;
                     }
                 }
     }
 
-    private GSPPType childGSPPType( int pos )
+    private GSPPType firstChild()
     {
-        return node -> node.childOffset( pos );
+        return ( cursor, node ) -> node.childOffset( 0 );
+    }
+
+    private GSPPType middleChild()
+    {
+        return ( cursor, node ) ->
+        {
+            int keyCount = TreeNode.keyCount( cursor );
+            return node.childOffset( keyCount / 2 );
+        };
+    }
+
+    private GSPPType lastChild()
+    {
+        return ( cursor, node ) ->
+        {
+            int keyCount = TreeNode.keyCount( cursor );
+            return node.childOffset( keyCount );
+        };
     }
 
     /* PageCorruption */
     private PageCorruption crashed( GSPPType gsppType )
     {
         return ( pageCursor, node, stableGeneration, unstableGeneration, crashGeneration ) ->
-                node.crashGSPP( pageCursor, gsppType.offset( node ), crashGeneration );
+                node.crashGSPP( pageCursor, gsppType.offset( pageCursor, node ), crashGeneration );
     }
 
     private interface PageCorruption

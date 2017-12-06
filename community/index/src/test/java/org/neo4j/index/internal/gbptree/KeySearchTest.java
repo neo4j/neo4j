@@ -23,12 +23,15 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.KeySearch.search;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
@@ -451,33 +454,39 @@ public class KeySearchTest
     {
         // GIVEN a leaf node with random, although sorted (as of course it must be to binary-search), data
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        int internalMaxKeyCount = node.internalMaxKeyCount();
-        int half = internalMaxKeyCount / 2;
-        int keyCount = random.nextInt( half ) + half;
-        long[] keys = new long[keyCount];
+        List<MutableLong> keys = new ArrayList<>();
         int currentKey = random.nextInt( 10_000 );
         MutableLong key = layout.newKey();
-        for ( int i = 0; i < keyCount; i++ )
+
+        int keyCount = 0;
+        while ( true )
         {
-            keys[i] = currentKey;
+            MutableLong expectedKey = layout.newKey();
             key.setValue( currentKey );
-            node.insertKeyValueAt( cursor, key, dummyValue, i, i );
+            if ( node.leafOverflow( cursor, keyCount, key, dummyValue ) )
+            {
+                break;
+            }
+            layout.copyKey( key, expectedKey );
+            keys.add( keyCount, expectedKey );
+            node.insertKeyValueAt( cursor, key, dummyValue, keyCount, keyCount );
             currentKey += random.nextInt( 100 ) + 10;
+            keyCount++;
         }
         TreeNode.setKeyCount( cursor, keyCount );
 
         // WHEN searching for random keys within that general range
+        MutableLong searchKey = layout.newKey();
         for ( int i = 0; i < 1_000; i++ )
         {
-            long searchKey = random.nextInt( currentKey + 10 );
-            key.setValue( searchKey );
-            int searchResult = search( cursor, node, LEAF, key, readKey, keyCount );
+            searchKey.setValue( random.nextInt( currentKey + 10 ) );
+            int searchResult = search( cursor, node, LEAF, searchKey, readKey, keyCount );
 
             // THEN position should be as expected
-            boolean exists = contains( keys, searchKey );
+            boolean exists = contains( keys, searchKey, layout );
             int position = KeySearch.positionOf( searchResult );
             assertEquals( exists, KeySearch.isHit( searchResult ) );
-            if ( searchKey <= keys[0] )
+            if ( layout.compare( searchKey, keys.get( 0 ) ) <= 0 )
             {   // Our search key was lower than any of our keys, expect 0
                 assertEquals( 0, position );
             }
@@ -486,7 +495,7 @@ public class KeySearchTest
                 boolean found = false;
                 for ( int j = keyCount - 1; j >= 0; j-- )
                 {
-                    if ( searchKey > keys[j] )
+                    if ( layout.compare( searchKey, keys.get( j ) ) > 0 )
                     {
                         assertEquals( j + 1, position );
                         found = true;
