@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPoint
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, Version => IPDVersion}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, Version => IPDVersion, PlannerVersion => IPDPlannerVersion}
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.util.v3_4.Eagerly
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
@@ -492,7 +492,7 @@ object CypherComparisonSupport {
     def prepare(): Unit = newRuntimeMonitor.clear()
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
-      val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String) = extractConfiguration(internalExecutionResult)
+      val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersionName: String) = extractConfiguration(internalExecutionResult)
       // Rule planner only exists in 3.1 and earlier
       val rulePlannerFallback = Planners.Rule.acceptedPlannerNames.contains(reportedPlanner) && Versions.V3_1.acceptedVersionNames.contains(reportedVersion)
 
@@ -508,7 +508,7 @@ object CypherComparisonSupport {
       internalExecutionResult match {
         case Failure(_) => // not unexpected
         case Success(result) =>
-          val (reportedRuntimeName: String, reportedPlannerName: String, reportedVersionName: String) = extractConfiguration(result)
+          val (reportedRuntimeName: String, reportedPlannerName: String, reportedVersionName: String, reportedPlannerVersionName: String) = extractConfiguration(result)
 
           if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName)
             && planner.acceptedPlannerNames.contains(reportedPlannerName)
@@ -518,27 +518,30 @@ object CypherComparisonSupport {
       }
     }
 
-    private def extractConfiguration(result: InternalExecutionResult): (String, String, String) = {
+    private def extractConfiguration(result: InternalExecutionResult): (String, String, String, String) = {
       val arguments = result.executionPlanDescription().arguments
       val reportedRuntime = arguments.collectFirst {
-        case IPDRuntime(reportedRuntime) => reportedRuntime
+        case IPDRuntime(reported) => reported
       }
       val reportedPlanner = arguments.collectFirst {
-        case IPDPlanner(reportedPlanner) => reportedPlanner
+        case IPDPlanner(reported) => reported
       }
       val reportedVersion = arguments.collectFirst {
-        case IPDVersion(reportedVersion) => reportedVersion
+        case IPDVersion(reported) => reported
+      }
+      val reportedPlannerVersion = arguments.collectFirst {
+        case IPDPlannerVersion(reported) => reported
       }
 
       // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
       // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
       val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_1) + Versions.Default
-      val (reportedRuntimeName, reportedPlannerName, reportedVersionName) =
+      val (reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName) =
         if (versionsWithUnreportedProcedureUsage.versions.contains(version))
-          (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"))
+          (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"), reportedPlannerVersion.getOrElse("NONE"))
         else
-          (reportedRuntime.get, reportedPlanner.get, reportedVersion.get)
-      (reportedRuntimeName, reportedPlannerName, reportedVersionName)
+          (reportedRuntime.get, reportedPlanner.get, reportedVersion.get, reportedPlannerVersion.get)
+      (reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName)
     }
 
     def +(other: TestConfiguration): TestConfiguration = other + this

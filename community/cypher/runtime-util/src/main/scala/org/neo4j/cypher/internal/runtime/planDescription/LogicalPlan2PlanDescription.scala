@@ -36,6 +36,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => Intern
       .addArgument(Version("CYPHER 3.4"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
+      .addArgument(PlannerVersion(plannerName.version))
   }
 }
 

@@ -222,7 +222,7 @@ object RewindableExecutionResult {
           Arguments.ExpandExpression(from, relName, relTypes, to, dir, min, max)
         case v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
-      }
+      } :+ Arguments.PlannerVersion("2.3")
       PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.identifiers)
     }
 
@@ -349,7 +349,7 @@ object RewindableExecutionResult {
         case Arguments3_1.Signature(procedureName, _, results) =>
           val procName = QualifiedName(procedureName.namespace, procedureName.name)
           Arguments.Signature(procName, Seq.empty, results.map(pair => (pair._1, lift(pair._2))))
-      }
+      } :+ Arguments.PlannerVersion("3.1")
       PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.variables)
     }
 

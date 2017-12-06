@@ -180,6 +180,11 @@ object InternalPlanDescription {
       override def name = "planner-impl"
     }
 
+    case class PlannerVersion(value: String) extends Argument {
+
+      override def name = "planner-version"
+    }
+
     case class Runtime(value: String) extends Argument {
 
       override def name = "runtime"

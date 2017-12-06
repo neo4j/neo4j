@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 
 sealed abstract class CostBasedPlannerName extends PlannerName {
   val toTextOutput = "COST"
+  val version = "3.3"
 }
 
 object CostBasedPlannerName {
@@ -51,6 +52,7 @@ case object DPPlannerName extends CostBasedPlannerName {
   */
 case object ProcedurePlannerName extends PlannerName {
   val name = "PROCEDURE"
+  val version = "3.3"
 
   override def toTextOutput: String = "PROCEDURE"
 }
