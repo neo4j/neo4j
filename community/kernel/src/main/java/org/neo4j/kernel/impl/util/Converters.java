@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.OptionalHostnamePort;
-
 public class Converters
 {
     private Converters()
