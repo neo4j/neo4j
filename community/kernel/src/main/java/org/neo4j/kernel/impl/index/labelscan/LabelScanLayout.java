@@ -79,7 +79,7 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public int keySize()
+    public int keySize( LabelScanKey key )
     {
         return KEY_SIZE;
     }
@@ -110,7 +110,7 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public void readKey( PageCursor cursor, LabelScanKey into )
+    public void readKey( PageCursor cursor, LabelScanKey into, int keySize )
     {
         into.labelId = cursor.getInt();
         into.idRange = get6ByteLong( cursor );

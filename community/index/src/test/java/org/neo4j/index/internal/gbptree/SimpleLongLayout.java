@@ -72,7 +72,7 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     }
 
     @Override
-    public int keySize()
+    public int keySize( MutableLong key )
     {
         // pad the key here to affect the max key count, useful to get odd or even max key count
         return Long.BYTES + keyPadding;
@@ -97,7 +97,7 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     }
 
     @Override
-    public void readKey( PageCursor cursor, MutableLong into )
+    public void readKey( PageCursor cursor, MutableLong into, int keySize )
     {
         into.setValue( cursor.getLong() );
     }

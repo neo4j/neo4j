@@ -84,14 +84,14 @@ abstract class TreeNode<KEY,VALUE>
     static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
     static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
     static final int BYTE_POS_SUCCESSOR = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
-    static final int HEADER_LENGTH = BYTE_POS_SUCCESSOR + SIZE_PAGE_REFERENCE;
+    static final int BASE_HEADER_LENGTH = BYTE_POS_SUCCESSOR + SIZE_PAGE_REFERENCE;
 
     static final byte LEAF_FLAG = 1;
     static final byte INTERNAL_FLAG = 0;
     static final long NO_NODE_FLAG = 0;
 
     final Layout<KEY,VALUE> layout;
-    private final int pageSize;
+    final int pageSize;
 
     TreeNode( int pageSize, Layout<KEY,VALUE> layout )
     {
@@ -217,6 +217,30 @@ abstract class TreeNode<KEY,VALUE>
     }
 
     // BODY METHODS
+
+    /**
+     * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
+     * from pos - itemCount.
+     * itemCount is keyCount for key and value, but keyCount+1 for children.
+     */
+    static void insertSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int itemCount, int baseOffset,
+            int itemSize )
+    {
+        for ( int posToMoveRight = itemCount - 1, offset = baseOffset + posToMoveRight * itemSize;
+              posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
+        {
+            cursor.copyTo( offset, cursor, offset + itemSize * numberOfSlots, itemSize );
+        }
+    }
+
+    static void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
+    {
+        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
+              posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
+        {
+            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
+        }
+    }
 
     abstract KEY keyAt( PageCursor cursor, KEY into, int pos, Type type );
 

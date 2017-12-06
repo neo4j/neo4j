@@ -1,11 +1,31 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.index.internal.gbptree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
+import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 
-public class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
+class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 {
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
@@ -15,11 +35,11 @@ public class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     TreeNodeFixedSize( int pageSize, Layout<KEY,VALUE> layout )
     {
         super( pageSize, layout );
-        this.keySize = layout.keySize();
+        this.keySize = layout.keySize( null );
         this.valueSize = layout.valueSize();
-        this.internalMaxKeyCount = Math.floorDiv( pageSize - (HEADER_LENGTH + SIZE_PAGE_REFERENCE),
+        this.internalMaxKeyCount = Math.floorDiv( pageSize - (BASE_HEADER_LENGTH + SIZE_PAGE_REFERENCE),
                 keySize + SIZE_PAGE_REFERENCE);
-        this.leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
+        this.leafMaxKeyCount = Math.floorDiv( pageSize - BASE_HEADER_LENGTH, keySize + valueSize );
 
         if ( internalMaxKeyCount < 2 )
         {
@@ -34,30 +54,6 @@ public class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
     }
 
-    /**
-     * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
-     * from pos - itemCount.
-     * itemCount is keyCount for key and value, but keyCount+1 for children.
-     */
-    private static void insertSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int itemCount, int baseOffset,
-            int itemSize )
-    {
-        for ( int posToMoveRight = itemCount - 1, offset = baseOffset + posToMoveRight * itemSize;
-              posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
-        {
-            cursor.copyTo( offset, cursor, offset + itemSize * numberOfSlots, itemSize );
-        }
-    }
-
-    private static void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
-    {
-        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
-              posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
-        {
-            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
-        }
-    }
-
     private static int childSize()
     {
         return SIZE_PAGE_REFERENCE;
@@ -67,7 +63,7 @@ public class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     KEY keyAt( PageCursor cursor, KEY into, int pos, Type type )
     {
         cursor.setOffset( keyOffset( pos ) );
-        layout.readKey( cursor, into );
+        layout.readKey( cursor, into, FIXED_SIZE_KEY );
         return into;
     }
 
@@ -224,18 +220,18 @@ public class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     private int keyOffset( int pos )
     {
-        return HEADER_LENGTH + pos * keySize;
+        return BASE_HEADER_LENGTH + pos * keySize;
     }
 
     private int valueOffset( int pos )
     {
-        return HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
+        return BASE_HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
     }
 
     @Override
     int childOffset( int pos )
     {
-        return HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
+        return BASE_HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
     }
 
     @Override

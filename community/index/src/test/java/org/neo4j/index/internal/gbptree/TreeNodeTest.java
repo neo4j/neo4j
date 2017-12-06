@@ -412,7 +412,7 @@ public class TreeNodeTest
         // WHEN
         try
         {
-            new TreeNodeFixedSize<>( TreeNode.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
+            new TreeNodeFixedSize<>( TreeNode.BASE_HEADER_LENGTH + layout.keySize( null ) + layout.valueSize(), layout );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )

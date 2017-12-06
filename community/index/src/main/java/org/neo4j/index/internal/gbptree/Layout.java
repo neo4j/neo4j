@@ -40,6 +40,8 @@ import static java.lang.String.format;
  */
 public interface Layout<KEY, VALUE> extends Comparator<KEY>
 {
+    int FIXED_SIZE_KEY = 0;
+
     /**
      * @return new key instance.
      */
@@ -60,9 +62,10 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     VALUE newValue();
 
     /**
-     * @return size, in bytes, of a key.
+     * @param key for which to give size.
+     * @return size, in bytes, of given key.
      */
-    int keySize();
+    int keySize( KEY key );
 
     /**
      * @return size, in bytes, of a value.
@@ -87,11 +90,11 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
 
     /**
      * Reads key contents at {@code cursor} at its current offset into {@code key}.
-     *
-     * @param cursor {@link PageCursor} to read from, at current offset.
+     *  @param cursor {@link PageCursor} to read from, at current offset.
      * @param into key instances to read into.
+     * @param keySize
      */
-    void readKey( PageCursor cursor, KEY into );
+    void readKey( PageCursor cursor, KEY into, int keySize );
 
     /**
      * Reads value contents at {@code cursor} at its current offset into {@code value}.
@@ -202,7 +205,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         {
             return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d]",
                     getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(),
-                    keySize(), valueSize() );
+                    keySize( null ), valueSize() );
         }
 
         @Override
@@ -238,7 +241,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public int keySize()
+        public int keySize( Object key )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
@@ -262,7 +265,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public void readKey( PageCursor cursor, Object into )
+        public void readKey( PageCursor cursor, Object into, int keySize )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }

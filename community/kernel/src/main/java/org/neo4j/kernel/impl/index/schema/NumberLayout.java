@@ -50,7 +50,7 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public int keySize()
+    public int keySize( NumberSchemaKey key )
     {
         return NumberSchemaKey.SIZE;
     }
@@ -75,7 +75,7 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public void readKey( PageCursor cursor, NumberSchemaKey into )
+    public void readKey( PageCursor cursor, NumberSchemaKey into, int keySize )
     {
         into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
