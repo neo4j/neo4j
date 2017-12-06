@@ -31,6 +31,7 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.BYTE_SIZE_VALUE_S
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.hasTombstone;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyOffset;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeySize;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putTombstone;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyOffset;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeySize;
@@ -140,7 +141,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private int keyPosOffsetInternal( int pos )
     {
         // header + childPointer + pos * (keyPosOffsetSize + childPointer)
-        return HEADER_LENGTH_DYNAMIC + SIZE_PAGE_REFERENCE + pos * keyChildSize();
+        return HEADER_LENGTH_DYNAMIC + childSize() + pos * keyChildSize();
     }
 
     @Override
@@ -197,7 +198,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         // Kill actual key
         placeCursorAtActualKey( cursor, pos, LEAF );
-        DynamicSizeUtil.putTombstone( cursor );
+        putTombstone( cursor );
 
         // Remove from offset array
         removeSlotAt( cursor, pos, keyCount, keyPosOffsetLeaf( 0 ), keySize() );
@@ -206,13 +207,26 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        // Kill actual key
+        placeCursorAtActualKey( cursor, keyPos, INTERNAL );
+        putTombstone( cursor );
+
+        // Remove for offsetArray
+        removeSlotAt( cursor, keyPos, keyCount, keyPosOffsetInternal( 0 ), keyChildSize() );
     }
 
     @Override
     void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        // Kill actual key
+        placeCursorAtActualKey( cursor, keyPos, INTERNAL );
+        putTombstone( cursor );
+
+        // Remove for offsetArray
+        removeSlotAt( cursor, keyPos, keyCount, keyPosOffsetInternal( 0 ) - childSize(), keyChildSize() );
+
+        // Move last child
+        cursor.copyTo( childOffset( keyCount ), cursor, childOffset( keyCount - 1 ), childSize() );
     }
 
     @Override
@@ -272,7 +286,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        cursor.setOffset( childOffset( pos ) );
+        writeChild( cursor, child, stableGeneration, unstableGeneration );
     }
 
     @Override
@@ -297,7 +312,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     int childOffset( int pos )
     {
         // Child pointer to the left of key at pos
-        return keyPosOffsetInternal( pos ) - SIZE_PAGE_REFERENCE;
+        return keyPosOffsetInternal( pos ) - childSize();
     }
 
     @Override
@@ -354,6 +369,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private int keyChildSize()
     {
         return BYTE_SIZE_OFFSET + SIZE_PAGE_REFERENCE;
+    }
+
+    private int childSize()
+    {
+        return SIZE_PAGE_REFERENCE;
     }
 
     private int keySize()
