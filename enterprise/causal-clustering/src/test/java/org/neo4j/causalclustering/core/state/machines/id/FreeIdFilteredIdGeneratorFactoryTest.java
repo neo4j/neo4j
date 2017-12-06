@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.core.state.machines.id;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -47,10 +47,10 @@ public class FreeIdFilteredIdGeneratorFactoryTest
         IdType idType = IdType.NODE;
         long highId = 1L;
         long maxId = 10L;
-        Supplier<Long> highIdSupplier = () -> highId;
+        LongSupplier highIdSupplier = () -> highId;
         IdGenerator idGenerator = filteredGenerator.open( file, idType, highIdSupplier, maxId );
 
-        verify( idGeneratorFactory ).open( eq( file ), eq( idType ), any( Supplier.class ), eq( maxId ) );
+        verify( idGeneratorFactory ).open( eq( file ), eq( idType ), any( LongSupplier.class ), eq( maxId ) );
         assertThat( idGenerator, instanceOf( FreeIdFilteredIdGenerator.class ) );
     }
 
@@ -62,7 +62,7 @@ public class FreeIdFilteredIdGeneratorFactoryTest
         long highId = 1L;
         long maxId = 10L;
         int grabSize = 5;
-        Supplier<Long> highIdSupplier = () -> highId;
+        LongSupplier highIdSupplier = () -> highId;
         IdGenerator idGenerator = filteredGenerator.open( file, grabSize, idType, highIdSupplier, maxId );
 
         verify( idGeneratorFactory ).open( file, grabSize, idType, highIdSupplier, maxId );

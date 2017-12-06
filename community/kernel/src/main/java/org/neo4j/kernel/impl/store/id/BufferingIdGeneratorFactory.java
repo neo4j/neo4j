@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
+import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -55,14 +56,14 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
     {
         IdTypeConfiguration typeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         return open( filename, typeConfiguration.getGrabSize(), idType, highId, maxId);
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
+    public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 

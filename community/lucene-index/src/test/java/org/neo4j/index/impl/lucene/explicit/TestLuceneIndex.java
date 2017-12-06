@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
@@ -2227,11 +2227,11 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
     private void queryAndSortNodesByNumericProperty( Index<Node> index, String numericProperty )
     {
-        queryAndSortNodesByNumericProperty( index, numericProperty, Function.identity() );
+        queryAndSortNodesByNumericProperty( index, numericProperty, i -> i );
     }
 
     private void queryAndSortNodesByNumericProperty( Index<Node> index, String numericProperty,
-            Function<Integer,? extends Number> expectedValueProvider )
+            IntFunction<? extends Number> expectedValueProvider )
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {
@@ -2255,7 +2255,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     private void queryAndSortNodesByStringProperty( Index<Node> index, String stringProperty,
-            Function<Integer, String> expectedValueProvider )
+            IntFunction<String> expectedValueProvider )
     {
         try ( Transaction transaction = graphDb.beginTx() )
         {

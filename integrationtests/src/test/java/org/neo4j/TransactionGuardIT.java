@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -771,13 +772,13 @@ public class TransactionGuardIT
         }
 
         @Override
-        public IdGenerator open( File filename, IdType idType, Supplier<Long> highIdSupplier, long maxId )
+        public IdGenerator open( File filename, IdType idType, LongSupplier highIdSupplier, long maxId )
         {
             return delegate.open( filename, idType, highIdSupplier, maxId );
         }
 
         @Override
-        public IdGenerator open( File filename, int grabSize, IdType idType, Supplier<Long> highIdSupplier, long maxId )
+        public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highIdSupplier, long maxId )
         {
             return new TerminationIdGenerator( delegate.open( filename, grabSize, idType, highIdSupplier, maxId ) );
         }

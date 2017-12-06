@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.core.consensus.log.segmented;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.util.function.Function;
+import java.util.function.LongFunction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -500,7 +500,7 @@ public class TermsTest
         assertTermInRange( from, to, index -> expectedTerm );
     }
 
-    private void assertTermInRange( long from, long to, Function<Long,Long> expectedTermFunction )
+    private void assertTermInRange( long from, long to, LongFunction<Long> expectedTermFunction )
     {
         for ( long index = from; index < to; index++ )
         {
@@ -513,7 +513,7 @@ public class TermsTest
         appendRange( from, to, index -> term );
     }
 
-    private void appendRange( long from, long to, Function<Long,Long> termFunction )
+    private void appendRange( long from, long to, LongFunction<Long> termFunction )
     {
         for ( long index = from; index < to; index++ )
         {

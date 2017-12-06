@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 import java.util.stream.LongStream;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -376,7 +376,7 @@ public class NodeStoreTest
         {
             @Override
             protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
-                    boolean aggressiveReuse, IdType idType, Supplier<Long> highId )
+                    boolean aggressiveReuse, IdType idType, LongSupplier highId )
             {
                 return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId ) );
             }

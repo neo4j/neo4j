@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
@@ -178,8 +178,8 @@ public class IdGeneratorImplTest
         // Given
         // An empty file (default, nothing to do)
         // and a mock supplier to test against
-        Supplier<Long> highId = mock( Supplier.class );
-        when( highId.get() ).thenReturn( 0L ); // necessary, otherwise it runs into NPE in the constructor below
+        LongSupplier highId = mock( LongSupplier.class );
+        when( highId.getAsLong() ).thenReturn( 0L ); // necessary, otherwise it runs into NPE in the constructor below
 
         // Wheb
         // The id generator is started
@@ -187,7 +187,7 @@ public class IdGeneratorImplTest
 
         // Then
         // The highId supplier must have been called to get the high id
-        verify( highId ).get();
+        verify( highId ).getAsLong();
 
         idGenerator.close();
     }
@@ -199,7 +199,7 @@ public class IdGeneratorImplTest
         // A non empty, clean id file
         IdContainer.createEmptyIdFile( fsr.get(), file, 42, true );
         // and a mock supplier to test against
-        Supplier<Long> highId = mock( Supplier.class );
+        LongSupplier highId = mock( LongSupplier.class );
 
         // When
         // An IdGenerator is created over the previous properly closed file

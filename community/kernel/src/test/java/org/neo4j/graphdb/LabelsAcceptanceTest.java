@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -703,7 +703,7 @@ public class LabelsAcceptanceTest
                     idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
 
             @Override
-            public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
+            public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
             {
                 if ( idType == IdType.LABEL_TOKEN )
                 {
