@@ -48,7 +48,6 @@ import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -84,7 +83,9 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
  */
 public class UdcExtensionImplTest extends LocalServerTestBase
 {
-    private static final String VersionPattern = "(\\d\\.\\d+((\\.|\\-).*)?)|(dev)";
+    private static final String VersionPattern = "(\\d\\.\\d+(([.-]).*)?)|(dev)";
+    private static final Condition<Integer> IS_ZERO = value -> value == 0;
+    private static final Condition<Integer> IS_GREATER_THAN_ZERO = value -> value > 0;
 
     @Rule
     public TestDirectory path = TestDirectory.testDirectory();
@@ -241,20 +242,6 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         assertTrue( latch.await( 1000, TimeUnit.MILLISECONDS ) );
 
         t.join();
-    }
-
-    @Test
-    public void shouldNotBeAbleToSpecifyRegistrationIdWithConfig() throws Exception
-    {
-        // Given
-        config.put( UdcSettings.udc_registration_key.name(), "marketoid" );
-
-        // When
-        graphdb = createDatabase( config );
-
-        // Then
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
     }
 
     @Test
@@ -434,15 +421,6 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     }
 
     @Test
-    public void testUdcPropertyFileKeysMatchSettings() throws Exception
-    {
-        Map<String,String> config =
-                MapUtil.load( getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc" + ".properties" ) );
-        assertEquals( "test-reg", config.get( UdcSettings.udc_registration_key.name() ) );
-        assertEquals( "unit-testing", config.get( UdcSettings.udc_source.name() ) );
-    }
-
-    @Test
     public void shouldFilterPlusBuildNumbers() throws Exception
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9.0-M01+00001" ),
@@ -467,10 +445,6 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     {
         boolean isTrue( T value );
     }
-
-    private static final Condition<Integer> IS_ZERO = value -> value == 0;
-
-    private static final Condition<Integer> IS_GREATER_THAN_ZERO = value -> value > 0;
 
     private void assertGotSuccessWithRetry( Condition<Integer> condition ) throws Exception
     {
