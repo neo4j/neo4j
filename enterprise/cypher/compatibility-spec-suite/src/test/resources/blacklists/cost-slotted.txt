@@ -1,87 +1,14 @@
-Aggregates in aggregates
-Fail at runtime when attempting to index with an Int into a Map
-Fail at runtime when trying to index into a map with a non-string
-Fail at runtime when attempting to index with a String into a Collection
-Fail at runtime when trying to index into a list with a list
-Fail at runtime when trying to index something which is not a map or collection
-`percentileCont()` failing on bad arguments
-`percentileDisc()` failing on bad arguments
-`percentileDisc()` failing in more involved query
-`type()` failing on invalid arguments
-Fail when using property access on primitive type
-Failing on merging node with null property
-Failing when setting a list of maps as a property
-Fail when returning properties of deleted nodes
-Fail when returning labels of deleted nodes
-Fail when returning properties of deleted relationships
-Fail when sorting on variable removed by DISTINCT
-Concatenating and returning the size of literal lists
-Failing when performing property access on a non-map 1
-Failing when performing property access on a non-map 2
-Bad arguments for `range()`
-Using `rand()` in aggregations
-`toBoolean()` on invalid types
-`toInteger()` failing on invalid arguments
-`toFloat()` failing on invalid arguments
-`toString()` failing on invalid arguments
-Creating nodes from an unwound parameter list
-Fail when asterisk operator is missing
-Fail on negative bound
-Fail at compile time when attempting to index with a non-integer into a list
-`properties()` failing on an integer literal
-`properties()` failing on a string literal
-`properties()` failing on a list of booleans
-Fail when adding a new label predicate on a node that is already bound 1
-Fail when adding new label predicate on a node that is already bound 2
-Fail when adding new label predicate on a node that is already bound 3
-Fail when adding new label predicate on a node that is already bound 4
-Fail when adding new label predicate on a node that is already bound 5
-Failing on incorrect unicode literal
-Failing on aggregation in WHERE
-Failing when not aliasing expressions in WITH
-Failing when using undefined variable in pattern
-Failing when using undefined variable in SET
-Failing when using undefined variable in DELETE
-Failing when using a variable that is already bound in CREATE
-
-// Updating queries
-Fail when imposing new predicates on a variable that is already bound
-Create a relationship with the correct direction
-Deleting connected nodes
-Detach deleting connected nodes and relationships
-Detach deleting paths
-Create and delete in same query
-Delete nodes from a map
-Delete paths from nested map/list
-Delete relationship with bidirectional matching
-Updating one property with ON CREATE
-Null-setting one property with ON CREATE
-Copying properties from literal map with ON CREATE
-Copying properties from literal map with ON MATCH
-Copying properties from node with ON CREATE
-Copying properties from node with ON MATCH
-Should be able to use properties from match in ON MATCH and ON CREATE
-Merges should not be able to match on deleted nodes
-UNWIND with multiple merges
-Do not match on deleted entities
-Do not match on deleted relationships
-Set a property
-Set a property to an expression
-Concatenate elements onto a list property
-Concatenate elements in reverse onto a list property
-Overwrite values when using +=
-Non-existent values in a property map are removed with SET =
-Unwind with merge
-Fail when trying to create using an undirected relationship pattern
-
-Many CREATE clauses
-
-`labels()` failing on invalid arguments
+// unsupported YIELD -
 In-query call to procedure that takes no arguments and yields no results
-In-query call to procedure with explicit arguments
 In-query call to procedure with explicit arguments that drops all result fields
+
+// type hierarchy bugs/coercion rules
 Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
 In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
+
+// TODO tck enforces specific order of `keys`, remove from blacklist when tck has been updated.
+Copying properties from literal map with ON CREATE
+Copying properties from literal map with ON MATCH
 
 // TCK side effects are incorrectly specified -- need update
 Standalone call to procedure with explicit arguments

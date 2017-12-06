@@ -81,7 +81,6 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
     new CypherCompilerFactory().costBasedCompiler(configV3_4, clock, monitors, rewriterSequencer,
       maybePlannerNameV3_4, maybeUpdateStrategy, contextCreatorV3_4)
 
-
   private def queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.
     createQueryGraphSolver(maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default), monitors, configV3_4)
 

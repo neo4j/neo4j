@@ -111,7 +111,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   private val rewriting = PreparatoryRewriting andThen
     SemanticAnalysis(warn = true).adds(BaseContains[SemanticState])
   private val createExecPlan = ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
-    If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
+    If((s: CompilationState) => s.maybeExecutionPlan.isFailure)(
       CommunityRuntimeBuilder.create(None, CypherReductionSupport.config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan]))
 
 

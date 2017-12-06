@@ -48,6 +48,8 @@ import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.virtual.MapValue
 
+import scala.util.{Failure, Success}
+
 object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = CompilationPhase.PIPE_BUILDING
 
@@ -72,11 +74,11 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
       val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
                                              dispatcher, context.notificationLogger)
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
-      new CompilationState(from, Some(execPlan))
+      new CompilationState(from, Success(execPlan))
     } catch {
       case e: CantCompileQueryException =>
         runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, e)
-        new CompilationState(from, None)
+        new CompilationState(from, Failure(e))
     }
   }
 

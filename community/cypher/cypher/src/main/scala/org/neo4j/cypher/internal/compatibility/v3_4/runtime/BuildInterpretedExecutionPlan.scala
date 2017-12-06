@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult
 import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
 
+import scala.util.Success
+
 object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase = PIPE_BUILDING
 
@@ -65,7 +67,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
       context.createFingerprintReference(fp),
       context.config)
 
-    new CompilationState(from, Some(execPlan))
+    new CompilationState(from, Success(execPlan))
   }
 
   def checkForNotifications(pipe: Pipe, planContext: PlanContext, config: CypherCompilerConfiguration): Seq[InternalNotification] = {

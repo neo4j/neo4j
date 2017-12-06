@@ -27,63 +27,64 @@ import org.neo4j.cypher.internal.frontend.v3_4.notification.RuntimeUnsupportedNo
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Do, If, Transformer}
 import org.neo4j.cypher.internal.util.v3_4.InvalidArgumentException
 
+import scala.util.{Failure, Success}
+
 object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
+
+  type CompilationStateTransformer = Transformer[EnterpriseRuntimeContext, CompilationState, CompilationState]
+
+  private val AssertExecutionPlan: CompilationStateTransformer = AssertExecutionPlan(false)
+  private val AssertExecutionPlanAndWrapException: CompilationStateTransformer = AssertExecutionPlan(true)
+  private def AssertExecutionPlan(wrapException: Boolean): CompilationStateTransformer =
+    Do((state, ctx) => state.maybeExecutionPlan match {
+      case Success(_) => state
+      case Failure(t) =>
+        if (wrapException)
+          throw new InvalidArgumentException("The given query is not currently supported in the selected runtime", t)
+        else throw t
+    })
+
+  private def Fallback(fallback: Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]
+                      ): CompilationStateTransformer =
+    If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isFailure) { fallback }
+
+  private def FallbackWithNotification(fallback: Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]
+                                      ): CompilationStateTransformer =
+    Fallback(
+      Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification))
+        andThen fallback
+    )
+
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] = {
 
     def pickInterpretedExecutionPlan() =
-      BuildSlottedExecutionPlan andThen
-        If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
-          BuildInterpretedExecutionPlan
-        }
+      BuildSlottedExecutionPlan andThen Fallback(BuildInterpretedExecutionPlan)
 
     runtimeName match {
       case None =>
-        BuildCompiledExecutionPlan andThen
-          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
-            pickInterpretedExecutionPlan()
-          }
+        BuildCompiledExecutionPlan andThen Fallback(pickInterpretedExecutionPlan())
 
       case Some(InterpretedRuntimeName) =>
-        BuildInterpretedExecutionPlan
+        BuildInterpretedExecutionPlan andThen AssertExecutionPlan
 
-      case Some(MorselRuntimeName)if useErrorsOverWarnings =>
-        BuildVectorizedExecutionPlan andThen
-          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
-            Do((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
-          )
+      case Some(MorselRuntimeName) if useErrorsOverWarnings =>
+        BuildVectorizedExecutionPlan andThen AssertExecutionPlanAndWrapException
 
       case Some(MorselRuntimeName) =>
-        BuildVectorizedExecutionPlan andThen
-          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
-            Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
-              pickInterpretedExecutionPlan()
-          )
+        BuildVectorizedExecutionPlan andThen FallbackWithNotification(pickInterpretedExecutionPlan())
 
       case Some(SlottedRuntimeName) if useErrorsOverWarnings =>
-        BuildSlottedExecutionPlan andThen
-          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
-            Do((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
-          }
+        BuildSlottedExecutionPlan andThen AssertExecutionPlan
 
       case Some(SlottedRuntimeName) =>
         BuildSlottedExecutionPlan andThen
-          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
-            Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
-              BuildInterpretedExecutionPlan
-          }
+          FallbackWithNotification(BuildInterpretedExecutionPlan)
 
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
-        BuildCompiledExecutionPlan andThen
-          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
-            Do((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
-          )
+        BuildCompiledExecutionPlan andThen AssertExecutionPlanAndWrapException
 
       case Some(CompiledRuntimeName) =>
-        BuildCompiledExecutionPlan andThen
-          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
-            Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
-              pickInterpretedExecutionPlan()
-          )
+        BuildCompiledExecutionPlan andThen FallbackWithNotification(pickInterpretedExecutionPlan())
 
       case Some(x) =>
         throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")

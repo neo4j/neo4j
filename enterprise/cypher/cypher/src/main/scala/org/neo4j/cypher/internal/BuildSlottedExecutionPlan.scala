@@ -42,6 +42,8 @@ import org.neo4j.cypher.internal.util.v3_4.CypherException
 import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
 
+import scala.util.{Failure, Success}
+
 object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] with DebugPrettyPrinter {
   val ENABLE_DEBUG_PRINTS = false // NOTE: false toggles all debug prints off, overriding the individual settings below
 
@@ -110,7 +112,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
         printPipeInfo(physicalPlan.slotConfigurations, pipeInfo)
       }
 
-      new CompilationState(from, Some(execPlan))
+      new CompilationState(from, Success(execPlan))
     } catch {
       case e: CypherException =>
         if (ENABLE_DEBUG_PRINTS) {
@@ -120,7 +122,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
           }
         }
         runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException(cause = e))
-        new CompilationState(from, None)
+        new CompilationState(from, Failure(e))
     }
   }
 

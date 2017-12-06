@@ -41,6 +41,8 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.IndexUsage
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
 
+import scala.util.{Failure, Success}
+
 object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
 
   override def phase = CODE_GENERATION
@@ -59,11 +61,11 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
                                   context.createFingerprintReference(compiled.fingerprint),
                                   notifications(context))
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
-      new CompilationState(from, Some(executionPlan))
+      new CompilationState(from, Success(executionPlan))
     } catch {
       case e: CantCompileQueryException =>
         runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, e)
-        new CompilationState(from, None)
+        new CompilationState(from, Failure(e))
     }
   }
 
