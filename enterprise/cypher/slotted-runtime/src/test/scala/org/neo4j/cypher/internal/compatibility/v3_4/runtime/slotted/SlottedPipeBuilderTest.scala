@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
+import java.time.Clock
+
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.BuildSlottedExecutionPlan.EnterprisePipeBuilderFactory
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{pipes => slottedPipes}
-import org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen.CompiledRuntimeContextHelper
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{HardcodedGraphStatistics, LogicalPlanningTestSupport2}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext}
@@ -56,15 +57,14 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val planContext = mock[PlanContext]
     when(planContext.statistics).thenReturn(HardcodedGraphStatistics)
     when(planContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(0))
-    val context: EnterpriseRuntimeContext = CompiledRuntimeContextHelper.create(planContext = planContext)
     val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, table)
-    val slottedRewriter = new SlottedRewriter(context.planContext)
+    val slottedRewriter = new SlottedRewriter(planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
     val converters = new ExpressionConverters(CommunityExpressionConverter, SlottedExpressionConverters)
-    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-      expressionConverters = converters, pipeBuilderFactory = EnterprisePipeBuilderFactory(physicalPlan))
-    val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, table, IDPPlannerName)
-    executionPlanBuilder.build(None, logicalPlan)(pipeBuildContext, context.planContext).pipe
+    val executionPlanBuilder = new PipeExecutionPlanBuilder( mock[Clock], mock[Monitors],
+      expressionConverters = converters, pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan))
+    val context = PipeExecutionBuilderContext(mock[Metrics.CardinalityModel], table, IDPPlannerName)
+    executionPlanBuilder.build(None, logicalPlan)(context, planContext).pipe
   }
 
   private val x = IdName("x")

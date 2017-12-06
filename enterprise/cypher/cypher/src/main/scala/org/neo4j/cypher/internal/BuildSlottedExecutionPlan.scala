@@ -80,7 +80,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       }
 
       val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
-      val pipeBuilderFactory = EnterprisePipeBuilderFactory(physicalPlan)
+      val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
                                                               expressionConverters = converters,
                                                               pipeBuilderFactory = pipeBuilderFactory)
@@ -149,19 +149,5 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
     override def notifications(planContext: PlanContext): Seq[InternalNotification] =
       BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
-  }
-
-  case class EnterprisePipeBuilderFactory(physicalPlan: PhysicalPlan)
-    extends PipeBuilderFactory {
-    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
-              expressionConverters: ExpressionConverters)
-             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
-
-      val expressionToExpression = recursePipes(recurse, planContext) _
-
-      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, expressionToExpression)
-
-      new SlottedPipeBuilder(fallback, expressionConverters, monitors, physicalPlan, readOnly, expressionToExpression)
-    }
   }
 }

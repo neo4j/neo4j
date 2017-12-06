@@ -49,7 +49,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
 
     val pipeInfo = PipeInfo(pipe, updating = true, None, None, PlannerName)
-    val builderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
@@ -67,7 +67,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
-    val builderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
@@ -86,7 +86,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
     val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
-    val builderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
