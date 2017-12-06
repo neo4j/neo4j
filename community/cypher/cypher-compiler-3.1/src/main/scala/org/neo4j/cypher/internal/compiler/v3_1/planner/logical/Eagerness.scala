@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.{PlannerQuery, ProcedureCallProjection, QueryGraph, QueryHorizon}
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 
@@ -50,7 +50,8 @@ object Eagerness {
   @tailrec
   private def headConflicts(head: PlannerQuery, tail: PlannerQuery, unstableLeaves: Seq[IdName]): Boolean = {
     val mergeReadWrite = head == tail && head.queryGraph.containsMergeRecursive
-    val conflict = if (tail.queryGraph.readOnly || mergeReadWrite) false
+    val conflict = if (isMutatingHorizon(head.horizon)) true
+    else if (tail.queryGraph.readOnly || mergeReadWrite) false
     else {
       //if we have unsafe rels we need to check relation overlap and delete
       //overlap immediately
@@ -88,7 +89,7 @@ object Eagerness {
   def tailReadWriteEagerizeNonRecursive(inputPlan: LogicalPlan, query: PlannerQuery)
                            (implicit context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    if (alwaysEager || readWriteConflict(query, query))
+    if (alwaysEager || isMutatingHorizon(query.horizon) || readWriteConflict(query, query))
       context.logicalPlanProducer.planEager(inputPlan)
     else
       inputPlan
@@ -343,5 +344,10 @@ object Eagerness {
     }))
 
     override def apply(input: AnyRef) = instance.apply(input)
+  }
+
+  def isMutatingHorizon(horizon: QueryHorizon): Boolean = horizon match {
+    case ProcedureCallProjection(call) => call.containsUpdates
+    case _ => false
   }
 }

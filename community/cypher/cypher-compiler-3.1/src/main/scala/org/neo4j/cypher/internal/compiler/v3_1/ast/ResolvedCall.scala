@@ -140,4 +140,6 @@ case class ResolvedCall(signature: ProcedureSignature,
     case ProcedureReadOnlyAccess(_) => true
     case _ => false
   }
+
+  def containsUpdates: Boolean = !containsNoUpdates
 }
