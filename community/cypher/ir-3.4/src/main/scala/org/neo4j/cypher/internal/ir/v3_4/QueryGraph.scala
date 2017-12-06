@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.collection.{GenTraversableOnce, mutable}
+import scala.runtime.ScalaRunTime
 
 /*
 This is one of the core classes used during query planning. It represents the declarative query,
@@ -32,7 +33,8 @@ it contains no more information that the AST, but it contains data in a format t
 to consume by the planner. If you want to trace this back to the original query - one QueryGraph
 represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
  */
-case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
+case class QueryGraph(// !!! If you change anything here, make sure to update the equals method at the bottom of this class !!!
+                      patternRelationships: Set[PatternRelationship] = Set.empty,
                       patternNodes: Set[IdName] = Set.empty,
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
@@ -311,8 +313,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   private def argumentsOverLapsWith(coveredIds: Set[IdName]) = (argumentIds intersect coveredIds).nonEmpty
 
   private def predicatePullsInArguments(node: IdName) = selections.flatPredicates.exists { p =>
-    val dependencies = p.dependencies.map(IdName.fromVariable)
-    dependencies(node) && (dependencies intersect argumentIds).nonEmpty
+      val dependencies = p.dependencies.map(IdName.fromVariable)
+      dependencies(node) && (dependencies intersect argumentIds).nonEmpty
   }
 
   def containsReads: Boolean = {
@@ -386,6 +388,64 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
     builder.append("}")
     builder.toString()
+  }
+
+  /**
+    * We have to do this special treatment of QG to avoid problems when checking that the produced plan actually
+    * solves what we set out to solve. In some rare circumstances, we'll get a few optional matches that are independent of each other.
+    *
+    * Given the way our planner works, it can unpredictably plan these optional matches in different orders, which leads to an exception being thrown when
+    * checking that the correct query has been solved.
+    */
+  override def equals(in: scala.Any): Boolean = in match {
+    case other: QueryGraph if other canEqual this =>
+
+      val optionals = if (optionalMatches.isEmpty) {
+        true
+      } else {
+        compareOptionalMatches(other)
+      }
+
+      patternRelationships == other.patternRelationships &&
+        patternNodes == other.patternNodes &&
+        argumentIds == other.argumentIds &&
+        selections == other.selections &&
+        optionals &&
+        hints == other.hints &&
+        shortestPathPatterns == other.shortestPathPatterns &&
+        mutatingPatterns == other.mutatingPatterns
+
+    case _ =>
+      false
+  }
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[QueryGraph]
+
+  override def hashCode(): Int = {
+    val optionals = if(optionalMatches.nonEmpty && containsIndependentOptionalMatches)
+      optionalMatches.toSet
+    else
+      optionalMatches
+
+    ScalaRunTime._hashCode((patternRelationships, patternNodes, argumentIds, selections, optionals, hints, shortestPathPatterns, mutatingPatterns))
+  }
+
+  private lazy val containsIndependentOptionalMatches = {
+    val nonOptional = idsWithoutOptionalMatchesOrUpdates -- argumentIds
+
+    val result = this.optionalMatches.foldLeft(false) {
+      case (acc, oqg) =>
+        acc || (oqg.dependencies -- nonOptional).nonEmpty
+    }
+
+    result
+  }
+
+  private def compareOptionalMatches(other: QueryGraph) = {
+    if (containsIndependentOptionalMatches) {
+      optionalMatches.toSet == other.optionalMatches.toSet
+    } else
+      optionalMatches == other.optionalMatches
   }
 }
 
