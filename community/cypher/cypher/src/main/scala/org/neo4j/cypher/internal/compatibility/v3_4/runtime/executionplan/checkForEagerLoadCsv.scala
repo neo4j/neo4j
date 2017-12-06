@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{EagerLoadCsvNotification, InternalNotification}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{EagerPipe, LoadCSVPipe, Pipe}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Eager, LoadCSV, LogicalPlan}
 
-object checkForEagerLoadCsv extends (Pipe => Option[InternalNotification]) {
+object checkForEagerLoadCsv extends (LogicalPlan => Option[InternalNotification]) {
 
-  def apply(pipe: Pipe) = {
+  def apply(plan: LogicalPlan) = {
     import org.neo4j.cypher.internal.util.v3_4.Foldable._
     sealed trait SearchState
     case object NoEagerFound extends SearchState
@@ -32,12 +32,12 @@ object checkForEagerLoadCsv extends (Pipe => Option[InternalNotification]) {
     case object EagerWithLoadCsvFound extends SearchState
 
     // Walk over the pipe tree and check if an Eager is to be executed after a LoadCsv
-    val resultState = pipe.treeFold[SearchState](NoEagerFound) {
-      case _: LoadCSVPipe => {
+    val resultState = plan.treeFold[SearchState](NoEagerFound) {
+      case _: LoadCSV => {
         case EagerFound => (EagerWithLoadCsvFound, None)
         case e => (e, None)
       }
-      case _: EagerPipe =>
+      case _: Eager =>
         acc =>
           (EagerFound, Some(identity))
     }

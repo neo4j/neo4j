@@ -101,7 +101,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
-      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
+      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, logicalPlan, context.config)
 
       if (ENABLE_DEBUG_PRINTS) {
         if (!PRINT_PLAN_INFO_EARLY) {
@@ -138,7 +138,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                   plannerUsed: PlannerName,
                                   override val plannedIndexUsage: Seq[IndexUsage],
                                   runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
-                                  pipe: Pipe,
+                                  logicalPlan: LogicalPlan,
                                   config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode,
@@ -150,6 +150,6 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
     override def runtimeUsed: RuntimeName = SlottedRuntimeName
 
     override def notifications(planContext: PlanContext): Seq[InternalNotification] =
-      BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
+      BuildInterpretedExecutionPlan.checkForNotifications(logicalPlan, planContext, config)
   }
 }

@@ -70,11 +70,13 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     new CompilationState(from, Success(execPlan))
   }
 
-  def checkForNotifications(pipe: Pipe, planContext: PlanContext, config: CypherCompilerConfiguration): Seq[InternalNotification] = {
+  def checkForNotifications(logicalPlan: LogicalPlan,
+                            planContext: PlanContext,
+                            config: CypherCompilerConfiguration): Seq[InternalNotification] = {
     val notificationCheckers = Seq(checkForEagerLoadCsv,
       CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
 
-    notificationCheckers.flatMap(_ (pipe))
+    notificationCheckers.flatMap(_ (logicalPlan))
   }
 
   def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
@@ -123,7 +125,8 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
 
     override def runtimeUsed: RuntimeName = InterpretedRuntimeName
 
-    override def notifications(planContext: PlanContext): Seq[InternalNotification] = checkForNotifications(pipe, planContext, config)
+    override def notifications(planContext: PlanContext): Seq[InternalNotification] =
+      checkForNotifications(logicalPlan, planContext, config)
 
     override def plannedIndexUsage: Seq[IndexUsage] = logicalPlan.indexUsage
   }

@@ -19,23 +19,46 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AllNodesScanPipe, EagerPipe, LoadCSVPipe}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.notification.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_4.HasHeaders
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, NoHeaders}
+import org.neo4j.cypher.internal.v3_4.expressions.StringLiteral
+import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, Eager, LoadCSV}
 
-class CheckForEagerLoadCsvTest extends CypherFunSuite {
+class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private val url = StringLiteral("file:///tmp/foo.csv")(pos)
 
   test("should notify for EagerPipe on top of LoadCsvPipe") {
-    val pipe = EagerPipe(LoadCSVPipe(AllNodesScanPipe("a")(), HasHeaders, Literal("foo"), "bar", None, false)())()
+    val plan =
+      Eager(
+        LoadCSV(
+          AllNodesScan(IdName("a"), Set.empty)(solved),
+          url,
+          IdName("foo"),
+          NoHeaders,
+          None,
+          legacyCsvQuoteEscaping = false
+        )(solved)
+      )(solved)
 
-    checkForEagerLoadCsv(pipe) should equal(Some(EagerLoadCsvNotification))
+    checkForEagerLoadCsv(plan) should equal(Some(EagerLoadCsvNotification))
   }
 
   test("should not notify for LoadCsv on top of eager pipe") {
-    val pipe = LoadCSVPipe(EagerPipe(AllNodesScanPipe("a")())(), HasHeaders, Literal("foo"), "bar", None, false)()
+    val plan =
+      LoadCSV(
+        Eager(
+          AllNodesScan(IdName("a"), Set.empty)(solved)
+        )(solved),
+        url,
+        IdName("foo"),
+        NoHeaders,
+        None,
+        legacyCsvQuoteEscaping = false
+      )(solved)
 
-    checkForEagerLoadCsv(pipe) should equal(None)
+    checkForEagerLoadCsv(plan) should equal(None)
   }
 }

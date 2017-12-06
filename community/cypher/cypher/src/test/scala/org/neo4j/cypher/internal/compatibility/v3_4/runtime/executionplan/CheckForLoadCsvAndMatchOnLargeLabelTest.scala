@@ -23,20 +23,25 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.notification.LargeLabelWithLoadCsvNotification
-import org.neo4j.cypher.internal.ir.v3_4.HasHeaders
+import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, IdName, NoHeaders}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
+import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, StringLiteral}
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
+class CheckForLoadCsvAndMatchOnLargeLabelTest
+    extends CypherFunSuite
+    with LogicalPlanningTestSupport {
+
+  private val url = StringLiteral("file:///tmp/foo.csv")(pos)
 
   private val THRESHOLD = 100
   private val labelOverThreshold = "A"
   private val labelUnderThreshold = "B"
-  private val indexFor= Map(labelOverThreshold -> 1, labelUnderThreshold -> 2)
+  private val indexFor = Map(labelOverThreshold -> 1, labelUnderThreshold -> 2)
   private val planContext = mock[PlanContext]
   when(planContext.getOptLabelId(anyString)).thenAnswer(new Answer[Option[Int]] {
     override def answer(invocationOnMock: InvocationOnMock): Option[Int] = {
@@ -51,23 +56,49 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   private val checker = CheckForLoadCsvAndMatchOnLargeLabel(planContext, THRESHOLD)
 
   test("should notify when doing LoadCsv on top of large label scan") {
-    val loadCsvPipe = LoadCSVPipe(ArgumentPipe()(), HasHeaders, Literal("foo"), "bar", None, false)()
-    val pipe = CartesianProductPipe(loadCsvPipe, NodeByLabelScanPipe("bar", LazyLabel(labelOverThreshold))())()
+    val loadCsv =
+      LoadCSV(
+        Argument()(solved)(),
+        url,
+        IdName("foo"),
+        HasHeaders,
+        None,
+        legacyCsvQuoteEscaping = false
+      )(solved)
 
-    checker(pipe) should equal(Some(LargeLabelWithLoadCsvNotification))
+    val plan = CartesianProduct(
+      loadCsv,
+      NodeByLabelScan("bar", LabelName(labelOverThreshold)(pos), Set.empty)(solved)
+    )(solved)
+
+    checker(plan) should equal(Some(LargeLabelWithLoadCsvNotification))
   }
 
   test("should not notify when doing LoadCsv on top of a small label scan") {
-    val loadCsvPipe = LoadCSVPipe(ArgumentPipe()(), HasHeaders, Literal("foo"), "bar", None, false)()
-    val pipe = CartesianProductPipe(loadCsvPipe, NodeByLabelScanPipe("bar", LazyLabel(labelUnderThreshold))())()
+    val loadCsv =
+      LoadCSV(
+        Argument()(solved)(),
+        url,
+        IdName("foo"),
+        HasHeaders,
+        None,
+        legacyCsvQuoteEscaping = false
+      )(solved)
 
-    checker(pipe) should equal(None)
+    val plan =
+      CartesianProduct(
+        loadCsv,
+        NodeByLabelScan("bar", LabelName(labelUnderThreshold)(pos), Set.empty)(solved)
+      )(solved)
+
+    checker(plan) should equal(None)
   }
 
   test("should not notify when doing large label scan on top of LoadCSV") {
-    val startPipe = NodeByLabelScanPipe("bar", LazyLabel(labelOverThreshold))()
-    val pipe = LoadCSVPipe(startPipe, HasHeaders, Literal("foo"), "bar", None, false)()
+    val start = NodeByLabelScan("bar", LabelName(labelOverThreshold)(pos), Set.empty)(solved)
+    val plan =
+      LoadCSV(start, url, IdName("foo"), HasHeaders, None, legacyCsvQuoteEscaping = false)(solved)
 
-    checker(pipe) should equal(None)
+    checker(plan) should equal(None)
   }
 }
