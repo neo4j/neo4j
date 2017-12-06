@@ -334,6 +334,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         }
 
         KernelTransaction ktx = spi.currentTransaction();
+        assertTransactionOpen( ktx );
         try ( Statement ignore = ktx.acquireStatement() )
         {
             if ( !ktx.dataRead().nodeExists( id ) )
@@ -460,10 +461,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public ResourceIterable<Node> getAllNodes()
     {
-        assertTransactionOpen();
+        KernelTransaction ktx = spi.currentTransaction();
+        assertTransactionOpen( ktx );
         return () ->
         {
-            KernelTransaction ktx = spi.currentTransaction();
             Statement statement = ktx.acquireStatement();
             NodeCursor cursor = ktx.cursors().allocateNodeCursor();
             ktx.dataRead().allNodesScan( cursor );
@@ -813,7 +814,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     private void assertTransactionOpen()
     {
-        Optional<Status> terminationReason = spi.currentTransaction().getReasonIfTerminated();
+        assertTransactionOpen( spi.currentTransaction() );
+    }
+
+    private void assertTransactionOpen( KernelTransaction transaction )
+    {
+        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
         if ( terminationReason.isPresent() )
         {
             throw new TransactionTerminatedException( terminationReason.get() );
