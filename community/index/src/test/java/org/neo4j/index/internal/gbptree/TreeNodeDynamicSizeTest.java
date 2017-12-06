@@ -53,7 +53,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     protected RawBytes value( long someValue )
     {
         RawBytes value = layout.newValue();
-        value.bytes = ByteBuffer.allocate( 16 ).putLong( someValue ).putLong( someValue ).array();
+        value.bytes = ByteBuffer.allocate( 17 ).putLong( someValue ).putLong( someValue ).array();
         return value;
     }
 

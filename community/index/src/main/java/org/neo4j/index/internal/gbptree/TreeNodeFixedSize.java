@@ -124,10 +124,11 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void setValueAt( PageCursor cursor, VALUE value, int pos )
+    boolean setValueAt( PageCursor cursor, VALUE value, int pos )
     {
         cursor.setOffset( valueOffset( pos ) );
         layout.writeValue( cursor, value );
+        return true;
     }
 
     @Override

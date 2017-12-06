@@ -174,59 +174,72 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // WHEN
         KEY firstKey = key( 1 );
-        VALUE firstValue = value( 1 );
+        VALUE firstValue = value( 10 );
         node.insertKeyValueAt( cursor, firstKey, firstValue, 0, 0 );
         TreeNode.setKeyCount( cursor, 1 );
 
         // THEN
-        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( firstValue, node.valueAt( cursor, readValue, 0 ) ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
+        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
 
         // WHEN
         KEY secondKey = key( 3 );
-        VALUE secondValue = value( 3 );
+        VALUE secondValue = value( 30 );
         node.insertKeyValueAt( cursor, secondKey, secondValue, 1, 1 );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
-        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( firstValue, node.valueAt( cursor, readValue, 0 ) ) );
-        assertTrue( layout.compare( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( secondValue, node.valueAt( cursor, readValue, 1 ) ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
+        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
+        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) );
+        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1 ) );
 
         // WHEN
         KEY removedKey = key( 2 );
-        VALUE removedValue = value( 2 );
+        VALUE removedValue = value( 20 );
         node.insertKeyValueAt( cursor, removedKey, removedValue, 1, 2 );
         TreeNode.setKeyCount( cursor, 3 );
 
         // THEN
-        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( firstValue, node.valueAt( cursor, readValue, 0 ) ) );
-        assertTrue( layout.compare( removedKey, node.keyAt( cursor, readKey, 1, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( removedValue, node.valueAt( cursor, readValue, 1 ) ) );
-        assertTrue( layout.compare( secondKey, node.keyAt( cursor, readKey, 2, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( secondValue, node.valueAt( cursor, readValue, 2 ) ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
+        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
+        assertKeyEquals( removedKey, node.keyAt( cursor, readKey, 1, LEAF ) );
+        assertValueEquals( removedValue, node.valueAt( cursor, readValue, 1 ) );
+        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 2, LEAF ) );
+        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 2 ) );
 
         // WHEN
         node.removeKeyValueAt( cursor, 1, 3 );
         TreeNode.setKeyCount( cursor, 2 );
 
         // THEN
-        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( firstValue, node.valueAt( cursor, readValue, 0 ) ) );
-        assertTrue( layout.compare( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( secondValue, node.valueAt( cursor, readValue, 1 ) ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
+        assertValueEquals( firstValue, node.valueAt( cursor, readValue, 0 ) );
+        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) );
+        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1 ) );
 
         // WHEN
         VALUE overwriteValue = value( 666 );
-        node.setValueAt( cursor, overwriteValue, 0 );
+        assertTrue( String.format( "Could not overwrite value, oldValue=%s, newValue=%s", firstValue, overwriteValue ),
+                node.setValueAt( cursor, overwriteValue, 0 ) );
 
         // THEN
-        assertTrue( layout.compare( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( overwriteValue, node.valueAt( cursor, readValue, 0 ) ) );
-        assertTrue( layout.compare( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) ) == 0 );
-        assertTrue( valuesEqual( secondValue, node.valueAt( cursor, readValue, 1 ) ) );
+        assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
+        assertValueEquals( overwriteValue, node.valueAt( cursor, readValue, 0 ) );
+        assertKeyEquals( secondKey, node.keyAt( cursor, readKey, 1, LEAF ) );
+        assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1 ) );
+    }
+
+    private void assertKeyEquals( KEY expectedKey, KEY actualKey )
+    {
+        assertTrue( String.format( "expectedKey=%s, actualKey=%s", expectedKey, actualKey ),
+                layout.compare( expectedKey, actualKey ) == 0 );
+    }
+
+    private void assertValueEquals( VALUE expectedValue, VALUE actualValue )
+    {
+        assertTrue( String.format( "expectedValue=%s, actualKey=%s", expectedValue, actualValue ),
+                valuesEqual( expectedValue, actualValue ) );
     }
 
     private void assertKeysAndChildren( long stable, long unstable, long... keysAndChildren )

@@ -267,7 +267,11 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract VALUE valueAt( PageCursor cursor, VALUE value, int pos );
 
-    abstract void setValueAt( PageCursor cursor, VALUE value, int pos );
+    /**
+     * Overwrite value at position with given value.
+     * @return True if value was overwritten, false otherwise.
+     */
+    abstract boolean setValueAt( PageCursor cursor, VALUE value, int pos );
 
     abstract long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration );
 

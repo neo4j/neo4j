@@ -535,9 +535,21 @@ class InternalTreeLogic<KEY,VALUE>
                 createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                         stableGeneration, unstableGeneration );
                 // simple, just write the merged value right in there
-                bTreeNode.setValueAt( cursor, mergedValue, pos );
+                boolean couldOverwrite = bTreeNode.setValueAt( cursor, mergedValue, pos );
+                if ( couldOverwrite )
+                {
+                    // Fine we are done
+                    return;
+                }
+                else
+                {
+                    // todo Need to do full remove and insert. Without underflow on remove though.
+                }
             }
-            return; // No split has occurred
+            else
+            {
+                return; // No split has occurred
+            }
         }
 
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
