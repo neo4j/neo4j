@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -58,6 +59,8 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -448,24 +451,23 @@ public class NodeProxy implements Node
                     throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
                 }
                 nodes.properties( propertyCursor );
-                while ( propertyCursor.next() )
+                int propertiesToFind = itemsToReturn;
+                while (propertiesToFind > 0 && propertyCursor.next() )
                 {
                     //Do a linear check if this is a property we are interested in.
-                    for ( int propertyId : propertyIds )
+                    for ( int i = 0; i < itemsToReturn; i++ )
                     {
+                        int propertyId = propertyIds[i];
                         int currentKey = propertyCursor.propertyKey();
                         if ( propertyId == currentKey )
                         {
-                            properties.put( token.propertyKeyGetName( currentKey ),
+                            properties.put( keys[i],
                                     propertyCursor.propertyValue().asObjectCopy() );
+                            propertiesToFind--;
+                            break;
                         }
                     }
-
                 }
-            }
-            catch ( PropertyKeyIdNotFoundKernelException e )
-            {
-                throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
             }
             return properties;
         }
