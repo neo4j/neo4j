@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPoint
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, Version => IPDVersion, PlannerVersion => IPDPlannerVersion}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion, PlannerVersion => IPDPlannerVersion}
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.util.v3_4.Eagerly
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
@@ -356,14 +356,14 @@ object CypherComparisonSupport {
 
     object V3_3 extends Version("3.3") {
       // 3.3 has 3.4 runtime
-      override val acceptedVersionNames = Set("CYPHER 3.4")
+      override val acceptedRuntimeVersionNames = Set("3.4")
     }
 
     object V3_4 extends Version("3.4")
 
     object Default extends Version("") {
-      override val acceptedVersionNames = Set("2.3", "3.1", "3.3", "3.4").map("CYPHER " + _)
-      override val acceptedPlannerVersionName = Set("2.3", "3.1", "3.3", "3.4")
+      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.3", "3.4")
+      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.3", "3.4")
     }
 
   }
@@ -376,9 +376,8 @@ object CypherComparisonSupport {
       Versions(Versions.orderedVersions.slice(fromIndex, toIndex): _*)
     }
 
-    // TODO Rename Version to RuntimeVersion everywhere
-    val acceptedVersionNames: Set[String] = Set("CYPHER " + name)
-    val acceptedPlannerVersionName: Set[String] = Set(name)
+    val acceptedRuntimeVersionNames: Set[String] = Set(name)
+    val acceptedPlannerVersionNames: Set[String] = Set(name)
 
   }
 
@@ -501,10 +500,10 @@ object CypherComparisonSupport {
         fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
       if (!planner.acceptedPlannerNames.contains(reportedPlanner))
         fail(s"did not use ${planner.acceptedPlannerNames} planner - instead $reportedPlanner was used. Scenario $name")
-      if (!version.acceptedVersionNames.contains(reportedVersion))
-        fail(s"did not use ${version.acceptedVersionNames} runtime version - instead $reportedVersion was used. Scenario $name")
-      if (!version.acceptedPlannerVersionName.contains(reportedPlannerVersion))
-        fail(s"did not use ${version.acceptedPlannerVersionName} planner version - instead $reportedPlannerVersion was used. Scenario $name")
+      if (!version.acceptedRuntimeVersionNames.contains(reportedVersion))
+        fail(s"did not use ${version.acceptedRuntimeVersionNames} runtime version - instead $reportedVersion was used. Scenario $name")
+      if (!version.acceptedPlannerVersionNames.contains(reportedPlannerVersion))
+        fail(s"did not use ${version.acceptedPlannerVersionNames} planner version - instead $reportedPlannerVersion was used. Scenario $name")
     }
 
     def checkResultForFailure(query: String, internalExecutionResult: Try[InternalExecutionResult]): Unit = {
@@ -515,7 +514,7 @@ object CypherComparisonSupport {
 
           if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName)
             && planner.acceptedPlannerNames.contains(reportedPlannerName)
-            && version.acceptedVersionNames.contains(reportedVersionName)) {
+            && version.acceptedRuntimeVersionNames.contains(reportedVersionName)) {
             fail(s"Unexpectedly succeeded using $name for query $query, with $reportedVersionName and $reportedRuntimeName runtime and $reportedPlannerName planner.")
           }
       }
@@ -530,7 +529,7 @@ object CypherComparisonSupport {
         case IPDPlanner(reported) => reported
       }
       val reportedVersion = arguments.collectFirst {
-        case IPDVersion(reported) => reported
+        case IPDRuntimeVersion(reported) => reported
       }
       val reportedPlannerVersion = arguments.collectFirst {
         case IPDPlannerVersion(reported) => reported

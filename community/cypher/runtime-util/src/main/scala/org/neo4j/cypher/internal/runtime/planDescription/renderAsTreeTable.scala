@@ -163,6 +163,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
         !x.isInstanceOf[PlannerImpl] &&
         !x.isInstanceOf[PlannerVersion] &&
         !x.isInstanceOf[Runtime] &&
+        !x.isInstanceOf[RuntimeVersion] &&
         !x.isInstanceOf[SourceCode] &&
         !x.isInstanceOf[ByteCode] &&
         !x.isInstanceOf[Time] &&

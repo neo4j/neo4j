@@ -165,9 +165,16 @@ object InternalPlanDescription {
                          args: Seq[ast.Expression],
                          results: Seq[(String, CypherType)]) extends Argument
 
+    // This is the version of cypher and will equal the planner version
+    // that is being used.
     case class Version(value: String) extends Argument {
 
       override def name = "version"
+    }
+
+    case class RuntimeVersion(value: String) extends Argument {
+
+      override def name = "runtime-version"
     }
 
     case class Planner(value: String) extends Argument {
@@ -281,7 +288,7 @@ final case class PlanDescriptionImpl(id: LogicalPlanId,
 
   override def toString = {
     val version = arguments.collectFirst {
-      case Version(v) => s"Compiler $v$NL"
+      case PlannerVersion(v) => s"Compiler $v$NL"
     }
     val planner = arguments.collectFirst {
       case Planner(n) => s"Planner ${n.toUpperCase}$NL"
@@ -290,7 +297,11 @@ final case class PlanDescriptionImpl(id: LogicalPlanId,
     val runtime = arguments.collectFirst {
       case Runtime(n) => s"Runtime ${n.toUpperCase}$NL"
     }
-    val prefix = version ++ planner ++ runtime
+
+    val runtimeVersion = arguments.collectFirst {
+      case RuntimeVersion(n) => s"Runtime version ${n.toUpperCase}$NL"
+    }
+    val prefix = version ++ planner ++ runtime ++ runtimeVersion
     s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this)}$NL${renderSummary(this)}$renderSources"
   }
 

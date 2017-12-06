@@ -1231,7 +1231,7 @@ class MultipleGraphClauseSemanticCheckingTest
     override object plannerName extends PlannerName {
       override def name: String = "Test"
 
-      override def version: String = "3.3"
+      override def version: String = "3.4"
 
       override def toTextOutput: String = name
     }

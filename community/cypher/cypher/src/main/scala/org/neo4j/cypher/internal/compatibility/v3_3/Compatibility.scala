@@ -163,7 +163,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
           val logicalPlanStateV3_3 = compiler.planPreparedQuery(preparedQuery, contextV3_3)
           val logicalPlanStateV3_4 = helpers.as3_4(logicalPlanStateV3_3)
           // Here we switch from 3.3 to 3.4
-          val result: CompilationState = createExecPlan.transform(logicalPlanStateV3_4, contextV3_4)
+          val result = createExecPlan.transform(logicalPlanStateV3_4, contextV3_4)
           result.maybeExecutionPlan.get
         }
 

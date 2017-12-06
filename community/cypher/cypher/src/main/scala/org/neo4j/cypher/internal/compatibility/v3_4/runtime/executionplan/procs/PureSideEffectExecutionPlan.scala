@@ -65,7 +65,8 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
                                                     PlannerVersion(plannerUsed.version),
                                                     Runtime(runtimeUsed.toTextOutput),
                                                     RuntimeImpl(runtimeUsed.name),
-                                                    Version(s"CYPHER ${CypherVersion.default.name}"))
+                                                    Version(s"CYPHER ${CypherVersion.default.name}"),
+                                                    RuntimeVersion(CypherVersion.default.name))
                                                 , Set.empty)
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
