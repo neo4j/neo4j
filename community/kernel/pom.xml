@@ -74,9 +74,13 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
-      <!-- This module contains public API, generate javadoc -->
+      <!-- This module contains public API, run javadoc and revapi -->
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
 
       <plugin>
@@ -113,22 +117,6 @@ the relevant Commercial Agreement.
               <Implementation-Version>${project.version},${git.commit}</Implementation-Version>
             </manifestEntries>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <ignored combine.children="append">
-            <difference>
-              <className>org/neo4j/unsafe/batchinsert/DirectRecordAccess</className>
-              <differenceType>8001</differenceType>
-            </difference>
-            <difference>
-              <className>org/neo4j/unsafe/batchinsert/DirectRecordAccessSet</className>
-              <differenceType>8001</differenceType>
-            </difference>
-          </ignored>
         </configuration>
       </plugin>
     </plugins>
