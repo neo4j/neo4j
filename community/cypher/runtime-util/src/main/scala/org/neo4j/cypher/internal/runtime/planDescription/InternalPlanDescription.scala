@@ -372,20 +372,3 @@ final case class ArgumentPlanDescription(id: LogicalPlanId,
 
   def toIndexedSeq: Seq[InternalPlanDescription] = Seq(this)
 }
-
-final case class LegacyPlanDescription(name: String,
-                                       arguments: Seq[Argument],
-                                       variables: Set[String],
-                                       stringRep: String
-                                      ) extends InternalPlanDescription {
-
-  override def id: LogicalPlanId = LogicalPlanId.DEFAULT
-
-  override def children: Children = NoChildren
-
-  override def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = this
-
-  override def find(searchedName: String): Seq[InternalPlanDescription] = if (searchedName == name) Seq(this) else Seq.empty
-
-  override def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
-}

@@ -22,23 +22,23 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.{internal, _}
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification
-import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription => InternalPlanDescription3_4}
+import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, _}
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_1.{PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
-import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
-import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, ProfileMode}
-import org.neo4j.cypher.internal.runtime.QueryStatistics
-import org.neo4j.cypher.internal.runtime.planDescription.LegacyPlanDescription
-import org.neo4j.cypher.internal.v3_4.expressions
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, symbols => symbols3_1}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.runtime.planDescription.{Argument, Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, InternalPlanDescription => InternalPlanDescription3_4}
+import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, ProfileMode, QueryStatistics}
+import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsv3_4}
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb
@@ -82,43 +82,84 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-  override def executionPlanDescription(): internal.runtime.planDescription.InternalPlanDescription =
-    convert(
-      inner.executionPlanDescription().
-        addArgument(Version("CYPHER 3.1")).
-        addArgument(Planner(planner.toTextOutput)).
-        addArgument(PlannerImpl(planner.name)).
-        addArgument(Runtime(runtime.toTextOutput)).
-        addArgument(RuntimeImpl(runtime.name))
-      )
+  override def executionPlanDescription(): InternalPlanDescription3_4 =
+    lift(inner.executionPlanDescription()).addArgument(Version("CYPHER 3.1")).
+      addArgument(Planner(planner.toTextOutput)).
+      addArgument(PlannerImpl(planner.name)).
+      addArgument(Runtime(runtime.toTextOutput)).
+      addArgument(RuntimeImpl(runtime.name))
 
-  private def convert(i: InternalPlanDescription): internal.runtime.planDescription.InternalPlanDescription = exceptionHandler.runSafely {
-    LegacyPlanDescription(i.name, convert(i.arguments), Set.empty, i.toString)
+  private def lift(planDescription: v3_1.planDescription.InternalPlanDescription): InternalPlanDescription3_4 = {
+
+    import v3_1.planDescription.InternalPlanDescription.{Arguments => Arguments3_1}
+
+    val name: String = planDescription.name
+    val children: Children = planDescription.children match {
+      case v3_1.planDescription.NoChildren => NoChildren
+      case v3_1.planDescription.SingleChild(child) => SingleChild(lift(child))
+      case v3_1.planDescription.TwoChildren(left, right) => TwoChildren(lift(left), lift(right))
+    }
+
+    val arguments: Seq[Argument] = planDescription.arguments.map {
+      case Arguments3_1.Time(value) => Arguments.Time(value)
+      case Arguments3_1.Rows(value) => Arguments.Rows(value)
+      case Arguments3_1.DbHits(value) => Arguments.DbHits(value)
+      case Arguments3_1.ColumnsLeft(value) => Arguments.ColumnsLeft(value)
+      case Arguments3_1.Expression(_) => Arguments.Expression(null)
+      case Arguments3_1.LegacyExpression(_) => Arguments.Expression(null)
+      case Arguments3_1.UpdateActionName(value) => Arguments.UpdateActionName(value)
+      case Arguments3_1.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
+      case Arguments3_1.LegacyIndex(value) => Arguments.ExplicitIndex(value)
+      case Arguments3_1.Index(label, propertyKey) => Arguments.Index(label, Seq(propertyKey))
+      case Arguments3_1.PrefixIndex(label, propertyKey, _) => Arguments.PrefixIndex(label, propertyKey, null)
+      case Arguments3_1.InequalityIndex(label, propertyKey, bounds) => Arguments
+        .InequalityIndex(label, propertyKey, bounds)
+      case Arguments3_1.LabelName(label) => Arguments.LabelName(label)
+      case Arguments3_1.KeyNames(keys) => Arguments.KeyNames(keys)
+      case Arguments3_1.KeyExpressions(_) => Arguments.KeyExpressions(null)
+      case Arguments3_1.EntityByIdRhs(_) => Arguments.EntityByIdRhs(null)
+      case Arguments3_1.EstimatedRows(value) => Arguments.EstimatedRows(value)
+      case Arguments3_1.Version(value) => Arguments.Version(value)
+      case Arguments3_1.Planner(value) => Arguments.Planner(value)
+      case Arguments3_1.PlannerImpl(value) => Arguments.PlannerImpl(value)
+      case Arguments3_1.Runtime(value) => Arguments.Runtime(value)
+      case Arguments3_1.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
+      case Arguments3_1.ExpandExpression(from, relName, relTypes, to, direction, min, max) =>
+        val dir = direction match {
+          case SemanticDirection3_1.OUTGOING => OUTGOING
+          case SemanticDirection3_1.INCOMING => INCOMING
+          case SemanticDirection3_1.BOTH => BOTH
+        }
+        Arguments.ExpandExpression(from, relName, relTypes, to, dir, min, max)
+      case Arguments3_1.SourceCode(className, sourceCode) =>
+        Arguments.SourceCode(className, sourceCode)
+      case Arguments3_1.CountNodesExpression(ident, label) => Arguments
+        .CountNodesExpression(ident, List(label.map(_.name)))
+      case Arguments3_1.CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) => Arguments
+        .CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.names, endLabel.map(_.name))
+      case Arguments3_1.LegacyExpressions(expressions) => Arguments.Expressions(
+        expressions.mapValues(_ => null))
+      case Arguments3_1.Signature(procedureName, _, results) =>
+        val procName = QualifiedName(procedureName.namespace, procedureName.name)
+        Arguments.Signature(procName, Seq.empty, results.map(pair => (pair._1, lift(pair._2))))
+    }
+    PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.variables)
   }
 
-  private def convert(args: Seq[Argument]): Seq[internal.runtime.planDescription.Argument] = args.collect {
-    case Arguments.LabelName(label) => InternalPlanDescription3_4.Arguments.LabelName(label)
-    case Arguments.ColumnsLeft(value) => InternalPlanDescription3_4.Arguments.ColumnsLeft(value)
-    case Arguments.DbHits(value) => InternalPlanDescription3_4.Arguments.DbHits(value)
-    case Arguments.EstimatedRows(value) => InternalPlanDescription3_4.Arguments.EstimatedRows(value)
-    case Arguments.ExpandExpression(from, relName, relTypes, to, direction, min, max) =>
-      val dir3_3 = direction match {
-        case INCOMING => expressions.SemanticDirection.INCOMING
-        case OUTGOING => expressions.SemanticDirection.OUTGOING
-        case BOTH => expressions.SemanticDirection.BOTH
-      }
-      InternalPlanDescription3_4.Arguments.ExpandExpression(from, relName,relTypes,to, dir3_3, min, max)
-
-    case Arguments.Index(label, propertyKey) => InternalPlanDescription3_4.Arguments.Index(label, Seq(propertyKey))
-    case Arguments.LegacyIndex(value) => InternalPlanDescription3_4.Arguments.ExplicitIndex(value)
-    case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_4.Arguments.InequalityIndex(label, propertyKey, bounds)
-    case Arguments.Planner(value) => InternalPlanDescription3_4.Arguments.Planner(value)
-    case Arguments.PlannerImpl(value) => InternalPlanDescription3_4.Arguments.PlannerImpl(value)
-    case Arguments.Runtime(value) => InternalPlanDescription3_4.Arguments.Runtime(value)
-    case Arguments.RuntimeImpl(value) => InternalPlanDescription3_4.Arguments.RuntimeImpl(value)
-    case Arguments.KeyNames(keys) => InternalPlanDescription3_4.Arguments.KeyNames(keys)
-    case Arguments.MergePattern(start) => InternalPlanDescription3_4.Arguments.MergePattern(start)
-    case Arguments.Version(value) => InternalPlanDescription3_4.Arguments.Version(value)
+  private def lift(cypherType: symbols3_1.CypherType): symbolsv3_4.CypherType = cypherType match {
+    case symbols3_1.CTAny => symbolsv3_4.CTAny
+    case symbols3_1.CTBoolean => symbolsv3_4.CTBoolean
+    case symbols3_1.CTString => symbolsv3_4.CTString
+    case symbols3_1.CTNumber => symbolsv3_4.CTNumber
+    case symbols3_1.CTFloat => symbolsv3_4.CTFloat
+    case symbols3_1.CTInteger => symbolsv3_4.CTInteger
+    case symbols3_1.CTMap => symbolsv3_4.CTMap
+    case symbols3_1.CTNode => symbolsv3_4.CTNode
+    case symbols3_1.CTRelationship => symbolsv3_4.CTRelationship
+    case symbols3_1.CTPoint => symbolsv3_4.CTPoint
+    case symbols3_1.CTGeometry => symbolsv3_4.CTGeometry
+    case symbols3_1.CTPath => symbolsv3_4.CTPath
+    case symbols3_1.ListType(t) => symbolsv3_4.ListType(lift(t))
   }
 
   override def hasNext: Boolean = inner.hasNext
