@@ -56,6 +56,7 @@ public class ReadReplica implements ClusterMember
     private final String boltAdvertisedSocketAddress;
     protected ReadReplicaGraphDatabase database;
     protected Monitors monitors;
+    private final ThreadGroup threadGroup;
 
     public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,
                         DiscoveryServiceFactory discoveryServiceFactory,
@@ -106,6 +107,7 @@ public class ReadReplica implements ClusterMember
         storeDir.mkdirs();
 
         this.monitors = monitors;
+        threadGroup = new ThreadGroup( toString() );
     }
 
     public String boltAdvertisedAddress()
@@ -157,6 +159,12 @@ public class ReadReplica implements ClusterMember
     public String settingValue( String settingName )
     {
         return config.get(settingName);
+    }
+
+    @Override
+    public ThreadGroup threadGroup()
+    {
+        return threadGroup;
     }
 
     public File storeDir()

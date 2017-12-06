@@ -26,16 +26,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -53,8 +51,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -119,16 +117,8 @@ public class Cluster
 
     public void start() throws InterruptedException, ExecutionException
     {
-        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "cluster-starter" ) );
-        try
-        {
-            startCoreMembers( executor );
-            startReadReplicas( executor );
-        }
-        finally
-        {
-            executor.shutdown();
-        }
+        startCoreMembers();
+        startReadReplicas();
     }
 
     public Set<CoreClusterMember> healthyCoreMembers()
@@ -226,31 +216,38 @@ public class Cluster
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     private void shutdownMembers( Collection<? extends ClusterMember> clusterMembers, ErrorHandler errorHandler )
     {
-        ExecutorService executor = Executors.newCachedThreadPool();
-        List<Callable<Object>> memberShutdownSuppliers = new ArrayList<>();
-        for ( final ClusterMember clusterMember : clusterMembers )
-        {
-            memberShutdownSuppliers.add( () ->
-            {
-                clusterMember.shutdown();
-                return null;
-            } );
-        }
-
         try
         {
-            combine( executor.invokeAll( memberShutdownSuppliers ) ).get();
+            combine( invokeAll( "cluster-shutdown", clusterMembers, cm ->
+            {
+                cm.shutdown();
+                return null;
+            } ) ).get();
         }
         catch ( Exception e )
         {
             errorHandler.add( e );
         }
-        finally
+    }
+
+    private <X extends GraphDatabaseAPI, T extends ClusterMember<X>, R> List<Future<R>> invokeAll(
+            String threadName, Collection<T> members, Function<T,R> call )
+    {
+        List<Future<R>> list = new ArrayList<>( members.size() );
+        int threadNumber = 0;
+        for ( T member : members )
         {
-            executor.shutdown();
+            FutureTask<R> task = new FutureTask<>( () -> call.apply( member ) );
+            ThreadGroup threadGroup = member.threadGroup();
+            Thread thread = new Thread( threadGroup, task, threadName + "-" + threadNumber );
+            thread.start();
+            threadNumber++;
+            list.add( task );
         }
+        return list;
     }
 
     public void removeCoreMemberWithMemberId( int memberId )
@@ -522,41 +519,31 @@ public class Cluster
         );
     }
 
-    private void startCoreMembers( ExecutorService executor ) throws InterruptedException, ExecutionException
+    public void startCoreMembers() throws InterruptedException, ExecutionException
     {
-        CompletionService<CoreGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
-
-        for ( CoreClusterMember coreClusterMember : coreMembers.values() )
+        Collection<CoreClusterMember> members = coreMembers.values();
+        List<Future<CoreGraphDatabase>> futures = invokeAll( "cluster-starter", members, cm ->
         {
-            ecs.submit( () ->
-            {
-                coreClusterMember.start();
-                return coreClusterMember.database();
-            } );
-        }
-
-        for ( int i = 0; i < coreMembers.size(); i++ )
+            cm.start();
+            return cm.database();
+        } );
+        for ( Future<CoreGraphDatabase> future : futures )
         {
-            ecs.take().get();
+            future.get();
         }
     }
 
-    private void startReadReplicas( ExecutorService executor ) throws InterruptedException, ExecutionException
+    private void startReadReplicas() throws InterruptedException, ExecutionException
     {
-        CompletionService<ReadReplicaGraphDatabase> rrcs = new ExecutorCompletionService<>( executor );
-
-        for ( ReadReplica readReplicas : this.readReplicas.values() )
+        Collection<ReadReplica> members = readReplicas.values();
+        List<Future<ReadReplicaGraphDatabase>> futures = invokeAll( "cluster-starter", members, cm ->
         {
-            rrcs.submit( () ->
-            {
-                readReplicas.start();
-                return readReplicas.database();
-            } );
-        }
-
-        for ( int i = 0; i < readReplicas.size(); i++ )
+            cm.start();
+            return cm.database();
+        } );
+        for ( Future<ReadReplicaGraphDatabase> future : futures )
         {
-            rrcs.take().get();
+            future.get();
         }
     }
 
@@ -642,19 +629,6 @@ public class Cluster
                 DbRepresentation representation = DbRepresentation.of( targetDB.database() );
                 return source.equals( representation );
             }, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
-        }
-    }
-
-    public void startCoreMembers() throws ExecutionException, InterruptedException
-    {
-        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "core-starter" ) );
-        try
-        {
-            startCoreMembers( executor );
-        }
-        finally
-        {
-            executor.shutdown();
         }
     }
 
