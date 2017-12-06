@@ -31,8 +31,9 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
   with Closure {
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): ListValue = {
     val list = makeTraversable(value)
+    val innerContext = m.createClone()
     VirtualValues.transform(list, new java.util.function.Function[AnyValue, AnyValue]() {
-      override def apply(v1: AnyValue): AnyValue = expression(m.newWith1(id, v1), state)
+      override def apply(v1: AnyValue): AnyValue = expression(innerContext.newWith1(id, v1), state)
     })
   }
 
