@@ -59,8 +59,6 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -543,6 +541,38 @@ public class NodeProxy implements Node
             }
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
+
+//        if ( null == key )
+//        {
+//            throw new IllegalArgumentException( "(null) property key is not allowed" );
+//        }
+//
+//        try ( Statement statement = actions.statement() )
+//        {
+//            try
+//            {
+//                int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
+//                if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+//                {
+//                    throw new NotFoundException( format( "No such property, '%s'.", key ) );
+//                }
+//
+//                Value value = statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
+//
+//                if ( value == Values.NO_VALUE )
+//                {
+//                    throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
+//                }
+//
+//                return value.asObjectCopy();
+//
+//            }
+//            catch ( EntityNotFoundException | PropertyNotFoundException e )
+//            {
+//                throw new NotFoundException(
+//                        e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+//            }
+//        }
     }
 
     @Override

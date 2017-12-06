@@ -73,11 +73,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.next = 0;
         this.highMark = read.nodeHighMark();
         this.read = read;
-        if ( labelCursor == null )
-        {
-            labelCursor = read.labelCursor();
-        }
-        this.labelCursor = read.labelCursor();
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = null;
     }
@@ -96,10 +91,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         //This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
         this.read = read;
-        if ( labelCursor == null )
-        {
-            labelCursor = read.labelCursor();
-        }
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = null;
     }
@@ -124,7 +115,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             else
             {
                 //Get labels from store and put in intSet, unfortunately we get longs back
-                long[] longs = NodeLabelsField.get( this, labelCursor );
+                long[] longs = NodeLabelsField.get( this, labelCursor() );
                 PrimitiveIntSet labels = Primitive.intSet();
                 for ( long labelToken : longs )
                 {
@@ -138,7 +129,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         else
         {
             //Nothing in tx state, just read the data.
-            return new Labels( NodeLabelsField.get( this, labelCursor ) );
+            return new Labels( NodeLabelsField.get( this, labelCursor()) );
         }
     }
 
@@ -345,6 +336,15 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     {
         next = NO_ID;
         setId( NO_ID );
+    }
+
+    private RecordCursor<DynamicRecord> labelCursor()
+    {
+        if ( labelCursor == null )
+        {
+            labelCursor = read.labelCursor();
+        }
+        return labelCursor;
     }
 
     private boolean isSingle()
