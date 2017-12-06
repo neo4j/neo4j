@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext, ProcedurePlannerName}
+import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, ProcedurePlannerName}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -136,8 +135,6 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   private def createSignatureArgument: Argument =
     Signature(signature.name, Seq.empty, resultSymbols)
-
-  override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
 
   override def isPeriodicCommit: Boolean = false
 

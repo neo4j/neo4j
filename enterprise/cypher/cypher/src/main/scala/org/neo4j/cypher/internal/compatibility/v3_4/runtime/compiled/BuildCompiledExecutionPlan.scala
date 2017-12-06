@@ -19,22 +19,21 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Phase
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.util.v3_4.TaskCloser
 import org.neo4j.cypher.internal.v3_4.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.v3_4.logical.plans.IndexUsage
@@ -122,8 +121,6 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = CompiledRuntimeName
-
-    override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
 
     override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
 

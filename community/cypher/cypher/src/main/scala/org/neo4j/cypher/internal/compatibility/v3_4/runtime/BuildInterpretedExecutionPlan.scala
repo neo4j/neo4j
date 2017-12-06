@@ -19,21 +19,18 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.util.v3_4.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.profiler.Profiler
-import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{InternalNotificationLogger, Phase}
-import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
+import org.neo4j.cypher.internal.util.v3_4.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
 
@@ -61,22 +58,11 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
 
     val execPlan: ExecutionPlan = new InterpretedExecutionPlan(func,
       logicalPlan,
-      pipe,
       periodicCommitInfo.isDefined,
       planner,
-      context.createFingerprintReference(fp),
-      context.config)
+      context.createFingerprintReference(fp))
 
     new CompilationState(from, Success(execPlan))
-  }
-
-  def checkForNotifications(logicalPlan: LogicalPlan,
-                            planContext: PlanContext,
-                            config: CypherCompilerConfiguration): Seq[InternalNotification] = {
-    val notificationCheckers = Seq(checkForEagerLoadCsv,
-      CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
-
-    notificationCheckers.flatMap(_ (logicalPlan))
   }
 
   def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
@@ -112,11 +98,9 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     */
   class InterpretedExecutionPlan(val executionPlanFunc: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
                                  val logicalPlan: LogicalPlan,
-                                 val pipe: Pipe,
                                  override val isPeriodicCommit: Boolean,
                                  override val plannerUsed: PlannerName,
-                                 val fingerprint: PlanFingerprintReference,
-                                 val config: CypherCompilerConfiguration) extends ExecutionPlan {
+                                 val fingerprint: PlanFingerprintReference) extends ExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
       executionPlanFunc(queryContext, planType, params)
@@ -124,9 +108,6 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = InterpretedRuntimeName
-
-    override def notifications(planContext: PlanContext): Seq[InternalNotification] =
-      checkForNotifications(logicalPlan, planContext, config)
 
     override def plannedIndexUsage: Seq[IndexUsage] = logicalPlan.indexUsage
   }

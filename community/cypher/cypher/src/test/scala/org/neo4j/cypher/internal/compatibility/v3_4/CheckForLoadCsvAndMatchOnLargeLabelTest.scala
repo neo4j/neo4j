@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
+package org.neo4j.cypher.internal.compatibility.v3_4
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.notification.LargeLabelWithLoadCsvNotification
-import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, IdName, NoHeaders}
+import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, IdName}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}

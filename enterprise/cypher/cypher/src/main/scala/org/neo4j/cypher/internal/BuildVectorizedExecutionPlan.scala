@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.notification.{ExperimentalFeatureNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v3_4.notification.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
@@ -122,10 +122,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = CacheCheckResult.empty
 
     override def runtimeUsed: RuntimeName = MorselRuntimeName
-
-    override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
   }
-
 }
 
 class VectorizedOperatorExecutionResult(operators: Pipeline,
