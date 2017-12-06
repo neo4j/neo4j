@@ -71,11 +71,11 @@ public class PersistentSnapshotDownloaderTest
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
         verify( coreStateDownloader, times( 1 ) ).downloadSnapshot( any() );
-        assertFalse( persistentSnapshotDownloader.isRunning() );
+        assertTrue( persistentSnapshotDownloader.hasCompleted() );
     }
 
     @Test
-    public void shouldResumeCommandApplicationProcessIsInterruptedDownloadIsFailing() throws Exception
+    public void shouldResumeCommandApplicationProcessIfInterrupted() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -94,20 +94,16 @@ public class PersistentSnapshotDownloaderTest
         Thread thread = new Thread( persistentSnapshotDownloader );
         thread.start();
         awaitOneIteration( timeout );
-
-        // then
-        assertTrue( persistentSnapshotDownloader.isRunning() );
-
-        // when
         thread.stop();
 
         // then
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
+        assertTrue( persistentSnapshotDownloader.hasCompleted() );
     }
 
     @Test
-    public void shouldResumeCommandApplicationProcessIfDownloadIsStopped() throws Exception
+    public void shouldResumeCommandApplicationProcessIfDownloaderIsStopped() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -126,17 +122,13 @@ public class PersistentSnapshotDownloaderTest
         Thread thread = new Thread( persistentSnapshotDownloader );
         thread.start();
         awaitOneIteration( timeout );
-
-        // then
-        assertTrue( persistentSnapshotDownloader.isRunning() );
-
-        // when
         persistentSnapshotDownloader.stop();
         thread.join();
 
         // then
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
+        assertTrue( persistentSnapshotDownloader.hasCompleted() );
     }
 
     @Test
@@ -161,11 +153,11 @@ public class PersistentSnapshotDownloaderTest
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
         assertEquals( 3, timeout.increments );
-        assertFalse( persistentSnapshotDownloader.isRunning() );
+        assertTrue( persistentSnapshotDownloader.hasCompleted() );
     }
 
     @Test
-    public void shouldNotStartIfAlreadyCompleted() throws Exception
+    public void shouldNotStartDownloadIfAlreadyCompleted() throws Exception
     {
         // given
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
@@ -177,11 +169,12 @@ public class PersistentSnapshotDownloaderTest
         PersistentSnapshotDownloader persistentSnapshotDownloader =
                 new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log );
 
+        // when
         persistentSnapshotDownloader.run();
         persistentSnapshotDownloader.run();
 
-        verify( log, times( 1 ) )
-                .error( startsWith( "Persistent snapshot downloader has already completed." ), any(), any() );
+        // then
+        verify( coreStateDownloader, times(1) ).downloadSnapshot( someMember );
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
     }
@@ -210,33 +203,9 @@ public class PersistentSnapshotDownloaderTest
         persistentSnapshotDownloader.stop();
         thread.join();
 
-        verify( log, times( 1 ) )
-                .error( startsWith( "Persistent snapshot downloader is already running." ), any(), any() );
+        // then
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
-    }
-
-    @Test
-    public void shouldNotStartIfStoppedBeforeRunning() throws Exception
-    {
-        // given
-        CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
-        final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        doThrow( NoLeaderFoundException.class ).when( leaderLocator ).getLeader();
-
-        final Log log = mock( Log.class );
-        PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log );
-
-        // when
-        persistentSnapshotDownloader.stop();
-        persistentSnapshotDownloader.run();
-
-        verify( log, times( 1 ) )
-                .error( startsWith( "Persistent snapshot downloader has already completed.") , any(), any() );
-        verify( applicationProcess, never() ).pauseApplier( OPERATION_NAME );
-        verify( applicationProcess, never() ).resumeApplier( OPERATION_NAME );
     }
 
     private void awaitOneIteration( NoTimeout timeout ) throws TimeoutException

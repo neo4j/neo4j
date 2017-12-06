@@ -38,7 +38,8 @@ class PersistentSnapshotDownloader implements Runnable
     private final CoreStateDownloader downloader;
     private final Log log;
     private final TimeoutStrategy.Timeout timeout;
-    private State state;
+    private volatile State state;
+    private volatile boolean keepRunning;
 
     PersistentSnapshotDownloader( LeaderLocator leaderLocator,
             CommandApplicationProcess applicationProcess, CoreStateDownloader downloader, Log log,
@@ -50,6 +51,7 @@ class PersistentSnapshotDownloader implements Runnable
         this.log = log;
         this.timeout = timeout;
         this.state = State.INITIATED;
+        this.keepRunning = true;
     }
 
     PersistentSnapshotDownloader( LeaderLocator leaderLocator,
@@ -63,22 +65,21 @@ class PersistentSnapshotDownloader implements Runnable
     {
         INITIATED,
         RUNNING,
-        STOPPED,
         COMPLETED
     }
 
     @Override
     public void run()
     {
-        if ( !initialStateOk() )
+        if ( !moveToRunningState() )
         {
             return;
         }
+
         try
         {
-            state = State.RUNNING;
             applicationProcess.pauseApplier( OPERATION_NAME );
-            while ( state == State.RUNNING )
+            while ( keepRunning )
             {
                 try
                 {
@@ -108,50 +109,26 @@ class PersistentSnapshotDownloader implements Runnable
         }
     }
 
-    private boolean initialStateOk()
+    private synchronized boolean moveToRunningState()
     {
-        switch ( state )
+        if ( state != State.INITIATED )
         {
-        case INITIATED:
+            return false;
+        }
+        else
+        {
+            state = State.RUNNING;
             return true;
-        case RUNNING:
-            log.error( "Persistent snapshot downloader is already running. " +
-                       "Illegal state '{}'. Expected '{}'", state, State.INITIATED );
-            return false;
-        case STOPPED:
-            log.info( "Persistent snapshot downloader was stopped before starting" );
-            return false;
-        case COMPLETED:
-            log.error( "Persistent snapshot downloader has already completed. " +
-                       "Illegal state '{}'. Expected '{}'", state, State.INITIATED );
-            return false;
-        default:
-            log.error( "Not a recognised state. " +
-                       "Illegal state '{}'. Expected '{}'", state, State.INITIATED );
-            return false;
         }
     }
 
     void stop()
     {
-        if ( state == State.RUNNING )
-        {
-            state = State.STOPPED;
-        }
-        else if ( state == State.INITIATED )
-        {
-            state = State.COMPLETED;
-        }
-    }
-
-    boolean isRunning()
-    {
-        return state == State.RUNNING;
+        this.keepRunning = false;
     }
 
     boolean hasCompleted()
     {
         return state == State.COMPLETED;
     }
-
 }
