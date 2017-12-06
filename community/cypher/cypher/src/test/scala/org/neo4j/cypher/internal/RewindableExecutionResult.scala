@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription._
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, symbols}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}
@@ -171,7 +171,7 @@ object RewindableExecutionResult {
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-    override def executionPlanDescription(): InternalPlanDescription = lift(inner.executionPlanDescription())
+    override def executionPlanDescription(): InternalPlanDescription = lift(inner.executionPlanDescription()).addArgument(Arguments.PlannerVersion("2.3"))
 
     private def lift(planDescription: v2_3.planDescription.InternalPlanDescription): InternalPlanDescription = {
       val name: String = planDescription.name
@@ -222,7 +222,7 @@ object RewindableExecutionResult {
           Arguments.ExpandExpression(from, relName, relTypes, to, dir, min, max)
         case v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
-      } :+ Arguments.PlannerVersion("2.3")
+      }
       PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.identifiers)
     }
 
@@ -289,9 +289,10 @@ object RewindableExecutionResult {
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
     override def executionPlanDescription(): InternalPlanDescription = {
-      var description = lift(inner.executionPlanDescription())
+      var description = lift(inner.executionPlanDescription()).addArgument(Arguments.PlannerVersion("3.1"))
       if (!description.arguments.exists(_.isInstanceOf[Arguments.Version])) {
-        description = description.addArgument(planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
+        // FIXME do we need this
+        description = description.addArgument(Arguments.Version("CYPHER 3.1"))
       }
       description
     }
@@ -349,7 +350,7 @@ object RewindableExecutionResult {
         case Arguments3_1.Signature(procedureName, _, results) =>
           val procName = QualifiedName(procedureName.namespace, procedureName.name)
           Arguments.Signature(procName, Seq.empty, results.map(pair => (pair._1, lift(pair._2))))
-      } :+ Arguments.PlannerVersion("3.1")
+      }
       PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.variables)
     }
 

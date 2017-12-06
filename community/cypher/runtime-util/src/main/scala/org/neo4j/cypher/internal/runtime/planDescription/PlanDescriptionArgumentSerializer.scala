@@ -64,6 +64,7 @@ object PlanDescriptionArgumentSerializer {
       case Version(version) => version
       case Planner(planner) => planner
       case PlannerImpl(plannerName) => plannerName
+      case PlannerVersion(value) => value
       case Runtime(runtime) => runtime
       case SourceCode(className, sourceCode) => sourceCode
       case ByteCode(className, byteCode) => byteCode

@@ -131,6 +131,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                                                RuntimeImpl(runtimeUsed.name),
                                                                Planner(plannerUsed.toTextOutput),
                                                                PlannerImpl(plannerUsed.name),
+                                                               PlannerVersion(plannerUsed.version),
                                                                Version(s"CYPHER ${CypherVersion.default.name}"))
 
 

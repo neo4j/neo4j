@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 
 sealed abstract class CostBasedPlannerName extends PlannerName {
   val toTextOutput = "COST"
-  val version = "3.3"
+  val version = "3.4"
 }
 
 object CostBasedPlannerName {
@@ -52,7 +52,7 @@ case object DPPlannerName extends CostBasedPlannerName {
   */
 case object ProcedurePlannerName extends PlannerName {
   val name = "PROCEDURE"
-  val version = "3.3"
+  val version = "3.4"
 
   override def toTextOutput: String = "PROCEDURE"
 }
@@ -69,4 +69,12 @@ object PlannerNameFor {
     case n => throw new IllegalArgumentException(
       s"$n is not a a valid planner, valid options are COST, ${IDPPlannerName.name} and ${DPPlannerName.name}")
   }
+}
+
+/**
+ * When running older planner from current version
+ */
+case class PlannerNameWithVersion(inner: PlannerName, version: String) extends PlannerName {
+  override def name = inner.name
+  override def toTextOutput = inner.toTextOutput
 }

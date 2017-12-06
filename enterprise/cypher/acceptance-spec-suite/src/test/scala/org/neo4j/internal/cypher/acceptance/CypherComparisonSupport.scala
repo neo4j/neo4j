@@ -355,6 +355,7 @@ object CypherComparisonSupport {
     object V3_1 extends Version("3.1")
 
     object V3_3 extends Version("3.3") {
+      // 3.3 has 3.4 runtime
       override val acceptedVersionNames = Set("CYPHER 3.4")
     }
 
@@ -362,6 +363,7 @@ object CypherComparisonSupport {
 
     object Default extends Version("") {
       override val acceptedVersionNames = Set("2.3", "3.1", "3.3", "3.4").map("CYPHER " + _)
+      override val acceptedPlannerVersionName = Set("2.3", "3.1", "3.3", "3.4")
     }
 
   }
@@ -374,7 +376,9 @@ object CypherComparisonSupport {
       Versions(Versions.orderedVersions.slice(fromIndex, toIndex): _*)
     }
 
+    // TODO Rename Version to RuntimeVersion everywhere
     val acceptedVersionNames: Set[String] = Set("CYPHER " + name)
+    val acceptedPlannerVersionName: Set[String] = Set(name)
 
   }
 
@@ -492,8 +496,9 @@ object CypherComparisonSupport {
     def prepare(): Unit = newRuntimeMonitor.clear()
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
-      val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersionName: String) = extractConfiguration(internalExecutionResult)
+      val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)
       // Rule planner only exists in 3.1 and earlier
+      // TODO remove this check!
       val rulePlannerFallback = Planners.Rule.acceptedPlannerNames.contains(reportedPlanner) && Versions.V3_1.acceptedVersionNames.contains(reportedVersion)
 
       if (!runtime.acceptedRuntimeNames.contains(reportedRuntime))
@@ -501,7 +506,9 @@ object CypherComparisonSupport {
       if (!planner.acceptedPlannerNames.contains(reportedPlanner))
         fail(s"did not use ${planner.acceptedPlannerNames} planner - instead $reportedPlanner was used. Scenario $name")
       if (!(version.acceptedVersionNames.contains(reportedVersion) || rulePlannerFallback))
-        fail(s"did not use ${version.acceptedVersionNames} version - instead $reportedVersion was used. Scenario $name")
+        fail(s"did not use ${version.acceptedVersionNames} runtime version - instead $reportedVersion was used. Scenario $name")
+      if (!(version.acceptedPlannerVersionName.contains(reportedPlannerVersion)))
+        fail(s"did not use ${version.acceptedPlannerVersionName} planner version - instead $reportedPlannerVersion was used. Scenario $name")
     }
 
     def checkResultForFailure(query: String, internalExecutionResult: Try[InternalExecutionResult]): Unit = {
