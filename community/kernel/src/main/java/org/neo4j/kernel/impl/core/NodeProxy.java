@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -38,6 +39,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Token;
@@ -52,6 +54,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
@@ -108,9 +111,10 @@ public class NodeProxy implements Node
     @Override
     public void delete()
     {
-        try ( Statement ignore = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            boolean deleted = actions.kernelTransaction().dataWrite().nodeDelete( getId() );
+            boolean deleted = transaction.dataWrite().nodeDelete( getId() );
             if ( !deleted )
             {
                 throw new NotFoundException( "Unable to delete Node[" + nodeId +
@@ -345,9 +349,9 @@ public class NodeProxy implements Node
         {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
-        try ( Statement ignore = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            KernelTransaction transaction = actions.kernelTransaction();
             int propertyKey = transaction.tokenRead().propertyKey( key );
             if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
@@ -376,9 +380,9 @@ public class NodeProxy implements Node
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        KernelTransaction transaction = actions.kernelTransaction();
+        KernelTransaction transaction = safeAcquireTransaction();
         List<String> keys = new ArrayList<>();
-        try ( Statement ignore = actions.statement() )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             NodeCursor nodes = transaction.nodeCursor();
             PropertyCursor properties = transaction.propertyCursor();
@@ -411,9 +415,9 @@ public class NodeProxy implements Node
             return Collections.emptyMap();
         }
 
-        try ( Statement ignore = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            KernelTransaction transaction = actions.kernelTransaction();
             int itemsToReturn = keys.length;
             Map<String,Object> properties = new HashMap<>( itemsToReturn );
             TokenRead token = transaction.tokenRead();
@@ -463,10 +467,10 @@ public class NodeProxy implements Node
     @Override
     public Map<String,Object> getAllProperties()
     {
-        KernelTransaction transaction = actions.kernelTransaction();
+        KernelTransaction transaction = safeAcquireTransaction();
         Map<String,Object> properties = new HashMap<>();
 
-        try ( Statement ignore = actions.statement() )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             TokenRead token = transaction.tokenRead();
             PropertyCursor propertyCursor = transaction.propertyCursor();
@@ -497,7 +501,7 @@ public class NodeProxy implements Node
         {
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
-        KernelTransaction transaction = actions.kernelTransaction();
+        KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
         if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
         {
@@ -505,7 +509,7 @@ public class NodeProxy implements Node
         }
         NodeCursor nodes = transaction.nodeCursor();
         PropertyCursor properties = transaction.propertyCursor();
-        try ( Statement ignore = actions.statement() )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )
@@ -536,14 +540,16 @@ public class NodeProxy implements Node
         {
             return false;
         }
-        KernelTransaction transaction = actions.kernelTransaction();
-        int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+
+        KernelTransaction transaction = safeAcquireTransaction();
+
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            return false;
-        }
-        try ( Statement ignore = actions.statement() )
-        {
+            int propertyKey = transaction.tokenRead().propertyKey( key );
+            if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                return false;
+            }
             NodeCursor nodes = transaction.nodeCursor();
             PropertyCursor properties = transaction.propertyCursor();
             transaction.dataRead().singleNode( nodeId, nodes );
@@ -561,6 +567,17 @@ public class NodeProxy implements Node
             }
             return false;
         }
+    }
+
+    private KernelTransaction safeAcquireTransaction()
+    {
+        KernelTransaction transaction = actions.kernelTransaction();
+        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
+        if ( terminationReason.isPresent() )
+        {
+            throw new TransactionTerminatedException( terminationReason.get() );
+        }
+        return transaction;
     }
 
     public int compareTo( Object node )

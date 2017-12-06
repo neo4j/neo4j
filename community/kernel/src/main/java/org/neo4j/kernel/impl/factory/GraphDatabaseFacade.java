@@ -265,9 +265,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Node createNode()
     {
-        try ( Statement ignore = spi.currentStatement() )
+        KernelTransaction transaction = spi.currentTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            return new NodeProxy( nodeActions, spi.currentTransaction().dataWrite().nodeCreate() );
+            return new NodeProxy( nodeActions, transaction.dataWrite().nodeCreate() );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -278,9 +279,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Long createNodeId()
     {
-        try ( Statement ignore = spi.currentStatement() )
+        KernelTransaction transaction = spi.currentTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            return spi.currentTransaction().dataWrite().nodeCreate();
+            return transaction.dataWrite().nodeCreate();
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -332,7 +334,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         }
 
         KernelTransaction ktx = spi.currentTransaction();
-        try ( Statement ignore = spi.currentStatement() )
+        try ( Statement ignore = ktx.acquireStatement() )
         {
             if ( !ktx.dataRead().nodeExists( id ) )
             {
@@ -461,8 +463,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         assertTransactionOpen();
         return () ->
         {
-            Statement statement = spi.currentStatement();
             KernelTransaction ktx = spi.currentTransaction();
+            Statement statement = ktx.acquireStatement();
             NodeCursor cursor = ktx.nodeCursor();
             ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<Node>()
