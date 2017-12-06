@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
@@ -665,5 +664,15 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     private void acquireSharedLabelLock( int labelId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+    }
+
+    public NodeCursor nodeCursor()
+    {
+        return nodeCursor;
+    }
+
+    public PropertyCursor propertyCursor()
+    {
+        return propertyCursor;
     }
 }

@@ -463,7 +463,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         {
             Statement statement = spi.currentStatement();
             KernelTransaction ktx = spi.currentTransaction();
-            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
+            NodeCursor cursor = ktx.nodeCursor();
             ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<Node>()
             {
@@ -485,7 +485,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                 public void close()
                 {
                     statement.close();
-                    cursor.close();
                 }
             };
         };
