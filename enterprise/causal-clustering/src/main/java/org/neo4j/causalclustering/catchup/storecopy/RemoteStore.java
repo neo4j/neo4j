@@ -159,8 +159,11 @@ public class RemoteStore
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
+            // Even for cluster store copy, we still write the transaction logs into the store directory itself
+            // because the destination directory is temporary. We will copy them to the correct place later.
+            boolean keepTxLogsInStoreDir = true;
             CatchupResult catchupResult =
-                    pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true, true );
+                    pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true, keepTxLogsInStoreDir );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
