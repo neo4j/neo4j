@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
@@ -65,6 +66,7 @@ abstract class MuninnPageCursor extends PageCursor
     private long pointer;
     private int pageSize;
     private int filePageSize;
+    protected VersionContext versionContext;
     private int offset;
     private boolean outOfBounds;
     private boolean isLinkedCursor;
@@ -73,11 +75,12 @@ abstract class MuninnPageCursor extends PageCursor
     // offending code.
     private Object cursorException;
 
-    MuninnPageCursor( long victimPage, PageCursorTracer tracer )
+    MuninnPageCursor( long victimPage, PageCursorTracer tracer, VersionContext versionContext )
     {
         this.victimPage = victimPage;
         this.pointer = victimPage;
         this.tracer = tracer;
+        this.versionContext = versionContext;
     }
 
     final void initialiseFile( MuninnPagedFile pagedFile )

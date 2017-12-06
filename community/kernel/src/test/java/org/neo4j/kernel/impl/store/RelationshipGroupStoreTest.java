@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -170,7 +171,7 @@ public class RelationshipGroupStoreTest
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
         return new StoreFactory( directory, Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
-                fs, NullLogProvider.getInstance() );
+                fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
     }
 
     @Test

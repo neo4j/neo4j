@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -114,7 +115,7 @@ public class ApplyRecoveredTransactionsTest
         FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
         StoreFactory storeFactory = new StoreFactory( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

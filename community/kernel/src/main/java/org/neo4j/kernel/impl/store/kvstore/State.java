@@ -26,6 +26,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+
 @Inherited
 @Target( ElementType.TYPE )
 @Retention( RetentionPolicy.RUNTIME )
@@ -38,17 +41,17 @@ public @interface State
         CONCURRENT_HASH_MAP
         {
             @Override
-            public <Key> ActiveState<Key> open( ReadableState<Key> store, File file )
+            public <Key> ActiveState<Key> open( ReadableState<Key> store, File file, VersionContextSupplier versionContextSupplier )
             {
-                return new ConcurrentMapState<>( store, file );
+                return new ConcurrentMapState<>( store, file, versionContextSupplier );
             }
         },
         READ_ONLY_CONCURRENT_HASH_MAP
         {
             @Override
-            public <Key> ActiveState<Key> open( ReadableState<Key> store, File file )
+            public <Key> ActiveState<Key> open( ReadableState<Key> store, File file, VersionContextSupplier versionContextSupplier )
             {
-                return new ConcurrentMapState<Key>( store, file )
+                return new ConcurrentMapState<Key>( store, file, EmptyVersionContextSupplier.INSTANCE )
                 {
                     @Override
                     protected boolean hasChanges()

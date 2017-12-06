@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,6 +27,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -123,7 +124,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Config config = Config.defaults( params );
         factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
     }
 
     @After

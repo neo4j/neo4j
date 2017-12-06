@@ -27,6 +27,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 
@@ -46,12 +48,13 @@ public final class ConfigurableStandalonePageCacheFactory
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
         return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE,
-                Config.defaults() );
+                Config.defaults(), EmptyVersionContextSupplier.INSTANCE );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config )
     {
-        return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE, config );
+        return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE, config,
+                EmptyVersionContextSupplier.INSTANCE );
     }
 
     /**
@@ -61,17 +64,19 @@ public final class ConfigurableStandalonePageCacheFactory
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
      * @param config page cache configuration
+     * @param versionContextSupplier version context supplier
      * @return created page cache instance
      */
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier, Config config )
+            PageCursorTracerSupplier pageCursorTracerSupplier, Config config,
+            VersionContextSupplier versionContextSupplier )
     {
         config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8M" );
         ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
         FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, pageCacheTracer, pageCursorTracerSupplier,
-                logProvider.getLog( PageCache.class ) );
+                logProvider.getLog( PageCache.class ), versionContextSupplier );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

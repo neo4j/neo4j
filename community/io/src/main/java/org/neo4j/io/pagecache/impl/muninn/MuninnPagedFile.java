@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable
@@ -78,6 +79,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     // Used to trace the causes of any exceptions from getLastPageId.
     private volatile Exception closeStackTrace;
 
+    // max modifier transaction id among evicted pages for this file
+    private static final long evictedTransactionIdOffset = UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "highestEvictedTransactionId" );
+    private volatile long highestEvictedTransactionId;
+
     /**
      * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
      * the file – 48 bits, plus an empty file marker bit. Because our pages are usually 2^13 bytes, this means that we
@@ -104,24 +109,20 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param pageCacheTracer global page cache tracer
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
+     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
+     * access to thread local version context
      * @param createIfNotExists should create file if it does not exists
      * @param truncateExisting should truncate file if it exists
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
-    MuninnPagedFile(
-            File file,
-            MuninnPageCache pageCache,
-            int filePageSize,
-            PageSwapperFactory swapperFactory,
-            PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier,
-            boolean createIfNotExists,
-            boolean truncateExisting ) throws IOException
+    MuninnPagedFile( File file, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory,
+            PageCacheTracer pageCacheTracer, PageCursorTracerSupplier pageCursorTracerSupplier,
+            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting ) throws IOException
     {
         super( pageCache.pages );
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = new CursorPool( this, pageCursorTracerSupplier, pageCacheTracer );
+        this.cursorPool = new CursorPool( this, pageCursorTracerSupplier, pageCacheTracer, versionContextSupplier );
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap();
 
@@ -655,6 +656,25 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         UnsafeUtil.putIntVolatile( chunk, chunkOffset, UNMAPPED_TTE );
     }
 
+    void setHighestEvictedTransactionId( long modifiedTransactionId )
+    {
+        long highestModifier;
+        do
+        {
+            highestModifier = this.highestEvictedTransactionId;
+            if ( highestModifier >= modifiedTransactionId )
+            {
+                return;
+            }
+        }
+        while ( !UnsafeUtil.compareAndSwapLong( this, evictedTransactionIdOffset, highestModifier, modifiedTransactionId ) );
+    }
+
+    long getHighestEvictedTransactionId()
+    {
+        return highestEvictedTransactionId;
+    }
+
     /**
      * Expand the translation table such that it can include at least the given chunkId.
      * @param maxChunkId The new translation table must be big enough to include at least this chunkId.
@@ -700,5 +720,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     {
         int index = (int) (filePageId & translationTableChunkSizeMask);
         return UnsafeUtil.arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );
+    }
+
+    public void setLastModifiedTxId( long l )
+    {
+
     }
 }

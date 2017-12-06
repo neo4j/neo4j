@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -106,7 +107,7 @@ public class LockingStatementOperationsTest
         lockingOps = new LockingStatementOperations(
                 entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
         );
-        state.initialize( new SimpleStatementLocks( locks ), PageCursorTracer.NULL );
+        state.initialize( new SimpleStatementLocks( locks ), PageCursorTracer.NULL, EmptyVersionContext.INSTANCE );
         state.acquire();
     }
 

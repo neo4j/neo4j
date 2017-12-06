@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -75,7 +76,7 @@ public class StoreAccess
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
+                fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE ).openAllNeoStores() );
         this.closeable = true;
     }
 

@@ -35,6 +35,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -107,7 +108,7 @@ public class RsdrMain
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider );
+        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.INSTANCE );
     }
 
     private static void interact( FileSystemAbstraction fileSystem, NeoStores neoStores ) throws IOException
