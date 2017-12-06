@@ -1,10 +1,2 @@
-Should fail on merge using multiple unique indexes using same key if found different nodes
-Should fail on merge using multiple unique indexes if found different nodes
-Should fail on merge using multiple unique indexes if it found a node matching single property only
-Should fail on merge using multiple unique indexes if it found a node matching single property only flipped order
-Should fail on merge using multiple unique indexes and labels if found different nodes
-Merge with uniqueness constraints must properly handle multiple labels
-Failing when creation would violate constraint
-
-//SkipLimitAcceptance.feature
+//Broken because of bug in IR rewriting
 Using a optional match after aggregation and before an aggregation
