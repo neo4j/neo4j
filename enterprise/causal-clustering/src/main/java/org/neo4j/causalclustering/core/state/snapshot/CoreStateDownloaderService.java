@@ -56,7 +56,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
         if (currentJob != null)
         {
