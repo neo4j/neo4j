@@ -73,13 +73,12 @@ STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery
 
   // concrete stuff
+  protected val logger: InfoLogger = new StringInfoLogger(log)
   protected val monitorsV3_4: Monitors = WrappedMonitorsV3_4(kernelMonitors)
 
-  protected def planCacheFactory: LFUCache[STATEMENT, ExecutionPlan_v3_4] = new LFUCache[STATEMENT, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
+  protected lazy val cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4](cacheMonitor)
 
-  protected def logger: InfoLogger = new StringInfoLogger(log)
-
-  protected def cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4](cacheMonitor)
+  protected def planCacheFactory(): LFUCache[STATEMENT, ExecutionPlan_v3_4] = new LFUCache[STATEMENT, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
 
   protected def queryGraphSolverV3_4: QueryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
     maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default),

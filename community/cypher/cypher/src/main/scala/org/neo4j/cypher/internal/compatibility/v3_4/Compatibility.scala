@@ -111,7 +111,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                         clock, simpleExpressionEvaluator)
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
-        val cache = provideCache(cacheAccessor, cacheMonitor, planContext, () => planCacheFactory)
+        val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
         val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContext.txIdProvider, planContext.statistics)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
