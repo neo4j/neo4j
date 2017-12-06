@@ -35,7 +35,10 @@ import static java.lang.String.format;
 
 final class MuninnPage extends SequenceLock implements Page
 {
+    private static final int UNBOUND_LAST_MODIFIED_TX_ID = -1;
+
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
+    private static final long lastModifiedTxIdOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "lastModifiedTxId" );
 
     // The sign bit is used as a dirty flag for the page.
     // The other 7 bits are used as an exponent for computing the cache page size (as a power of two).
@@ -46,6 +49,10 @@ final class MuninnPage extends SequenceLock implements Page
     private final MemoryManager memoryManager;
 
     private long pointer;
+
+    // max transaction id that updated this page
+    @SuppressWarnings( "unused" )
+    private volatile long lastModifiedTxId = UNBOUND_LAST_MODIFIED_TX_ID;
 
     // Optimistically incremented; occasionally truncated to a max of 4.
     // accessed through unsafe
@@ -82,6 +89,32 @@ final class MuninnPage extends SequenceLock implements Page
     public long address()
     {
         return pointer;
+    }
+
+    public long getLastModifiedTxId()
+    {
+        return lastModifiedTxId;
+    }
+
+    public long resetLastModifiedTxId()
+    {
+        long value = lastModifiedTxId;
+        lastModifiedTxId = UNBOUND_LAST_MODIFIED_TX_ID;
+        return value;
+    }
+
+    public void setLastModifiedTxId( long modifierTxId )
+    {
+        long pageLatestModifier;
+        do
+        {
+            pageLatestModifier = this.lastModifiedTxId;
+            if ( pageLatestModifier >= modifierTxId )
+            {
+                return;
+            }
+        }
+        while ( !UnsafeUtil.compareAndSwapLong( this, lastModifiedTxIdOffset, pageLatestModifier, modifierTxId ) );
     }
 
     /**
@@ -208,7 +241,6 @@ final class MuninnPage extends SequenceLock implements Page
 
         flush( evictionEvent.flushEventOpportunity() );
         this.filePageId = PageCursor.UNBOUND_PAGE_ID;
-
         this.swapper = null;
         if ( swapper != null )
         {

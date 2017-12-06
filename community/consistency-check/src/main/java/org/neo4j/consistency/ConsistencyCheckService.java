@@ -43,6 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -158,7 +159,7 @@ public class ConsistencyCheckService
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                logProvider.getLog( PageCache.class ) );
+                logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.INSTANCE );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try
@@ -218,7 +219,7 @@ public class ConsistencyCheckService
                 GraphDatabaseSettings.read_only.name(), TRUE,
                 GraphDatabaseSettings.label_index.name(), LabelIndex.AUTO.name() ) );
         StoreFactory factory = new StoreFactory( storeDir, config,
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.INSTANCE );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );

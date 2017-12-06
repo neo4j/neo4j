@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.File;
+
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -52,7 +53,8 @@ public class FreeIdsAfterRecoveryTest
     {
         // GIVEN
         StoreFactory storeFactory = new StoreFactory( directory.directory(),
-                pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.INSTANCE );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {

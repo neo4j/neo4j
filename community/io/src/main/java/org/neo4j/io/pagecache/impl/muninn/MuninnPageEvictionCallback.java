@@ -38,5 +38,6 @@ final class MuninnPageEvictionCallback implements PageEvictionCallback
         assert removed == page :
                 "Removed unexpected page when cleaning up translation table for filePageId " + filePageId + ". " +
                         "Evicted " + page + " but removed " + removed + " from the translation table.";
+        file.setHighestEvictedTransactionId( removed.resetLastModifiedTxId() );
     }
 }

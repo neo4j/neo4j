@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -143,7 +144,7 @@ public class KernelTransactionTestBase
         return new KernelTransactionImplementation( operationContainer, schemaWriteGuard,
                 hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexStateSupplier,
                 txPool, clock, TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
-                new CanWrite() );
+                new CanWrite(), EmptyVersionContextSupplier.INSTANCE );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

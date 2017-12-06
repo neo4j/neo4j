@@ -33,6 +33,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -149,7 +150,7 @@ public class StoreMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( storeDirectory, pageCache, fs, logService.getInternalLogProvider() );
+                new StoreFactory( storeDirectory, pageCache, fs, logService.getInternalLogProvider(), EmptyVersionContextSupplier.INSTANCE );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -184,7 +185,7 @@ public class StoreMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( storeDirectory, pageCache, fs, logService.getInternalLogProvider() );
+                new StoreFactory( storeDirectory, pageCache, fs, logService.getInternalLogProvider(), EmptyVersionContextSupplier.INSTANCE );
         storeFactory.openAllNeoStores().close();
     }
 

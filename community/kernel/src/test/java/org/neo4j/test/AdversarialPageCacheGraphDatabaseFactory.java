@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
@@ -28,6 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -71,9 +71,10 @@ public class AdversarialPageCacheGraphDatabaseFactory
 
                             @Override
                             protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
-                                    LogService logging, Tracers tracers )
+                                    LogService logging, Tracers tracers, VersionContextSupplier versionContextSupplier )
                             {
-                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers );
+                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers,
+                                        versionContextSupplier );
                                 return new AdversarialPageCache( pageCache, adversary );
                             }
                         };

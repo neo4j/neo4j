@@ -26,6 +26,7 @@ import org.mockito.InOrder;
 
 import java.io.File;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -62,7 +63,8 @@ public class RelationshipGroupGetterTest
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( dir, pageCache.getPageCache( fs.get() ), fs.get(), logProvider );
+        StoreFactory storeFactory = new StoreFactory( dir, pageCache.getPageCache( fs.get() ), fs.get(), logProvider,
+                EmptyVersionContextSupplier.INSTANCE );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );

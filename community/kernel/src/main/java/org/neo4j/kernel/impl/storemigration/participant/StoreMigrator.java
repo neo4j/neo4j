@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -412,7 +413,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         RecordFormats recordFormats = selectForVersion( versionToMigrateTo );
         StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fileSystem, recordFormats,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
@@ -425,7 +426,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                         lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId,
                         NumberArrayFactory.auto( pageCache, storeDir, true ) );
                 life.add( new CountsTracker(
-                        logService.getInternalLogProvider(), fileSystem, pageCache, config, storeFileBase )
+                        logService.getInternalLogProvider(), fileSystem, pageCache, config, storeFileBase,
+                        EmptyVersionContextSupplier.INSTANCE )
                         .setInitializer( initializer ) );
             }
         }
@@ -512,7 +514,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )
     {
         return new StoreFactory( storeDir, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                format, NullLogProvider.getInstance() ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
@@ -591,7 +593,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private void createStore( File migrationDir, RecordFormats newFormat )
     {
         StoreFactory storeFactory = new StoreFactory( new File( migrationDir.getPath() ), pageCache, fileSystem,
-                newFormat, NullLogProvider.getInstance() );
+                newFormat, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             neoStores.getMetaDataStore();

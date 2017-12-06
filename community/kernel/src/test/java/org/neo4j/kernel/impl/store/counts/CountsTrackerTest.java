@@ -31,9 +31,13 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -52,6 +56,7 @@ import org.neo4j.time.FakeClock;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -190,6 +195,54 @@ public class CountsTrackerTest
     }
 
     @Test
+    public void detectInMemoryDirtyVersionRead()
+    {
+        int labelId = 1;
+        long lastClosedTransactionId = 11L;
+        long writeTransactionId = 22L;
+        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        versionContextSupplier.init( () -> lastClosedTransactionId );
+        VersionContext versionContext = versionContextSupplier.getVersionContext();
+
+        try ( Lifespan life = new Lifespan() )
+        {
+            CountsTracker tracker = life.add( newTracker( versionContextSupplier ) );
+            try ( CountsAccessor.Updater updater = tracker.apply( writeTransactionId ).get() )
+            {
+                updater.incrementNodeCount( labelId, 1 );
+            }
+
+            versionContext.initRead();
+            tracker.nodeCount( labelId, Registers.newDoubleLongRegister() );
+            assertTrue( versionContext.isDirty() );
+        }
+    }
+
+    @Test
+    public void allowNonDirtyInMemoryDirtyVersionRead()
+    {
+        int labelId = 1;
+        long lastClosedTransactionId = 15L;
+        long writeTransactionId = 13L;
+        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        versionContextSupplier.init( () -> lastClosedTransactionId );
+        VersionContext versionContext = versionContextSupplier.getVersionContext();
+
+        try ( Lifespan life = new Lifespan() )
+        {
+            CountsTracker tracker = life.add( newTracker( versionContextSupplier ) );
+            try ( CountsAccessor.Updater updater = tracker.apply( writeTransactionId ).get() )
+            {
+                updater.incrementNodeCount( labelId, 1 );
+            }
+
+            versionContext.initRead();
+            tracker.nodeCount( labelId, Registers.newDoubleLongRegister() );
+            assertFalse( versionContext.isDirty() );
+        }
+    }
+
+    @Test
     public void shouldBeAbleToReadUpToDateValueWhileAnotherThreadIsPerformingRotation() throws Exception
     {
         // given
@@ -217,7 +270,7 @@ public class CountsTrackerTest
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
                     resourceManager.logProvider(), resourceManager.fileSystem(), resourceManager.pageCache(),
-                    Config.empty(), resourceManager.testPath() )
+                    Config.empty(), resourceManager.testPath(), EmptyVersionContextSupplier.INSTANCE )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -357,7 +410,7 @@ public class CountsTrackerTest
     {
         // GIVEN
         FakeClock clock = Clocks.fakeClock();
-        CountsTracker tracker = resourceManager.managed( newTracker( clock ) );
+        CountsTracker tracker = resourceManager.managed( newTracker( clock, EmptyVersionContextSupplier.INSTANCE ) );
         int labelId = 1;
         try ( CountsAccessor.Updater tx = tracker.apply( 2 ).get() )
         {
@@ -403,13 +456,18 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker()
     {
-        return newTracker( Clocks.systemClock() );
+        return newTracker( EmptyVersionContextSupplier.INSTANCE );
     }
 
-    private CountsTracker newTracker( Clock clock )
+    private CountsTracker newTracker( VersionContextSupplier versionContextSupplier )
+    {
+        return newTracker( Clocks.systemClock(), versionContextSupplier );
+    }
+
+    private CountsTracker newTracker( Clock clock, VersionContextSupplier versionContextSupplier )
     {
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
-                resourceManager.pageCache(), Config.empty(), resourceManager.testPath(), clock )
+                resourceManager.pageCache(), Config.empty(), resourceManager.testPath(), clock, versionContextSupplier )
                 .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override

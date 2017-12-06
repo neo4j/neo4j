@@ -25,6 +25,8 @@ import java.util.function.Function;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutionStatisticsOperations;
@@ -55,14 +57,16 @@ import org.neo4j.storageengine.api.StorageStatement;
  * <ol>
  * <li>Construct {@link KernelStatement} when {@link KernelTransactionImplementation} is constructed</li>
  * <li>For every transaction...</li>
- * <li>Call {@link #initialize(StatementLocks, StatementOperationParts, PageCursorTracer)} which makes this instance
+ * <li>Call {@link #initialize(StatementLocks, StatementOperationParts, PageCursorTracer, VersionContext)} which makes this
+ * instance
  * full available and ready to use. Call when the {@link KernelTransactionImplementation} is initialized.</li>
  * <li>Alternate {@link #acquire()} / {@link #close()} when acquiring / closing a statement for the transaction...
  * Temporarily asymmetric number of calls to {@link #acquire()} / {@link #close()} is supported, although in
  * the end an equal number of calls must have been issued.</li>
  * <li>To be safe call {@link #forceClose()} at the end of a transaction to force a close of the statement,
  * even if there are more than one current call to {@link #acquire()}. This instance is now again ready
- * to be {@link #initialize(StatementLocks, StatementOperationParts, PageCursorTracer)}  initialized} and used for the transaction
+ * to be {@link #initialize(StatementLocks, StatementOperationParts, PageCursorTracer, VersionContext)}  initialized} and used for
+ * the transaction
  * instance again, when it's initialized.</li>
  * </ol>
  */
@@ -78,6 +82,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     private int referenceCount;
     private volatile ExecutingQueryList executingQueryList;
     private final LockTracer systemLockTracer;
+    private VersionContext versionContext = EmptyVersionContext.INSTANCE;
 
     public KernelStatement( KernelTransactionImplementation transaction,
                             TxStateHolder txStateHolder,
@@ -195,11 +200,12 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     }
 
     public void initialize( StatementLocks statementLocks, StatementOperationParts operationParts,
-            PageCursorTracer pageCursorCounters )
+            PageCursorTracer pageCursorCounters, VersionContext versionContext )
     {
         this.statementLocks = statementLocks;
         this.pageCursorTracer = pageCursorCounters;
         facade.initialize( operationParts );
+        this.versionContext = versionContext;
     }
 
     public StatementLocks locks()
@@ -270,12 +276,18 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     {
         // closing is done by KTI
         storeStatement.release();
+        versionContext.clear();
         executingQueryList = ExecutingQueryList.EMPTY;
     }
 
     public KernelTransactionImplementation getTransaction()
     {
         return transaction;
+    }
+
+    public VersionContext getVersionContext()
+    {
+        return versionContext;
     }
 
     void assertAllows( Function<AccessMode,Boolean> allows, String mode )

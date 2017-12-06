@@ -19,14 +19,16 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import org.neo4j.cypher.internal.javacompat.MapRow;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Arrays.asList;
