@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static java.lang.System.lineSeparator;
 import static java.lang.System.nanoTime;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
@@ -45,6 +46,55 @@ public class DebugUtil
 {
     private DebugUtil()
     {
+    }
+
+    public static void logTrace( String fmt, Object... args )
+    {
+        logTrace( 2, 5, fmt, args );
+    }
+
+    public static void logTrace( int skip, int limit, String fmt, Object... args )
+    {
+        if ( enabledAssertions() )
+        {
+            Thread thread = Thread.currentThread();
+            String threadName = thread.getName();
+            ThreadGroup group = thread.getThreadGroup();
+            String message = "[" + threadName + (group != null ? " in group " + group.getName() : "" )+ "] " + String.format( fmt, args );
+            TraceLog traceLog = new TraceLog( message );
+            printLimitedStackTrace( System.err, traceLog, skip, limit );
+        }
+    }
+
+    private static void printLimitedStackTrace( PrintStream out, Throwable cause, int skip, int limit )
+    {
+        synchronized ( out )
+        {
+            String[] lines = stringify( cause ).split( lineSeparator() );
+            for ( String line : lines )
+            {
+                if ( line.startsWith( "\tat " ) )
+                {
+                    if ( skip > 0 )
+                    {
+                        skip--;
+                    }
+                    else if ( limit > 0 )
+                    {
+                        limit--;
+                        out.println( line );
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    out.println( line );
+                }
+            }
+        }
     }
 
     public static void printShortStackTrace( Throwable cause, int maxNumberOfStackLines )
@@ -327,8 +377,7 @@ public class DebugUtil
      */
     public static String trackTest()
     {
-        boolean track = false;
-        assert track = true : "A trick to set this variable to true if assertions are enabled";
+        boolean track = enabledAssertions();
 
         if ( track )
         {
@@ -354,6 +403,14 @@ public class DebugUtil
             }
         }
         return "";
+    }
+
+    private static boolean enabledAssertions()
+    {
+        boolean enabled = false;
+        //noinspection AssertWithSideEffects
+        assert enabled = true : "A trick to set this variable to true if assertions are enabled";
+        return enabled;
     }
 
     private static String simpleClassName( String className )
