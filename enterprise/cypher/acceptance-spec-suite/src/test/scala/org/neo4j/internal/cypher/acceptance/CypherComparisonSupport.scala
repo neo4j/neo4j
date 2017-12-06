@@ -497,17 +497,13 @@ object CypherComparisonSupport {
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
       val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)
-      // Rule planner only exists in 3.1 and earlier
-      // TODO remove this check!
-      val rulePlannerFallback = Planners.Rule.acceptedPlannerNames.contains(reportedPlanner) && Versions.V3_1.acceptedVersionNames.contains(reportedVersion)
-
       if (!runtime.acceptedRuntimeNames.contains(reportedRuntime))
         fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
       if (!planner.acceptedPlannerNames.contains(reportedPlanner))
         fail(s"did not use ${planner.acceptedPlannerNames} planner - instead $reportedPlanner was used. Scenario $name")
-      if (!(version.acceptedVersionNames.contains(reportedVersion) || rulePlannerFallback))
+      if (!version.acceptedVersionNames.contains(reportedVersion))
         fail(s"did not use ${version.acceptedVersionNames} runtime version - instead $reportedVersion was used. Scenario $name")
-      if (!(version.acceptedPlannerVersionName.contains(reportedPlannerVersion)))
+      if (!version.acceptedPlannerVersionName.contains(reportedPlannerVersion))
         fail(s"did not use ${version.acceptedPlannerVersionName} planner version - instead $reportedPlannerVersion was used. Scenario $name")
     }
 
