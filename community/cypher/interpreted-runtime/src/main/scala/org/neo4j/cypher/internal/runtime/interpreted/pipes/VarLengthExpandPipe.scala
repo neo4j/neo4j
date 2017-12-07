@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
 
@@ -65,7 +64,7 @@ case class VarLengthExpandPipe(source: Pipe,
         val (node, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
           val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(node.id(), dir,
-                                                                                      types.types(state.query)).map(ValueUtils.fromRelationshipProxy)
+                                                                                      types.types(state.query))
 
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
             val otherNode = rel.otherNode(node)
@@ -103,7 +102,7 @@ case class VarLengthExpandPipe(source: Pipe,
             expand(row, node)
 
           case nodeRef: NodeReference =>
-            val node = ValueUtils.fromNodeProxy(state.query.nodeOps.getById(nodeRef.id))
+            val node = state.query.nodeOps.getById(nodeRef.id)
             expand(row, node)
 
           case Values.NO_VALUE => Iterator(row.newWith2(relName, Values.NO_VALUE, toName, Values.NO_VALUE))

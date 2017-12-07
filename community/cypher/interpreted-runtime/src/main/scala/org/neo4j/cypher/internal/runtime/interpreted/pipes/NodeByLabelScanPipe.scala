@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.kernel.impl.util.ValueUtils
 
 case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe  {
@@ -32,7 +31,7 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
       case Some(labelId) =>
         val nodes = state.query.getNodesByLabel(labelId.id)
         val baseContext = state.createOrGetInitialContext(executionContextFactory)
-        nodes.map(n => baseContext.newWith1(ident, ValueUtils.fromNodeProxy(n)))
+        nodes.map(n => baseContext.newWith1(ident, n))
       case None =>
         Iterator.empty
     }

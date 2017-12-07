@@ -99,6 +99,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
+      taskCloser.addTask(queryContext.resources.close)
       val planDescription =
         () => LogicalPlan2PlanDescription(physicalPlan, plannerUsed)
           .addArgument(Runtime(MorselRuntimeName.toTextOutput))

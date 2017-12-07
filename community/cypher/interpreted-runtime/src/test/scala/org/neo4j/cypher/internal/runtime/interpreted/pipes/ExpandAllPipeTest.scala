@@ -30,21 +30,27 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.values.virtual.EdgeValue
 
 class ExpandAllPipeTest extends CypherFunSuite {
 
-  val startNode = newMockedNode(1)
-  val endNode1 = newMockedNode(2)
-  val endNode2 = newMockedNode(3)
-  val relationship1 = newMockedRelationship(1, startNode, endNode1)
-  val relationship2 = newMockedRelationship(2, startNode, endNode2)
-  val selfRelationship = newMockedRelationship(3, startNode, startNode)
-  val query = mock[QueryContext]
-  val queryState = QueryStateHelper.emptyWith(query = query)
+//  val startNode = newMockedNode(1)
+//  val endNode1 = newMockedNode(2)
+//  val endNode2 = newMockedNode(3)
+//  val relationship1 = newMockedRelationship(1, startNode, endNode1)
+//  val relationship2 = newMockedRelationship(2, startNode, endNode2)
+//  val selfRelationship = newMockedRelationship(3, startNode, startNode)
+//  val query = mock[QueryContext]
+//  val queryState = QueryStateHelper.emptyWith(query = query)
 
   test("should support expand between two nodes with a relationship") {
     // given
-    mockRelationships(relationship1)
+    val startNode = newMockedNode(1)
+    val endNode1 = newMockedNode(2)
+    val relationship1 = newMockedRelationship(1, startNode, endNode1)
+    val query = mockRelationships(relationship1)
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
     val left = newMockedPipe("a",
       row("a" -> startNode))
 
@@ -59,13 +65,20 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]]{
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = {
+    val query = mock[QueryContext]
+    val queryState = QueryStateHelper.emptyWith(query = query)
+    val startNode = newMockedNode(1)
+    val endNode1 = newMockedNode(2)
+    val endNode2 = newMockedNode(3)
+    val relationship1 = newMockedRelationship(1, startNode, endNode1)
+    val relationship2 = newMockedRelationship(2, startNode, endNode2)
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]]{
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[EdgeValue] = {
         val arg = invocationOnMock.getArgument[Option[Array[Int]]](2)
         arg match {
           case None => Iterator.empty
           case Some(array) if array.isEmpty => Iterator.empty
-          case _ => Iterator(relationship1, relationship2)
+          case _ => Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2))
         }
       }
     })
@@ -89,7 +102,14 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships") {
     // given
-    mockRelationships(relationship1, relationship2)
+    val startNode = newMockedNode(1)
+    val endNode1 = newMockedNode(2)
+    val endNode2 = newMockedNode(3)
+    val relationship1 = newMockedRelationship(1, startNode, endNode1)
+    val relationship2 = newMockedRelationship(2, startNode, endNode2)
+    val query = mockRelationships(relationship1, relationship2)
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
     val left = newMockedPipe("a",
       row("a" -> startNode))
 
@@ -104,7 +124,12 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships and self loops") {
     // given
-    mockRelationships(relationship1, selfRelationship)
+    val startNode = newMockedNode(1)
+    val endNode1 = newMockedNode(2)
+    val relationship1 = newMockedRelationship(1, startNode, endNode1)
+    val selfRelationship = newMockedRelationship(3, startNode, startNode)
+    val query = mockRelationships(relationship1, selfRelationship)
+    val queryState = QueryStateHelper.emptyWith(query = query)
     val left = newMockedPipe("a",
       row("a" -> startNode))
 
@@ -119,7 +144,8 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   test("given empty input, should return empty output") {
     // given
-    mockRelationships()
+    val query = mockRelationships()
+    val queryState = QueryStateHelper.emptyWith(query = query)
     val left = newMockedPipe("a", row("a" -> null))
 
     // when
@@ -131,7 +157,12 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   test("given a null start point, returns an empty iterator") {
     // given
-    mockRelationships(relationship1)
+    val startNode = newMockedNode(1)
+    val endNode1 = newMockedNode(2)
+    val relationship1 = newMockedRelationship(1, startNode, endNode1)
+    val query = mockRelationships(relationship1)
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
     val left = newMockedPipe("a",
       row("a" -> startNode))
 
@@ -145,10 +176,12 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)
 
-  private def mockRelationships(rels: Relationship*) {
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = rels.iterator
+  private def mockRelationships(rels: Relationship*) = {
+    val query = mock[QueryContext]
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]] {
+      def answer(invocation: InvocationOnMock): Iterator[EdgeValue] = rels.iterator.map(fromRelationshipProxy)
     })
+    query
   }
 
   private def newMockedNode(id: Int) = {

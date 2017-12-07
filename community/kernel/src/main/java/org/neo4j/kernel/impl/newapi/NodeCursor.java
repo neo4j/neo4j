@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Set;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -43,6 +45,15 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private PageCursor pageCursor;
     private long next;
     private long highMark;
+    private HasChanges hasChanges = HasChanges.MAYBE;
+    private Set<Long> addedNodes;
+
+    private enum HasChanges
+    {
+        MAYBE,
+        YES,
+        NO
+    }
 
     NodeCursor()
     {
@@ -66,6 +77,9 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         {
             labelCursor = read.labelCursor();
         }
+        this.labelCursor = read.labelCursor();
+        this.hasChanges = HasChanges.MAYBE;
+        this.addedNodes = null;
     }
 
     void single( long reference, Read read )
@@ -86,6 +100,8 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         {
             labelCursor = read.labelCursor();
         }
+        this.hasChanges = HasChanges.MAYBE;
+        this.addedNodes = null;
     }
 
     @Override
@@ -97,7 +113,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public LabelSet labels()
     {
-        if ( read.hasTxStateWithChanges() )
+        if ( hasChanges() )
         {
             TransactionState txState = read.txState();
             if ( txState.nodeIsAddedInThisTx( nodeReference() ) )
@@ -178,7 +194,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         //so we can retrieve it later in the property cursor.
         long propertiesReference = getNextProp();
 
-        if ( read.hasTxStateWithChanges() )
+        if ( hasChanges() )
         {
             TransactionState txState = read.txState();
             NodeState nodeState = txState.getNodeState( nodeReference() );
@@ -215,12 +231,12 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             return false;
         }
         // Check tx state
+        boolean hasChanges = hasChanges();
 
-        boolean hasChanges = read.hasTxStateWithChanges();
         TransactionState txs = hasChanges ? read.txState() : null;
         do
         {
-            if ( hasChanges && txs.nodeIsAddedInThisTx( next ) )
+            if ( hasChanges && addedNodes.contains( next ) )
             {
                 setId( next++ );
                 setInUse( true );
@@ -285,6 +301,8 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             labelCursor.close();
             labelCursor = null;
         }
+        hasChanges = HasChanges.MAYBE;
+        addedNodes = null;
         reset();
     }
 
@@ -292,6 +310,35 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     public boolean isClosed()
     {
         return pageCursor == null;
+    }
+
+    /**
+     * NodeCursor should only see changes that are there from the beginning
+     * otherwise it will not be stable.
+     */
+    private boolean hasChanges()
+    {
+        switch ( hasChanges )
+        {
+        case MAYBE:
+            boolean changes = read.hasTxStateWithChanges();
+            if ( changes )
+            {
+                addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
+                hasChanges = HasChanges.YES;
+            }
+            else
+            {
+                hasChanges = HasChanges.NO;
+            }
+            return changes;
+        case YES:
+            return true;
+        case NO:
+            return false;
+        default:
+            throw new IllegalStateException( "Style guide, why are you making me do this" );
+        }
     }
 
     private void reset()

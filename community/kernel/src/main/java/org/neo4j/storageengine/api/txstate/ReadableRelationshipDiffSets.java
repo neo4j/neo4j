@@ -70,6 +70,12 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
         }
 
         @Override
+        public Set<T> getAddedSnapshot()
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
         public Set<T> getRemoved()
         {
             return Collections.emptySet();

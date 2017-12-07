@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class FullPruningVarLengthExpandPipe(source: Pipe,
@@ -246,7 +245,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       */
     def ensureExpanded(queryState: QueryState, row: ExecutionContext, node: NodeValue) = {
       if ( rels == null ) {
-        val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query)).map(ValueUtils.fromRelationshipProxy)
+        val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query))
         rels = allRels.filter(r => {
           filteringStep.filterRelationship(row, queryState)(r) &&
             filteringStep.filterNode(row, queryState)(r.otherNode(node))

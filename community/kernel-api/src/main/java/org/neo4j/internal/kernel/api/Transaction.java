@@ -78,9 +78,14 @@ public interface Transaction extends AutoCloseable
     ExplicitIndexWrite indexWrite();
 
     /**
-     * @return Token operations
+     * @return Token read operations
      */
-    Token token();
+    TokenRead tokenRead();
+
+    /**
+     * @return Token read operations
+     */
+    TokenWrite tokenWrite();
 
     /**
      * @return The schema index read operations of the graph, used for finding indexes.

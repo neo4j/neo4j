@@ -116,7 +116,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             new GlobalKernelTransactionPool( allTransactions, factory );
     // Pool of unused transactions.
     private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
-    private final KernelToken token;
 
     /**
      * Kernel transactions component status. True when stopped, false when started.
@@ -161,7 +160,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.clock = clock;
         blockNewTransactions();
         this.cursors = cursors;
-        this.token = new KernelToken( storageEngine );
     }
 
     public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()

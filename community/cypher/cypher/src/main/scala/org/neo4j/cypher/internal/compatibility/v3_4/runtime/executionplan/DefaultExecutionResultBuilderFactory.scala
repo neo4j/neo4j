@@ -66,6 +66,7 @@ abstract class BaseExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     def build(queryId: AnyRef, planType: ExecutionMode, params: MapValue,
               notificationLogger: InternalNotificationLogger, runtimeName: RuntimeName): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
+      taskCloser.addTask(queryContext.resources.close)
       val state = createQueryState(params, queryId)
       try {
         createResults(state, planType, notificationLogger, runtimeName)

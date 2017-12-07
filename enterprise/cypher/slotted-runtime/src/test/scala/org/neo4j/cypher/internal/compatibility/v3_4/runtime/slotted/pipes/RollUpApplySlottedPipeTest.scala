@@ -32,11 +32,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QuerySta
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Node
-import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.{NodeValue, VirtualValues}
 
 class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport with FakeEntityTestSupport {
   private val slots = SlotConfiguration
@@ -120,10 +119,10 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     val node1 = new FakeNode {
       override def getId(): Long = 1L
     }
-    val nodeOps = Mockito.mock(classOf[Operations[Node]])
+    val nodeOps = Mockito.mock(classOf[Operations[NodeValue]])
     when(queryContext.nodeOps).thenReturn(nodeOps)
-    when(nodeOps.getById(0)).thenReturn(node0)
-    when(nodeOps.getById(1)).thenReturn(node1)
+    when(nodeOps.getById(0)).thenReturn(fromNodeProxy(node0))
+    when(nodeOps.getById(1)).thenReturn(fromNodeProxy(node1))
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
@@ -132,10 +131,10 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport wit
     // then
     val a_offset = slots.get("a").get.offset
     val x_offset = slots.get("x").get.offset
-    result(0).getRefAt(a_offset) should equal(Values.longValue(1))
-    result(0).getRefAt(x_offset) should equal(VirtualValues.list(
-      ValueUtils.fromNodeProxy(node0),
-      ValueUtils.fromNodeProxy(node1)))
+    result.head.getRefAt(a_offset) should equal(Values.longValue(1))
+    result.head.getRefAt(x_offset) should equal(VirtualValues.list(
+      fromNodeProxy(node0),
+      fromNodeProxy(node1)))
   }
 
   test("should set the QueryState when calling down to the RHS") {

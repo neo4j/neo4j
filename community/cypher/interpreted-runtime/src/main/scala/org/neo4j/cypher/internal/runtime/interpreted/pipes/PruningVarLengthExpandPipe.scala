@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeReference, NodeValue}
 
@@ -277,7 +276,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
           case Some(node: NodeValue) =>
             nextState(row, node)
           case Some(nodeRef: NodeReference) =>
-            val node = ValueUtils.fromNodeProxy(state.query.nodeOps.getById(nodeRef.id()))
+            val node = state.query.nodeOps.getById(nodeRef.id())
             nextState(row, node)
           case Some(x: Value) if x == Values.NO_VALUE =>
             (Empty, null)
@@ -311,7 +310,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       * List all relationships of a node, given the predicates of this pipe.
       */
     def expand(row: ExecutionContext, node: NodeValue) = {
-      val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query)).map(ValueUtils.fromRelationshipProxy)
+      val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
       relationships.filter(r => {
         filteringStep.filterRelationship(row, state)(r) &&
           filteringStep.filterNode(row, state)(r.otherNode(node))

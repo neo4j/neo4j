@@ -125,6 +125,7 @@ public class RelationshipStateImpl extends PropertyContainerStateImpl implements
             {
             }
 
+            @Override
             public boolean hasPropertyChanges()
             {
                 return false;
