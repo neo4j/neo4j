@@ -1,9 +1,0 @@
-script(id='template/popover/popover.html', type="text/ng-template")
-  .popover(ng-class='{ in: isOpen(), fade: animation()}', class="{{placement}}")
-    .arrow
-    .popover-inner
-      h3.popover-title(ng-bind='title', ng-show='title')
-      .popover-content(ng-bind-html-unsafe='content')
-
-script(id='template/tooltip/tooltip-popup.html', type="text/ng-template")
-  include ../../components/angular-ui-bootstrap/template/tooltip/tooltip-popup.html
