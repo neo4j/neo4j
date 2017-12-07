@@ -28,11 +28,11 @@ public class InternalTreeLogicFixedSizeTest extends InternalTreeLogicTestBase<Mu
     @Override
     protected ValueMerger<MutableLong,MutableLong> getAdder()
     {
-        return (( existingKey, newKey, base, add ) ->
+        return ( existingKey, newKey, base, add ) ->
         {
             base.add( add.longValue() );
             return base;
-        } );
+        };
     }
 
     @Override
