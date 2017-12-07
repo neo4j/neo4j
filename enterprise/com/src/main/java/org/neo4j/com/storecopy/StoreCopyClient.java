@@ -155,7 +155,8 @@ public class StoreCopyClient
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
             FileSystemAbstraction fs, PageCache pageCache, Monitor monitor, boolean forensics )
     {
-        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( pageCache ) );
+        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( pageCache,
+                fs ) );
     }
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
@@ -182,13 +183,13 @@ public class StoreCopyClient
             // *moved via the PageCache*!
             // We have to move these files via the page cache, because that is the *only way* that we can communicate
             // with any block storage that might have been configured for this instance.
-            List<FileMoveAction> storeFileMoveActions = new ArrayList<>();
+            List<FileMoveAction> moveActions = new ArrayList<>();
             cleanDirectory( tempStore );
 
             // Request store files and transactions that will need recovery
             monitor.startReceivingStoreFiles();
-            try ( Response<?> response = requester.copyStore(
-                    decorateWithProgressIndicator( new ToFileStoreWriter( tempStore, fs, monitor, pageCache, storeFileMoveActions ) ) ) )
+            ToFileStoreWriter storeWriter = new ToFileStoreWriter( tempStore, fs, monitor, pageCache, moveActions );
+            try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator( storeWriter ) ) )
             {
                 monitor.finishReceivingStoreFiles();
                 // Update highest archived log id
@@ -210,7 +211,7 @@ public class StoreCopyClient
             // Start with the files written through the page cache. Should only be record store files.
             // Note that the stream is lazy, so the file system traversal won't happen until *after* the store files
             // have been moved. Thus we ensure that we only attempt to move them once.
-            moveFromTemporaryLocationToCorrect( storeFileMoveActions, tempStore, moveAfterCopy );
+            moveFromTemporaryLocationToCorrect( moveActions, tempStore, moveAfterCopy );
         }
         finally
         {
@@ -219,13 +220,15 @@ public class StoreCopyClient
         }
     }
 
-    private void moveFromTemporaryLocationToCorrect( List<FileMoveAction> storeFileMoveActions, File tempStore, MoveAfterCopy moveAfterCopy ) throws Exception
+    private void moveFromTemporaryLocationToCorrect(
+            List<FileMoveAction> storeFileMoveActions, File tempStore, MoveAfterCopy moveAfterCopy ) throws Exception
     {
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withConfig( config ).build();
 
         Stream<FileMoveAction> moveActionStream =
                 Stream.concat( storeFileMoveActions.stream(), fileMoveProvider.traverseForMoving( tempStore ) );
-        Function<File,File> destinationMapper = file -> logFiles.isLogFile( file ) ? logFiles.logFilesDirectory() : storeDir;
+        Function<File,File> destinationMapper =
+                file -> logFiles.isLogFile( file ) ? logFiles.logFilesDirectory() : storeDir;
         moveAfterCopy.move( moveActionStream, tempStore, destinationMapper );
     }
 

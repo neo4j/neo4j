@@ -30,11 +30,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -71,18 +68,21 @@ public class FileMoveProviderTest
     {
         pageCache = pageCacheRule.getPageCache( ephemeralFileSystemAbstraction );
         fileMoveActionInformer = mock( FileMoveActionInformer.class );
-        subject = new FileMoveProvider( pageCache, fileMoveActionInformer );
+        subject = new FileMoveProvider( pageCache, fileMoveActionInformer, defaultFileSystemAbstraction );
     }
 
     @Test
-    public void moveSingleFiles()
+    public void moveSingleFiles() throws IOException
     {
         // given
-        File sharedParent = testDirectory.directory( "shared_parent" );
-        File sourceParent = createDirectory( new File( sharedParent, "source" ) );
-        File sourceFile = createFile( new File( sourceParent, "file.txt" ) );
+        File sharedParent = testDirectory.cleanDirectory( "shared_parent" );
+        File sourceParent = new File( sharedParent, "source" );
+        assertTrue( sourceParent.mkdirs() );
+        File sourceFile = new File( sourceParent, "file.txt" );
+        assertTrue( sourceFile.createNewFile() );
         writeToFile( sourceFile, "Garbage data" );
-        File targetParent = createDirectory( new File( sharedParent, "target" ) );
+        File targetParent = new File( sharedParent, "target" );
+        assertTrue( targetParent.mkdirs() );
         File targetFile = new File( targetParent, "file.txt" );
 
         // when
@@ -92,36 +92,19 @@ public class FileMoveProviderTest
         assertEquals( "Garbage data", readFromFile( targetFile ) );
     }
 
-    private interface RunnableThrowable
-    {
-        void run() throws Throwable;
-    }
-
-    private static Runnable runnableFromThrowable( RunnableThrowable runnableThrowable )
-    {
-        return () ->
-        {
-            try
-            {
-                runnableThrowable.run();
-            }
-            catch ( Throwable throwable )
-            {
-                throw new RuntimeException( throwable );
-            }
-        };
-    }
-
     @Test
-    public void singleDirectoriesAreNotMoved()
+    public void singleDirectoriesAreNotMoved() throws IOException
     {
         // given
-        File sharedParent = testDirectory.directory( "shared_parent" );
-        File sourceParent = createDirectory( new File( sharedParent, "source" ) );
-        File sourceDirectory = createDirectory( new File( sourceParent, "directory" ) );
+        File sharedParent = testDirectory.cleanDirectory( "shared_parent" );
+        File sourceParent = new File( sharedParent, "source" );
+        assertTrue( sourceParent.mkdirs() );
+        File sourceDirectory = new File( sourceParent, "directory" );
+        assertTrue( sourceDirectory.mkdirs() );
 
         // and
-        File targetParent = createDirectory( new File( sharedParent, "target" ) );
+        File targetParent = new File( sharedParent, "target" );
+        assertTrue( targetParent.mkdirs() );
         File targetDirectory = new File( targetParent, "directory" );
         assertFalse( targetDirectory.exists() );
 
@@ -134,16 +117,24 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void moveNestedFiles()
+    public void moveNestedFiles() throws IOException
     {
         // given
-        File sharedParent = testDirectory.directory( "shared_parent" );
-        File sourceParent = createDirectory( new File( sharedParent, "source" ) );
-        File targetParent = createDirectory( new File( sharedParent, "target" ) );
+        File sharedParent = testDirectory.cleanDirectory( "shared_parent" );
+        File sourceParent = new File( sharedParent, "source" );
+        assertTrue( sourceParent.mkdirs() );
+        File targetParent = new File( sharedParent, "target" );
+        assertTrue( targetParent.mkdirs() );
 
         // and
-        File nestedFileOne = createFile( new File( createDirectory( new File( sourceParent, "A" ) ), "file.txt" ) );
-        File nestedFileTwo = createFile( new File( createDirectory( new File( sourceParent, "B" ) ), "file.txt" ) );
+        File dirA = new File( sourceParent, "A" );
+        assertTrue( dirA.mkdirs() );
+        File nestedFileOne = new File( dirA, "file.txt" );
+        assertTrue( nestedFileOne.createNewFile() );
+        File dirB = new File( sourceParent, "B" );
+        assertTrue( dirB.mkdirs() );
+        File nestedFileTwo = new File( dirB, "file.txt" );
+        assertTrue( nestedFileTwo.createNewFile() );
         writeToFile( nestedFileOne, "This is the file contained in directory A" );
         writeToFile( nestedFileTwo, "This is the file contained in directory B" );
 
@@ -163,11 +154,12 @@ public class FileMoveProviderTest
     public void filesAreMovedViaPageCacheWhenNecessary() throws IOException
     {
         // given there is a file on the default file system
-        File parentDirectory = createDirectory( testDirectory.directory( "parent" ) );
-        File aNormalFile = createFile( new File( parentDirectory, "aNormalFile.A" ) );
+        File parentDirectory = testDirectory.cleanDirectory( "parent" );
+        File aNormalFile = new File( parentDirectory, "aNormalFile.A" );
+        assertTrue( aNormalFile.createNewFile() );
 
         // and we have an expected target directory
-        File targetDirectory = createDirectory( testDirectory.directory( "targetDirectory" ) );
+        File targetDirectory = testDirectory.cleanDirectory( "targetDirectory" );
         pageCache.getCachedFileSystem().mkdirs( targetDirectory );
 
         // and there is also a file on the block device
@@ -195,16 +187,19 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void filesAreMovedBeforeDirectories() // TODO doesnt test anything maybe
+    public void filesAreMovedBeforeDirectories() throws IOException // TODO doesnt test anything maybe
     {
         // given there is a file contained in a directory
-        File parentDirectory = createDirectory( testDirectory.directory( "parent" ) );
-        File sourceDirectory = createDirectory( new File( parentDirectory, "source" ) );
-        File childFile = createFile( new File( sourceDirectory, "child" ) );
+        File parentDirectory = testDirectory.cleanDirectory( "parent" );
+        File sourceDirectory = new File( parentDirectory, "source" );
+        assertTrue( sourceDirectory.mkdirs() );
+        File childFile = new File( sourceDirectory, "child" );
+        assertTrue( childFile.createNewFile() );
         writeToFile( childFile, "Content" );
 
         // and we have an expected target directory
-        File targetDirectory = createDirectory( new File( parentDirectory, "target" ) );
+        File targetDirectory = new File( parentDirectory, "target" );
+        assertTrue( targetDirectory.mkdirs() );
 
         // when
         subject.traverseForMoving( sourceDirectory ).forEach( moveToDirectory( targetDirectory ) );
@@ -212,64 +207,40 @@ public class FileMoveProviderTest
         // then no exception due to files happening before empty target directory
     }
 
-    private Supplier<RuntimeException> failure()
+    private Consumer<FileMoveAction> moveToDirectory( File toDirectory )
     {
-        return () -> new RuntimeException( "Fail" );
-    }
-
-    private List<File> safeList( File dir )
-    {
-        return Arrays.asList( Optional.ofNullable( dir ).map( File::listFiles ).orElse( new File[]{} ) );
-    }
-
-    private Consumer<FileMoveAction> moveToDirectory( File fileToMove )
-    {
-        return fileMoveAction -> runnableFromThrowable( () -> fileMoveAction.move( fileToMove ) ).run();
-    }
-
-    private String readFromFile( File input )
-    {
-        try
+        return fileMoveAction ->
         {
-            BufferedReader fileReader = new BufferedReader( new FileReader( input ) );
-            StringBuilder stringBuilder = new StringBuilder();
-            char[] data = new char[32];
-            int read;
-            while ( (read = fileReader.read( data )) != -1 )
+            try
             {
-                stringBuilder.append( data, 0, read );
+                fileMoveAction.move( toDirectory );
             }
-            return stringBuilder.toString();
-        }
-        catch ( IOException e )
+            catch ( Throwable throwable )
+            {
+                throw new AssertionError( throwable );
+            }
+        };
+    }
+
+    private String readFromFile( File input ) throws IOException
+    {
+        BufferedReader fileReader = new BufferedReader( new FileReader( input ) );
+        StringBuilder stringBuilder = new StringBuilder();
+        char[] data = new char[32];
+        int read;
+        while ( (read = fileReader.read( data )) != -1 )
         {
-            throw new RuntimeException( e );
+            stringBuilder.append( data, 0, read );
         }
+        return stringBuilder.toString();
     }
 
-    private File createDirectory( File file )
+    private void writeToFile( File output, String input ) throws IOException
     {
-        runnableFromThrowable( file::mkdirs ).run();
-        return file;
-    }
-
-    private File createFile( File file )
-    {
-        runnableFromThrowable( file::createNewFile ).run();
-        return file;
-    }
-
-    private void writeToFile( File output, String input )
-    {
-        try
+        try ( BufferedWriter bw = new BufferedWriter( new FileWriter( output ) ) )
         {
-            BufferedWriter bw = new BufferedWriter( new FileWriter( output ) );
             bw.write( input );
             bw.close();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 }

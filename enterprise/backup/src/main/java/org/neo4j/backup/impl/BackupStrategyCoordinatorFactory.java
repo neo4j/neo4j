@@ -26,6 +26,7 @@ import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -59,10 +60,12 @@ class BackupStrategyCoordinatorFactory
      * @param pageCache the page cache used moving files
      * @return strategy coordinator that handles the which backup strategies are tried and establishes if a backup was successful or not
      */
-    BackupStrategyCoordinator backupStrategyCoordinator( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService,
-                                                         BackupDelegator backupDelegator, PageCache pageCache )
+    BackupStrategyCoordinator backupStrategyCoordinator(
+            OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService,
+            BackupDelegator backupDelegator, PageCache pageCache )
     {
-        BackupCopyService copyService = new BackupCopyService( pageCache, new FileMoveProvider( pageCache ) );
+        FileSystemAbstraction fs = outsideWorld.fileSystem();
+        BackupCopyService copyService = new BackupCopyService( pageCache, new FileMoveProvider( pageCache, fs ) );
         ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.textual( outsideWorld.errorStream() );
         BackupRecoveryService recoveryService = new BackupRecoveryService();
         long timeout = onlineBackupContext.getRequiredArguments().getTimeout();
