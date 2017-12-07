@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.indexQuery
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QueryExpression}
 
@@ -55,7 +55,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
     resultNodes.map { node =>
       val context = PrimitiveExecutionContext(slots)
       state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
-      context.setLongAt(offset, node.getId)
+      context.setLongAt(offset, node.id)
       context
     }
   }

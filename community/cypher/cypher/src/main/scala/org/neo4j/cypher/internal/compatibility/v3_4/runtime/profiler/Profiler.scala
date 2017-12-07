@@ -21,17 +21,17 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.profiler
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext, ExecutionContext}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext, ExecutionContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.MathUtil
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.mutable
 
@@ -166,15 +166,15 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def hasNext: Boolean = inner.hasNext
   }
 
-  class ProfilerOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
+  class ProfilerOperations[T](inner: Operations[T]) extends DelegatingOperations[T](inner) {
     override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
     override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = self.manyDbHits(value)
 
     override protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = self.manyDbHits(value)
   }
 
-  override def nodeOps: Operations[Node] = new ProfilerOperations(inner.nodeOps)
-  override def relationshipOps: Operations[Relationship] = new ProfilerOperations(inner.relationshipOps)
+  override def nodeOps: Operations[NodeValue] = new ProfilerOperations(inner.nodeOps)
+  override def relationshipOps: Operations[EdgeValue] = new ProfilerOperations(inner.relationshipOps)
 }
 
 class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, pipeId: LogicalPlanId,

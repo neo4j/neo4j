@@ -22,12 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext, ProcedurePlannerName}
-import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -36,7 +33,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource,
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.util.v3_4.TaskCloser
-import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, ProcedureSignature}
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
 
@@ -72,6 +71,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     val input = evaluateArguments(ctx, params)
 
     val taskCloser = new TaskCloser
+    taskCloser.addTask(ctx.resources.close)
     taskCloser.addTask(ctx.transactionalContext.close)
 
     planType match {

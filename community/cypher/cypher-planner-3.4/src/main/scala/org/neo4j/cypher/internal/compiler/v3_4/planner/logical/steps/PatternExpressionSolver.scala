@@ -161,7 +161,7 @@ object PatternExpressionSolver {
       import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 
       val queryGraph = namedExpr.asQueryGraph
-      val args = queryGraph.coveredIds intersect availableSymbols
+      val args = queryGraph.idsWithoutOptionalMatchesOrUpdates intersect availableSymbols
       queryGraph.withArgumentIds(args)
     }
 

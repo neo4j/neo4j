@@ -48,7 +48,7 @@ object ExpressionConverters {
         patternRelationships = patternContent.rels.toSet,
         patternNodes = patternContent.nodeIds.toSet
       ).addPredicates(predicates: _*)
-      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toIndexedSeq)
+      qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.name.isNamed).toIndexedSeq)
     }
   }
 
@@ -69,7 +69,7 @@ object ExpressionConverters {
         patternRelationships = patternContent.rels.toSet,
         patternNodes = patternContent.nodeIds.toSet
       ).addPredicates(predicates: _*)
-      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toIndexedSeq)
+      qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.name.isNamed).toIndexedSeq)
     }
   }
 

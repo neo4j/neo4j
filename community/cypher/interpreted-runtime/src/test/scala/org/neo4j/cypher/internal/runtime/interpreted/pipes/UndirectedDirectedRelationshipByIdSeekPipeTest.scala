@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
@@ -35,7 +34,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
   test("should seek relationship by id") {
     // given
     val (startNode, rel, endNode) = getRelWithNodes
-    val relOps= mock[Operations[Relationship]]
+    val relOps= mock[Operations[EdgeValue]]
     when(relOps.getByIdIfExists(17)).thenReturn(Some(rel))
 
     val to = "to"
@@ -59,7 +58,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val (s1, r1, e1) = getRelWithNodes
     val (s2, r2, e2) = getRelWithNodes
-    val relationshipOps = mock[Operations[Relationship]]
+    val relationshipOps = mock[Operations[EdgeValue]]
     val to = "to"
     val from = "from"
 
@@ -77,10 +76,10 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // then
     result.toSet should equal(Set(
-      Map(relName -> fromRelationshipProxy(r1), to -> fromNodeProxy(e1), from -> fromNodeProxy(s1)),
-      Map(relName -> fromRelationshipProxy(r2), to -> fromNodeProxy(e2), from -> fromNodeProxy(s2)),
-      Map(relName -> fromRelationshipProxy(r1), to -> fromNodeProxy(s1), from -> fromNodeProxy(e1)),
-      Map(relName -> fromRelationshipProxy(r2), to -> fromNodeProxy(s2), from -> fromNodeProxy(e2))
+      Map(relName -> r1, to -> e1, from -> s1),
+      Map(relName -> r2, to -> e2, from -> s2),
+      Map(relName -> r1, to -> s1, from -> e1),
+      Map(relName -> r2, to -> s2, from -> e2)
     ))
   }
 
@@ -88,7 +87,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val to = "to"
     val from = "from"
-    val relationshipOps = mock[Operations[Relationship]]
+    val relationshipOps = mock[Operations[EdgeValue]]
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
     )
@@ -100,12 +99,12 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     result.toList should be(empty)
   }
 
-  private def getRelWithNodes:(Node,Relationship,Node) = {
-    val rel = mock[Relationship]
-    val startNode = mock[Node]
-    val endNode = mock[Node]
-    when(rel.getStartNode).thenReturn(startNode)
-    when(rel.getEndNode).thenReturn(endNode)
+  private def getRelWithNodes:(NodeValue,EdgeValue,NodeValue) = {
+    val rel = mock[EdgeValue]
+    val startNode = mock[NodeValue]
+    val endNode = mock[NodeValue]
+    when(rel.startNode()).thenReturn(startNode)
+    when(rel.endNode()).thenReturn(endNode)
     (startNode, rel, endNode)
   }
 

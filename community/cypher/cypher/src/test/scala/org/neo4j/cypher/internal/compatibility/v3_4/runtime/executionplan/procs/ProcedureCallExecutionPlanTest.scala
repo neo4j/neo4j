@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.util.v3_4.DummyPosition
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.{NormalMode, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime.{CloseableResource, NormalMode, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -101,6 +101,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   private val pos = DummyPosition(-1)
   val ctx = mock[QueryContext]
+  when(ctx.resources).thenReturn(mock[CloseableResource])
   var iteratorExhausted = false
 
   val procedureResult = new Answer[Iterator[Array[AnyRef]]] {

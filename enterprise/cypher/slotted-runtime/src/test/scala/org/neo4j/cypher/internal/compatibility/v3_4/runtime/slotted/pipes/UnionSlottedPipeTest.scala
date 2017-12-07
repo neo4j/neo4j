@@ -31,9 +31,10 @@ import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.storable.Values.{longValue, stringArray, stringValue}
-import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
 
 import scala.collection.immutable
 
@@ -47,16 +48,16 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     val rhs = FakeSlottedPipe(rhsData.toIterator, rhsSlots)
     val union = UnionSlottedPipe(lhs, rhs, computeUnionMapping(lhsSlots, out), computeUnionMapping(rhsSlots, out) )()
     val context = mock[QueryContext]
-    val nodeOps = mock[Operations[Node]]
-    when(nodeOps.getById(any())).thenAnswer(new Answer[Node] {
-      override def answer(invocation: InvocationOnMock): Node =
-        newMockedNode(invocation.getArgument[Long](0))
+    val nodeOps = mock[Operations[NodeValue]]
+    when(nodeOps.getById(any())).thenAnswer(new Answer[NodeValue] {
+      override def answer(invocation: InvocationOnMock): NodeValue =
+        fromNodeProxy(newMockedNode(invocation.getArgument[Long](0)))
     })
     when(context.nodeOps).thenReturn(nodeOps)
-    val relOps = mock[Operations[Relationship]]
-    when(relOps.getById(any())).thenAnswer(new Answer[Relationship] {
-      override def answer(invocation: InvocationOnMock): Relationship =
-        newMockedRelationship(invocation.getArgument[Long](0))
+    val relOps = mock[Operations[EdgeValue]]
+    when(relOps.getById(any())).thenAnswer(new Answer[EdgeValue] {
+      override def answer(invocation: InvocationOnMock): EdgeValue =
+        fromRelationshipProxy(newMockedRelationship(invocation.getArgument[Long](0)))
     })
     when(context.relationshipOps).thenReturn(relOps)
     val res = union.createResults(QueryStateHelper.emptyWith(query = context)).toList.map {

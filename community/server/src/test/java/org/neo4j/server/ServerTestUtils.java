@@ -67,13 +67,6 @@ public class ServerTestUtils
         return file;
     }
 
-    public static File getRelativeFile( Setting<File> setting ) throws IOException
-    {
-        return getSharedTestTemporaryFolder()
-                .toPath().resolve( setting.getDefaultValue() )
-                .toFile();
-    }
-
     public static String getRelativePath( File folder, Setting<File> setting )
     {
         return folder.toPath().resolve( setting.getDefaultValue() ).toString();

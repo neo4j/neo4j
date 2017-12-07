@@ -49,9 +49,13 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
-      <!-- This module contains public API, generate javadoc -->
+      <!-- This module contains public API, run javadoc and revapi -->
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

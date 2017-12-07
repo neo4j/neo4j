@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, SyntaxException}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticError, SemanticExpressionCheck, SemanticState}
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CypherType, _}
 
 object ResolvedCall {
@@ -87,6 +87,9 @@ case class ResolvedCall(signature: ProcedureSignature,
   }
 
   def callResultTypes: Seq[(String, CypherType)] = {
+    if (signature.outputSignature == None && callResults.size > 0) {
+      throw new SyntaxException("Cannot yield value from void procedure.")
+    }
     val outputTypes = callOutputTypes
     callResults.map(result => result.variable.name -> outputTypes(result.outputName))
   }

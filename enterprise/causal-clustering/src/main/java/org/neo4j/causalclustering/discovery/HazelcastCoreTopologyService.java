@@ -336,16 +336,16 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private void refreshCoreTopology() throws InterruptedException
     {
         waitOnHazelcastInstanceCreation();
+
         CoreTopology newCoreTopology = getCoreTopology( hazelcastInstance, config, log );
         TopologyDifference difference = coreTopology.difference( newCoreTopology );
+        coreTopology = newCoreTopology;
+
         if ( difference.hasChanges() )
         {
             log.info( "Core topology changed %s", difference );
+            listenerService.notifyListeners( coreTopology );
         }
-
-        this.coreTopology = newCoreTopology;
-        listenerService.notifyListeners( this.coreTopology );
-
     }
 
     private void refreshReadReplicaTopology() throws InterruptedException

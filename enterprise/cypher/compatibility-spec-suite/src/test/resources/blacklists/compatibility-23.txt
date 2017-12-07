@@ -43,6 +43,7 @@ LIMIT with an expression that does not depend on variables
 `toBoolean()` on variables with valid string values
 `toBoolean()` on invalid strings
 `toBoolean()` on invalid types
+`toBoolean()` on invalid types
 
 // any-type
 `type()` handling Any type

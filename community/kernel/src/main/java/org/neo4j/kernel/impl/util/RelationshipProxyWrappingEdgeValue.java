@@ -122,6 +122,12 @@ public class RelationshipProxyWrappingEdgeValue extends EdgeValue
     }
 
     @Override
+    public long otherNodeId( long node )
+    {
+        return relationship.getOtherNodeId( node );
+    }
+
+    @Override
     public TextValue type()
     {
         TextValue t = type;

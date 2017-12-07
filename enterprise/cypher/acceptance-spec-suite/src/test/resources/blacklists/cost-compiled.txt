@@ -206,3 +206,6 @@ Should handle complex IS NOT NULL on node property when node is null
 
 //AggregationAcceptance.feature
 Multiple aggregations should work
+
+//DeleteAcceptance.feature
+Return properties from deleted node

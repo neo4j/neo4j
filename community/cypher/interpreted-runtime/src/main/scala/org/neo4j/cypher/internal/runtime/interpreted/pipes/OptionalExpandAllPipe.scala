@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
@@ -44,8 +43,8 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
           case n: NodeValue =>
             val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             val matchIterator = relationships.map { r =>
-                val other = if (n.id() == r.getStartNodeId) r.getEndNode else r.getStartNode
-                row.newWith2(relName, ValueUtils.fromRelationshipProxy(r), toName, ValueUtils.fromNodeProxy(other))
+                val other = r.otherNode(n)
+                row.newWith2(relName, r, toName, other)
             }.filter(ctx => predicate.isTrue(ctx, state))
 
             if (matchIterator.isEmpty) {

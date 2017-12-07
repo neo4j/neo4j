@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.OptionalHostnamePort;
+import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +45,9 @@ public class AddressResolutionHelperTest
     @Test
     public void noPortResolvesToDefault_ha()
     {
+        // given
         Integer portIsNotSupplied = null;
+
         // when
         HostnamePort resolved = subject.resolveCorrectHAAddress( defaultConfig, new OptionalHostnamePort( "localhost", portIsNotSupplied, null ) );
 

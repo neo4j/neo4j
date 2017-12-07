@@ -28,12 +28,14 @@ import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -151,13 +153,13 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return storeReadLayer.labelGetOrCreateForName( checkValidTokenName( labelName ) );
     }
 
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return storeReadLayer.propertyKeyGetOrCreateForName( propertyKeyName );
     }
 
     @Override
@@ -170,6 +172,18 @@ public class AllStoreHolder extends Read implements Token
     public void labelCreateForName( String labelName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public String labelGetName( int token ) throws LabelNotFoundKernelException
+    {
+        return storeReadLayer.labelGetName( token );
+    }
+
+    @Override
+    public int labelGetForName( String name ) throws LabelNotFoundKernelException
+    {
+        return storeReadLayer.labelGetForName( name );
     }
 
     @Override
@@ -304,7 +318,7 @@ public class AllStoreHolder extends Read implements Token
         return PropertyUtil.readArrayFromBuffer( buffer );
     }
 
-    public boolean nodeExistsInStore( long id )
+    boolean nodeExistsInStore( long id )
     {
         return storeReadLayer.nodeExists( id );
     }
@@ -317,5 +331,14 @@ public class AllStoreHolder extends Read implements Token
     void getOrCreateRelationshipIndexConfig( String indexName, Map<String,String> customConfig )
     {
         explicitIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
+    }
+
+    private String checkValidTokenName( String name ) throws IllegalTokenNameException
+    {
+        if ( name == null || name.isEmpty() )
+        {
+            throw new IllegalTokenNameException( name );
+        }
+        return name;
     }
 }

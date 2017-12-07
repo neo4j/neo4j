@@ -23,16 +23,18 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Not, Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.virtual.EdgeValue
 
 class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
@@ -122,15 +124,25 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), any())).thenReturn(Iterator.empty)
-    when(query.getRelationshipsForIds(startNode.getId, SemanticDirection.OUTGOING, None))
-      .thenReturn(Iterator(relationship1, relationship2, relationship3, selfRelationship))
-    when(query.getRelationshipsForIds(endNode1.getId, SemanticDirection.INCOMING, None))
-      .thenReturn(Iterator(relationship1))
-    when(query.getRelationshipsForIds(endNode2.getId, SemanticDirection.INCOMING, None))
-      .thenReturn(Iterator(relationship2))
-    when(query.getRelationshipsForIds(endNode3.getId, SemanticDirection.INCOMING, None))
-      .thenReturn(Iterator(relationship3))
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]] {
+      override def answer(invocation: InvocationOnMock): Iterator[EdgeValue] = {
+        val node = invocation.getArgument[Long](0)
+        val dir = invocation.getArgument[SemanticDirection](1)
+        (node, dir) match {
+          case (start, SemanticDirection.OUTGOING) if start == startNode.getId =>
+            Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2),
+                     fromRelationshipProxy(relationship3), fromRelationshipProxy(selfRelationship))
+          case (start, SemanticDirection.INCOMING) if start == endNode1.getId =>
+            Iterator(fromRelationshipProxy(relationship1))
+          case (start, SemanticDirection.INCOMING) if start == endNode2.getId =>
+            Iterator(fromRelationshipProxy(relationship2))
+          case (start, SemanticDirection.INCOMING) if start == endNode3.getId =>
+            Iterator(fromRelationshipProxy(relationship3))
+          case _ => Iterator.empty
+
+        }
+      }
+    })
 
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1),//(1) - (2)
@@ -231,8 +243,8 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
   }
 
   private def mockRelationships(rels: Relationship*) {
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = rels.iterator
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]] {
+      def answer(invocation: InvocationOnMock): Iterator[EdgeValue] = rels.iterator.map(fromRelationshipProxy)
     })
   }
 

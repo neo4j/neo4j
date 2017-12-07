@@ -33,18 +33,17 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
 
-class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
-                                           columns: List[String],
-                                           logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
-  def create(): ExecutionResultBuilder =
-    new ExecutionWorkflowBuilder()
-
-  class ExecutionWorkflowBuilder() extends ExecutionResultBuilder {
+abstract class BaseExecutionResultBuilderFactory(pipeInfo: PipeInfo,
+                                                 columns: List[String],
+                                                 logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
+  abstract class BaseExecutionWorkflowBuilder() extends ExecutionResultBuilder {
     protected val taskCloser = new TaskCloser
     protected var externalResource: ExternalCSVResource = new CSVResources(taskCloser)
     protected var maybeQueryContext: Option[QueryContext] = None
     protected var pipeDecorator: PipeDecorator = NullPipeDecorator
     protected var exceptionDecorator: CypherException => CypherException = identity
+
+    protected def createQueryState(params: MapValue, queryId: AnyRef): QueryState
 
     def setQueryContext(context: QueryContext) {
       maybeQueryContext = Some(context)
@@ -64,14 +63,10 @@ class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       exceptionDecorator = newDecorator
     }
 
-    protected def createQueryState(params: MapValue, queryId: AnyRef) = {
-      new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
-        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
-    }
-
     def build(queryId: AnyRef, planType: ExecutionMode, params: MapValue,
               notificationLogger: InternalNotificationLogger, runtimeName: RuntimeName): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
+      taskCloser.addTask(queryContext.resources.close)
       val state = createQueryState(params, queryId)
       try {
         createResults(state, planType, notificationLogger, runtimeName)
@@ -138,5 +133,21 @@ class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       } else
         READ_ONLY
     queryType
+  }
+}
+
+case class InterpretedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
+                                                    columns: List[String],
+                                                    logicalPlan: LogicalPlan)
+  extends BaseExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan) {
+
+  override def create(): ExecutionResultBuilder =
+    new InterpretedExecutionWorkflowBuilder()
+
+  case class InterpretedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
+    override def createQueryState(params: MapValue, queryId: AnyRef) = {
+      new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
+        triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+    }
   }
 }

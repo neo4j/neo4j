@@ -27,19 +27,18 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QuerySta
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
-import org.neo4j.graphdb.Node
-import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
+import org.neo4j.values.virtual.NodeValue
 
 class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
-  private val node = nodeProxy(11)
+  private val node = nodeValue(11)
 
-  private def nodeProxy(id: Long) = {
-    val node = mock[Node]
-    when(node.getId()).thenReturn(id)
+  private def nodeValue(id: Long) = {
+    val node = mock[NodeValue]
+    when(node.id()).thenReturn(id)
     node
   }
 
@@ -54,10 +53,10 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(fromNodeProxy(node)))
+    result.map(_("n")).toList should equal(List(node))
   }
 
-  private def scanFor(nodes: Iterator[Node]): QueryContext = {
+  private def scanFor(nodes: Iterator[NodeValue]): QueryContext = {
     val query = mock[QueryContext]
     when(query.indexScan(any())).thenReturn(nodes)
     query

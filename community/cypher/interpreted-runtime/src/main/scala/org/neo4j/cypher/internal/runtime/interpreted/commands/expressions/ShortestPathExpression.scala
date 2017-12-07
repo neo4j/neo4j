@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.{Expander, KernelPredicate}
-import org.neo4j.cypher.internal.util.v3_4.{NonEmptyList, ShortestPathCommonEndNodesForbiddenException, SyntaxException}
-import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.{Expander, KernelPredicate}
+import org.neo4j.cypher.internal.util.v3_4.{NonEmptyList, ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 import org.neo4j.graphdb.{Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeReference, NodeValue, VirtualValues}
@@ -95,7 +95,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
       throw new SyntaxException(
         s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`")) match {
       case node: NodeValue => node
-      case node: NodeReference => ValueUtils.fromNodeProxy(state.query.nodeOps.getById(node.id()))
+      case node: NodeReference => state.query.nodeOps.getById(node.id())
     }
 
   private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =

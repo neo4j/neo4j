@@ -23,7 +23,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import org.neo4j.helpers.OptionalHostnamePort;
+import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 
 public class OnlineBackupRequiredArguments
 {

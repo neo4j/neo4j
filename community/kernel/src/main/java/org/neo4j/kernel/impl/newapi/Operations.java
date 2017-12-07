@@ -322,10 +322,10 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
 
     private void assertOpen()
     {
-        Optional<Status> terminationReason = ktx.getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        if ( ktx.isTerminated() )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            Status terminationReason = ktx.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 

@@ -31,7 +31,7 @@ import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
-import org.neo4j.helpers.OptionalHostnamePort;
+import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.kernel.configuration.Config;
 

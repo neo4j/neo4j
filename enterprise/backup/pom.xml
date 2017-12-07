@@ -40,15 +40,6 @@
     </license>
   </licenses>
 
-  <build>
-    <plugins>
-      <!-- This module contains public API, generate javadoc -->
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

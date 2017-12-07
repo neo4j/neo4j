@@ -35,10 +35,12 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -81,7 +83,8 @@ public class ConvertNonCausalClusteringStoreIT
         {
             for ( CoreClusterMember core : cluster.coreMembers() )
             {
-                fileSystem.copyRecursively( classicNeo4jStore, core.storeDir() );
+                new RestoreDatabaseCommand( fileSystem, classicNeo4jStore, core.getMemberConfig(), core.settingValue(
+                        GraphDatabaseSettings.active_database.name() ), true ).execute();
             }
         }
 

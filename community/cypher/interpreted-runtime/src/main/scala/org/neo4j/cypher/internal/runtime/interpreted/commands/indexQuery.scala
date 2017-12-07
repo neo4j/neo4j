@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
-import org.neo4j.cypher.internal.runtime.interpreted.IsList
-import org.neo4j.cypher.internal.runtime.interpreted.{GraphElementPropertyFunctions, makeValueNeoSafe}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.SeqCombiner.combine
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions, IsList, makeValueNeoSafe}
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
-import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.GenTraversableOnce
 import scala.collection.JavaConverters._
@@ -38,9 +36,9 @@ object indexQuery extends GraphElementPropertyFunctions {
   def apply(queryExpression: QueryExpression[Expression],
             m: ExecutionContext,
             state: QueryState,
-            index: Seq[Any] => GenTraversableOnce[Node],
+            index: Seq[Any] => GenTraversableOnce[NodeValue],
             labelName: String,
-            propertyNames: Seq[String]): Iterator[Node] = queryExpression match {
+            propertyNames: Seq[String]): Iterator[NodeValue] = queryExpression match {
 
     // Index exact value seek on single value
     case SingleQueryExpression(inner) =>
@@ -82,7 +80,7 @@ object indexQuery extends GraphElementPropertyFunctions {
       index(Seq(range)).toIterator
   }
 
-  private def lookupNodes(values: Seq[AnyValue], index: Seq[Any] => GenTraversableOnce[Node]): Iterator[Node] = {
+  private def lookupNodes(values: Seq[AnyValue], index: Seq[Any] => GenTraversableOnce[NodeValue]): Iterator[NodeValue] = {
     // If any of the values we are searching for is null, the whole expression that this index seek represents
     // collapses into a null value, which will not match any nodes.
     if (values.contains(Values.NO_VALUE))

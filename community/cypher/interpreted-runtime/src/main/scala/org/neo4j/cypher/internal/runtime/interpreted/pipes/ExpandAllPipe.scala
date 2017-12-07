@@ -19,15 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.graphdb.Relationship
-import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class ExpandAllPipe(source: Pipe,
                          fromName: String,
@@ -42,10 +40,10 @@ case class ExpandAllPipe(source: Pipe,
       row =>
         getFromNode(row) match {
           case n: NodeValue =>
-            val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
+            val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             relationships.map { r =>
-                val other = if (n.id() == r.getStartNodeId) r.getEndNode else r.getStartNode
-                row.newWith2(relName, fromRelationshipProxy(r), toName, fromNodeProxy(other))
+                val other = r.otherNode(n)
+                row.newWith2(relName, r, toName, other)
             }
 
           case Values.NO_VALUE => None
