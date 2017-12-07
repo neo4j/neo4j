@@ -101,7 +101,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         val syntacticQuery = preparedSyntacticQueryForV_3_4.get
 
         //Context used for db communication during planning
-        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
+        val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(transactionalContext, notificationLogger))
         //Context used to create logical plans
         val context = contextCreatorV3_4.create(tracer, notificationLogger, planContext,
                                                         syntacticQuery.queryText, preParsedQuery.debugOptions,

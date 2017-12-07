@@ -145,6 +145,6 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     when(tc.statement).thenReturn(statement)
     when(tc.readOperations).thenReturn(statement.readOperations())
     when(tc.graph).thenReturn(graph)
-    new TransactionBoundPlanContext(tc, devNullLogger)
+    TransactionBoundPlanContext(tc, devNullLogger)
   }
 }

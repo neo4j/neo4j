@@ -41,10 +41,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Statement => Sta
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{RecordingNotificationLogger => RecordingNotificationLoggerV3_4, CompilationPhaseTracer, Transformer}
-import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Transformer, RecordingNotificationLogger => RecordingNotificationLoggerV3_4}
+import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, InstrumentedGraphStatistics => InstrumentedGraphStatisticsV3_4, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotV3_4}
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
+import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -117,10 +117,22 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
 
         //Context used for db communication during planning
         val tcV3_4 = TransactionalContextWrapper(transactionalContext.tc)
+
+        // Create graph-statistics to be shared between 3.3 logical planning and 3.4 physical planning
+        val graphStatisticsSnapshotV3_4 = new MutableGraphStatisticsSnapshotV3_4()
+        val graphStatisticsV3_3 = new WrappedInstrumentedGraphStatistics(
+          TransactionBoundGraphStatisticsV3_3(transactionalContext.tc.readOperations()),
+          graphStatisticsSnapshotV3_4)
+
         val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(
-          new TransactionBoundPlanContextV3_3(() => transactionalContext.tc.readOperations(), notificationLoggerV3_3))
+          new TransactionBoundPlanContextV3_3(() => transactionalContext.tc.readOperations(),
+            notificationLoggerV3_3, graphStatisticsV3_3))
+
+        val graphStatisticsV3_4 = InstrumentedGraphStatisticsV3_4(
+          TransactionBoundGraphStatistics(transactionalContext.tc.readOperations()),
+          graphStatisticsSnapshotV3_4)
         val planContextV3_4 = new ExceptionTranslatingPlanContextV3_4(
-          new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4))
+          new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4, graphStatisticsV3_4))
 
         // Only used during planning
         def simpleExpressionEvaluatorV3_3 = new logicalV3_3.ExpressionEvaluator {

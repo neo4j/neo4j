@@ -40,7 +40,7 @@ import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, logger: InternalNotificationLogger)
+class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, logger: InternalNotificationLogger, graphStatistics: GraphStatistics)
   extends TransactionBoundTokenContext(readOperationsSupplier) with PlanContext with IndexDescriptorCompatibility {
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
@@ -121,9 +121,7 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
     readOperationsSupplier().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  val statistics: GraphStatistics =
-    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(readOperationsSupplier()),
-      new MutableGraphStatisticsSnapshot())
+  val statistics: GraphStatistics = graphStatistics
 
   // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_3/Compatibility
   def txIdProvider: () => Long = ???
