@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.Values
 
 case class OptionalSlottedPipe(source: Pipe,
-                               nullableSlots: Seq[Slot],
+                               nullableSlots: Array[Slot],
                                slots: SlotConfiguration,
                                argumentSize: SlotConfiguration.Size)
                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
