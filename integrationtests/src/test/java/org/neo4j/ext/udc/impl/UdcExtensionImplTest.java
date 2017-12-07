@@ -48,6 +48,7 @@ import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -439,6 +440,23 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     public void shouldNotFilterReleaseBuildNumbers() throws Exception
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ), is( equalTo( "1.9" ) ) );
+    }
+
+    @Test
+    public void shouldUseTheCustomConfiguration() throws Exception
+    {
+        // Given
+        config.put( UdcSettings.udc_source.name(), "my_source" );
+        config.put( UdcSettings.udc_registration_key.name(), "my_key" );
+
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
+        Config config = ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency(Config.class);
+
+        assertEquals("my_source",config.get(UdcSettings.udc_source));
+        assertEquals("my_key",config.get(UdcSettings.udc_registration_key));
     }
 
     private interface Condition<T>
