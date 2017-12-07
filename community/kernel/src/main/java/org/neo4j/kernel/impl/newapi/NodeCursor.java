@@ -336,6 +336,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     {
         next = NO_ID;
         setId( NO_ID );
+        clear();
     }
 
     private RecordCursor<DynamicRecord> labelCursor()
