@@ -68,8 +68,6 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
     protected abstract TreeNode<KEY,VALUE> getNode( int pageSize, Layout<KEY,VALUE> layout );
 
-    abstract boolean valuesEqual( VALUE firstValue, VALUE secondValue );
-
     abstract void assertAdditionalHeader( PageCursor cursor, TreeNode<KEY,VALUE> node, int pageSize );
 
     private KEY key( long seed )
@@ -243,7 +241,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     private void assertValueEquals( VALUE expectedValue, VALUE actualValue )
     {
         assertTrue( String.format( "expectedValue=%s, actualKey=%s", expectedValue, actualValue ),
-                valuesEqual( expectedValue, actualValue ) );
+                layout.compareValue( expectedValue, actualValue ) == 0 );
     }
 
     private void assertKeysAndChildren( long stable, long unstable, long... keysAndChildren )
@@ -424,7 +422,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                     assertTrue( "Key differ with expected, key=" + readKey + ", expectedKey=" + expectedKey,
                             layout.compare( expectedKey, readKey ) == 0 );
                     assertTrue( "Value differ with expected, value=" + readValue + ", expectedValue=" + expectedValue,
-                            valuesEqual( expectedValue, readValue ) );
+                            layout.compareValue( expectedValue, readValue ) == 0 );
 
                     TreeNode.setKeyCount( cursor, --expectedKeyCount );
                 }
@@ -450,7 +448,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
             VALUE expectedValue = expectedValues.get( i );
             node.valueAt( cursor, actualValue, i );
             assertTrue( "Value differ with expected, actualValue=" + actualValue + ", expectedValue=" + expectedValue,
-                    valuesEqual( expectedValue, actualValue ) );
+                    layout.compareValue( expectedValue, actualValue ) == 0 );
         }
     }
 

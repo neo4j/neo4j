@@ -118,6 +118,12 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         return compare != 0 ? compare : byteArrayCompare( o1.bytes, o2.bytes, Long.BYTES );
     }
 
+    @Override
+    int compareValue( RawBytes v1, RawBytes v2 )
+    {
+        return compare( v1, v2 );
+    }
+
     private int byteArrayCompare( byte[] a, byte[] b, int fromPos )
     {
         assert a != null && b != null : "Null arrays not supported.";

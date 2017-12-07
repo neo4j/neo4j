@@ -40,12 +40,6 @@ public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong,MutableL
     }
 
     @Override
-    boolean valuesEqual( MutableLong firstValue, MutableLong secondValue )
-    {
-        return layout.compare( firstValue, secondValue ) == 0;
-    }
-
-    @Override
     void assertAdditionalHeader( PageCursor cursor, TreeNode<MutableLong,MutableLong> node, int pageSize )
     {   // no addition header
     }

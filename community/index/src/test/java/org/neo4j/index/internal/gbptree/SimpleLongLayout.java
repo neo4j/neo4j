@@ -53,6 +53,12 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     }
 
     @Override
+    int compareValue( MutableLong v1, MutableLong v2 )
+    {
+        return compare( v1, v2 );
+    }
+
+    @Override
     public MutableLong newKey()
     {
         return new MutableLong();

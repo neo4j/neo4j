@@ -40,12 +40,6 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     }
 
     @Override
-    boolean valuesEqual( RawBytes firstValue, RawBytes secondValue )
-    {
-        return layout.compare( firstValue, secondValue ) == 0;
-    }
-
-    @Override
     void assertAdditionalHeader( PageCursor cursor, TreeNode<RawBytes,RawBytes> node, int pageSize )
     {
         // When
