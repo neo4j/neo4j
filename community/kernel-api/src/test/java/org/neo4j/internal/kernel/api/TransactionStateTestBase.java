@@ -454,6 +454,66 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
+    @Test
+    public void shouldSeeExistingNode() throws Exception
+    {
+        // Given
+        long node;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            node = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertTrue( tx.dataRead().nodeExists( node ) );
+        }
+    }
+
+    @Test
+    public void shouldNotSeeNonExistingNode() throws Exception
+    {
+        // Given, empty db
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertFalse( tx.dataRead().nodeExists( 1337L ) );
+        }
+    }
+
+    @Test
+    public void shouldSeeNodeExistingInTxOnly() throws Exception
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            long node = tx.dataWrite().nodeCreate();
+            assertTrue( tx.dataRead().nodeExists( node ) );
+
+        }
+    }
+
+    @Test
+    public void shouldNotSeeDeletedNode() throws Exception
+    {
+        // Given
+        long node;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            node = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.dataWrite().nodeDelete( node );
+            assertFalse( tx.dataRead().nodeExists( node ) );
+        }
+    }
+
     private void assertLabels( LabelSet labels, int... expected )
     {
         assertEquals( expected.length, labels.numberOfLabels() );
