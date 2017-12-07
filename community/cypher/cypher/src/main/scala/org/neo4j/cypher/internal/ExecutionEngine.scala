@@ -176,13 +176,17 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           })
 
           def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
-          def producePlan() = {
-            val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
-            parsedQuery.plan(tc, phaseTracer)
+          val producePlan = new PlanProducer[(ExecutionPlan, Map[String, Any])] {
+            override def produceWithExistingTX: (ExecutionPlan, Map[String, Any]) = {
+              val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+              parsedQuery.plan(tc, phaseTracer)
+            }
+
+            override def produceWithNewTx(tx: TransactionalContextWrapper): (ExecutionPlan, Map[String, Any]) = ???
           }
 
           val stateBefore = schemaState(tc)
-          var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+          var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan)
           if (!touched) {
             val labelIds: Seq[Long] = extractPlanLabels(plan, preParsedQuery.version, tc)
             if (labelIds.nonEmpty) {

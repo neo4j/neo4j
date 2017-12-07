@@ -110,7 +110,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     execute(query).toList
 
     // then
-    counter.counts should equal(CacheCounts(hits = 3, misses = 2, flushes = 1, evicted = 1))
+    counter.counts should equal(CacheCounts(hits = 3, misses = 1, flushes = 1, evicted = 1))
   }
 
   test("should log on cache evictions") {
