@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.storable.Values
 
 import scala.collection.mutable
 
@@ -107,27 +108,37 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
-      inputRowWithFromNode =>
-        val fromNode = inputRowWithFromNode.getLongAt(fromOffset)
-
-        // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
-        // the start node is valid
-        inputRowWithFromNode.setLongAt(tempNodeOffset, fromNode)
-        if (nodePredicate.isTrue(inputRowWithFromNode, state)) {
-
-          val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
-          paths collect {
-            case (toNode: LNode, rels: Seq[Relationship])
-              if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
-              val resultRow = PrimitiveExecutionContext(pipeline)
-              resultRow.copyFrom(inputRowWithFromNode, longsToCopy, pipeline .initialNumberOfReferences)
-              resultRow.setLongAt(toOffset, toNode)
-              resultRow.setRefAt(relOffset, ValueUtils.asListOfEdges(rels.toArray))
-              resultRow
-          }
+      inputRow =>
+        val fromNode = inputRow.getLongAt(fromOffset)
+        if (fromNode == -1) {
+          val resultRow = PrimitiveExecutionContext(pipeline)
+          resultRow.copyFrom(inputRow, longsToCopy, pipeline.initialNumberOfReferences)
+          resultRow.setRefAt(relOffset, Values.NO_VALUE)
+          if (shouldExpandAll)
+            resultRow.setLongAt(toOffset, -1L)
+          Iterator(resultRow)
         }
-        else
-          Iterator.empty
+        else {
+          // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
+          // the start node is valid
+          inputRow.setLongAt(tempNodeOffset, fromNode)
+          if (nodePredicate.isTrue(inputRow, state)) {
+
+            val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRow)
+            paths collect {
+              case (toNode: LNode, rels: Seq[Relationship])
+                if rels.length >= min && isToNodeValid(inputRow, toNode) =>
+                val resultRow = PrimitiveExecutionContext(pipeline)
+                resultRow.copyFrom(inputRow, longsToCopy, pipeline.initialNumberOfReferences)
+                if (shouldExpandAll)
+                  resultRow.setLongAt(toOffset, toNode)
+                resultRow.setRefAt(relOffset, ValueUtils.asListOfEdges(rels.toArray))
+                resultRow
+            }
+          }
+          else
+            Iterator.empty
+        }
     }
   }
 
