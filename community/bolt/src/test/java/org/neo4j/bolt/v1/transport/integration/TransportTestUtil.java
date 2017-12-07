@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
@@ -223,7 +223,7 @@ public class TransportTestUtil
             @Override
             protected boolean matchesSafely( TransportConnection connection )
             {
-                Supplier<Boolean> condition = () ->
+                BooleanSupplier condition = () ->
                 {
                     try
                     {

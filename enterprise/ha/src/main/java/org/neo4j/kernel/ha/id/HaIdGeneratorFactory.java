@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha.id;
 import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
@@ -67,14 +67,14 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         return open( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         HaIdGenerator previous = generators.remove( idType );
         if ( previous != null )
@@ -92,7 +92,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             // Initially we may call switchToSlave() before calling open, so we need this additional
             // (and, you might say, hacky) call to delete the .id file here as well as in switchToSlave().
             fs.deleteFile( fileName );
-            initialIdGenerator = new SlaveIdGenerator( idType, highId.get(), master.cement(), log, requestContextFactory );
+            initialIdGenerator = new SlaveIdGenerator( idType, highId.getAsLong(), master.cement(), log, requestContextFactory );
             break;
         default:
             throw new IllegalStateException( globalState.name() );

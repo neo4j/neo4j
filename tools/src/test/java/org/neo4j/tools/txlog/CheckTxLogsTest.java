@@ -29,7 +29,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.LongFunction;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -844,7 +844,7 @@ public class CheckTxLogsTest
     public void shouldReportAnInconsistencyIfTxIdSequenceIsNotStrictlyIncreasing() throws Exception
     {
         // given
-        Function<Long, Command.NodeCommand> newNodeCommandFunction =
+        LongFunction<Command.NodeCommand> newNodeCommandFunction =
                 i -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
                         new NodeRecord( i, true, false, -1, -1, -1 ) );
         writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );
@@ -869,7 +869,7 @@ public class CheckTxLogsTest
     public void shouldReportAnInconsistencyIfTxIdSequenceHasGaps() throws Exception
     {
         // given
-        Function<Long, Command.NodeCommand> newNodeCommandFunction =
+        LongFunction<Command.NodeCommand> newNodeCommandFunction =
                 i -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
                         new NodeRecord( i, true, false, -1, -1, -1 ) );
         writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );
@@ -896,7 +896,7 @@ public class CheckTxLogsTest
     {
         // given
 
-        Function<Long, Command.NodeCommand> newNodeCommandFunction =
+        LongFunction<Command.NodeCommand> newNodeCommandFunction =
                 i -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
                         new NodeRecord( i, true, false, -1, -1, -1 ) );
         writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );

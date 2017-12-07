@@ -19,7 +19,7 @@
  */
 package org.neo4j.register;
 
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 /**
  * Collection of common register types.
@@ -49,7 +49,7 @@ public interface Register
 
             boolean hasValues( long first, long second );
 
-            boolean satisfies( BiFunction<java.lang.Long,java.lang.Long,Boolean> condition );
+            boolean satisfies( BiPredicate<java.lang.Long,java.lang.Long> condition );
         }
 
         interface Out

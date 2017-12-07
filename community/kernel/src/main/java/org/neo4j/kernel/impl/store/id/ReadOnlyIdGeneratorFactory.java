@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -49,13 +49,13 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, LongSupplier highId, long maxId )
     {
         return open( filename, 0, idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
+    public IdGenerator open( File filename, int grabSize, IdType idType, LongSupplier highId, long maxId )
     {
         IdGenerator generator = new ReadOnlyIdGenerator( highId, fileSystemAbstraction, filename );
         idGenerators.put( idType, generator );
@@ -79,7 +79,7 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         private final long highId;
         private final long defragCount;
 
-        ReadOnlyIdGenerator( Supplier<Long> highId, FileSystemAbstraction fs, File filename )
+        ReadOnlyIdGenerator( LongSupplier highId, FileSystemAbstraction fs, File filename )
         {
             if ( fs != null && fs.fileExists( filename ) )
             {
@@ -96,7 +96,7 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
             }
             else
             {
-                this.highId = highId.get();
+                this.highId = highId.getAsLong();
                 defragCount = 0;
             }
         }

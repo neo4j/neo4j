@@ -19,7 +19,7 @@
  */
 package org.neo4j.register;
 
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 public class Registers
 {
@@ -64,9 +64,9 @@ public class Registers
             }
 
             @Override
-            public boolean satisfies( BiFunction<Long, Long, Boolean> condition )
+            public boolean satisfies( BiPredicate<Long, Long> condition )
             {
-                return condition.apply( first, second );
+                return condition.test( first, second );
             }
 
             @Override
