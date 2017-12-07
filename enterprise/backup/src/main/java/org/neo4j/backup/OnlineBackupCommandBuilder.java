@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,15 +41,13 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
-import static java.lang.String.format;
-
 /**
  * This class encapsulates the information needed to perform an online backup against a running Neo4j instance
  * configured to act as a backup server.
  * <p>
  * All backup methods return the same instance, allowing for chaining calls.
  */
-public class OnlineBackupCommandBuilder
+class OnlineBackupCommandBuilder
 {
     private String host;
     private Integer port;

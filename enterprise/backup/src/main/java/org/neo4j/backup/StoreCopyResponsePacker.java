@@ -45,14 +45,14 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
  * Full backup will stream at most N transactions back, even if nothing happened during the backup.
  * Streaming these transaction aren't as important, since they are mostly a nice-to-have.
  */
-public class StoreCopyResponsePacker extends ResponsePacker
+class StoreCopyResponsePacker extends ResponsePacker
 {
     private final long mandatoryStartTransactionId;
     private final LogFileInformation logFileInformation;
     private final TransactionIdStore transactionIdStore;
     private final Monitor monitor;
 
-    public StoreCopyResponsePacker( LogicalTransactionStore transactionStore,
+    StoreCopyResponsePacker( LogicalTransactionStore transactionStore,
             TransactionIdStore transactionIdStore, LogFileInformation logFileInformation,
             Supplier<StoreId> storeId, long mandatoryStartTransactionId, StoreCopyServer.Monitor monitor )
     {

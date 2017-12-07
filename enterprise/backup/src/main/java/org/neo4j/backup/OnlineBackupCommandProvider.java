@@ -35,12 +35,17 @@ import org.neo4j.logging.NullLogProvider;
 import static java.lang.String.format;
 import static org.neo4j.backup.BackupSupportingClassesFactoryProvider.getProvidersByPriority;
 
-public class OnlineBackupCommandProvider extends AdminCommand.Provider
+class OnlineBackupCommandProvider extends AdminCommand.Provider
 {
+    // CHECKSTYLE:OFF
+    // Checkstyle complains that the `public` modifier is redundant since this class is package private.
+    // However, what Checkstyle doesn't know, is that this class is service loaded, and this *requires*
+    // a public no-arg constructor to work.
     public OnlineBackupCommandProvider()
     {
         super( "backup" );
     }
+    // CHECKSTYLE:ON
 
     @Override
     @Nonnull
