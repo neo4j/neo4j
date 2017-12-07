@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
+class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
 {
     private final int keyPadding;
     private String customNameAsMetaData;
@@ -179,5 +179,27 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
         byte[] bytes = new byte[length];
         cursor.getBytes( bytes );
         return new String( bytes, UTF_8 );
+    }
+
+    @Override
+    public MutableLong key( long seed )
+    {
+        MutableLong key = newKey();
+        key.setValue( seed );
+        return key;
+    }
+
+    @Override
+    public MutableLong value( long seed )
+    {
+        MutableLong value = newValue();
+        value.setValue( seed );
+        return value;
+    }
+
+    @Override
+    public long getSeed( MutableLong key )
+    {
+        return key.getValue();
     }
 }

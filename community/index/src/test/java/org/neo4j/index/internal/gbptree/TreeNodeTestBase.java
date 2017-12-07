@@ -50,7 +50,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     private static final int PAGE_SIZE = 512;
     final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
 
-    private Layout<KEY,VALUE> layout;
+    private TestLayout<KEY,VALUE> layout;
     private TreeNode<KEY,VALUE> node;
 
     @Rule
@@ -64,17 +64,23 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node = getNode( PAGE_SIZE, layout );
     }
 
-    protected abstract Layout<KEY,VALUE> getLayout();
+    protected abstract TestLayout<KEY,VALUE> getLayout();
 
     protected abstract TreeNode<KEY,VALUE> getNode( int pageSize, Layout<KEY,VALUE> layout );
-
-    protected abstract KEY key( long sortOrder );
-
-    protected abstract VALUE value( long someValue );
 
     abstract boolean valuesEqual( VALUE firstValue, VALUE secondValue );
 
     abstract void assertAdditionalHeader( PageCursor cursor, TreeNode<KEY,VALUE> node, int pageSize );
+
+    private KEY key( long seed )
+    {
+        return layout.key( seed );
+    };
+
+    private VALUE value( long seed )
+    {
+        return layout.value( seed );
+    }
 
     @Test
     public void shouldInitializeLeaf() throws Exception

@@ -63,7 +63,7 @@ public class InternalTreeLogicTest
     private final int pageSize = 256;
 
     private final SimpleIdProvider id = new SimpleIdProvider();
-    private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+    private final TestLayout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( pageSize, layout );
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
 
@@ -1587,21 +1587,17 @@ public class InternalTreeLogicTest
 
     private MutableLong key( long seed )
     {
-        MutableLong key = layout.newKey();
-        key.setValue( seed );
-        return key;
+        return layout.key( seed );
     }
 
     private MutableLong value( long seed )
     {
-        MutableLong value = layout.newValue();
-        value.setValue( seed );
-        return value;
+        return layout.value( seed );
     }
 
     private long getSeed( MutableLong key )
     {
-        return key.getValue();
+        return layout.getSeed( key );
     }
 
     private void newRootFromSplit( StructurePropagation<MutableLong> split ) throws IOException

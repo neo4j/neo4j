@@ -28,7 +28,7 @@ public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong,MutableL
     private SimpleLongLayout layout = new SimpleLongLayout();
 
     @Override
-    protected Layout<MutableLong,MutableLong> getLayout()
+    protected TestLayout<MutableLong,MutableLong> getLayout()
     {
         return layout;
     }
@@ -37,22 +37,6 @@ public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong,MutableL
     protected TreeNode<MutableLong,MutableLong> getNode( int pageSize, Layout<MutableLong,MutableLong> layout )
     {
         return new TreeNodeFixedSize<>( pageSize, layout );
-    }
-
-    @Override
-    protected MutableLong key( long sortOrder )
-    {
-        MutableLong key = layout.newKey();
-        key.setValue( sortOrder );
-        return key;
-    }
-
-    @Override
-    protected MutableLong value( long someValue )
-    {
-        MutableLong value = layout.newValue();
-        value.setValue( someValue );
-        return value;
     }
 
     @Override

@@ -19,9 +19,11 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.nio.ByteBuffer;
+
 import org.neo4j.io.pagecache.PageCursor;
 
-public class SimpleByteArrayLayout extends Layout.Adapter<RawBytes,RawBytes>
+public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
 {
     @Override
     public RawBytes newKey()
@@ -112,10 +114,11 @@ public class SimpleByteArrayLayout extends Layout.Adapter<RawBytes,RawBytes>
     @Override
     public int compare( RawBytes o1, RawBytes o2 )
     {
-        return byteArrayCompare( o1.bytes, o2.bytes );
+        int compare = Long.compare( getSeed( o1 ), getSeed( o2 ) );
+        return compare != 0 ? compare : byteArrayCompare( o1.bytes, o2.bytes, Long.BYTES );
     }
 
-    private int byteArrayCompare( byte[] a, byte[] b )
+    private int byteArrayCompare( byte[] a, byte[] b, int fromPos )
     {
         assert a != null && b != null : "Null arrays not supported.";
 
@@ -125,7 +128,7 @@ public class SimpleByteArrayLayout extends Layout.Adapter<RawBytes,RawBytes>
         }
 
         int length = Math.min( a.length, b.length );
-        for ( int i = 0; i < length; i++ )
+        for ( int i = fromPos; i < length; i++ )
         {
             int compare = Byte.compare( a[i], b[i] );
             if ( compare != 0 )
@@ -144,5 +147,30 @@ public class SimpleByteArrayLayout extends Layout.Adapter<RawBytes,RawBytes>
             return 1;
         }
         return 0;
+    }
+
+    @Override
+    public RawBytes key( long seed )
+    {
+        RawBytes key = newKey();
+        key.bytes = ByteBuffer.allocate( 16 ).putLong( seed ).putLong( seed ).array();
+        return key;
+    }
+
+    @Override
+    public RawBytes value( long seed )
+    {
+        RawBytes value = newValue();
+        value.bytes = ByteBuffer.allocate( 17 ).putLong( seed ).putLong( seed ).array();
+        return value;
+    }
+
+    @Override
+    public long getSeed( RawBytes rawBytes )
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.put( rawBytes.bytes, 0, Long.BYTES );
+        buffer.flip();
+        return buffer.getLong();
     }
 }

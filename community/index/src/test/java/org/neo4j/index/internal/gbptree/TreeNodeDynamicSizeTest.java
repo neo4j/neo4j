@@ -1,7 +1,5 @@
 package org.neo4j.index.internal.gbptree;
 
-import java.nio.ByteBuffer;
-
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.assertEquals;
@@ -30,7 +28,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
 
     @Override
-    protected Layout<RawBytes,RawBytes> getLayout()
+    protected TestLayout<RawBytes,RawBytes> getLayout()
     {
         return layout;
     }
@@ -39,22 +37,6 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     protected TreeNode<RawBytes,RawBytes> getNode( int pageSize, Layout<RawBytes,RawBytes> layout )
     {
         return new TreeNodeDynamicSize<>( pageSize, layout );
-    }
-
-    @Override
-    protected RawBytes key( long sortOrder )
-    {
-        RawBytes key = layout.newKey();
-        key.bytes = ByteBuffer.allocate( 16 ).putLong( sortOrder ).putLong( sortOrder ).array();
-        return key;
-    }
-
-    @Override
-    protected RawBytes value( long someValue )
-    {
-        RawBytes value = layout.newValue();
-        value.bytes = ByteBuffer.allocate( 17 ).putLong( someValue ).putLong( someValue ).array();
-        return value;
     }
 
     @Override
