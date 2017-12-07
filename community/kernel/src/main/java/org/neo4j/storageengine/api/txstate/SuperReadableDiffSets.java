@@ -40,6 +40,8 @@ public interface SuperReadableDiffSets<T,LONGITERATOR extends PrimitiveLongItera
 
     Set<T> getAdded();
 
+    Set<T> getAddedSnapshot();
+
     Set<T> getRemoved();
 
     boolean isEmpty();

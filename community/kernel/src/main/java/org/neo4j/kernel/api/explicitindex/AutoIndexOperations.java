@@ -22,9 +22,7 @@ package org.neo4j.kernel.api.explicitindex;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -40,21 +38,23 @@ import org.neo4j.values.storable.Value;
  */
 public interface AutoIndexOperations
 {
-    void propertyAdded( DataWriteOperations ops, long entityId, int propertyKeyId, Value value ) throws AutoIndexingKernelException;
-    void propertyChanged( DataWriteOperations ops, long entityId, int propertyKeyId, Value oldValue, Value newValue )
-        throws AutoIndexingKernelException;
-    void propertyRemoved( DataWriteOperations ops, long entityId, int propertyKey )
-        throws AutoIndexingKernelException;
+    void propertyAdded( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value value )
+            throws AutoIndexingKernelException;
 
-    //TODO this method should be removed once fully migrated
-    void entityRemoved( DataWriteOperations ops, long entityId ) throws AutoIndexingKernelException;
+    void propertyChanged( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value oldValue, Value newValue )
+            throws AutoIndexingKernelException;
 
-    void entityRemoved( ExplicitIndexWrite write, long entityId ) throws KernelException;
+    void propertyRemoved( ExplicitIndexWrite write, long entityId, int propertyKey )
+            throws AutoIndexingKernelException;
+
+    void entityRemoved( ExplicitIndexWrite write, long entityId ) throws AutoIndexingKernelException;
 
     boolean enabled();
+
     void enabled( boolean enabled );
 
     void startAutoIndexingProperty( String propName );
+
     void stopAutoIndexingProperty( String propName );
 
     Set<String> getAutoIndexedProperties();
@@ -64,29 +64,24 @@ public interface AutoIndexOperations
      */
     AutoIndexOperations UNSUPPORTED = new AutoIndexOperations()
     {
+
         @Override
-        public void propertyAdded( DataWriteOperations ops, long entityId, int propertyKeyId, Value value )
+        public void propertyAdded( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value value )
                 throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void propertyChanged( DataWriteOperations ops, long entityId, int propertyKeyId, Value oldValue,
+        public void propertyChanged( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value oldValue,
                 Value newValue ) throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void propertyRemoved( DataWriteOperations ops, long entityId, int propertyKey ) throws
-                AutoIndexingKernelException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void entityRemoved( DataWriteOperations ops, long entityId ) throws AutoIndexingKernelException
+        public void propertyRemoved( ExplicitIndexWrite write, long entityId, int propertyKey )
+                throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }

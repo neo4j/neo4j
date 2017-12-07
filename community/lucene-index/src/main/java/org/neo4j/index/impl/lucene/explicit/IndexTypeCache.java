@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 class IndexTypeCache

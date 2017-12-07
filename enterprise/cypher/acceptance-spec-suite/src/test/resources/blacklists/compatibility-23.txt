@@ -70,3 +70,6 @@ max() over mixed values
 min() over mixed values
 max() over list values
 min() over list values
+
+//DeleteAcceptance.feature
+Return properties from deleted node

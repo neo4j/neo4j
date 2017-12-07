@@ -27,8 +27,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.values.virtual.EdgeValue
 
 class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -60,8 +61,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = {
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]] {
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[EdgeValue] = {
         val arg = invocationOnMock.getArgument[Option[Array[Int]]](2)
         arg match {
           case None => Iterator.empty
@@ -71,9 +72,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
             val dir = invocationOnMock.getArgument[SemanticDirection](1)
             (nodeId, dir) match {
               case (0, SemanticDirection.INCOMING) => Iterator.empty
-              case (0, _) => Iterator(relationship1, relationship2, relationship3, selfRelationship)
+              case (0, _) => Iterator(fromRelationshipProxy(relationship1), fromRelationshipProxy(relationship2),
+                                      fromRelationshipProxy(relationship3), fromRelationshipProxy(selfRelationship))
               case (2, SemanticDirection.OUTGOING) => Iterator.empty
-              case (2, _) => Iterator(relationship1)
+              case (2, _) => Iterator(fromRelationshipProxy(relationship1))
               case (id, d)=> throw new AssertionError(s"I am only a mocked hack, not a real database. I have no clue about $id and $d")
             }
         }
@@ -219,6 +221,30 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // relationships should be cached after the first call
     verify(query, times(1)).getRelationshipsForIds(any(), mockEq(SemanticDirection.BOTH), mockEq(None))
+  }
+
+  private def setUpRelMockingInQueryContext(rels: Relationship*) {
+    val relsByStartNode = rels.groupBy(_.getStartNode())
+    val relsByEndNode = rels.groupBy(_.getEndNode())
+    val relsByNode = (relsByStartNode.keySet ++ relsByEndNode.keySet).map {
+      n => n -> (relsByStartNode.getOrElse(n, Seq.empty) ++ relsByEndNode.getOrElse(n, Seq.empty))
+    }.toMap
+
+    setUpRelLookupMocking(SemanticDirection.OUTGOING, relsByStartNode)
+    setUpRelLookupMocking(SemanticDirection.INCOMING, relsByEndNode)
+    setUpRelLookupMocking(SemanticDirection.BOTH, relsByNode)
+  }
+
+  private def setUpRelLookupMocking(direction: SemanticDirection, relsByNode: Map[Node, Seq[Relationship]]) {
+    relsByNode.foreach {
+      case (node, rels) =>
+        when(query.getRelationshipsForIds(node.getId, direction, None)).thenAnswer(
+          new Answer[Iterator[EdgeValue]] {
+            def answer(invocation: InvocationOnMock) = rels.iterator.map(fromRelationshipProxy)
+          })
+
+        when(query.nodeGetDegree(node.getId, direction)).thenReturn(rels.size)
+    }
   }
 
 }

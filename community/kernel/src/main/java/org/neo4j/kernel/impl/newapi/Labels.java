@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Collection;
+
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
 
 class Labels implements LabelSet
@@ -32,6 +36,30 @@ class Labels implements LabelSet
     Labels( long[] labels )
     {
         this.labels = labels;
+    }
+
+    static Labels from( Collection<Integer> integers )
+    {
+        int size = integers.size();
+        long[] tokens = new long[size];
+        int i = 0;
+        for ( Integer token : integers )
+        {
+            tokens[i++] = token;
+        }
+        return new Labels( tokens );
+    }
+
+    static Labels from( PrimitiveIntSet set )
+    {
+        long[] labelArray = new long[set.size()];
+        int index = 0;
+        PrimitiveIntIterator iterator = set.iterator();
+        while ( iterator.hasNext() )
+        {
+            labelArray[index++] = iterator.next();
+        }
+        return new Labels( labelArray );
     }
 
     @Override

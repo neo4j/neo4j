@@ -30,8 +30,8 @@ import java.util.Set;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;

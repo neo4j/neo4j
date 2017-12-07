@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Map;
-
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.values.storable.Value;
 
-public interface DataWriteOperations
+public interface DataWriteOperations extends ExplicitIndexWrite
 {
     //===========================================
     //== DATA OPERATIONS ========================
@@ -90,23 +89,9 @@ public interface DataWriteOperations
 
     Value graphRemoveProperty( int propertyKeyId );
 
-    /**
-     * Creates an explicit index in a separate transaction if not yet available.
-     */
-    void nodeExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
-
-    void nodeExplicitIndexCreate( String indexName, Map<String, String> customConfig );
-
     //===========================================
     //== EXPLICIT INDEX OPERATIONS ================
     //===========================================
-
-    /**
-     * Creates an explicit index in a separate transaction if not yet available.
-     */
-    void relationshipExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
-
-    void relationshipExplicitIndexCreate( String indexName, Map<String, String> customConfig );
 
     String nodeExplicitIndexSetConfiguration( String indexName, String key, String value )
             throws ExplicitIndexNotFoundKernelException;
@@ -122,14 +107,6 @@ public interface DataWriteOperations
 
     void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
             throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
-
-    void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
-            throws ExplicitIndexNotFoundKernelException;
-
-    void nodeRemoveFromExplicitIndex( String indexName, long node, String key ) throws
-            ExplicitIndexNotFoundKernelException;
-
-    void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException;
 
     void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
             throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;

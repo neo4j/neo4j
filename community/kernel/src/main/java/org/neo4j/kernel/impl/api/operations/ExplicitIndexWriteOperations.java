@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api.operations;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface ExplicitIndexWriteOperations

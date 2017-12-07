@@ -31,10 +31,11 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -193,6 +194,82 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     assertThat(Long.box(accesses), greaterThan(Long.box(1L)))
 
     transactionalContext.close(true)
+    tx.close()
+  }
+
+  test("should close all resources when closing resources") {
+    // GIVEN
+    val tc = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
+    val transactionalContext = TransactionalContextWrapper(tc)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val resource1 = mock[AutoCloseable]
+    val resource2 = mock[AutoCloseable]
+    val resource3 = mock[AutoCloseable]
+    context.resources.trace(resource1)
+    context.resources.trace(resource2)
+    context.resources.trace(resource3)
+
+    // WHEN
+    context.resources.close(success = true)
+
+    // THEN
+    verify(resource1).close()
+    verify(resource2).close()
+    verify(resource3).close()
+  }
+
+  test("should add cursor as resource when calling all") {
+    // GIVEN
+    graph.getGraphDatabaseService.shutdown()
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+
+    // WHEN
+    context.resources.allResources shouldBe empty
+    context.nodeOps.all
+
+    // THEN
+    context.resources.allResources should have size 1
+    context.resources.allResources.head shouldBe a [NodeCursor]
+    tx.close()
+  }
+
+  test("should add cursor as resource when calling allPrimitive") {
+    // GIVEN
+    graph.getGraphDatabaseService.shutdown()
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+
+    // WHEN
+    context.resources.allResources shouldBe empty
+    context.nodeOps.allPrimitive
+
+    // THEN
+    context.resources.allResources should have size 1
+    context.resources.allResources.head shouldBe a [NodeCursor]
+    tx.close()
+  }
+
+  test("should remove cursor after closing resource") {
+    // GIVEN
+    graph.getGraphDatabaseService.shutdown()
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+
+    // WHEN
+    context.resources.allResources shouldBe empty
+    context.nodeOps.all
+    context.resources.allResources should have size 1
+    context.resources.close(success = true)
+
+    // THEN
+    context.resources.allResources shouldBe empty
     tx.close()
   }
 

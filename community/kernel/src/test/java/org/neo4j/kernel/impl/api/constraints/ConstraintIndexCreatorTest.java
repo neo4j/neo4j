@@ -33,7 +33,11 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -53,7 +57,6 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -411,6 +414,18 @@ public class ConstraintIndexCreatorTest
             }
 
             @Override
+            public TokenRead tokenRead()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public TokenWrite tokenWrite()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
             public SchemaRead schemaRead()
             {
                 throw new UnsupportedOperationException( "not implemented" );
@@ -424,6 +439,12 @@ public class ConstraintIndexCreatorTest
 
             @Override
             public Locks locks()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public CursorFactory cursors()
             {
                 throw new UnsupportedOperationException( "not implemented" );
             }

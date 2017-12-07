@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.neo4j.function.Factory;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -85,7 +85,7 @@ public class BufferReusingChunkingChannelBufferTest
         when( channel.isOpen() ).thenReturn( true );
         when( channel.isConnected() ).thenReturn( true );
         when( channel.isBound() ).thenReturn( true );
-        when( channel.write( anyObject() ) ).thenReturn( channelFuture );
+        when( channel.write( any() ) ).thenReturn( channelFuture );
 
         return new BufferReusingChunkingChannelBuffer( buffer, bufferFactory, channel, capacity, (byte) 1, (byte) 1 );
     }

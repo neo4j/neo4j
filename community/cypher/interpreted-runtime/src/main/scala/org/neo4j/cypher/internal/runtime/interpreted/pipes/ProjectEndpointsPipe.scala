@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.VirtualValues.reverse
 import org.neo4j.values.virtual.{EdgeReference, EdgeValue, ListValue, NodeValue}
 
@@ -73,7 +72,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def findSimpleLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
     val relValue = context(relName) match {
       case edgeValue: EdgeValue => edgeValue
-      case edgeRef: EdgeReference => ValueUtils.fromRelationshipProxy(qtx.relationshipOps.getById(edgeRef.id()))
+      case edgeRef: EdgeReference => qtx.relationshipOps.getById(edgeRef.id())
     }
     val rel = Some(relValue).filter(hasAllowedType)
     rel.flatMap { rel => pickStartAndEnd(rel, rel, context, qtx)}
@@ -84,11 +83,11 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     if (rels.nonEmpty && allHasAllowedType(rels, qtx)) {
       val firstRel = rels.head match {
         case edgeValue: EdgeValue => edgeValue
-        case edgeRef: EdgeReference => ValueUtils.fromRelationshipProxy(qtx.relationshipOps.getById(edgeRef.id()))
+        case edgeRef: EdgeReference => qtx.relationshipOps.getById(edgeRef.id())
       }
       val lastRel = rels.last match {
         case edgeValue: EdgeValue => edgeValue
-        case edgeRef: EdgeReference => ValueUtils.fromRelationshipProxy(qtx.relationshipOps.getById(edgeRef.id()))
+        case edgeRef: EdgeReference => qtx.relationshipOps.getById(edgeRef.id())
       }
       pickStartAndEnd(firstRel, lastRel, context, qtx).map { case (s, e) => (s, e, rels) }
     } else {
@@ -101,7 +100,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     while(iterator.hasNext) {
       val next = iterator.next() match {
         case edgeValue: EdgeValue => edgeValue
-        case edgeRef: EdgeReference => ValueUtils.fromRelationshipProxy(qtx.relationshipOps.getById(edgeRef.id()))
+        case edgeRef: EdgeReference => qtx.relationshipOps.getById(edgeRef.id())
       }
       if (!hasAllowedType(next)) return false
     }

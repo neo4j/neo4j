@@ -64,6 +64,11 @@ public abstract class EdgeValue extends VirtualEdgeValue
         return node.equals( startNode() ) ? endNode() : startNode();
     }
 
+    public long otherNodeId( long node )
+    {
+        return node == startNode().id() ? endNode().id() : startNode().id();
+    }
+
     static class DirectEdgeValue extends EdgeValue
     {
         private final NodeValue startNode;

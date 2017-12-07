@@ -159,6 +159,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
             edgePage = null;
         }
         current = null;
+        read = null;
         setId( NO_ID );
         clear();
     }

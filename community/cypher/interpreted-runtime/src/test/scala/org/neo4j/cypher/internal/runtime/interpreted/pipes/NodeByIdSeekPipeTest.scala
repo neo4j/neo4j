@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.Mockito
+import org.mockito.{ArgumentMatchers, Matchers, Mockito}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
+import org.neo4j.values.virtual.NodeValue
 
 class NodeByIdSeekPipeTest extends CypherFunSuite {
 
@@ -35,8 +38,11 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     // given
     val id = 17
     val node = nodeProxy(17)
-    val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[Node]]
-    when(nodeOps.getByIdIfExists(17)).thenReturn(Some(node))
+    val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[NodeValue]]
+    when(nodeOps.getByIdIfExists(17)).thenAnswer(new Answer[Option[NodeValue]] {
+      override def answer(invocation: InvocationOnMock): Option[NodeValue] = Some(fromNodeProxy(node))
+    })
+
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
@@ -53,11 +59,17 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val node1 = nodeProxy(42)
     val node2 = nodeProxy(21)
     val node3 = nodeProxy(11)
-    val nodeOps = mock[Operations[Node]]
+    val nodeOps = mock[Operations[NodeValue]]
 
-    when(nodeOps.getByIdIfExists(42)).thenReturn(Some(node1))
-    when(nodeOps.getByIdIfExists(21)).thenReturn(Some(node2))
-    when(nodeOps.getByIdIfExists(11)).thenReturn(Some(node3))
+    when(nodeOps.getByIdIfExists(ArgumentMatchers.anyLong())).thenAnswer(new Answer[Option[NodeValue]] {
+      override def answer(invocation: InvocationOnMock): Option[NodeValue] = invocation.getArgument[Long](0) match {
+        case 42 => Some(fromNodeProxy(node1))
+        case 21 => Some(fromNodeProxy(node2))
+        case 11 => Some(fromNodeProxy(node3))
+        case _ => fail()
+      }
+    })
+
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]

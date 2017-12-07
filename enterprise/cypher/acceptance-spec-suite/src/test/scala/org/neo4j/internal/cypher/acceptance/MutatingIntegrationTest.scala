@@ -250,7 +250,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("create node and rel in foreach") {
-    executeWith(createConf - Configs.SlottedInterpreted, """
+    executeWith(createConf, """
       |create (center {name: "center"})
       |foreach(x in range(1,10) |
       |  create (leaf1 {number : x}) , (center)-[:X]->(leaf1)
@@ -322,7 +322,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("delete and delete again") {
     createNode()
-    val result = executeWith(deleteConf - Configs.SlottedInterpreted, "match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
+    val result = executeWith(deleteConf, "match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
 
     assertStats(result, nodesDeleted = 1)
   }
@@ -365,14 +365,14 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("can create anonymous nodes inside foreach") {
     createNode()
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "match (me) where id(me) = 0 foreach (i in range(1,10) | create (me)-[:FRIEND]->())")
+    val result = executeWith(createConf, "match (me) where id(me) = 0 foreach (i in range(1,10) | create (me)-[:FRIEND]->())")
 
     result.toList shouldBe empty
   }
 
   test("should be able to use external variables inside foreach") {
     createNode()
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "match (a), (b) where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create (x)-[:FOO]->(a)) ")
+    val result = executeWith(createConf, "match (a), (b) where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create (x)-[:FOO]->(a)) ")
 
     result.toList shouldBe empty
   }
@@ -386,7 +386,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("complete graph") {
     val result =
-      executeWith(createConf - Configs.SlottedInterpreted, """CREATE (center { count:0 })
+      executeWith(createConf, """CREATE (center { count:0 })
                  FOREACH (x IN range(1,6) | CREATE (leaf { count : x }),(center)-[:X]->(leaf))
                  WITH center
                  MATCH (leaf1)<--(center)-->(leaf2)
@@ -400,13 +400,13 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("for each applied to null should never execute") {
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "foreach(x in null| create ())")
+    val result = executeWith(createConf, "foreach(x in null| create ())")
 
     assertStats(result, nodesCreated = 0)
   }
 
   test("should execute when null is contained in a collection") {
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "foreach(x in [null]| create ())")
+    val result = executeWith(createConf, "foreach(x in [null]| create ())")
 
     assertStats(result, nodesCreated = 1)
   }

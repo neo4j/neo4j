@@ -21,14 +21,16 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
-class KernelToken implements Token
+public class KernelToken implements Token
 {
     private final StoreReadLayer store;
 
-    KernelToken( StorageEngine engine )
+    public KernelToken( StorageEngine engine )
     {
         store = engine.storeReadLayer();
     }
@@ -42,7 +44,7 @@ class KernelToken implements Token
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return store.propertyKeyGetOrCreateForName( propertyKeyName );
     }
 
     @Override
@@ -55,6 +57,18 @@ class KernelToken implements Token
     public void labelCreateForName( String labelName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public String labelGetName( int token ) throws LabelNotFoundKernelException
+    {
+        return store.labelGetName( token );
+    }
+
+    @Override
+    public int labelGetForName( String name ) throws LabelNotFoundKernelException
+    {
+        return store.labelGetForName( name );
     }
 
     @Override
@@ -85,5 +99,11 @@ class KernelToken implements Token
     public int propertyKey( String name )
     {
         return store.propertyKeyGetForName( name );
+    }
+
+    @Override
+    public String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
+    {
+        return store.propertyKeyGetName( propertyKeyId );
     }
 }

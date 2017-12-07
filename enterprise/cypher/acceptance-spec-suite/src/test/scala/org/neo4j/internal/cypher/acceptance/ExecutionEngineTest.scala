@@ -596,7 +596,7 @@ order by a.COL1""".format(a, b))
 
   test("can use variables created inside the foreach") {
     createNode()
-    val result = executeWith(createConf - Configs.SlottedInterpreted, "match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
+    val result = executeWith(createConf, "match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 
     result.toList shouldBe empty
   }

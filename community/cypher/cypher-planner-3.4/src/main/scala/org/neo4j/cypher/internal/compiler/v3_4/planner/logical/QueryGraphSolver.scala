@@ -52,7 +52,7 @@ trait PatternExpressionSolving {
   def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension)
                               (implicit context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
     val asQueryGraph = expr.asQueryGraph
-    val qgArguments = planArguments intersect asQueryGraph.coveredIds
+    val qgArguments = planArguments intersect asQueryGraph.idsWithoutOptionalMatchesOrUpdates
     val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
     val plan: LogicalPlan = planQueryGraph(qg, Map.empty)
     (plan, expr)

@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.spi.TokenContext
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.exceptions.{LabelNotFoundKernelException, PropertyKeyNotFoundException, RelationshipTypeNotFoundException}
+import org.neo4j.kernel.api.exceptions.{PropertyKeyNotFoundException, RelationshipTypeNotFoundException}
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 
 abstract class TransactionBoundTokenContext(statement: => Statement) extends TokenContext {

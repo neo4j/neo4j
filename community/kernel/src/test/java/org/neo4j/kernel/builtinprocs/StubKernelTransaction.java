@@ -21,19 +21,23 @@ package org.neo4j.kernel.builtinprocs;
 
 import java.util.Optional;
 
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -87,6 +91,18 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public TokenRead tokenRead()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public TokenWrite tokenWrite()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public SchemaRead schemaRead()
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -100,6 +116,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public Locks locks()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public CursorFactory cursors()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

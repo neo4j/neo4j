@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.values.storable.Value
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
@@ -76,21 +76,16 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.createNodeId()
   }
 
-  override def nodeOps: Operations[Node] =
-    new CountingOps[Node](inner.nodeOps, nodesDeleted)
+  override def nodeOps: Operations[NodeValue] =
+    new CountingOps[NodeValue](inner.nodeOps, nodesDeleted)
 
-  override def relationshipOps: Operations[Relationship] =
-    new CountingOps[Relationship](inner.relationshipOps, relationshipsDeleted)
+  override def relationshipOps: Operations[EdgeValue] =
+    new CountingOps[EdgeValue](inner.relationshipOps, relationshipsDeleted)
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     val added = inner.setLabelsOnNode(node, labelIds)
     labelsAdded.increase(added)
     added
-  }
-
-  override def createRelationship(start: Node, end: Node, relType: String) = {
-    relationshipsCreated.increase()
-    inner.createRelationship(start, end, relType)
   }
 
   override def createRelationship(start: Long, end: Long, relType: Int) = {
@@ -178,7 +173,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     }
   }
 
-  private class CountingOps[T <: PropertyContainer](inner: Operations[T], deletes: Counter)
+  private class CountingOps[T](inner: Operations[T], deletes: Counter)
     extends DelegatingOperations[T](inner) {
 
     override def delete(id: Long) {

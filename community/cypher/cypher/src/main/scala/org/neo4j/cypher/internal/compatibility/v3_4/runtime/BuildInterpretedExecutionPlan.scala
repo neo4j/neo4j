@@ -53,7 +53,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = from.statement().returnColumns
-    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
+    val resultBuilderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
     val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory,
                                         context.notificationLogger, InterpretedRuntimeName)
 

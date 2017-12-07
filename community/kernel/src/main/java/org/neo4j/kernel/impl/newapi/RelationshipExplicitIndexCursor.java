@@ -115,6 +115,7 @@ class RelationshipExplicitIndexCursor extends IndexCursor
         relationship = NO_ID;
         score = 0;
         expectedSize = 0;
+        read = null;
     }
 
     @Override

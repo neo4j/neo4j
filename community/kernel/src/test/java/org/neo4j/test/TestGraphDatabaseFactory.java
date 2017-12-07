@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -331,6 +332,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             protected FileSystemAbstraction createNewFileSystem()
             {
                 return new EphemeralFileSystemAbstraction();
+            }
+
+            @Override
+            protected StoreLocker createStoreLocker()
+            {
+                return new StoreLocker( fileSystem, storeDir );
             }
         }
     }

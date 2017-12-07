@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 /**
  * A statement which is a smaller coherent unit of work inside a {@link KernelTransaction}.

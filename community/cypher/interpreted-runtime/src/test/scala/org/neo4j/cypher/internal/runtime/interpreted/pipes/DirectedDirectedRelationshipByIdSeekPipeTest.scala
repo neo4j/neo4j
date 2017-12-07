@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
@@ -34,7 +34,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
   test("should seek relationship by id") {
     // given
     val (startNode, rel, endNode) = getRelWithNodes
-    val relOps= mock[Operations[Relationship]]
+    val relOps= mock[Operations[EdgeValue]]
     when(relOps.getByIdIfExists(17)).thenReturn(Some(rel))
 
     val to = "to"
@@ -55,7 +55,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val (s1, r1, e1) = getRelWithNodes
     val (s2, r2, e2) = getRelWithNodes
-    val relationshipOps = mock[Operations[Relationship]]
+    val relationshipOps = mock[Operations[EdgeValue]]
     val to = "to"
     val from = "from"
 
@@ -81,7 +81,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val to = "to"
     val from = "from"
-    val relationshipOps = mock[Operations[Relationship]]
+    val relationshipOps = mock[Operations[EdgeValue]]
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
     )
@@ -94,12 +94,12 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     result.toList should be(empty)
   }
 
-  private def getRelWithNodes:(Node,Relationship,Node) = {
-    val rel = mock[Relationship]
-    val startNode = mock[Node]
-    val endNode = mock[Node]
-    when(rel.getStartNode).thenReturn(startNode)
-    when(rel.getEndNode).thenReturn(endNode)
+  private def getRelWithNodes:(NodeValue,EdgeValue,NodeValue) = {
+    val rel = mock[EdgeValue]
+    val startNode = mock[NodeValue]
+    val endNode = mock[NodeValue]
+    when(rel.startNode()).thenReturn(startNode)
+    when(rel.endNode()).thenReturn(endNode)
     (startNode, rel, endNode)
   }
 

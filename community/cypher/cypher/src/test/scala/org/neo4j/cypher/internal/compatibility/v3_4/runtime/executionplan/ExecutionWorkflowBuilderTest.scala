@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
-import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.Argument
@@ -47,9 +47,10 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
+    when(context.resources).thenReturn(mock[CloseableResource])
 
     val pipeInfo = PipeInfo(pipe, updating = true, None, None, PlannerName)
-    val builderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
@@ -67,7 +68,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
-    val builderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
@@ -85,8 +86,9 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
+    when(context.resources).thenReturn(mock[CloseableResource])
     val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
-    val builderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()

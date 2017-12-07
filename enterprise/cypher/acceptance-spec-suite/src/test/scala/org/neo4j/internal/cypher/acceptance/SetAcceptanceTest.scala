@@ -114,7 +114,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val n3 = createNode()
 
     val query = "MATCH (n) WITH collect(n) AS nodes, {param} AS data FOREACH (idx IN range(0,size(nodes)-1) | SET (nodes[idx]).num = data[idx])"
-    val result = executeWith(expectedToSucceed, query, params = Map("param" ->  Array("1", "2", "3")))
+    val result = executeWith(expectedToSucceedIncludingSlotted, query, params = Map("param" ->  Array("1", "2", "3")))
 
     assertStats(result, propertiesWritten = 3)
     n1 should haveProperty("num").withValue("1")
@@ -129,7 +129,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val r3 = relate(createNode(), createNode())
 
     val query = "MATCH ()-[r]->() WITH collect(r) AS rels, {param} as data FOREACH (idx IN range(0,size(rels)-1) | SET (rels[idx]).num = data[idx])"
-    val result = executeWith(expectedToSucceed, query, params = Map("param" ->  Array("1", "2", "3")))
+    val result = executeWith(expectedToSucceedIncludingSlotted, query, params = Map("param" ->  Array("1", "2", "3")))
 
     assertStats(result, propertiesWritten = 3)
     r1 should haveProperty("num").withValue("1")
@@ -155,7 +155,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // when
     val q = "MATCH p=(a)-->(b)-->(c) WHERE id(a) = 0 AND id(c) = 2 WITH p FOREACH(n IN nodes(p) | SET n.marked = true)"
 
-    executeWith(expectedToSucceed, q)
+    executeWith(expectedToSucceedIncludingSlotted, q)
 
     // then
     a should haveProperty("marked").withValue(true)
@@ -171,7 +171,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val c = createNode("c"->"C")
 
     // when
-    val result = executeWith(expectedToSucceed, "MATCH (n) WITH collect(n) AS nodes FOREACH(x IN nodes | SET x += {x:'X'})")
+    val result = executeWith(expectedToSucceedIncludingSlotted, "MATCH (n) WITH collect(n) AS nodes FOREACH(x IN nodes | SET x += {x:'X'})")
 
     // then
     a should haveProperty("a").withValue("A")
@@ -190,7 +190,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val c = createNode("c"->"C")
 
     // when
-   executeWith(expectedToSucceed, "MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
+   executeWith(expectedToSucceedIncludingSlotted, "MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
 
     // then
     a should haveProperty("a").withValue("D")

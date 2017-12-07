@@ -21,13 +21,13 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 
 public class TransactionStatementSequenceTest
 {

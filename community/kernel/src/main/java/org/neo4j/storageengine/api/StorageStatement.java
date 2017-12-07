@@ -229,7 +229,7 @@ public interface StorageStatement extends AutoCloseable
     interface Nodes extends RecordReads<NodeRecord>
     {
         /**
-         * @return a new Record cursor for accessing DynamicRecords containing labels.
+         * @return a new Record cursor for accessing DynamicRecords containing labels. This comes acquired.
          */
         RecordCursor<DynamicRecord> newLabelCursor();
     }

@@ -37,10 +37,10 @@ import java.util.stream.LongStream;
 
 import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion;
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
 import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 
 import static java.lang.String.format;
@@ -197,24 +197,21 @@ public abstract class CompiledConversionUtils
         }
 
         boolean lhsNodeIdWrapper = lhs instanceof NodeIdWrapper;
-        boolean rhsNodeIdWrapper = rhs instanceof NodeIdWrapper;
-        boolean lhsRelIdWrapper = lhs instanceof RelationshipIdWrapper;
-        boolean rhsRelIdWrapper = rhs instanceof RelationshipIdWrapper;
-
-        if ( lhsNodeIdWrapper || rhsNodeIdWrapper || lhsRelIdWrapper || rhsRelIdWrapper )
+        if ( lhsNodeIdWrapper || rhs instanceof NodeIdWrapper || lhs instanceof RelationshipIdWrapper ||
+             rhs instanceof RelationshipIdWrapper )
         {
-            if ( (lhsNodeIdWrapper && !rhsNodeIdWrapper) ||
-                 (rhsNodeIdWrapper && !lhsNodeIdWrapper) ||
-                 (lhsRelIdWrapper && !rhsRelIdWrapper) ||
-                 (rhsRelIdWrapper && !lhsRelIdWrapper) )
+            if ( (lhsNodeIdWrapper && !(rhs instanceof NodeIdWrapper)) ||
+                 (rhs instanceof NodeIdWrapper && !lhsNodeIdWrapper) ||
+                 (lhs instanceof RelationshipIdWrapper && !(rhs instanceof RelationshipIdWrapper)) ||
+                 (rhs instanceof RelationshipIdWrapper && !(lhs instanceof RelationshipIdWrapper)) )
             {
                 throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
             }
             return lhs.equals( rhs );
         }
 
-        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueConversion.asValue( lhs );
-        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueConversion.asValue( rhs );
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueUtils.of( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueUtils.of( rhs );
 
         return lhsValue.ternaryEquals( rhsValue );
     }

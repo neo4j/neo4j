@@ -27,8 +27,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 public class IndexProviderImpl implements IndexProvider
 {

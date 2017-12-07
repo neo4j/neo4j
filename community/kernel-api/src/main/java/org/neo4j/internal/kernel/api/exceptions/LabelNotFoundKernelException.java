@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.explicitindex;
+package org.neo4j.internal.kernel.api.exceptions;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
-public class AutoIndexingKernelException extends KernelException
+public class LabelNotFoundKernelException extends KernelException
 {
-    public AutoIndexingKernelException( KernelException cause )
+    public LabelNotFoundKernelException( String message, Exception cause )
     {
-        super( cause.status(), cause, cause.getMessage() );
+        super( Status.Schema.LabelAccessFailed, cause, message );
     }
 }

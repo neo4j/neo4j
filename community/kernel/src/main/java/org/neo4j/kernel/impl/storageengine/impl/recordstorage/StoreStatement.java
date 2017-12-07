@@ -40,12 +40,16 @@ import org.neo4j.kernel.impl.api.store.StoreSingleRelationshipCursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -82,14 +86,19 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
+
     private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
+    private final RelationshipGroupStore relationshipGroupStore;
+    private final PropertyStore propertyStore;
+
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final RecordCursors recordCursors;
     private final Supplier<LabelScanReader> labelScanStore;
-    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final RecordStorageCommandCreationContext commandCreationContext;
+    private final DynamicArrayStore propertyArrayStore;
+    private final DynamicStringStore propertyStringStore;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -110,9 +119,13 @@ public class StoreStatement implements StorageStatement
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
         this.commandCreationContext = commandCreationContext;
+
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        this.propertyStore = neoStores.getPropertyStore();
+        this.propertyArrayStore = propertyStore.getArrayStore();
+        this.propertyStringStore = propertyStore.getStringStore();
         this.recordCursors = new RecordCursors( neoStores );
 
         singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
@@ -331,123 +344,119 @@ public class StoreStatement implements StorageStatement
 
     class Nodes implements StorageStatement.Nodes
     {
-
         @Override
         public PageCursor openPageCursor( long reference )
         {
-            return neoStores.getNodeStore().openPageCursorForReading( reference );
+            return nodeStore.openPageCursorForReading( reference );
         }
 
         @Override
         public void loadRecordByCursor( long reference, NodeRecord nodeRecord, RecordLoad mode, PageCursor cursor )
                 throws InvalidRecordException
         {
-            neoStores.getNodeStore().getRecordByCursor( reference, nodeRecord, mode, cursor );
+            nodeStore.getRecordByCursor( reference, nodeRecord, mode, cursor );
         }
 
         @Override
         public long getHighestPossibleIdInUse()
         {
-            return neoStores.getNodeStore().getHighestPossibleIdInUse();
+            return nodeStore.getHighestPossibleIdInUse();
         }
 
         @Override
         public RecordCursor<DynamicRecord> newLabelCursor()
         {
-            return newCursor( neoStores.getNodeStore().getDynamicLabelStore() );
+            return newCursor( nodeStore.getDynamicLabelStore() );
         }
     }
 
     class Relationships implements StorageStatement.Relationships
     {
-
         @Override
         public PageCursor openPageCursor( long reference )
         {
-            return neoStores.getRelationshipStore().openPageCursorForReading( reference );
+            return relationshipStore.openPageCursorForReading( reference );
         }
 
         @Override
         public void loadRecordByCursor( long reference, RelationshipRecord relationshipRecord, RecordLoad mode,
                 PageCursor cursor ) throws InvalidRecordException
         {
-            neoStores.getRelationshipStore().getRecordByCursor( reference, relationshipRecord, mode, cursor );
+            relationshipStore.getRecordByCursor( reference, relationshipRecord, mode, cursor );
         }
 
         @Override
         public long getHighestPossibleIdInUse()
         {
-            return neoStores.getRelationshipStore().getHighestPossibleIdInUse();
+            return relationshipStore.getHighestPossibleIdInUse();
         }
     }
 
     class Groups implements StorageStatement.Groups
     {
-
         @Override
         public PageCursor openPageCursor( long reference )
         {
-            return neoStores.getRelationshipGroupStore().openPageCursorForReading( reference );
+            return relationshipGroupStore.openPageCursorForReading( reference );
         }
 
         @Override
         public void loadRecordByCursor( long reference, RelationshipGroupRecord relationshipGroupRecord,
                 RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
         {
-            neoStores.getRelationshipGroupStore().getRecordByCursor( reference, relationshipGroupRecord, mode, cursor );
+            relationshipGroupStore.getRecordByCursor( reference, relationshipGroupRecord, mode, cursor );
         }
 
         @Override
         public long getHighestPossibleIdInUse()
         {
-            return neoStores.getRelationshipGroupStore().getHighestPossibleIdInUse();
+            return relationshipGroupStore.getHighestPossibleIdInUse();
         }
     }
 
     class Properties implements StorageStatement.Properties
     {
-
         @Override
         public PageCursor openPageCursor( long reference )
         {
-            return neoStores.getPropertyStore().openPageCursorForReading( reference );
+            return propertyStore.openPageCursorForReading( reference );
         }
 
         @Override
         public void loadRecordByCursor( long reference, PropertyRecord propertyBlocks, RecordLoad mode,
                 PageCursor cursor ) throws InvalidRecordException
         {
-            neoStores.getPropertyStore().getRecordByCursor( reference, propertyBlocks, mode, cursor );
+            propertyStore.getRecordByCursor( reference, propertyBlocks, mode, cursor );
         }
 
         @Override
         public long getHighestPossibleIdInUse()
         {
-            return neoStores.getPropertyStore().getHighestPossibleIdInUse();
+            return propertyStore.getHighestPossibleIdInUse();
         }
 
         @Override
         public PageCursor openStringPageCursor( long reference )
         {
-            return neoStores.getPropertyStore().getStringStore().openPageCursorForReading( reference );
+            return propertyStringStore.openPageCursorForReading( reference );
         }
 
         @Override
         public PageCursor openArrayPageCursor( long reference )
         {
-            return neoStores.getPropertyStore().getArrayStore().openPageCursorForReading( reference );
+            return propertyArrayStore.openPageCursorForReading( reference );
         }
 
         @Override
         public ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page )
         {
-            return readDynamic( neoStores.getPropertyStore().getStringStore(), reference, buffer, page );
+            return readDynamic( propertyStore.getStringStore(), reference, buffer, page );
         }
 
         @Override
         public ByteBuffer loadArray( long reference, ByteBuffer buffer, PageCursor page )
         {
-            return readDynamic( neoStores.getPropertyStore().getArrayStore(), reference, buffer, page );
+            return readDynamic( propertyStore.getArrayStore(), reference, buffer, page );
         }
     }
 
@@ -465,7 +474,9 @@ public class StoreStatement implements StorageStatement
         DynamicRecord record = store.newRecord();
         do
         {
-            store.getRecordByCursor( reference, record, RecordLoad.CHECK, page );
+            //We need to load forcefully here since otherwise we can have inconsistent reads
+            //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
+            store.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
             reference = record.getNextBlock();
             byte[] data = record.getData();
             if ( buffer.remaining() < data.length )

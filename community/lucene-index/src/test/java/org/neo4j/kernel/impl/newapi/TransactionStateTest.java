@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.TransactionStateTestBase;
 
-public class LabelNotFoundKernelException extends KernelException
+public class TransactionStateTest extends TransactionStateTestBase<WriteTestSupport>
 {
-    public LabelNotFoundKernelException( String message, Exception cause )
+    @Override
+    public WriteTestSupport newTestSupport()
     {
-        super( Status.Schema.LabelAccessFailed, cause, message );
+        return new WriteTestSupport();
     }
 }

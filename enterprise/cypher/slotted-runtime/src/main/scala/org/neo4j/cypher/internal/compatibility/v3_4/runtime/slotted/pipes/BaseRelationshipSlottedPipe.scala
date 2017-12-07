@@ -23,10 +23,10 @@ import java.util.function.BiConsumer
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap, makeValueNeoSafe}
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
@@ -51,11 +51,11 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe,
         val typeId = typ.typ(state.query)
         val relationship = state.query.createRelationship(start, end, typeId)
 
-        relationship.getType // we do this to make sure the relationship is loaded from the store into this object
+        relationship.`type`() // we do this to make sure the relationship is loaded from the store into this object
 
-        setProperties(row, state, relationship.getId)
+        setProperties(row, state, relationship.id())
 
-        row.setLongAt(offset, relationship.getId)
+        row.setLongAt(offset, relationship.id())
         row
       }
     }

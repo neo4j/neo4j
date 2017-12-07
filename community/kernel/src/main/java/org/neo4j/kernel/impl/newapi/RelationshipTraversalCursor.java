@@ -425,6 +425,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
             pageCursor.close();
             pageCursor = null;
         }
+        read = null;
         reset();
     }
 

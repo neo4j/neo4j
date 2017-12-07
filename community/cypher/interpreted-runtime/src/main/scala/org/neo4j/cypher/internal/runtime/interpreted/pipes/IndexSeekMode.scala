@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekMode.{MultipleValueQuery, assertSingleValue}
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QueryExpression, RangeQueryExpression}
-import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.NodeValue
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
   def fromQueryExpression[T](qexpr: QueryExpression[T]): IndexSeekMode = qexpr match {
@@ -36,7 +36,7 @@ case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
 }
 
 object IndexSeekMode {
-  type MultipleValueQuery = (QueryState) => (Seq[Any]) => Iterator[Node]
+  type MultipleValueQuery = (QueryState) => (Seq[Any]) => Iterator[NodeValue]
 
   def assertSingleValue(values: Seq[Any]): Any = {
     if(values.size != 1)

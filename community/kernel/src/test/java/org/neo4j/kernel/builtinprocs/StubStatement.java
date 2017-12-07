@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutionStatisticsOperations;
 import org.neo4j.kernel.api.ProcedureCallOperations;
@@ -27,7 +28,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 public class StubStatement implements Statement
 {

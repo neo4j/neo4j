@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CacheCheckResult, CompilationPhaseTracer, Monitors, Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -72,14 +73,14 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
         printPlanInfo(from)
       }
 
-      val (logicalPlan, physicalPlan) = rewritePlan(context, from.logicalPlan)
+      val (logicalPlan, physicalPlan) = rewritePlan(context, from.logicalPlan, from.semanticTable())
 
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
         printRewrittenPlanInfo(logicalPlan)
       }
 
       val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
-      val pipeBuilderFactory = EnterprisePipeBuilderFactory(physicalPlan)
+      val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
                                                               expressionConverters = converters,
                                                               pipeBuilderFactory = pipeBuilderFactory)
@@ -123,8 +124,8 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
     }
   }
 
-  private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan): (LogicalPlan, PhysicalPlan) = {
-    val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite)
+  private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan, semanticTable: SemanticTable): (LogicalPlan, PhysicalPlan) = {
+    val physicalPlan: PhysicalPlan = SlotAllocation.allocateSlots(beforeRewrite, semanticTable)
     val slottedRewriter = new SlottedRewriter(context.planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
     (logicalPlan, physicalPlan)
@@ -148,19 +149,5 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
     override def notifications(planContext: PlanContext): Seq[InternalNotification] =
       BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
-  }
-
-  case class EnterprisePipeBuilderFactory(physicalPlan: PhysicalPlan)
-    extends PipeBuilderFactory {
-    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
-              expressionConverters: ExpressionConverters)
-             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
-
-      val expressionToExpression = recursePipes(recurse, planContext) _
-
-      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, expressionToExpression)
-
-      new SlottedPipeBuilder(fallback, expressionConverters, monitors, physicalPlan, readOnly, expressionToExpression)
-    }
   }
 }

@@ -26,13 +26,16 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
-import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -57,7 +60,7 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-class AllStoreHolder extends Read implements Token
+public class AllStoreHolder extends Read implements Token
 {
     private final StorageStatement.Nodes nodes;
     private final StorageStatement.Groups groups;
@@ -68,12 +71,14 @@ class AllStoreHolder extends Read implements Token
     private final ExplicitIndexStore explicitIndexStore;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
 
-    AllStoreHolder( StorageEngine engine,
+    public AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
             TxStateHolder txStateHolder,
-            Cursors cursors, ExplicitIndexStore explicitIndexStore )
+            Cursors cursors,
+            ExplicitIndexStore explicitIndexStore,
+            AssertOpen assertOpen )
     {
-        super( cursors, txStateHolder );
+        super( cursors, txStateHolder, assertOpen );
         this.storeReadLayer = engine.storeReadLayer();
         this.statement = statement; // use provided statement, to assert no leakage
         this.explicitIndexes = Suppliers.lazySingleton( txStateHolder::explicitIndexTxState );
@@ -148,13 +153,13 @@ class AllStoreHolder extends Read implements Token
     @Override
     public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return storeReadLayer.labelGetOrCreateForName( checkValidTokenName( labelName ) );
     }
 
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return storeReadLayer.propertyKeyGetOrCreateForName( propertyKeyName );
     }
 
     @Override
@@ -167,6 +172,18 @@ class AllStoreHolder extends Read implements Token
     public void labelCreateForName( String labelName, int id ) throws KernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public String labelGetName( int token ) throws LabelNotFoundKernelException
+    {
+        return storeReadLayer.labelGetName( token );
+    }
+
+    @Override
+    public int labelGetForName( String name ) throws LabelNotFoundKernelException
+    {
+        return storeReadLayer.labelGetForName( name );
     }
 
     @Override
@@ -197,6 +214,12 @@ class AllStoreHolder extends Read implements Token
     public int propertyKey( String name )
     {
         return storeReadLayer.propertyKeyGetForName( name );
+    }
+
+    @Override
+    public String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
+    {
+        return storeReadLayer.propertyKeyGetName( propertyKeyId );
     }
 
     @Override
@@ -256,7 +279,9 @@ class AllStoreHolder extends Read implements Token
     @Override
     void property( PropertyRecord record, long reference, PageCursor pageCursor )
     {
-        properties.loadRecordByCursor( reference, record, RecordLoad.NORMAL, pageCursor );
+        //We need to load forcefully here since otherwise we can have inconsistent reads
+        //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
+        properties.loadRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 
     @Override
@@ -293,7 +318,7 @@ class AllStoreHolder extends Read implements Token
         return PropertyUtil.readArrayFromBuffer( buffer );
     }
 
-    public boolean nodeExists( long id )
+    boolean nodeExistsInStore( long id )
     {
         return storeReadLayer.nodeExists( id );
     }
@@ -301,5 +326,19 @@ class AllStoreHolder extends Read implements Token
     void getOrCreateNodeIndexConfig( String indexName, Map<String,String> customConfig )
     {
         explicitIndexStore.getOrCreateNodeIndexConfig( indexName, customConfig );
+    }
+
+    void getOrCreateRelationshipIndexConfig( String indexName, Map<String,String> customConfig )
+    {
+        explicitIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
+    }
+
+    private String checkValidTokenName( String name ) throws IllegalTokenNameException
+    {
+        if ( name == null || name.isEmpty() )
+        {
+            throw new IllegalTokenNameException( name );
+        }
+        return name;
     }
 }

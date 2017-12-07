@@ -50,9 +50,8 @@ class PatternRelationship(key: String,
     val result: Iterator[GraphRelationship] =
       state.query.
         getRelationshipsForIds(realNode.id(), getDirection(node), types.types(state.query))
-        .map(ValueUtils.fromRelationshipProxy)
         .filter(r => canUseThis(r, state, f)).
-        map(new SingleGraphRelationship(_))
+        map(SingleGraphRelationship)
 
     if (startNode == endNode)
       result.filter(r => r.getOtherNode(realNode) == realNode).toIndexedSeq

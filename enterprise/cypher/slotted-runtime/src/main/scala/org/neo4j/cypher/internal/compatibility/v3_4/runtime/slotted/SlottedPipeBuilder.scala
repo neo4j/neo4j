@@ -414,6 +414,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val refOffsets = refIds.map(e => slots.getReferenceOffsetFor(e.name))
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, slots)(id)
 
+      case ForeachApply(_, _, variable, expression) =>
+        val innerVariableSlot = slots.get(variable).getOrElse(throw new InternalException(s"Foreach variable '$variable' has no slot"))
+        ForeachSlottedPipe(lhs, rhs, innerVariableSlot, convertExpressions(expression))(id)
+
       case Union(_, _) =>
         val lhsSlots = slotConfigs(lhs.id)
         val rhsSlots = slotConfigs(rhs.id)
@@ -497,6 +501,21 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 }
 
 object SlottedPipeBuilder {
+
+  case class Factory(physicalPlan: PhysicalPlan)
+    extends PipeBuilderFactory {
+    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
+              expressionConverters: ExpressionConverters)
+             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
+
+      val expressionToExpression = recursePipes(recurse, planContext) _
+
+      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, expressionToExpression)
+
+      new SlottedPipeBuilder(fallback, expressionConverters, monitors, physicalPlan, readOnly, expressionToExpression)
+    }
+  }
+
   private def projectSlotExpression(slot: Slot): Expression = slot match {
     case LongSlot(offset, false, CTNode) =>
       slottedExpressions.NodeFromSlot(offset)

@@ -25,11 +25,13 @@ import org.neo4j.cypher.internal.util.v3_4.{DummyPosition, Rewriter}
 import org.neo4j.cypher.internal.compiler.v3_4.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery.StatementConverters.toUnionQuery
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.OptionalMatchRemover.smallestGraphIncluding
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.flattenBooleanOperators
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticChecker, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_4.UnionQuery
+import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.BOTH
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -246,6 +248,81 @@ assert_that(
       |  CREATE (z) )
       |RETURN DISTINCT a AS a""".stripMargin).
     is_not_rewritten()
+
+  val x = IdName("x")
+  val n = IdName("n")
+  val m = IdName("m")
+  val c = IdName("c")
+  val r1 = IdName("r1")
+  val r2 = IdName("r2")
+  val r3 = IdName("r3")
+
+
+  test("finds shortest path starting from a single element with a single node in the QG") {
+    val qg = QueryGraph(patternNodes = Set(n))
+
+    smallestGraphIncluding(qg, Set(n)) should equal(Set(n))
+  }
+
+  test("finds shortest path starting from a single element with a single relationship in the QG") {
+    val r = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(r), patternNodes = Set(n, m))
+
+    smallestGraphIncluding(qg, Set(n)) should equal(Set(n))
+  }
+
+  test("finds shortest path starting from two nodes with a single relationship in the QG") {
+    val r = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(r), patternNodes = Set(n, m))
+
+    smallestGraphIncluding(qg, Set(n, m)) should equal(Set(n, m, r1))
+  }
+
+  test("finds shortest path starting from two nodes with two relationships in the QG") {
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
+
+    smallestGraphIncluding(qg, Set(n, m)) should equal(Set(n, m, r1))
+  }
+
+  test("finds shortest path starting from two nodes with two relationships between the same nodes in the QG") {
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m))
+
+    val result = smallestGraphIncluding(qg, Set(n, m))
+    result should contain(n)
+    result should contain(m)
+    result should contain oneOf (r1, r2)
+  }
+
+  test("finds shortest path starting from two nodes with an intermediate relationship in the QG") {
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
+
+    smallestGraphIncluding(qg, Set(n, c)) should equal(
+      Set(n, m, c, r1, r2))
+  }
+
+  test("find smallest graph that connect three nodes") { // MATCH (n)-[r1]-(m), (n)-[r2]->(c), (n)-[r3]->(x)
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (n, c), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel3 = PatternRelationship(r3, (n, x), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      patternRelationships = Set(pattRel1, pattRel2, pattRel3),
+      patternNodes = Set(n, m, c, x))
+
+    smallestGraphIncluding(qg, Set(n, m, c)) should equal(
+      Set(n, m, c, r1, r2))
+  }
+
+  test("querygraphs containing only nodes") {
+    val qg = QueryGraph(patternNodes = Set(n, m))
+
+    smallestGraphIncluding(qg, Set(n, m)) should equal(Set(n, m))
+  }
 
   case class RewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit =

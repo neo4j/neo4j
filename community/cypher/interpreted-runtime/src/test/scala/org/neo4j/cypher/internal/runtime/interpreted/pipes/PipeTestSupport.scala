@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -45,30 +44,6 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
   }
 
   def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)
-
-  def setUpRelMockingInQueryContext(rels: Relationship*) {
-    val relsByStartNode = rels.groupBy(_.getStartNode)
-    val relsByEndNode = rels.groupBy(_.getEndNode)
-    val relsByNode = (relsByStartNode.keySet ++ relsByEndNode.keySet).map {
-      n => n -> (relsByStartNode.getOrElse(n, Seq.empty) ++ relsByEndNode.getOrElse(n, Seq.empty))
-    }.toMap
-
-    setUpRelLookupMocking(SemanticDirection.OUTGOING, relsByStartNode)
-    setUpRelLookupMocking(SemanticDirection.INCOMING, relsByEndNode)
-    setUpRelLookupMocking(SemanticDirection.BOTH, relsByNode)
-  }
-
-  def setUpRelLookupMocking(direction: SemanticDirection, relsByNode: Map[Node, Seq[Relationship]]) {
-    relsByNode.foreach {
-      case (node, rels) =>
-        when(query.getRelationshipsForIds(node.getId, direction, None)).thenAnswer(
-          new Answer[Iterator[Relationship]] {
-            def answer(invocation: InvocationOnMock) = rels.iterator
-          })
-
-        when(query.nodeGetDegree(node.getId, direction)).thenReturn(rels.size)
-    }
-  }
 
   def newMockedNode(id: Int) = {
     val node = mock[Node]
