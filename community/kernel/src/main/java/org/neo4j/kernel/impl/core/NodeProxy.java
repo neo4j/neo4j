@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -40,9 +39,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -350,15 +350,16 @@ public class NodeProxy implements Node
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
         KernelTransaction transaction = safeAcquireTransaction();
-        try ( Statement ignore = transaction.acquireStatement() )
+        CursorFactory cursors = transaction.cursors();
+        try ( Statement ignore = transaction.acquireStatement();
+              NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
         {
             int propertyKey = transaction.tokenRead().propertyKey( key );
             if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 return defaultValue;
             }
-            NodeCursor nodes = transaction.nodeCursor();
-            PropertyCursor properties = transaction.propertyCursor();
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )
             {
@@ -382,10 +383,11 @@ public class NodeProxy implements Node
     {
         KernelTransaction transaction = safeAcquireTransaction();
         List<String> keys = new ArrayList<>();
-        try ( Statement ignore = transaction.acquireStatement() )
+        CursorFactory cursors = transaction.cursors();
+        try ( Statement ignore = transaction.acquireStatement();
+              NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
         {
-            NodeCursor nodes = transaction.nodeCursor();
-            PropertyCursor properties = transaction.propertyCursor();
             transaction.dataRead().singleNode( nodeId, nodes );
             TokenRead token = transaction.tokenRead();
             if ( !nodes.next() )
@@ -435,28 +437,31 @@ public class NodeProxy implements Node
                 propertyIds[i] = token.propertyKey( key );
             }
 
-            NodeCursor nodes = transaction.nodeCursor();
-            PropertyCursor propertyCursor = transaction.propertyCursor();
-            transaction.dataRead().singleNode( nodeId, nodes );
-            if ( !nodes.next() )
+            CursorFactory cursors = transaction.cursors();
+            try ( NodeCursor nodes = cursors.allocateNodeCursor();
+                  PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
             {
-                throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
-            }
-            nodes.properties( propertyCursor );
-            int propertiesToFind = itemsToReturn;
-            while ( propertiesToFind > 0 && propertyCursor.next() )
-            {
-                //Do a linear check if this is a property we are interested in.
-                for ( int i = 0; i < itemsToReturn; i++ )
+                transaction.dataRead().singleNode( nodeId, nodes );
+                if ( !nodes.next() )
                 {
-                    int propertyId = propertyIds[i];
-                    int currentKey = propertyCursor.propertyKey();
-                    if ( propertyId == currentKey )
+                    throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
+                }
+                nodes.properties( propertyCursor );
+                int propertiesToFind = itemsToReturn;
+                while ( propertiesToFind > 0 && propertyCursor.next() )
+                {
+                    //Do a linear check if this is a property we are interested in.
+                    for ( int i = 0; i < itemsToReturn; i++ )
                     {
-                        properties.put( keys[i],
-                                propertyCursor.propertyValue().asObjectCopy() );
-                        propertiesToFind--;
-                        break;
+                        int propertyId = propertyIds[i];
+                        int currentKey = propertyCursor.propertyKey();
+                        if ( propertyId == currentKey )
+                        {
+                            properties.put( keys[i],
+                                    propertyCursor.propertyValue().asObjectCopy() );
+                            propertiesToFind--;
+                            break;
+                        }
                     }
                 }
             }
@@ -470,11 +475,12 @@ public class NodeProxy implements Node
         KernelTransaction transaction = safeAcquireTransaction();
         Map<String,Object> properties = new HashMap<>();
 
-        try ( Statement ignore = transaction.acquireStatement() )
+        CursorFactory cursors = transaction.cursors();
+        try ( Statement ignore = transaction.acquireStatement();
+              NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
         {
             TokenRead token = transaction.tokenRead();
-            PropertyCursor propertyCursor = transaction.propertyCursor();
-            NodeCursor nodes = transaction.nodeCursor();
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )
             {
@@ -507,9 +513,11 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor properties = transaction.propertyCursor();
-        try ( Statement ignore = transaction.acquireStatement() )
+
+        CursorFactory cursors = transaction.cursors();
+        try ( Statement ignore = transaction.acquireStatement();
+              NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
         {
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )
@@ -519,7 +527,7 @@ public class NodeProxy implements Node
             nodes.properties( properties );
             while ( properties.next() )
             {
-                if ( propertyKey == properties.propertyKey()  )
+                if ( propertyKey == properties.propertyKey() )
                 {
                     Value value = properties.propertyValue();
                     if ( value == Values.NO_VALUE )
@@ -542,16 +550,16 @@ public class NodeProxy implements Node
         }
 
         KernelTransaction transaction = safeAcquireTransaction();
-
-        try ( Statement ignore = transaction.acquireStatement() )
+        int propertyKey = transaction.tokenRead().propertyKey( key );
+        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
         {
-            int propertyKey = transaction.tokenRead().propertyKey( key );
-            if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-            {
-                return false;
-            }
-            NodeCursor nodes = transaction.nodeCursor();
-            PropertyCursor properties = transaction.propertyCursor();
+            return false;
+        }
+        CursorFactory cursors = transaction.cursors();
+        try ( Statement ignore = transaction.acquireStatement();
+              NodeCursor nodes = cursors.allocateNodeCursor();
+              PropertyCursor properties = cursors.allocatePropertyCursor() )
+        {
             transaction.dataRead().singleNode( nodeId, nodes );
             if ( !nodes.next() )
             {
@@ -572,10 +580,10 @@ public class NodeProxy implements Node
     private KernelTransaction safeAcquireTransaction()
     {
         KernelTransaction transaction = actions.kernelTransaction();
-        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        if ( transaction.isTerminated() )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
         }
         return transaction;
     }
@@ -740,6 +748,7 @@ public class NodeProxy implements Node
         try
         {
             return label( statement.readOperations().labelGetName( labelId ) );
+
         }
         catch ( LabelNotFoundKernelException e )
         {

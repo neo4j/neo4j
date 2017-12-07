@@ -94,6 +94,8 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public boolean nodeExists( long id )
     {
+        assertOpen.assertOpen();
+
         if ( hasTxStateWithChanges() )
         {
             TransactionState txState = txState();

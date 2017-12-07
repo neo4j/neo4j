@@ -23,7 +23,6 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -819,10 +818,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     private void assertTransactionOpen( KernelTransaction transaction )
     {
-        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        if ( transaction.isTerminated() )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 }

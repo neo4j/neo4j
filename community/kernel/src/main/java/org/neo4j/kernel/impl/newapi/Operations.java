@@ -407,16 +407,6 @@ public class Operations implements Write, ExplicitIndexWrite
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
     }
 
-    public NodeCursor nodeCursor()
-    {
-        return nodeCursor;
-    }
-
-    public PropertyCursor propertyCursor()
-    {
-        return propertyCursor;
-    }
-
     public ExplicitIndexRead indexRead()
     {
         return allStoreHolder;

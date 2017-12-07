@@ -37,12 +37,9 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -367,18 +364,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         currentStatement.acquire();
         return currentStatement;
-    }
-
-    @Override
-    public NodeCursor nodeCursor()
-    {
-        return operations.nodeCursor();
-    }
-
-    @Override
-    public PropertyCursor propertyCursor()
-    {
-        return operations.propertyCursor();
     }
 
     ExecutingQueryList executingQueries()
