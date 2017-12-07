@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, ReplanAsync, ReplanBlocking, Reuse}
 
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
@@ -39,12 +39,15 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
         })
       }.flatMap { value =>
         if (!planned) {
-          val cacheCheck = isStale(value)
-          if (cacheCheck.isStale) {
-            cacheAccessor.remove(cache)(key, userKey, cacheCheck.secondsSinceReplan)
-            None
-          } else {
-            Some((value, planned))
+          isStale(value) match {
+            case ReplanBlocking(secondsSinceReplan) =>
+              cacheAccessor.remove(cache)(key, userKey, secondsSinceReplan)
+              None
+            case ReplanAsync(secondsSinceReplan) =>
+              ???
+            case Reuse =>
+              Some((value, planned))
+
           }
         }
         else {

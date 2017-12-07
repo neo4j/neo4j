@@ -138,7 +138,7 @@ STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult =
-      inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+      inner.checkPlanResusability(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
 
     override val plannerInfo: PlannerInfo = {
       new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {

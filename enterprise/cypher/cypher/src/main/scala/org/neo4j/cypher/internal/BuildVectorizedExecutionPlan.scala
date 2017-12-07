@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{NewRu
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, Reuse}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
@@ -119,7 +120,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
     override def isPeriodicCommit: Boolean = false
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = CacheCheckResult.empty
+    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = Reuse // TODO: This is a lie.
 
     override def runtimeUsed: RuntimeName = MorselRuntimeName
   }

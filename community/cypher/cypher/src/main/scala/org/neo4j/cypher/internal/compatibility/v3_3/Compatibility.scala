@@ -156,7 +156,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_3)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContextV3_3, planCacheFactory)
-        val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContextV3_4.txIdProvider, planContextV3_4.statistics)
+        val isStale = (plan: ExecutionPlan_v3_4) => plan.checkPlanResusability(planContextV3_4.txIdProvider, planContextV3_4.statistics)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
         def createPlan(): ExecutionPlan_v3_4 = {

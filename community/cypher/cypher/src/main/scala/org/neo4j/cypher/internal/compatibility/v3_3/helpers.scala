@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => Logic
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
+import org.neo4j.cypher.internal.compiler.{v3_4 => compilerV3_4}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracer3_3}
@@ -83,12 +84,12 @@ object helpers {
     }
   }
 
-  def as3_3(calc: phasesV3_4.StatsDivergenceCalculator): phasesV3_3.StatsDivergenceCalculator = calc match {
-    case phasesV3_4.StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
+  def as3_3(calc: compilerV3_4.StatsDivergenceCalculator): phasesV3_3.StatsDivergenceCalculator = calc match {
+    case compilerV3_4.StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
       phasesV3_3.StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
-    case phasesV3_4.StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
+    case compilerV3_4.StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
       phasesV3_3.StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
-    case phasesV3_4.StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis) =>
+    case compilerV3_4.StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis) =>
       phasesV3_3.StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
   }
 

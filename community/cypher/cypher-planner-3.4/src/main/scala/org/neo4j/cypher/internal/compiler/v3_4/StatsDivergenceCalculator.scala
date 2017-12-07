@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.phases
+package org.neo4j.cypher.internal.compiler.v3_4
 
-case class CacheCheckResult(isStale: Boolean, secondsSinceReplan: Int)
+sealed trait CacheCheckResult
 
-object CacheCheckResult {
-  val empty = CacheCheckResult(isStale = false,0)
-}
+case class ReplanBlocking(secondsSinceReplan: Int) extends CacheCheckResult
+case class ReplanAsync(secondsSinceReplan: Int) extends CacheCheckResult
+case object Reuse extends CacheCheckResult
 
 sealed trait StatsDivergenceCalculator {
   val initialThreshold: Double

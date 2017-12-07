@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, Reuse}
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, ProcedurePlannerName}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
@@ -70,7 +70,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = CacheCheckResult.empty
+  override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = Reuse // TODO: Should this really always be reused?
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 

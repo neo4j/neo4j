@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CacheCheckResult, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, ReplanBlocking, Reuse, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, GraphStatisticsSnapshot}
 
 case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot) {
@@ -33,12 +33,12 @@ case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, 
 class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculator,
                                private var fingerprint: Option[PlanFingerprint]) {
 
-  def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = {
-    fingerprint.fold(CacheCheckResult.empty) { f =>
+  def checkPlanReusability(lastCommittedTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = {
+    fingerprint.fold[CacheCheckResult](Reuse) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
-      CacheCheckResult(divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
+      val stale = divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
         check(currentTxId != f.txId,
           () => {
             fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis))
@@ -46,8 +46,13 @@ class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculat
         check(f.snapshot.diverges(f.snapshot.recompute(statistics), divergence.decay(currentTimeMillis - f.creationTimeMillis)),
           () => {
             fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId))
-          }),
-        ((currentTimeMillis - f.creationTimeMillis)/1000).toInt)
+          })
+
+      if(stale) {
+        val secondsSinceReplan = ((currentTimeMillis - f.creationTimeMillis) / 1000).toInt
+        ReplanBlocking(secondsSinceReplan)
+      } else
+        Reuse
     }
   }
 
