@@ -288,18 +288,17 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   }
 
   private def translateColumnOrder(slots: SlotConfiguration, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
-    case plans.Ascending(IdName(name)) => {
+    case plans.Ascending(IdName(name)) =>
       slots.get(name) match {
         case Some(slot) => pipes.Ascending(slot)
         case None => throw new InternalException(s"Did not find `$name` in the slot configuration")
       }
-    }
-    case plans.Descending(IdName(name)) => {
+
+    case plans.Descending(IdName(name)) =>
       slots.get(name) match {
         case Some(slot) => pipes.Descending(slot)
         case None => throw new InternalException(s"Did not find `$name` in the slot configuration")
       }
-    }
   }
 
   private def createProjectionsForResult(columns: Seq[String], slots: SlotConfiguration) = {
@@ -374,6 +373,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
             copyLongsFromRHS += ((offset, slots.getLongOffsetFor(key)))
           case (key, RefSlot(offset, _, _)) if offset >= argumentSize.nReferences =>
             copyRefsFromRHS += ((offset, slots.getReferenceOffsetFor(key)))
+          case _ => // do nothing, already added by lhs
         }
         NodeHashJoinSlottedPipe(leftNodes, rightNodes, lhs, rhs, slots, copyLongsFromRHS.result().toArray, copyRefsFromRHS.result().toArray)(id)
 
@@ -458,7 +458,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     if (!longSlotsOk || !refSlotsOk) {
       val longSlotsMessage = if (longSlotsOk) "" else s"#long arguments=${argumentSize.nLongs} shared long slots: $sharedLongSlots "
       val refSlotsMessage = if (refSlotsOk) "" else s"#ref arguments=${argumentSize.nReferences} shared ref slots: $sharedRefSlots "
-      throw new InternalException(s"Unexpected slot configuration. Shared slots not only within argument size: ${longSlotsMessage}${refSlotsMessage}")
+      throw new InternalException(s"Unexpected slot configuration. Shared slots not only within argument size: $longSlotsMessage$refSlotsMessage")
     }
   }
 
@@ -479,21 +479,19 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val sizesAreTheSame = lhsArgLongSlots.size == rhsArgLongSlots.size && lhsArgLongSlots.size == argumentSize.nLongs &&
       lhsArgRefSlots.size == rhsArgRefSlots.size && lhsArgRefSlots.size == argumentSize.nReferences
     val longSlotsOk = sizesAreTheSame && lhsArgLongSlots.forall {
-      case (k, slot) => {
+      case (k, slot) =>
         val (k2, slot2) = rhsArgLongSlots(slot.offset)
         k == k2 && slot.isTypeCompatibleWith(slot2)
-      }
     }
     val refSlotsOk = sizesAreTheSame && lhsArgRefSlots.forall {
-      case (k, slot) => {
+      case (k, slot) =>
         val (k2, slot2) = rhsArgRefSlots(slot.offset)
         k == k2 && slot.isTypeCompatibleWith(slot2)
-      }
     }
     if (!longSlotsOk || !refSlotsOk) {
       val longSlotsMessage = if (longSlotsOk) "" else s"#long arguments=${argumentSize.nLongs} lhs: $lhsLongSlots rhs: $rhsArgLongSlots "
       val refSlotsMessage = if (refSlotsOk) "" else s"#ref arguments=${argumentSize.nReferences} lhs: $lhsRefSlots rhs: $rhsArgRefSlots "
-      throw new InternalException(s"Unexpected slot configuration. Arguments differ between lhs and rhs: ${longSlotsMessage}${refSlotsMessage}")
+      throw new InternalException(s"Unexpected slot configuration. Arguments differ between lhs and rhs: $longSlotsMessage$refSlotsMessage")
     }
   }
 }

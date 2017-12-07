@@ -30,7 +30,7 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
 
   private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
 
-  def apply(plan: LogicalPlan) = {
+  def apply(plan: LogicalPlan): Option[InternalNotification] = {
     import org.neo4j.cypher.internal.util.v3_4.Foldable._
 
     sealed trait SearchState
@@ -55,7 +55,5 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
   }
 
   private def cardinality(labelName: String): Cardinality =
-    cardinality(planContext.getOptLabelId(labelName).getOrElse(NameId.WILDCARD))
-
-  private def cardinality(id: Int) = planContext.statistics.nodesWithLabelCardinality(Some(LabelId(id)))
+    planContext.statistics.nodesWithLabelCardinality(planContext.getOptLabelId(labelName).map(LabelId))
 }

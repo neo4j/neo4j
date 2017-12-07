@@ -30,34 +30,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-//  test("APA") {
-//    val query = "CYPHER runtime=slotted MATCH (a) RETURN a ORDER BY id(a)"
-//    val result = innerExecuteDeprecated(query)
-//
-//    println(result.toList)
-//  }
-//
-//  test("Should work when doing union with alias on one side used as value on another") {
-//    val node = createLabeledNode("A")
-//
-//    val query1 =
-//      """
-//        |MATCH (n)
-//        |WITH n AS X
-//        |WITH X as A, X
-//        |RETURN A, X
-//        |UNION
-//        |MATCH (m)
-//        |WITH m as A, "foo" AS X
-//        |RETURN A, X
-//      """.stripMargin
-//
-//    val result1 = executeWith(Configs.Interpreted, query1)
-//    val expected1 = List(Map("A" -> node, "X" -> node), Map("A" -> node, "X" -> "foo"))
-//
-//    result1.toList should equal(expected1)
-//  }
-
   test("Do not count null elements in nodes without labels") {
 
     createNode("name" -> "a")

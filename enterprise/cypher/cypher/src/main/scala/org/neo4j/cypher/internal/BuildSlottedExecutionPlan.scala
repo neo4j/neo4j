@@ -43,7 +43,7 @@ import org.neo4j.values.virtual.MapValue
 import scala.util.{Failure, Success}
 
 object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] with DebugPrettyPrinter {
-  val ENABLE_DEBUG_PRINTS = true // NOTE: false toggles all debug prints off, overriding the individual settings below
+  val ENABLE_DEBUG_PRINTS = false // NOTE: false toggles all debug prints off, overriding the individual settings below
 
   // Should we print query text and logical plan before we see any exceptions from execution plan building?
   // Setting this to true is useful if you want to see the query and logical plan while debugging a failure
