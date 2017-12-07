@@ -117,7 +117,6 @@ Find a shortest path among paths that fulfill a predicate on all relationships 2
 Find a shortest path among paths that fulfill a predicate
 Find a shortest path without loosing context information at runtime
 Find a shortest path in an expression context
-Find a shortest path among paths that fulfill a predicate on all relationships
 Finds shortest path
 Optionally finds shortest path
 Optionally finds shortest path using previously bound nodes
