@@ -147,8 +147,6 @@ public class BackupToolTest
     {
         String[] args = new String[]{"-full", "-host", "localhost", "-to", "my_backup"};
         BackupProtocolService service = mock( BackupProtocolService.class );
-//        when( service.directoryContainsDb( eq( Paths.get( "my_backup" ) ) ) )
-//                .thenReturn( true );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when

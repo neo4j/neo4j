@@ -19,7 +19,6 @@
  */
 package org.neo4j.backup;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -54,7 +53,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * It tests legacy and modern sets of args in all possible forms: (-option, --option, -option value, -option=value).
  * Legacy is (-from, -to, -verify) and modern is (-host, -port, -to, -verify).
  */
-@Ignore
 @RunWith( Parameterized.class )
 public class BackupToolCmdArgumentsAcceptanceTest
 {

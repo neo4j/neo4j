@@ -134,7 +134,6 @@ class BackupStrategyWrapper
             return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
         }
 
-//        Config config = onlineBackupContext.getConfig();
         OptionalHostnamePort address = onlineBackupContext.getRequiredArguments().getAddress();
         Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, config, address );
 

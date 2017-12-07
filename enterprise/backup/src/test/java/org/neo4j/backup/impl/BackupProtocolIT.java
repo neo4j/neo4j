@@ -82,12 +82,16 @@ public class BackupProtocolIT
         LifeSupport life = new LifeSupport();
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-        BackupClient
-                client = life.add( new BackupClient( host, port, null, NullLogProvider.getInstance(), storeId, 10_000,
-                mock( ResponseUnpacker.class ), mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), reader ) );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
+        ByteCounterMonitor byteCounterMonitor = mock( ByteCounterMonitor.class );
+        RequestMonitor requestMonitor = mock( RequestMonitor.class );
+        BackupClient client = new BackupClient( host, port, null, logProvider, storeId, 10_000,
+                responseUnpacker, byteCounterMonitor, requestMonitor, reader );
+        life.add( client );
         ControlledBackupInterface backup = new ControlledBackupInterface();
-        life.add( new BackupServer( backup, new HostnamePort( host, port ), NullLogProvider.getInstance(),
-                mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ) ) );
+        HostnamePort hostnamePort = new HostnamePort( host, port );
+        life.add( new BackupServer( backup, hostnamePort, logProvider, byteCounterMonitor, requestMonitor ) );
         life.start();
 
         try
