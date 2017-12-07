@@ -75,14 +75,14 @@ case class FieldSignature(name: String, typ: CypherType, default: Option[CypherV
 sealed trait ProcedureAccessMode {
   def allowed: Array[String]
 
-  override def hashCode() = util.Arrays.hashCode(this.allowed.asInstanceOf[Array[Object]])
+  override def hashCode() = this.allowed.toSet.hashCode()
 
   override def equals(obj: scala.Any) = {
     if(obj.getClass != this.getClass) {
       false
     } else {
       val other = obj.asInstanceOf[ProcedureAccessMode]
-      util.Arrays.equals(this.allowed.asInstanceOf[Array[Object]], other.allowed.asInstanceOf[Array[Object]])
+      this.allowed.toSet.equals(other.allowed.toSet)
     }
   }
 }
