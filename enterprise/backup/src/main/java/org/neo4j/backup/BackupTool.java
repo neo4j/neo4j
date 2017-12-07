@@ -30,6 +30,11 @@ import java.time.ZoneId;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupOutcome;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.BackupServer;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;

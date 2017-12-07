@@ -24,6 +24,11 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupOutcome;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.BackupServer;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 

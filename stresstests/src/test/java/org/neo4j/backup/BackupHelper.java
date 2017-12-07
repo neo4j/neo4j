@@ -25,6 +25,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupOutcome;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.function.Predicates;
 import org.neo4j.helper.IsChannelClosedException;
 import org.neo4j.helper.IsConnectionException;

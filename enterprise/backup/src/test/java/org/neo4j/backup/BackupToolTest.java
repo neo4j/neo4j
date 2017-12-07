@@ -31,6 +31,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.BackupServer;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
@@ -56,7 +60,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 public class BackupToolTest
 {
@@ -144,8 +147,8 @@ public class BackupToolTest
     {
         String[] args = new String[]{"-full", "-host", "localhost", "-to", "my_backup"};
         BackupProtocolService service = mock( BackupProtocolService.class );
-        when( service.directoryContainsDb( eq( Paths.get( "my_backup" ) ) ) )
-                .thenReturn( true );
+//        when( service.directoryContainsDb( eq( Paths.get( "my_backup" ) ) ) )
+//                .thenReturn( true );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when

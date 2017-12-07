@@ -35,6 +35,9 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 

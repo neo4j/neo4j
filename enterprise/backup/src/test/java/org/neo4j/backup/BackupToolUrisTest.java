@@ -28,6 +28,10 @@ import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.List;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.BackupServer;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.asList;
