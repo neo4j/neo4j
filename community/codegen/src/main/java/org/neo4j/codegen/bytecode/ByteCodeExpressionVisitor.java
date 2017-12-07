@@ -158,7 +158,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
         methodVisitor.visitMethodInsn( INVOKESTATIC,
                 byteCodeName( method.owner() ),
-                method.name(), desc( method ), false );
+                method.name(), desc( method ), Modifier.isInterface( method.owner().modifiers() ) );
     }
 
     @Override
