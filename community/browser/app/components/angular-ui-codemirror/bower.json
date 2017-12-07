@@ -1,9 +1,0 @@
-{
-  "name": "angular-ui-codemirror",
-  "version": "0.2.2",
-  "main": "ui-codemirror.js",
-  "dependencies": {
-    "angular": "~1.3",
-    "codemirror": "~4.8"
-  }
-}
