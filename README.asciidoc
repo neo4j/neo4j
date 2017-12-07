@@ -21,23 +21,15 @@ NOTE: This GitHub repository contains mixed GPL and AGPL code. Our Community edi
 
 Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.0.x and a recent version of http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 7]. Bash and Make is also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=128m"`.
 
-The Neo4j Browser module is built using http://nodejs.org[Node.js]. For skipping that part of the build, see below. Building the manual requires Python, graphviz and make.
-
 OSX users need to have http://brew.sh/[Homebrew] installed.
 
 === With brew on OSX ===
 
-  brew install graphviz libtool maven node.js
-
-Node.js and npm are required to build the neo4j browser. In addition, on some machines it was necessary to install grunt-cli:
-
-  npm install grunt-cli
-
-If you don't plan to build the browser (for example by using -DskipBrowser), then don't worry about this step.
+  brew install graphviz libtool maven
 
 === With apt-get on Ubuntu ===
 
-  sudo apt-get install graphviz maven nodejs-legacy npm make openjdk-7-jdk devscripts debhelper rpm
+  sudo apt-get install graphviz maven make openjdk-7-jdk devscripts debhelper rpm
 
 == Building Neo4j ==
 
