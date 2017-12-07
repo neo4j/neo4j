@@ -28,7 +28,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,10 +62,10 @@ public class ClusterTest
 
         // then
         assertNotNull( exception );
-        verify( healthyCore, only() ).shutdown();
-        verify( unhealthyCore, only() ).shutdown();
-        verify( healthyReadReplica, only() ).shutdown();
-        verify( unhealthyReadReplica, only() ).shutdown();
+        verify( healthyCore ).shutdown();
+        verify( unhealthyCore ).shutdown();
+        verify( healthyReadReplica ).shutdown();
+        verify( unhealthyReadReplica ).shutdown();
 
         assertEquals( IllegalStateException.class, exception.getCause().getCause().getClass() );
         assertEquals( 1, exception.getSuppressed().length );
