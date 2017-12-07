@@ -24,7 +24,7 @@ package org.neo4j.kernel.impl.util;
  */
 class TraceLog extends Exception
 {
-    public TraceLog( String message )
+    TraceLog( String message )
     {
         super( message );
     }

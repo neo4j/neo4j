@@ -60,7 +60,8 @@ public class DebugUtil
             Thread thread = Thread.currentThread();
             String threadName = thread.getName();
             ThreadGroup group = thread.getThreadGroup();
-            String message = "[" + threadName + (group != null ? " in group " + group.getName() : "" )+ "] " + String.format( fmt, args );
+            String groupPart = group != null ? " in group " + group.getName() : "";
+            String message = "[" + threadName + groupPart + "] " + String.format( fmt, args );
             TraceLog traceLog = new TraceLog( message );
             printLimitedStackTrace( System.err, traceLog, skip, limit );
         }
