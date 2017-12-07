@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, inSequence}
 
 class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
 
-  object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer)
+  object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer, getDegreeRewriting = true)
 
-  object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
+  object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer, getDegreeRewriting = true)
 
   def rewriterUnderTest: Rewriter = inSequence(
     PropertyPredicateNormalization,

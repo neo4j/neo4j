@@ -21,7 +21,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{NotEquals, Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 
-class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, literalExtraction: LiteralExtraction) {
+class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer,
+                  literalExtraction: LiteralExtraction,
+                  getDegreeRewriting: Boolean) {
 
   import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStep._
 
@@ -45,7 +47,7 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, literalE
       enableCondition(noUnnamedPatternElementsInMatch),
       nameGraphOfPatternElements,
       enableCondition(noUnnamedPatternElementsInGraphOf),
-      normalizeMatchPredicates,
+      normalizeMatchPredicates(getDegreeRewriting),
       normalizeNotEquals,
       enableCondition(containsNoNodesOfType[NotEquals]),
       normalizeArgumentOrder,
