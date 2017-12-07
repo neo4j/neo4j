@@ -19,23 +19,20 @@
  */
 package org.neo4j.cypher.internal
 
-import java.io.PrintWriter
-
 import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
+import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.result.QueryResult
-import org.neo4j.graphdb.{Notification, ResourceIterator, Result}
+import org.neo4j.graphdb.{QueryExecutionType, Result}
 
 object RewindableExecutionResult {
 
-  private def current(inner: InternalExecutionResult): InternalExecutionResult =
+  private def eagerize(inner: InternalExecutionResult): InternalExecutionResult =
     inner match {
       case other: PipeExecutionResult =>
         exceptionHandler.runSafely {
@@ -51,28 +48,52 @@ object RewindableExecutionResult {
         inner
     }
 
-  private case class CachingExecutionResultWrapper(inner: InternalExecutionResult) extends InternalExecutionResult {
-    private val cache = inner.toList
-    override def toList: List[Map[String, Any]] = cache
+  private def eagerize(inner: v2_3.executionplan.InternalExecutionResult): v2_3.executionplan.InternalExecutionResult = {
+    inner match {
+      case other: v2_3.PipeExecutionResult =>
+        exceptionHandlerFor2_3.runSafely {
+          new v2_3.PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
+            other.executionMode, QueryExecutionType.QueryType.READ_WRITE)
+        }
+      case other: v2_3.ExplainExecutionResult =>
+        v2_3.ExplainExecutionResult(other.columns, other.executionPlanDescription, other.executionType.queryType(), other.notifications)
+      case _ =>
+        inner
+    }
+  }
 
-    override def columnAs[T](column: String): Iterator[T] = inner.columnAs(column)
-    override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
-    override def javaIterator: ResourceIterator[java.util.Map[String, Any]] = inner.javaIterator
-    override def dumpToString(writer: PrintWriter): Unit = inner.dumpToString(writer)
-    override def dumpToString(): String = inner.dumpToString()
-    override def queryStatistics(): QueryStatistics = inner.queryStatistics()
-    override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
-    override def executionPlanDescription(): InternalPlanDescription = inner.executionPlanDescription()
-    override def queryType: InternalQueryType = inner.queryType
-    override def executionMode: ExecutionMode = inner.executionMode
-    override def notifications: Iterable[Notification] = inner.notifications
-    override def accept[E <: Exception](visitor: Result.ResultVisitor[E]): Unit = inner.accept(visitor)
-    override def withNotifications(notification: Notification*): InternalExecutionResult = inner.withNotifications(notification: _*)
-    override def hasNext: Boolean = inner.hasNext
-    override def next(): Map[String, Any] = inner.next()
-    override def fieldNames(): Array[String] = inner.fieldNames()
-    override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit = inner.accept(visitor)
-    override def close(): Unit = inner.close()
+  private def eagerize(inner: v3_1.executionplan.InternalExecutionResult): v3_1.executionplan.InternalExecutionResult = {
+    inner match {
+      case other: v3_1.PipeExecutionResult =>
+        exceptionHandlerFor3_1.runSafely {
+          new v3_1.PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
+            other.executionMode, v3_1.executionplan.READ_WRITE)
+        }
+      case other: v3_1.ExplainExecutionResult =>
+        v3_1.ExplainExecutionResult(other.columns, other.executionPlanDescription, other.executionType, other.notifications)
+      case _ =>
+        inner
+    }
+  }
+
+  private class CachingExecutionResultWrapperFor3_1(inner: v3_1.executionplan.InternalExecutionResult,
+                                                    planner: v3_1.PlannerName,
+                                                    runtime: v3_1.RuntimeName,
+                                                    preParsingNotification: Set[org.neo4j.graphdb.Notification],
+                                                    offset: Option[frontend.v3_1.InputPosition])
+    extends ExecutionResultWrapperFor3_1(inner, planner, runtime, preParsingNotification, offset) {
+    val cache = inner.toList
+    override val toList = cache
+  }
+
+  private class CachingExecutionResultWrapperFor2_3(inner: v2_3.executionplan.InternalExecutionResult,
+                                                    planner: v2_3.PlannerName,
+                                                    runtime: v2_3.RuntimeName,
+                                                    preParsingNotification: Set[org.neo4j.graphdb.Notification],
+                                                    offset: Option[frontend.v2_3.InputPosition])
+    extends ExecutionResultWrapperFor2_3(inner, planner, runtime, preParsingNotification, offset) {
+    val cache = inner.toList
+    override val toList = cache
   }
 
   def apply(in: Result): InternalExecutionResult = {
@@ -83,11 +104,13 @@ object RewindableExecutionResult {
 
   def apply(internal: InternalExecutionResult) : InternalExecutionResult = {
     internal match {
-      case e:ExecutionResultWrapperFor3_1 =>
-        exceptionHandlerFor3_1.runSafely(CachingExecutionResultWrapper(e))
-      case e:ExecutionResultWrapperFor2_3 =>
-        exceptionHandlerFor2_3.runSafely(CachingExecutionResultWrapper(e))
-      case _ => exceptionHandler.runSafely(current(internal))
+      case ExecutionResultWrapperFor3_1(inner, planner, runtime, preParsingNotification, offset) =>
+        val wrapper = new CachingExecutionResultWrapperFor3_1(eagerize(inner), planner, runtime, preParsingNotification, offset)
+        exceptionHandlerFor3_1.runSafely(wrapper)
+      case ExecutionResultWrapperFor2_3(inner, planner, runtime, preParsingNotification, offset) =>
+        val wrapper = new CachingExecutionResultWrapperFor2_3(eagerize(inner), planner, runtime, preParsingNotification, offset)
+        exceptionHandlerFor3_1.runSafely(wrapper)
+      case _ => exceptionHandler.runSafely(eagerize(internal))
     }
   }
 }

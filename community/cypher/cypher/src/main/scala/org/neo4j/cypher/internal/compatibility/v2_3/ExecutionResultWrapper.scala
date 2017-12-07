@@ -48,9 +48,9 @@ import scala.collection.JavaConverters._
 
 object ExecutionResultWrapper {
 
-  def unapply(v: Any): Option[(InternalExecutionResult, PlannerName, RuntimeName, Set[org.neo4j.graphdb.Notification])] = v match {
+  def unapply(v: Any): Option[(InternalExecutionResult, PlannerName, RuntimeName, Set[org.neo4j.graphdb.Notification], Option[v2_3.InputPosition])] = v match {
     case closing: ClosingExecutionResult => unapply(closing.inner)
-    case wrapper: ExecutionResultWrapper => Some((wrapper.inner, wrapper.planner, wrapper.runtime, wrapper.preParsingNotifications))
+    case wrapper: ExecutionResultWrapper => Some((wrapper.inner, wrapper.planner, wrapper.runtime, wrapper.preParsingNotifications, wrapper.offset))
     case _ => None
   }
 
@@ -102,7 +102,7 @@ object ExecutionResultWrapper {
 
 class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
                              val preParsingNotifications: Set[org.neo4j.graphdb.Notification],
-                             offset : Option[v2_3.InputPosition])
+                             val offset : Option[v2_3.InputPosition])
   extends internal.runtime.InternalExecutionResult {
 
   override def planDescriptionRequested: Boolean = inner.planDescriptionRequested

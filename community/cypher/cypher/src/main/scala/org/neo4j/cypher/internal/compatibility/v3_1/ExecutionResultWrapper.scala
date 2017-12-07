@@ -52,7 +52,7 @@ import scala.collection.JavaConverters._
 
 class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
                              val preParsingNotification: Set[org.neo4j.graphdb.Notification],
-                             offset : Option[frontend.v3_1.InputPosition])
+                             val offset : Option[frontend.v3_1.InputPosition])
   extends internal.runtime.InternalExecutionResult  {
 
   override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
@@ -212,9 +212,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 }
 
 object ExecutionResultWrapper {
-  def unapply(v: Any): Option[(InternalExecutionResult, PlannerName, RuntimeName, Set[org.neo4j.graphdb.Notification])] = v match {
+  def unapply(v: Any): Option[(InternalExecutionResult, PlannerName, RuntimeName, Set[org.neo4j.graphdb.Notification], Option[frontend.v3_1.InputPosition])] = v match {
     case closing: ClosingExecutionResult => unapply(closing.inner)
-    case wrapper: ExecutionResultWrapper => Some((wrapper.inner, wrapper.planner, wrapper.runtime, wrapper.preParsingNotification))
+    case wrapper: ExecutionResultWrapper => Some((wrapper.inner, wrapper.planner, wrapper.runtime, wrapper.preParsingNotification, wrapper.offset))
     case _ => None
   }
 
