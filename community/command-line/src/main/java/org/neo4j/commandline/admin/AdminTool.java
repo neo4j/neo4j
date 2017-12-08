@@ -33,15 +33,18 @@ import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class AdminTool
 {
-
-    static final int STATUS_SUCCESS = 0;
+    public static final int STATUS_SUCCESS = 0;
     public static final int STATUS_ERROR = 1;
+    // These fields are mutable for in-process AdminTool testing purposes.
+    public static String NEO4J_HOME = System.getenv().getOrDefault( "NEO4J_HOME", "" );
+    public static String NEO4J_CONF = System.getenv().getOrDefault( "NEO4J_CONF", "" );
+    public static String NEO4J_DEBUG = System.getenv().getOrDefault( "NEO4J_DEBUG", "" );
 
     public static void main( String[] args ) throws IOException
     {
-        Path homeDir = Paths.get( System.getenv().getOrDefault( "NEO4J_HOME", "" ) );
-        Path configDir = Paths.get( System.getenv().getOrDefault( "NEO4J_CONF", "" ) );
-        boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
+        Path homeDir = Paths.get( NEO4J_HOME );
+        Path configDir = Paths.get( NEO4J_CONF );
+        boolean debug = NEO4J_DEBUG != null;
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
