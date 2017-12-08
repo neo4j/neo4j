@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  */
 public abstract class FusionIndexUtils
 {
-    interface ActionAble
+    public interface ActionAble
     {
         void doIt( Object obj ) throws Exception;
     }
