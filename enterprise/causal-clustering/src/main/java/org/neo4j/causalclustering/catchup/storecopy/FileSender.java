@@ -35,16 +35,18 @@ import static org.neo4j.causalclustering.catchup.storecopy.FileSender.State.PRE_
 
 class FileSender implements ChunkedInput<FileChunk>
 {
+    private final StoreResource resource;
     private final ReadableByteChannel channel;
     private final ByteBuffer byteBuffer;
 
     private byte[] nextBytes;
     private State state = PRE_INIT;
 
-    FileSender( ReadableByteChannel channel ) throws IOException
+    FileSender( StoreResource resource ) throws IOException
     {
-        this.channel = channel;
+        this.resource = resource;
         this.byteBuffer = ByteBuffer.allocateDirect( MAX_SIZE );
+        this.channel = resource.open();
     }
 
     @Override
@@ -56,7 +58,7 @@ class FileSender implements ChunkedInput<FileChunk>
     @Override
     public void close() throws Exception
     {
-        channel.close();
+        resource.close();
     }
 
     @Override
