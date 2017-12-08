@@ -24,8 +24,7 @@ import java.net.URL
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
 import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedIndexException}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -113,13 +112,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
 
   def getLabelsForNode(node: Long) =
-    JavaConversionSupport.asScala(statement.readOperations().nodeGetLabels(node))
+    asScala(statement.readOperations().nodeGetLabels(node))
 
   def getPropertiesForNode(node: Long) =
-    JavaConversionSupport.mapToScala(statement.readOperations().nodeGetPropertyKeys(node))(_.toLong)
+    mapToScala(statement.readOperations().nodeGetPropertyKeys(node))(_.toLong)
 
   def getPropertiesForRelationship(relId: Long) =
-    JavaConversionSupport.mapToScala(statement.readOperations().relationshipGetPropertyKeys(relId))(_.toLong)
+    mapToScala(statement.readOperations().relationshipGetPropertyKeys(relId))(_.toLong)
 
   override def isLabelSetOnNode(label: Int, node: Long) =
     statement.readOperations().nodeHasLabel(node, label)
@@ -128,8 +127,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
   def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
-    case None => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir)).map(relationshipOps.getById)
-    case Some(typeIds) => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* )).map(relationshipOps.getById)
+    case None => asScala(statement.readOperations().nodeGetRelationships(node.getId, dir)).map(relationshipOps.getById)
+    case Some(typeIds) => asScala(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* )).map(relationshipOps.getById)
   }
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
