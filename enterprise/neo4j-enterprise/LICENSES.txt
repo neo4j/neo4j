@@ -34,6 +34,11 @@ Apache Software License, Version 2.0
   opencsv
   parboiled-core
   parboiled-scala
+  Prometheus Java Simpleclient
+  Prometheus Java Simpleclient Common
+  Prometheus Java Simpleclient Dropwizard
+  Prometheus Java Simpleclient Hotspot
+  Prometheus Java Simpleclient Httpserver
 ------------------------------------------------------------------------------
 
                                  Apache License

@@ -23,84 +23,88 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.codahale.metrics.graphite.Graphite;
-import com.codahale.metrics.graphite.GraphiteReporter;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.HTTPServer;
+import io.prometheus.client.hotspot.DefaultExports;
 
-import java.io.IOException;
+import java.util.Map;
 import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
-public class GraphiteOutput implements Lifecycle, EventReporter
+/**
+ * Prometheus poll data from clients, this exposes a HTTP endpoint at a configurable port.
+ */
+public class PrometheusOutput implements Lifecycle, EventReporter
 {
     private final HostnamePort hostnamePort;
-    private final long period;
     private final MetricRegistry registry;
     private final Log logger;
-    private final String prefix;
 
-    private GraphiteReporter graphiteReporter;
+    private HTTPServer server;
+    private Map<String,Object> registeredEvents = new ConcurrentHashMap<>();
 
-    public GraphiteOutput( HostnamePort hostnamePort, long period, MetricRegistry registry, Log logger, String prefix )
+    public PrometheusOutput( HostnamePort hostnamePort, MetricRegistry registry, Log logger )
     {
         this.hostnamePort = hostnamePort;
-        this.period = period;
         this.registry = registry;
         this.logger = logger;
-        this.prefix = prefix;
     }
 
     @Override
     public void init()
     {
-        // Setup Graphite reporting
-        final Graphite graphite = new Graphite( hostnamePort.getHost(), hostnamePort.getPort() );
+        // Setup neo4j prometheus collector
+        CollectorRegistry.defaultRegistry.register( new DropwizardExports( registry ) );
 
-        graphiteReporter = GraphiteReporter.forRegistry( registry )
-                .prefixedWith( prefix )
-                .convertRatesTo( TimeUnit.SECONDS )
-                .convertDurationsTo( TimeUnit.MILLISECONDS )
-                .filter( MetricFilter.ALL )
-                .build( graphite );
+        // Add additional JVM statistics
+        DefaultExports.initialize();
     }
 
     @Override
-    public void start()
+    public void start() throws Throwable
     {
-        graphiteReporter.start( period, TimeUnit.MILLISECONDS );
-        logger.info( "Sending metrics to Graphite server at " + hostnamePort );
+        if ( server == null )
+        {
+            server = new HTTPServer( hostnamePort.getHost(), hostnamePort.getPort(), true );
+            logger.info( "Started publishing Prometheus metrics at http://" + hostnamePort + "/metrics" );
+        }
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
-        graphiteReporter.close();
+        if ( server != null )
+        {
+            server.stop();
+            server = null;
+            logger.info( "Stopped Prometheus endpoint at http://" + hostnamePort + "/metrics" );
+        }
     }
 
     @Override
     public void shutdown()
     {
-        graphiteReporter = null;
+        this.stop();
     }
 
     @Override
     public void report( SortedMap<String,Gauge> gauges, SortedMap<String,Counter> counters,
             SortedMap<String,Histogram> histograms, SortedMap<String,Meter> meters, SortedMap<String,Timer> timers )
     {
-        /*
-         * The synchronized is needed here since the `report` method called below is also called by the recurring
-         * scheduled thread.  In order to avoid races with that thread we synchronize on the same monitor
-         * before reporting.
-         */
-        synchronized ( graphiteReporter )
+        // Prometheus does not support events, just output the latest event that occurred
+        String metricKey = gauges.firstKey();
+        if ( !registeredEvents.containsKey( metricKey ) )
         {
-            graphiteReporter.report( gauges, counters, histograms, meters, timers );
+            registry.register( metricKey, (Gauge) () -> registeredEvents.get( metricKey ) );
         }
+
+        registeredEvents.put( metricKey, gauges.get( metricKey ).getValue() );
     }
 }
