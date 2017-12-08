@@ -50,6 +50,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -98,7 +99,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, AssertOpen
 {
     /*
      * IMPORTANT:
@@ -201,8 +202,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
-                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore,
-                        this::assertOpen );
+                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
         this.operations =
                 new Operations(
                         allStoreHolder,
@@ -467,10 +467,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void assertOpen()
     {
-        Optional<Status> terminationReason = getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        if ( terminationReason != null )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.function.Suppliers;
@@ -31,8 +32,9 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -41,7 +43,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -74,15 +76,14 @@ public class AllStoreHolder extends Read implements Token
 
     public AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
-            TxStateHolder txStateHolder,
+            KernelTransactionImplementation ktx,
             Cursors cursors,
-            ExplicitIndexStore explicitIndexStore,
-            AssertOpen assertOpen )
+            ExplicitIndexStore explicitIndexStore)
     {
-        super( cursors, txStateHolder, assertOpen );
+        super( cursors, ktx);
         this.storeReadLayer = engine.storeReadLayer();
         this.statement = statement; // use provided statement, to assert no leakage
-        this.explicitIndexes = Suppliers.lazySingleton( txStateHolder::explicitIndexTxState );
+        this.explicitIndexes = Suppliers.lazySingleton( ktx::explicitIndexTxState );
 
         this.nodes = statement.nodes();
         this.relationships = statement.relationships();
@@ -94,7 +95,7 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public boolean nodeExists( long id )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
 
         if ( hasTxStateWithChanges() )
         {
@@ -154,7 +155,7 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public CapableIndexReference index( int label, int... properties )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
         IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
         if ( indexDescriptor == null )
         {
@@ -170,6 +171,31 @@ public class AllStoreHolder extends Read implements Token
         {
             throw new IllegalStateException( "Could not find capability for index " + indexDescriptor, e );
         }
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
+    {
+        sharedOptimisticLock( descriptor.keyType(), descriptor.keyId() );
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetForSchema( descriptor );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            return ktx.txState().constraintsChangesForSchema( descriptor ).apply( constraints );
+        }
+        return constraints;
+    }
+
+    @Override
+    public boolean constraintExists( ConstraintDescriptor descriptor )
+    {
+        return false;
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
+    {
+        return null;
     }
 
     @Override

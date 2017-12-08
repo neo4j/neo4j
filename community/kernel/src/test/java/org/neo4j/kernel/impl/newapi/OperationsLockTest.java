@@ -30,10 +30,11 @@ import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -68,6 +69,8 @@ public class OperationsLockTest
     private PropertyCursor propertyCursor;
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
+
 
     @Before
     public void setUp() throws InvalidTransactionTypeKernelException
@@ -92,7 +95,7 @@ public class OperationsLockTest
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
-                ExplicitIndexStore.class ), AssertOpen.ALWAYS_OPEN );
+                ExplicitIndexStore.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
                 storageStatement, transaction, cursors, autoindexing );
         operations.initialize();
@@ -224,5 +227,15 @@ public class OperationsLockTest
         //THEN
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
         assertThat( txState.nodeIsDeletedInThisTx( 123 ), equalTo( true ) );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
+    {
+        // WHEN
+        allStoreHolder.constraintsGetForSchema( descriptor );
+
+        // THEN
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
     }
 }
