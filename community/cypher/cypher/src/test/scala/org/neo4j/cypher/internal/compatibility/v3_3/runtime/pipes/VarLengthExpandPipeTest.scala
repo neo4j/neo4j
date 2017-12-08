@@ -1045,6 +1045,27 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     single("b").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
   }
 
+  test("should not overwrite expand into to-node on nulls from source pipe") {
+    // given
+    val query = mock[QueryContext]
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val source = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val toNode = newMockedNode(1)
+    when(source.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
+      def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> Values.NO_VALUE, "b" -> toNode))
+    })
+
+    // when
+    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = true)().createResults(queryState).toList
+
+    // then
+    val (single :: Nil) = result
+    single("a").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
+    single("r").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
+    single("b") should beEquivalentTo(toNode)
+  }
+
   private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
 
   private def newMockedNode(id: Int) = {
