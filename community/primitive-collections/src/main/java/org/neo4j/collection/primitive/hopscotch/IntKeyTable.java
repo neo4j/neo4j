@@ -29,7 +29,7 @@ public class IntKeyTable<VALUE> extends IntArrayBasedKeyTable<VALUE>
     @Override
     public long key( int index )
     {
-        return table[index( index )];
+        return table[address( index )];
     }
 
     @Override

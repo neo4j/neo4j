@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_1.spi._

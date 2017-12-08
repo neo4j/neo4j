@@ -624,7 +624,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType]) = {
     if (codeGenTypes.size == 1 && codeGenTypes.head.repr == LongType) {
       generator.assign(generator.declare(typeRef[PrimitiveLongSet], name),
-                       invoke(method[Primitive, PrimitiveLongSet]("offHeapLongSet")))
+                       invoke(method[Primitive, PrimitiveLongSet]("longSet")))
       _finalizers.append((_: Boolean) => (block) =>
                            block.expression(
                              invoke(block.load(name), method[PrimitiveLongSet, Unit]("close"))))
@@ -722,7 +722,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType]) = {
     if (keyTypes.size == 1 && keyTypes.head.repr == LongType) {
       generator.assign(generator.declare(typeRef[PrimitiveLongLongMap], name),
-                       invoke(method[Primitive, PrimitiveLongLongMap]("offHeapLongLongMap")))
+                       invoke(method[Primitive, PrimitiveLongLongMap]("longLongMap")))
       _finalizers.append((_: Boolean) => (block) =>
                            block.expression(
                              invoke(block.load(name), method[PrimitiveLongLongMap, Unit]("close"))))
