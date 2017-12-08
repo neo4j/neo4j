@@ -89,7 +89,7 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
                 {
                     StoreFileMetadata fileMetadata = files.next();
                     File file = fileMetadata.file();
-                    log.debug( "Sending file " + file );
+                    log.info( "Sending file " + file );
                     ctx.writeAndFlush( ResponseMessageType.FILE );
                     ctx.writeAndFlush( new FileHeader( relativePath( dataSource.get().getStoreDir(), file ),
                             fileMetadata.recordSize() ) );
