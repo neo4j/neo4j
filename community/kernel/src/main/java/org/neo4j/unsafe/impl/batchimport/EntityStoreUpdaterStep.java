@@ -90,7 +90,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         int skipped = 0;
         for ( RECORD record : records )
         {
-            if ( record != null )
+            if ( record != null && record.inUse() )
             {
                 highestId = max( highestId, record.getId() );
                 entityStore.prepareForCommit( record, idSequence.apply( record.getId() ) );
