@@ -252,7 +252,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         LogProvider internalLogProvider = logService.getInternalLogProvider();
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, storeDir, fileSystem,
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, storeDir,
                 pageCache, internalLogProvider );
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, internalLogProvider );

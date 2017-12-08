@@ -122,7 +122,7 @@ public class StoreUpgrader
         {
             migrateStore( storeDirectory, migrationDirectory, migrationStateFile );
         }
-        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, storeDirectory, fileSystem, pageCache, logProvider ) )
+        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, storeDirectory, pageCache, logProvider ) )
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }

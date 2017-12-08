@@ -535,7 +535,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PageCache pageCache, LogService logService )
     {
         LogProvider logging = logService.getInternalLogProvider();
-        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, fs, pageCache, logging );
+        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, pageCache, logging );
         new RecordFormatPropertyConfigurator( formats, config ).configure();
         return formats;
     }

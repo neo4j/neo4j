@@ -72,7 +72,7 @@ public class StoreFactoryTest
     private StoreFactory storeFactory( Config config, OpenOption... openOptions )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        RecordFormats recordFormats = selectForStoreOrConfig( config, storeDir, fsRule.get(), pageCache, logProvider );
+        RecordFormats recordFormats = selectForStoreOrConfig( config, storeDir, pageCache, logProvider );
         return new StoreFactory( storeDir, DEFAULT_NAME, config, idGeneratorFactory, pageCache, fsRule.get(),
                 recordFormats, logProvider, openOptions );
     }
