@@ -51,7 +51,7 @@ public class UpdateRecordsStepTest
 
         Configuration configuration = mock( Configuration.class );
         StageControl stageControl = mock( StageControl.class );
-        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, configuration, store, new StorePrepareIdSequence<>() );
+        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, configuration, store, new StorePrepareIdSequence() );
 
         NodeRecord record = new NodeRecord( 1 );
         record.setInUse( true );
@@ -71,7 +71,7 @@ public class UpdateRecordsStepTest
         RecordStore<NodeRecord> store = mock( NodeStore.class );
         StageControl stageControl = mock( StageControl.class );
         UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, Configuration.DEFAULT, store,
-                new StorePrepareIdSequence<>() );
+                new StorePrepareIdSequence() );
 
         NodeRecord node1 = new NodeRecord( 1 );
         node1.setInUse( true );
@@ -82,11 +82,11 @@ public class UpdateRecordsStepTest
 
         step.process( batch, mock( BatchSender.class ) );
 
-        verify( store ).prepareForCommit( node1 );
+        verify( store ).prepareForCommit( node1, store );
         verify( store ).updateRecord( node1 );
-        verify( store ).prepareForCommit( node2 );
+        verify( store ).prepareForCommit( node2, store );
         verify( store ).updateRecord( node2 );
-        verify( store, never() ).prepareForCommit( nodeWithReservedId );
+        verify( store, never() ).prepareForCommit( nodeWithReservedId, store );
         verify( store, never() ).updateRecord( nodeWithReservedId );
     }
 }

@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -31,10 +30,10 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  * Exists to allow {@link IdSequence} with specific behaviour relevant to import to be injected into
  * {@link CommonAbstractStore#prepareForCommit(AbstractBaseRecord, IdSequence)}.
  */
-public interface PrepareIdSequence<RECORD extends AbstractBaseRecord> extends Function<RecordStore<RECORD>,LongFunction<IdSequence>>
+public interface PrepareIdSequence extends Function<IdSequence,LongFunction<IdSequence>>
 {
-    static <RECORD extends AbstractBaseRecord> PrepareIdSequence<RECORD> of( boolean doubleUnits )
+    static PrepareIdSequence of( boolean doubleUnits )
     {
-        return doubleUnits ? new SecondaryUnitPrepareIdSequence<>() : new StorePrepareIdSequence<>();
+        return doubleUnits ? new SecondaryUnitPrepareIdSequence() : new StorePrepareIdSequence();
     }
 }

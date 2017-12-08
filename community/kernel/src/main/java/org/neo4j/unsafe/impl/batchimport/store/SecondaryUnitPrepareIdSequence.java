@@ -21,19 +21,17 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
  * Assumes that records have been allocated such that there will be a free record, right after a given record,
  * to place the secondary unit of that record.
  */
-public class SecondaryUnitPrepareIdSequence<RECORD extends AbstractBaseRecord> implements PrepareIdSequence<RECORD>
+public class SecondaryUnitPrepareIdSequence implements PrepareIdSequence
 {
     @Override
-    public LongFunction<IdSequence> apply( RecordStore<RECORD> store )
+    public LongFunction<IdSequence> apply( IdSequence idSequence )
     {
         return new NeighbourIdSequence();
     }
@@ -56,7 +54,10 @@ public class SecondaryUnitPrepareIdSequence<RECORD extends AbstractBaseRecord> i
         {
             try
             {
-                assert !returned;
+                if ( returned )
+                {
+                    throw new IllegalStateException( "Already returned" );
+                }
                 return id + 1;
             }
             finally

@@ -39,6 +39,6 @@ public class RelationshipGroupStage extends Stage
     {
         super( NAME, topic, config, 0 );
         add( new ReadGroupRecordsByCacheStep( control(), config, store, cache ) );
-        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence<>() ) );
+        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence() ) );
     }
 }

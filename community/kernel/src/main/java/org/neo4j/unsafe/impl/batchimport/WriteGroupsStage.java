@@ -48,6 +48,6 @@ public class WriteGroupsStage extends Stage
         super( NAME, null, config, 0 );
         add( new ReadGroupsFromCacheStep( control(), config, cache.iterator(), GROUP_ENTRY_SIZE ) );
         add( new EncodeGroupsStep( control(), config, store ) );
-        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence<>() ) );
+        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence() ) );
     }
 }

@@ -45,6 +45,6 @@ public class NodeFirstGroupStage extends Stage
         add( new BatchFeedStep( control(), config, allIn( groupStore, config ), groupStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, groupStore, null ) );
         add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence<>() ) );
+        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence() ) );
     }
 }

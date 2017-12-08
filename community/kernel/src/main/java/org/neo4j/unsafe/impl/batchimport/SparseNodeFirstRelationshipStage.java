@@ -51,6 +51,6 @@ public class SparseNodeFirstRelationshipStage extends Stage
         add( new ReadRecordsStep<>( control(), config, true, nodeStore, null ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new SparseNodeFirstRelationshipProcessor( cache ), false ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence<>() ) );
+        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence() ) );
     }
 }

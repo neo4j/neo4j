@@ -21,15 +21,13 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-public class StorePrepareIdSequence<RECORD extends AbstractBaseRecord> implements PrepareIdSequence<RECORD>
+public class StorePrepareIdSequence implements PrepareIdSequence
 {
     @Override
-    public LongFunction<IdSequence> apply( RecordStore<RECORD> store )
+    public LongFunction<IdSequence> apply( IdSequence idSequence )
     {
-        return id -> store;
+        return id -> idSequence;
     }
 }

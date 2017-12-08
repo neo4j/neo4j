@@ -59,12 +59,12 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final PropertyStore propertyStore;
     private final IoMonitor ioMonitor;
     private final Monitor monitor;
-    private final PrepareIdSequence<RECORD> prepareIdSequence;
+    private final PrepareIdSequence prepareIdSequence;
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
             CommonAbstractStore<RECORD,? extends StoreHeader> entityStore,
             PropertyStore propertyStore, IoMonitor ioMonitor,
-            Monitor monitor, PrepareIdSequence<RECORD> prepareIdSequence )
+            Monitor monitor, PrepareIdSequence prepareIdSequence )
     {
         super( control, "v", config, config.parallelRecordWrites() ? 0 : 1, ioMonitor );
         this.entityStore = entityStore;

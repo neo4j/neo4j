@@ -26,15 +26,18 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DeadEndStep;
+import org.neo4j.unsafe.impl.batchimport.staging.SimpleStageControl;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.input.Collector.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 public class RelationshipRecordPreparationStepTest
@@ -72,6 +75,49 @@ public class RelationshipRecordPreparationStepTest
             verify( collector, times( 1 ) ).collectBadRelationship( any( InputRelationship.class ), eq( "b" ) );
             verify( collector, times( 1 ) ).collectBadRelationship( any( InputRelationship.class ), eq( "c" ) );
             verify( collector, times( 1 ) ).collectBadRelationship( any( InputRelationship.class ), eq( "d" ) );
+        }
+    }
+
+    @Test
+    public void shouldPreallocateDoubleRecordUnitsIfToldTo() throws Exception
+    {
+        // given
+        StageControl control = new SimpleStageControl();
+        try ( RelationshipRecordPreparationStep step = new RelationshipRecordPreparationStep(
+                control, DEFAULT, mock( BatchingRelationshipTypeTokenRepository.class ), EMPTY, new BatchingIdSequence(), true ) )
+        {
+            DeadEndStep end = new DeadEndStep( control );
+            end.start( 0 );
+            step.setDownstream( end );
+            step.start( 0 );
+
+            // when
+            Batch<InputRelationship,RelationshipRecord> batch = batch(
+                    relationship( 1, 2 ),
+                    relationship( 2, 3 ),
+                    relationship( 3, 4 ),
+                    relationship( 4, 5 ),
+                    relationship( 5, 6 ) );
+            step.receive( 0, batch );
+            step.endOfUpstream();
+            while ( !step.isCompleted() )
+            {
+                // wait
+                control.assertHealthy();
+                Thread.sleep( 10 );
+            }
+
+            // then
+            long previousId = -1;
+            for ( RelationshipRecord record : batch.records )
+            {
+                long id = record.getId();
+                if ( previousId != -1 )
+                {
+                    assertEquals( previousId + 2, id );
+                }
+                previousId = id;
+            }
         }
     }
 

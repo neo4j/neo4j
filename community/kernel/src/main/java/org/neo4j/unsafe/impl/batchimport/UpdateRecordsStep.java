@@ -44,11 +44,11 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
 {
     protected final RecordStore<RECORD> store;
     private final int recordSize;
-    private final PrepareIdSequence<RECORD> prepareIdSequence;
+    private final PrepareIdSequence prepareIdSequence;
     private long recordsUpdated;
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            PrepareIdSequence<RECORD> prepareIdSequence )
+            PrepareIdSequence prepareIdSequence )
     {
         super( control, "v", config, config.parallelRecordWrites() ? 0 : 1 );
         this.store = store;
