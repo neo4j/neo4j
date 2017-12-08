@@ -29,18 +29,19 @@ import java.util.function.LongSupplier;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+
+import static org.mockito.Mockito.verify;
 
 public class LeaderAvailabilityHandlerTest
 {
     @SuppressWarnings( "unchecked" )
-    private Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate = Mockito.mock( Inbound.MessageHandler.class );
+    private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate = Mockito.mock( LifecycleMessageHandler.class );
     private LeaderAvailabilityTimers leaderAvailabilityTimers = Mockito.mock( LeaderAvailabilityTimers.class );
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
     private LongSupplier term = () -> 3;
 
-    private LeaderAvailabilityHandler handler = new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term, NullLogProvider.getInstance() );
+    private LeaderAvailabilityHandler handler = new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term );
 
     private MemberId leader = new MemberId( UUID.randomUUID() );
     private RaftMessages.ReceivedInstantClusterIdAwareMessage heartbeat =
@@ -53,46 +54,7 @@ public class LeaderAvailabilityHandlerTest
             RaftMessages.ReceivedInstantClusterIdAwareMessage.of( Instant.now(), clusterId, new RaftMessages.Vote.Response( leader, term.getAsLong(), false ) );
 
     @Test
-    public void shouldDropMessagesIfHasNotBeenStarted() throws Exception
-    {
-        // when
-        handler.handle( heartbeat );
-
-        // then
-        Mockito.verify( delegate, Mockito.never() ).handle( heartbeat );
-    }
-
-    @Test
-    public void shouldDropMessagesIfHasBeenStopped() throws Exception
-    {
-        // given
-        handler.start( clusterId );
-        handler.stop();
-
-        // when
-        handler.handle( heartbeat );
-
-        // then
-        Mockito.verify( delegate, Mockito.never() ).handle( heartbeat );
-    }
-
-    @Test
-    public void shouldDropMessagesIfForDifferentClusterId() throws Exception
-    {
-        // given
-        handler.start( clusterId );
-
-        // when
-        handler.handle( RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
-                Instant.now(), new ClusterId( UUID.randomUUID() ), new RaftMessages.Heartbeat( leader, term.getAsLong(), 0, 0 )
-        ) );
-
-        // then
-        Mockito.verify( delegate, Mockito.never() ).handle( heartbeat );
-    }
-
-    @Test
-    public void shouldDelegateMessages() throws Exception
+    public void shouldRenewElectionForHeartbeats() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -101,24 +63,11 @@ public class LeaderAvailabilityHandlerTest
         handler.handle( heartbeat );
 
         // then
-        Mockito.verify( delegate ).handle( heartbeat );
+        verify( leaderAvailabilityTimers ).renewElection();
     }
 
     @Test
-    public void shouldRenewElectionForHeartbeats() throws Exception
-    {
-        // given
-        handler.start( clusterId );
-
-        // when
-        handler.handle( heartbeat );
-
-        // then
-        Mockito.verify( leaderAvailabilityTimers ).renewElection();
-    }
-
-    @Test
-    public void shouldRenewElectionForAppendEntriesRequests() throws Exception
+    public void shouldRenewElectionForAppendEntriesRequests() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -127,11 +76,11 @@ public class LeaderAvailabilityHandlerTest
         handler.handle( appendEntries );
 
         // then
-        Mockito.verify( leaderAvailabilityTimers ).renewElection();
+        verify( leaderAvailabilityTimers ).renewElection();
     }
 
     @Test
-    public void shouldNotRenewElectionForOtherMessages() throws Exception
+    public void shouldNotRenewElectionForOtherMessages() throws Throwable
     {
         // given
         handler.start( clusterId );
@@ -140,11 +89,11 @@ public class LeaderAvailabilityHandlerTest
         handler.handle( voteResponse );
 
         // then
-        Mockito.verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
+        verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
     }
 
     @Test
-    public void shouldNotRenewElectionTimeoutsForHeartbeatsFromEarlierTerm() throws Exception
+    public void shouldNotRenewElectionTimeoutsForHeartbeatsFromEarlierTerm() throws Throwable
     {
         // given
         RaftMessages.ReceivedInstantClusterIdAwareMessage heartbeat =  RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
@@ -156,11 +105,11 @@ public class LeaderAvailabilityHandlerTest
         handler.handle( heartbeat );
 
         // then
-        Mockito.verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
+        verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
     }
 
     @Test
-    public void shouldNotRenewElectionTimeoutsForAppendEntriesRequestsFromEarlierTerms() throws Exception
+    public void shouldNotRenewElectionTimeoutsForAppendEntriesRequestsFromEarlierTerms() throws Throwable
     {
         RaftMessages.ReceivedInstantClusterIdAwareMessage appendEntries = RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
                 Instant.now(), clusterId,
@@ -174,6 +123,26 @@ public class LeaderAvailabilityHandlerTest
         handler.handle( appendEntries );
 
         // then
-        Mockito.verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
+        verify( leaderAvailabilityTimers, Mockito.never() ).renewElection();
+    }
+
+    @Test
+    public void shouldDelegateStart() throws Throwable
+    {
+        // when
+        handler.start( clusterId );
+
+        // then
+        verify( delegate ).start( clusterId );
+    }
+
+    @Test
+    public void shouldDelegateStop() throws Throwable
+    {
+        // when
+        handler.stop();
+
+        // then
+        verify( delegate ).stop();
     }
 }

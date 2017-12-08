@@ -19,59 +19,49 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import java.util.Objects;
 import java.util.function.LongSupplier;
 
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
 
-public class LeaderAvailabilityHandler implements Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
-    private final Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler;
+    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler;
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private final LongSupplier term;
-    private final Log log;
-    private volatile ClusterId boundClusterId;
 
-    public LeaderAvailabilityHandler( Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler, LeaderAvailabilityTimers leaderAvailabilityTimers,
-            LongSupplier term, LogProvider logProvider )
+    public LeaderAvailabilityHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler,
+            LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
     {
         this.delegateHandler = delegateHandler;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
         this.term = term;
-        this.log = logProvider.getLog( getClass() );
     }
 
-    public synchronized void start( ClusterId clusterId )
+    public static ComposableMessageHandler composable( LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
     {
-        boundClusterId = clusterId;
+        return ( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate ) ->
+                new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term );
     }
 
-    public synchronized void stop()
+    @Override
+    public synchronized void start( ClusterId clusterId ) throws Throwable
     {
-        boundClusterId = null;
+        delegateHandler.start( clusterId );
+    }
+
+    @Override
+    public synchronized void stop() throws Throwable
+    {
+        delegateHandler.stop();
     }
 
     @Override
     public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
     {
-        if ( Objects.isNull( boundClusterId ) )
-        {
-            log.debug( "This pre handler has been stopped, dropping the message: %s", message.message() );
-        }
-        else if ( !Objects.equals( message.clusterId(), boundClusterId ) )
-        {
-            log.info( "Discarding message[%s] owing to mismatched clusterId. Expected: %s, Encountered: %s",
-                    message.message(), boundClusterId, message.clusterId() );
-        }
-        else
-        {
-            handleTimeouts( message );
-
-            delegateHandler.handle( message );
-        }
+        handleTimeouts( message );
+        delegateHandler.handle( message );
     }
 
     private void handleTimeouts( RaftMessages.ReceivedInstantClusterIdAwareMessage message )

@@ -244,9 +244,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
-        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
-                messageLogger, databaseHealthSupplier, clusterSslPolicy );
+        RaftServerModule raftServerModule = new RaftServerModule( platformModule, consensusModule, identityModule, localDatabase, clusterSslPolicy, monitors,
+                messageLogger );
+
+        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
+                replicationModule, raftServerModule, localDatabase, databaseHealthSupplier, clusterSslPolicy, clusterStateDirectory.get() );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 

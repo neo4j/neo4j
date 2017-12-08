@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.consensus;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -29,7 +30,7 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.Inbound;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.time.Clocks;
 
@@ -42,7 +43,7 @@ public class RaftMessageMonitoringHandlerTest
     private Monitors monitors = new Monitors();
     private RaftMessageProcessingMonitor monitor = mock( RaftMessageProcessingMonitor.class );
     @SuppressWarnings( "unchecked" )
-    private Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> downstream = mock( Inbound.MessageHandler.class );
+    private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> downstream = mock( LifecycleMessageHandler.class );
 
     private Duration messageQueueDelay = Duration.ofMillis( 5 );
     private Duration messageProcessingDelay = Duration.ofMillis( 7 );
@@ -87,5 +88,28 @@ public class RaftMessageMonitoringHandlerTest
 
         // then
         verify( monitor ).updateTimer( RaftMessages.Type.HEARTBEAT, messageProcessingDelay );
+    }
+
+    @Test
+    public void shouldDelegateStart() throws Throwable
+    {
+        // given
+        ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+
+        // when
+        handler.start( clusterId );
+
+        // then
+        Mockito.verify( downstream ).start( clusterId );
+    }
+
+    @Test
+    public void shouldDelegateStop() throws Throwable
+    {
+        // when
+        handler.stop();
+
+        // then
+        Mockito.verify( downstream ).stop();
     }
 }

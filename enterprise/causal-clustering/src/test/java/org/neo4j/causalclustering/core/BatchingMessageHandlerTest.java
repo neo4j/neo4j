@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.server;
+package org.neo4j.causalclustering.core;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -25,17 +25,22 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 
 import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.Mockito;
 
+import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.Inbound.MessageHandler;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
@@ -44,14 +49,18 @@ public class BatchingMessageHandlerTest
     private static final int MAX_BATCH = 16;
     private static final int QUEUE_SIZE = 64;
     private final Instant now = Instant.now();
-    private MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> downstreamHandler = mock( MessageHandler.class );
+    @SuppressWarnings( "unchecked" )
+    private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> downstreamHandler = mock( LifecycleMessageHandler.class );
     private ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
+    private ContinuousJob mockJob = mock( ContinuousJob.class );
+    private Function<Runnable,ContinuousJob> jobSchedulerFactory = (Runnable ignored) -> mockJob;
 
     @Test
-    public void shouldInvokeInnerHandlerWhenRun() throws Exception
+    public void shouldInvokeInnerHandlerWhenRun() throws Throwable
     {
         // given
-        BatchingMessageHandler batchHandler = new BatchingMessageHandler( downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
 
         RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
                 now, localClusterId, new RaftMessages.NewEntry.Request( null, null ) );
@@ -66,11 +75,11 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldInvokeHandlerOnQueuedMessage() throws Exception
+    public void shouldInvokeHandlerOnQueuedMessage() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
         RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
                 new RaftMessages.NewEntry.Request( null, null ) );
 
@@ -92,11 +101,11 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchRequests() throws Exception
+    public void shouldBatchRequests() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentB = new ReplicatedString( "B" );
         RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( null, contentA );
@@ -117,11 +126,11 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchUsingReceivedInstantOfFirstReceivedMessage() throws Exception
+    public void shouldBatchUsingReceivedInstantOfFirstReceivedMessage() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
         ReplicatedString content = new ReplicatedString( "A" );
         RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( null, content );
 
@@ -142,11 +151,11 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchNewEntriesAndHandleOtherMessagesSingularly() throws Exception
+    public void shouldBatchNewEntriesAndHandleOtherMessagesSingularly() throws Throwable
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, NullLogProvider.getInstance() );
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
 
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentC = new ReplicatedString( "C" );
@@ -180,12 +189,12 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldDropMessagesAfterBeingStopped() throws Exception
+    public void shouldDropMessagesAfterBeingStopped() throws Throwable
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, QUEUE_SIZE, MAX_BATCH, logProvider );
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, logProvider );
 
         RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now,
                 localClusterId, new RaftMessages.NewEntry.Request( null, null ) );
@@ -196,18 +205,18 @@ public class BatchingMessageHandlerTest
         batchHandler.run();
 
         // then
-        verifyZeroInteractions( downstreamHandler );
+        verify( downstreamHandler, never() ).handle( Matchers.any( RaftMessages.ReceivedInstantClusterIdAwareMessage.class ) );
         logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( BatchingMessageHandler.class )
                 .debug( "This handler has been stopped, dropping the message: %s", message ) );
     }
 
     @Test( timeout = 5_000 /* 5 seconds */)
-    public void shouldGiveUpAddingMessagesInTheQueueIfTheHandlerHasBeenStopped() throws Exception
+    public void shouldGiveUpAddingMessagesInTheQueueIfTheHandlerHasBeenStopped() throws Throwable
     {
         // given
         int queueSize = 1;
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                downstreamHandler, queueSize, MAX_BATCH, NullLogProvider.getInstance() );
+                downstreamHandler, queueSize, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
         RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, localClusterId,
                 new RaftMessages.NewEntry.Request( null, null ) );
         batchHandler.handle( message ); // fill the queue
@@ -215,15 +224,11 @@ public class BatchingMessageHandlerTest
         CountDownLatch latch = new CountDownLatch( 1 );
 
         // when
-        Thread thread = new Thread()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
-            {
-                latch.countDown();
-                batchHandler.handle( message );
-            }
-        };
+            latch.countDown();
+            batchHandler.handle( message );
+        } );
 
         thread.start();
 
@@ -234,5 +239,63 @@ public class BatchingMessageHandlerTest
         thread.join();
 
         // then we are not stuck and we terminate
+    }
+
+    @Test
+    public void shouldDelegateStart() throws Throwable
+    {
+        // given
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+
+        // when
+        batchHandler.start( clusterId );
+
+        // then
+        Mockito.verify( downstreamHandler ).start( clusterId );
+    }
+
+    @Test
+    public void shouldDelegateStop() throws Throwable
+    {
+        // given
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+
+        // when
+        batchHandler.stop();
+
+        // then
+        Mockito.verify( downstreamHandler ).stop();
+    }
+
+    @Test
+    public void shouldStartJob() throws Throwable
+    {
+        // given
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+        ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+
+        // when
+        batchHandler.start( clusterId );
+
+        // then
+        Mockito.verify( mockJob ).start();
+    }
+
+    @Test
+    public void shouldStopJob() throws Throwable
+    {
+        // given
+        BatchingMessageHandler batchHandler = new BatchingMessageHandler(
+                downstreamHandler, QUEUE_SIZE, MAX_BATCH, jobSchedulerFactory, NullLogProvider.getInstance() );
+
+        // when
+        batchHandler.stop();
+
+        // then
+        Mockito.verify( mockJob ).stop();
     }
 }

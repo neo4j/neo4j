@@ -23,20 +23,29 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
-import org.neo4j.causalclustering.messaging.Inbound;
+import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class RaftMessageMonitoringHandler implements Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+public class RaftMessageMonitoringHandler implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
-    private final Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> raftMessageHandler;
+    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> raftMessageHandler;
     private final Clock clock;
     private final RaftMessageProcessingMonitor raftMessageDelayMonitor;
 
-    public RaftMessageMonitoringHandler( Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> raftMessageHandler, Clock clock, Monitors monitors )
+    public RaftMessageMonitoringHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> raftMessageHandler,
+            Clock clock, Monitors monitors )
     {
         this.raftMessageHandler = raftMessageHandler;
         this.clock = clock;
         this.raftMessageDelayMonitor = monitors.newMonitor( RaftMessageProcessingMonitor.class );
+    }
+
+    public static ComposableMessageHandler composable( Clock clock, Monitors monitors )
+    {
+        return (LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate) ->
+                new RaftMessageMonitoringHandler( delegate, clock, monitors );
     }
 
     @Override
@@ -67,5 +76,17 @@ public class RaftMessageMonitoringHandler implements Inbound.MessageHandler<Raft
         Duration delay = Duration.between( incomingMessage.receivedAt(), start );
 
         raftMessageDelayMonitor.setDelay( delay );
+    }
+
+    @Override
+    public void start( ClusterId clusterId ) throws Throwable
+    {
+        raftMessageHandler.start( clusterId );
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        raftMessageHandler.stop();
     }
 }

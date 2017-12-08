@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.server;
+package org.neo4j.causalclustering.core;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -25,43 +25,60 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
+import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.Inbound.MessageHandler;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.function.Predicates.awaitForever;
 
-class BatchingMessageHandler extends LifecycleAdapter
-        implements Runnable, MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
-    private final MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler;
+    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler;
     private final Log log;
     private final int maxBatch;
     private final List<RaftMessages.ReceivedInstantClusterIdAwareMessage> batch;
     private final BlockingQueue<RaftMessages.ReceivedInstantClusterIdAwareMessage> messageQueue;
+    private final ContinuousJob job;
 
     private volatile boolean stopped;
 
-    BatchingMessageHandler( MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler, int queueSize, int maxBatch,
-            LogProvider logProvider )
+    BatchingMessageHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler, int queueSize, int maxBatch,
+            Function<Runnable,ContinuousJob> jobSchedulerFactory, LogProvider logProvider )
     {
         this.handler = handler;
         this.log = logProvider.getLog( getClass() );
         this.maxBatch = maxBatch;
         this.batch = new ArrayList<>( maxBatch );
         this.messageQueue = new ArrayBlockingQueue<>( queueSize );
+        job = jobSchedulerFactory.apply( this );
+    }
+
+    static ComposableMessageHandler composable( int queueSize, int maxBatch, Function<Runnable,ContinuousJob> jobSchedulerFactory, LogProvider logProvider )
+    {
+        return (LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate) ->
+                new BatchingMessageHandler( delegate, queueSize, maxBatch, jobSchedulerFactory, logProvider );
+    }
+    @Override
+    public void start( ClusterId clusterId ) throws Throwable
+    {
+        handler.start( clusterId );
+        job.start();
     }
 
     @Override
-    public void stop()
+    public void stop() throws Throwable
     {
         stopped = true;
+        handler.stop();
+        job.stop();
     }
 
     @Override
