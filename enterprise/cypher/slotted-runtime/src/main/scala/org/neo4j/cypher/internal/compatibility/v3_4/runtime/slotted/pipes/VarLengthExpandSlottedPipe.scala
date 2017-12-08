@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{EdgeValue, VirtualValues}
 
 import scala.collection.mutable
@@ -110,25 +111,35 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
     input.flatMap {
       inputRow =>
         val fromNode = inputRow.getLongAt(fromOffset)
-
-        // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
-        // the start node is valid
-        inputRow.setLongAt(tempNodeOffset, fromNode)
-        if (nodePredicate.isTrue(inputRow, state)) {
-
-          val paths: Iterator[(LNode, Seq[EdgeValue])] = varLengthExpand(fromNode, state, inputRow)
-          paths collect {
-            case (toNode: LNode, rels: Seq[EdgeValue])
-              if rels.length >= min && isToNodeValid(inputRow, toNode) =>
-              val resultRow = PrimitiveExecutionContext(slots)
-              resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
-              resultRow.setLongAt(toOffset, toNode)
-              resultRow.setRefAt(relOffset, VirtualValues.list(rels.toArray:_*))
-              resultRow
-          }
+        if (fromNode == -1) {
+          val resultRow = PrimitiveExecutionContext(slots)
+          resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
+          resultRow.setRefAt(relOffset, Values.NO_VALUE)
+          if (shouldExpandAll)
+            resultRow.setLongAt(toOffset, -1L)
+          Iterator(resultRow)
         }
-        else
-          Iterator.empty
+        else {
+          // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
+          // the start node is valid
+          inputRow.setLongAt(tempNodeOffset, fromNode)
+          if (nodePredicate.isTrue(inputRow, state)) {
+
+            val paths: Iterator[(LNode, Seq[EdgeValue])] = varLengthExpand(fromNode, state, inputRow)
+            paths collect {
+              case (toNode: LNode, rels: Seq[EdgeValue])
+                if rels.length >= min && isToNodeValid(inputRow, toNode) =>
+                val resultRow = PrimitiveExecutionContext(slots)
+                resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
+                if (shouldExpandAll)
+                  resultRow.setLongAt(toOffset, toNode)
+                resultRow.setRefAt(relOffset, VirtualValues.list(rels.toArray: _*))
+                resultRow
+            }
+          }
+          else
+            Iterator.empty
+        }
     }
   }
 
