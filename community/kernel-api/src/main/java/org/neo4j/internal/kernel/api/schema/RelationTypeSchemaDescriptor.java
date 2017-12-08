@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,18 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.schema;
+package org.neo4j.internal.kernel.api.schema;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.schema.SchemaRule;
-
-public class SchemaRuleNotFoundException extends SchemaRuleException
+public interface RelationTypeSchemaDescriptor extends SchemaDescriptor
 {
-    private static final String NOT_FOUND_MESSAGE_TEMPLATE = "No %s was found for %s.";
+    int getRelTypeId();
 
-    public SchemaRuleNotFoundException( SchemaRule.Kind kind, SchemaDescriptor descriptor )
-    {
-        super( Status.Schema.SchemaRuleAccessFailed, NOT_FOUND_MESSAGE_TEMPLATE, kind, descriptor );
-    }
+    int getPropertyId();
 }

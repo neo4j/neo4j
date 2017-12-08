@@ -25,8 +25,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;

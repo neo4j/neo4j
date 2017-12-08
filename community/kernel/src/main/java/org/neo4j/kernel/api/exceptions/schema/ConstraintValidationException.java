@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.schema.SchemaUtil;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 
 /**
  * Constraint verification happens when a new constraint is created, and the database verifies that existing

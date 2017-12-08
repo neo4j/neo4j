@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;

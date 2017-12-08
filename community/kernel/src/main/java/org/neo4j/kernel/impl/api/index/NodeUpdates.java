@@ -30,9 +30,9 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;

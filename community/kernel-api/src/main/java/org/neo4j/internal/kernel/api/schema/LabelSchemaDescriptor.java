@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,19 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema;
+package org.neo4j.internal.kernel.api.schema;
 
-/**
- * A SchemaProcessor performs from side-effect processing on a SchemaDescriptor. To get the concrete type of the
- * target schema descriptor, a visitor pattern is used to bounce the code path into the correct overloaded
- * processSpecific variant. See SchemaComputer.
- */
-public interface SchemaProcessor
+public interface LabelSchemaDescriptor extends SchemaDescriptor, LabelSchemaSupplier
 {
-    /*
-    The following section contains the overloaded process signatures for all concrete SchemaDescriptor implementers.
-    Add new overloaded methods here when adding more concrete SchemaDescriptors.
-     */
-    void processSpecific( LabelSchemaDescriptor schema );
-    void processSpecific( RelationTypeSchemaDescriptor schema );
+    int getLabelId();
+
+    int getPropertyId();
 }

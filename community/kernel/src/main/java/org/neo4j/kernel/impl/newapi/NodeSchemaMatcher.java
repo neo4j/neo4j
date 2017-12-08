@@ -25,8 +25,8 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingBiConsumer;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
 
 /**
  * This class holds functionality to match LabelSchemaDescriptors to nodes

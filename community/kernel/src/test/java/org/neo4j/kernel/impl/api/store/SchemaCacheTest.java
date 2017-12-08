@@ -28,8 +28,8 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;

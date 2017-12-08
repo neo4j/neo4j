@@ -17,18 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.schema;
+package org.neo4j.internal.kernel.api.schema;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.schema.SchemaRule;
-
-public class SchemaRuleNotFoundException extends SchemaRuleException
+public interface LabelSchemaSupplier extends SchemaDescriptor.Supplier
 {
-    private static final String NOT_FOUND_MESSAGE_TEMPLATE = "No %s was found for %s.";
-
-    public SchemaRuleNotFoundException( SchemaRule.Kind kind, SchemaDescriptor descriptor )
-    {
-        super( Status.Schema.SchemaRuleAccessFailed, NOT_FOUND_MESSAGE_TEMPLATE, kind, descriptor );
-    }
+    @Override
+    LabelSchemaDescriptor schema();
 }

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -31,7 +32,6 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;

@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -41,7 +42,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;

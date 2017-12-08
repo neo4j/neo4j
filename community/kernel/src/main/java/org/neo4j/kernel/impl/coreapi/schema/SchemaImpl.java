@@ -42,6 +42,9 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -57,10 +60,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
