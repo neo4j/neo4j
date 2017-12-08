@@ -22,6 +22,7 @@ package org.neo4j.backup.impl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -33,6 +34,7 @@ import org.neo4j.com.storecopy.FileMoveAction;
 import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
@@ -78,8 +80,9 @@ class BackupCopyService
 
     boolean backupExists( Path destination )
     {
-        File[] listFiles = pageCache.getCachedFileSystem().listFiles( destination.toFile() );
-        return listFiles != null && listFiles.length > 0;
+        File[] files = pageCache.getCachedFileSystem().listFiles( destination.toFile() );
+        return files != null && Arrays.stream( files ).anyMatch(
+                f -> f.isFile() && f.getName().endsWith( MetaDataStore.DEFAULT_NAME ) );
     }
 
     Path findNewBackupLocationForBrokenExisting( Path existingBackup ) throws IOException
