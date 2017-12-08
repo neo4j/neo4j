@@ -48,6 +48,8 @@ public class HighLimit extends BaseRecordFormats
      * Default maximum number of bits that can be used to represent id
      */
     static final int DEFAULT_MAXIMUM_BITS_PER_ID = 50;
+    static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 24;
+    // id limits for property key and label tokens are already quite high
 
     public static final String STORE_VERSION = StoreVersion.HIGH_LIMIT_V3_1_0.versionString();
 
@@ -99,7 +101,7 @@ public class HighLimit extends BaseRecordFormats
     @Override
     public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
     {
-        return new RelationshipTypeTokenRecordFormat();
+        return new RelationshipTypeTokenRecordFormat( RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
     }
 
     @Override
