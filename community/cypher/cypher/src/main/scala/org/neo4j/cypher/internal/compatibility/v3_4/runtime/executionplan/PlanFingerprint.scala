@@ -24,7 +24,11 @@ import java.time.Clock
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CacheCheckResult, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, GraphStatisticsSnapshot}
 
-case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
+case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot) {
+  if (snapshot.statsValues.isEmpty) {
+    throw new IllegalArgumentException("Cannot create plan fingerprint with empty graph statistics snapshot")
+  }
+}
 
 class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculator,
                                private var fingerprint: Option[PlanFingerprint]) {

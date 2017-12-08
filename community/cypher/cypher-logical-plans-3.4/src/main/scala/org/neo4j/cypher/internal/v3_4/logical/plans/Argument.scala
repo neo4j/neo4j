@@ -26,18 +26,17 @@ import org.neo4j.cypher.internal.util.v3_4.symbols._
   * Produce a single row with the contents of argument
   */
 case class Argument(argumentIds: Set[IdName] = Set.empty)(val solved: PlannerQuery with CardinalityEstimation)
-                   (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap)
   extends LogicalLeafPlan {
 
   def availableSymbols: Set[IdName] = argumentIds
 
   override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): Argument =
-    copy(argumentIds)(newSolved)(typeInfo)
+    copy(argumentIds)(newSolved)
 
-  override def copyPlan(): LogicalPlan = this.copy(argumentIds)(solved)(typeInfo).asInstanceOf[this.type]
+  override def copyPlan(): LogicalPlan = this.copy(argumentIds)(solved).asInstanceOf[this.type]
 
   override def dup(children: Seq[AnyRef]) = children.size match {
     case 1 =>
-      copy(children.head.asInstanceOf[Set[IdName]])(solved)(typeInfo).asInstanceOf[this.type]
+      copy(children.head.asInstanceOf[Set[IdName]])(solved).asInstanceOf[this.type]
   }
 }

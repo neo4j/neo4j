@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compatibility.{CypherCacheMonitor, LFUCache, MonitoringCacheAccessor, QueryCache}
 import org.neo4j.cypher.internal.compatibility.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer

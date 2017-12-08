@@ -217,7 +217,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-  val argument = Argument()(solved)()
+  val argument = Argument()(solved)
 
   test("single node is represented nicely") {
     val arguments = Seq(

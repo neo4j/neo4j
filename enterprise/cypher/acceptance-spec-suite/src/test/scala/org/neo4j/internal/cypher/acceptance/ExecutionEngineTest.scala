@@ -33,7 +33,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.ProcedureOrSchema
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1, V3_2, V3_3, V3_4}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1, V3_4}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.NeoStoreDataSource
@@ -48,7 +48,7 @@ import scala.collection.mutable
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport {
 
   val createConf = Configs.Interpreted - Configs.Cost2_3
-  val startConf = TestConfiguration(Versions(V3_2, V3_3, V3_4, Versions.Default), Planners(Planners.Rule, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
+  val startConf = TestConfiguration(Versions(V3_4, Versions.Default), Planners(Planners.Rule, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
                   TestConfiguration(Versions(V2_3, V3_1), Planners.all, Runtimes.Default)
 
   test("shouldGetRelationshipById") {
@@ -725,7 +725,7 @@ order by a.COL1""".format(a, b))
     val labelName = "Person"
     val propertyKeys = Seq("name")
 
-    val testconfiguration = TestConfiguration(Versions(V3_1, V3_2, V3_4, Versions.Default), Planners.Default, Runtimes(ProcedureOrSchema, Runtimes.Default)) + Configs.Rule2_3
+    val testconfiguration = TestConfiguration(Versions(V3_1, V3_4, Versions.Default), Planners.Default, Runtimes(ProcedureOrSchema, Runtimes.Default)) + Configs.Rule2_3
     // WHEN
     executeWith(testconfiguration, s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 

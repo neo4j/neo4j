@@ -21,55 +21,54 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 
 import java.time.Clock
 
+import org.neo4j.cypher._
+import org.neo4j.cypher.exceptionHandler.{RunSafely, runSafely}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_4}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_4
 import org.neo4j.cypher.internal.compiler.v3_4._
-import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, QueryGraphSolver, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.neo4j.cypher.internal.v3_4.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
-import org.neo4j.cypher.{CypherExecutionMode, exceptionHandler}
-import org.neo4j.graphdb.Result
-import org.neo4j.kernel.api.query.IndexUsage.{explicitIndexUsage, schemaIndexUsage}
-import org.neo4j.kernel.api.query.PlannerInfo
-import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
-import org.neo4j.values.virtual.MapValue
 
-import scala.collection.JavaConverters._
 import scala.util.Try
 
-trait Compatibility[CONTEXT <: CommunityRuntimeContext,
-                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]] {
-  val kernelMonitors: KernelMonitors
-  val clock: Clock
-  val monitors: Monitors
-  val config: CypherCompilerConfiguration
-  val logger: InfoLogger
-  val runtimeBuilder: RuntimeBuilder[T]
-  val contextCreator: ContextCreator[CONTEXT]
-  val maybePlannerName: Option[CostBasedPlannerName]
-  val maybeRuntimeName: Option[RuntimeName]
-  val maybeUpdateStrategy: Option[UpdateStrategy]
-  val cacheMonitor: AstCacheMonitor
-  val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan_v3_4]
-  val monitorTag = "cypher3.4"
+case class Compatibility[CONTEXT <: CommunityRuntimeContext,
+                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](configV3_4: CypherCompilerConfiguration,
+                                                                                   clock: Clock,
+                                                                                   kernelMonitors: KernelMonitors,
+                                                                                   log: Log,
+                                                                                   planner: CypherPlanner,
+                                                                                   runtime: CypherRuntime,
+                                                                                   updateStrategy: CypherUpdateStrategy,
+                                                                                   runtimeBuilder: RuntimeBuilder[T],
+                                                                                   contextCreatorV3_4: ContextCreator[CONTEXT])
+  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](configV3_4, clock, kernelMonitors, log, planner, runtime, updateStrategy, runtimeBuilder, contextCreatorV3_4) {
+
+  val monitors: Monitors = WrappedMonitors(kernelMonitors)
+  val cacheMonitor: AstCacheMonitor[Statement] = monitors.newMonitor[AstCacheMonitor[Statement]]("cypher3.4")
+  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.4")
+
+  val maybePlannerNameV3_4: Option[CostBasedPlannerName] = planner match {
+    case CypherPlanner.default => None
+    case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
+    case CypherPlanner.dp => Some(DPPlannerName)
+    case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
+  }
+  val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
+    case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
+    case _ => None
+  }
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
     import RewriterStepSequencer._
@@ -78,20 +77,14 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_4.CypherCompiler[CONTEXT]
+  protected val compiler: v3_4.CypherCompiler[CONTEXT] =
+    new CypherCompilerFactory().costBasedCompiler(configV3_4, clock, monitors, rewriterSequencer,
+      maybePlannerNameV3_4, maybeUpdateStrategy, contextCreatorV3_4)
 
-  private def queryGraphSolver = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(CostBasedPlannerName.default), monitors, config)
 
-  def createExecPlan: Transformer[CONTEXT, LogicalPlanState, CompilationState] = {
-    ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
-      If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
-        runtimeBuilder.create(maybeRuntimeName, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_4])
-      )
-  }
+  private def queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.
+    createQueryGraphSolver(maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default), monitors, configV3_4)
 
-  private val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_4](config.queryCacheSize)
-
-  implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
@@ -104,17 +97,17 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
                               Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
-        (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
+        (ExecutionPlan, Map[String, Any]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_4.get
 
         //Context used for db communication during planning
-        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
+        val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(transactionalContext, notificationLogger))
         //Context used to create logical plans
-        val context = contextCreator.create(tracer, notificationLogger, planContext,
+        val context = contextCreatorV3_4.create(tracer, notificationLogger, planContext,
                                                         syntacticQuery.queryText, preParsedQuery.debugOptions,
                                                         Some(preParsedQuery.offset), monitors,
                                                         CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolver,
-                                                        config, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
+                                                        configV3_4, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
                                                         clock, simpleExpressionEvaluator)
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
@@ -142,12 +135,6 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
     }
   }
 
-  protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
-    override def cacheDiscard(key: Statement, userKey: String, secondsSinceReplan: Int) {
-      log.info(s"Discarded stale query from the query cache after ${secondsSinceReplan} seconds: $userKey")
-    }
-  }
-
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan_v3_4],
                            monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan_v3_4]],
                            planContext: PlanContext,
@@ -158,91 +145,6 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
       new QueryCache(cacheAccessor, lRUCache)
     })
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_4, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offset: InputPosition)
-    extends ExecutionPlan {
-
-    private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
-
-    private def queryContext(transactionalContext: TransactionalContextWrapper) = {
-      val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
-      new ExceptionTranslatingQueryContext(ctx)
-    }
-
-    def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode,
-            params: MapValue): Result = {
-      val innerExecutionMode = executionMode match {
-        case CypherExecutionMode.explain => ExplainMode
-        case CypherExecutionMode.profile => ProfileMode
-        case CypherExecutionMode.normal => NormalMode
-      }
-      exceptionHandler.runSafely {
-
-        val context = queryContext(transactionalContext)
-
-        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, params)
-        new ExecutionResult(new ClosingExecutionResult(
-          transactionalContext.tc.executingQuery(),
-          innerResult.withNotifications(preParsingNotifications.toSeq:_*),
-          exceptionHandler.runSafely
-        ))
-      }
-    }
-
-    def isPeriodicCommit: Boolean = inner.isPeriodicCommit
-
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper) =
-      inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
-
-    override val plannerInfo: PlannerInfo = {
-      new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
-        case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => schemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
-        case SchemaIndexScanUsage(identifier, labelId, label, propertyKey) => schemaIndexUsage(identifier, labelId, label, propertyKey)
-        case ExplicitNodeIndexUsage(identifier, index) => explicitIndexUsage(identifier, "NODE", index)
-        case ExplicitRelationshipIndexUsage(identifier, index) => explicitIndexUsage(identifier, "RELATIONSHIP", index)
-      }.asJava)
-    }
-  }
+  override val runSafelyDuringPlanning: RunSafely = runSafely
+  override val runSafelyDuringRuntime: RunSafely = runSafely
 }
-
-object Compatibility {
-  def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors,
-                             config: CypherCompilerConfiguration): QueryGraphSolver = n match {
-    case IDPPlannerName =>
-      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-      val solverConfig = new ConfigurableIDPSolverConfig(
-        maxTableSize = config.idpMaxTableSize,
-        iterationDurationLimit = config.idpIterationDuration
-      )
-      val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
-      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-
-    case DPPlannerName =>
-      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-      val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
-      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-  }
-}
-
-trait CypherCacheFlushingMonitor[T] {
-  def cacheFlushDetected(justBeforeKey: T) {}
-}
-
-trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T) {}
-  def cacheMiss(key: T) {}
-  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {}
-}
-
-trait InfoLogger {
-  def info(message: String)
-}
-trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
-
-trait AstCacheMonitor extends CypherCacheMonitor[Statement, CacheAccessor[Statement, ExecutionPlan_v3_4]]
-
-class StringInfoLogger(log: Log) extends InfoLogger {
-  def info(message: String) {
-    log.info(message)
-  }
-}
-

@@ -32,6 +32,11 @@ object Rewriter {
   val noop = Rewriter.lift(PartialFunction.empty)
 }
 
+object RewriterWithArgs {
+  def lift(f: PartialFunction[(AnyRef, Seq[AnyRef]), AnyRef]): RewriterWithArgs =
+    f.orElse(PartialFunction({ case (a: AnyRef, _) => a }))
+}
+
 object Rewritable {
   implicit class IteratorEq[A <: AnyRef](val iterator: Iterator[A]) {
     def eqElements[B <: AnyRef](that: Iterator[B]): Boolean = {
@@ -124,6 +129,16 @@ object Rewritable {
       }
       result
     }
+
+    def rewrite(rewriter: RewriterWithArgs, args: Seq[AnyRef]): AnyRef = {
+      val result = rewriter.apply(that, args)
+      if (that.isInstanceOf[RewritableWithMemory]) {
+        val withMemory = result.asInstanceOf[RewritableWithMemory]
+        withMemory.rememberMe(that)
+      }
+      result
+    }
+
     def endoRewrite(rewriter: Rewriter): T = rewrite(rewriter).asInstanceOf[T]
   }
 
@@ -171,9 +186,7 @@ object topDown {
     }
 
     @tailrec
-    private def rec(
-        stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]
-    ): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -215,9 +228,7 @@ object bottomUp {
     }
 
     @tailrec
-    private def rec(
-        stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]
-    ): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -245,4 +256,46 @@ object bottomUp {
 
   def apply(rewriter: Rewriter, stopper: (AnyRef) => Boolean = _ => false): Rewriter =
     new BottomUpRewriter(rewriter, stopper)
+}
+
+object bottomUpWithArgs {
+
+  private class BottomUpWithArgsRewriter(val rewriter: RewriterWithArgs, val stopper: AnyRef => Boolean)
+    extends RewriterWithArgs {
+    override def apply(tuple: (AnyRef, Seq[AnyRef])): AnyRef = {
+      val (that: AnyRef, _) = tuple
+      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val result = rec(initialStack)
+      assert(result.size == 1)
+      result.head
+    }
+
+    @tailrec
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      val (currentJobs, _) = stack.top
+      if (currentJobs.isEmpty) {
+        val (_, newChildren) = stack.pop()
+        if (stack.isEmpty) {
+          newChildren
+        } else {
+          val (job :: jobs, doneJobs) = stack.pop()
+          val doneJob = job.rewrite(rewriter, newChildren)
+          stack.push((jobs, doneJobs += doneJob))
+          rec(stack)
+        }
+      } else {
+        val next = currentJobs.head
+        if (stopper(next)) {
+          val (job :: jobs, doneJobs) = stack.pop()
+          stack.push((jobs, doneJobs += job))
+        } else {
+          stack.push((next.childrenWithListsAsSeq.toList, new mutable.MutableList()))
+        }
+        rec(stack)
+      }
+    }
+  }
+
+  def apply(rewriter: RewriterWithArgs, stopper: (AnyRef) => Boolean = _ => false): RewriterWithArgs =
+    new BottomUpWithArgsRewriter(rewriter, stopper)
 }

@@ -29,7 +29,7 @@ class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport 
   test("merges two selections into one") {
     val p1 = propEquality("a", "foo", 12)
     val p2 = propEquality("a", "bar", 33)
-    val lhs = Argument(Set(IdName("a")))(solved)()
+    val lhs = Argument(Set(IdName("a")))(solved)
 
     Selection(Seq(p1),
       Selection(Seq(p2), lhs)(solved))(solved).
@@ -42,7 +42,7 @@ class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val p1 = propEquality("a", "foo", 12)
     val p2 = propEquality("a", "bar", 33)
     val p3 = propEquality("a", "baz", 42)
-    val lhs = Argument(Set(IdName("a")))(solved)()
+    val lhs = Argument(Set(IdName("a")))(solved)
 
     Selection(Seq(p1),
       Selection(Seq(p2),

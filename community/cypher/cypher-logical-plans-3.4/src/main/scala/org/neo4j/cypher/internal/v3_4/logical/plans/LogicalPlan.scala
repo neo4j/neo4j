@@ -71,6 +71,9 @@ abstract class LogicalPlan
 
   override def rememberMe(old: AnyRef): Unit = _id = old.asInstanceOf[LogicalPlan]._id
 
+  // This should only be used for converting old versions of LogicalPlans
+  def setIdTo(id: LogicalPlanId) : Unit = _id = Some(id)
+
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
       if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => (acc :+ plan, Some(identity))

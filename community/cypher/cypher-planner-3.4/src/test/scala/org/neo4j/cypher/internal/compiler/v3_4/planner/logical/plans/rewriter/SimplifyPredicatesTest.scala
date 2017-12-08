@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, LogicalPlan, Sele
 
 class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {
-    val argument: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
+    val argument: LogicalPlan = Argument(Set(IdName("a")))(solved)
     val predicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos))(pos)
     val cleanPredicate: Expression = Equals(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
@@ -38,7 +38,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should not rewrite WHERE x.prop in [1, 2]") {
-    val argument: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
+    val argument: LogicalPlan = Argument(Set(IdName("a")))(solved)
     val collection = ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos), SignedDecimalIntegerLiteral("2")(pos)))(pos)
     val orgPredicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), collection)(pos)
     val selection = Selection(Seq(orgPredicate), argument)(solved)
@@ -47,7 +47,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite WHERE AndedPropertyInequality(x.prop, 1) to WHERE x.prop > 42") {
-    val argument: LogicalPlan = Argument(Set(IdName("x")))(solved)(Map.empty)
+    val argument: LogicalPlan = Argument(Set(IdName("x")))(solved)
     val variable = Variable("x")(pos)
     val property = Property(variable, PropertyKeyName("prop")(pos))(pos)
     val greaterThan = GreaterThan(property, SignedDecimalIntegerLiteral("42")(pos))(pos)

@@ -167,7 +167,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   private def executeInTx(query: String, statement: Statement, parsingBaseState: BaseState, implicitTx: InternalTransaction): InternalExecutionResult = {
     val neo4jtxContext = contextFactory.newContext(EMBEDDED_CONNECTION, implicitTx, query, EMPTY_MAP)
     val txContextWrapper = TransactionalContextWrapper(neo4jtxContext)
-    val planContext = new TransactionBoundPlanContext(txContextWrapper, devNullLogger)
+    val planContext = TransactionBoundPlanContext(txContextWrapper, devNullLogger)
 
     var baseState = parsingBaseState.withStatement(statement)
     val planningContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, planContext, CypherReductionSupport.queryGraphSolver)

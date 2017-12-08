@@ -22,7 +22,7 @@ object CacheCheckResult {
   val empty = CacheCheckResult(isStale = false,0)
 }
 
-trait StatsDivergenceCalculator {
+sealed trait StatsDivergenceCalculator {
   val initialThreshold: Double
   val initialMillis: Long
 

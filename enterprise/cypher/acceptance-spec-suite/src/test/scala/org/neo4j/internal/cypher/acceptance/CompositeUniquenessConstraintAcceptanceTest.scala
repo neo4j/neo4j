@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{Default, V3_4}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{Default, V3_3, V3_4}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
@@ -37,7 +37,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should be able to create and remove single property uniqueness constraint") {
 
-    val testconfiguration = TestConfiguration(Versions(V3_4, Default), Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
+    val testconfiguration = Configs.Procs
     // When
     executeWith(testconfiguration, "CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS UNIQUE")
 
@@ -52,7 +52,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
   }
 
   val singlePropertyUniquenessFailConf =
-    TestConfiguration(Versions(V3_4, Default), Planners(Planners.Default, Planners.Cost), Runtimes.all)
+    TestConfiguration(Versions(V3_4, V3_3, Default), Planners(Planners.Default, Planners.Cost), Runtimes.all)
 
   test("should fail to to create composite uniqueness constraints") {
     // When
