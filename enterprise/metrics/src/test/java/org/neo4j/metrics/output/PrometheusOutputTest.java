@@ -43,7 +43,8 @@ public class PrometheusOutputTest
         PrometheusOutput prometheusOutput =
                 new PrometheusOutput( new HostnamePort( "localhost:8080" ), registry, Mockito.mock( Log.class ) );
 
-        LongConsumer callback = durationMillis -> {
+        LongConsumer callback = durationMillis ->
+        {
             TreeMap<String,Gauge> gauges = new TreeMap<>();
             gauges.put( metricKey, () -> durationMillis );
             prometheusOutput.report( gauges, emptySortedMap(), emptySortedMap(), emptySortedMap(), emptySortedMap() );

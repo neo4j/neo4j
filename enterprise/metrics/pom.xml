@@ -149,11 +149,6 @@
     </dependency>
     <dependency>
       <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient_hotspot</artifactId>
-      <version>0.1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>io.prometheus</groupId>
       <artifactId>simpleclient_dropwizard</artifactId>
       <version>0.1.0</version>
     </dependency>

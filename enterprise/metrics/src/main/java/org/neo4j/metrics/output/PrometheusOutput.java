@@ -28,7 +28,6 @@ import com.codahale.metrics.Timer;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.HTTPServer;
-import io.prometheus.client.hotspot.DefaultExports;
 
 import java.util.Map;
 import java.util.SortedMap;
@@ -60,11 +59,8 @@ public class PrometheusOutput implements Lifecycle, EventReporter
     @Override
     public void init()
     {
-        // Setup neo4j prometheus collector
+        // Setup prometheus collector
         CollectorRegistry.defaultRegistry.register( new DropwizardExports( registry ) );
-
-        // Add additional JVM statistics
-        DefaultExports.initialize();
     }
 
     @Override
