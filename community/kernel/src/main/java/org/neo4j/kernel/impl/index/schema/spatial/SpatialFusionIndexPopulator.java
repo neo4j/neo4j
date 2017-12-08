@@ -1,0 +1,140 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.index.schema.spatial;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexProvider.KnownSpatialIndex;
+import org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexProvider.KnownSpatialIndexFactory;
+import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
+
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
+import static org.neo4j.kernel.impl.index.schema.spatial.SpatialFusionSchemaIndexProvider.combineSamples;
+
+class SpatialFusionIndexPopulator implements IndexPopulator
+{
+    private final long indexId;
+    private final IndexDescriptor descriptor;
+    private final IndexSamplingConfig samplingConfig;
+    private final KnownSpatialIndexFactory indexFactory;
+    private final Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap;
+
+    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig, KnownSpatialIndexFactory indexFactory )
+    {
+        this.indexMap = indexMap;
+        this.indexId = indexId;
+        this.descriptor = descriptor;
+        this.samplingConfig = samplingConfig;
+        this.indexFactory = indexFactory;
+    }
+
+    @Override
+    public void create() throws IOException
+    {
+        for ( KnownSpatialIndex pop : indexMap.values() )
+        {
+            pop.getPopulator(descriptor, samplingConfig).create();
+        }
+    }
+
+    @Override
+    public void drop() throws IOException
+    {
+        forAll( ( entry ) -> ((KnownSpatialIndex) entry).getPopulator( descriptor, samplingConfig ).drop(), indexMap.values().toArray() );
+    }
+
+    @Override
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    {
+        Map<CoordinateReferenceSystem,Collection<IndexEntryUpdate<?>>> batchMap = new HashMap<>();
+        for ( Map.Entry<CoordinateReferenceSystem,KnownSpatialIndex> index : indexMap.entrySet() )
+        {
+            batchMap.put( index.getKey(), new ArrayList<>() );
+        }
+        for ( IndexEntryUpdate<?> update : updates )
+        {
+            select( batchMap, update.values() ).add( update );
+        }
+        for ( Map.Entry<CoordinateReferenceSystem,KnownSpatialIndex> index : indexMap.entrySet() )
+        {
+            index.getValue().getPopulator( descriptor, samplingConfig ).add( batchMap.get( index.getKey() ) );
+        }
+    }
+
+    private <T> T select( Map<CoordinateReferenceSystem,T> instances, Value... values )
+    {
+        assert(values.length == 1);
+        PointValue pointValue = (PointValue) values[0];
+        return instances.get( pointValue.getCoordinateReferenceSystem() );
+    }
+
+    @Override
+    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+            throws IndexEntryConflictException, IOException
+    {
+        forAll( ( entry ) -> ((KnownSpatialIndex) entry).getPopulator( descriptor, samplingConfig ).verifyDeferredConstraints( propertyAccessor ),
+                indexMap.values().toArray() );
+    }
+
+    @Override
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
+    {
+        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, accessor );
+    }
+
+    @Override
+    public void close( boolean populationCompletedSuccessfully ) throws IOException
+    {
+        forAll( ( entry ) -> ((KnownSpatialIndex) entry).getPopulator( descriptor, samplingConfig ).close( populationCompletedSuccessfully ), indexMap.values().toArray() );
+    }
+
+    @Override
+    public void markAsFailed( String failure ) throws IOException
+    {
+        forAll( ( entry ) -> ((KnownSpatialIndex) entry).getPopulator( descriptor, samplingConfig ).markAsFailed( failure ), indexMap.values().toArray() );
+    }
+
+    @Override
+    public void includeSample( IndexEntryUpdate<?> update )
+    {
+        indexFactory.select( indexMap, indexId, update.values() ).getPopulator( descriptor, samplingConfig ).includeSample( update );
+    }
+
+    @Override
+    public IndexSample sampleResult()
+    {
+        return combineSamples( populatorMap.values().stream().map( IndexPopulator::sampleResult ).toArray( IndexSample[]::new ) );
+    }
+}
