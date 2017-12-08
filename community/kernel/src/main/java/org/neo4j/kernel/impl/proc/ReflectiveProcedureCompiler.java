@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -604,7 +604,7 @@ class ReflectiveProcedureCompiler
                 }
                 else
                 {
-                    return new MappingIterator( ((Stream<?>) rs).iterator(), () -> ((Stream<?>) rs).close() );
+                    return new MappingIterator( ((Stream<?>) rs).iterator(), ((Stream<?>) rs)::close );
                 }
             }
             catch ( Throwable throwable )
