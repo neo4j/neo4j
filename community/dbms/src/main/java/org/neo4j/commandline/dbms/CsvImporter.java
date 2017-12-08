@@ -116,7 +116,7 @@ class CsvImporter implements Importer
                 badCollector,
                 configuration.maxNumberOfProcessors(), !ignoreBadRelationships );
 
-        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), System.in, storeDir, logsDir,
+        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), storeDir, logsDir,
                 reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration );
     }
 
