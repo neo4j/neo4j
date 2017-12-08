@@ -159,22 +159,25 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         val isStale = (plan: ExecutionPlan_v3_4) => plan.checkPlanResusability(planContextV3_4.txIdProvider, planContextV3_4.statistics)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
-        def createPlan(): ExecutionPlan_v3_4 = {
-          val logicalPlanStateV3_3 = compiler.planPreparedQuery(preparedQuery, contextV3_3)
-          val logicalPlanStateV3_4 = helpers.as3_4(logicalPlanStateV3_3)
-          LogicalPlanNotifications
-            .checkForNotifications(logicalPlanStateV3_4.maybeLogicalPlan.get, planContextV3_4, configV3_4)
-            .foreach(notificationLoggerV3_4.log)
+        val createPlan: PlanProducer[ExecutionPlan_v3_4] = new PlanProducer[ExecutionPlan_v3_4] {
+          override def produceWithNewTx(tx: TransactionalContextWrapper): ExecutionPlan_v3_4 = ???
 
-          // Here we switch from 3.3 to 3.4
-          val result = createExecPlan.transform(logicalPlanStateV3_4, contextV3_4)
-          result.maybeExecutionPlan.get
+          override def produceWithExistingTX: ExecutionPlan_v3_4 = {
+            val logicalPlanStateV3_3 = compiler.planPreparedQuery(preparedQuery, contextV3_3)
+            val logicalPlanStateV3_4 = helpers.as3_4(logicalPlanStateV3_3)
+            LogicalPlanNotifications
+              .checkForNotifications(logicalPlanStateV3_4.maybeLogicalPlan.get, planContextV3_4, configV3_4)
+              .foreach(notificationLoggerV3_4.log)
+
+            // Here we switch from 3.3 to 3.4
+            val result = createExecPlan.transform(logicalPlanStateV3_4, contextV3_4)
+            result.maybeExecutionPlan.get
+          }
         }
-
         val executionPlan = if (preParsedQuery.debugOptions.isEmpty)
-          cache.getOrElseUpdate(syntacticQuery.statement(), syntacticQuery.queryText, isStale, createPlan())._1
+          cache.getOrElseUpdate(syntacticQuery.statement(), syntacticQuery.queryText, isStale, createPlan)._1
         else
-          createPlan()
+          createPlan.produceWithExistingTX
 
         // Log notifications/warnings from planning
         notificationLoggerV3_3.notifications.map(helpers.as3_4).foreach(notificationLoggerV3_4.log)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, ReplanAsync, ReplanBlocking, Reuse}
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, OkToReuseButShouldSoonBeReplanned, NeedsReplan, FineToReuse}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
@@ -48,13 +48,13 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
       else {
         // We found a matching plan in the cache. let's make sure it's OK to use again.
         checkPlanStillValid(plan) match {
-          case ReplanBlocking(secondsSinceReplan) =>
+          case NeedsReplan(secondsSinceReplan) =>
             val newPlan = produce.produceWithExistingTX
             cacheAccessor.put(cache)(key, newPlan, userKey, secondsSinceReplan)
             (newPlan, true)
-          case ReplanAsync(secondsSinceReplan) =>
-            ???
-          case Reuse =>
+          case OkToReuseButShouldSoonBeReplanned(secondsSinceReplan) =>
+            (plan, false)
+          case FineToReuse =>
             (plan, false)
         }
 

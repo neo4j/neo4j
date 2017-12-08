@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 import java.util.concurrent.TimeUnit.{MILLISECONDS, SECONDS}
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_4.{ReplanBlocking, Reuse, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.compiler.v3_4.{NeedsReplan, FineToReuse, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, GraphStatisticsSnapshot, NodesWithLabelCardinality}
 import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -44,7 +44,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         val cacheCheck = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).checkPlanReusability(transactionIdSupplier(42), stats)
 
-        cacheCheck shouldBe a[ReplanBlocking]
+        cacheCheck shouldBe a[NeedsReplan]
       }
     }
   }
@@ -63,7 +63,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         val cacheCheck = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).checkPlanReusability(transactionIdSupplier(42), stats)
 
-        cacheCheck shouldBe a[ReplanBlocking]
+        cacheCheck shouldBe a[NeedsReplan]
       }
     }
   }
@@ -82,7 +82,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         val cacheCheck = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).checkPlanReusability(transactionIdSupplier(42), stats)
 
-        cacheCheck shouldBe Reuse
+        cacheCheck shouldBe FineToReuse
       }
     }
   }
@@ -101,7 +101,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         val cacheCheck = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).checkPlanReusability(transactionIdSupplier(42), stats)
 
-        cacheCheck shouldBe Reuse
+        cacheCheck shouldBe FineToReuse
       }
     }
   }
@@ -122,7 +122,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         val cacheCheck = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).checkPlanReusability(transactionIdSupplier(17), stats)
 
-        cacheCheck shouldBe Reuse
+        cacheCheck shouldBe FineToReuse
       }
     }
   }
@@ -143,7 +143,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
         val cacheCheck = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint).checkPlanReusability(transactionIdSupplier(42), stats)
 
-        cacheCheck shouldBe Reuse
+        cacheCheck shouldBe FineToReuse
       }
     }
   }
@@ -163,10 +163,10 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
         val reference = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint)
 
         clock.forward(2, SECONDS)
-        reference.checkPlanReusability(transactionIdSupplier(17), stats) shouldBe Reuse
+        reference.checkPlanReusability(transactionIdSupplier(17), stats) shouldBe FineToReuse
 
         clock.forward(500, MILLISECONDS)
-        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe Reuse
+        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe FineToReuse
       }
     }
   }
@@ -184,10 +184,10 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
         val reference = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint)
 
         clock.forward(2, SECONDS)
-        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe Reuse
+        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe FineToReuse
 
         clock.forward(2, SECONDS)
-        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe Reuse
+        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe FineToReuse
       }
     }
   }
@@ -205,14 +205,14 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
         val reference = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint)
 
         clock.forward(2, SECONDS)
-        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe Reuse
+        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe FineToReuse
 
         clock.forward(100, SECONDS)
         val result = reference.checkPlanReusability(transactionIdSupplier(73), stats)
         if (name == StatsDivergenceCalculator.none)
-          result shouldBe Reuse
+          result shouldBe FineToReuse
         else
-          result shouldBe a[ReplanBlocking]
+          result shouldBe a[NeedsReplan]
       }
     }
   }
@@ -230,14 +230,14 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
         val reference = new PlanFingerprintReference(clock, divergenceCalculator, fingerprint)
 
         clock.forward(2, SECONDS)
-        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe Reuse
+        reference.checkPlanReusability(transactionIdSupplier(23), stats) shouldBe FineToReuse
 
         clock.forward(100, SECONDS)
         val result = reference.checkPlanReusability(transactionIdSupplier(73), stats)
         if (name == StatsDivergenceCalculator.none)
-          result shouldBe Reuse
+          result shouldBe FineToReuse
         else
-          result shouldBe a[ReplanBlocking]
+          result shouldBe a[NeedsReplan]
       }
     }
   }

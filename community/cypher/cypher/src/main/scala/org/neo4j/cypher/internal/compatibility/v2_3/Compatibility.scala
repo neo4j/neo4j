@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, Ex
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
-import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, ReplanBlocking, Reuse}
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, NeedsReplan, FineToReuse}
 import org.neo4j.cypher.internal.frontend.v3_4
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
@@ -127,9 +127,9 @@ trait Compatibility {
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult = {
       val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
       if (stale)
-        ReplanBlocking(0)
+        NeedsReplan(0)
       else
-        Reuse
+        FineToReuse
     }
 
     override val plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])

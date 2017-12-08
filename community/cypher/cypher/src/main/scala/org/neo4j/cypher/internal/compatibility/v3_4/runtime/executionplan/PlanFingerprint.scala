@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, ReplanBlocking, Reuse, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, NeedsReplan, FineToReuse, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, GraphStatisticsSnapshot}
 
 case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot) {
@@ -34,7 +34,7 @@ class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculat
                                private var fingerprint: Option[PlanFingerprint]) {
 
   def checkPlanReusability(lastCommittedTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = {
-    fingerprint.fold[CacheCheckResult](Reuse) { f =>
+    fingerprint.fold[CacheCheckResult](FineToReuse) { f =>
       lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
@@ -50,9 +50,9 @@ class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculat
 
       if(stale) {
         val secondsSinceReplan = ((currentTimeMillis - f.creationTimeMillis) / 1000).toInt
-        ReplanBlocking(secondsSinceReplan)
+        NeedsReplan(secondsSinceReplan)
       } else
-        Reuse
+        FineToReuse
     }
   }
 
