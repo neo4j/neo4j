@@ -43,22 +43,15 @@ class PersistentSnapshotDownloader implements Runnable
 
     PersistentSnapshotDownloader( LeaderLocator leaderLocator,
             CommandApplicationProcess applicationProcess, CoreStateDownloader downloader, Log log,
-            TimeoutStrategy.Timeout timeout )
+            TimeoutStrategy.Timeout pauseStrategy )
     {
         this.applicationProcess = applicationProcess;
         this.leaderLocator = leaderLocator;
         this.downloader = downloader;
         this.log = log;
-        this.timeout = timeout;
+        this.timeout = pauseStrategy;
         this.state = State.INITIATED;
         this.keepRunning = true;
-    }
-
-    PersistentSnapshotDownloader( LeaderLocator leaderLocator,
-            CommandApplicationProcess applicationProcess, CoreStateDownloader downloader, Log log )
-    {
-        this( leaderLocator, applicationProcess, downloader, log,
-                new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS ).newTimeout() );
     }
 
     private enum State

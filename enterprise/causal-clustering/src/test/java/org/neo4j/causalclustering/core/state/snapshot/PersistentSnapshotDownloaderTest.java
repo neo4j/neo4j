@@ -29,20 +29,16 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
-import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.function.Predicates;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -62,7 +58,8 @@ public class PersistentSnapshotDownloaderTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( someMember );
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log );
+                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
+                        new NoTimeout() );
 
         // when
         persistentSnapshotDownloader.run();
@@ -94,7 +91,8 @@ public class PersistentSnapshotDownloaderTest
         Thread thread = new Thread( persistentSnapshotDownloader );
         thread.start();
         awaitOneIteration( timeout );
-        thread.stop();
+        thread.interrupt();
+        thread.join();
 
         // then
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
@@ -152,7 +150,7 @@ public class PersistentSnapshotDownloaderTest
         // then
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
-        assertEquals( 3, timeout.increments );
+        assertEquals( 3, timeout.currentCount() );
         assertTrue( persistentSnapshotDownloader.hasCompleted() );
     }
 
@@ -167,14 +165,15 @@ public class PersistentSnapshotDownloaderTest
 
         final Log log = mock( Log.class );
         PersistentSnapshotDownloader persistentSnapshotDownloader =
-                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log );
+                new PersistentSnapshotDownloader( leaderLocator, applicationProcess, coreStateDownloader, log,
+                        new NoTimeout() );
 
         // when
         persistentSnapshotDownloader.run();
         persistentSnapshotDownloader.run();
 
         // then
-        verify( coreStateDownloader, times(1) ).downloadSnapshot( someMember );
+        verify( coreStateDownloader, times( 1 ) ).downloadSnapshot( someMember );
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
         verify( applicationProcess, times( 1 ) ).resumeApplier( OPERATION_NAME );
     }
@@ -210,7 +209,7 @@ public class PersistentSnapshotDownloaderTest
 
     private void awaitOneIteration( NoTimeout timeout ) throws TimeoutException
     {
-        Predicates.await( () -> timeout.increments > 0, 1, TimeUnit.SECONDS );
+        Predicates.await( () -> timeout.currentCount() > 0, 1, TimeUnit.SECONDS );
     }
 
     private class EventuallySuccessfulDownloader extends CoreStateDownloader
@@ -235,20 +234,4 @@ public class PersistentSnapshotDownloaderTest
         }
     }
 
-    private class NoTimeout implements TimeoutStrategy.Timeout
-    {
-        private int increments = 0;
-
-        @Override
-        public long getMillis()
-        {
-            return 0;
-        }
-
-        @Override
-        public void increment()
-        {
-            increments++;
-        }
-    }
 }

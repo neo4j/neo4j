@@ -78,7 +78,7 @@ public class CoreStateDownloaderServiceTest
         final Log log = mock( Log.class );
         CoreStateDownloaderService coreStateDownloaderService =
                 new CoreStateDownloaderService( neo4jJobScheduler, coreStateDownloader, applicationProcess,
-                        logProvider( log ) );
+                        logProvider( log ), new NoTimeout() );
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( someMember );
         coreStateDownloaderService.scheduleDownload( leaderLocator );
@@ -100,7 +100,7 @@ public class CoreStateDownloaderServiceTest
         final Log log = mock( Log.class );
         CoreStateDownloaderService coreStateDownloaderService =
                 new CoreStateDownloaderService( countingJobScheduler, coreStateDownloader, applicationProcess,
-                        logProvider( log ) );
+                        logProvider( log ), new NoTimeout() );
 
         AtomicBoolean availableLeader = new AtomicBoolean( false );
 
@@ -113,54 +113,6 @@ public class CoreStateDownloaderServiceTest
         availableLeader.set( true );
 
         assertEquals( 1, schedules.get() );
-    }
-
-    @Test
-    public void shouldRunConcurrentDownloads() throws Throwable
-    {
-        // given
-        AtomicInteger schedules = new AtomicInteger();
-        CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, neo4jJobScheduler );
-        CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
-        doThrow( StoreCopyFailedException.class ).when( coreStateDownloader ).downloadSnapshot( someMember );
-        final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
-
-        final Log log = mock( Log.class );
-        CoreStateDownloaderService coreStateDownloaderService =
-                new CoreStateDownloaderService( countingJobScheduler, coreStateDownloader, applicationProcess,
-                        logProvider( log ) );
-
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( someMember );
-
-        // when
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-        Predicates.await( () ->
-        {
-            try
-            {
-                verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
-                return true;
-            }
-            catch ( Throwable t )
-            {
-                return false;
-            }
-        }, 1, TimeUnit.SECONDS );
-        coreStateDownloaderService.stop();
-
-        // then
-        waitForApplierToResume( applicationProcess );
-
-        // given
-        doNothing().when( coreStateDownloader ).downloadSnapshot( someMember );
-
-        // when
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-        waitForApplierToResume( applicationProcess );
-
-        //then
-        assertEquals( 2, schedules.get() );
     }
 
     private void waitForApplierToResume( CommandApplicationProcess applicationProcess ) throws TimeoutException

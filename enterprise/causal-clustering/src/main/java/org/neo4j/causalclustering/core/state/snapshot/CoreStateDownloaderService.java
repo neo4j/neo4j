@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.state.snapshot;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
+import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -34,23 +35,27 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     private final CoreStateDownloader downloader;
     private final CommandApplicationProcess applicationProcess;
     private final Log log;
+    private final TimeoutStrategy.Timeout downloaderPauseStrategy;
     private PersistentSnapshotDownloader currentJob = null;
 
     public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader,
             CommandApplicationProcess applicationProcess,
-            LogProvider logProvider )
+            LogProvider logProvider,
+            TimeoutStrategy.Timeout downloaderPauseStrategy )
     {
         this.jobScheduler = jobScheduler;
         this.downloader = downloader;
         this.applicationProcess = applicationProcess;
         this.log = logProvider.getLog( getClass() );
+        this.downloaderPauseStrategy = downloaderPauseStrategy;
     }
 
     public synchronized void scheduleDownload( LeaderLocator leaderLocator )
     {
         if ( currentJob == null || currentJob.hasCompleted() )
         {
-            currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log );
+            currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log,
+                    downloaderPauseStrategy );
             jobScheduler.schedule( downloadSnapshot, currentJob );
         }
     }
