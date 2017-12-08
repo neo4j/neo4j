@@ -26,16 +26,22 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 
+import static java.lang.String.format;
+
 /**
  * Keeps data about how relationships are distributed between different types.
  */
-public class RelationshipTypeDistribution implements Iterable<Pair<Object,Long>>
+public class DataStatistics implements Iterable<Pair<Object,Long>>
 {
     // keys can be either String or Integer
     private final Pair<Object,Long>[] sortedTypes;
+    private final long nodeCount;
+    private final long propertyCount;
 
-    public RelationshipTypeDistribution( Pair<Object,Long>[] sortedTypes )
+    public DataStatistics( long nodeCount, long propertyCount, Pair<Object,Long>[] sortedTypes )
     {
+        this.nodeCount = nodeCount;
+        this.propertyCount = propertyCount;
         this.sortedTypes = sortedTypes;
     }
 
@@ -63,5 +69,31 @@ public class RelationshipTypeDistribution implements Iterable<Pair<Object,Long>>
             types.add( get( i ).first() );
         }
         return types;
+    }
+
+    public long getNodeCount()
+    {
+        return nodeCount;
+    }
+
+    public long getPropertyCount()
+    {
+        return propertyCount;
+    }
+
+    public long getRelationshipCount()
+    {
+        long sum = 0;
+        for ( Pair<Object,Long> type : sortedTypes )
+        {
+            sum += type.other();
+        }
+        return sum;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Imported:%n  %d nodes%n  %d relationships%n  %d properties", nodeCount, getRelationshipCount(), propertyCount );
     }
 }

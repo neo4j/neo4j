@@ -64,6 +64,21 @@ public abstract class InputEntity implements SourceTraceability
         return properties;
     }
 
+    public int propertyCount()
+    {
+        return properties.length / 2;
+    }
+
+    public Object propertyKey( int i )
+    {
+        return properties[i * 2];
+    }
+
+    public Object propertyValue( int i )
+    {
+        return properties[i * 2 + 1];
+    }
+
     /**
      * Adds properties to existing properties in this entity. Properties that exist
      * @param keyValuePairs

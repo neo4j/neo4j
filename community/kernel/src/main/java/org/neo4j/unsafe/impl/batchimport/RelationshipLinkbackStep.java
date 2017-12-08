@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 
@@ -36,9 +37,10 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_
 public class RelationshipLinkbackStep extends RelationshipLinkStep
 {
     public RelationshipLinkbackStep( StageControl control, Configuration config,
-            NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes )
+            NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes,
+            StatsProvider... additionalStatsProvider )
     {
-        super( control, config, cache, filter, nodeTypes, false );
+        super( control, config, cache, filter, nodeTypes, false, additionalStatsProvider );
     }
 
     @Override

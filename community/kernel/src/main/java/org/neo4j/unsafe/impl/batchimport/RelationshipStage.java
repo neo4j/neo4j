@@ -64,7 +64,7 @@ public class RelationshipStage extends Stage
     public RelationshipStage( Configuration config, IoMonitor writeMonitor,
             InputIterable<InputRelationship> relationships, IdMapper idMapper,
             Collector badCollector, InputCache inputCache,
-            BatchingNeoStores neoStore, EntityStoreUpdaterStep.Monitor storeUpdateMonitor ) throws IOException
+            BatchingNeoStores neoStore, CountingStoreUpdateMonitor storeUpdateMonitor ) throws IOException
     {
         super( NAME, null, config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(),
@@ -76,7 +76,7 @@ public class RelationshipStage extends Stage
 
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
-        add( typer = new RelationshipTypeCheckerStep( control(), config, neoStore.getRelationshipTypeRepository() ) );
+        add( typer = new RelationshipTypeCheckerStep( control(), config, neoStore.getRelationshipTypeRepository(), storeUpdateMonitor ) );
         add( new AssignRelationshipIdBatchStep( control(), config, 0 ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new RelationshipRecordPreparationStep( control(), config,
@@ -86,7 +86,7 @@ public class RelationshipStage extends Stage
                 writeMonitor, storeUpdateMonitor ) );
     }
 
-    public RelationshipTypeDistribution getDistribution()
+    public DataStatistics getDistribution()
     {
         return typer.getDistribution();
     }

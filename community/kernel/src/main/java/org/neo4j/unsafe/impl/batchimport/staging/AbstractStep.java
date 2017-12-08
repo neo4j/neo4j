@@ -72,7 +72,7 @@ public abstract class AbstractStep<T> implements Step<T>
     protected final MovingAverage totalProcessingTime;
     protected long startTime;
     protected long endTime;
-    private final List<StatsProvider> additionalStatsProvider;
+    protected final List<StatsProvider> additionalStatsProvider;
     protected final Runnable healthChecker = this::assertHealthy;
     protected final Configuration config;
 

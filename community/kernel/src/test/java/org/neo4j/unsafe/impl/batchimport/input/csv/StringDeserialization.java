@@ -17,27 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.lang.reflect.Array;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 /**
  * {@link Deserialization} that writes the values to a {@link StringBuilder}, suitable for piping the
  * data straight down to a .csv file.
  */
-class StringDeserialization implements Deserialization<String>
+public class StringDeserialization implements Deserialization<String>
 {
     private final StringBuilder builder = new StringBuilder();
     private final Configuration config;
     private int field;
 
-    StringDeserialization( Configuration config )
+    public StringDeserialization( Configuration config )
     {
         this.config = config;
     }

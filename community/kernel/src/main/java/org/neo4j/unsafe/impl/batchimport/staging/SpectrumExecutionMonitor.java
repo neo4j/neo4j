@@ -32,6 +32,7 @@ import static java.lang.Math.pow;
 
 import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.helpers.collection.Iterables.last;
 
 /**
  * This is supposed to be a beautiful one-line {@link ExecutionMonitor}, looking like:
@@ -93,11 +94,21 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     public void check( StageExecution execution )
     {
         StringBuilder builder = new StringBuilder();
-        printSpectrum( builder, execution, width );
+        printSpectrum( builder, execution, width, DetailLevel.IMPORTANT );
+
+        // add delta
+        long progress = last( execution.steps() ).stats().stat( Keys.done_batches ).asLong() * execution.getConfig().batchSize();
+        long currentDelta = progress - lastProgress;
+        builder.append( " ∆" + fitInProgress( currentDelta ) );
+
+        // and remember progress to compare with next check
+        lastProgress = progress;
+
+        // print it (overwriting the previous contents on this console line)
         out.print( "\r" + builder );
     }
 
-    private void printSpectrum( StringBuilder builder, StageExecution execution, int width )
+    public static void printSpectrum( StringBuilder builder, StageExecution execution, int width, DetailLevel additionalStatsLevel )
     {
         long[] values = values( execution );
         long total = total( values );
@@ -129,7 +140,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
                 boolean isBottleNeck = bottleNeck.first() == step;
                 String name =
                         (isBottleNeck ? "*" : "") +
-                        stats.toString( DetailLevel.IMPORTANT ) + (step.processors( 0 ) > 1
+                        stats.toString( additionalStatsLevel ) + (step.processors( 0 ) > 1
                         ? "(" + step.processors( 0 ) + ")"
                         : "");
                 int charIndex = 0; // negative value "delays" the text, i.e. pushes it to the right
@@ -151,10 +162,6 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
         builder.append( "]" ).append( fitInProgress( progress ) );
-
-        long currentDelta = progress - lastProgress;
-        builder.append( " ∆" + fitInProgress( currentDelta ) );
-        lastProgress = progress;
     }
 
     private static String fitInProgress( long value )
@@ -204,7 +211,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         return weight;
     }
 
-    private long[] values( StageExecution execution )
+    private static long[] values( StageExecution execution )
     {
         long[] values = new long[execution.size()];
         int i = 0;
@@ -215,7 +222,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         return values;
     }
 
-    private long total( long[] values )
+    private static long total( long[] values )
     {
         long total = 0;
         for ( long value : values )
@@ -225,7 +232,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         return total;
     }
 
-    private long avg( StatsProvider step )
+    private static long avg( StatsProvider step )
     {
         return step.stat( Keys.avg_processing_time ).asLong();
     }

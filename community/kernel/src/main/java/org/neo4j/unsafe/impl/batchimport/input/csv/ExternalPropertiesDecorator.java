@@ -19,7 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.io.IOException;
+
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -61,12 +64,13 @@ public class ExternalPropertiesDecorator implements Decorator<InputNode>
     /**
      * @param headerFactory creates a {@link Header} that will specify which field is the {@link Type#ID id field}
      * and which properties to extract. All other should be {@link Type#IGNORE ignored}. I think.
+     * @throws IOException on I/O error.
      */
     public ExternalPropertiesDecorator( DataFactory<InputNode> data, Header.Factory headerFactory,
-            Configuration config, IdType idType, UpdateBehaviour updateBehaviour, Collector badCollector )
+            Configuration config, IdType idType, UpdateBehaviour updateBehaviour, Collector badCollector ) throws IOException
     {
         this.updateBehaviour = updateBehaviour;
-        CharSeeker dataStream = charSeeker( data.create( config ).stream(), config, true );
+        CharSeeker dataStream = charSeeker( new MultiReadable( data.create( config ).stream() ), config, true );
         Header header = headerFactory.create( dataStream, config, idType );
         this.deserializer = new InputEntityDeserializer<>( header, dataStream, config.delimiter(),
                 new InputNodeDeserialization( header, dataStream, new Groups(), idType.idsAreExternal() ),

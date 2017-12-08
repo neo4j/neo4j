@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.time.Clock;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.time.Clocks;
 
 /**
@@ -44,6 +45,15 @@ public class MultiExecutionMonitor implements ExecutionMonitor
         this.monitors = monitors;
         this.endTimes = new long[monitors.length];
         fillEndTimes();
+    }
+
+    @Override
+    public void initialize( DependencyResolver dependencyResolver )
+    {
+        for ( ExecutionMonitor monitor : monitors )
+        {
+            monitor.initialize( dependencyResolver );
+        }
     }
 
     @Override

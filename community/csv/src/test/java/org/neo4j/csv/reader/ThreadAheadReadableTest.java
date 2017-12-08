@@ -103,10 +103,12 @@ public class ThreadAheadReadableTest
         private int bytesRead;
         private volatile int readsCompleted;
         private final CharReadable actual;
+        private final long bytes;
 
         TrackingReader( int length )
         {
-            this.actual = Readables.wrap( new CharArrayReader( chars( 0, length ) ) );
+            this.bytes = length * 2;
+            this.actual = Readables.wrap( new CharArrayReader( chars( 0, length ) ), length * 2 );
         }
 
         @Override
@@ -158,6 +160,12 @@ public class ThreadAheadReadableTest
         public String sourceDescription()
         {
             return getClass().getSimpleName();
+        }
+
+        @Override
+        public long length()
+        {
+            return bytes;
         }
     }
 

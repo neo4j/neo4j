@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.junit.Test;
 
-import java.io.StringReader;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -127,7 +126,7 @@ public class ExternalPropertiesDecoratorTest
 
     private Supplier<CharReadable> readable( final String data )
     {
-        return () -> Readables.wrap( new StringReader( data ) );
+        return () -> Readables.wrap( data );
     }
 
     private Overridden config()

@@ -74,34 +74,27 @@ public class Stage
     public void close()
     {
         Exception exception = null;
-        try
+        for ( Step<?> step : pipeline )
         {
-            for ( Step<?> step : pipeline )
+            try
             {
-                try
-                {
-                    step.close();
-                }
-                catch ( Exception e )
-                {
-                    if ( exception == null )
-                    {
-                        exception = e;
-                    }
-                    else
-                    {
-                        exception.addSuppressed( e );
-                    }
-                }
+                step.close();
             }
-            if ( exception != null )
+            catch ( Exception e )
             {
-                throw launderedException( exception );
+                if ( exception == null )
+                {
+                    exception = e;
+                }
+                else
+                {
+                    exception.addSuppressed( e );
+                }
             }
         }
-        finally
+        if ( exception != null )
         {
-            pipeline.clear();
+            throw launderedException( exception );
         }
     }
 }

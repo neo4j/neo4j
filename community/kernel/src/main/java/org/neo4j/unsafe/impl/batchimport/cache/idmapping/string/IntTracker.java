@@ -29,6 +29,7 @@ import static org.neo4j.helpers.Numbers.safeCastLongToInt;
  */
 public class IntTracker extends AbstractTracker<IntArray>
 {
+    static final int ID_SIZE = Integer.BYTES;
     static final int DEFAULT_VALUE = -1;
 
     public IntTracker( IntArray array )

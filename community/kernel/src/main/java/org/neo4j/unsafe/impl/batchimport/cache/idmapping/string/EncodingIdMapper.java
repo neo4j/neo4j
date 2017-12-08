@@ -867,4 +867,11 @@ public class EncodingIdMapper implements IdMapper
         }
         collisionNodeIdCache.close();
     }
+
+    @Override
+    public long calculateMemoryUsage( long numberOfNodes )
+    {
+        int trackerSize = numberOfNodes > TrackerFactories.HIGHEST_ID_FOR_SMALL_TRACKER ? BigIdTracker.ID_SIZE : IntTracker.ID_SIZE;
+        return numberOfNodes * (Long.BYTES /*data*/ + trackerSize /*tracker*/);
+    }
 }

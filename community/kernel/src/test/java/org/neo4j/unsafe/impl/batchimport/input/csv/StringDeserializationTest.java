@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.junit.Test;
 
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 import static org.junit.Assert.assertEquals;
 
