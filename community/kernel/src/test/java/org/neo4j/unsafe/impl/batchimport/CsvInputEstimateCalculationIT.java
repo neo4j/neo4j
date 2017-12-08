@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.apache.commons.io.Charsets;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -143,17 +144,19 @@ public class CsvInputEstimateCalculationIT
     private Input generateData() throws IOException
     {
         List<DataFactory<InputNode>> nodeData = new ArrayList<>();
+        MutableLong start = new MutableLong();
         nodeData.add( generateData( defaultFormatNodeFileHeader(),
-                NODE_COUNT / 3, NODE_COUNT, ":ID", "nodes-1.csv" ) );
+                start, NODE_COUNT / 3, NODE_COUNT, ":ID", "nodes-1.csv" ) );
         nodeData.add( generateData( defaultFormatNodeFileHeader(),
-                NODE_COUNT / 3, NODE_COUNT, ":ID,:LABEL,name:String,yearOfBirth:int", "nodes-2.csv" ) );
+                start, NODE_COUNT / 3, NODE_COUNT, ":ID,:LABEL,name:String,yearOfBirth:int", "nodes-2.csv" ) );
         nodeData.add( generateData( defaultFormatNodeFileHeader(),
-                NODE_COUNT / 3, NODE_COUNT, ":ID,name:String,yearOfBirth:int,other", "nodes-3.csv" ) );
+                start, NODE_COUNT - start.longValue(), NODE_COUNT, ":ID,name:String,yearOfBirth:int,other", "nodes-3.csv" ) );
         List<DataFactory<InputRelationship>> relationshipData = new ArrayList<>();
-        relationshipData.add( generateData( defaultFormatRelationshipFileHeader(), RELATIONSHIP_COUNT / 2, NODE_COUNT,
+        start.setValue( 0 );
+        relationshipData.add( generateData( defaultFormatRelationshipFileHeader(), start, RELATIONSHIP_COUNT / 2, NODE_COUNT,
                 ":START_ID,:TYPE,:END_ID", "relationships-1.csv" ) );
-        relationshipData.add( generateData( defaultFormatRelationshipFileHeader(), RELATIONSHIP_COUNT / 2, NODE_COUNT,
-                ":START_ID,:TYPE,:END_ID,prop1,prop2", "relationships-2.csv" ) );
+        relationshipData.add( generateData( defaultFormatRelationshipFileHeader(), start, RELATIONSHIP_COUNT - start.longValue(),
+                NODE_COUNT, ":START_ID,:TYPE,:END_ID,prop1,prop2", "relationships-2.csv" ) );
         return new CsvInput( nodeData, defaultFormatNodeFileHeader(), relationshipData, defaultFormatRelationshipFileHeader(),
                 IdType.INTEGER, COMMAS, Collector.EMPTY, 1, false );
     }
@@ -181,13 +184,13 @@ public class CsvInputEstimateCalculationIT
         assertThat( expected / 10, greaterThan( diff ) );
     }
 
-    private <ENTITY extends InputEntity> DataFactory<ENTITY> generateData( Header.Factory factory, long count,
+    private <ENTITY extends InputEntity> DataFactory<ENTITY> generateData( Header.Factory factory, MutableLong start, long count,
             long nodeCount, String headerString, String fileName ) throws IOException
     {
         File file = directory.file( fileName );
         Header header = factory.create( charSeeker( wrap( headerString ), COMMAS, false ), COMMAS, IdType.INTEGER );
         Distribution<String> distribution = new Distribution<>( new String[] {"Token"} );
-        SimpleDataGeneratorBatch<String> generator = new SimpleDataGeneratorBatch<>( header, 0, random.seed(), nodeCount,
+        SimpleDataGeneratorBatch<String> generator = new SimpleDataGeneratorBatch<>( header, start.longValue(), random.seed(), nodeCount,
                 distribution, distribution, new StringDeserialization( COMMAS ), new String[toIntExact( count )], 0, 0 );
         try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( file ) ) ) )
         {
@@ -197,6 +200,7 @@ public class CsvInputEstimateCalculationIT
                 out.println( entity );
             }
         }
+        start.add( count );
         return DataFactories.data( InputEntityDecorators.noDecorator(), Charsets.UTF_8, file );
     }
 }
