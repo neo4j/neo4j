@@ -28,8 +28,8 @@ import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering._
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, _}
