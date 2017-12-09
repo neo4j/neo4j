@@ -53,6 +53,7 @@ class PageList
     private static final boolean forceSlowMemoryClear = flag( PageList.class, "forceSlowMemoryClear", false );
 
     public static final int META_DATA_BYTES_PER_PAGE = 32;
+    public static final long MAX_PAGES = Integer.MAX_VALUE;
     private static final int OFFSET_LOCK_WORD = 0; // 8 bytes
     private static final int OFFSET_ADDRESS = 8; // 8 bytes
     private static final int OFFSET_FILE_PAGE_ID = 16; // 8 bytes

@@ -299,10 +299,7 @@ public class MuninnPageCache implements PageCache
                     "Page cache must have at least %s pages (%s bytes of memory), but was given %s pages.",
                     minimumPageCount, minimumPageCount * memoryPerPage, maxPages ) );
         }
-        if ( maxPages > Integer.MAX_VALUE )
-        {
-            return Integer.MAX_VALUE;
-        }
+        maxPages = Math.min( maxPages, PageList.MAX_PAGES );
         return Math.toIntExact( maxPages );
     }
 
