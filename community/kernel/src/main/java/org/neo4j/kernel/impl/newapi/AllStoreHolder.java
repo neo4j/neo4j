@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -195,7 +196,14 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
     {
-        return null;
+        sharedOptimisticLock( ResourceTypes.LABEL, labelId );
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetForLabel( labelId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            return ktx.txState().constraintsChangesForLabel( labelId ).apply( constraints );
+        }
+        return constraints;
     }
 
     @Override

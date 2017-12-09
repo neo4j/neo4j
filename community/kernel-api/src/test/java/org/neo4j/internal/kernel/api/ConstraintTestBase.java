@@ -19,23 +19,39 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.hasSize;
+import static org.neo4j.helpers.collection.Iterators.asList;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     protected abstract LabelSchemaDescriptor labelSchemaDescriptor( int labelId, int... propertyIds );
+
+    @Before
+    public void setup()
+    {
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            for ( ConstraintDefinition definition : graphDb.schema().getConstraints() )
+            {
+                definition.drop();
+            }
+            tx.success();
+        }
+
+    }
 
     @Test
     public void shouldFindConstraintsBySchema() throws Exception
@@ -54,14 +70,40 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             LabelSchemaDescriptor descriptor = labelSchemaDescriptor( label, prop );
 
             //WHEN
-            Iterator<ConstraintDescriptor> constraints =
-                    tx.schemaRead().constraintsGetForSchema( descriptor );
+            List<ConstraintDescriptor> constraints =
+                    asList( tx.schemaRead().constraintsGetForSchema( descriptor ) );
 
             // THEN
-            ConstraintDescriptor next = constraints.next();
-            assertTrue( next.enforcesUniqueness() );
-            assertThat( next.schema(), equalTo( descriptor ) );
-            assertFalse( constraints.hasNext() );
+            assertThat( constraints, hasSize( 1 ) );
+            assertThat( constraints.get( 0 ).schema().getPropertyIds()[0], equalTo( prop) );
+        }
+    }
+
+    @Test
+    public void shouldFindConstraintsByLabel() throws Exception
+    {
+        // GIVEN
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
+            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int label = tx.tokenWrite().labelGetOrCreateForName( "FOO" );
+            int prop1 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+            int prop2 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+
+            //WHEN
+            List<ConstraintDescriptor> constraints = asList(
+                    tx.schemaRead().constraintsGetForLabel( label ) );
+
+            // THEN
+            assertThat( constraints, hasSize( 2 ) );
+            assertThat( constraints.get( 0 ).schema().getPropertyIds(), equalTo( new int[]{prop1} ) );
+            assertThat( constraints.get( 1 ).schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
         }
     }
 }

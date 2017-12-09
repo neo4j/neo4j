@@ -238,4 +238,14 @@ public class OperationsLockTest
         // THEN
         verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
     }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
+    {
+        // WHEN
+        allStoreHolder.constraintsGetForLabel( 42 );
+
+        // THEN
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 42 );
+    }
 }
