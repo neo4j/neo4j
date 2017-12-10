@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -247,5 +248,15 @@ public class OperationsLockTest
 
         // THEN
         verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 42 );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints() throws Exception
+    {
+        // WHEN
+        allStoreHolder.constraintExists( ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
+
+        // THEN
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 123 );
     }
 }

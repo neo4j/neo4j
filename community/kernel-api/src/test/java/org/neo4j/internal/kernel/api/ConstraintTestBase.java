@@ -32,12 +32,16 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     protected abstract LabelSchemaDescriptor labelSchemaDescriptor( int labelId, int... propertyIds );
+
+    protected abstract ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds );
 
     @Before
     public void setup()
@@ -102,8 +106,32 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
             // THEN
             assertThat( constraints, hasSize( 2 ) );
-            assertThat( constraints.get( 0 ).schema().getPropertyIds(), equalTo( new int[]{prop1} ) );
-            assertThat( constraints.get( 1 ).schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleCheckExistenceOfConstraints() throws Exception
+    {
+        // GIVEN
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+
+            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
+            ConstraintDefinition dropped =
+                    graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
+            dropped.drop();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int label = tx.tokenWrite().labelGetOrCreateForName( "FOO" );
+            int prop1 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+            int prop2 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+
+            // THEN
+            assertTrue( tx.schemaRead().constraintExists( uniqueConstraintDescriptor( label, prop1 ) ) );
+            assertFalse( tx.schemaRead().constraintExists( uniqueConstraintDescriptor( label, prop2 ) ) );
         }
     }
 }

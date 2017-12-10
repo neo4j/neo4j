@@ -59,6 +59,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
@@ -190,7 +191,18 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public boolean constraintExists( ConstraintDescriptor descriptor )
     {
-        return false;
+        SchemaDescriptor schema = descriptor.schema();
+        sharedOptimisticLock( schema.keyType(), schema.keyId() );
+        ktx.assertOpen();
+        boolean inStore = storeReadLayer.constraintExists( descriptor );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<ConstraintDescriptor> diffSet =
+                    ktx.txState().constraintsChangesForSchema( descriptor.schema() );
+            return diffSet.isAdded( descriptor ) || (inStore && !diffSet.isRemoved( descriptor ));
+        }
+
+        return inStore;
     }
 
     @Override
