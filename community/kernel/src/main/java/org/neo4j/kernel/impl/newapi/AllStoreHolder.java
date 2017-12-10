@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.Token;
@@ -216,6 +217,23 @@ public class AllStoreHolder extends Read implements Token
             return ktx.txState().constraintsChangesForLabel( labelId ).apply( constraints );
         }
         return constraints;
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetAll()
+    {
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetAll();
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            constraints = ktx.txState().constraintsChanges().apply( constraints );
+        }
+        return Iterators.map( constraintDescriptor ->
+        {
+            SchemaDescriptor schema = constraintDescriptor.schema();
+            ktx.locks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.keyId() );
+            return constraintDescriptor;
+        }, constraints );
     }
 
     @Override

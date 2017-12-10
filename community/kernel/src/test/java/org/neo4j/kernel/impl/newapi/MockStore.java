@@ -382,4 +382,10 @@ public class MockStore extends Read implements TestRule
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetAll()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
 }

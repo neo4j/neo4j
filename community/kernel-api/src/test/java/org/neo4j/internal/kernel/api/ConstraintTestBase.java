@@ -97,8 +97,6 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         try ( Transaction tx = session.beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "FOO" );
-            int prop1 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
-            int prop2 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
 
             //WHEN
             List<ConstraintDescriptor> constraints = asList(
@@ -132,6 +130,28 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             // THEN
             assertTrue( tx.schemaRead().constraintExists( uniqueConstraintDescriptor( label, prop1 ) ) );
             assertFalse( tx.schemaRead().constraintExists( uniqueConstraintDescriptor( label, prop2 ) ) );
+        }
+    }
+
+    @Test
+    public void shouldFindAllConstraints() throws Exception
+    {
+        // GIVEN
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
+            graphDb.schema().constraintFor( Label.label( "BAR" ) ).assertPropertyIsUnique( "prop2" ).create();
+            graphDb.schema().constraintFor( Label.label( "BAZ" ) ).assertPropertyIsUnique( "prop3" ).create();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            //WHEN
+            List<ConstraintDescriptor> constraints = asList( tx.schemaRead().constraintsGetAll( ) );
+
+            // THEN
+            assertThat( constraints, hasSize( 3 ) );
         }
     }
 }

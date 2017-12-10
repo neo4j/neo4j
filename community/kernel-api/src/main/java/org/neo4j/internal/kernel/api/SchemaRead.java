@@ -58,4 +58,10 @@ public interface SchemaRead
      * @return All constraints for the given label
      */
     Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
+
+    /**
+     * Find all constraints in the database
+     * @return An iterator of all the constraints in the database.
+     */
+    Iterator<ConstraintDescriptor> constraintsGetAll( );
 }
