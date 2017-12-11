@@ -23,7 +23,7 @@ import org.neo4j.causalclustering.helper.TimeoutStrategy;
 
 class NoTimeout implements TimeoutStrategy.Timeout
 {
-    private int increments = 0;
+    private int increments;
 
     @Override
     public long getMillis()
