@@ -58,7 +58,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
   test("should notify when doing LoadCsv on top of large label scan") {
     val loadCsv =
       LoadCSV(
-        Argument()(solved)(),
+        Argument()(solved),
         url,
         IdName("foo"),
         HasHeaders,
@@ -77,7 +77,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
   test("should not notify when doing LoadCsv on top of a small label scan") {
     val loadCsv =
       LoadCSV(
-        Argument()(solved)(),
+        Argument()(solved),
         url,
         IdName("foo"),
         HasHeaders,

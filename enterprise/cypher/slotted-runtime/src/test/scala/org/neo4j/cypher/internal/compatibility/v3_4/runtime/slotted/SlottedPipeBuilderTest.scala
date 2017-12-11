@@ -309,7 +309,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("optional refslot value") {
     // given
-    val arg = Argument(Set.empty)(solved)()
+    val arg = Argument(Set.empty)(solved)
     val project = Projection(arg, Map("x" -> literalInt(1)))(solved)
     val plan = Optional(project)(solved)
 
