@@ -489,10 +489,24 @@ public class HostnamePortTest
     {
         HostnamePort hostnamePortSinglePort = new HostnamePort( ":1234" );
         String host1 = InetAddress.getLocalHost().getHostName();
-        
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
+
+        URI uri1;
+        URI uri2;
+        try
+        {
+            uri1 = URI.create( "ha://" + host1 + ":1234" );
+            uri2 = URI.create( host1 + ":1234" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // For some reason the host name contained illegal characters, like beginning with a number or something else.
+            // Apparently URI thinks that's an invalid host name. We have to accept that some machines have that as host name.
+            return;
+        }
+
+        assertFalse( hostnamePortSinglePort.matches( uri1 ) );
         // no scheme means no ports and no host, so both null therefore comparison fails
-        assertFalse( hostnamePortSinglePort.matches( URI.create( host1 + ":1234" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( uri2 ) );
     }
     
     @Test
