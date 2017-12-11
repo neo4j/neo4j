@@ -85,9 +85,9 @@ public class AllStoreHolder extends Read implements Token
             StorageStatement statement,
             KernelTransactionImplementation ktx,
             Cursors cursors,
-            ExplicitIndexStore explicitIndexStore)
+            ExplicitIndexStore explicitIndexStore )
     {
-        super( cursors, ktx);
+        super( cursors, ktx );
         this.storeReadLayer = engine.storeReadLayer();
         this.statement = statement; // use provided statement, to assert no leakage
         this.explicitIndexes = Suppliers.lazySingleton( ktx::explicitIndexTxState );
@@ -216,7 +216,6 @@ public class AllStoreHolder extends Read implements Token
         }
         return false;
     }
-
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )

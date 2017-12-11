@@ -81,7 +81,6 @@ public class OperationsLockTest
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
     private StoreReadLayer storeReadLayer;
 
-
     @Before
     public void setUp() throws InvalidTransactionTypeKernelException
     {

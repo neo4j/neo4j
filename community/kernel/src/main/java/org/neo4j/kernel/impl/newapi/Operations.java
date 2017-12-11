@@ -210,14 +210,15 @@ public class Operations implements Write, ExplicitIndexWrite
      * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
      * array.
      */
-    private IndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema, int changedPropertyKeyId, Value changedValue )
+    private IndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema, int changedPropertyKeyId,
+            Value changedValue )
     {
         int[] schemaPropertyIds = schema.getPropertyIds();
         IndexQuery.ExactPredicate[] values = new IndexQuery.ExactPredicate[schemaPropertyIds.length];
 
         int nMatched = 0;
         nodeCursor.properties( propertyCursor );
-        while (propertyCursor.next())
+        while ( propertyCursor.next() )
         {
             int nodePropertyId = propertyCursor.propertyKey();
             int k = ArrayUtils.indexOf( schemaPropertyIds, nodePropertyId );
@@ -256,7 +257,7 @@ public class Operations implements Write, ExplicitIndexWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
     ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        try (NodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor())
+        try ( NodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
         {
             IndexDescriptor indexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( indexDescriptor );

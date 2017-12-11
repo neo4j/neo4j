@@ -80,7 +80,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
             // THEN
             assertThat( constraints, hasSize( 1 ) );
-            assertThat( constraints.get( 0 ).schema().getPropertyIds()[0], equalTo( prop) );
+            assertThat( constraints.get( 0 ).schema().getPropertyIds()[0], equalTo( prop ) );
         }
     }
 
@@ -138,7 +138,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         try ( Transaction tx = session.beginTransaction() )
         {
             //WHEN
-            List<ConstraintDescriptor> constraints = asList( tx.schemaRead().constraintsGetAll( ) );
+            List<ConstraintDescriptor> constraints = asList( tx.schemaRead().constraintsGetAll() );
 
             // THEN
             assertThat( constraints, hasSize( 3 ) );
@@ -180,7 +180,8 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             {
                 tx.dataWrite().nodeAddLabel( nodeConflicting, label );
                 fail();
-            } catch ( ConstraintValidationException e )
+            }
+            catch ( ConstraintValidationException e )
             {
                 //ignore
             }
@@ -231,13 +232,14 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             property = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
 
             //This is ok, since it will satisfy constraint
-            tx.dataWrite().nodeSetProperty( nodeNotConflicting, property, intValue(1337) );
+            tx.dataWrite().nodeSetProperty( nodeNotConflicting, property, intValue( 1337 ) );
 
             try
             {
-                tx.dataWrite().nodeSetProperty( nodeConflicting, property, intValue(1337) );
+                tx.dataWrite().nodeSetProperty( nodeConflicting, property, intValue( 1337 ) );
                 fail();
-            } catch ( ConstraintValidationException e )
+            }
+            catch ( ConstraintValidationException e )
             {
                 //ignore
             }
@@ -247,7 +249,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         //Verify
         try ( Transaction tx = session.beginTransaction();
               NodeCursor nodeCursor = cursors.allocateNodeCursor();
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor())
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
         {
             //Node without conflict
             tx.dataRead().singleNode( nodeNotConflicting, nodeCursor );
@@ -262,11 +264,11 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         }
     }
 
-    private boolean hasKey(PropertyCursor propertyCursor, int key)
+    private boolean hasKey( PropertyCursor propertyCursor, int key )
     {
-        while (propertyCursor.next())
+        while ( propertyCursor.next() )
         {
-            if (propertyCursor.propertyKey() == key)
+            if ( propertyCursor.propertyKey() == key )
             {
                 return true;
             }
@@ -274,8 +276,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         return false;
     }
 
-
-    private void addConstraints(String... labelProps)
+    private void addConstraints( String... labelProps )
     {
         assert labelProps.length % 2 == 0;
 
@@ -283,7 +284,8 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         {
             for ( int i = 0; i < labelProps.length; i += 2 )
             {
-                graphDb.schema().constraintFor( label( labelProps[i] ) ).assertPropertyIsUnique( labelProps[i + 1] ).create();
+                graphDb.schema().constraintFor( label( labelProps[i] ) ).assertPropertyIsUnique( labelProps[i + 1] )
+                        .create();
             }
             tx.success();
         }

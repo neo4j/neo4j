@@ -79,7 +79,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if (transactionalContext.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
+    case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
   }
 
   def createNewQueryContext(): QueryContext = {
@@ -439,7 +439,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
       try {
-        transactionalContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
+        writes().nodeRemoveProperty(id, propertyKeyId)
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
@@ -447,7 +447,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Value): Unit = {
       try {
-        transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, value)
+        writes().nodeSetProperty(id, propertyKeyId, value)
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
