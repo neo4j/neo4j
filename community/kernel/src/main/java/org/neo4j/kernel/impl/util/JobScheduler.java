@@ -158,6 +158,11 @@ public interface JobScheduler extends Lifecycle
         public static final Group metricsEvent = new Group( "MetricsEvent", POOLED );
 
         /**
+         * Snapshot downloader
+         */
+        public static final Group downloadSnapshot = new JobScheduler.Group( "DownloadSnapshot", POOLED );
+
+        /**
          * UDC timed events.
          */
         public static Group udc  = new Group( "UsageDataCollection", POOLED );

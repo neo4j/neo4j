@@ -39,8 +39,8 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.IdentityModule;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
-import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
+import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.consensus.log.pruning.PruningScheduler;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipWaiter;
@@ -55,9 +55,11 @@ import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.causalclustering.core.state.RaftMessageHandler;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
@@ -79,6 +81,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 public class CoreServerModule
@@ -177,10 +180,14 @@ public class CoreServerModule
 
         CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy,
                 remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachinesModule.coreStateMachines,
-                snapshotService, commandApplicationProcess, topologyService );
+                snapshotService, topologyService );
+
+        CoreStateDownloaderService downloadService = new CoreStateDownloaderService( platformModule
+                .jobScheduler, downloader, commandApplicationProcess, logProvider,
+                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() );
 
         RaftMessageHandler messageHandler = new RaftMessageHandler( localDatabase, logProvider,
-                consensusModule.raftMachine(), downloader, commandApplicationProcess );
+                consensusModule.raftMachine(), downloadService, commandApplicationProcess );
 
         int queueSize = config.get( CausalClusteringSettings.raft_in_queue_size );
         int maxBatch = config.get( CausalClusteringSettings.raft_in_queue_max_batch );
@@ -232,5 +239,6 @@ public class CoreServerModule
         life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         life.add( coreLife );
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
+        life.add( downloadService );
     }
 }

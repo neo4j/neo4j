@@ -32,7 +32,6 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -59,7 +58,6 @@ public class CoreStateDownloaderTest
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private CoreSnapshotService snaptshotService = mock( CoreSnapshotService.class );
-    private CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
     private TopologyService topologyService = mock( TopologyService.class );
 
     private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
@@ -73,7 +71,7 @@ public class CoreStateDownloaderTest
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider,
-                    storeCopyProcess, coreStateMachines, snaptshotService, applicationProcess, topologyService );
+                    storeCopyProcess, coreStateMachines, snaptshotService, topologyService );
 
     @Before
     public void commonMocking() throws IOException
