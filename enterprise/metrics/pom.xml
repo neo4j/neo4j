@@ -16,6 +16,10 @@
   <name>Neo4j - Metrics Kernel Extension</name>
   <packaging>jar</packaging>
 
+  <properties>
+    <prometheus.client.version>0.1.0</prometheus.client.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -140,19 +144,18 @@
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient</artifactId>
-      <version>0.1.0</version>
+      <version>${prometheus.client.version}</version>
     </dependency>
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient_httpserver</artifactId>
-      <version>0.1.0</version>
+      <version>${prometheus.client.version}</version>
     </dependency>
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient_dropwizard</artifactId>
-      <version>0.1.0</version>
+      <version>${prometheus.client.version}</version>
     </dependency>
-
 
     <dependency>
       <groupId>junit</groupId>
