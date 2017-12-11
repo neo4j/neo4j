@@ -74,7 +74,6 @@ Apache Software License, Version 2.0
   Prometheus Java Simpleclient
   Prometheus Java Simpleclient Common
   Prometheus Java Simpleclient Dropwizard
-  Prometheus Java Simpleclient Hotspot
   Prometheus Java Simpleclient Httpserver
 
 BSD - Scala License
