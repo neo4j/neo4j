@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -182,6 +184,135 @@ final class MuninnPagedFile implements PagedFile, Flushable
 
         cursor.rewind();
         return cursor;
+    }
+
+    private static final int MAX_PAGES = 512;
+
+    private final Object[][] chunkArrays = new Object[MAX_PAGES][];
+    private final long[] chunkOffsets = new long[MAX_PAGES];
+    private final long[] pageIds = new long[MAX_PAGES];
+    private final MuninnPage[] pages = new MuninnPage[MAX_PAGES];
+
+    @Override
+    public int prefetch( long startPageId ) throws IOException
+    {
+        long maxPageId = Math.min( startPageId + MAX_PAGES - 1, getLastPageId() );
+        int maxChunkId = MuninnPagedFile.computeChunkId( maxPageId );
+
+        int maxCount = (int) (maxPageId - startPageId + 1);
+        if ( maxCount < 1 )
+        {
+            return 0;
+        }
+
+        if ( translationTable.length <= maxChunkId )
+        {
+            expandCapacity( maxChunkId );
+        }
+
+        int swapCount = 0;
+        int attemptCount = 0;
+
+        try
+        {
+            for ( long pageId = startPageId; pageId <= maxPageId; pageId++ )
+            {
+                int chunkId = computeChunkId( pageId );
+                long chunkOffset = computeChunkOffset( pageId );
+                Object[] chunk = translationTable[chunkId];
+                BinaryLatch latch = new BinaryLatch();
+                if ( UnsafeUtil.compareAndSwapObject( chunk, chunkOffset, null, latch ) )
+                {
+                    chunkOffsets[swapCount] = chunkOffset;
+                    chunkArrays[swapCount] = chunk;
+                    pageIds[swapCount] = pageId;
+                    swapCount++;
+                    attemptCount++;
+                }
+                else if ( swapCount == 0 )
+                {
+                    // skip this page
+                    startPageId = pageId + 1;
+                    attemptCount++;
+                }
+                else
+                {
+                    // we have to break since there would be a gap otherwise, which the swapper doesn't support
+                    break;
+                }
+            }
+        }
+        catch ( Throwable t )
+        {
+            for ( int i = 0; i < swapCount; i++ )
+            {
+                Object[] chunk = chunkArrays[i];
+                long chunkOffset = chunkOffsets[i];
+                BinaryLatch latch = (BinaryLatch) UnsafeUtil.getObjectVolatile( chunk, chunkOffset );
+                UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
+                latch.release();
+            }
+            throw t; // todo: how to error handle?
+        }
+
+        if ( swapCount == 0 )
+        {
+            return attemptCount;
+        }
+
+        try
+        {
+            for ( int i = 0; i < swapCount; i++ )
+            {
+                pages[i] = grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL ); // todo: proper tracing event
+            }
+
+            assertPagedFileStillMapped();
+
+            for ( int i = 0; i < swapCount; i++ )
+            {
+                pages[i].initBuffer();
+                pages[i].markAsLoaded( pageIds[i] );
+            }
+
+            swapper.read( startPageId, pages, 0, swapCount );
+
+            for ( int i = 0; i < swapCount; i++ )
+            {
+                pages[i].markAsBound( swapper );
+            }
+        }
+        catch ( Throwable t )
+        {
+            for ( int i = 0; i < swapCount; i++ )
+            {
+                // todo: partial way through error handling
+                pages[i].unlockExclusive();
+                Object[] chunk = chunkArrays[i];
+                long chunkOffset = chunkOffsets[i];
+                BinaryLatch latch = (BinaryLatch) UnsafeUtil.getObjectVolatile( chunk, chunkOffset );
+                UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
+                latch.release();
+            }
+            throw t; // todo: error handle
+        }
+
+        for ( int i = 0; i < swapCount; i++ )
+        {
+            Object[] chunk = chunkArrays[i];
+            long chunkOffset = chunkOffsets[i];
+            BinaryLatch latch = (BinaryLatch) UnsafeUtil.getObjectVolatile( chunk, chunkOffset );
+            UnsafeUtil.putObjectVolatile( chunk, chunkOffset, pages[i] );
+            pages[i].unlockExclusive();
+            latch.release();
+        }
+
+        return attemptCount;
+    }
+
+    private void assertPagedFileStillMapped()
+    {
+        getLastPageId();
     }
 
     @Override

@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-public class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
+class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
 {
     private final int notificationThreshold;
 
     private volatile long nextTransactionIdTarget;
 
-    public CountCommittedTransactionThreshold( int notificationThreshold )
+    CountCommittedTransactionThreshold( int notificationThreshold )
     {
+        super( "tx count threshold" );
         this.notificationThreshold = notificationThreshold;
     }
 
@@ -40,12 +41,6 @@ public class CountCommittedTransactionThreshold extends AbstractCheckPointThresh
     protected boolean thresholdReached( long lastCommittedTransactionId )
     {
         return lastCommittedTransactionId >= nextTransactionIdTarget;
-    }
-
-    @Override
-    protected String description()
-    {
-        return "tx count threshold";
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Predicate;
 
@@ -243,6 +244,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION;
 
+    void prefetchAllPages() throws IOException;
+
     void freeId( long id );
 
     Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
@@ -392,6 +395,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public <EXCEPTION extends Exception> void scanAllRecords( Visitor<R,EXCEPTION> visitor ) throws EXCEPTION
         {
             actual.scanAllRecords( visitor );
+        }
+
+        @Override
+        public void prefetchAllPages() throws IOException
+        {
+            actual.prefetchAllPages();
         }
 
         @Override

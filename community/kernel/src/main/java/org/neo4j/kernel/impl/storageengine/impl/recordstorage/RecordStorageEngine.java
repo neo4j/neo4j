@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.apache.commons.lang3.mutable.MutableObject;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -388,6 +390,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void start() throws Throwable
     {
         neoStores.makeStoreOk();
+        prefetch();
 
         propertyKeyTokenHolder.setInitialTokens(
                 neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
@@ -401,6 +404,30 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         indexingService.start();
         labelScanStore.start();
         idController.start();
+    }
+
+    @Override
+    public void prefetch() throws Throwable
+    {
+        MutableObject<Throwable> throwable = new MutableObject<>();
+        neoStores.visitStore( store ->
+        {
+            try
+            {
+                store.prefetchAllPages();
+            }
+            catch ( Throwable e )
+            {
+                throwable.setValue( e );
+                return true;
+            }
+            return false;
+        } );
+
+        if ( throwable.getValue() != null )
+        {
+            throw throwable.getValue();
+        }
     }
 
     @Override

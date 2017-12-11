@@ -131,6 +131,18 @@ public interface PagedFile extends AutoCloseable
     PageCursor io( long pageId, int pf_flags ) throws IOException;
 
     /**
+     * Attempts to prefetch pages. A subsequent prefetch should
+     * move forward by the returned number. When zero is returned
+     * then no more prefetching should be attempted.
+     *
+     * @param startPageId the page id to start from.
+     * @return the number of pages which were attempted to fetch.
+     *
+     * @throws IOException if something goes wrong with IO.
+     */
+    int prefetch( long startPageId ) throws IOException;
+
+    /**
      * Get the size of the file-pages, in bytes.
      */
     int pageSize();

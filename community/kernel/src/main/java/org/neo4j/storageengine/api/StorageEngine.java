@@ -141,4 +141,5 @@ public interface StorageEngine
     @Deprecated
     void clearBufferedIds();
 
+    void prefetch() throws Throwable;
 }

@@ -52,7 +52,7 @@ import static java.util.Collections.singletonMap;
 /**
  * Implementation of Lucene schema index that support multiple partitions.
  */
-class LuceneSchemaIndex extends AbstractLuceneIndex
+public class LuceneSchemaIndex extends AbstractLuceneIndex
 {
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
@@ -198,26 +198,30 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private SimpleIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
-        return new SimpleIndexReader( singlePartition.acquireSearcher(), descriptor, samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( singlePartition.acquireSearcher(), descriptor, samplingConfig, taskCoordinator, this );
     }
 
     private UniquenessVerifier createSimpleUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
-        return new SimpleUniquenessVerifier( partitionSearcher );
+        return new SimpleUniquenessVerifier( partitionSearcher, descriptor );
     }
 
     private PartitionedIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedIndexReader( searchers, descriptor, samplingConfig, taskCoordinator );
+        return new PartitionedIndexReader( searchers, descriptor, samplingConfig, taskCoordinator, this );
     }
 
     private UniquenessVerifier createPartitionedUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedUniquenessVerifier( searchers );
+        return new PartitionedUniquenessVerifier( searchers, descriptor );
     }
 
+    public PartitionedIndexStorage indexStorage()
+    {
+        return indexStorage;
+    }
 }

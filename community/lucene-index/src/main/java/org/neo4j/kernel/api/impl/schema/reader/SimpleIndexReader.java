@@ -26,16 +26,21 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.impl.LuceneErrorDetails;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.schema.IndexQuery;
@@ -60,16 +65,19 @@ public class SimpleIndexReader implements IndexReader
     private IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
     private TaskCoordinator taskCoordinator;
+    private final LuceneSchemaIndex luceneSchemaIndex;
 
     public SimpleIndexReader( PartitionSearcher partitionSearcher,
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
-            TaskCoordinator taskCoordinator )
+            TaskCoordinator taskCoordinator,
+            LuceneSchemaIndex luceneSchemaIndex )
     {
         this.partitionSearcher = partitionSearcher;
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;
+        this.luceneSchemaIndex = luceneSchemaIndex;
     }
 
     @Override
@@ -131,6 +139,8 @@ public class SimpleIndexReader implements IndexReader
             assertNotComposite( predicates );
             IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
             return endsWith( ssp.suffix() );
+        case fail:
+            return query( (Query) null );
         default:
             // todo figure out a more specific exception
             throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
@@ -186,16 +196,18 @@ public class SimpleIndexReader implements IndexReader
         BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder().setDisableCoord( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
+        BooleanQuery query = null;
         try
         {
             TotalHitCountCollector collector = new TotalHitCountCollector();
-            getIndexSearcher().search( nodeIdAndValueQuery.build(), collector );
+            query = nodeIdAndValueQuery.build();
+            getIndexSearcher().search( query, collector );
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
             return collector.getTotalHits();
         }
-        catch ( IOException e )
+        catch ( Throwable t )
         {
-            throw new RuntimeException( e );
+            throw new RuntimeException( LuceneErrorDetails.searchError( descriptor.toString(), query ), t );
         }
     }
 
@@ -212,7 +224,7 @@ public class SimpleIndexReader implements IndexReader
         }
     }
 
-    protected PrimitiveLongIterator query( Query query )
+    public PrimitiveLongIterator query( Query query )
     {
         try
         {
@@ -220,9 +232,101 @@ public class SimpleIndexReader implements IndexReader
             getIndexSearcher().search( query, docValuesCollector );
             return docValuesCollector.getValuesIterator( NODE_ID_KEY );
         }
-        catch ( IOException e )
+        catch ( Throwable t )
         {
-            throw new RuntimeException( e );
+            // Completely ignore the stack trace. Only keep index and query information.
+            RuntimeException exceptionToThrow = new RuntimeException( LuceneErrorDetails.searchError( descriptor.toString(), query ) )
+            {
+                @Override
+                public synchronized Throwable fillInStackTrace()
+                {
+                    return this;
+                }
+            };
+
+            // Hack to not pass in real LuceneSchemaIndex to constructor everywhere
+            if ( luceneSchemaIndex != null )
+            {
+                try
+                {
+                    luceneSchemaIndex.flush( false );
+
+                    PartitionedIndexStorage indexStorage = luceneSchemaIndex.indexStorage();
+                    File storeDir = indexStorage.getIndexFolder() /* /db/schema/index/lucene/1 */
+                            .getParentFile() /* /db/schema/index/lucene */
+                            .getParentFile() /* /db/schema/index */
+                            .getParentFile() /* /db/schema */
+                            .getParentFile();/* /db */
+                    File indexFolder = indexStorage.getIndexFolder();
+                    File dumpDir = new File( storeDir, "dump_" + indexFolder.getName() );
+                    if ( dumpDir.exists() )
+                    {
+                        // We have already created a dump
+                    }
+                    else
+                    {
+                        dumpDir.mkdir();
+
+                        // dump index snapshot
+                        File indexDir = indexStorage.getPartitionFolder( 1 );
+                        File indexDumpDir = new File( dumpDir, "index" );
+                        FileUtils.copyRecursively( indexDir, indexDumpDir );
+
+                        // snapshot debug.log
+                        File logs = new File( storeDir, "logs" );
+                        File logsDumpDir = new File( dumpDir, "logs" );
+                        FileUtils.copyRecursively( logs, logsDumpDir );
+                    }
+                }
+                catch ( Exception e )
+                {
+                    RuntimeException snapshotException = new RuntimeException( "Could not create snapshot of lucene files", e );
+                    snapshotException.addSuppressed( exceptionToThrow );
+                    exceptionToThrow = snapshotException;
+                }
+
+                try
+                {
+                    luceneSchemaIndex.close();
+                    luceneSchemaIndex.open();
+                }
+                catch ( IOException e )
+                {
+                    RuntimeException closeOpenException = new RuntimeException( "Could not close and open index.", e );
+                    closeOpenException.addSuppressed( exceptionToThrow );
+                    exceptionToThrow = closeOpenException;
+                }
+            }
+            throw exceptionToThrow;
+        }
+    }
+
+    private void printExist( int propertyKeyId ) throws IOException, IndexNotApplicableKernelException
+    {
+        IndexReader indexReader = luceneSchemaIndex.getIndexReader();
+        PrimitiveLongIterator result = indexReader.query( IndexQuery.exists( propertyKeyId ) );
+        while ( result.hasNext() )
+        {
+            System.out.println( result.next() );
+        }
+    }
+
+    private File parent( File storeDir )
+    {
+        File parent = storeDir.getParentFile();
+        System.out.println( parent );
+        return parent;
+    }
+
+    private void sleep()
+    {
+        try
+        {
+            Thread.sleep( 100 );
+        }
+        catch ( InterruptedException e )
+        {
+            e.printStackTrace();
         }
     }
 

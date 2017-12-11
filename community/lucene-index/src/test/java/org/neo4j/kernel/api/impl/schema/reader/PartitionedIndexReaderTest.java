@@ -192,7 +192,7 @@ public class PartitionedIndexReaderTest
 
     private PartitionedIndexReader createPartitionedReader()
     {
-        return new PartitionedIndexReader( getPartitionSearchers(), indexDescriptor, samplingConfig, taskCoordinator );
+        return new PartitionedIndexReader( getPartitionSearchers(), indexDescriptor, samplingConfig, taskCoordinator, null );
     }
 
     private List<PartitionSearcher> getPartitionSearchers()

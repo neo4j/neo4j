@@ -33,13 +33,13 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * Applicable only to a single Lucene index partition.
  *
  */
-class ReadOnlyIndexSnapshotFileIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
+public class ReadOnlyIndexSnapshotFileIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
 {
     private final File indexDirectory;
     private final Iterator<String> fileNames;
     private final IndexCommit indexCommit;
 
-    ReadOnlyIndexSnapshotFileIterator( File indexDirectory, IndexCommit indexCommit ) throws IOException
+    public ReadOnlyIndexSnapshotFileIterator( File indexDirectory, IndexCommit indexCommit ) throws IOException
     {
         this.indexDirectory = indexDirectory;
         this.indexCommit = indexCommit;

@@ -76,7 +76,6 @@ public class RaftState implements ReadableRaftState
         this.inFlightCache = inFlightCache;
         this.supportPreVoting = supportPreVoting;
         this.log = logProvider.getLog( getClass() );
-
         // Initial state
         this.isPreElection = supportPreVoting;
     }
