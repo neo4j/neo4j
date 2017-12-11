@@ -95,7 +95,9 @@ public class InconsistencyReportReaderTest
         ReportInconsistencies inconsistencies = new ReportInconsistencies();
         String text =
                 "ERROR: The first outgoing relationship is not the first in its chain.\n" +
-                "\tRelationshipGroup[1337,type=1,out=2,in=-1,loop=-1,prev=-1,next=3,used=true,owner=4,secondaryUnitId=-1]";
+                "\tRelationshipGroup[1337,type=1,out=2,in=-1,loop=-1,prev=-1,next=3,used=true,owner=4,secondaryUnitId=-1]\n" +
+                "ERROR: The first outgoing relationship is not the first in its chain.\n" +
+                "\tRelationshipGroup[4242,type=1,out=2,in=-1,loop=-1,prev=-1,next=3,used=true,owner=4,secondaryUnitId=-1]\n";
 
         // When
         InconsistencyReportReader reader = new InconsistencyReportReader( inconsistencies );
@@ -103,5 +105,6 @@ public class InconsistencyReportReaderTest
 
         // Then
         assertTrue( inconsistencies.containsRelationshipGroupId( 1337 ) );
+        assertTrue( inconsistencies.containsRelationshipGroupId( 4242 ) );
     }
 }
