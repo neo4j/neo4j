@@ -273,7 +273,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean leafUnderflow( int keyCount )
+    boolean leafUnderflow( PageCursor cursor, int keyCount )
     {
         return keyCount < (leafMaxKeyCount() + 1) / 2;
     }

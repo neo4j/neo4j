@@ -1019,7 +1019,7 @@ class InternalTreeLogic<KEY,VALUE>
                 stableGeneration, unstableGeneration );
         keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos );
 
-        if ( bTreeNode.leafUnderflow( keyCount ) )
+        if ( bTreeNode.leafUnderflow( cursor, keyCount ) )
         {
             // Underflow
             underflowInLeaf( cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration );

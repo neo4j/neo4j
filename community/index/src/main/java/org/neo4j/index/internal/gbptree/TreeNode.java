@@ -334,7 +334,7 @@ abstract class TreeNode<KEY,VALUE>
      */
     abstract void defragmentLeaf( PageCursor cursor );
 
-    abstract boolean leafUnderflow( int keyCount );
+    abstract boolean leafUnderflow( PageCursor cursor, int keyCount );
 
     abstract boolean canRebalanceLeaves( int leftKeyCount, int rightKeyCount );
 

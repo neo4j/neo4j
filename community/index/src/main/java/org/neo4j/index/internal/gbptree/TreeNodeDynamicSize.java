@@ -282,10 +282,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     Overflow leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue )
     {
         // How much space do we have?
-        int allocOffset = getAllocOffset( cursor );
         int deadSpace = getDeadSpace( cursor );
-        int endOfOffsetArray = keyPosOffsetLeaf( currentKeyCount );
-        int allocSpace = allocOffset - endOfOffsetArray;
+        int allocSpace = getAllocSpace( cursor, currentKeyCount );
 
         // How much space do we need?
         int keySize = layout.keySize( newKey );
@@ -402,9 +400,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean leafUnderflow( int keyCount )
+    boolean leafUnderflow( PageCursor cursor, int keyCount )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        int halfSpace = halfSpace();
+        int allocSpace = getAllocSpace( cursor, keyCount );
+        int deadSpace = getDeadSpace( cursor );
+        int availableSpace = allocSpace + deadSpace;
+
+        return availableSpace > halfSpace;
     }
 
     @Override
@@ -468,6 +471,13 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         TreeNode.setKeyCount( rightCursor, rightKeyCount );
     }
 
+    private int getAllocSpace( PageCursor cursor, int keyCount )
+    {
+        int allocOffset = getAllocOffset( cursor );
+        int endOfOffsetArray = keyPosOffsetLeaf( keyCount );
+        return allocOffset - endOfOffsetArray;
+    }
+
     private void recordDeadAndAlive( PageCursor cursor, PrimitiveIntStack deadKeysOffset, PrimitiveIntStack aliveKeysOffset )
     {
         int currentOffset = getAllocOffset( cursor );
@@ -529,7 +539,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private int middle( PageCursor leftCursor, int insertPos, KEY newKey, VALUE newValue )
     {
-        int halfSpace = (pageSize - HEADER_LENGTH_DYNAMIC) / 2;
+        int halfSpace = halfSpace();
         int middle = 0;
         int currentPos = 0;
         int middleSpace = 0;
@@ -560,6 +570,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         while ( currentDelta < prevDelta );
         middle--; // Step back to the pos that most equally divide the available space in two
         return middle;
+    }
+
+    private int halfSpace()
+    {
+        return (pageSize - HEADER_LENGTH_DYNAMIC) / 2;
     }
 
     private int totalSpaceOfKeyValue( KEY key, VALUE value )
