@@ -89,18 +89,29 @@ public class MemoryAllocatorTest
     public void allocatingMustIncreaseMemoryUsedAndDecreaseAvailableMemory() throws Exception
     {
         MemoryAllocator mman = createAllocator( ONE_PAGE );
+        // We haven't allocated anything, so usedMemory should be zero, and the available memory should be the
+        // initial capacity.
         assertThat( mman.usedMemory(), is( 0L ) );
         assertThat( mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
-        assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
 
+        // Allocate 32 bytes of unaligned memory. Ideally there would be no memory wasted on this allocation,
+        // but in principle we cannot rule it out.
         mman.allocateAligned( 32, 1 );
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 32L ) ) );
         assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 32L ) ) );
-        assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
 
+        // Allocate another 32 bytes of unaligned memory.
         mman.allocateAligned( 32, 1 );
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 64L ) ) );
-        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 32 - 32L ) ) );
-        assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 64L ) ) );
+
+        // Allocate 1 byte to throw off any subsequent accidental alignment.
+        mman.allocateAligned( 1, 1 );
+
+        // Allocate 32 bytes memory, but this time it is aligned to a 16 byte boundary.
+        mman.allocateAligned( 32, 16 );
+        // Don't count the 16 byte alignment in our assertions since we might already be accidentally aligned.
+        assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 97L ) ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 97L ) ) );
     }
 }
