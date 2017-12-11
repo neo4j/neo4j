@@ -23,7 +23,6 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -265,9 +264,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Node createNode()
     {
-        try ( Statement ignore = spi.currentStatement() )
+        KernelTransaction transaction = spi.currentTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            return new NodeProxy( nodeActions, spi.currentTransaction().dataWrite().nodeCreate() );
+            return new NodeProxy( nodeActions, transaction.dataWrite().nodeCreate() );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -278,9 +278,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Long createNodeId()
     {
-        try ( Statement ignore = spi.currentStatement() )
+        KernelTransaction transaction = spi.currentTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            return spi.currentTransaction().dataWrite().nodeCreate();
+            return transaction.dataWrite().nodeCreate();
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -332,12 +333,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         }
 
         KernelTransaction ktx = spi.currentTransaction();
-        try ( Statement ignore = spi.currentStatement();
-              NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor()
-        )
+        assertTransactionOpen( ktx );
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            ktx.dataRead().singleNode( id, nodeCursor );
-            if ( !nodeCursor.next() )
+            if ( !ktx.dataRead().nodeExists( id ) )
             {
                 throw new NotFoundException( format( "Node %d not found", id ),
                         new EntityNotFoundException( EntityType.NODE, id ) );
@@ -461,11 +460,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public ResourceIterable<Node> getAllNodes()
     {
-        assertTransactionOpen();
+        KernelTransaction ktx = spi.currentTransaction();
+        assertTransactionOpen( ktx );
         return () ->
         {
-            Statement statement = spi.currentStatement();
-            KernelTransaction ktx = spi.currentTransaction();
+            Statement statement = ktx.acquireStatement();
             NodeCursor cursor = ktx.cursors().allocateNodeCursor();
             ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<Node>()
@@ -487,8 +486,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                 @Override
                 public void close()
                 {
-                    statement.close();
                     cursor.close();
+                    statement.close();
                 }
             };
         };
@@ -814,10 +813,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     private void assertTransactionOpen()
     {
-        Optional<Status> terminationReason = spi.currentTransaction().getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        assertTransactionOpen( spi.currentTransaction() );
+    }
+
+    private void assertTransactionOpen( KernelTransaction transaction )
+    {
+        if ( transaction.isTerminated() )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 }
