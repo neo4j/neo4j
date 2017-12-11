@@ -91,6 +91,12 @@ public class Readables
         }
     };
 
+    public static CharReadable wrap( final InputStream stream, final String sourceName, Charset charset )
+            throws IOException
+    {
+        return wrap( stream, sourceName, charset, 0 );
+    }
+
     /**
      * Wraps a {@link InputStream} in a {@link CharReadable}.
      *
