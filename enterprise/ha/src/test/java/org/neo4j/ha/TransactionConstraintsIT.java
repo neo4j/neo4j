@@ -65,7 +65,7 @@ public class TransactionConstraintsIT
 
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withSharedSetting( HaSettings.pull_interval, "0" )
+            new ClusterRule().withSharedSetting( HaSettings.pull_interval, "0" )
                     .withInstanceSetting( HaSettings.slave_only,
                             serverId -> serverId == SLAVE_ONLY_ID ? "true" : "false" );
 

@@ -47,7 +47,7 @@ import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 public class BackupReadReplicaIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
             .withNumberOfReadReplicas( 1 )

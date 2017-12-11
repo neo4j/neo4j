@@ -74,7 +74,7 @@ public class PullUpdatesIT
     private static final int PULL_INTERVAL = 100;
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
 
     @Test
     public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Throwable

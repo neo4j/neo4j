@@ -79,7 +79,7 @@ public class IdReusabilityStressTesting
     private static final RelationshipType RELATIONSHIP_TYPE = RelationshipType.withName( "testType" );
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
 
     private final DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
     private DefaultFileSystemAbstraction fs;

@@ -54,7 +54,7 @@ public class ListQueriesProcedureInClusterIT
 {
     private static final int THIRTY_SECONDS_TIMEOUT = 30;
     private final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 1 );
+            new ClusterRule().withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 1 );
     private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 1000, SECONDS ).build();
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( clusterRule ).around( timeout );

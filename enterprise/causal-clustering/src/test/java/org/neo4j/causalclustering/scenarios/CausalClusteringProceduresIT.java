@@ -41,7 +41,7 @@ import static org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext
 public class CausalClusteringProceduresIT
 {
     @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( CausalClusteringProceduresIT.class )
+    public static final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 2 )
             .withNumberOfReadReplicas( 1 );
 

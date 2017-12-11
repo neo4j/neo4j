@@ -39,7 +39,7 @@ public class CorePruningIT
 {
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 )
+            new ClusterRule().withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 )
                     .withSharedCoreParam( CausalClusteringSettings.state_machine_flush_window_size, "1" )
                     .withSharedCoreParam( raft_log_pruning_strategy, "keep_none" )
                     .withSharedCoreParam( CausalClusteringSettings.raft_log_rotation_size, "1K" )

@@ -44,7 +44,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFil
 public class ClusterCustomLogLocationIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 2 );
 

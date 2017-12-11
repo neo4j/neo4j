@@ -110,7 +110,7 @@ public class ReadReplicaReplicationIT
     protected static final int NR_READ_REPLICAS = 1;
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( NR_CORE_MEMBERS )
+    public final ClusterRule clusterRule = new ClusterRule().withNumberOfCoreMembers( NR_CORE_MEMBERS )
             .withNumberOfReadReplicas( NR_READ_REPLICAS )
             .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
             .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );

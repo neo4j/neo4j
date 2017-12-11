@@ -45,7 +45,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class RecoveryIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
 

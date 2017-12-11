@@ -95,7 +95,7 @@ public class SchemaIndexHaIT
     @ClassRule
     public static DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    public ClusterRule clusterRule = new ClusterRule();
 
     @Test
     public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable

@@ -19,11 +19,11 @@
  */
 package org.neo4j.ha;
 
-import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 public class BoltHAIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withBoltEnabled().withCluster( clusterOfSize( 3 ) );
+    public final ClusterRule clusterRule = new ClusterRule().withBoltEnabled().withCluster( clusterOfSize( 3 ) );
 
     @Test
     public void shouldContinueServingBoltRequestsBetweenInternalRestarts() throws Throwable

@@ -38,7 +38,7 @@ import static org.neo4j.kernel.api.exceptions.Status.statusCodeOf;
 public class UnavailableIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 );
+    public final ClusterRule clusterRule = new ClusterRule().withNumberOfCoreMembers( 3 );
 
     private Cluster cluster;
 

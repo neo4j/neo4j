@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 public class SlaveOnlyClusterIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( SlaveOnlyClusterIT.class )
+    public ClusterRule clusterRule = new ClusterRule()
             .withInstanceSetting( HaSettings.slave_only,
                     value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE );
 

@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
@@ -63,7 +62,7 @@ public class CoreEdgeMetricsIT
     private static final int TIMEOUT = 15;
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 1 )
             .withSharedCoreParam( MetricsSettings.metricsEnabled, Settings.TRUE )

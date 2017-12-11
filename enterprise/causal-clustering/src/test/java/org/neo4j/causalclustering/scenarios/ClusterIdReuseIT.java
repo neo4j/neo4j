@@ -43,7 +43,7 @@ import static org.junit.Assume.assumeTrue;
 public class ClusterIdReuseIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             // increased to decrease likelihood of unnecessary leadership changes
             .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "2s" )

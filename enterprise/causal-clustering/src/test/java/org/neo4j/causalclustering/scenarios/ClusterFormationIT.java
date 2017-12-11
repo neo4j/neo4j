@@ -46,7 +46,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 public class ClusterFormationIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
 

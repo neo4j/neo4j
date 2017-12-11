@@ -53,7 +53,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 public class UpdatePullerSwitchIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withCluster( clusterOfSize( 2 ) )
+    public final ClusterRule clusterRule = new ClusterRule().withCluster( clusterOfSize( 2 ) )
             .withSharedSetting( tx_push_factor, "0" )
             .withSharedSetting( HaSettings.pull_interval, "100s" )
             .withFirstInstanceId( 6 );

@@ -91,7 +91,7 @@ public class TransactionTerminationIT
     public String lockManagerName;
 
     private final CleanupRule cleanupRule = new CleanupRule();
-    private final ClusterRule clusterRule = new ClusterRule( getClass() )
+    private final ClusterRule clusterRule = new ClusterRule()
             .withCluster( clusterOfSize( 3 ) )
             .withSharedSetting( HaSettings.tx_push_factor, "2" )
             .withSharedSetting( HaSettings.lock_read_timeout, "1m" );

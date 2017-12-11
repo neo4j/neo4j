@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 public class ClusterTransactionIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
 
     private ClusterManager.ManagedCluster cluster;
 
