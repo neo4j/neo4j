@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -31,10 +32,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class ReuseExcessBatchIdsOnRestartIT
 {
@@ -75,7 +76,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         int threads = Runtime.getRuntime().availableProcessors();
         int batchSize = Integer.parseInt( GraphDatabaseSettings.record_id_batch_size.getDefaultValue() );
         ExecutorService executor = Executors.newFixedThreadPool( threads );
-        boolean[] createdIds = new boolean[threads * batchSize];
+        AtomicIntegerArray createdIds = new AtomicIntegerArray( threads * batchSize );
         for ( int i = 0; i < threads; i++ )
         {
             executor.submit( () ->
@@ -85,7 +86,7 @@ public class ReuseExcessBatchIdsOnRestartIT
                     for ( int j = 0; j < batchSize / 2; j++ )
                     {
                         int index = toIntExact( db.createNode().getId() );
-                        createdIds[index] = true;
+                        createdIds.set( index, 1 );
                     }
                     tx.success();
                 }
@@ -95,27 +96,27 @@ public class ReuseExcessBatchIdsOnRestartIT
         while ( !executor.awaitTermination( 1, SECONDS ) )
         {   // Just wait longer
         }
-        assertFalse( allTrue( createdIds ) );
+        assertFalse( allSet( createdIds ) );
 
         // when/then
         db.restartDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            while ( !allTrue( createdIds ) )
+            while ( !allSet( createdIds ) )
             {
                 int index = toIntExact( db.createNode().getId() );
-                assert !createdIds[index];
-                createdIds[index] = true;
+                assert createdIds.get( index ) != 1;
+                createdIds.set( index, 1 );
             }
             tx.success();
         }
     }
 
-    private static boolean allTrue( boolean[] values )
+    private static boolean allSet( AtomicIntegerArray values )
     {
-        for ( boolean value : values )
+        for ( int i = 0; i < values.length(); i++ )
         {
-            if ( !value )
+            if ( values.get( i ) == 0 )
             {
                 return false;
             }
