@@ -1,9 +1,3 @@
-package org.neo4j.index.internal.gbptree;
-
-import org.neo4j.io.pagecache.PageCursor;
-
-import static org.junit.Assert.assertEquals;
-
 /*
  * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -23,29 +17,32 @@ import static org.junit.Assert.assertEquals;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
+package org.neo4j.index.internal.gbptree;
+
+public class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawBytes,RawBytes>
 {
     private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
 
     @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout()
+    protected ValueMerger<RawBytes,RawBytes> getAdder()
     {
-        return layout;
+        return ( existingKey, newKey, base, add ) ->
+        {
+            long baseSeed = layout.getSeed( base );
+            long addSeed = layout.getSeed( add );
+            return layout.value( baseSeed + addSeed );
+        };
     }
 
     @Override
-    protected TreeNode<RawBytes,RawBytes> getNode( int pageSize, Layout<RawBytes,RawBytes> layout )
+    protected TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, Layout<RawBytes,RawBytes> layout )
     {
         return new TreeNodeDynamicSize<>( pageSize, layout );
     }
 
     @Override
-    void assertAdditionalHeader( PageCursor cursor, TreeNode<RawBytes,RawBytes> node, int pageSize )
+    protected TestLayout<RawBytes,RawBytes> getLayout()
     {
-        // When
-        int currentAllocSpace = ((TreeNodeDynamicSize) node).getAllocOffset( cursor );
-
-        // Then
-        assertEquals("allocSpace point to end of page", pageSize, currentAllocSpace );
+        return layout;
     }
 }

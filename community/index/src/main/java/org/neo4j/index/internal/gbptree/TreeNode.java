@@ -72,6 +72,13 @@ abstract class TreeNode<KEY,VALUE>
         INTERNAL
     }
 
+    enum Overflow
+    {
+        YES,
+        NO,
+        NEED_DEFRAG
+    }
+
     // Shared between all node types: TreeNode and FreelistNode
     static final int BYTE_POS_NODE_TYPE = 0;
     static final byte NODE_TYPE_TREE_NODE = 1;
@@ -320,7 +327,12 @@ abstract class TreeNode<KEY,VALUE>
      * Will leaf overflow if inserting new key and value?
      * @return true if leaf will overflow, else false.
      */
-    abstract boolean leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue );
+    abstract Overflow leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue );
+
+    /**
+     * Clean page from garbage to make room for further insert without having to split.
+     */
+    abstract void defragmentLeaf( PageCursor cursor );
 
     abstract boolean leafUnderflow( int keyCount );
 
@@ -329,15 +341,14 @@ abstract class TreeNode<KEY,VALUE>
     abstract boolean canMergeLeaves( int leftKeyCount, int rightKeyCount );
 
     /**
-     * Performs the entry moving part of split in leaf.
+     * Calculate where split should be done and move entries between leaves participating in split.
      *
      * Keys and values from left are divide between left and right and the new key and value is inserted where it belongs.
      *
      * Key count is updated.
      */
-    abstract void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int insertPos,
-            KEY newKey,
-            VALUE newValue, int middlePos );
+    abstract void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey, VALUE newValue,
+            StructurePropagation<KEY> structurePropagation );
 
     /**
      * Performs the entry moving part of split in internal.

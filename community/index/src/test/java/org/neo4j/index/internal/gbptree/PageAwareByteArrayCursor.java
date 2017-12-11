@@ -124,7 +124,7 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
-        if ( sourceOffset < 0 || targetOffset < 0 || lengthInBytes < 1 )
+        if ( sourceOffset < 0 || targetOffset < 0 || lengthInBytes < 0 )
         {
             throw new IllegalArgumentException();
         }

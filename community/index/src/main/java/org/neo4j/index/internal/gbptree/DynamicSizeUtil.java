@@ -108,4 +108,9 @@ class DynamicSizeUtil
         assert (keySize & FLAG_TOMBSTONE) == 0 : "Key size " + keySize + " is to large to fit tombstone.";
         return keySize | FLAG_TOMBSTONE;
     }
+
+    static int stripTombstone( int keySize )
+    {
+        return keySize & ~FLAG_TOMBSTONE;
+    }
 }

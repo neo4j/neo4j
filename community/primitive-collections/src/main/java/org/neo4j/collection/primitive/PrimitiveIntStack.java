@@ -113,10 +113,18 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
     }
 
     /**
-     * @return the top most item, or -1 if stack is empty
+     * @return the top most item and remove it from stack, or -1 if stack is empty
      */
     public int poll()
     {
         return cursor == -1 ? -1 : array[cursor--];
+    }
+
+    /**
+     * @return the top most item, or -1 if stack is empty
+     */
+    public int peek()
+    {
+        return cursor == -1 ? -1 : array[cursor];
     }
 }

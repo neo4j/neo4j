@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_VALUE;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 {
@@ -261,9 +262,14 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue )
+    Overflow leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue )
     {
-        return currentKeyCount + 1 > leafMaxKeyCount();
+        return currentKeyCount + 1 > leafMaxKeyCount() ? Overflow.YES : Overflow.NO;
+    }
+
+    @Override
+    void defragmentLeaf( PageCursor cursor )
+    {   // no-op
     }
 
     @Override
@@ -285,9 +291,22 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int insertPos, KEY newKey,
-            VALUE newValue, int middlePos )
+    void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
+            VALUE newValue, StructurePropagation<KEY> structurePropagation )
     {
+        int keyCountAfterInsert = leftKeyCount + 1;
+        int middlePos = middle( keyCountAfterInsert );
+
+        if ( middlePos == insertPos )
+        {
+            layout.copyKey( newKey, structurePropagation.rightKey );
+        }
+        else
+        {
+            keyAt( leftCursor, structurePropagation.rightKey, insertPos < middlePos ? middlePos - 1 : middlePos, LEAF );
+        }
+        int rightKeyCount = keyCountAfterInsert - middlePos;
+
         if ( insertPos < middlePos )
         {
             //                  v-------v       copy
@@ -320,6 +339,11 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
         TreeNode.setKeyCount( leftCursor, middlePos );
         TreeNode.setKeyCount( rightCursor, rightKeyCount );
+    }
+
+    private static int middle( int keyCountAfterInsert )
+    {
+        return keyCountAfterInsert / 2;
     }
 
     @Override

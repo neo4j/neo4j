@@ -33,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.KeySearch.search;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
@@ -463,7 +464,7 @@ public class KeySearchTest
         {
             MutableLong expectedKey = layout.newKey();
             key.setValue( currentKey );
-            if ( node.leafOverflow( cursor, keyCount, key, dummyValue ) )
+            if ( node.leafOverflow( cursor, keyCount, key, dummyValue ) != NO )
             {
                 break;
             }

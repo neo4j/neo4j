@@ -38,6 +38,8 @@ import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NEED_DEFRAG;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
@@ -73,7 +75,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     private KEY key( long seed )
     {
         return layout.key( seed );
-    };
+    }
 
     private VALUE value( long seed )
     {
@@ -372,6 +374,146 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
+    public void shouldDefragLeafWithTombstoneOnLast() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        KEY key = key( 1 );
+        VALUE value = value( 1 );
+        node.insertKeyValueAt( cursor, key, value, 0, 0 );
+        key = key( 2 );
+        value = value( 2 );
+        node.insertKeyValueAt( cursor, key, value, 1, 1 );
+
+        // AND
+        node.removeKeyValueAt( cursor, 1, 2 );
+
+        // WHEN
+        node.defragmentLeaf( cursor );
+
+        // THEN
+        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
+    }
+
+    @Test
+    public void shouldDefragLeafWithTombstoneOnFirst() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        KEY key = key( 1 );
+        VALUE value = value( 1 );
+        node.insertKeyValueAt( cursor, key, value, 0, 0 );
+        key = key( 2 );
+        value = value( 2 );
+        node.insertKeyValueAt( cursor, key, value, 1, 1 );
+
+        // AND
+        node.removeKeyValueAt( cursor, 0, 2 );
+
+        // WHEN
+        node.defragmentLeaf( cursor );
+
+        // THEN
+        assertKeyEquals( key( 2 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
+    }
+
+    @Test
+    public void shouldDefragLeafWithTombstoneInterleaved() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        KEY key = key( 1 );
+        VALUE value = value( 1 );
+        node.insertKeyValueAt( cursor, key, value, 0, 0 );
+        key = key( 2 );
+        value = value( 2 );
+        node.insertKeyValueAt( cursor, key, value, 1, 1 );
+        key = key( 3 );
+        value = value( 3 );
+        node.insertKeyValueAt( cursor, key, value, 2, 2 );
+
+        // AND
+        node.removeKeyValueAt( cursor, 1, 3 );
+
+        // WHEN
+        node.defragmentLeaf( cursor );
+
+        // THEN
+        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
+        assertKeyEquals( key( 3 ), node.keyAt( cursor, layout.newKey(), 1, LEAF ) );
+    }
+
+    @Test
+    public void shouldDefragLeafWithMultipleTombstonesInterleavedOdd() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        KEY key = key( 1 );
+        VALUE value = value( 1 );
+        node.insertKeyValueAt( cursor, key, value, 0, 0 );
+        key = key( 2 );
+        value = value( 2 );
+        node.insertKeyValueAt( cursor, key, value, 1, 1 );
+        key = key( 3 );
+        value = value( 3 );
+        node.insertKeyValueAt( cursor, key, value, 2, 2 );
+        key = key( 4 );
+        value = value( 4 );
+        node.insertKeyValueAt( cursor, key, value, 3, 3 );
+        key = key( 5 );
+        value = value( 5 );
+        node.insertKeyValueAt( cursor, key, value, 4, 4 );
+
+        // AND
+        node.removeKeyValueAt( cursor, 1, 5 );
+        node.removeKeyValueAt( cursor, 2, 4 );
+        TreeNode.setKeyCount( cursor, 3 );
+
+        // WHEN
+        node.defragmentLeaf( cursor );
+
+        // THEN
+        assertKeyEquals( key( 1 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
+        assertKeyEquals( key( 3 ), node.keyAt( cursor, layout.newKey(), 1, LEAF ) );
+        assertKeyEquals( key( 5 ), node.keyAt( cursor, layout.newKey(), 2, LEAF ) );
+    }
+
+    @Test
+    public void shouldDefragLeafWithMultipleTombstonesInterleavedEven() throws Exception
+    {
+        // GIVEN
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        KEY key = key( 1 );
+        VALUE value = value( 1 );
+        node.insertKeyValueAt( cursor, key, value, 0, 0 );
+        key = key( 2 );
+        value = value( 2 );
+        node.insertKeyValueAt( cursor, key, value, 1, 1 );
+        key = key( 3 );
+        value = value( 3 );
+        node.insertKeyValueAt( cursor, key, value, 2, 2 );
+        key = key( 4 );
+        value = value( 4 );
+        node.insertKeyValueAt( cursor, key, value, 3, 3 );
+        key = key( 5 );
+        value = value( 5 );
+        node.insertKeyValueAt( cursor, key, value, 4, 4 );
+
+        // AND
+        node.removeKeyValueAt( cursor, 0, 5 );
+        node.removeKeyValueAt( cursor, 1, 4 );
+        node.removeKeyValueAt( cursor, 2, 3 );
+        TreeNode.setKeyCount( cursor, 2 );
+
+        // WHEN
+        node.defragmentLeaf( cursor );
+
+        // THEN
+        assertKeyEquals( key( 2 ), node.keyAt( cursor, layout.newKey(), 0, LEAF ) );
+        assertKeyEquals( key( 4 ), node.keyAt( cursor, layout.newKey(), 1, LEAF ) );
+    }
+
+    @Test
     public void shouldInsertAndRemoveRandomKeysAndValues() throws Exception
     {
         // This test doesn't care about sorting, that's an aspect that lies outside of TreeNode, really
@@ -398,7 +540,12 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                 while ( contains( expectedKeys, newKey, layout ) );
                 VALUE newValue = value( random.nextLong() );
 
-                if ( !node.leafOverflow( cursor, expectedKeyCount + 1, newKey, newValue ) )
+                TreeNode.Overflow overflow = node.leafOverflow( cursor, expectedKeyCount, newKey, newValue );
+                if ( overflow == NEED_DEFRAG )
+                {
+                    node.defragmentLeaf( cursor );
+                }
+                if ( overflow != YES )
                 {   // there's room
                     int position = expectedKeyCount == 0 ? 0 : random.nextInt( expectedKeyCount );
                     // ensure unique
@@ -419,7 +566,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                     node.removeKeyValueAt( cursor, position, expectedKeyCount );
                     KEY expectedKey = expectedKeys.remove( position );
                     VALUE expectedValue = expectedValues.remove( position );
-                    assertTrue( "Key differ with expected, key=" + readKey + ", expectedKey=" + expectedKey,
+                    assertTrue( String.format( "Key differ with expected%n    readKey=%s %nexpectedKey=%s%n", readKey, expectedKey ),
                             layout.compare( expectedKey, readKey ) == 0 );
                     assertTrue( "Value differ with expected, value=" + readValue + ", expectedValue=" + expectedValue,
                             layout.compareValue( expectedValue, readValue ) == 0 );

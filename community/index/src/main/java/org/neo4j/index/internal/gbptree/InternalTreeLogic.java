@@ -32,6 +32,8 @@ import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceSt
 import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.REPLACE;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_MID_CHILD;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_RIGHT_CHILD;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NEED_DEFRAG;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
@@ -555,11 +557,17 @@ class InternalTreeLogic<KEY,VALUE>
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
 
-        if ( bTreeNode.leafOverflow( cursor, keyCount, key, value ) )
+        TreeNode.Overflow overflow = bTreeNode.leafOverflow( cursor, keyCount, key, value );
+        if ( overflow == YES )
         {
             // Overflow, split leaf
             splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGeneration, unstableGeneration );
             return;
+        }
+
+        if ( overflow == NEED_DEFRAG )
+        {
+            bTreeNode.defragmentLeaf( cursor );
         }
 
         // No overflow, insert key and value
@@ -642,21 +650,10 @@ class InternalTreeLogic<KEY,VALUE>
 
         // Position where newKey / newValue is to be inserted
         int pos = positionOf( search( cursor, LEAF, newKey, readKey, keyCount ) );
-        int keyCountAfterInsert = keyCount + 1;
-        int middlePos = middle( keyCountAfterInsert );
 
         structurePropagation.hasRightKeyInsert = true;
         structurePropagation.midChild = current;
         structurePropagation.rightChild = newRight;
-
-        if ( middlePos == pos )
-        {
-            layout.copyKey( newKey, structurePropagation.rightKey );
-        }
-        else
-        {
-            bTreeNode.keyAt( cursor, structurePropagation.rightKey, pos < middlePos ? middlePos - 1 : middlePos, LEAF );
-        }
 
         try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
         {
@@ -665,10 +662,9 @@ class InternalTreeLogic<KEY,VALUE>
             bTreeNode.initializeLeaf( rightCursor, stableGeneration, unstableGeneration );
             TreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
-            int rightKeyCount = keyCountAfterInsert - middlePos;
 
             // Do split
-            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, rightKeyCount, pos, newKey, newValue, middlePos );
+            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, pos, newKey, newValue, structurePropagation );
         }
 
         // Update old right with new left sibling (newRight)
