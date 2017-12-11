@@ -107,7 +107,8 @@ public class OperationsLockTest
         allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
                 ExplicitIndexStore.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                storageStatement, transaction, cursors, autoindexing );
+                storageStatement, transaction, cursors, autoindexing,
+                new NodeSchemaMatcher( allStoreHolder ) );
         operations.initialize();
     }
 

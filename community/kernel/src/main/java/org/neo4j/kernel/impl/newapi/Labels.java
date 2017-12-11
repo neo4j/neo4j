@@ -93,4 +93,9 @@ public class Labels implements LabelSet
     {
         return "Labels" + Arrays.toString( labels );
     }
+
+    public long[] all()
+    {
+        return labels;
+    }
 }

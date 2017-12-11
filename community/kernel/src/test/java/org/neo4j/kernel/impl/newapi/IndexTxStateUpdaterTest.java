@@ -111,7 +111,7 @@ public class IndexTxStateUpdaterTest
         Read readOps = mock( Read.class );
         when( readOps.txState() ).thenReturn( txState );
 
-        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps );
+        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, new NodeSchemaMatcher( readOps ) );
 
     }
 

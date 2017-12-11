@@ -39,6 +39,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.values.storable.Values.intValue;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -200,6 +201,79 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             assertFalse( nodeCursor.labels().contains( label ) );
         }
     }
+
+    @Test
+    public void shouldCheckUniquenessWhenAddingProperties() throws Exception
+    {
+        // GIVEN
+        long nodeConflicting, nodeNotConflicting;
+        addConstraints( "FOO", "prop" );
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node conflict = graphDb.createNode();
+            conflict.addLabel( Label.label( "FOO" ) );
+            nodeConflicting = conflict.getId();
+
+            Node ok = graphDb.createNode();
+            ok.addLabel( Label.label( "BAR" ) );
+            nodeNotConflicting = ok.getId();
+
+            //Existing node
+            Node existing = graphDb.createNode();
+            existing.addLabel( Label.label( "FOO" ) );
+            existing.setProperty( "prop", 1337 );
+            tx.success();
+        }
+
+        int property;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            property = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+
+            //This is ok, since it will satisfy constraint
+            tx.dataWrite().nodeSetProperty( nodeNotConflicting, property, intValue(1337) );
+
+            try
+            {
+                tx.dataWrite().nodeSetProperty( nodeConflicting, property, intValue(1337) );
+                fail();
+            } catch ( ConstraintValidationException e )
+            {
+                //ignore
+            }
+            tx.success();
+        }
+
+        //Verify
+        try ( Transaction tx = session.beginTransaction();
+              NodeCursor nodeCursor = cursors.allocateNodeCursor();
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor())
+        {
+            //Node without conflict
+            tx.dataRead().singleNode( nodeNotConflicting, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.properties( propertyCursor );
+            assertTrue( hasKey( propertyCursor, property ) );
+            //Node with conflict
+            tx.dataRead().singleNode( nodeConflicting, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.properties( propertyCursor );
+            assertFalse( hasKey( propertyCursor, property ) );
+        }
+    }
+
+    private boolean hasKey(PropertyCursor propertyCursor, int key)
+    {
+        while (propertyCursor.next())
+        {
+            if (propertyCursor.propertyKey() == key)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     private void addConstraints(String... labelProps)
     {

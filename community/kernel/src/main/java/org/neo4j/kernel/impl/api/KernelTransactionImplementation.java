@@ -203,11 +203,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
+        org.neo4j.kernel.impl.newapi.NodeSchemaMatcher matcher =
+                new org.neo4j.kernel.impl.newapi.NodeSchemaMatcher( allStoreHolder );
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
-                        storageStatement, this, cursors, autoIndexing );
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
+                        storageStatement,
+                        this, cursors, autoIndexing, matcher );
     }
 
     /**

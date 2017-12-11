@@ -31,11 +31,11 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
 /**
  * This class holds functionality to match LabelSchemaDescriptors to nodes
  */
-class NodeSchemaMatcher
+public class NodeSchemaMatcher
 {
     private final Read read;
 
-    NodeSchemaMatcher( Read read )
+    public NodeSchemaMatcher( Read read )
     {
         this.read = read;
     }

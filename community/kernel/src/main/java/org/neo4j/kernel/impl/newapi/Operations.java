@@ -24,6 +24,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.CastingIterator;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
@@ -33,6 +35,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -55,9 +58,12 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
@@ -77,13 +83,14 @@ public class Operations implements Write, ExplicitIndexWrite
     private final IndexTxStateUpdater updater;
     private PropertyCursor propertyCursor;
     private final Cursors cursors;
+    private final NodeSchemaMatcher schemaMatcher;
 
     public Operations(
             AllStoreHolder allStoreHolder,
             IndexTxStateUpdater updater,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors, AutoIndexing autoIndexing  )
+            Cursors cursors, AutoIndexing autoIndexing, NodeSchemaMatcher schemaMatcher )
     {
         this.autoIndexing = autoIndexing;
         this.allStoreHolder = allStoreHolder;
@@ -91,6 +98,7 @@ public class Operations implements Write, ExplicitIndexWrite
         this.statement = statement;
         this.updater = updater;
         this.cursors = cursors;
+        this.schemaMatcher = schemaMatcher;
     }
 
     public void initialize()
@@ -183,7 +191,8 @@ public class Operations implements Write, ExplicitIndexWrite
             if ( constraint.enforcesUniqueness() )
             {
                 IndexBackedConstraintDescriptor uniqueConstraint = (IndexBackedConstraintDescriptor) constraint;
-                IndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( uniqueConstraint.schema() );
+                IndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( uniqueConstraint.schema(),
+                        StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
                 if ( propertyValues != null )
                 {
                     validateNoExistingNodeWithExactValues( uniqueConstraint, propertyValues, node );
@@ -200,9 +209,8 @@ public class Operations implements Write, ExplicitIndexWrite
     /**
      * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
      * array.
-     *
      */
-    private IndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema )
+    private IndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema, int changedPropertyKeyId, Value changedValue )
     {
         int[] schemaPropertyIds = schema.getPropertyIds();
         IndexQuery.ExactPredicate[] values = new IndexQuery.ExactPredicate[schemaPropertyIds.length];
@@ -219,6 +227,17 @@ public class Operations implements Write, ExplicitIndexWrite
                 {
                     values[k] = IndexQuery.exact( nodePropertyId, propertyCursor.propertyValue() );
                 }
+                nMatched++;
+            }
+        }
+
+        //This is true if we are adding a property
+        if ( changedPropertyKeyId != NO_SUCH_PROPERTY_KEY )
+        {
+            int k = ArrayUtils.indexOf( schemaPropertyIds, changedPropertyKeyId );
+            if ( k >= 0 )
+            {
+                values[k] = IndexQuery.exact( changedPropertyKeyId, changedValue );
                 nMatched++;
             }
         }
@@ -299,10 +318,38 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public Value nodeSetProperty( long node, int propertyKey, Value value )
-            throws EntityNotFoundException, AutoIndexingKernelException
+            throws KernelException
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
+
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, node );
+        }
+        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL,
+                nodeCursor.labels().all() );
+        Iterator<ConstraintDescriptor> constraints = Iterators.filter( hasProperty( propertyKey ),
+                allStoreHolder.constraintsGetAll() );
+        Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
+                new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
+
+        schemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, propertyKey,
+                ( constraint, propertyIds ) ->
+                {
+                    if ( propertyIds.contains( propertyKey ) )
+                    {
+                        Value previousValue = readNodeProperty( node, propertyKey );
+                        if ( value.equals( previousValue ) )
+                        {
+                            // since we are changing to the same value, there is no need to check
+                            return;
+                        }
+                    }
+                    validateNoExistingNodeWithExactValues( constraint,
+                            getAllPropertyValues( constraint.schema(), propertyKey, value ), node );
+                } );
 
         Value existingValue = readNodeProperty( node, propertyKey );
 

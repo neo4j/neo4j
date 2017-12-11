@@ -199,6 +199,12 @@ public class StubNodeCursor implements NodeCursor
                     }
                     return false;
                 }
+
+                @Override
+                public long[] all()
+                {
+                    return labels;
+                }
             };
         }
     }

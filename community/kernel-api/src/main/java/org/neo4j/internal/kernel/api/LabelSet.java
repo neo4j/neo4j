@@ -32,6 +32,8 @@ public interface LabelSet
 
     boolean contains( int labelToken );
 
+    long[] all();
+
     LabelSet NONE = new LabelSet()
     {
         @Override
@@ -50,6 +52,12 @@ public interface LabelSet
         public boolean contains( int labelToken )
         {
             return false;
+        }
+
+        @Override
+        public long[] all()
+        {
+            return new long[0];
         }
     };
 }
