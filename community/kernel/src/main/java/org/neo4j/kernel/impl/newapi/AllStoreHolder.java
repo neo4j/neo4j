@@ -28,12 +28,14 @@ import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
@@ -65,6 +67,8 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
+
+import static java.lang.String.format;
 
 public class AllStoreHolder extends Read implements Token
 {
@@ -164,17 +168,55 @@ public class AllStoreHolder extends Read implements Token
         {
             return CapableIndexReference.NO_INDEX;
         }
+
+        return indexGetCapability( indexDescriptor);
+    }
+
+    CapableIndexReference indexGetCapability( IndexDescriptor indexDescriptor )
+    {
         boolean unique = indexDescriptor.type() == IndexDescriptor.Type.UNIQUE;
         try
         {
             IndexCapability indexCapability = storeReadLayer.indexGetCapability( indexDescriptor );
-            return new DefaultCapableIndexReference( unique, indexCapability, label, properties );
+            return new DefaultCapableIndexReference( unique, indexCapability, indexDescriptor.schema().getLabelId(),
+                    indexDescriptor.schema().getPropertyIds() );
         }
         catch ( IndexNotFoundKernelException e )
         {
             throw new IllegalStateException( "Could not find capability for index " + indexDescriptor, e );
         }
     }
+
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        // If index is in our state, then return populating
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            if ( checkIndexState( descriptor,
+                    ktx.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
+            {
+                return InternalIndexState.POPULATING;
+            }
+        }
+
+        return storeReadLayer.indexGetState( descriptor );
+    }
+
+    private boolean checkIndexState( IndexDescriptor index, ReadableDiffSets<IndexDescriptor> diffSet )
+            throws IndexNotFoundKernelException
+    {
+        if ( diffSet.isAdded( index ) )
+        {
+            return true;
+        }
+        if ( diffSet.isRemoved( index ) )
+        {
+            throw new IndexNotFoundKernelException( format( "Index on %s has been dropped in this transaction.",
+                    index.userDescription( SchemaUtil.idTokenNameLookup ) ) );
+        }
+        return false;
+    }
+
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
@@ -426,5 +468,10 @@ public class AllStoreHolder extends Read implements Token
             throw new IllegalTokenNameException( name );
         }
         return name;
+    }
+
+    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return storeReadLayer.indexGetFailure( descriptor.schema() );
     }
 }

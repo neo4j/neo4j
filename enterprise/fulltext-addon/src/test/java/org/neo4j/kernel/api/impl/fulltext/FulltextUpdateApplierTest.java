@@ -27,8 +27,8 @@ import java.time.Clock;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;

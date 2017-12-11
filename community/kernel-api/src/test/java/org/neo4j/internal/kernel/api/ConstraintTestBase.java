@@ -25,7 +25,9 @@ import org.junit.Test;
 import java.util.List;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 
@@ -34,6 +36,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 @SuppressWarnings( "Duplicates" )
@@ -61,11 +65,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     public void shouldFindConstraintsBySchema() throws Exception
     {
         // GIVEN
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-        {
-            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop" ).create();
-            tx.success();
-        }
+        addConstraints( "FOO", "prop" );
 
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -87,12 +87,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     public void shouldFindConstraintsByLabel() throws Exception
     {
         // GIVEN
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-        {
-            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
-            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
-            tx.success();
-        }
+        addConstraints( "FOO", "prop1", "FOO", "prop2" );
 
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -114,9 +109,9 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
 
-            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
+            graphDb.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
             ConstraintDefinition dropped =
-                    graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
+                    graphDb.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
             dropped.drop();
             tx.success();
         }
@@ -137,13 +132,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     public void shouldFindAllConstraints() throws Exception
     {
         // GIVEN
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-        {
-            graphDb.schema().constraintFor( Label.label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
-            graphDb.schema().constraintFor( Label.label( "BAR" ) ).assertPropertyIsUnique( "prop2" ).create();
-            graphDb.schema().constraintFor( Label.label( "BAZ" ) ).assertPropertyIsUnique( "prop3" ).create();
-            tx.success();
-        }
+        addConstraints( "FOO", "prop1", "BAR", "prop2", "BAZ", "prop3" );
 
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -152,6 +141,77 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
             // THEN
             assertThat( constraints, hasSize( 3 ) );
+        }
+    }
+
+    @Test
+    public void shouldCheckUniquenessWhenAddingLabel() throws Exception
+    {
+        // GIVEN
+        long nodeConflicting, nodeNotConflicting;
+        addConstraints( "FOO", "prop" );
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node conflict = graphDb.createNode();
+            conflict.setProperty( "prop", 1337 );
+            nodeConflicting = conflict.getId();
+
+            Node ok = graphDb.createNode();
+            ok.setProperty( "prop", 42 );
+            nodeNotConflicting = ok.getId();
+
+            //Existing node
+            Node existing = graphDb.createNode();
+            existing.addLabel( Label.label( "FOO" ) );
+            existing.setProperty( "prop", 1337 );
+            tx.success();
+        }
+
+        int label;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            label = tx.tokenWrite().labelGetOrCreateForName( "FOO" );
+
+            //This is ok, since it will satisfy constraint
+            assertTrue( tx.dataWrite().nodeAddLabel( nodeNotConflicting, label ) );
+
+            try
+            {
+                tx.dataWrite().nodeAddLabel( nodeConflicting, label );
+                fail();
+            } catch ( ConstraintValidationException e )
+            {
+                //ignore
+            }
+            tx.success();
+        }
+
+        //Verify
+        try ( Transaction tx = session.beginTransaction();
+              NodeCursor nodeCursor = cursors.allocateNodeCursor() )
+        {
+            //Node without conflict
+            tx.dataRead().singleNode( nodeNotConflicting, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            assertTrue( nodeCursor.labels().contains( label ) );
+            //Node with conflict
+            tx.dataRead().singleNode( nodeConflicting, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            assertFalse( nodeCursor.labels().contains( label ) );
+        }
+    }
+
+    private void addConstraints(String... labelProps)
+    {
+        assert labelProps.length % 2 == 0;
+
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            for ( int i = 0; i < labelProps.length; i += 2 )
+            {
+                graphDb.schema().constraintFor( label( labelProps[i] ) ).assertPropertyIsUnique( labelProps[i + 1] ).create();
+            }
+            tx.success();
         }
     }
 }
