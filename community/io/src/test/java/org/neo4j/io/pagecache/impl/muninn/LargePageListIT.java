@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.stream.IntStream;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
+import org.neo4j.io.mem.MemoryAllocator;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -34,8 +34,6 @@ import static org.junit.Assert.assertTrue;
 
 public class LargePageListIT
 {
-    private static final long ALIGNMENT = 8;
-
     @Test
     public void veryLargePageListsMustBeFullyAccessible() throws Exception
     {
@@ -45,11 +43,11 @@ public class LargePageListIT
         long pageCacheSize = ByteUnit.gibiBytes( 513 ) + pageSize;
         int pages = Math.toIntExact( pageCacheSize / pageSize );
 
-        MemoryManager mman = new MemoryManager( ByteUnit.gibiBytes( 2 ), ALIGNMENT );
+        MemoryAllocator mman = MemoryAllocator.createAllocator( "2 GiB" );
         SwapperSet swappers = new SwapperSet();
         long victimPage = VictimPageReference.getVictimPage( pageSize );
 
-        PageList pageList = new PageList( pages, pageSize, mman, swappers, victimPage );
+        PageList pageList = new PageList( pages, pageSize, mman, swappers, victimPage, Long.BYTES );
 
         // Verify we end up with the correct number of pages.
         assertThat( pageList.getPageCount(), is( pages ) );

@@ -76,11 +76,12 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected int recordSize = 9;
     protected int maxPages = 20;
-    protected int pageCachePageSize = 32;
-    protected int recordsPerFilePage = pageCachePageSize / recordSize;
-    protected int recordCount = 25 * maxPages * recordsPerFilePage;
-    protected int filePageSize = recordsPerFilePage * recordSize;
-    protected ByteBuffer bufA = ByteBuffer.allocate( recordSize );
+
+    protected int pageCachePageSize;
+    protected int recordsPerFilePage;
+    protected int recordCount;
+    protected int filePageSize;
+    protected ByteBuffer bufA;
     protected FileSystemAbstraction fs;
     protected T pageCache;
 
@@ -109,34 +110,40 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         fs.close();
     }
 
-    protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, int pageSize,
-            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
+    protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
+                                       PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
-        return fixture.createPageCache( swapperFactory, maxPages, pageSize, tracer, cursorTracerSupplier );
+        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier );
+        pageCachePageSize = pageCache.pageSize();
+        recordsPerFilePage = pageCachePageSize / recordSize;
+        recordCount = 5 * maxPages * recordsPerFilePage;
+        filePageSize = recordsPerFilePage * recordSize;
+        bufA = ByteBuffer.allocate( recordSize );
+        return pageCache;
     }
 
-    protected T createPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheTracer tracer,
-            PageCursorTracerSupplier cursorTracerSupplier )
+    protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
+                                 PageCursorTracerSupplier cursorTracerSupplier )
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.open( fs, Configuration.EMPTY );
-        return createPageCache( swapperFactory, maxPages, pageSize, tracer, cursorTracerSupplier );
+        return createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier );
     }
 
-    protected final T getPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheTracer tracer,
-            PageCursorTracerSupplier cursorTracerSupplier ) throws IOException
+    protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
+                                    PageCursorTracerSupplier cursorTracerSupplier ) throws IOException
     {
         if ( pageCache != null )
         {
             tearDownPageCache( pageCache );
         }
-        pageCache = createPageCache( fs, maxPages, pageSize, tracer, cursorTracerSupplier );
+        pageCache = createPageCache( fs, maxPages, tracer, cursorTracerSupplier );
         return pageCache;
     }
 
     protected void configureStandardPageCache() throws IOException
     {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }
 
     protected final void tearDownPageCache( T pageCache ) throws IOException
@@ -319,8 +326,8 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     public abstract static class Fixture<T extends PageCache>
     {
-        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, int pageSize,
-                PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier );
+        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
+                                           PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier );
 
         public abstract void tearDownPageCache( T pageCache ) throws IOException;
 

@@ -34,19 +34,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.FileIsMappedException;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
@@ -105,6 +104,9 @@ public class MuninnPageCache implements PageCache
 {
     public static final byte ZERO_BYTE =
             (byte) (flag( MuninnPageCache.class, "brandedZeroByte", false ) ? 0x0f : 0);
+
+    // The amount of memory we need for every page, both its buffer and its meta-data.
+    private static final int MEMORY_USE_PER_PAGE = PAGE_SIZE + PageList.META_DATA_BYTES_PER_PAGE;
 
     // Keep this many pages free and ready for use in faulting.
     // This will be truncated to be no more than half of the number of pages
@@ -191,10 +193,19 @@ public class MuninnPageCache implements PageCache
     private boolean printExceptionsOnClose;
 
     /**
-     * Create page cache
+     * Compute the amount of memory needed for a page cache with the given number of 8 KiB pages.
+     * @param pageCount The number of pages
+     * @return The memory required for the buffers and meta-data of the given number of pages
+     */
+    public static long memoryRequiredForPages( long pageCount )
+    {
+        return pageCount * MEMORY_USE_PER_PAGE;
+    }
+
+    /**
+     * Create page cache.
      * @param swapperFactory page cache swapper factory
      * @param maxPages maximum number of pages
-     * @param cachePageSize page cache size
      * @param pageCacheTracer global page cache tracer
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
@@ -202,13 +213,50 @@ public class MuninnPageCache implements PageCache
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
             int maxPages,
+            PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier )
+    {
+        this( swapperFactory,
+                // Cast to long prevents overflow:
+                MemoryAllocator.createAllocator( "" + memoryRequiredForPages( maxPages ) ),
+                PAGE_SIZE,
+                pageCacheTracer,
+                pageCursorTracerSupplier );
+    }
+
+    /**
+     * Create page cache.
+     * @param swapperFactory page cache swapper factory
+     * @param memoryAllocator the source of native memory the page cache should use
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     */
+    public MuninnPageCache(
+            PageSwapperFactory swapperFactory,
+            MemoryAllocator memoryAllocator,
+            PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier )
+    {
+        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, pageCursorTracerSupplier );
+    }
+
+    /**
+     * Constructor variant that allows setting a non-standard cache page size.
+     * Only ever use this for testing.
+     */
+    @SuppressWarnings( "DeprecatedIsStillUsed" )
+    @Deprecated
+    public MuninnPageCache(
+            PageSwapperFactory swapperFactory,
+            MemoryAllocator memoryAllocator,
             int cachePageSize,
             PageCacheTracer pageCacheTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
-        verifyMinimumPageCount( maxPages, cachePageSize );
+        int maxPages = calculatePageCount( memoryAllocator, cachePageSize );
 
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
@@ -217,13 +265,9 @@ public class MuninnPageCache implements PageCache
         this.pageCacheTracer = pageCacheTracer;
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.printExceptionsOnClose = true;
-
         long alignment = swapperFactory.getRequiredBufferAlignment();
-        long expectedMaxMemory = ((long) maxPages) * cachePageSize; // cast to long prevents overflow
-        MemoryManager memoryManager = new MemoryManager( expectedMaxMemory, alignment );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
-
-        this.pages = new PageList( maxPages, cachePageSize, memoryManager, new SwapperSet(), victimPage );
+        this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
 
         setFreelistHead( new AtomicInteger() );
     }
@@ -244,15 +288,19 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    private static void verifyMinimumPageCount( int maxPages, int cachePageSize )
+    private static int calculatePageCount( MemoryAllocator memoryAllocator, int cachePageSize )
     {
+        long memoryPerPage = cachePageSize + PageList.META_DATA_BYTES_PER_PAGE;
+        long maxPages = memoryAllocator.availableMemory() / memoryPerPage;
         int minimumPageCount = 2;
         if ( maxPages < minimumPageCount )
         {
             throw new IllegalArgumentException( String.format(
                     "Page cache must have at least %s pages (%s bytes of memory), but was given %s pages.",
-                    minimumPageCount, minimumPageCount * cachePageSize, maxPages ) );
+                    minimumPageCount, minimumPageCount * memoryPerPage, maxPages ) );
         }
+        maxPages = Math.min( maxPages, PageList.MAX_PAGES );
+        return Math.toIntExact( maxPages );
     }
 
     @Override
@@ -381,14 +429,6 @@ public class MuninnPageCache implements PageCache
 
         // no mapping exists
         return null;
-    }
-
-    private void assertNotMapped( File file, FileIsMappedException.Operation operation ) throws IOException
-    {
-        if ( tryGetMappingOrNull( file ) != null )
-        {
-            throw new FileIsMappedException( file, operation );
-        }
     }
 
     /**

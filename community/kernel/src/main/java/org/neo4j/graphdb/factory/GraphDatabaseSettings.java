@@ -524,9 +524,8 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "JVM enough heap to hold all your transaction state and query context, and then leave the rest for " +
                   "the page cache. If no page cache memory is configured, then a heuristic setting is computed based " +
                   "on available system resources." )
-    public static final Setting<Long> pagecache_memory =
-            buildSetting( "dbms.memory.pagecache.size", BYTES, null)
-                    .constraint( min( 8192 * 30L ) ).build();
+    public static final Setting<String> pagecache_memory =
+            buildSetting( "dbms.memory.pagecache.size", STRING, null ).build();
 
     @Description( "Specify which page swapper to use for doing paged IO. " +
                   "This is only used when integrating with proprietary storage technology." )

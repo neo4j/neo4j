@@ -302,7 +302,7 @@ public abstract class KeyValueStoreFileFormat
 
     private static int pageSize( PageCache pages, int keySize, int valueSize )
     {
-        int pageSize = pages == null ? 8192 : pages.pageSize();
+        int pageSize = pages == null ? PageCache.PAGE_SIZE : pages.pageSize();
         pageSize -= pageSize % (keySize + valueSize);
         return pageSize;
     }

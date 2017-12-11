@@ -31,6 +31,7 @@ import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
@@ -53,7 +54,7 @@ public class PagedByteChannelsTest
             ThrowingFunction<PagedFile,? extends Channel,IOException> channelConstructor ) throws Exception
     {
         AtomicInteger closeCounter = new AtomicInteger();
-        PagedFile pf = new StubPagedFile( 8192 )
+        PagedFile pf = new StubPagedFile( PageCache.PAGE_SIZE )
         {
             @Override
             public PageCursor io( long pageId, int pf_flags ) throws IOException

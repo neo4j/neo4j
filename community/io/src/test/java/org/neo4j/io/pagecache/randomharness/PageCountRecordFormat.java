@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.randomharness;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -63,30 +64,41 @@ public class PageCountRecordFormat extends RecordFormat
     public void write( Record record, PageCursor cursor )
     {
         PageCountRecord r = (PageCountRecord) record;
-        for ( int i = 0; i < getRecordSize(); i++ )
+        int shorts = getRecordSize() / 2;
+        for ( int i = 0; i < shorts; i++ )
         {
-            cursor.putByte( r.getRecordId() );
+            cursor.putShort( r.getRecordId() );
         }
     }
 
     private static final class PageCountRecord implements Record
     {
         private final byte[] bytes;
+        private final ByteBuffer buf;
 
         PageCountRecord( int recordId, int recordSize )
         {
-            if ( recordId > Byte.MAX_VALUE )
+            if ( recordId > Short.MAX_VALUE )
             {
                 throw new IllegalArgumentException(
-                        "Record ID greater than Byte.MAX_VALUE: " + recordId );
+                        "Record ID greater than Short.MAX_VALUE: " + recordId );
             }
-            if ( recordSize < 1 )
+            if ( recordSize < 2 )
             {
                 throw new IllegalArgumentException(
                         "Record size must be positive: " + recordSize );
             }
+            if ( recordSize % 2 != 0 )
+            {
+                throw new IllegalArgumentException(
+                        "Record size must be even: " + recordSize );
+            }
             bytes = new byte[recordSize];
-            Arrays.fill( bytes, (byte) recordId );
+            buf = ByteBuffer.wrap( bytes );
+            for ( int i = 0; i < bytes.length; i += 2 )
+            {
+                buf.putShort( (short) recordId );
+            }
         }
 
         PageCountRecord( byte[] bytes )
@@ -94,6 +106,11 @@ public class PageCountRecordFormat extends RecordFormat
             if ( bytes.length == 0 )
             {
                 throw new IllegalArgumentException( "Bytes cannot be empty" );
+            }
+            if ( bytes.length % 2 != 0 )
+            {
+                throw new IllegalArgumentException(
+                        "Record size must be even: " + bytes.length );
             }
             byte first = bytes[0];
             for ( byte b : bytes )
@@ -105,11 +122,12 @@ public class PageCountRecordFormat extends RecordFormat
                 }
             }
             this.bytes = bytes;
+            this.buf = ByteBuffer.wrap( bytes );
         }
 
-        public byte getRecordId()
+        public short getRecordId()
         {
-            return bytes[0];
+            return buf.getShort( 0 );
         }
 
         @Override

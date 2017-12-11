@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.StandardOpenOption;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -50,6 +51,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -127,7 +129,7 @@ public class CommonAbstractStoreBehaviourTest
     private void prepareStoreForOutOfBoundsAccess()
     {
         createStore();
-        nextPageOffset.add( 8190 );
+        nextPageOffset.add( PAGE_SIZE - 2 );
     }
 
     private void verifyExceptionOnCursorError( ThrowingAction<Exception> access ) throws Exception
@@ -144,7 +146,7 @@ public class CommonAbstractStoreBehaviourTest
 
     private void createStore()
     {
-        store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ) );
+        store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ), 8 );
         store.initialise( true );
     }
 
@@ -152,20 +154,22 @@ public class CommonAbstractStoreBehaviourTest
     public void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow() throws Exception
     {
         // 16-byte header will overflow an 8-byte page size
-        PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config().withPageSize( 8 );
-        MyStore store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config ) );
+        PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config();
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config );
+        MyStore store = new MyStore( config, pageCache, PAGE_SIZE + 1 );
         assertThrowsUnderlyingStorageException( () -> store.initialise( true ) );
     }
 
     @Test
     public void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow() throws Exception
     {
-        MyStore first = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ) );
+        MyStore first = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ), 8 );
         first.initialise( true );
         first.close();
 
-        PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config().withPageSize( 8 );
-        MyStore second = new MyStore( config, pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config ) );
+        PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config();
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config );
+        MyStore second = new MyStore( config, pageCache, PAGE_SIZE + 1 );
         assertThrowsUnderlyingStorageException( () -> second.initialise( false ) );
     }
 
@@ -380,9 +384,9 @@ public class CommonAbstractStoreBehaviourTest
 
     private class MyFormat extends BaseRecordFormat<IntRecord> implements StoreHeaderFormat<LongLongHeader>
     {
-        MyFormat()
+        MyFormat( int recordHeaderSize )
         {
-            super( x -> 4, 8, 32 );
+            super( x -> 4, recordHeaderSize, 32 );
         }
 
         @Override
@@ -444,25 +448,30 @@ public class CommonAbstractStoreBehaviourTest
         @Override
         public void writeHeader( PageCursor cursor )
         {
-            cursor.putLong( 0xA5A5A5_7E7E7EL );
-            cursor.putLong( 0x3B3B3B_1A1A1AL );
+            for ( int i = 0; i < getRecordHeaderSize(); i++ )
+            {
+                cursor.putByte( (byte) ThreadLocalRandom.current().nextInt() );
+            }
         }
 
         @Override
         public LongLongHeader readHeader( PageCursor cursor )
         {
             LongLongHeader header = new LongLongHeader();
-            cursor.getLong(); // pretend to read fields into the header
-            cursor.getLong();
+            for ( int i = 0; i < getRecordHeaderSize(); i++ )
+            {
+                // pretend to read fields into the header
+                cursor.getByte();
+            }
             return header;
         }
     }
 
     private class MyStore extends CommonAbstractStore<IntRecord,LongLongHeader>
     {
-        MyStore( Config config, PageCache pageCache )
+        MyStore( Config config, PageCache pageCache, int recordHeaderSize )
         {
-            this( config, pageCache, new MyFormat() );
+            this( config, pageCache, new MyFormat( recordHeaderSize ) );
         }
 
         MyStore( Config config, PageCache pageCache, MyFormat format )
