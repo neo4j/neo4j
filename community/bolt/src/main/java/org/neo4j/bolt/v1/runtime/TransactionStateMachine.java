@@ -39,7 +39,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.function.ThrowingAction.noop;
@@ -200,14 +201,20 @@ public class TransactionStateMachine implements StatementProcessor
                         if ( BEGIN.matcher( statement ).matches() )
                         {
                             AnyValue txTimeoutMills = params.get( TX_TIMEOUT_MILLIS );
-                            if ( txTimeoutMills instanceof LongValue )
+                            if ( txTimeoutMills == Values.NO_VALUE )
+                            {
+                                ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
+                            }
+                            else if ( txTimeoutMills instanceof IntegralValue )
                             {
                                 ctx.currentTransaction = spi.beginTransaction( ctx.securityContext,
-                                        ((LongValue) txTimeoutMills).value(), TimeUnit.MILLISECONDS );
+                                        ((IntegralValue) txTimeoutMills).longValue(), TimeUnit.MILLISECONDS );
                             }
                             else
                             {
-                                ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
+                                throw new QueryExecutionKernelException( new InvalidSemanticsException(
+                                        "Invalid transaction timeout type. Expecting to be an integer, but got " +
+                                        txTimeoutMills.toString() ) );
                             }
 
                             Bookmark bookmark = Bookmark.fromParamsOrNull( params );

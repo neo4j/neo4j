@@ -431,7 +431,42 @@ public class TransactionStateMachineTest
         stateMachine.run( "BEGIN", map("txTimeout", 1234L ) );
         assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
 
-        verify( stateMachineSPI, times( 1 ) ).beginTransaction( any(), eq(1234L), eq(TimeUnit.MILLISECONDS) );
+        verify( stateMachineSPI, times( 1 ) ).beginTransaction( any(), eq(1234L ), eq(TimeUnit.MILLISECONDS) );
+    }
+
+    @Test
+    public void shouldBeginTxWithIntegerTimeoutIfProvided() throws Throwable
+    {
+        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        // start an explicit transaction
+        stateMachine.run( "BEGIN", map("txTimeout", 1234 ) );
+        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+
+        verify( stateMachineSPI, times( 1 ) ).beginTransaction( any(), eq(1234L ), eq(TimeUnit.MILLISECONDS) );
+    }
+
+    @Test
+    public void shouldErrorIfWrongTxTimeoutType() throws Throwable
+    {
+        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        // start an explicit transaction
+        try
+        {
+            stateMachine.run( "BEGIN", map( "txTimeout", 1234.4 ) );
+            fail( "exception expected" );
+        }
+        catch ( QueryExecutionKernelException t )
+        {
+            assertThat( t.status(), is( Status.Statement.SemanticError ) );
+        }
+        catch ( Throwable t )
+        {
+            fail( "expected QueryExecutionKernelException but got " + t.getMessage() );
+        }
     }
 
     @Test
