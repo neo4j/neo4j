@@ -54,6 +54,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker;
+import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
@@ -174,16 +176,22 @@ public class ImportLogic implements Closeable
 
     private void sanityCheckEstimatesWithRecordFormat( Estimates inputEstimates )
     {
-        sanityCheckEstimateWithMaxId( inputEstimates.numberOfNodes(), recordFormats.node().getMaxId(), "nodes" );
-        sanityCheckEstimateWithMaxId( inputEstimates.numberOfRelationships(), recordFormats.relationship().getMaxId(), "relationships" );
-    }
-
-    private static void sanityCheckEstimateWithMaxId( long estimate, long max, String formatName )
-    {
-        if ( estimate > max * 0.8 )
+        new EstimationSanityChecker( recordFormats, new Monitor()
         {
-            System.err.println( "WARNING: estimated number of " + formatName + " may exceed capacity of selected record format" );
-        }
+            @Override
+            public void nodeCountCapacity( long capacity, long estimatedCount )
+            {
+                System.err.printf( "WARNING: estimated number of relationships %d may exceed capacity %d of selected record format%n",
+                        estimatedCount, capacity );
+            }
+
+            @Override
+            public void relationshipCountCapacity( long capacity, long estimatedCount )
+            {
+                System.err.printf( "WARNING: estimated number of nodes %d may exceed capacity %d of selected record format%n",
+                        estimatedCount, capacity );
+            }
+        } ).sanityCheck( inputEstimates );
     }
 
     /**
