@@ -906,42 +906,63 @@ public interface RaftMessages
         }
     }
 
-    interface ClusterIdAwareMessage extends RaftMessage
+    interface EnrichedRaftMessage<RM extends RaftMessage> extends RaftMessage
+    {
+        RM message();
+
+        @Override
+        default MemberId from()
+        {
+            return message().from();
+        }
+
+        @Override
+        default Type type()
+        {
+            return message().type();
+        }
+
+        @Override
+        default <T, E extends Exception> T dispatch( Handler<T, E> handler ) throws E
+        {
+            return message().dispatch( handler );
+        }
+    }
+
+    interface ClusterIdAwareMessage<RM extends RaftMessage> extends EnrichedRaftMessage<RM>
     {
         ClusterId clusterId();
-        RaftMessage message();
 
-        static ClusterIdAwareMessage of( ClusterId clusterId, RaftMessage message )
+        static <RM extends RaftMessage>ClusterIdAwareMessage<RM> of( ClusterId clusterId, RM message )
         {
-            return new ClusterIdAwareMessageImpl( clusterId, message );
+            return new ClusterIdAwareMessageImpl<>( clusterId, message );
         }
     }
 
-    interface ReceivedInstantAwareMessage extends RaftMessage
+    interface ReceivedInstantAwareMessage<RM extends RaftMessage> extends EnrichedRaftMessage<RM>
     {
         Instant receivedAt();
-        RaftMessage message();
 
-        static ReceivedInstantAwareMessage of( Instant receivedAt, RaftMessage message )
+        static <RM extends RaftMessage> ReceivedInstantAwareMessage<RM> of( Instant receivedAt, RM message )
         {
-            return new ReceivedInstantAwareMessageImpl( receivedAt, message );
+            return new ReceivedInstantAwareMessageImpl<>( receivedAt, message );
         }
     }
 
-    interface ReceivedInstantClusterIdAwareMessage extends ReceivedInstantAwareMessage, ClusterIdAwareMessage
+    interface ReceivedInstantClusterIdAwareMessage<RM extends RaftMessage> extends ReceivedInstantAwareMessage<RM>, ClusterIdAwareMessage<RM>
     {
-        static ReceivedInstantClusterIdAwareMessage of( Instant receivedAt, ClusterId clusterId, RaftMessage message )
+        static <RM extends RaftMessage>ReceivedInstantClusterIdAwareMessage<RM> of( Instant receivedAt, ClusterId clusterId, RM message )
         {
-            return new ReceivedInstantClusterIdAwareMessageImpl( receivedAt, clusterId, message );
+            return new ReceivedInstantClusterIdAwareMessageImpl<>( receivedAt, clusterId, message );
         }
     }
 
-    class ClusterIdAwareMessageImpl implements ClusterIdAwareMessage
+    class ClusterIdAwareMessageImpl<RM extends RaftMessage> implements ClusterIdAwareMessage<RM>
     {
         private final ClusterId clusterId;
-        private final RaftMessage message;
+        private final RM message;
 
-        private ClusterIdAwareMessageImpl( ClusterId clusterId, RaftMessage message )
+        private ClusterIdAwareMessageImpl( ClusterId clusterId, RM message )
         {
             Objects.requireNonNull( message );
             this.clusterId = clusterId;
@@ -951,6 +972,12 @@ public interface RaftMessages
         public ClusterId clusterId()
         {
             return clusterId;
+        }
+
+        @Override
+        public RM message()
+        {
+            return message;
         }
 
         @Override
@@ -979,38 +1006,14 @@ public interface RaftMessages
         {
             return format( "{clusterId: %s, message: %s}", clusterId, message() );
         }
-
-        @Override
-        public MemberId from()
-        {
-            return message().from();
-        }
-
-        @Override
-        public Type type()
-        {
-            return message().type();
-        }
-
-        @Override
-        public RaftMessage message()
-        {
-            return message;
-        }
-
-        @Override
-        public <T, E extends Exception> T dispatch( Handler<T,E> visitor ) throws E
-        {
-            return message().dispatch( visitor );
-        }
     }
 
-    class ReceivedInstantAwareMessageImpl implements ReceivedInstantAwareMessage
+    class ReceivedInstantAwareMessageImpl<RM extends RaftMessage> implements ReceivedInstantAwareMessage<RM>
     {
         private final Instant receivedAt;
-        private final RaftMessage message;
+        private final RM message;
 
-        private ReceivedInstantAwareMessageImpl( Instant receivedAt, RaftMessage message )
+        private ReceivedInstantAwareMessageImpl( Instant receivedAt, RM message )
         {
             Objects.requireNonNull( message );
             this.receivedAt = receivedAt;
@@ -1021,6 +1024,12 @@ public interface RaftMessages
         public Instant receivedAt()
         {
             return receivedAt;
+        }
+
+        @Override
+        public RM message()
+        {
+            return message;
         }
 
         @Override
@@ -1049,39 +1058,15 @@ public interface RaftMessages
         {
             return format( "{receivedAt: %s, message: %s}", receivedAt, message() );
         }
-
-        @Override
-        public MemberId from()
-        {
-            return message().from();
-        }
-
-        @Override
-        public Type type()
-        {
-            return message().type();
-        }
-
-        @Override
-        public RaftMessage message()
-        {
-            return message;
-        }
-
-        @Override
-        public <T, E extends Exception> T dispatch( Handler<T,E> visitor ) throws E
-        {
-            return message().dispatch( visitor );
-        }
     }
 
-    class ReceivedInstantClusterIdAwareMessageImpl implements ReceivedInstantClusterIdAwareMessage
+    class ReceivedInstantClusterIdAwareMessageImpl<RM extends RaftMessage> implements ReceivedInstantClusterIdAwareMessage<RM>
     {
         private final Instant receivedAt;
         private final ClusterId clusterId;
-        private final RaftMessage message;
+        private final RM message;
 
-        private ReceivedInstantClusterIdAwareMessageImpl( Instant receivedAt, ClusterId clusterId, RaftMessage message )
+        private ReceivedInstantClusterIdAwareMessageImpl( Instant receivedAt, ClusterId clusterId, RM message )
         {
             Objects.requireNonNull( message );
             this.clusterId = clusterId;
@@ -1099,6 +1084,12 @@ public interface RaftMessages
         public ClusterId clusterId()
         {
             return clusterId;
+        }
+
+        @Override
+        public RM message()
+        {
+            return message;
         }
 
         @Override
@@ -1126,30 +1117,6 @@ public interface RaftMessages
         public String toString()
         {
             return format( "{clusterId: %s, receivedAt: %s, message: %s}", clusterId, receivedAt, message() );
-        }
-
-        @Override
-        public MemberId from()
-        {
-            return message().from();
-        }
-
-        @Override
-        public Type type()
-        {
-            return message().type();
-        }
-
-        @Override
-        public RaftMessage message()
-        {
-            return message;
-        }
-
-        @Override
-        public <T, E extends Exception> T dispatch( Handler<T,E> visitor ) throws E
-        {
-            return message().dispatch( visitor );
         }
     }
 
