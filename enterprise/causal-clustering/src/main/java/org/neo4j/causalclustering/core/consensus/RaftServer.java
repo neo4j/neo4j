@@ -104,7 +104,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
             log.warn( "Interrupted while closing channel." );
         }
 
-        if ( workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
+        if ( !workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
         {
             log.warn( "Worker group not shutdown within 10 seconds." );
         }

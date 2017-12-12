@@ -226,7 +226,7 @@ public class CatchupServer extends LifecycleAdapter
         }
 
         if ( workerGroup != null &&
-                workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
+             !workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
         {
             log.warn( "Worker group not shutdown within 10 seconds." );
         }
