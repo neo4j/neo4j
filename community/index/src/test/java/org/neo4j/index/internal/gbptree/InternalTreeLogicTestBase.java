@@ -39,6 +39,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -1178,17 +1179,17 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         // add some more keys to middleChild to not have remove trigger a merge
         goTo( readCursor, middleChild );
         KEY firstKeyInMiddleChild = keyAt( 0, LEAF );
+        VALUE firstValueInMiddleChild = valueAt( 0 );
         long seed = getSeed( firstKeyInMiddleChild );
         insert( key( seed + 1 ), value( seed + 1 ) );
+        insert( key( seed + 3 ), value( seed + 3 ) );
         goTo( readCursor, rootId );
 
         assertSiblings( leftChild, middleChild, rightChild );
 
         // WHEN
         generationManager.checkpoint();
-        long middleKeySeed = i / 2; // Should be located in middle leaf
-        KEY middleKey = key( middleKeySeed );
-        remove( middleKey, dontCare );
+        assertNotNull( remove( firstKeyInMiddleChild, dontCare ) );
 
         // THEN
         // root have new middle child
@@ -1202,11 +1203,11 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         assertEquals( newMiddleChild, successor( readCursor, stableGeneration, unstableGeneration ) );
 
         // old middle child has seen no change
-        assertKeyAssociatedWithValue( middleKey, value( middleKeySeed ) );
+        assertKeyAssociatedWithValue( firstKeyInMiddleChild, firstValueInMiddleChild );
 
         // new middle child has seen change
         goTo( readCursor, newMiddleChild );
-        assertKeyNotFound( middleKey, LEAF );
+        assertKeyNotFound( firstKeyInMiddleChild, LEAF );
 
         // sibling pointers updated
         assertSiblings( leftChild, newMiddleChild, rightChild );
@@ -1553,7 +1554,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         assertTrue( KeySearch.isHit( search ) );
         int keyPos = KeySearch.positionOf( search );
         node.valueAt( readCursor, readValue, keyPos );
-        assertEquals( expectedValue, readValue );
+        assertEqualsValue( expectedValue, readValue );
     }
 
     private void assertKeyNotFound( KEY key, TreeNode.Type type )
@@ -1673,8 +1674,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         structurePropagation.hasRightKeyInsert = false;
         structurePropagation.hasMidChildUpdate = false;
-        treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, stableGeneration,
-                unstableGeneration );
+        treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, stableGeneration, unstableGeneration );
         handleAfterChange();
     }
 

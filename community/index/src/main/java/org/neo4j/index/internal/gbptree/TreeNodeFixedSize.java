@@ -256,7 +256,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     /* SPLIT, MERGE and REBALANCE*/
 
     @Override
-    boolean internalOverflow( int currentKeyCount )
+    boolean internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey )
     {
         return currentKeyCount + 1 > internalMaxKeyCount();
     }

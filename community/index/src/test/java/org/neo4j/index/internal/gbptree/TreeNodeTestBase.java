@@ -234,38 +234,6 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         assertValueEquals( secondValue, node.valueAt( cursor, readValue, 1 ) );
     }
 
-    private void assertKeyEquals( KEY expectedKey, KEY actualKey )
-    {
-        assertTrue( String.format( "expectedKey=%s, actualKey=%s", expectedKey, actualKey ),
-                layout.compare( expectedKey, actualKey ) == 0 );
-    }
-
-    private void assertValueEquals( VALUE expectedValue, VALUE actualValue )
-    {
-        assertTrue( String.format( "expectedValue=%s, actualKey=%s", expectedValue, actualValue ),
-                layout.compareValue( expectedValue, actualValue ) == 0 );
-    }
-
-    private void assertKeysAndChildren( long stable, long unstable, long... keysAndChildren )
-    {
-        KEY actualKey = layout.newKey();
-        int pos;
-        for ( int i = 0; i < keysAndChildren.length; i++ )
-        {
-            pos = i / 2;
-            if ( i % 2 == 0 )
-            {
-                assertEquals( keysAndChildren[i], GenerationSafePointerPair.pointer( node.childAt( cursor, pos, stable, unstable ) ) );
-            }
-            else
-            {
-                KEY expectedKey = key( keysAndChildren[i] );
-                node.keyAt( cursor, actualKey, pos, INTERNAL );
-                assertTrue( layout.compare( expectedKey, actualKey ) == 0 );
-            }
-        }
-    }
-
     @Test
     public void keyChildOperationsInInternal() throws Exception
     {
@@ -328,6 +296,38 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // THEN
         assertKeysAndChildren( stable, unstable, overwriteChild, secondKey, secondChild );
+    }
+
+    @Test
+    public void shouldFillInternal() throws Exception
+    {
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        long stable = 3;
+        long unstable = 4;
+        int keyCount = 0;
+        long childId = 10;
+        node.setChildAt( cursor, childId, 0, stable, unstable );
+        childId++;
+        KEY key = key( childId );
+        for ( ; node.internalOverflow( cursor, keyCount, key ); childId++, keyCount++, key = key( childId ) )
+        {
+            node.insertKeyAndRightChildAt( cursor, key, childId, keyCount, keyCount, stable, unstable );
+        }
+
+        // Assert children
+        long firstChild = 10;
+        for ( int i = 0; i <= keyCount; i++ )
+        {
+            assertEquals( firstChild + i, pointer( node.childAt( cursor, i, stable, unstable ) ) );
+        }
+
+        // Assert keys
+        int firstKey = 11;
+        KEY readKey = layout.newKey();
+        for ( int i = 0; i < keyCount; i++ )
+        {
+            assertKeyEquals( key( firstKey + i ), node.keyAt( cursor, readKey, i, INTERNAL ) );
+        }
     }
 
     @Test
@@ -781,6 +781,38 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // THEN
         assertTrue( GenerationSafePointerPair.isLogicalPos( result ) );
+    }
+
+    private void assertKeyEquals( KEY expectedKey, KEY actualKey )
+    {
+        assertTrue( String.format( "expectedKey=%s, actualKey=%s", expectedKey, actualKey ),
+                layout.compare( expectedKey, actualKey ) == 0 );
+    }
+
+    private void assertValueEquals( VALUE expectedValue, VALUE actualValue )
+    {
+        assertTrue( String.format( "expectedValue=%s, actualKey=%s", expectedValue, actualValue ),
+                layout.compareValue( expectedValue, actualValue ) == 0 );
+    }
+
+    private void assertKeysAndChildren( long stable, long unstable, long... keysAndChildren )
+    {
+        KEY actualKey = layout.newKey();
+        int pos;
+        for ( int i = 0; i < keysAndChildren.length; i++ )
+        {
+            pos = i / 2;
+            if ( i % 2 == 0 )
+            {
+                assertEquals( keysAndChildren[i], GenerationSafePointerPair.pointer( node.childAt( cursor, pos, stable, unstable ) ) );
+            }
+            else
+            {
+                KEY expectedKey = key( keysAndChildren[i] );
+                node.keyAt( cursor, actualKey, pos, INTERNAL );
+                assertTrue( layout.compare( expectedKey, actualKey ) == 0 );
+            }
+        }
     }
 
     private long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )

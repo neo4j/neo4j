@@ -419,7 +419,7 @@ class InternalTreeLogic<KEY,VALUE>
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
 
-        if ( bTreeNode.internalOverflow( keyCount ) )
+        if ( bTreeNode.internalOverflow( cursor, keyCount, primKey ) )
         {
             // Overflow
             // We will overwrite rightKey in structurePropagation, so copy it over to a place holder

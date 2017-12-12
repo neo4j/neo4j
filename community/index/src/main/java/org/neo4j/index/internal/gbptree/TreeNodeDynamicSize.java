@@ -56,7 +56,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         super( pageSize, layout );
 
-        keyValueSizeCap = (pageSize - HEADER_LENGTH_DYNAMIC) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - BYTE_SIZE_TOTAL_OVERHEAD;
+        keyValueSizeCap = totalSpace( pageSize ) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - BYTE_SIZE_TOTAL_OVERHEAD;
 
         if ( keyValueSizeCap < MINIMUM_ENTRY_SIZE_CAP )
         {
@@ -155,7 +155,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // Update dead space
         int deadSpace = getDeadSpace( cursor );
-        setDeadSpace( cursor, deadSpace + keySize + valueSize + bytesKeySize() );
+        setDeadSpace( cursor, deadSpace + keySize + valueSize + bytesKeySize() + bytesValueSize() );
 
         // Remove from offset array
         removeSlotAt( cursor, pos, keyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffset() );
@@ -256,7 +256,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean reasonableKeyCount( int keyCount )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        return keyCount >= 0 && keyCount <= totalSpace( pageSize ) / BYTE_SIZE_TOTAL_OVERHEAD;
     }
 
     @Override
@@ -273,9 +273,13 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean internalOverflow( int currentKeyCount )
+    boolean internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        // How much space do we have?
+        int allocSpace = getAllocSpace( cursor, currentKeyCount, INTERNAL );
+        int neededSpace = totalSpaceOfKeyChild( newKey );
+
+        return neededSpace > allocSpace;
     }
 
     @Override
@@ -283,7 +287,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         // How much space do we have?
         int deadSpace = getDeadSpace( cursor );
-        int allocSpace = getAllocSpace( cursor, currentKeyCount );
+        int allocSpace = getAllocSpace( cursor, currentKeyCount, LEAF );
 
         // How much space do we need?
         int keySize = layout.keySize( newKey );
@@ -403,7 +407,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     boolean leafUnderflow( PageCursor cursor, int keyCount )
     {
         int halfSpace = halfSpace();
-        int allocSpace = getAllocSpace( cursor, keyCount );
+        int allocSpace = getAllocSpace( cursor, keyCount, LEAF );
         int deadSpace = getDeadSpace( cursor );
         int availableSpace = allocSpace + deadSpace;
 
@@ -447,7 +451,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             // insert _,_,_,X,_,_,_,_,_,_,_
             // middle           ^
             moveKeysAndValues( leftCursor, middlePos - 1, rightCursor, 0, rightKeyCount );
-
             defragmentLeaf( leftCursor );
             insertKeyValueAt( leftCursor, newKey, newValue, insertPos, middlePos - 1 );
         }
@@ -463,18 +466,17 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             int newInsertPos = insertPos - middlePos;
             int keysToMove = leftKeyCount - middlePos;
             moveKeysAndValues( leftCursor, middlePos, rightCursor, 0, keysToMove );
-
-            // Insert new key and value
+            defragmentLeaf( leftCursor );
             insertKeyValueAt( rightCursor, newKey, newValue, newInsertPos, keysToMove );
         }
         TreeNode.setKeyCount( leftCursor, middlePos );
         TreeNode.setKeyCount( rightCursor, rightKeyCount );
     }
 
-    private int getAllocSpace( PageCursor cursor, int keyCount )
+    private int getAllocSpace( PageCursor cursor, int keyCount, Type type )
     {
         int allocOffset = getAllocOffset( cursor );
-        int endOfOffsetArray = keyPosOffsetLeaf( keyCount );
+        int endOfOffsetArray = type == LEAF ? keyPosOffsetLeaf( keyCount ) : keyPosOffsetInternal( keyCount );
         return allocOffset - endOfOffsetArray;
     }
 
@@ -572,14 +574,24 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return middle;
     }
 
+    private int totalSpace( int pageSize )
+    {
+        return pageSize - HEADER_LENGTH_DYNAMIC;
+    }
+
     private int halfSpace()
     {
-        return (pageSize - HEADER_LENGTH_DYNAMIC) / 2;
+        return totalSpace( pageSize ) / 2;
     }
 
     private int totalSpaceOfKeyValue( KEY key, VALUE value )
     {
         return bytesKeyOffset() + bytesKeySize() + bytesValueSize() + layout.keySize( key ) + layout.valueSize( value );
+    }
+
+    private int totalSpaceOfKeyChild( KEY key )
+    {
+        return bytesKeyOffset() + bytesKeySize() + childSize() + layout.keySize( key );
     }
 
     private int totalSpaceOfKeyValue( PageCursor cursor, int pos )
@@ -604,10 +616,10 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         throw new UnsupportedOperationException( "Implement me" );
     }
 
-    private void setAllocOffset( PageCursor cursor, int allocSpace )
+    private void setAllocOffset( PageCursor cursor, int allocOffset )
     {
         cursor.setOffset( BYTE_POS_ALLOCOFFSET );
-        putKeyOffset( cursor, allocSpace );
+        putKeyOffset( cursor, allocOffset );
     }
 
     int getAllocOffset( PageCursor cursor )

@@ -318,10 +318,10 @@ abstract class TreeNode<KEY,VALUE>
     /* SPLIT, MERGE AND REBALANCE */
 
     /**
-     * Will internal overflow if inserting one more key?
+     * Will internal overflow if inserting new key?
      * @return true if leaf will overflow, else false.
      */
-    abstract boolean internalOverflow( int currentKeyCount );
+    abstract boolean internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey );
 
     /**
      * Will leaf overflow if inserting new key and value?
