@@ -21,6 +21,7 @@ package org.neo4j.scheduler;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -200,7 +201,7 @@ public interface JobScheduler extends Lifecycle
     {
         void cancel( boolean mayInterruptIfRunning );
 
-        void waitTermination() throws InterruptedException, ExecutionException;
+        void waitTermination() throws InterruptedException, ExecutionException, CancellationException;
 
         default void registerCancelListener( CancelListener listener )
         {
