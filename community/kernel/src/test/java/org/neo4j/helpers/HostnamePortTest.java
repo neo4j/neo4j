@@ -19,19 +19,19 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.Test;
+
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-
-import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 public class HostnamePortTest
 {
@@ -471,8 +471,6 @@ public class HostnamePortTest
     	// When & Then
     	
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234" ) ) );
-        // no scheme means no ports and no host, so both null therefore comparison fails
-        assertFalse( hostnamePortSinglePort.matches( URI.create( unknownHost + ":1234" ) ) );
     }
 
     @Test
@@ -491,8 +489,6 @@ public class HostnamePortTest
         String host1 = InetAddress.getLocalHost().getHostName();
         
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
-        // no scheme means no ports and no host, so both null therefore comparison fails
-        assertFalse( hostnamePortSinglePort.matches( URI.create( host1 + ":1234" ) ) );
     }
     
     @Test
