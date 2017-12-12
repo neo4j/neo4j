@@ -24,42 +24,90 @@ import com.codahale.metrics.MetricRegistry;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.function.LongConsumer;
 
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.Log;
+import org.neo4j.ports.allocation.PortAuthority;
 
 import static java.util.Collections.emptySortedMap;
-import static org.junit.Assert.assertEquals;
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class PrometheusOutputTest
 {
     @Test
-    public void eventsShouldBeRedirectedToGauges()
+    public void eventsShouldBeRedirectedToGauges() throws Throwable
     {
-        String metricKey = "my.metric";
+        String serverAddress = "localhost:" + PortAuthority.allocatePort();
         MetricRegistry registry = new MetricRegistry();
         PrometheusOutput prometheusOutput =
-                new PrometheusOutput( new HostnamePort( "localhost:8080" ), registry, Mockito.mock( Log.class ) );
+                new PrometheusOutput( new HostnamePort( serverAddress ), registry, Mockito.mock( Log.class ) );
 
-        LongConsumer callback = durationMillis ->
+        LongConsumer callback = l ->
         {
             TreeMap<String,Gauge> gauges = new TreeMap<>();
-            gauges.put( metricKey, () -> durationMillis );
+            gauges.put( "my.event", () -> l );
             prometheusOutput.report( gauges, emptySortedMap(), emptySortedMap(), emptySortedMap(), emptySortedMap() );
         };
 
-        assertEquals( 0, registry.getGauges().size() );
-
         callback.accept( 10 );
 
-        assertEquals( 1, registry.getGauges().size() );
-        assertEquals( "10", registry.getGauges().get( metricKey ).getValue().toString() );
+        prometheusOutput.init();
+        prometheusOutput.start();
+
+        assertTrue( getResponse( serverAddress ).contains( "my_event 10.0" ) );
+        assertTrue( getResponse( serverAddress ).contains( "my_event 10.0" ) );
+
+        callback.accept( 20 );
+        assertTrue( getResponse( serverAddress ).contains( "my_event 20.0" ) );
+        assertTrue( getResponse( serverAddress ).contains( "my_event 20.0" ) );
+    }
+
+    @Test
+    public void metricsRegisteredAfterStartShouldBeIncluded() throws Throwable
+    {
+        String serverAddress = "localhost:" + PortAuthority.allocatePort();
+        MetricRegistry registry = new MetricRegistry();
+        PrometheusOutput prometheusOutput =
+                new PrometheusOutput( new HostnamePort( serverAddress ), registry, Mockito.mock( Log.class ) );
+
+        LongConsumer callback = l ->
+        {
+            TreeMap<String,Gauge> gauges = new TreeMap<>();
+            gauges.put( "my.event", () -> l );
+            prometheusOutput.report( gauges, emptySortedMap(), emptySortedMap(), emptySortedMap(), emptySortedMap() );
+        };
+
+        registry.register( "my.metric", (Gauge) () -> 10 );
+
+        prometheusOutput.init();
+        prometheusOutput.start();
 
         callback.accept( 20 );
 
-        assertEquals( 1, registry.getGauges().size() );
-        assertEquals( "20", registry.getGauges().get( metricKey ).getValue().toString() );
+        String response = getResponse( serverAddress );
+        assertTrue( response.contains( "my_metric 10.0" ) );
+        assertTrue( response.contains( "my_event 20.0" ) );
+    }
+
+    private String getResponse( String serverAddress ) throws IOException
+    {
+        String url = "http://" + serverAddress + "/metrics";
+        URLConnection connection = new URL( url ).openConnection();
+        connection.setDoOutput( true );
+        connection.connect();
+        Scanner s = new Scanner( connection.getInputStream(), "UTF-8" ).useDelimiter( "\\A" );
+
+        assertTrue( s.hasNext() );
+        String ret = s.next();
+        assertFalse( s.hasNext() );
+        s.close();
+        return ret;
     }
 }

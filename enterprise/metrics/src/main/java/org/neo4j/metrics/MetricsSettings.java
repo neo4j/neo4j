@@ -160,5 +160,5 @@ public class MetricsSettings implements LoadableConfig
 
     @Description( "The hostname and port to use as Prometheus endpoint" )
     public static Setting<HostnamePort> prometheusEndpoint =
-            setting( "metrics.prometheus.endpoint", HOSTNAME_PORT, "localhost:8080" );
+            setting( "metrics.prometheus.endpoint", HOSTNAME_PORT, "localhost:2004" );
 }

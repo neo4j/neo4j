@@ -48,12 +48,14 @@ public class PrometheusOutput implements Lifecycle, EventReporter
 
     private HTTPServer server;
     private Map<String,Object> registeredEvents = new ConcurrentHashMap<>();
+    private final MetricRegistry eventRegistry;
 
     public PrometheusOutput( HostnamePort hostnamePort, MetricRegistry registry, Log logger )
     {
         this.hostnamePort = hostnamePort;
         this.registry = registry;
         this.logger = logger;
+        eventRegistry = new MetricRegistry();
     }
 
     @Override
@@ -61,6 +63,9 @@ public class PrometheusOutput implements Lifecycle, EventReporter
     {
         // Setup prometheus collector
         CollectorRegistry.defaultRegistry.register( new DropwizardExports( registry ) );
+
+        // We have to have a separate registry to not pollute the default one
+        CollectorRegistry.defaultRegistry.register( new DropwizardExports( eventRegistry ) );
     }
 
     @Override
@@ -98,7 +103,7 @@ public class PrometheusOutput implements Lifecycle, EventReporter
         String metricKey = gauges.firstKey();
         if ( !registeredEvents.containsKey( metricKey ) )
         {
-            registry.register( metricKey, (Gauge) () -> registeredEvents.get( metricKey ) );
+            eventRegistry.register( metricKey, (Gauge) () -> registeredEvents.get( metricKey ) );
         }
 
         registeredEvents.put( metricKey, gauges.get( metricKey ).getValue() );
