@@ -37,6 +37,8 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -1045,6 +1047,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             waitingTimeNanos = 0;
             transactionThreadId = -1;
         }
+    }
+
+    @Override
+    public NodeCursor nodeCursor()
+    {
+        return operations.nodeCursor();
+    }
+
+    @Override
+    public PropertyCursor propertyCursor()
+    {
+        return operations.propertyCursor();
     }
 
     /**

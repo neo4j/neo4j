@@ -421,4 +421,14 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         return allStoreHolder;
     }
+
+    public NodeCursor nodeCursor()
+    {
+        return nodeCursor;
+    }
+
+    public PropertyCursor propertyCursor()
+    {
+        return propertyCursor;
+    }
 }
