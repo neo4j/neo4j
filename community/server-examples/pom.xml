@@ -3,13 +3,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.12-SNAPSHOT</version>
+    <version>2.3.13-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-server-examples</artifactId>
   <name>Neo4j - Server Examples</name>
-  <version>2.3.12-SNAPSHOT</version>
+  <version>2.3.13-SNAPSHOT</version>
 
   <description>Neo4j Server Plugin Examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>

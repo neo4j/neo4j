@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>2.3.12-SNAPSHOT</version>
+    <version>2.3.13-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
@@ -11,7 +11,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-cypher-frontend-2.3</artifactId>
   <packaging>jar</packaging>
-  <version>2.3.12-SNAPSHOT</version>
+  <version>2.3.13-SNAPSHOT</version>
   <name>Neo4j - Cypher Frontend 2.3</name>
   <description>Front end of the Cypher compiler</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>

@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.12-SNAPSHOT</version>
+    <version>2.3.13-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-monitor-logging</artifactId>
   <name>Neo4j - Monitor Logging</name>
-  <version>2.3.12-SNAPSHOT</version>
+  <version>2.3.13-SNAPSHOT</version>
 
   <description>Logs information collected from a set of monitors.</description>
 

@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.12-SNAPSHOT</version>
+    <version>2.3.13-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-jmx</artifactId>
-  <version>2.3.12-SNAPSHOT</version>
+  <version>2.3.13-SNAPSHOT</version>
 
   <name>Neo4j - JMX support</name>
   <description>Management support using JMX.</description>

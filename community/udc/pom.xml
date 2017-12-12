@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.12-SNAPSHOT</version>
+    <version>2.3.13-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-udc</artifactId>
   <name>Neo4j - Usage Data Collection</name>
-  <version>2.3.12-SNAPSHOT</version>
+  <version>2.3.13-SNAPSHOT</version>
 
   <description>Collects simple statistics about server deployment.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>

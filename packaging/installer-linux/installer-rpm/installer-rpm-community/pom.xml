@@ -4,12 +4,12 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-installer-rpm</artifactId>
-        <version>2.3.12-SNAPSHOT</version>
+        <version>2.3.13-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>neo4j-community-rpm</artifactId>
-    <version>2.3.12-SNAPSHOT</version>
+    <version>2.3.13-SNAPSHOT</version>
     <packaging>pom</packaging>
 
 
