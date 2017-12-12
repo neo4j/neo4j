@@ -286,7 +286,7 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
-        return storeReadLayer.propertyKeyGetOrCreateForName( propertyKeyName );
+        return storeReadLayer.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKeyName ) );
     }
 
     @Override

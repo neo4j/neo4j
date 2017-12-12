@@ -197,7 +197,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[NodeValue] = {
     indexSearchMonitor.indexSeek(index, values)
     val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
-    val indexResult = transactionalContext.statement.readOperations().indexQuery(index, predicates: _*)
+    val indexResult = transactionalContext.statement.readOperations().indexQuery(cypherToKernel(index), predicates: _*)
     JavaConversionSupport.mapToScalaENFXSafe(indexResult)(nodeOps.getById)
   }
 
@@ -264,7 +264,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[NodeValue] = {
     val indexedNodes = transactionalContext.statement.readOperations()
-      .indexQuery(index, IndexQuery.stringPrefix(index.property, prefix))
+      .indexQuery(cypherToKernel(index), IndexQuery.stringPrefix(index.property, prefix))
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 
@@ -276,13 +276,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case rangeLessThan: RangeLessThan[Number] =>
         rangeLessThan.limit(BY_NUMBER).map { limit =>
           val rangePredicate = IndexQuery.range(index.property, null, false, limit.endPoint, limit.isInclusive)
-          readOps.indexQuery(index, rangePredicate)
+          readOps.indexQuery(cypherToKernel(index), rangePredicate)
         }
 
       case rangeGreaterThan: RangeGreaterThan[Number] =>
         rangeGreaterThan.limit(BY_NUMBER).map { limit =>
           val rangePredicate = IndexQuery.range(index.property, limit.endPoint, limit.isInclusive, null, false)
-          readOps.indexQuery(index, rangePredicate)
+          readOps.indexQuery(cypherToKernel(index), rangePredicate)
         }
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
@@ -291,7 +291,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
             val rangePredicate = IndexQuery
               .range(index.property, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint,
                      lessThanLimit.isInclusive)
-            readOps.indexQuery(index, rangePredicate)
+            readOps.indexQuery(cypherToKernel(index), rangePredicate)
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
@@ -307,14 +307,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         rangeLessThan.limit(BY_STRING).map { limit =>
           val rangePredicate = IndexQuery
             .range(index.property, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive)
-          readOps.indexQuery(index, rangePredicate)
+          readOps.indexQuery(cypherToKernel(index), rangePredicate)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case rangeGreaterThan: RangeGreaterThan[String] =>
         rangeGreaterThan.limit(BY_STRING).map { limit =>
           val rangePredicate = IndexQuery
             .range(index.property, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false);
-          readOps.indexQuery(index, rangePredicate)
+          readOps.indexQuery(cypherToKernel(index), rangePredicate)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
@@ -323,7 +323,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
             val rangePredicate = IndexQuery
               .range(index.property, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive,
                      lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
-            readOps.indexQuery(index, rangePredicate)
+            readOps.indexQuery(cypherToKernel(index), rangePredicate)
           }
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }
@@ -335,22 +335,22 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     JavaConversionSupport.mapToScalaENFXSafe(indexScanPrimitive(index))(nodeOps.getById)
 
   override def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongResourceIterator =
-    transactionalContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.property))
+    transactionalContext.statement.readOperations().indexQuery(cypherToKernel(index), IndexQuery.exists(index.property))
 
   override def indexScanByContains(index: IndexDescriptor, value: String): Iterator[NodeValue] =
     JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations()
-                                               .indexQuery(index, IndexQuery.stringContains(index.property, value)))(
+                                               .indexQuery(cypherToKernel(index), IndexQuery.stringContains(index.property, value)))(
       nodeOps.getById)
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String): Iterator[NodeValue] =
     JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations()
-                                               .indexQuery(index, IndexQuery.stringSuffix(index.property, value)))(
+                                               .indexQuery(cypherToKernel(index), IndexQuery.stringSuffix(index.property, value)))(
       nodeOps.getById)
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[NodeValue] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, values)
     val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
-    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, predicates: _*)
+    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(cypherToKernel(index), predicates: _*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -645,23 +645,25 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor] = {
+    val kernelDescriptor = cypherToKernelSchema(descriptor)
     try {
-      IdempotentResult(transactionalContext.statement.schemaWriteOperations().indexCreate(descriptor))
+      IdempotentResult(
+        kernelToCypher(transactionalContext.statement.schemaWriteOperations().indexCreate(kernelDescriptor)))
     } catch {
       case _: AlreadyIndexedException =>
         val indexDescriptor = transactionalContext.statement.readOperations().indexGetForSchema(
-          SchemaDescriptorFactory.forLabel(descriptor.getLabelId, descriptor.getPropertyIds: _*))
+          SchemaDescriptorFactory.forLabel(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*))
         if (transactionalContext.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
           throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
-        IdempotentResult(indexDescriptor, wasCreated = false)
+       IdempotentResult(kernelToCypher(indexDescriptor), wasCreated = false)
     }
   }
 
   override def dropIndexRule(descriptor: IndexDescriptor) =
-    transactionalContext.statement.schemaWriteOperations().indexDrop(descriptor)
+    transactionalContext.statement.schemaWriteOperations().indexDrop(cypherToKernel(descriptor))
 
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = try {
-    transactionalContext.statement.schemaWriteOperations().nodeKeyConstraintCreate(descriptor)
+    transactionalContext.statement.schemaWriteOperations().nodeKeyConstraintCreate(cypherToKernelSchema(descriptor))
     true
   } catch {
     case existing: AlreadyConstrainedException => false
@@ -669,10 +671,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def dropNodeKeyConstraint(descriptor: IndexDescriptor) =
     transactionalContext.statement.schemaWriteOperations()
-      .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(descriptor))
+      .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(cypherToKernelSchema(descriptor)))
 
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = try {
-    transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(descriptor)
+    transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(cypherToKernelSchema(descriptor))
     true
   } catch {
     case existing: AlreadyConstrainedException => false
@@ -680,7 +682,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def dropUniqueConstraint(descriptor: IndexDescriptor) =
     transactionalContext.statement.schemaWriteOperations()
-      .constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(descriptor))
+      .constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(cypherToKernelSchema(descriptor)))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     try {

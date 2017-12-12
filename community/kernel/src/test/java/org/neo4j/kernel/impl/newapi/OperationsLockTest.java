@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 
@@ -59,7 +60,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -102,12 +105,13 @@ public class OperationsLockTest
         StorageEngine engine = mock( StorageEngine.class );
         storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
+        when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
                 ExplicitIndexStore.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
                 storageStatement, transaction, cursors, autoindexing,
-                new NodeSchemaMatcher( allStoreHolder ) );
+                mock( NodeSchemaMatcher.class ) );
         operations.initialize();
     }
 
@@ -160,7 +164,7 @@ public class OperationsLockTest
         operations.nodeAddLabel( 123, labelId );
 
         // then
-        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
+        verify( locks, atLeastOnce() ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
         assertThat( txState.getNodeState( 123L ).labelDiffSets().getAdded(), contains( 456 ) );
     }
 
