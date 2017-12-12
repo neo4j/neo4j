@@ -24,7 +24,7 @@ package org.neo4j.function;
  *
  * @param <E> The type of exception this action may throw.
  */
-public interface ThrowingAction<E extends Exception>
+public interface ThrowingAction<E extends Throwable>
 {
     /**
      * Apply the action for some or all of its side-effects to take place, possibly throwing an exception.
@@ -33,7 +33,7 @@ public interface ThrowingAction<E extends Exception>
      */
     void apply() throws E;
 
-    static <E extends Exception> ThrowingAction<E> noop()
+    static <E extends Throwable> ThrowingAction<E> noop()
     {
         return () ->
         {
