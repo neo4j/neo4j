@@ -78,7 +78,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         }
         if ( jobHandle != null )
         {
-            jobHandle.cancel( true );
+            jobHandle.cancel( false );
             jobHandle.waitTermination();
         }
     }
