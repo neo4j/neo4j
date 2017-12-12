@@ -63,7 +63,7 @@ public class SecondaryUnitPrepareIdSequenceTest
         try
         {
             prepared.nextId();
-            fail( "Shoul've failed" );
+            fail( "Should've failed" );
         }
         catch ( IllegalStateException e )
         {   // good

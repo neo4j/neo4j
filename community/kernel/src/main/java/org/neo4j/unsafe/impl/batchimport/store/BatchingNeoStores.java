@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -81,7 +82,9 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
 public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visitable
 {
     // Empirical and slightly defensive threshold where relationship records seem to start requiring double record units.
-    private static final long DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD = 1L << 33;
+    // Basically decided by picking a maxId of pointer (as well as node ids) in the relationship record and randomizing its data,
+    // seeing which is a maxId where records starts to require a secondary unit.
+    static final long DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD = 1L << 33;
     private static final String TEMP_NEOSTORE_NAME = "temp." + DEFAULT_NAME;
 
     private final FileSystemAbstraction fileSystem;
@@ -429,8 +432,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public boolean determineDoubleRelationshipRecordUnits( Estimates inputEstimates )
     {
         doubleRelationshipRecordUnits =
-                // TODO figure out in a good way if this is the high limit format
-                recordFormats.relationship().getMaxId() > 2L << 36 &&
+                recordFormats.hasCapability( Capability.SECONDARY_RECORD_UNITS ) &&
                 inputEstimates.numberOfRelationships() > DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
         return doubleRelationshipRecordUnits;
     }

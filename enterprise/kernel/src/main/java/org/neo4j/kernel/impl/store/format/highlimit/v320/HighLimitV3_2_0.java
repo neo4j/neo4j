@@ -54,7 +54,7 @@ public class HighLimitV3_2_0 extends BaseRecordFormats
     public HighLimitV3_2_0()
     {
         super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_2_0.introductionVersion(), 4, Capability.DENSE_NODES,
-                Capability.RELATIONSHIP_TYPE_3BYTES, Capability.SCHEMA, Capability.LUCENE_5 );
+                Capability.RELATIONSHIP_TYPE_3BYTES, Capability.SCHEMA, Capability.LUCENE_5, Capability.SECONDARY_RECORD_UNITS );
     }
 
     @Override
