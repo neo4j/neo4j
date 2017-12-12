@@ -48,11 +48,6 @@ object SlotAllocation {
 
   case class SlotsAndArgument(slotConfiguration: SlotConfiguration, argumentSize: Size)
 
-  // If we reintroduce pipeline again to hold the final slot size, which is needed when we create new execution context.
-  // (actually leaf pipes should get new execution contexts from the pipeline, and terminator pipes should release them back to pipeline
-  //  (which holds a pool of contexts))
-  // We can then have an individual copy of SlotConfiguration for each plan id which holds the current slots and size that exists at that pipeline stage.
-  // It can also hold liveness information (at least we can remove variables/symbols/aliases that are not live after a projection/aggregation (horizon))
   case class PhysicalPlan(slotConfigurations: Map[LogicalPlanId, SlotConfiguration],
                           argumentSizes: Map[LogicalPlanId, Size])
 
@@ -474,16 +469,18 @@ object SlotAllocation {
       case ProcedureCall(_, ResolvedCall(_, _, callResults, _, _)) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         // Also, if the procedure is void it cannot increase cardinality.
+        val result = source.copy()
         callResults.foreach {
           case ProcedureResultItem(output, variable) =>
-            source.newReference(variable.name, true, CTAny)
+            result.newReference(variable.name, true, CTAny)
         }
-        source
+        result
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
-        allocateShortestPathPattern(shortestPathPattern, source, nullable)
-        source
+        val result = source.copy()
+        allocateShortestPathPattern(shortestPathPattern, result, nullable)
+        result
 
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
