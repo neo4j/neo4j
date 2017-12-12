@@ -40,6 +40,7 @@ import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
+import org.neo4j.causalclustering.core.server.ServerShutdown;
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
@@ -94,20 +95,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     public synchronized void stop() throws Throwable
     {
         log.info( "RaftServer stopping and unbinding from " + listenAddress );
-        try
-        {
-            channel.close().sync();
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-            log.warn( "Interrupted while closing channel." );
-        }
-
-        if ( workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
-        {
-            log.warn( "Worker group not shutdown within 10 seconds." );
-        }
+        new ServerShutdown( log, workerGroup, channel ).shutdown();
     }
 
     private void startNettyServer()

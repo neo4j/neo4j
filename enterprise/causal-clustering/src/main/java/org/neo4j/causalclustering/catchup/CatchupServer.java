@@ -53,6 +53,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.server.ServerShutdown;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequest;
@@ -208,28 +209,15 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void stop() throws Throwable
     {
-        if ( channel == null )
-        {
-            return;
-        }
-
         log.info( "CatchupServer stopping and unbinding from " + listenAddress );
         try
         {
-            channel.close().sync();
+            new ServerShutdown( log, workerGroup, channel ).shutdown();
+        }
+        finally
+        {
             channel = null;
+            workerGroup = null;
         }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-            log.warn( "Interrupted while closing channel." );
-        }
-
-        if ( workerGroup != null &&
-                workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
-        {
-            log.warn( "Worker group not shutdown within 10 seconds." );
-        }
-        workerGroup = null;
     }
 }
