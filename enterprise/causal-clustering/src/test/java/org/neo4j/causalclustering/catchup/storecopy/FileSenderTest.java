@@ -20,12 +20,14 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.buffer.ByteBufAllocator;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.Random;
 
 import org.neo4j.adversaries.Adversary;
@@ -33,6 +35,7 @@ import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -41,19 +44,27 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.storecopy.FileChunk.MAX_SIZE;
 
 public class FileSenderTest
 {
+    private final Random random = new Random();
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final FileSystemAbstraction fs = fsRule.get();
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory( fsRule.get() );
-
-    private final FileSystemAbstraction fs = fsRule.get();
-    private final Random random = new Random();
     private ByteBufAllocator allocator = mock( ByteBufAllocator.class );
+    private PageCache pageCache = mock( PageCache.class );
+
+    @Before
+    public void setup() throws IOException
+    {
+        when( pageCache.getExistingMapping( any() ) ).thenReturn( Optional.empty() );
+    }
 
     @Test
     public void sendEmptyFile() throws Exception
@@ -61,7 +72,7 @@ public class FileSenderTest
         // given
         File emptyFile = testDirectory.file( "emptyFile" );
         fs.create( emptyFile ).close();
-        FileSender fileSender = new FileSender( fs.open( emptyFile, "r" ) );
+        FileSender fileSender = new FileSender( new StoreResource( emptyFile, null, 16, pageCache, fs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -83,7 +94,7 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
+        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, pageCache, fs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -106,13 +117,12 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
+        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, pageCache, fs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
         assertEquals( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ), fileSender.readChunk( allocator ) );
-        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, bytes.length ), true ),
-                fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, bytes.length ), true ), fileSender.readChunk( allocator ) );
         assertNull( fileSender.readChunk( allocator ) );
         assertTrue( fileSender.isEndOfInput() );
     }
@@ -130,15 +140,13 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( fs.open( smallFile, "r" ) );
+        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, pageCache, fs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
         assertEquals( FileChunk.create( copyOfRange( bytes, 0, MAX_SIZE ), false ), fileSender.readChunk( allocator ) );
-        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, MAX_SIZE * 2 ), false ),
-                fileSender.readChunk( allocator ) );
-        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE * 2, bytes.length ), true ),
-                fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE, MAX_SIZE * 2 ), false ), fileSender.readChunk( allocator ) );
+        assertEquals( FileChunk.create( copyOfRange( bytes, MAX_SIZE * 2, bytes.length ), true ), fileSender.readChunk( allocator ) );
         assertNull( fileSender.readChunk( allocator ) );
         assertTrue( fileSender.isEndOfInput() );
     }
@@ -149,8 +157,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        StoreChannel reader = fs.open( file, "r" );
-        FileSender fileSender = new FileSender( reader );
+        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, pageCache, fs ) );
 
         // when
         byte[] bytes = writeRandomBytes( writer, 1024 );
@@ -168,8 +175,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        StoreChannel reader = fs.open( file, "r" );
-        FileSender fileSender = new FileSender( reader );
+        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, pageCache, fs ) );
 
         // when
         byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
@@ -194,8 +200,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        StoreChannel reader = fs.open( file, "r" );
-        FileSender fileSender = new FileSender( reader );
+        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, pageCache, fs ) );
 
         // when
         byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
@@ -219,8 +224,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        StoreChannel reader = fs.open( file, "r" );
-        FileSender fileSender = new FileSender( reader );
+        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, pageCache, fs ) );
 
         // when
         byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
@@ -263,7 +267,7 @@ public class FileSenderTest
 
         Adversary adversary = new RandomAdversary( 0.9, 0.0, 0.0 );
         AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction( adversary, fs );
-        FileSender fileSender = new FileSender( afs.open( smallFile, "r" ) );
+        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, pageCache, afs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
