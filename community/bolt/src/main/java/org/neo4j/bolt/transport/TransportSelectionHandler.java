@@ -136,7 +136,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         p.addLast(
                 new HttpServerCodec(),
                 new HttpObjectAggregator( MAX_WEBSOCKET_HANDSHAKE_SIZE ),
-                new WebSocketServerProtocolHandler( "" ),
+                new WebSocketServerProtocolHandler( "/" ),
                 new WebSocketFrameTranslator(),
                 new SocketTransportHandler(
                         new SocketTransportHandler.ProtocolChooser( protocolVersions, isEncrypted ), logging ) );
