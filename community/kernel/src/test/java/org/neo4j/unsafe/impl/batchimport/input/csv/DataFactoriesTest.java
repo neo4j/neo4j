@@ -201,9 +201,13 @@ public class DataFactoriesTest
     public void shouldParseGroupName() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = seeker( ":START_ID(GroupOne)\t:END_ID(GroupTwo)\ttype:TYPE\tdate:long\tmore:long[]" );
+        String groupOneName = "GroupOne";
+        String groupTwoName = "GroupTwo";
+        CharSeeker seeker = seeker( ":START_ID(" + groupOneName + ")\t:END_ID(" + groupTwoName + ")\ttype:TYPE\tdate:long\tmore:long[]" );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
+        groups.getOrCreate( groupOneName );
+        groups.getOrCreate( groupTwoName );
 
         // WHEN
         Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType, groups );

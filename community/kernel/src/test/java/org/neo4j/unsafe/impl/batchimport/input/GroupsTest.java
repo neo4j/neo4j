@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
-
 import static org.neo4j.unsafe.impl.batchimport.input.Groups.LOWEST_NONGLOBAL_ID;
 
 public class GroupsTest
@@ -54,26 +54,26 @@ public class GroupsTest
         assertEquals( LOWEST_NONGLOBAL_ID + 1, otherGroup.id() );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void shouldFailOnMixedGroupModeInGetOrCreate() throws Exception
+    @Test
+    public void shouldSupportMixedGroupModeInGetOrCreate() throws Exception
     {
         // given
         Groups groups = new Groups();
-        groups.getOrCreate( null );
+        assertEquals( Group.GLOBAL, groups.getOrCreate( null ) );
 
         // when
-        groups.getOrCreate( "Something" );
+        assertNotEquals( Group.GLOBAL, groups.getOrCreate( "Something" ) );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void shouldFailOnMixedGroupModeInGetOrCreate2() throws Exception
+    @Test
+    public void shouldSupportMixedGroupModeInGetOrCreate2() throws Exception
     {
         // given
         Groups groups = new Groups();
-        groups.getOrCreate( "Something" );
+        assertNotEquals( Group.GLOBAL, groups.getOrCreate( "Something" ) );
 
         // when
-        groups.getOrCreate( null );
+        assertEquals( Group.GLOBAL, groups.getOrCreate( null ) );
     }
 
     @Test
@@ -105,23 +105,22 @@ public class GroupsTest
         assertSame( Group.GLOBAL, group );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void shouldFailOnMixedGroupModeInGet() throws Exception
+    @Test
+    public void shouldSupportMixedGroupModeInGet() throws Exception
     {
         // given
         Groups groups = new Groups();
         groups.getOrCreate( "Something" );
 
         // when
-        groups.get( null );
+        assertEquals( Group.GLOBAL, groups.get( null ) );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void shouldFailOnMixedGroupModeInGet2() throws Exception
+    @Test ( expected = HeaderException.class )
+    public void shouldFailOnGettingNonExistentGroup() throws Exception
     {
         // given
         Groups groups = new Groups();
-        groups.getOrCreate( null );
 
         // when
         groups.get( "Something" );

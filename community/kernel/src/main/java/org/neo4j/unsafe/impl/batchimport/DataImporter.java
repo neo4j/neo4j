@@ -143,6 +143,7 @@ public class DataImporter
         step.markAsCompleted();
         writeMonitor.stop();
         executionMonitor.end( execution, currentTimeMillis() - startTime );
+        execution.assertHealthy();
 
         return roughEntityCountProgress.sum();
     }
