@@ -499,10 +499,12 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     public void modifierMustRemoveFromRightChildButNotFromInternalWithHitOnInternalSearch() throws Exception
     {
         initialize();
-        for ( int i = 0; numberOfRootSplits == 0; i++ )
+        int i;
+        for ( i = 0; numberOfRootSplits == 0; i++ )
         {
             insert( key( i ), value( i ) );
         }
+        insert( key( i ), value( i ) ); // And one more to avoid rebalance
 
         // when key to remove exists in internal
         KEY keyToRemove = structurePropagation.rightKey;
@@ -566,10 +568,12 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         // given
         initialize();
-        for ( int i = 0; numberOfRootSplits == 0; i++ )
+        int i;
+        for ( i = 0; numberOfRootSplits == 0; i++ )
         {
             insert( key( i ), value( i ) );
         }
+        insert( key( i ), value( i ) ); // And an extra to not cause rebalance
 
         // when key to remove exists in internal
         KEY keyToRemove = structurePropagation.rightKey;
@@ -773,7 +777,8 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         // new left child contain keys from old left and old middle
         goTo( readCursor, oldRightChild );
         KEY firstKeyOfOldRightChild = keyAt( 0, LEAF );
-        List<KEY> expectedKeysInNewLeftChild = allKeys.subList( 0, allKeys.indexOf( firstKeyOfOldRightChild ) );
+        int index = indexOf( firstKeyOfOldRightChild, allKeys, layout );
+        List<KEY> expectedKeysInNewLeftChild = allKeys.subList( 0, index );
         goTo( readCursor, newLeftChild );
         assertNodeContainsExpectedKeys( expectedKeysInNewLeftChild, LEAF );
 
@@ -1403,6 +1408,20 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
             // THEN
             assertThat( e.getMessage(), containsString( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE ) );
         }
+    }
+
+    private int indexOf( KEY theKey, List<KEY> keys, Layout<KEY,VALUE> layout )
+    {
+        int i = 0;
+        for ( KEY key : keys )
+        {
+            if ( layout.compare( theKey, key ) == 0 )
+            {
+                return i;
+            }
+            i++;
+        }
+        return -1;
     }
 
     private void giveSuccessor( PageCursor cursor, long nodeId ) throws IOException

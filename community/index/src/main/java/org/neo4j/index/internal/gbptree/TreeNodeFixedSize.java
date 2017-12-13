@@ -279,9 +279,15 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean canRebalanceLeaves( int leftKeyCount, int rightKeyCount )
+    int canRebalanceLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
     {
-        return leftKeyCount + rightKeyCount >= leafMaxKeyCount();
+        if ( leftKeyCount + rightKeyCount >= leafMaxKeyCount() )
+        {
+            int totalKeyCount = rightKeyCount + leftKeyCount;
+            int moveFromPosition = totalKeyCount / 2;
+            return leftKeyCount - moveFromPosition;
+        }
+        return -1;
     }
 
     @Override

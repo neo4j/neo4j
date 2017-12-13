@@ -415,9 +415,40 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean canRebalanceLeaves( int leftKeyCount, int rightKeyCount )
+    int canRebalanceLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        // Know that right has underflow
+        int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount );
+        int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount );
+
+        if ( leftActiveSpace + rightActiveSpace < totalSpace( pageSize ) )
+        {
+            // There is no way to split this up without one of them having an underflow
+            return -1;
+        }
+
+        int prevDelta;
+        int currentDelta = Math.abs( leftActiveSpace - rightActiveSpace );
+        int keysToMove = 0;
+        int lastChunkSize;
+        do
+        {
+            keysToMove++;
+            lastChunkSize = totalSpaceOfKeyValue( leftCursor, leftKeyCount - keysToMove );
+            leftActiveSpace -= lastChunkSize;
+            rightActiveSpace += lastChunkSize;
+
+            prevDelta = currentDelta;
+            currentDelta = Math.abs( leftActiveSpace - rightActiveSpace );
+        }
+        while ( currentDelta < prevDelta );
+        keysToMove--; // Move back to optimal split
+        leftActiveSpace += lastChunkSize;
+        rightActiveSpace -= lastChunkSize;
+
+        int halfSpace = halfSpace();
+        boolean canRebalance = leftActiveSpace > halfSpace && rightActiveSpace > halfSpace;
+        return canRebalance ? keysToMove : -1;
     }
 
     @Override
@@ -574,6 +605,13 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return middle;
     }
 
+    private int totalActiveSpace( PageCursor cursor, int keyCount )
+    {
+        int deadSpace = getDeadSpace( cursor );
+        int allocSpace = getAllocSpace( cursor, keyCount, LEAF );
+        return totalSpace( pageSize ) - deadSpace - allocSpace;
+    }
+
     private int totalSpace( int pageSize )
     {
         return pageSize - HEADER_LENGTH_DYNAMIC;
@@ -613,7 +651,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     void moveKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
             int fromPosInLeftNode )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        defragmentLeaf( rightCursor );
+        int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
+
+        // Push keys and values in right sibling to the right
+        insertSlotsAt( rightCursor, 0, numberOfKeysToMove, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeySize() );
+
+        // Move
+        moveKeysAndValues( leftCursor, fromPosInLeftNode, rightCursor, 0, numberOfKeysToMove );
     }
 
     private void setAllocOffset( PageCursor cursor, int allocOffset )

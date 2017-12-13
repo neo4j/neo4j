@@ -336,7 +336,11 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract boolean leafUnderflow( PageCursor cursor, int keyCount );
 
-    abstract boolean canRebalanceLeaves( int leftKeyCount, int rightKeyCount );
+    /**
+     * Can we move keys from underflowing left to right so that none of them underflow?
+     * @return number of keys to move or -1 if not possible.
+     */
+    abstract int canRebalanceLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount );
 
     abstract boolean canMergeLeaves( int leftKeyCount, int rightKeyCount );
 
@@ -362,7 +366,9 @@ abstract class TreeNode<KEY,VALUE>
             long newRightChild, int middlePos, long stableGeneration, long unstableGeneration );
 
     /**
-     * Move all rightmost keys and values in left node from given position to right node.
+     * Move all rightmost keys and values in left leaf from given position to right node.
+     *
+     * Right leaf will be defragmented.
      *
      * Key count is NOT updated.
      */

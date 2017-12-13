@@ -1044,11 +1044,12 @@ class InternalTreeLogic<KEY,VALUE>
                 leftSiblingCursor.next();
                 int leftSiblingKeyCount = TreeNode.keyCount( leftSiblingCursor );
 
-                if ( bTreeNode.canRebalanceLeaves( leftSiblingKeyCount, keyCount ) )
+                int keysToRebalance = bTreeNode.canRebalanceLeaves( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount );
+                if ( keysToRebalance != -1 )
                 {
                     createSuccessorIfNeeded( leftSiblingCursor, structurePropagation,
                             StructurePropagation.UPDATE_LEFT_CHILD, stableGeneration, unstableGeneration );
-                    rebalanceLeaf( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, structurePropagation );
+                    rebalanceLeaf( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, keysToRebalance , structurePropagation );
                 }
                 else
                 {
@@ -1153,15 +1154,11 @@ class InternalTreeLogic<KEY,VALUE>
     }
 
     private void rebalanceLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
-            StructurePropagation<KEY> structurePropagation )
+            int numberOfKeysToMove, StructurePropagation<KEY> structurePropagation )
     {
-        int totalKeyCount = rightKeyCount + leftKeyCount;
-        int moveFromPosition = totalKeyCount / 2;
-        int numberOfKeysToMove = leftKeyCount - moveFromPosition;
+        bTreeNode.moveKeyValuesFromLeftToRight( leftCursor, leftKeyCount, rightCursor, rightKeyCount, leftKeyCount - numberOfKeysToMove );
 
-        bTreeNode.moveKeyValuesFromLeftToRight( leftCursor, leftKeyCount, rightCursor, rightKeyCount, moveFromPosition );
-
-        TreeNode.setKeyCount( leftCursor, moveFromPosition );
+        TreeNode.setKeyCount( leftCursor, leftKeyCount - numberOfKeysToMove );
         TreeNode.setKeyCount( rightCursor, rightKeyCount + numberOfKeysToMove );
 
         // Propagate change
