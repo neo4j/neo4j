@@ -19,9 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.function.LongFunction;
+
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreHeader;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -29,6 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.store.PrepareIdSequence;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.Math.max;
@@ -55,18 +59,19 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final PropertyStore propertyStore;
     private final IoMonitor ioMonitor;
     private final Monitor monitor;
-    private final HighestId highestId = new HighestId();
+    private final PrepareIdSequence prepareIdSequence;
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
             CommonAbstractStore<RECORD,? extends StoreHeader> entityStore,
             PropertyStore propertyStore, IoMonitor ioMonitor,
-            Monitor monitor )
+            Monitor monitor, PrepareIdSequence prepareIdSequence )
     {
         super( control, "v", config, config.parallelRecordWrites() ? 0 : 1, ioMonitor );
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
         this.monitor = monitor;
         this.ioMonitor = ioMonitor;
+        this.prepareIdSequence = prepareIdSequence;
         this.ioMonitor.reset();
     }
 
@@ -74,6 +79,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     protected void process( Batch<INPUT,RECORD> batch, BatchSender sender )
     {
         // Write the entity records, and at the same time allocate property records for its property blocks.
+        LongFunction<IdSequence> idSequence = prepareIdSequence.apply( entityStore );
         long highestId = 0;
         RECORD[] records = batch.records;
         if ( records.length == 0 )
@@ -84,10 +90,10 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         int skipped = 0;
         for ( RECORD record : records )
         {
-            if ( record != null )
+            if ( record != null && record.inUse() )
             {
                 highestId = max( highestId, record.getId() );
-                entityStore.prepareForCommit( record );
+                entityStore.prepareForCommit( record, idSequence.apply( record.getId() ) );
                 entityStore.updateRecord( record );
             }
             else
@@ -97,7 +103,6 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             }
         }
 
-        this.highestId.offer( highestId );
         writePropertyRecords( batch.propertyRecords, propertyStore );
 
         monitor.entitiesWritten( records[0].getClass(), records.length - skipped );
@@ -128,7 +133,5 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         // and bytes written. NodeStage and CalculateDenseNodesStage can be run in parallel so if
         // NodeStage completes before CalculateDenseNodesStage then we want to stop the time in the I/O monitor.
         ioMonitor.stop();
-
-        entityStore.setHighestPossibleIdInUse( highestId.get() );
     }
 }

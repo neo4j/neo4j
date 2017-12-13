@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -26,8 +28,10 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
+import static org.neo4j.kernel.impl.store.id.validation.IdValidator.hasReservedIdInRange;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 
 /**
@@ -38,23 +42,36 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
 {
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private final Collector badCollector;
+    private final IdSequence idSequence;
+    private final boolean doubleRecordUnits;
+    private final int idsPerRecord;
 
     public RelationshipRecordPreparationStep( StageControl control, Configuration config,
-            BatchingRelationshipTypeTokenRepository relationshipTypeRepository, Collector badCollector )
+            BatchingRelationshipTypeTokenRepository relationshipTypeRepository, Collector badCollector,
+            IdSequence idSequence, boolean doubleRecordUnits,
+            StatsProvider... statsProviders )
     {
-        super( control, "RECORDS", config, 0 );
+        super( control, "RECORDS", config, 0, statsProviders );
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.badCollector = badCollector;
+        this.idSequence = idSequence;
+        this.doubleRecordUnits = doubleRecordUnits;
+        this.idsPerRecord = doubleRecordUnits ? 2 : 1;
     }
 
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
         batch.records = new RelationshipRecord[batch.input.length];
-        long id = batch.firstRecordId;
-        for ( int i = 0, idIndex = 0; i < batch.records.length; i++, id++ )
+        IdRange idRange = idSequence.nextIdBatch( batch.records.length * idsPerRecord );
+        if ( hasReservedIdInRange( idRange.getRangeStart(), idRange.getRangeStart() + idRange.getRangeLength() ) )
         {
-            RelationshipRecord relationship = batch.records[i] = new RelationshipRecord( id );
+            idRange = idSequence.nextIdBatch( batch.records.length * idsPerRecord );
+        }
+        IdSequence ids = idRange.iterator();
+        for ( int i = 0, idIndex = 0; i < batch.records.length; i++ )
+        {
+            RelationshipRecord relationship = batch.records[i] = new RelationshipRecord( ids.nextId() );
             InputRelationship batchRelationship = batch.input[i];
             long startNodeId = batch.ids[idIndex++];
             long endNodeId = batch.ids[idIndex++];
@@ -78,6 +95,11 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
                 int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
                 relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
                 relationship.setType( typeId );
+            }
+
+            if ( doubleRecordUnits )
+            {
+                ids.nextId(); // reserve it
             }
         }
         sender.send( batch );

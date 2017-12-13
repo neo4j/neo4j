@@ -17,33 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.store;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongFunction;
 
-/**
- * Tracks a highest id when there are potentially multiple concurrent threads calling {@link #offer(long)}.
- */
-public class HighestId
+import org.neo4j.kernel.impl.store.id.IdSequence;
+
+public class StorePrepareIdSequence implements PrepareIdSequence
 {
-    private final AtomicLong highestId = new AtomicLong();
-
-    public void offer( long candidate )
+    @Override
+    public LongFunction<IdSequence> apply( IdSequence idSequence )
     {
-        long currentHighest;
-        do
-        {
-            currentHighest = highestId.get();
-            if ( candidate <= currentHighest )
-            {
-                return;
-            }
-        }
-        while ( !highestId.compareAndSet( currentHighest, candidate ) );
-    }
-
-    public long get()
-    {
-        return highestId.get();
+        return id -> idSequence;
     }
 }

@@ -54,7 +54,10 @@ import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker;
+import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -114,7 +117,6 @@ public class ImportLogic implements Closeable
     private IoMonitor writeMonitor;
     private IdMapper idMapper;
     private IdGenerator idGenerator;
-    private MemoryUsageStatsProvider memoryUsageStats;
     private InputIterable<InputNode> nodes;
     private InputIterable<InputRelationship> relationships;
     private InputIterable<InputNode> cachedNodes;
@@ -157,14 +159,39 @@ public class ImportLogic implements Closeable
         idMapper = input.idMapper( numberArrayFactory );
         idGenerator = input.idGenerator();
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, config.denseNodeThreshold() );
-        memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper, neoStore );
         nodes = input.nodes();
         relationships = input.relationships();
         cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
-        dependencies.satisfyDependencies( input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() ),
-                idMapper, neoStore, nodeRelationshipCache );
+        Estimates inputEstimates = input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() );
+        sanityCheckEstimatesWithRecordFormat( inputEstimates );
+        dependencies.satisfyDependencies( inputEstimates, idMapper, neoStore, nodeRelationshipCache );
+
+        if ( neoStore.determineDoubleRelationshipRecordUnits( inputEstimates ) )
+        {
+            System.out.println( "Will use double record units for all relationships" );
+        }
 
         executionMonitor.initialize( dependencies );
+    }
+
+    private void sanityCheckEstimatesWithRecordFormat( Estimates inputEstimates )
+    {
+        new EstimationSanityChecker( recordFormats, new Monitor()
+        {
+            @Override
+            public void nodeCountCapacity( long capacity, long estimatedCount )
+            {
+                System.err.printf( "WARNING: estimated number of relationships %d may exceed capacity %d of selected record format%n",
+                        estimatedCount, capacity );
+            }
+
+            @Override
+            public void relationshipCountCapacity( long capacity, long estimatedCount )
+            {
+                System.err.printf( "WARNING: estimated number of nodes %d may exceed capacity %d of selected record format%n",
+                        estimatedCount, capacity );
+            }
+        } ).sanityCheck( inputEstimates );
     }
 
     /**
@@ -204,6 +231,7 @@ public class ImportLogic implements Closeable
     {
         // Import nodes, properties, labels
         Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
+        MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
         NodeStage nodeStage = new NodeStage( nodeConfig, writeMonitor,
                 nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
                 storeUpdateMonitor, memoryUsageStats );
@@ -220,6 +248,7 @@ public class ImportLogic implements Closeable
     {
         if ( idMapper.needsPreparation() )
         {
+            MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
             executeStage( new IdMapperPreparationStage( config, idMapper, cachedNodes,
                     badCollector, memoryUsageStats ) );
             PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
@@ -243,9 +272,10 @@ public class ImportLogic implements Closeable
         // Import relationships (unlinked), properties
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
+        MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
         RelationshipStage unlinkedRelationshipStage =
                 new RelationshipStage( relationshipConfig, writeMonitor, relationships, idMapper,
-                        badCollector, inputCache, neoStore, storeUpdateMonitor );
+                        badCollector, inputCache, neoStore, storeUpdateMonitor, memoryUsageStats );
         neoStore.startFlushingPageCache();
         executeStage( unlinkedRelationshipStage );
         neoStore.stopFlushingPageCache();
@@ -264,6 +294,7 @@ public class ImportLogic implements Closeable
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
         nodeRelationshipCache.setNodeCount( neoStore.getNodeStore().getHighId() );
+        MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeRelationshipCache );
         NodeDegreeCountStage nodeDegreeStage = new NodeDegreeCountStage( relationshipConfig,
                 neoStore.getRelationshipStore(), nodeRelationshipCache, memoryUsageStats );
         executeStage( nodeDegreeStage );
@@ -307,6 +338,7 @@ public class ImportLogic implements Closeable
 
         // Link relationships together with each other, their nodes and their relationship groups
         DataStatistics relationshipTypeDistribution = getState( DataStatistics.class );
+        MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeRelationshipCache );
 
         // Figure out which types we can fit in node-->relationship cache memory.
         // Types go from biggest to smallest group and so towards the end there will be
@@ -338,7 +370,7 @@ public class ImportLogic implements Closeable
 
         // LINK Forward
         RelationshipLinkforwardStage linkForwardStage = new RelationshipLinkforwardStage( topic, relationshipConfig,
-                neoStore.getRelationshipStore(), nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes,
+                neoStore, nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes,
                 new RelationshipLinkingProgress(), memoryUsageStats );
         executeStage( linkForwardStage );
 
@@ -354,8 +386,9 @@ public class ImportLogic implements Closeable
 
         // LINK backward
         nodeRelationshipCache.setForwardScan( false, true/*dense*/ );
-        executeStage( new RelationshipLinkbackStage( topic, relationshipConfig, neoStore.getRelationshipStore(),
-                nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes, new RelationshipLinkingProgress(), memoryUsageStats ) );
+        executeStage( new RelationshipLinkbackStage( topic, relationshipConfig, neoStore,
+                nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes,
+                new RelationshipLinkingProgress(), memoryUsageStats ) );
 
         updatePeakMemoryUsage();
 
@@ -444,7 +477,7 @@ public class ImportLogic implements Closeable
         {
             MigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
             nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );
-            memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
+            MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
             executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
                     neoStore.getLabelRepository().getHighId(), countsUpdater, progressMonitor.startSection( "Nodes" ),
                     memoryUsageStats ) );

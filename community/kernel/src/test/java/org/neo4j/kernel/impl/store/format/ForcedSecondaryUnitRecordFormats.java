@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import java.util.Set;
+import java.util.stream.Stream;
+
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -31,6 +34,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Wraps another {@link RecordFormats} and merely forces {@link AbstractBaseRecord#setSecondaryUnitId(long)}
@@ -127,13 +132,15 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     @Override
     public Capability[] capabilities()
     {
-        return actual.capabilities();
+        Set<Capability> myCapabilities = Stream.of( actual.capabilities() ).collect( toSet() );
+        myCapabilities.add( Capability.SECONDARY_RECORD_UNITS );
+        return myCapabilities.stream().toArray( Capability[]::new );
     }
 
     @Override
     public boolean hasCapability( Capability capability )
     {
-        return actual.hasCapability( capability );
+        return capability == Capability.SECONDARY_RECORD_UNITS || actual.hasCapability( capability );
     }
 
     @Override
@@ -145,7 +152,7 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     @Override
     public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
     {
-        return actual.hasSameCapabilities( other, type );
+        return BaseRecordFormats.hasSameCapabilities( this, other, type );
     }
 
     @Override

@@ -48,7 +48,9 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -57,12 +59,14 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
 import static java.lang.String.valueOf;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -77,6 +81,10 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
  */
 public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visitable
 {
+    // Empirical and slightly defensive threshold where relationship records seem to start requiring double record units.
+    // Basically decided by picking a maxId of pointer (as well as node ids) in the relationship record and randomizing its data,
+    // seeing which is a maxId where records starts to require a secondary unit.
+    static final long DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD = 1L << 33;
     private static final String TEMP_NEOSTORE_NAME = "temp." + DEFAULT_NAME;
 
     private final FileSystemAbstraction fileSystem;
@@ -100,6 +108,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private LifeSupport life = new LifeSupport();
     private LabelScanStore labelScanStore;
     private PageCacheFlusher flusher;
+    private boolean doubleRelationshipRecordUnits;
 
     private boolean successful;
 
@@ -172,6 +181,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         deleteStoreFiles( TEMP_NEOSTORE_NAME, tempStoresToKeep );
         deleteStoreFiles( DEFAULT_NAME, mainStoresToKeep );
         instantiateStores();
+        neoStores.makeStoreOk();
     }
 
     private void deleteStoreFiles( String storeName, Predicate<StoreType> storesToKeep )
@@ -259,7 +269,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
     {
         return new StoreFactory( storeDir, name, neo4jConfig,
-                new BatchingIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,
                 openOptions );
     }
 
@@ -417,5 +427,18 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public void success()
     {
         successful = true;
+    }
+
+    public boolean determineDoubleRelationshipRecordUnits( Estimates inputEstimates )
+    {
+        doubleRelationshipRecordUnits =
+                recordFormats.hasCapability( Capability.SECONDARY_RECORD_UNITS ) &&
+                inputEstimates.numberOfRelationships() > DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
+        return doubleRelationshipRecordUnits;
+    }
+
+    public boolean usesDoubleRelationshipRecordUnits()
+    {
+        return doubleRelationshipRecordUnits;
     }
 }

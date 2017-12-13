@@ -123,14 +123,19 @@ public abstract class BaseRecordFormats implements RecordFormats
         return contains( capabilities(), capability );
     }
 
-    @Override
-    public boolean hasSameCapabilities( RecordFormats other, CapabilityType types )
+    public static boolean hasSameCapabilities( RecordFormats one, RecordFormats other, CapabilityType type )
     {
-        Set<Capability> myFormatCapabilities = Stream.of( capabilities() )
-                .filter( capability -> capability.isType( types ) ).collect( toSet() );
+        Set<Capability> myFormatCapabilities = Stream.of( one.capabilities() )
+                .filter( capability -> capability.isType( type ) ).collect( toSet() );
         Set<Capability> otherFormatCapabilities = Stream.of( other.capabilities() )
-                .filter( capability -> capability.isType( types ) ).collect( toSet() );
+                .filter( capability -> capability.isType( type ) ).collect( toSet() );
 
         return myFormatCapabilities.equals( otherFormatCapabilities );
+    }
+
+    @Override
+    public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
+    {
+        return hasSameCapabilities( this, other, type );
     }
 }
