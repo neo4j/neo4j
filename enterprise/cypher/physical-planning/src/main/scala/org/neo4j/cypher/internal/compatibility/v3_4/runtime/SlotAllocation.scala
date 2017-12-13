@@ -42,6 +42,7 @@ import scala.collection.mutable
   * whereas the knowledge of how to traverse the plan tree is store in the while loops and stacks in the `populate`
   * method.
   **/
+//noinspection NameBooleanParameters
 object SlotAllocation {
 
   private def NO_ARGUMENT() = SlotsAndArgument(SlotConfiguration.empty, Size.zero)
@@ -198,7 +199,7 @@ object SlotAllocation {
 
       case e: NestedPlanExpression =>
         acc: Accumulator => {
-          if (acc.doNotTraverseExpression == e)
+          if (acc.doNotTraverseExpression.contains(e))
             (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
           else {
             val argumentSlotConfiguration = slots.copy()
@@ -217,7 +218,7 @@ object SlotAllocation {
 
       case e: Expression =>
         acc: Accumulator => {
-          if (acc.doNotTraverseExpression == e)
+          if (acc.doNotTraverseExpression.contains(e))
             (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
           else
             (acc, TRAVERSE_INTO_CHILDREN)
@@ -230,7 +231,7 @@ object SlotAllocation {
     * Compute the slot configuration of a leaf logical plan operator {@code lp}.
     *
     * @param lp the operator to compute slots for.
-    * @param nullable
+    * @param nullable true if new slots are nullable
     * @param argument the logical plan argument slot configuration.
     * @return the slot configuration of lp
     */
@@ -275,7 +276,7 @@ object SlotAllocation {
     * Compute the slot configuration of a single source logical plan operator {@code lp}.
     *
     * @param lp the operator to compute slots for.
-    * @param nullable
+    * @param nullable true if new slots are nullable
     * @param source the slot configuration of the source operator.
     * @param recordArgument function which records the argument size for the given operator
     * @return the slot configuration of lp
@@ -469,18 +470,18 @@ object SlotAllocation {
       case ProcedureCall(_, ResolvedCall(_, _, callResults, _, _)) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         // Also, if the procedure is void it cannot increase cardinality.
-        val result = source.copy()
+        // TODO: Actually perform pipeline break here if needed
         callResults.foreach {
           case ProcedureResultItem(output, variable) =>
-            result.newReference(variable.name, true, CTAny)
+            source.newReference(variable.name, true, CTAny)
         }
-        result
+        source
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
-        val result = source.copy()
-        allocateShortestPathPattern(shortestPathPattern, result, nullable)
-        result
+        // TODO: Actually perform pipeline break here if needed
+        allocateShortestPathPattern(shortestPathPattern, source, nullable)
+        source
 
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
@@ -490,7 +491,7 @@ object SlotAllocation {
     * Compute the slot configuration of a branching logical plan operator {@code lp}.
     *
     * @param lp the operator to compute slots for.
-    * @param nullable
+    * @param nullable true if new slots are nullable
     * @param lhs the slot configuration of the left hand side operator.
     * @param rhs the slot configuration of the right hand side operator.
     * @return the slot configuration of lp
