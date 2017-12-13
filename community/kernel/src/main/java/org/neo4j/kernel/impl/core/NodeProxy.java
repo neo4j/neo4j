@@ -718,12 +718,16 @@ public class NodeProxy implements Node
     @Override
     public boolean hasLabel( Label label )
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        try ( Statement ignore = transaction.acquireStatement();
+              NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
         {
-            int labelId = statement.readOperations().labelGetForName( label.name() );
-            return statement.readOperations().nodeHasLabel( getId(), labelId );
+            int labelId = transaction.tokenRead().labelGetForName( label.name() );
+            transaction.dataRead().singleNode( nodeId, nodes );
+            return nodes.next() && nodes.labels().contains( labelId );
+
         }
-        catch ( EntityNotFoundException e )
+        catch ( LabelNotFoundKernelException e )
         {
             return false;
         }
@@ -732,23 +736,23 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Label> getLabels()
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        try ( Statement ignore = actions.statement();
+              NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
         {
-            PrimitiveIntIterator labels = statement.readOperations().nodeGetLabels( getId() );
-            return asList( map( labelId -> convertToLabel( statement, labelId ), labels ) );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Node not found", e );
-        }
-    }
-
-    private Label convertToLabel( Statement statement, int labelId )
-    {
-        try
-        {
-            return label( statement.readOperations().labelGetName( labelId ) );
-
+            transaction.dataRead().singleNode( nodeId, nodes );
+            if ( !nodes.next() )
+            {
+                throw new NotFoundException( "Node not found" );
+            }
+            LabelSet labelSet = nodes.labels();
+            TokenRead tokenRead = transaction.tokenRead();
+            ArrayList<Label> list = new ArrayList<>( labelSet.numberOfLabels() );
+            for ( int i = 0; i < labelSet.numberOfLabels(); i++ )
+            {
+                list.add( label( tokenRead.labelGetName( labelSet.label( i ) ) ) );
+            }
+            return list;
         }
         catch ( LabelNotFoundKernelException e )
         {
