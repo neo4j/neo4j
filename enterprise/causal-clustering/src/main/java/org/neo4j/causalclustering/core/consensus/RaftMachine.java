@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManage
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.shipping.RaftLogShippingManager;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.core.consensus.state.RaftState;
@@ -62,7 +62,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
     private InFlightCache inFlightCache;
 
-    public enum Timeouts implements RenewableTimeoutService.TimeoutName
+    public enum Timeouts implements TimerService.TimerName
     {
         ELECTION,
         HEARTBEAT

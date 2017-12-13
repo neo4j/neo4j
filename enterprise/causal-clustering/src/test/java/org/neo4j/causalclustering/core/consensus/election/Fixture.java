@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.core.consensus.election;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,30 +27,31 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
-import org.neo4j.causalclustering.core.consensus.RaftMachine.BootstrapException;
 import org.neo4j.causalclustering.core.consensus.RaftMachineBuilder;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
-import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.TestNetwork;
 import org.neo4j.function.Predicates;
-import org.neo4j.time.Clocks;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.asSet;
-import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class Fixture
 {
     private final Set<MemberId> members = new HashSet<>();
     private final Set<BootstrapWaiter> bootstrapWaiters = new HashSet<>();
-    private final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
+    private final List<TimerService> timerServices = new ArrayList<>();
+    private final JobScheduler scheduler = new Neo4jJobScheduler();
     final Set<RaftFixture> rafts = new HashSet<>();
     final TestNetwork net;
 
@@ -66,7 +66,7 @@ public class Fixture
 
             members.add( member );
 
-            DelayedRenewableTimeoutService timeoutService = createTimeoutService();
+            TimerService timerService = createTimerService();
 
             BootstrapWaiter waiter = new BootstrapWaiter();
             bootstrapWaiters.add( waiter );
@@ -78,7 +78,7 @@ public class Fixture
                             .heartbeatInterval( heartbeatInterval )
                             .inbound( inbound )
                             .outbound( outbound )
-                            .timeoutService( timeoutService )
+                            .timerService( timerService )
                             .raftLog( raftLog )
                             .commitListener( waiter )
                             .build();
@@ -87,21 +87,17 @@ public class Fixture
         }
     }
 
-    private DelayedRenewableTimeoutService createTimeoutService()
+    private TimerService createTimerService()
     {
-        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService(
-                Clocks.systemClock(), getInstance() );
-
-        timeoutServices.add( timeoutService );
-
-        timeoutService.init();
-        timeoutService.start();
-
-        return timeoutService;
+        TimerService timerService = new TimerService( scheduler, NullLogProvider.getInstance() );
+        timerServices.add( timerService );
+        return timerService;
     }
 
-    void boot() throws BootstrapException, TimeoutException, InterruptedException, IOException
+    void boot() throws Throwable
     {
+        scheduler.init();
+        scheduler.start();
         for ( RaftFixture raft : rafts )
         {
             raft.raftLog().append( new RaftLogEntry( 0, new MemberIdSet( asSet( members ) ) ) );
@@ -112,24 +108,15 @@ public class Fixture
         awaitBootstrapped();
     }
 
-    public void tearDown()
+    public void tearDown() throws Throwable
     {
         net.stop();
-        for ( DelayedRenewableTimeoutService timeoutService : timeoutServices )
-        {
-            try
-            {
-                timeoutService.stop();
-            }
-            catch ( Throwable e )
-            {
-                e.printStackTrace();
-            }
-        }
         for ( RaftFixture raft : rafts )
         {
             raft.raftMachine().logShippingManager().stop();
         }
+        scheduler.stop();
+        scheduler.shutdown();
     }
 
     /**

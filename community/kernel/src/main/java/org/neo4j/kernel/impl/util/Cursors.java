@@ -79,7 +79,7 @@ public class Cursors
     {
         return new RawCursor<T,EX>()
         {
-            private int idx = 0;
+            private int idx;
             private CursorValue<T> current = new CursorValue<>();
 
             @Override
