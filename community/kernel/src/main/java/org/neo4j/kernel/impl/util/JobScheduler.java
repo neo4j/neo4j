@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
@@ -173,6 +174,11 @@ public interface JobScheduler extends Lifecycle
         public static Group storageMaintenance = new Group( "StorageMaintenance", POOLED );
 
         /**
+         * Raft timers.
+         */
+        public static Group raft = new Group( "RaftTimer", POOLED );
+
+        /**
          * Native security.
          */
         public static Group nativeSecurity = new Group( "NativeSecurity", POOLED );
@@ -192,7 +198,7 @@ public interface JobScheduler extends Lifecycle
     {
         void cancel( boolean mayInterruptIfRunning );
 
-        void waitTermination() throws InterruptedException, ExecutionException;
+        void waitTermination() throws InterruptedException, ExecutionException, CancellationException;
 
         default void registerCancelListener( CancelListener listener )
         {

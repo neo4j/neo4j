@@ -31,11 +31,11 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
 import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.core.consensus.schedule.Timer;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService.TimerName;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
@@ -51,10 +51,13 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.CANCELLED;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.TX_PULLING;
-import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timeouts.TX_PULLER_TIMEOUT;
+import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timers.TX_PULLER_TIMER;
+import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.pullUpdates;
 
 /**
  * This class is responsible for pulling transactions from a core server and queuing
@@ -66,9 +69,9 @@ import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timeou
  */
 public class CatchupPollingProcess extends LifecycleAdapter
 {
-    enum Timeouts implements TimeoutName
+    enum Timers implements TimerName
     {
-        TX_PULLER_TIMEOUT
+        TX_PULLER_TIMER
     }
 
     enum State
@@ -86,13 +89,13 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final CatchUpClient catchUpClient;
     private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
-    private final RenewableTimeoutService timeoutService;
+    private final TimerService timerService;
     private final long txPullIntervalMillis;
     private final BatchingTxApplier applier;
     private final PullRequestMonitor pullRequestMonitor;
     private final TopologyService topologyService;
 
-    private RenewableTimeout timeout;
+    private Timer timer;
     private volatile State state = TX_PULLING;
     private DatabaseHealth dbHealth;
     private CompletableFuture<Boolean> upToDateFuture; // we are up-to-date when we are successfully pulling
@@ -100,7 +103,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase,
             Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
-            UpstreamDatabaseStrategySelector selectionStrategy, RenewableTimeoutService timeoutService,
+            UpstreamDatabaseStrategySelector selectionStrategy, TimerService timerService,
             long txPullIntervalMillis, BatchingTxApplier applier, Monitors monitors,
             StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier, TopologyService topologyService )
 
@@ -110,7 +113,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         this.startStopOnStoreCopy = startStopOnStoreCopy;
         this.catchUpClient = catchUpClient;
         this.selectionStrategyPipeline = selectionStrategy;
-        this.timeoutService = timeoutService;
+        this.timerService = timerService;
         this.txPullIntervalMillis = txPullIntervalMillis;
         this.applier = applier;
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
@@ -123,7 +126,8 @@ public class CatchupPollingProcess extends LifecycleAdapter
     public synchronized void start() throws Throwable
     {
         state = TX_PULLING;
-        timeout = timeoutService.create( TX_PULLER_TIMEOUT, txPullIntervalMillis, 0, timeout -> onTimeout() );
+        timer = timerService.create( TX_PULLER_TIMER, pullUpdates, timeout -> onTimeout() );
+        timer.set( fixedTimeout( txPullIntervalMillis, MILLISECONDS ) );
         dbHealth = databaseHealthSupplier.get();
         upToDateFuture = new CompletableFuture<>();
     }
@@ -137,7 +141,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     public void stop() throws Throwable
     {
         state = CANCELLED;
-        timeout.cancel();
+        timer.cancel( true, true );
     }
 
     public State state()
@@ -173,7 +177,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         if ( state != PANIC && state != CANCELLED )
         {
-            timeout.renew();
+            timer.reset();
         }
     }
 

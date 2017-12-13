@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheMonitor;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
-import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.OnDemandTimerService;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
@@ -63,6 +63,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftMachineTest
 {
+    private final int electionTimeout = 500;
     private MemberId myself = member( 0 );
 
     /* A few members that we use at will in tests. */
@@ -92,11 +93,12 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
+                .timerService( timerService )
+                .electionTimeout( electionTimeout )
                 .clock( fakeClock )
                 .outbound( messages )
                 .build();
@@ -105,7 +107,7 @@ public class RaftMachineTest
         raft.postRecoveryActions();
 
         // When
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
 
         // Then
         assertThat( messages.sentTo( myself ).size(), equalTo( 0 ) );
@@ -122,14 +124,14 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( fakeClock ).build();
+                .timerService( timerService ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
         assertThat( raft.isLeader(), is( false ) );
 
         // When
@@ -144,15 +146,15 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( fakeClock ).build();
+                .timerService( timerService ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState(
                 new MembershipEntry( 0, asSet( myself, member1, member2, member3, member4 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
 
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
         assertThat( raft.isLeader(), is( false ) );
@@ -169,15 +171,15 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( fakeClock ).build();
+                .timerService( timerService ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState(
                 new MembershipEntry( 0, asSet( myself, member1, member2, member3, member4 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
 
         // When
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
@@ -192,14 +194,14 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( fakeClock ).build();
+                .timerService( timerService ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
 
         // When
         raft.handle( voteResponse().from( myself ).term( 1 ).grant().build() );
@@ -213,14 +215,14 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( fakeClock ).build();
+                .timerService( timerService ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
 
         // When
         raft.handle( voteResponse().from( member1 ).term( 1 ).deny().build() );
@@ -235,14 +237,14 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( fakeClock ).build();
+                .timerService( timerService ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
         // When
         raft.handle( voteResponse().from( member1 ).term( 0 ).grant().build() );
         raft.handle( voteResponse().from( member2 ).term( 0 ).grant().build() );
@@ -256,11 +258,11 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
+                .timerService( timerService )
                 .clock( fakeClock )
                 .outbound( messages )
                 .build();
@@ -282,14 +284,14 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( fakeClock ).build();
+                .timerService( timerService ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
 
         // When
         raft.handle( voteResponse().from( member1 ).term( 2 ).grant().build() );
@@ -304,12 +306,12 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
+                .timerService( timerService )
                 .clock( fakeClock )
                 .outbound( messages )
                 .raftLog( raftLog )
@@ -319,7 +321,7 @@ public class RaftMachineTest
         raft.postRecoveryActions();
 
         // When
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
 
         // Then
@@ -331,11 +333,11 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
+                .timerService( timerService )
                 .outbound( messages )
                 .clock( fakeClock )
                 .build();
@@ -343,11 +345,11 @@ public class RaftMachineTest
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
 
         // When
-        timeouts.invokeTimeout( RaftMachine.Timeouts.HEARTBEAT );
+        timerService.invoke( RaftMachine.Timeouts.HEARTBEAT );
 
         // Then
         assertTrue( last( messages.sentTo( member1 ) ) instanceof RaftMessages.Heartbeat );
@@ -359,10 +361,10 @@ public class RaftMachineTest
     {
         // Given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( fakeClock ).build();
+                .timerService( timerService ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
         raft.postRecoveryActions();
@@ -386,9 +388,9 @@ public class RaftMachineTest
     {
         // given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
+                .timerService( timerService )
                 .clock( fakeClock )
                 .raftLog( raftLog )
                 .build();
@@ -415,9 +417,9 @@ public class RaftMachineTest
         newMemberInbound.registerHandler( (Inbound.MessageHandler<RaftMessages.RaftMessage>) message -> messages.send( newMember, message ) );
 
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
+                .timerService( timerService )
                 .outbound( messages )
                 .clock( fakeClock )
                 .build();
@@ -426,14 +428,14 @@ public class RaftMachineTest
         raft.postRecoveryActions();
 
         // We make ourselves the leader
-        timeouts.invokeTimeout( ELECTION );
+        timerService.invoke( ELECTION );
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
 
         // When
         raft.setTargetMembershipSet( asSet( myself, member1, member2, newMember ) );
         network.processMessages();
 
-        timeouts.invokeTimeout( RaftMachine.Timeouts.HEARTBEAT );
+        timerService.invoke( RaftMachine.Timeouts.HEARTBEAT );
         network.processMessages();
 
         // Then
@@ -444,14 +446,15 @@ public class RaftMachineTest
     public void shouldMonitorLeaderNotFound() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
 
         Monitors monitors = new Monitors();
         LeaderNotFoundMonitor leaderNotFoundMonitor = new StubLeaderNotFoundMonitor();
         monitors.addMonitorListener( leaderNotFoundMonitor );
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
+                .timerService( timerService )
                 .monitors(monitors)
                 .build();
 
@@ -478,9 +481,9 @@ public class RaftMachineTest
         // given
         FakeClock fakeClock = Clocks.fakeClock();
         InFlightCache inFlightCache = new ConsecutiveInFlightCache( 10, 10000, InFlightCacheMonitor.VOID, false );
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        OnDemandTimerService timerService = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
+                .timerService( timerService )
                 .clock( fakeClock )
                 .raftLog( raftLog )
                 .inFlightCache( inFlightCache )
