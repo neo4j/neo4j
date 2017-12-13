@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription._
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, symbols}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}
@@ -171,7 +171,10 @@ object RewindableExecutionResult {
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-    override def executionPlanDescription(): InternalPlanDescription = lift(inner.executionPlanDescription())
+    override def executionPlanDescription(): InternalPlanDescription =
+      lift(inner.executionPlanDescription())
+        .addArgument(Arguments.PlannerVersion("2.3"))
+        .addArgument(Arguments.RuntimeVersion("2.3"))
 
     private def lift(planDescription: v2_3.planDescription.InternalPlanDescription): InternalPlanDescription = {
       val name: String = planDescription.name
@@ -288,13 +291,10 @@ object RewindableExecutionResult {
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-    override def executionPlanDescription(): InternalPlanDescription = {
-      var description = lift(inner.executionPlanDescription())
-      if (!description.arguments.exists(_.isInstanceOf[Arguments.Version])) {
-        description = description.addArgument(planDescription.InternalPlanDescription.Arguments.Version("CYPHER 3.1"))
-      }
-      description
-    }
+    override def executionPlanDescription(): InternalPlanDescription =
+      lift(inner.executionPlanDescription())
+        .addArgument(Arguments.PlannerVersion("3.1"))
+        .addArgument(Arguments.RuntimeVersion("3.1"))
 
     private def lift(planDescription: v3_1.planDescription.InternalPlanDescription): InternalPlanDescription = {
 
