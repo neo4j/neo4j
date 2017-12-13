@@ -32,11 +32,11 @@ public class FakeClock extends SystemNanoClock
 {
     private long nanoTime = 0;
 
-    FakeClock()
+    protected FakeClock()
     {
     }
 
-    FakeClock( long initialTime, TimeUnit unit )
+    protected FakeClock( long initialTime, TimeUnit unit )
     {
         forward( initialTime, unit );
     }

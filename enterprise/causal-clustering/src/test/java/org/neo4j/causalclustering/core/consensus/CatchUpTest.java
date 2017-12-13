@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.NewEntry.Request;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
+import org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -57,7 +58,7 @@ public class CatchUpTest
         final MemberId leaderMember = fixture.members().withId( leader ).member();
 
         // when
-        fixture.members().withId( leader ).timeoutService().invokeTimeout( RaftMachine.Timeouts.ELECTION );
+        fixture.members().withId( leader ).timerService().invoke( RaftMachine.Timeouts.ELECTION );
         net.processMessages();
         fixture.members().withId( leader ).raftInstance().handle( new Request( leaderMember, valueOf( 42 ) ) );
         net.processMessages();
@@ -86,7 +87,7 @@ public class CatchUpTest
         fixture.members().withId( leaderId ).raftInstance().installCoreState(
                 new RaftCoreState( new MembershipEntry( 0, new HashSet<>( Arrays.asList( allMembers ) ) ) ));
 
-        fixture.members().withId( leaderId ).timeoutService().invokeTimeout( RaftMachine.Timeouts.ELECTION );
+        fixture.members().withId( leaderId ).timerService().invoke( RaftMachine.Timeouts.ELECTION );
         net.processMessages();
 
         final MemberId leader = fixture.members().withId( leaderId ).member();
@@ -111,7 +112,7 @@ public class CatchUpTest
 
         // when
         net.reconnect( sleepyId );
-        Thread.sleep( 500 ); // TODO: This needs an injectable/controllable timeout service for the log shipper.
+        fixture.members().invokeTimeout( RaftLogShipper.Timeouts.RESEND );
         net.processMessages();
 
         // then

@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup.tx;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -30,7 +31,8 @@ import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.CountingTimerService;
+import org.neo4j.causalclustering.core.consensus.schedule.Timer;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.CoreMemberSelectionStrategy;
@@ -39,6 +41,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.FakeClockJobScheduler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,7 +56,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.TX_PULLING;
-import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timeouts.TX_PULLER_TIMEOUT;
+import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timers.TX_PULLER_TIMER;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CatchupPollingProcessTest
@@ -64,12 +68,14 @@ public class CatchupPollingProcessTest
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
     private final BatchingTxApplier txApplier = mock( BatchingTxApplier.class );
-    private final ControlledRenewableTimeoutService timeoutService = new ControlledRenewableTimeoutService();
+    private final FakeClockJobScheduler scheduler = new FakeClockJobScheduler();
+    private final CountingTimerService timerService = new CountingTimerService( scheduler, NullLogProvider.getInstance() );
 
     private final long txPullIntervalMillis = 100;
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
+
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
     }
@@ -77,7 +83,7 @@ public class CatchupPollingProcessTest
 
     private final CatchupPollingProcess txPuller =
             new CatchupPollingProcess( NullLogProvider.getInstance(), localDatabase, startStopOnStoreCopy,
-                    catchUpClient, serverSelection, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
+                    catchUpClient, serverSelection, timerService, txPullIntervalMillis, txApplier, new Monitors(),
                     storeCopyProcess, () -> mock( DatabaseHealth.class) );
 
     @Before
@@ -96,7 +102,7 @@ public class CatchupPollingProcessTest
         when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        timerService.invoke( TX_PULLER_TIMER );
 
         // then
         verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
@@ -118,7 +124,7 @@ public class CatchupPollingProcessTest
                         new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
                         new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 10 ) );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        timerService.invoke( TX_PULLER_TIMER );
 
         // then
         verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
@@ -134,10 +140,10 @@ public class CatchupPollingProcessTest
                 any( CatchUpResponseCallback.class ) ) ).thenReturn(
                 new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 0 ) );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        timerService.invoke( TX_PULLER_TIMER );
 
         // then
-        assertEquals( 1, timeoutService.getTimeout( TX_PULLER_TIMEOUT ).renewalCount() );
+        assertEquals( 1, timerService.invocationCount( TX_PULLER_TIMER ) );
     }
 
     @Test
@@ -149,7 +155,7 @@ public class CatchupPollingProcessTest
                 any( CatchUpResponseCallback.class ) ) ).thenReturn(
                         new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ) );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        timerService.invoke( TX_PULLER_TIMER );
 
         // then
         assertEquals( STORE_COPYING, txPuller.state() );
@@ -165,10 +171,10 @@ public class CatchupPollingProcessTest
                         new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ) );
 
         // when (tx pull)
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        timerService.invoke( TX_PULLER_TIMER );
 
         // when (store copy)
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        timerService.invoke( TX_PULLER_TIMER );
 
         // then
         verify( localDatabase ).stopForStoreCopy();
@@ -191,13 +197,14 @@ public class CatchupPollingProcessTest
 
         doThrow( new RuntimeException( "Panic all the things" ) ).when( callback )
                 .onTxPullResponse( any( CompletableFuture.class ), any( TxPullResponse.class ) );
+        Timer timer = Mockito.spy( single( timerService.getTimers( TX_PULLER_TIMER ) ) );
 
         // when
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+        timerService.invoke( TX_PULLER_TIMER );
 
         // then
         assertEquals( PANIC, txPuller.state() );
-        assertEquals( 0, timeoutService.getTimeout( TX_PULLER_TIMEOUT ).renewalCount() );
+        verify( timer, times( 0 ) ).reset();
     }
 
     @Test
@@ -216,13 +223,13 @@ public class CatchupPollingProcessTest
         Future<Boolean> operationalFuture = txPuller.upToDateFuture();
         assertFalse( operationalFuture.isDone() );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT ); // realises we need a store copy
+        timerService.invoke( TX_PULLER_TIMER ); // realises we need a store copy
         assertFalse( operationalFuture.isDone() );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT ); // does the store copy
+        timerService.invoke( TX_PULLER_TIMER ); // does the store copy
         assertFalse( operationalFuture.isDone() );
 
-        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT ); // does a pulling
+        timerService.invoke( TX_PULLER_TIMER ); // does a pulling
         assertTrue( operationalFuture.isDone() );
         assertTrue( operationalFuture.get() );
 
