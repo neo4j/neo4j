@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_4
 sealed trait CacheCheckResult
 
 case class NeedsReplan(secondsSinceReplan: Int) extends CacheCheckResult
-case class OkToReuseButShouldSoonBeReplanned(secondsSinceReplan: Int) extends CacheCheckResult
 case object FineToReuse extends CacheCheckResult
 
 sealed trait StatsDivergenceCalculator {

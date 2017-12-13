@@ -180,8 +180,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
               parsedQuery.plan(tc, phaseTracer)
             }
-
-            override def produceWithNewTx(tx: TransactionalContextWrapper): (ExecutionPlan, Map[String, Any]) = ???
           }
 
           val stateBefore = schemaState(tc)

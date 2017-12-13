@@ -124,8 +124,6 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
             val result = createExecPlan.transform(logicalPlanState, context)
             result.maybeExecutionPlan.get
           }
-
-          override def produceWithNewTx(tx: TransactionalContextWrapper): ExecutionPlan_v3_4 = ???
         }
         val executionPlan = if (preParsedQuery.debugOptions.isEmpty)
           cache.getOrElseUpdate(syntacticQuery.statement(), syntacticQuery.queryText, isStale, createPlan)._1

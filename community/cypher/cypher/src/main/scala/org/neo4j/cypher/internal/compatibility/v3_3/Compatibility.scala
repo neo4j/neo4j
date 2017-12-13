@@ -160,8 +160,6 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
         val createPlan: PlanProducer[ExecutionPlan_v3_4] = new PlanProducer[ExecutionPlan_v3_4] {
-          override def produceWithNewTx(tx: TransactionalContextWrapper): ExecutionPlan_v3_4 = ???
-
           override def produceWithExistingTX: ExecutionPlan_v3_4 = {
             val logicalPlanStateV3_3 = compiler.planPreparedQuery(preparedQuery, contextV3_3)
             val logicalPlanStateV3_4 = helpers.as3_4(logicalPlanStateV3_3)

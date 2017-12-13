@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, OkToReuseButShouldSoonBeReplanned, NeedsReplan, FineToReuse}
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse, NeedsReplan}
 
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
@@ -29,7 +28,6 @@ trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
 
 trait PlanProducer[T] {
   def produceWithExistingTX: T
-  def produceWithNewTx(tx: TransactionalContextWrapper): T
 }
 
 class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) {
@@ -52,8 +50,6 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
             val newPlan = produce.produceWithExistingTX
             cacheAccessor.put(cache)(key, newPlan, userKey, secondsSinceReplan)
             (newPlan, true)
-          case OkToReuseButShouldSoonBeReplanned(secondsSinceReplan) =>
-            (plan, false)
           case FineToReuse =>
             (plan, false)
         }
