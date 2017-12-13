@@ -173,7 +173,7 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
     {
         gen.get()
                 .expectedStatus( 404 )
-                .get( nodeUri + "00000" );
+                .get( nodeUri + "600000" );
     }
 
     private JaxRsResponse retrieveNodeFromService( final String uri )

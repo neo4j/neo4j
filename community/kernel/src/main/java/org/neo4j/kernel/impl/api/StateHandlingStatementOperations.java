@@ -907,7 +907,7 @@ public class StateHandlingStatementOperations implements
         return PrimitiveLongCollections.resourceIterator( result, committed );
     }
 
-    private IndexQuery.ExactPredicate[] assertOnlyExactPredicates( IndexQuery[] predicates )
+    public static IndexQuery.ExactPredicate[] assertOnlyExactPredicates( IndexQuery[] predicates )
     {
         IndexQuery.ExactPredicate[] exactPredicates;
         if ( predicates.getClass() == IndexQuery.ExactPredicate[].class )

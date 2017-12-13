@@ -34,6 +34,8 @@ import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -52,13 +54,15 @@ public class FusionIndexReaderTest
     private IndexReader luceneReader;
     private FusionIndexReader fusionIndexReader;
     private static final int PROP_KEY = 1;
+    private static final int LABEL_KEY = 11;
 
     @Before
     public void setup()
     {
         nativeReader = mock( IndexReader.class );
         luceneReader = mock( IndexReader.class );
-        fusionIndexReader = new FusionIndexReader( nativeReader, luceneReader, new NativeSelector(), new int[]{PROP_KEY} );
+        fusionIndexReader = new FusionIndexReader( nativeReader, luceneReader, new NativeSelector(),
+                IndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     /* close */

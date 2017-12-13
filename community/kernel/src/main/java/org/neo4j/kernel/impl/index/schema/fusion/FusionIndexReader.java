@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -44,14 +45,15 @@ class FusionIndexReader implements IndexReader
     private final IndexReader nativeReader;
     private final IndexReader luceneReader;
     private final Selector selector;
-    private final int[] propertyKeys;
+    private final IndexDescriptor descriptor;
 
-    FusionIndexReader( IndexReader nativeReader, IndexReader luceneReader, Selector selector, int[] propertyKeys )
+    FusionIndexReader( IndexReader nativeReader, IndexReader luceneReader, Selector selector,
+            IndexDescriptor descriptor )
     {
         this.nativeReader = nativeReader;
         this.luceneReader = luceneReader;
         this.selector = selector;
-        this.propertyKeys = propertyKeys;
+        this.descriptor = descriptor;
     }
 
     @Override
@@ -141,8 +143,9 @@ class FusionIndexReader implements IndexReader
                         format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.",
                                 indexOrder, Arrays.toString( predicates ), IndexOrder.NONE ) );
             }
-            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, propertyKeys );
-            cursor.initialize( multiProgressor, propertyKeys );
+            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor,
+                    descriptor.schema().getPropertyIds() );
+            cursor.initialize( descriptor, multiProgressor, predicates );
             nativeReader.query( multiProgressor, indexOrder, predicates[0] );
             luceneReader.query( multiProgressor, indexOrder, predicates[0] );
             return;
@@ -216,9 +219,9 @@ class FusionIndexReader implements IndexReader
         }
 
         @Override
-        public void initialize( IndexProgressor progressor, int[] keys )
+        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
         {
-            assertKeysAlign( keys );
+            assertKeysAlign( descriptor.schema().getPropertyIds() );
             progressors.add( progressor );
         }
 

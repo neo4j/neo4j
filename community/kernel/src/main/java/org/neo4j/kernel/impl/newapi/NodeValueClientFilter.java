@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -88,11 +89,11 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, int[] propertyIds )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
     {
         this.progressor = progressor;
-        this.keys = propertyIds;
-        target.initialize( this, propertyIds );
+        this.keys = descriptor.schema().getPropertyIds();
+        target.initialize( descriptor, this, query );
     }
 
     @Override
@@ -177,10 +178,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
                 }
             }
         }
-        if ( accepted < filters.length )
-        {
-            return false; // not all filters were matched
-        }
-        return target.acceptNode( reference, values );
+        // not all filters were matched
+        return accepted >= filters.length && target.acceptNode( reference, values );
     }
 }

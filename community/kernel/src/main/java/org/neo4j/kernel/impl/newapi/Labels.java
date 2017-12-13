@@ -39,7 +39,7 @@ public class Labels implements LabelSet
         this.labels = labels;
     }
 
-    static Labels from( long[] labels )
+    public static Labels from( long[] labels )
     {
         return new Labels( labels );
     }

@@ -47,7 +47,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
 
     public InMemoryIndexProvider( int prio )
     {
-        this( prio, new CopyOnWriteHashMap<Long, InMemoryIndex>() );
+        this( prio, new CopyOnWriteHashMap<>() );
     }
 
     private InMemoryIndexProvider( int prio, Map<Long, InMemoryIndex> indexes )
@@ -79,7 +79,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = descriptor.type() == UNIQUE
-                ? new UniqueInMemoryIndex( descriptor.schema() ) : new InMemoryIndex();
+                ? new UniqueInMemoryIndex( descriptor ) : new InMemoryIndex( descriptor );
         indexes.put( indexId, index );
         return index.getPopulator();
     }

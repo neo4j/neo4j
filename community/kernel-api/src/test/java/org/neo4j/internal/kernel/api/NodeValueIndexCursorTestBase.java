@@ -38,6 +38,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -478,6 +479,86 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         assertEquals( "bad label", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
         assertEquals( "bad prop", CapableIndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
         assertEquals( "just bad", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
+    }
+
+    @Test
+    public void shouldNotFindDeletedNodeInIndexSeek() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeDelete( strOne );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "one" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindDeletedNodeInIndexScan() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        IndexValueCapability wildcardCapability = index.valueCapability( ValueGroup.UNKNOWN );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
+              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        {
+            // when
+            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
+            assertFoundNodesAndValue( node, 24, uniqueIds, wildcardCapability );
+
+            // then
+            tx.dataWrite().nodeDelete( strOne );
+            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
+            assertFoundNodesAndValue( node, 23, uniqueIds, wildcardCapability );
+        }
+    }
+
+    @Test
+    public void shouldNotFindUpdatedNodeInIndexSeek() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( strOne, prop, stringValue("ett") );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "one" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldFindUpdatedNodeInIndexSeek() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( strOne, prop, stringValue("ett") );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "ett" ) );
+
+            // then
+            assertTrue( node.next() );
+        }
     }
 
     private long nodeWithProp( GraphDatabaseService graphDb, Object value )

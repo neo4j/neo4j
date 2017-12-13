@@ -32,6 +32,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
@@ -46,6 +47,11 @@ import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING
 class HashBasedIndex extends InMemoryIndexImplementation
 {
     private Map<List<Object>,Set<Long>> data;
+
+    HashBasedIndex( IndexDescriptor descriptor )
+    {
+        super( descriptor );
+    }
 
     public Map<List<Object>,Set<Long>> data()
     {
@@ -224,7 +230,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     synchronized InMemoryIndexImplementation snapshot()
     {
-        HashBasedIndex snapshot = new HashBasedIndex();
+        HashBasedIndex snapshot = new HashBasedIndex( descriptor );
         snapshot.initialize();
         for ( Map.Entry<List<Object>,Set<Long>> entry : data().entrySet() )
         {

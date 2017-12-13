@@ -28,6 +28,8 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.values.storable.Value;
 
 public class DefaultIndexReaderTest
@@ -51,7 +53,7 @@ public class DefaultIndexReaderTest
 
     private IndexReader stubIndexReader()
     {
-        return new IndexReader()
+        return new AbstractIndexReader( null )
         {
             @Override
             public long countIndexedNodes( long nodeId, Value... propertyValues )

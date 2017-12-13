@@ -19,46 +19,33 @@
  */
 package org.neo4j.storageengine.api.schema;
 
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.values.storable.Value;
 
-public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
+public abstract class AbstractIndexReader implements IndexReader
 {
-    public long reference;
-    public Value[] values;
-    private IndexProgressor progressor;
+    protected final IndexDescriptor descriptor;
 
-    public boolean next()
+    protected AbstractIndexReader( IndexDescriptor descriptor )
     {
-        if ( progressor.next() )
-        {
-            return true;
-        }
-        closeProgressor();
-        return false;
+        this.descriptor = descriptor;
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+    public void query(
+            IndexProgressor.NodeValueClient client,
+            IndexOrder indexOrder,
+            IndexQuery... query ) throws IndexNotApplicableKernelException
     {
-        this.progressor = progressor;
-    }
-
-    @Override
-    public boolean acceptNode( long reference, Value... values )
-    {
-        this.reference = reference;
-        this.values = values;
-        return true;
-    }
-
-    private void closeProgressor()
-    {
-        if ( progressor != null )
+        if ( indexOrder != IndexOrder.NONE )
         {
-            progressor.close();
-            progressor = null;
+            throw new UnsupportedOperationException(
+                    String.format( "This reader only have support for index order %s. Provided index order was %s.",
+                            IndexOrder.NONE, indexOrder ) );
         }
+        client.initialize( descriptor, new NodeValueIndexProgressor( query( query ), client ), query );
     }
+
 }
