@@ -342,7 +342,7 @@ abstract class TreeNode<KEY,VALUE>
      */
     abstract int canRebalanceLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount );
 
-    abstract boolean canMergeLeaves( int leftKeyCount, int rightKeyCount );
+    abstract boolean canMergeLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount );
 
     /**
      * Calculate where split should be done and move entries between leaves participating in split.
@@ -361,9 +361,9 @@ abstract class TreeNode<KEY,VALUE>
      *
      * Key count is updated.
      */
-    abstract void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int insertPos,
+    abstract void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos,
             KEY newKey,
-            long newRightChild, int middlePos, long stableGeneration, long unstableGeneration );
+            long newRightChild, long stableGeneration, long unstableGeneration, StructurePropagation<KEY> structurePropagation );
 
     /**
      * Move all rightmost keys and values in left leaf from given position to right node.

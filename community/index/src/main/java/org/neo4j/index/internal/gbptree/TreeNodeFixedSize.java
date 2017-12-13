@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_VALUE;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
@@ -291,7 +292,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean canMergeLeaves( int leftKeyCount, int rightKeyCount )
+    boolean canMergeLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
     {
         return leftKeyCount + rightKeyCount <= leafMaxKeyCount();
     }
@@ -353,9 +354,22 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int insertPos, KEY newKey,
-            long newRightChild, int middlePos, long stableGeneration, long unstableGeneration )
+    void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
+            long newRightChild, long stableGeneration, long unstableGeneration, StructurePropagation<KEY> structurePropagation )
     {
+        int keyCountAfterInsert = leftKeyCount + 1;
+        int middlePos = middle( keyCountAfterInsert );
+
+        if ( middlePos == insertPos )
+        {
+            layout.copyKey( newKey, structurePropagation.rightKey );
+        }
+        else
+        {
+            keyAt( leftCursor, structurePropagation.rightKey, insertPos < middlePos ? middlePos - 1 : middlePos, INTERNAL );
+        }
+        int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
+
         if ( insertPos < middlePos )
         {
             //                         v-------v       copy

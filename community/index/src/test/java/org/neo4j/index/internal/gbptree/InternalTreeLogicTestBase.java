@@ -858,7 +858,8 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         // new left child contain keys from old left and old middle
         goTo( readCursor, oldRightChild );
         KEY firstKeyInOldRightChild = keyAt( 0, LEAF );
-        List<KEY> expectedKeysInNewLeftChild = allKeys.subList( 0, allKeys.indexOf( firstKeyInOldRightChild ) );
+        int index = indexOf( firstKeyInOldRightChild, allKeys, layout );
+        List<KEY> expectedKeysInNewLeftChild = allKeys.subList( 0, index );
         goTo( readCursor, newLeftChild );
         assertNodeContainsExpectedKeys( expectedKeysInNewLeftChild, LEAF );
 
@@ -886,6 +887,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
             i++;
         }
 
+        goTo( readCursor, rootId );
         long oldLeft = rightmostLeafInSubtree( rootId, 0 );
         long oldRight = leftmostLeafInSubtree( rootId, 1 );
         KEY oldSplitter = keyAt( 0, INTERNAL );
@@ -961,7 +963,8 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         for ( int i = 0; i < numberOfEntries; i++ )
         {
             // when
-            insert( key( random.nextLong() ), value( random.nextLong() ) );
+            long keySeed = random.nextLong();
+            insert( key( keySeed ), value( random.nextLong() ) );
             if ( i == numberOfEntries / 2 )
             {
                 generationManager.checkpoint();

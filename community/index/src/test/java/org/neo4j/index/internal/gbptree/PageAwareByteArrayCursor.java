@@ -126,7 +126,8 @@ class PageAwareByteArrayCursor extends PageCursor
     {
         if ( sourceOffset < 0 || targetOffset < 0 || lengthInBytes < 0 )
         {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(
+                    String.format( "sourceOffset=%d, targetOffset=%d, lengthInBytes=%d", sourceOffset, targetOffset, lengthInBytes ) );
         }
         int bytesToCopy = Math.min( lengthInBytes,
                 Math.min( current.getCurrentPageSize() - sourceOffset,

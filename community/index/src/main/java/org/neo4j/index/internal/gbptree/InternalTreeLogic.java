@@ -459,21 +459,10 @@ class InternalTreeLogic<KEY,VALUE>
         // Find position to insert new key
         int pos = positionOf( search( cursor, INTERNAL, newKey, readKey, keyCount ) );
 
-        int keyCountAfterInsert = keyCount + 1;
-        int middlePos = middle( keyCountAfterInsert );
-
         // Update structurePropagation
         structurePropagation.hasRightKeyInsert = true;
         structurePropagation.midChild = current;
         structurePropagation.rightChild = newRight;
-        if ( middlePos == pos )
-        {
-            layout.copyKey( newKey, structurePropagation.rightKey );
-        }
-        else
-        {
-            bTreeNode.keyAt( cursor, structurePropagation.rightKey, pos < middlePos ? middlePos - 1 : middlePos, INTERNAL );
-        }
 
         try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
         {
@@ -482,11 +471,10 @@ class InternalTreeLogic<KEY,VALUE>
             bTreeNode.initializeInternal( rightCursor, stableGeneration, unstableGeneration );
             TreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
-            int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
 
             // Do split
-            bTreeNode.doSplitInternal( cursor, keyCount, rightCursor, rightKeyCount, pos, newKey, newRightChild, middlePos, stableGeneration,
-                    unstableGeneration );
+            bTreeNode.doSplitInternal( cursor, keyCount, rightCursor, pos, newKey, newRightChild, stableGeneration, unstableGeneration,
+                    structurePropagation );
         }
 
         // Update old right with new left sibling (newRight)
@@ -1068,7 +1056,7 @@ class InternalTreeLogic<KEY,VALUE>
                 rightSiblingCursor.next();
                 int rightSiblingKeyCount = TreeNode.keyCount( rightSiblingCursor );
 
-                if ( bTreeNode.canMergeLeaves( keyCount, rightSiblingKeyCount ) )
+                if ( bTreeNode.canMergeLeaves( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount ) )
                 {
                     createSuccessorIfNeeded( rightSiblingCursor, structurePropagation, UPDATE_RIGHT_CHILD,
                             stableGeneration, unstableGeneration );

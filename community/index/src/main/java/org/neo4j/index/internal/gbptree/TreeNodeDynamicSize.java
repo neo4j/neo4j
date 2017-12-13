@@ -306,7 +306,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Mark all offsets
         PrimitiveIntStack deadKeysOffset = new PrimitiveIntStack();
         PrimitiveIntStack aliveKeysOffset = new PrimitiveIntStack();
-        recordDeadAndAlive( cursor, deadKeysOffset, aliveKeysOffset );
+        recordDeadAndAliveLeaf( cursor, deadKeysOffset, aliveKeysOffset );
 
         /*
         BEFORE MOVE
@@ -403,6 +403,108 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         setDeadSpace( cursor, 0 );
     }
 
+    private void defragmentInternal( PageCursor cursor )
+    {
+        // Mark all offsets
+        PrimitiveIntStack deadKeysOffset = new PrimitiveIntStack();
+        PrimitiveIntStack aliveKeysOffset = new PrimitiveIntStack();
+        recordDeadAndAliveInternal( cursor, deadKeysOffset, aliveKeysOffset );
+
+        /*
+        BEFORE MOVE
+                          v       aliveRangeOffset
+        [X][_][_][X][_][X][_][_]
+                   ^   ^          deadRangeOffset
+                   |_____________ moveRangeOffset
+
+        AFTER MOVE
+                       v          aliveRangeOffset
+        [X][_][_][X][X][_][_][_]
+                 ^                 deadRangeOffset
+
+         */
+        int maxKeyCount = pageSize / (bytesKeySize() + bytesKeyOffset() + childSize());
+        int[] oldOffset = new int[maxKeyCount];
+        int[] newOffset = new int[maxKeyCount];
+        int oldOffsetCursor = 0;
+        int newOffsetCursor = 0;
+        int aliveRangeOffset = pageSize; // Everything after this point is alive
+        int deadRangeOffset; // Everything between this point and aliveRangeOffset is dead space
+
+        // Rightmost alive keys does not need to move
+        while ( deadKeysOffset.peek() < aliveKeysOffset.peek() )
+        {
+            aliveRangeOffset = aliveKeysOffset.poll();
+        }
+
+        do
+        {
+            // Locate next range of dead keys
+            deadRangeOffset = aliveRangeOffset;
+            while ( aliveKeysOffset.peek() < deadKeysOffset.peek() )
+            {
+                deadRangeOffset = deadKeysOffset.poll();
+            }
+
+            // Locate next range of alive keys
+            int moveOffset = deadRangeOffset;
+            while ( deadKeysOffset.peek() < aliveKeysOffset.peek() )
+            {
+                int moveKey = aliveKeysOffset.poll();
+                oldOffset[oldOffsetCursor++] = moveKey;
+                moveOffset = moveKey;
+            }
+
+            // Update offset mapping
+            int deadRangeSize = aliveRangeOffset - deadRangeOffset;
+            while ( oldOffsetCursor > newOffsetCursor )
+            {
+                newOffset[newOffsetCursor] = oldOffset[newOffsetCursor] + deadRangeSize;
+                newOffsetCursor++;
+            }
+
+            // Do move
+            while ( moveOffset < (deadRangeOffset - deadRangeSize) )
+            {
+                // Move one block
+                deadRangeOffset -= deadRangeSize;
+                aliveRangeOffset -= deadRangeSize;
+                cursor.copyTo( deadRangeOffset, cursor, aliveRangeOffset, deadRangeSize );
+            }
+            // Move the last piece
+            int lastBlockSize = deadRangeOffset - moveOffset;
+            deadRangeOffset -= lastBlockSize;
+            aliveRangeOffset -= lastBlockSize;
+            cursor.copyTo( deadRangeOffset, cursor, aliveRangeOffset, lastBlockSize );
+        }
+        while ( !aliveKeysOffset.isEmpty() );
+        // Update allocOffset
+        setAllocOffset( cursor, aliveRangeOffset );
+
+        // Update offset array
+        int keyCount = keyCount( cursor );
+        keyPos:
+        for ( int pos = 0; pos < keyCount; pos++ )
+        {
+            int keyPosOffset = keyPosOffsetInternal( pos );
+            cursor.setOffset( keyPosOffset );
+            int keyOffset = readKeyOffset( cursor );
+            for ( int index = 0; index < oldOffsetCursor; index++ )
+            {
+                if ( keyOffset == oldOffset[index] )
+                {
+                    // Overwrite with new offset
+                    cursor.setOffset( keyPosOffset );
+                    putKeyOffset( cursor, newOffset[index] );
+                    continue keyPos;
+                }
+            }
+        }
+
+        // Update dead space
+        setDeadSpace( cursor, 0 );
+    }
+
     @Override
     boolean leafUnderflow( PageCursor cursor, int keyCount )
     {
@@ -417,7 +519,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     int canRebalanceLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
     {
-        // Know that right has underflow
         int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount );
         int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount );
 
@@ -452,9 +553,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean canMergeLeaves( int leftKeyCount, int rightKeyCount )
+    boolean canMergeLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount );
+        int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount );
+        int totalSpace = totalSpace( pageSize );
+        return totalSpace >= leftActiveSpace + rightActiveSpace;
     }
 
     @Override
@@ -462,8 +566,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             VALUE newValue, StructurePropagation<KEY> structurePropagation )
     {
         // Find middle
-        int middlePos = middle( leftCursor, insertPos, newKey, newValue );
         int keyCountAfterInsert = leftKeyCount + 1;
+        int middlePos = middleLeaf( leftCursor, insertPos, newKey, newValue );
 
         if ( middlePos == insertPos )
         {
@@ -504,6 +608,97 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         TreeNode.setKeyCount( rightCursor, rightKeyCount );
     }
 
+    @Override
+    void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
+            long newRightChild, long stableGeneration, long unstableGeneration, StructurePropagation<KEY> structurePropagation )
+    {
+        int keyCountAfterInsert = leftKeyCount + 1;
+        int middlePos = middleInternal( leftCursor, insertPos, newKey );
+
+        if ( middlePos == insertPos )
+        {
+            layout.copyKey( newKey, structurePropagation.rightKey );
+        }
+        else
+        {
+            keyAt( leftCursor, structurePropagation.rightKey, insertPos < middlePos ? middlePos - 1 : middlePos, INTERNAL );
+        }
+        int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
+
+        if ( insertPos < middlePos )
+        {
+            //                         v-------v       copy
+            // before key    _,_,_,_,_,_,_,_,_,_
+            // before child -,-,-,-,-,-,-,-,-,-,-
+            // insert key    _,_,X,_,_,_,_,_,_,_,_
+            // insert child -,-,-,x,-,-,-,-,-,-,-,-
+            // middle key              ^
+
+            moveKeysAndChildren( leftCursor, middlePos, rightCursor, 0, rightKeyCount, true );
+            // Rightmost key in left is the one we send up to parent, remove it from here.
+            removeKeyAndRightChildAt( leftCursor, middlePos - 1, middlePos );
+            defragmentInternal( leftCursor );
+            insertKeyAndRightChildAt( leftCursor, newKey, newRightChild, insertPos, middlePos - 1, stableGeneration, unstableGeneration );
+        }
+        else
+        {
+            // pos > middlePos
+            //                         v-v          first copy
+            //                             v-v-v    second copy
+            // before key    _,_,_,_,_,_,_,_,_,_
+            // before child -,-,-,-,-,-,-,-,-,-,-
+            // insert key    _,_,_,_,_,_,_,X,_,_,_
+            // insert child -,-,-,-,-,-,-,-,x,-,-,-
+            // middle key              ^
+
+            // pos == middlePos
+            //                                      first copy
+            //                         v-v-v-v-v    second copy
+            // before key    _,_,_,_,_,_,_,_,_,_
+            // before child -,-,-,-,-,-,-,-,-,-,-
+            // insert key    _,_,_,_,_,X,_,_,_,_,_
+            // insert child -,-,-,-,-,-,x,-,-,-,-,-
+            // middle key              ^
+
+            // Keys
+            if ( insertPos == middlePos )
+            {
+                int copyFrom = middlePos;
+                int copyCount = leftKeyCount - copyFrom;
+                moveKeysAndChildren( leftCursor, copyFrom, rightCursor, 0, copyCount, false );
+                defragmentInternal( leftCursor );
+                setChildAt( rightCursor, newRightChild, 0, stableGeneration, unstableGeneration );
+            }
+            else
+            {
+                int copyFrom = middlePos + 1;
+                int copyCount = leftKeyCount - copyFrom;
+                moveKeysAndChildren( leftCursor, copyFrom, rightCursor, 0, copyCount, true );
+                // Rightmost key in left is the one we send up to parent, remove it from here.
+                removeKeyAndRightChildAt( leftCursor, middlePos, middlePos + 1 );
+                defragmentInternal( leftCursor );
+                insertKeyAndRightChildAt( rightCursor, newKey, newRightChild, insertPos - copyFrom, copyCount,
+                        stableGeneration, unstableGeneration );
+            }
+        }
+        TreeNode.setKeyCount( leftCursor, middlePos );
+        TreeNode.setKeyCount( rightCursor, rightKeyCount );
+    }
+
+    @Override
+    void moveKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
+            int fromPosInLeftNode )
+    {
+        defragmentLeaf( rightCursor );
+        int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
+
+        // Push keys and values in right sibling to the right
+        insertSlotsAt( rightCursor, 0, numberOfKeysToMove, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeySize() );
+
+        // Move
+        moveKeysAndValues( leftCursor, fromPosInLeftNode, rightCursor, 0, numberOfKeysToMove );
+    }
+
     private int getAllocSpace( PageCursor cursor, int keyCount, Type type )
     {
         int allocOffset = getAllocOffset( cursor );
@@ -511,7 +706,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return allocOffset - endOfOffsetArray;
     }
 
-    private void recordDeadAndAlive( PageCursor cursor, PrimitiveIntStack deadKeysOffset, PrimitiveIntStack aliveKeysOffset )
+    private void recordDeadAndAliveLeaf( PageCursor cursor, PrimitiveIntStack deadKeysOffset, PrimitiveIntStack aliveKeysOffset )
     {
         int currentOffset = getAllocOffset( cursor );
         while ( currentOffset < pageSize )
@@ -534,16 +729,78 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
     }
 
+    private void recordDeadAndAliveInternal( PageCursor cursor, PrimitiveIntStack deadKeysOffset, PrimitiveIntStack aliveKeysOffset )
+    {
+        int currentOffset = getAllocOffset( cursor );
+        while ( currentOffset < pageSize )
+        {
+            cursor.setOffset( currentOffset );
+            int keySize = readKeySize( cursor );
+            boolean dead = hasTombstone( keySize );
+            keySize = stripTombstone( keySize );
+
+            if ( dead )
+            {
+                deadKeysOffset.push( currentOffset );
+            }
+            else
+            {
+                aliveKeysOffset.push( currentOffset );
+            }
+            currentOffset += keySize + bytesKeySize();
+        }
+    }
+
     private void moveKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
     {
-        int rightAllocOffset = getAllocOffset( toCursor );
+        int toAllocOffset = getAllocOffset( toCursor );
         for ( int i = 0; i < count; i++, toPos++ )
         {
-            rightAllocOffset = transferRawKeyValue( fromCursor, fromPos + i, toCursor, rightAllocOffset );
+            toAllocOffset = transferRawKeyValue( fromCursor, fromPos + i, toCursor, toAllocOffset );
             toCursor.setOffset( keyPosOffsetLeaf( toPos ) );
-            putKeyOffset( toCursor, rightAllocOffset );
+            putKeyOffset( toCursor, toAllocOffset );
         }
-        setAllocOffset( toCursor, rightAllocOffset );
+        setAllocOffset( toCursor, toAllocOffset );
+    }
+
+    private void moveKeysAndChildren( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count,
+            boolean includeLeftMostChild )
+    {
+        // All children
+        // This will also copy key offsets but those will be overwritten below.
+        int childFromOffset = includeLeftMostChild ? childOffset( fromPos ) : childOffset( fromPos + 1 );
+        int childToOffset = childOffset( fromPos + count ) + childSize();
+        int lengthInBytes = childToOffset - childFromOffset;
+        int targetOffset = includeLeftMostChild ? childOffset( 0 ) : childOffset( 1 );
+        fromCursor.copyTo( childFromOffset, toCursor, targetOffset, lengthInBytes );
+
+        int toAllocOffset = getAllocOffset( toCursor );
+        for ( int i = 0; i < count; i++, toPos++ )
+        {
+            // Key
+            toAllocOffset = transferRawKey( fromCursor, fromPos + i, toCursor, toAllocOffset );
+            toCursor.setOffset( keyPosOffsetInternal( toPos ) );
+            putKeyOffset( toCursor, toAllocOffset );
+        }
+        setAllocOffset( toCursor, toAllocOffset );
+    }
+
+    private int transferRawKey( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toAllocOffset )
+    {
+        // What to copy?
+        placeCursorAtActualKey( fromCursor, fromPos, INTERNAL );
+        int fromKeyOffset = fromCursor.getOffset();
+        int keySize = readKeySize( fromCursor );
+
+        // Copy
+        int toCopy = bytesKeySize() + keySize;
+        toAllocOffset -= toCopy;
+        fromCursor.copyTo( fromKeyOffset, toCursor, toAllocOffset, toCopy );
+
+        // Put tombstone
+        fromCursor.setOffset( fromKeyOffset );
+        putTombstone( fromCursor );
+        return toAllocOffset;
     }
 
     /**
@@ -551,7 +808,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
      * Mark transferred key as dead.
      * @return new alloc offset in 'to'
      */
-    private int transferRawKeyValue( PageCursor fromCursor, int fromPos, PageCursor toCursor, int rightAllocOffset )
+    private int transferRawKeyValue( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toAllocOffset )
     {
         // What to copy?
         placeCursorAtActualKey( fromCursor, fromPos, LEAF );
@@ -561,7 +818,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // Copy
         int toCopy = bytesKeySize() + bytesValueSize() + keySize + valueSize;
-        int newRightAllocSpace = rightAllocOffset - toCopy;
+        int newRightAllocSpace = toAllocOffset - toCopy;
         fromCursor.copyTo( fromKeyOffset, toCursor, newRightAllocSpace, toCopy );
 
         // Put tombstone
@@ -570,7 +827,42 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return newRightAllocSpace;
     }
 
-    private int middle( PageCursor leftCursor, int insertPos, KEY newKey, VALUE newValue )
+    private int middleInternal( PageCursor cursor, int insertPos, KEY newKey )
+    {
+        int halfSpace = halfSpace();
+        int middle = 0;
+        int currentPos = 0;
+        int middleSpace = childSize(); // Leftmost child will always be included in left side
+        int currentDelta = Math.abs( middleSpace - halfSpace );
+        int prevDelta;
+        boolean includedNew = false;
+
+        do
+        {
+            // We may come closer to split by keeping one more in left
+            middle++;
+            currentPos++;
+            int space;
+            if ( currentPos == insertPos & !includedNew )
+            {
+                space = totalSpaceOfKeyChild( newKey );
+                includedNew = true;
+                currentPos--;
+            }
+            else
+            {
+                space = totalSpaceOfKeyChild( cursor, currentPos );
+            }
+            middleSpace += space;
+            prevDelta = currentDelta;
+            currentDelta = Math.abs( middleSpace - halfSpace );
+        }
+        while ( currentDelta < prevDelta );
+        middle--; // Step back to the pos that most equally divide the available space in two
+        return middle;
+    }
+
+    private int middleLeaf( PageCursor cursor, int insertPos, KEY newKey, VALUE newValue )
     {
         int halfSpace = halfSpace();
         int middle = 0;
@@ -594,7 +886,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             }
             else
             {
-                space = totalSpaceOfKeyValue( leftCursor, currentPos );
+                space = totalSpaceOfKeyValue( cursor, currentPos );
             }
             middleSpace += space;
             prevDelta = currentDelta;
@@ -640,25 +932,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return bytesKeyOffset() + bytesKeySize() + bytesValueSize() + keySize + valueSize;
     }
 
-    @Override
-    void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount, int insertPos, KEY newKey,
-            long newRightChild, int middlePos, long stableGeneration, long unstableGeneration )
+    private int totalSpaceOfKeyChild( PageCursor cursor, int pos )
     {
-        throw new UnsupportedOperationException( "Implement me" );
-    }
-
-    @Override
-    void moveKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
-            int fromPosInLeftNode )
-    {
-        defragmentLeaf( rightCursor );
-        int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
-
-        // Push keys and values in right sibling to the right
-        insertSlotsAt( rightCursor, 0, numberOfKeysToMove, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeySize() );
-
-        // Move
-        moveKeysAndValues( leftCursor, fromPosInLeftNode, rightCursor, 0, numberOfKeysToMove );
+        placeCursorAtActualKey( cursor, pos, INTERNAL );
+        int keySize = readKeySize( cursor );
+        return bytesKeyOffset() + bytesKeySize() + childSize() + keySize;
     }
 
     private void setAllocOffset( PageCursor cursor, int allocOffset )
@@ -697,7 +975,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int keyOffset = readKeyOffset( cursor );
 
         // Verify offset is reasonable
-        if ( keyOffset > pageSize )
+        if ( keyOffset > pageSize || keyOffset < 0 )
         {
             cursor.setCursorException( "Tried to read key on offset " + keyOffset + ". Page size is " + pageSize );
         }
@@ -765,8 +1043,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap + "]";
     }
 
-    @SuppressWarnings( "unused" )
-    void printNode( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
+    String asString( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
     {
         int currentOffset = cursor.getOffset();
         // [header] <- dont care
@@ -777,7 +1054,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // HEADER
         int allocSpace = getAllocOffset( cursor );
-        String additionalHeader = "[allocSpace=" + allocSpace + "]";
+        int deadSpace = getDeadSpace( cursor );
+        String additionalHeader = "{" + cursor.getCurrentPageId() + "} [allocSpace=" + allocSpace + " deadSpace=" + deadSpace + "] ";
 
         // OFFSET ARRAY
         String offsetArray = readOffsetArray( cursor, stableGeneration, unstableGeneration, type );
@@ -785,7 +1063,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // KEYS
         KEY readKey = layout.newKey();
         VALUE readValue = layout.newValue();
-        StringJoiner keys = new StringJoiner( "][", "[", "]" );
+        StringJoiner keys = new StringJoiner( " ");
         cursor.setOffset( allocSpace );
         while ( cursor.getOffset() < cursor.getCurrentPageSize() )
         {
@@ -824,14 +1102,20 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             keys.add( singleKey.toString() );
         }
 
-        System.out.println( additionalHeader + offsetArray + keys );
         cursor.setOffset( currentOffset );
+        return additionalHeader + offsetArray + " " + keys;
+    }
+
+    @SuppressWarnings( "unused" )
+    void printNode( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
+    {
+        System.out.println( asString( cursor, includeValue, stableGeneration, unstableGeneration ) );
     }
 
     private String readOffsetArray( PageCursor cursor, long stableGeneration, long unstableGeneration, Type type )
     {
         int keyCount = keyCount( cursor );
-        StringJoiner offsetArray = new StringJoiner( ",", "[", "]" );
+        StringJoiner offsetArray = new StringJoiner( " " );
         for ( int i = 0; i < keyCount; i++ )
         {
             if ( type == INTERNAL )
