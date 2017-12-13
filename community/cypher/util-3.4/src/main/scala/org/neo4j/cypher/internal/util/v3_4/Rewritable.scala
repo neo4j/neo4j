@@ -29,7 +29,7 @@ object Rewriter {
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter =
     f.orElse(PartialFunction(identity[AnyRef]))
 
-  val noop = Rewriter.lift(PartialFunction.empty)
+  val noop: Rewriter = Rewriter.lift(PartialFunction.empty)
 }
 
 object RewriterWithArgs {
@@ -131,7 +131,7 @@ object Rewritable {
     }
 
     def rewrite(rewriter: RewriterWithArgs, args: Seq[AnyRef]): AnyRef = {
-      val result = rewriter.apply(that, args)
+      val result = rewriter.apply((that, args))
       if (that.isInstanceOf[RewritableWithMemory]) {
         val withMemory = result.asInstanceOf[RewritableWithMemory]
         withMemory.rememberMe(that)

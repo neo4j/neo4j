@@ -317,11 +317,11 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   private def varLengthPredicate(predicates: Seq[(LogicalVariable, ASTExpression)]): VarLengthPredicate  = {
     //Creates commands out of the predicates
     def asCommand(predicates: Seq[(LogicalVariable, ASTExpression)]) = {
-      val (keys: Seq[Variable], exprs) = predicates.unzip
+      val (keys: Seq[LogicalVariable], exprs) = predicates.unzip
 
       val commands = exprs.map(buildPredicate)
       (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
-        keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
+        keys.zip(commands).forall { case (variable: LogicalVariable, expr: Predicate) =>
           context(variable.name) = entity
           val result = expr.isTrue(context, state)
           context.remove(variable.name)

@@ -104,6 +104,9 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
       case ast.NilPathStep =>
         nilProjector
+
+      case x =>
+        throw new IllegalArgumentException(s"Unknown pattern part found in expression: $x")
     }
 
     val projector = project(e.step)

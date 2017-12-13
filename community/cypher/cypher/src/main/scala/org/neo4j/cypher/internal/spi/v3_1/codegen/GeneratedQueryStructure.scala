@@ -80,7 +80,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
     private var _source: Option[(String, String)] = None
 
-    override def apply(typeName: String, sourceCode: String): Unit =  _source = Some(typeName, sourceCode)
+    override def apply(typeName: String, sourceCode: String): Unit =  _source = Some((typeName, sourceCode))
 
     def source: Option[(String, String)] = _source
   }
