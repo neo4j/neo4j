@@ -157,9 +157,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
-        val nullableSlots = nullableKeys.map(k => slots.get(k.name).get)
+        val nullableSlots: Array[Slot] = nullableKeys.map(k => slots.get(k.name).get).toArray
         val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
-        OptionalSlottedPipe(source, nullableSlots.toArray, slots, argumentSize)(id)
+        OptionalSlottedPipe(source, nullableSlots, slots, argumentSize)(id)
 
       case Projection(_, expressions) =>
         val expressionsWithSlots: Map[Int, Expression] = expressions collect {
