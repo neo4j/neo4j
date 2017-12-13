@@ -27,10 +27,11 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.core.consensus.LeaderContext;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
 import org.neo4j.causalclustering.core.consensus.outcome.ShipCommand;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -57,9 +58,10 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
 
     private boolean running;
     private boolean stopped;
+    private TimerService timerService;
 
     public RaftLogShippingManager( Outbound<MemberId,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
-                                   ReadableRaftLog raftLog,
+                                   ReadableRaftLog raftLog, TimerService timerService,
                                    Clock clock, MemberId myself, RaftMembership membership, long retryTimeMillis,
                                    int catchupBatchSize, int maxAllowedShippingLag,
                                    InFlightCache inFlightCache )
@@ -67,6 +69,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         this.outbound = outbound;
         this.logProvider = logProvider;
         this.raftLog = raftLog;
+        this.timerService = timerService;
         this.clock = clock;
         this.myself = myself;
         this.membership = membership;
@@ -120,7 +123,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         RaftLogShipper logShipper = logShippers.get( member );
         if ( logShipper == null && !member.equals( myself ) )
         {
-            logShipper = new RaftLogShipper( outbound, logProvider, raftLog, clock, myself, member,
+            logShipper = new RaftLogShipper( outbound, logProvider, raftLog, clock, timerService, myself, member,
                     leaderContext.term, leaderContext.commitIndex, retryTimeMillis, catchupBatchSize,
                     maxAllowedShippingLag, inFlightCache );
 

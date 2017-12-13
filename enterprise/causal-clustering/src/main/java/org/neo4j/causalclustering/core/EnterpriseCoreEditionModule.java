@@ -260,7 +260,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         dependencies.satisfyDependency( lockManager );
 
-        life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
     }
 

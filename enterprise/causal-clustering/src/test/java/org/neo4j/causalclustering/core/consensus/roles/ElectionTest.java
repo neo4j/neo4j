@@ -28,12 +28,14 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMachineBuilder;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
-import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.OnDemandTimerService;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -71,17 +73,17 @@ public class ElectionTest
     {
         // given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        TimerService timeouts = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
-                .timeoutService( timeouts )
+                .timerService( timeouts )
                 .clock( fakeClock )
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
+        timeouts.invoke( RaftMachine.Timeouts.ELECTION );
 
         // when
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
@@ -108,10 +110,10 @@ public class ElectionTest
 
         // given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        TimerService timeouts = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
-                .timeoutService( timeouts )
+                .timerService( timeouts )
                 .clock( fakeClock )
                 .build();
 
@@ -119,7 +121,7 @@ public class ElectionTest
                 new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 ) ) ));
         raft.postRecoveryActions();
 
-        timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
+        timeouts.invoke( RaftMachine.Timeouts.ELECTION );
 
         // when
         raft.handle( voteResponse().from( member1 ).term( 1 ).deny().build() );
@@ -138,10 +140,10 @@ public class ElectionTest
     {
         // given
         FakeClock fakeClock = Clocks.fakeClock();
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        TimerService timeouts = new OnDemandTimerService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
-                .timeoutService( timeouts )
+                .timerService( timeouts )
                 .clock( fakeClock )
                 .build();
 

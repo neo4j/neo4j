@@ -160,6 +160,11 @@ public interface JobScheduler extends Lifecycle
         public static Group storageMaintenance = new Group( "StorageMaintenance" );
 
         /**
+         * Raft timers.
+         */
+        public static Group raft = new Group( "RaftTimer" );
+
+        /**
          * Native security.
          */
         public static Group nativeSecurity = new Group( "NativeSecurity" );

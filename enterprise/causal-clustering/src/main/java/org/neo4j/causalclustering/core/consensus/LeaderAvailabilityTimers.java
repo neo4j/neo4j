@@ -22,31 +22,40 @@ package org.neo4j.causalclustering.core.consensus;
 import java.time.Clock;
 import java.time.Duration;
 
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.RaftMachine.Timeouts;
+import org.neo4j.causalclustering.core.consensus.schedule.TimeoutHandler;
+import org.neo4j.causalclustering.core.consensus.schedule.Timer;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.Groups;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
+import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.uniformRandomTimeout;
 
 class LeaderAvailabilityTimers
 {
     private final long electionTimeout;
     private final long heartbeatInterval;
     private final Clock clock;
-    private final RenewableTimeoutService renewableTimeoutService;
+    private final TimerService timerService;
     private final Log log;
 
     private volatile long lastElectionRenewalMillis;
 
-    private RenewableTimeoutService.RenewableTimeout heartbeatTimer;
-    private RenewableTimeoutService.RenewableTimeout electionTimer;
+    private Timer heartbeatTimer;
+    private Timer electionTimer;
 
-    LeaderAvailabilityTimers( Duration electionTimeout, Duration heartbeatInterval, Clock clock, RenewableTimeoutService renewableTimeoutService,
+    LeaderAvailabilityTimers( Duration electionTimeout, Duration heartbeatInterval, Clock clock, TimerService timerService,
             LogProvider logProvider )
     {
         this.electionTimeout = electionTimeout.toMillis();
         this.heartbeatInterval = heartbeatInterval.toMillis();
         this.clock = clock;
-        this.renewableTimeoutService = renewableTimeoutService;
+        this.timerService = timerService;
         this.log = logProvider.getLog( getClass() );
 
         if ( this.electionTimeout < this.heartbeatInterval )
@@ -59,10 +68,12 @@ class LeaderAvailabilityTimers
 
     synchronized void start( ThrowingAction<Exception> electionAction, ThrowingAction<Exception> heartbeatAction )
     {
-        this.electionTimer = renewableTimeoutService.create( RaftMachine.Timeouts.ELECTION, getElectionTimeout(), randomTimeoutRange(),
-                renewing( electionAction ) );
-        this.heartbeatTimer = renewableTimeoutService.create( RaftMachine.Timeouts.HEARTBEAT, getHeartbeatInterval(), 0,
-                renewing( heartbeatAction ) );
+        this.electionTimer = timerService.create( Timeouts.ELECTION, Groups.raft, renewing( electionAction) );
+        this.electionTimer.set( uniformRandomTimeout( electionTimeout, electionTimeout * 2, MILLISECONDS ) );
+
+        this.heartbeatTimer = timerService.create( Timeouts.HEARTBEAT, Groups.raft, renewing( heartbeatAction ) );
+        this.heartbeatTimer.set( fixedTimeout( heartbeatInterval, MILLISECONDS ) );
+
         lastElectionRenewalMillis = clock.millis();
     }
 
@@ -70,11 +81,11 @@ class LeaderAvailabilityTimers
     {
         if ( electionTimer != null )
         {
-            electionTimer.cancel();
+            electionTimer.cancel( true, true );
         }
         if ( heartbeatTimer != null )
         {
-            heartbeatTimer.cancel();
+            heartbeatTimer.cancel( true, true );
         }
 
     }
@@ -84,7 +95,7 @@ class LeaderAvailabilityTimers
         lastElectionRenewalMillis = clock.millis();
         if ( electionTimer != null )
         {
-            electionTimer.renew();
+            electionTimer.reset();
         }
     }
 
@@ -99,17 +110,7 @@ class LeaderAvailabilityTimers
         return electionTimeout;
     }
 
-    long getHeartbeatInterval()
-    {
-        return heartbeatInterval;
-    }
-
-    private long randomTimeoutRange()
-    {
-        return getElectionTimeout();
-    }
-
-    private RenewableTimeoutService.TimeoutHandler renewing( ThrowingAction<Exception> action )
+    private TimeoutHandler renewing( ThrowingAction<Exception> action )
     {
         return timeout ->
         {
@@ -121,7 +122,7 @@ class LeaderAvailabilityTimers
             {
                 log.error( "Failed to process timeout.", e );
             }
-            timeout.renew();
+            timeout.reset();
         };
     }
 }

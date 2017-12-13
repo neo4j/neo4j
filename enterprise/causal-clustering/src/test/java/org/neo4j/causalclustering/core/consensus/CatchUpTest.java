@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.NewEntry.Request;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
+import org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -57,7 +58,7 @@ public class CatchUpTest
         final MemberId leaderMember = fixture.members().withId( leader ).member();
 
         // when
-        fixture.members().withId( leader ).timeoutService().invokeTimeout( RaftMachine.Timeouts.ELECTION );
+        fixture.members().withId( leader ).timerService().invoke( RaftMachine.Timeouts.ELECTION );
         net.processMessages();
         fixture.members().withId( leader ).raftInstance().handle( new Request( leaderMember, valueOf( 42 ) ) );
         net.processMessages();
@@ -86,7 +87,7 @@ public class CatchUpTest
         fixture.members().withId( leaderId ).raftInstance().installCoreState(
                 new RaftCoreState( new MembershipEntry( 0, new HashSet<>( Arrays.asList( allMembers ) ) ) ));
 
-        fixture.members().withId( leaderId ).timeoutService().invokeTimeout( RaftMachine.Timeouts.ELECTION );
+        fixture.members().withId( leaderId ).timerService().invoke( RaftMachine.Timeouts.ELECTION );
         net.processMessages();
 
         final MemberId leader = fixture.members().withId( leaderId ).member();
@@ -111,23 +112,8 @@ public class CatchUpTest
 
         // when
         net.reconnect( sleepyId );
-        RaftMachine raftMachine = fixture.members().withId( sleepyId ).raftInstance();
-        /*
-         * This needs an injectable/controllable timeout service for the log shipper. Since we do not have that, we
-         * must wait until all messages have propagated or on a timeout. We know that the commit index must reach 5
-         * to make sure that everything has propagated.
-         * There is an obvious trade off here, given the absence of an injectable timeout service in log shipper. If
-         * this is dependent on an artificial timeout (say, wait 500ms and see if everything made it) then there is a
-         * chance that while everything would have made it if we waited a bit longer, we just don't know that. If, on
-         * the other hand we wait until everything makes it, then if a bug is introduced the test won't fail but it will
-         * just hang forever. We opt for the second case here, since it's detectable, traceable and doesn't suffer from
-         * false negatives (if this loop hangs, it does show a bug).
-         */
-        while ( raftMachine.state().commitIndex() < 5 )
-        {
-            Thread.sleep( 100 ); // Some messages pending, wait a bit
-            net.processMessages();
-        }
+        fixture.members().invokeTimeout( RaftLogShipper.Timeouts.RESEND );
+        net.processMessages();
 
         // then
         assertThat( fixture.messageLog(), integerValues( fixture.members().withId( sleepyId ).raftLog() ), hasItems( 10, 20, 30, 40 ) );
