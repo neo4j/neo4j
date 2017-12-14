@@ -274,6 +274,31 @@ public class TimerServiceTest
         scheduler.shutdown();
     }
 
+    @Test
+    public void shouldBeAbleToCancelBeforeHandlingWithRealScheduler() throws Throwable
+    {
+        // given
+        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        scheduler.init();
+        scheduler.start();
+
+        TimerService timerService = new TimerService( scheduler, FormattedLogProvider.toOutputStream( System.out ) );
+
+        TimeoutHandler handlerA = timer -> {};
+
+        Timer timer = timerService.create( Timers.TIMER_A, group, handlerA );
+        timer.set( fixedTimeout( 2, SECONDS ) );
+
+        // when
+        timer.cancel( SYNC_WAIT );
+
+        // then: should not deadlock
+
+        // cleanup
+        scheduler.stop();
+        scheduler.shutdown();
+    }
+
     enum Timers implements TimerService.TimerName
     {
         TIMER_A,
