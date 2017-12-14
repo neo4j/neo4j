@@ -59,6 +59,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.uniformRandomTimeout;
+import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.SYNC_WAIT;
 import static org.neo4j.kernel.impl.util.JobScheduler.*;
 
 /**
@@ -142,11 +143,11 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         if ( electionTimer != null )
         {
-            electionTimer.cancel( false, true );
+            electionTimer.cancel( SYNC_WAIT );
         }
         if ( heartbeatTimer != null )
         {
-            heartbeatTimer.cancel( false, true );
+            heartbeatTimer.cancel( SYNC_WAIT );
         }
     }
 

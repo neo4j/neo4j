@@ -53,6 +53,7 @@ import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.TX_PULLING;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timers.TX_PULLER_TIMER;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
+import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.SYNC_WAIT;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.pullUpdates;
 
 /**
@@ -131,7 +132,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
-        timer.cancel( false, true );
+        timer.cancel( SYNC_WAIT );
     }
 
     public State state()
