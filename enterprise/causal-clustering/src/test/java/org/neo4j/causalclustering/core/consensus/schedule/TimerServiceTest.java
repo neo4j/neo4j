@@ -21,12 +21,17 @@ package org.neo4j.causalclustering.core.consensus.schedule;
 
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.FakeClockJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -34,6 +39,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
+import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.SYNC_WAIT;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimerServiceTest.Timers.TIMER_A;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimerServiceTest.Timers.TIMER_B;
 
@@ -218,11 +224,53 @@ public class TimerServiceTest
         scheduler.forward( 900, MILLISECONDS );
 
         // when
-        timerA.cancel( true, true );
+        timerA.cancel( SYNC_WAIT );
         scheduler.forward( 100, MILLISECONDS );
 
         // then
         verify( handlerA, never() ).onTimeout( any() );
+    }
+
+    @Test
+    public void shouldAwaitCancellationUnderRealScheduler() throws Throwable
+    {
+        // given
+        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        scheduler.init();
+        scheduler.start();
+
+        TimerService timerService = new TimerService( scheduler, FormattedLogProvider.toOutputStream( System.out ) );
+
+        CountDownLatch started = new CountDownLatch( 1 );
+        CountDownLatch finished = new CountDownLatch( 1 );
+
+        TimeoutHandler handlerA = timer ->
+        {
+            started.countDown();
+            finished.await();
+        };
+
+        TimeoutHandler handlerB = timer ->
+        {
+            finished.countDown();
+        };
+
+        Timer timerA = timerService.create( Timers.TIMER_A, group, handlerA );
+        timerA.set( fixedTimeout( 0, SECONDS ) );
+        started.await();
+
+        Timer timerB = timerService.create( Timers.TIMER_B, group, handlerB );
+        timerB.set( fixedTimeout( 2, SECONDS ) );
+
+        // when
+        timerA.cancel( SYNC_WAIT );
+
+        // then
+        assertEquals( 0, finished.getCount() );
+
+        // cleanup
+        scheduler.stop();
+        scheduler.shutdown();
     }
 
     enum Timers implements TimerService.TimerName
