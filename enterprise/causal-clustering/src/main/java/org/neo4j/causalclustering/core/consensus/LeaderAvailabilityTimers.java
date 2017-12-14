@@ -34,6 +34,7 @@ import org.neo4j.logging.LogProvider;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.uniformRandomTimeout;
+import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.ASYNC;
 import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.SYNC_WAIT;
 
 class LeaderAvailabilityTimers
@@ -81,13 +82,12 @@ class LeaderAvailabilityTimers
     {
         if ( electionTimer != null )
         {
-            electionTimer.cancel( SYNC_WAIT );
+            electionTimer.cancel( ASYNC );
         }
         if ( heartbeatTimer != null )
         {
-            heartbeatTimer.cancel( SYNC_WAIT );
+            heartbeatTimer.cancel( ASYNC );
         }
-
     }
 
     synchronized void renewElection()
