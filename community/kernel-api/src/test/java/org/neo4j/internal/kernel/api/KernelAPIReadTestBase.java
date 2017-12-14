@@ -48,27 +48,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 @SuppressWarnings( "WeakerAccess" )
 public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
 {
-    public class ConditionalTeardown implements TestRule
-    {
-        public Statement apply( Statement base, Description description )
-        {
-            return statement( base, description );
-        }
-
-        private Statement statement( final Statement base, final Description description )
-        {
-            return new Statement()
-            {
-                @Override
-                public void evaluate() throws Throwable
-                {
-                    base.evaluate();
-                    checkCursors();  // only done if test succeeds
-                }
-            };
-        }
-    }
-
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIReadTestSupport testSupport;
     private Session session;
@@ -112,7 +91,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     }
 
     @Rule
-    public ConditionalTeardown conditionalTeardown = new ConditionalTeardown();
+    public CursorsClosedPostCondition cursorsClosedPostCondition = new CursorsClosedPostCondition( cursors );
 
     @After
     public void closeTransaction() throws Exception
@@ -120,11 +99,6 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         tx.success();
         tx.close();
         session.close();
-    }
-
-    public void checkCursors()
-    {
-        cursors.assertAllClosedAndReset();
     }
 
     @AfterClass

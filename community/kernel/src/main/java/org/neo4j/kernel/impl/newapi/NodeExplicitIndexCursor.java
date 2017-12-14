@@ -108,7 +108,7 @@ class NodeExplicitIndexCursor extends IndexCursor
         else
         {
             return "NodeExplicitIndexCursor[node=" + node + ", expectedSize=" + expectedSize + ", score=" + score +
-                    " ,underlying record=" + super.toString() + " ]";
+                    ", underlying record=" + super.toString() + " ]";
         }
     }
 }
