@@ -141,7 +141,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     public void stop() throws Throwable
     {
         state = CANCELLED;
-        timer.cancel( true, true );
+        timer.cancel( false, true );
     }
 
     public State state()

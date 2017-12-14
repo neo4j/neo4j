@@ -344,7 +344,7 @@ public class RaftLogShipper
     {
         if ( timer != null )
         {
-            timer.cancel( true, true );
+            timer.cancel( false, true );
         }
         timeoutAbsoluteMillis = TIMER_INACTIVE;
     }
