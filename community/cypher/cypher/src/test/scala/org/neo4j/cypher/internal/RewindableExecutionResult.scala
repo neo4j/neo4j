@@ -28,14 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.runtime.planDescription._
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition, symbols}
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}
+import org.neo4j.graphdb.{QueryExecutionType, Result}
 
 object RewindableExecutionResult {
 
@@ -89,8 +82,8 @@ object RewindableExecutionResult {
                                                     preParsingNotification: Set[org.neo4j.graphdb.Notification],
                                                     offset: Option[frontend.v3_1.InputPosition])
     extends ExecutionResultWrapperFor3_1(inner, planner, runtime, preParsingNotification, offset) {
-    val cache = inner.toList
-    override val toList = cache
+    val cache: List[Map[String, Any]] = inner.toList
+    override val toList: List[Map[String, Any]] = cache
   }
 
   private class CachingExecutionResultWrapperFor2_3(inner: v2_3.executionplan.InternalExecutionResult,
@@ -99,8 +92,8 @@ object RewindableExecutionResult {
                                                     preParsingNotification: Set[org.neo4j.graphdb.Notification],
                                                     offset: Option[frontend.v2_3.InputPosition])
     extends ExecutionResultWrapperFor2_3(inner, planner, runtime, preParsingNotification, offset) {
-    val cache = inner.toList
-    override val toList = cache
+    val cache: List[Map[String, Any]] = inner.toList
+    override val toList: List[Map[String, Any]] = cache
   }
 
   def apply(in: Result): InternalExecutionResult = {
@@ -116,7 +109,7 @@ object RewindableExecutionResult {
         exceptionHandlerFor3_1.runSafely(wrapper)
       case ExecutionResultWrapperFor2_3(inner, planner, runtime, preParsingNotification, offset) =>
         val wrapper = new CachingExecutionResultWrapperFor2_3(eagerize(inner), planner, runtime, preParsingNotification, offset)
-        exceptionHandlerFor3_1.runSafely(wrapper)
+        exceptionHandlerFor2_3.runSafely(wrapper)
       case _ => exceptionHandler.runSafely(eagerize(internal))
     }
   }
