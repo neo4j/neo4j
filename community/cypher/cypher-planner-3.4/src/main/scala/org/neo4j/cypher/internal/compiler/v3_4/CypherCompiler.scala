@@ -45,13 +45,13 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
-      val pipeLine = if (context.debugOptions.contains("tostring"))
-        planPipeLine andThen DebugPrinter
-      else
-        planPipeLine
+    val pipeLine = if (context.debugOptions.contains("tostring"))
+      planPipeLine andThen DebugPrinter
+    else
+      planPipeLine
 
     pipeLine.transform(state, context)
-    }
+  }
 
   def parseQuery(queryText: String,
                  rawQueryText: String,
