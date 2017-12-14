@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.core.consensus.schedule;
 
-import java.util.concurrent.CancellationException;
-
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService.TimerName;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -124,10 +122,9 @@ public class Timer
      * then a subsequent cancel will not ensure that the first execution of the
      * handler was cancelled.
      *
-     * @param mayInterruptIfRunning Interrupt any currently running job.
-     * @param awaitTermination Await termination of cancelled job.
+     * @param cancelMode The mode of cancelling.
      */
-    public synchronized void cancel( boolean mayInterruptIfRunning, boolean awaitTermination )
+    public synchronized void cancel( CancelMode cancelMode )
     {
         activeJobId++;
 
@@ -135,16 +132,14 @@ public class Timer
         {
             try
             {
-                job.cancel( mayInterruptIfRunning );
-
-                if ( awaitTermination )
+                if ( cancelMode == CancelMode.SYNC_WAIT )
                 {
                     job.waitTermination();
                 }
-            }
-            catch ( CancellationException ignored )
-            {
-                // expected if a cancelled job was awaited
+                else if ( cancelMode == CancelMode.ASYNC_INTERRUPT )
+                {
+                    job.cancel( true );
+                }
             }
             catch ( Exception e )
             {
@@ -175,5 +170,28 @@ public class Timer
     private String canonicalName()
     {
         return name.getClass().getCanonicalName() + "." + name.name();
+    }
+
+    public enum CancelMode
+    {
+        /**
+         * Asynchronously cancels.
+         */
+        ASYNC,
+
+        /**
+         * Asynchronously cancels and interrupts the handler.
+         */
+        ASYNC_INTERRUPT,
+
+        /**
+         * Synchronously cancels and waits for the handler to finish.
+         */
+        SYNC_WAIT,
+
+        /*
+         * Note that SYNC_INTERRUPT cannot be supported, since the underlying
+         * primitive is a future which cannot be cancelled/interrupted and awaited.
+         */
     }
 }
