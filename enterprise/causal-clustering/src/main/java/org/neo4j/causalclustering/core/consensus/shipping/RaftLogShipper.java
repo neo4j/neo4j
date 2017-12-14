@@ -40,6 +40,7 @@ import static java.lang.Long.min;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
+import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.SYNC_WAIT;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Mode.CATCHUP;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Mode.PIPELINE;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Timeouts.RESEND;
@@ -344,7 +345,7 @@ public class RaftLogShipper
     {
         if ( timer != null )
         {
-            timer.cancel( false, true );
+            timer.cancel( SYNC_WAIT );
         }
         timeoutAbsoluteMillis = TIMER_INACTIVE;
     }
