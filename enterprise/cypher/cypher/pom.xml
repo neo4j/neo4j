@@ -61,6 +61,9 @@
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <args>
+            <arg>-target:jvm-${maven.compiler.target}</arg>
+          </args>
         </configuration>
       </plugin>
 
