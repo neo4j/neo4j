@@ -81,11 +81,11 @@ class LeaderAvailabilityTimers
     {
         if ( electionTimer != null )
         {
-            electionTimer.cancel( true, true );
+            electionTimer.cancel( false, true );
         }
         if ( heartbeatTimer != null )
         {
-            heartbeatTimer.cancel( true, true );
+            heartbeatTimer.cancel( false, true );
         }
 
     }
