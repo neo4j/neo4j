@@ -79,6 +79,7 @@
           <args>
               <arg>-Xmax-classfile-name</arg>
               <arg>100</arg>
+              <arg>-target:jvm-${maven.compiler.target}</arg>
               <!-- arg>-deprecation</arg -->
           </args>
           <jvmArgs>
