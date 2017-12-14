@@ -186,6 +186,12 @@ public class MockStore extends Read implements TestRule
         };
     }
 
+    @Override
+    public boolean nodeExists( long id )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
     private abstract static class Record<R extends AbstractBaseRecord>
     {
         abstract void initialize( R record );

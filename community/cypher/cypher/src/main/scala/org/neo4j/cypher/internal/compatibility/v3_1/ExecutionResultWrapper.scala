@@ -85,9 +85,11 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def executionPlanDescription(): InternalPlanDescription3_4 =
     lift(inner.executionPlanDescription()).addArgument(Version("CYPHER 3.1")).
       addArgument(Planner(planner.toTextOutput)).
+      addArgument(PlannerVersion("3.1")).
       addArgument(PlannerImpl(planner.name)).
       addArgument(Runtime(runtime.toTextOutput)).
-      addArgument(RuntimeImpl(runtime.name))
+      addArgument(RuntimeImpl(runtime.name)).
+      addArgument(RuntimeVersion("3.1"))
 
   private def lift(planDescription: v3_1.planDescription.InternalPlanDescription): InternalPlanDescription3_4 = {
 

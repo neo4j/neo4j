@@ -21,8 +21,6 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -56,17 +54,6 @@ public interface PageSwapperFactory
      * Get the name of this PageSwapperFactory implementation, for configuration purpose.
      */
     String implementationName();
-
-    /**
-     * Get the most optimal cache page size (in bytes) for these PageSwapper implementations.
-     */
-    int getCachePageSizeHint();
-
-    /**
-     * Gives <code>true</code> if the {@link #getCachePageSizeHint()} is the only cache page size that is supported for
-     * these PageSwapper implementations, otherwise <code>false</code>.
-     */
-    boolean isCachePageSizeHintStrict();
 
     /**
      * Get the unit of alignment that the swappers require of the memory buffers. For instance, if page alignment is

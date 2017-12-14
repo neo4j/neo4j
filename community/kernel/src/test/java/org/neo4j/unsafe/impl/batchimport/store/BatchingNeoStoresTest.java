@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -46,16 +47,21 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
+import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 
 public class BatchingNeoStoresTest
 {
@@ -149,6 +155,66 @@ public class BatchingNeoStoresTest
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    public void shouldDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnSupportedFormat() throws Exception
+    {
+        // given
+        RecordFormats formats = new ForcedSecondaryUnitRecordFormats( Standard.LATEST_RECORD_FORMATS );
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
+                storage.pageCache(), PageCacheTracer.NULL, storage.directory().absolutePath(), formats, DEFAULT,
+                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+        {
+            stores.createNew();
+            Estimates estimates = Inputs.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
+
+            // when
+            boolean doubleUnits = stores.determineDoubleRelationshipRecordUnits( estimates );
+
+            // then
+            assertTrue( doubleUnits );
+        }
+    }
+
+    @Test
+    public void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLowAmountOfRelationshipsOnSupportedFormat() throws Exception
+    {
+        // given
+        RecordFormats formats = new ForcedSecondaryUnitRecordFormats( Standard.LATEST_RECORD_FORMATS );
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
+                storage.pageCache(), PageCacheTracer.NULL, storage.directory().absolutePath(), formats, DEFAULT,
+                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+        {
+            stores.createNew();
+            Estimates estimates = Inputs.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD >> 1, 0, 0, 0, 0, 0 );
+
+            // when
+            boolean doubleUnits = stores.determineDoubleRelationshipRecordUnits( estimates );
+
+            // then
+            assertFalse( doubleUnits );
+        }
+    }
+
+    @Test
+    public void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLargeAmountOfRelationshipsOnUnsupportedFormat() throws Exception
+    {
+        // given
+        RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
+                storage.pageCache(), PageCacheTracer.NULL, storage.directory().absolutePath(), formats, DEFAULT,
+                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+        {
+            stores.createNew();
+            Estimates estimates = Inputs.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
+
+            // when
+            boolean doubleUnits = stores.determineDoubleRelationshipRecordUnits( estimates );
+
+            // then
+            assertFalse( doubleUnits );
         }
     }
 

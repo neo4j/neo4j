@@ -28,7 +28,14 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.graphdb.{QueryExecutionType, Result}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.runtime.planDescription._
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, symbols}
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}
 
 object RewindableExecutionResult {
 

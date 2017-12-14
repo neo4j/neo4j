@@ -34,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
+import org.neo4j.unsafe.impl.batchimport.input.csv.StringDeserialization;
 
 import static org.neo4j.io.ByteUnit.mebiBytes;
 

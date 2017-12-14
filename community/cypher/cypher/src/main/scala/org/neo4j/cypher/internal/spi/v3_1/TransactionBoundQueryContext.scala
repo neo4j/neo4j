@@ -31,14 +31,12 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.interpreted.BeansAPIRelationshipIterator
+import org.neo4j.cypher.internal.runtime.interpreted.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
@@ -259,13 +257,16 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   override def indexScan(index: IndexDescriptor) =
-    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(
+      txContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
-    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.propertyId, value)))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(
+      txContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.propertyId, value)))(nodeOps.getById)
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
-    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.stringSuffix(index.propertyId, value)))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(
+      txContext.statement.readOperations().indexQuery(index, IndexQuery.stringSuffix(index.propertyId, value)))(nodeOps.getById)
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
@@ -374,7 +375,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
-      asScalaENFXSafe(txContext.statement.readOperations().relationshipGetPropertyKeys(id))
+      JavaConversionSupport.asScalaENFXSafe(txContext.statement.readOperations().relationshipGetPropertyKeys(id))
     } catch {
       case _: exceptions.EntityNotFoundException => Iterator.empty
     }

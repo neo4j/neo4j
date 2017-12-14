@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.StringReader;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -45,12 +44,13 @@ import java.util.zip.ZipOutputStream;
 
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static java.util.Arrays.copyOfRange;
 
 @RunWith( Parameterized.class )
 public class ReadablesTest
@@ -162,7 +162,7 @@ public class ReadablesTest
         // GIVEN
         String data = "1234567890";
         //                 ^   ^
-        CharReadable reader = Readables.wrap( new StringReader( data ) );
+        CharReadable reader = Readables.wrap( data );
         SectionedCharBuffer buffer = new SectionedCharBuffer( 4 );
 
         // WHEN
@@ -334,7 +334,7 @@ public class ReadablesTest
     {
         try ( InputStream stream = new FileInputStream( file ) )
         {
-            assertReadText( Readables.wrap( stream, file.getPath(), Charset.defaultCharset() ), text );
+            assertReadText( Readables.wrap( stream, file.getPath(), Charset.defaultCharset(), file.length() ), text );
         }
     }
 
@@ -343,5 +343,4 @@ public class ReadablesTest
         char[] readText = readMethod.read( readable, text.toCharArray().length );
         assertArrayEquals( readText, text.toCharArray() );
     }
-
 }

@@ -26,10 +26,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -134,7 +137,7 @@ public class PageCacheRule extends ExternalResource
     /**
      * @return new {@link PageCacheConfig} instance.
      */
-    public static final PageCacheConfig config()
+    public static PageCacheConfig config()
     {
         return new PageCacheConfig();
     }
@@ -168,11 +171,25 @@ public class PageCacheRule extends ExternalResource
     public PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig overriddenConfig )
     {
         closeExistingPageCache();
-        pageCache = StandalonePageCacheFactory.createPageCache( fs,
-                selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null ),
-                selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL ),
-                selectConfig( baseConfig.pageCursorTracerSupplier, overriddenConfig.pageCursorTracerSupplier,
-                        DefaultPageCursorTracerSupplier.INSTANCE ));
+        Integer pageSize = selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null );
+        PageCacheTracer cacheTracer = selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL );
+        PageCursorTracerSupplier cursorTracerSupplier = selectConfig(
+                baseConfig.pageCursorTracerSupplier,
+                overriddenConfig.pageCursorTracerSupplier,
+                DefaultPageCursorTracerSupplier.INSTANCE );
+
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
+        factory.open( fs, Configuration.EMPTY );
+
+        MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB" );
+        if ( pageSize != null )
+        {
+            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier );
+        }
+        else
+        {
+            pageCache = new MuninnPageCache( factory, mman, cacheTracer, cursorTracerSupplier );
+        }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;
     }

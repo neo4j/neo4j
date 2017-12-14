@@ -29,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.lang.Math.abs;
 
-class SimpleDataGeneratorBatch<T>
+public class SimpleDataGeneratorBatch<T>
 {
     private final Header header;
     private final Random random;
@@ -46,7 +46,7 @@ class SimpleDataGeneratorBatch<T>
     private long cursor;
     private long position;
 
-    SimpleDataGeneratorBatch(
+    public SimpleDataGeneratorBatch(
             Header header, long start, long randomSeed, long nodeCount,
             Distribution<String> labels, Distribution<String> relationshipTypes,
             Deserialization<T> deserialization, T[] target,
@@ -67,7 +67,7 @@ class SimpleDataGeneratorBatch<T>
         deserialization.initialize();
     }
 
-    T[] get()
+    public T[] get()
     {
         for ( int i = 0; i < target.length; i++ )
         {
@@ -188,7 +188,7 @@ class SimpleDataGeneratorBatch<T>
 
     private String[] randomLabels( Random random )
     {
-        int length = random.nextInt( 3 );
+        int length = random.nextInt( labels.length() + 1 );
         if ( length == 0 )
         {
             return InputEntity.NO_LABELS;

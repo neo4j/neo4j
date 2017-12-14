@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Caches {@link RelationshipGroupRecord} into {@link RelationshipGroupCache}.
@@ -31,9 +32,10 @@ public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
 {
     private final RelationshipGroupCache cache;
 
-    public CacheGroupsStep( StageControl control, Configuration config, RelationshipGroupCache cache )
+    public CacheGroupsStep( StageControl control, Configuration config, RelationshipGroupCache cache,
+            StatsProvider... additionalStatsProviders )
     {
-        super( control, "CACHE", config, 1 );
+        super( control, "CACHE", config, 1, additionalStatsProviders );
         this.cache = cache;
     }
 

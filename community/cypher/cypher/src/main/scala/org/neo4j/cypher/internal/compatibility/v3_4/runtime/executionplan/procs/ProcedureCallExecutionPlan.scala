@@ -131,7 +131,9 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                                                RuntimeImpl(runtimeUsed.name),
                                                                Planner(plannerUsed.toTextOutput),
                                                                PlannerImpl(plannerUsed.name),
-                                                               Version(s"CYPHER ${CypherVersion.default.name}"))
+                                                               PlannerVersion(plannerUsed.version),
+                                                               Version(s"CYPHER ${CypherVersion.default.name}"),
+                                                               RuntimeVersion(CypherVersion.default.name))
 
 
   private def createSignatureArgument: Argument =

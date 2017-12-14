@@ -19,7 +19,11 @@
  */
 package org.neo4j.io;
 
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.stream.Stream;
+
+import org.neo4j.helpers.collection.Pair;
 
 import static java.lang.String.format;
 
@@ -42,12 +46,12 @@ public enum ByteUnit
      */
 
     Byte( 0, "B" ),
-    KibiByte( 1, "KiB" ),
-    MebiByte( 2, "MiB" ),
-    GibiByte( 3, "GiB" ),
-    TebiByte( 4, "TiB" ),
-    PebiByte( 5, "PiB" ),
-    ExbiByte( 6, "EiB" );
+    KibiByte( 1, "KiB", "KB", "K", "kB", "kb", "k" ),
+    MebiByte( 2, "MiB", "MB", "M", "mB", "mb", "m" ),
+    GibiByte( 3, "GiB", "GB", "G", "gB", "gb", "g" ),
+    TebiByte( 4, "TiB", "TB" ),
+    PebiByte( 5, "PiB", "PB" ),
+    ExbiByte( 6, "EiB", "EB" );
 
     public static final long ONE_KIBI_BYTE = ByteUnit.KibiByte.toBytes( 1 );
     public static final long ONE_MEBI_BYTE = ByteUnit.MebiByte.toBytes( 1 );
@@ -57,11 +61,13 @@ public enum ByteUnit
 
     private final long factor;
     private final String shortName;
+    private final String[] names;
 
-    ByteUnit( long power, String shortName )
+    ByteUnit( long power, String... names )
     {
         this.factor = factorFromPower( power );
-        this.shortName = shortName;
+        this.shortName = names[0];
+        this.names = names;
     }
 
     /**
@@ -193,5 +199,67 @@ public enum ByteUnit
         {
             return bytes + Byte.shortName;
         }
+    }
+
+    public static long parse( String text )
+    {
+        long result = 0;
+        int len = text.length();
+        int unitCharacter = 0;
+        int digitCharacters = 0;
+        Stream<Pair<String,ByteUnit>> unitsStream = listUnits();
+
+        for ( int i = 0; i < len; i++ )
+        {
+            char ch = text.charAt( i );
+            int digit = Character.digit( ch, 10 );
+            if ( digit != -1 )
+            {
+                if ( unitCharacter != 0 )
+                {
+                    throw invalidFormat( text );
+                }
+                if ( result != 0 )
+                {
+                    result *= 10;
+                }
+                result += digit;
+                digitCharacters++;
+            }
+            else if ( !Character.isWhitespace( ch ) )
+            {
+                int idx = unitCharacter;
+                unitsStream = unitsStream.filter( p -> p.first().length() > idx && p.first().charAt( idx ) == ch );
+                unitCharacter++;
+            }
+        }
+
+        if ( digitCharacters == 0 )
+        {
+            throw invalidFormat( text );
+        }
+
+        if ( unitCharacter > 0 )
+        {
+            ByteUnit byteUnit = unitsStream.map( Pair::other ).findFirst().orElse( null );
+            if ( byteUnit == null )
+            {
+                throw invalidFormat( text );
+            }
+            result = byteUnit.toBytes( result );
+        }
+
+        return result;
+    }
+
+    private static IllegalArgumentException invalidFormat( String text )
+    {
+        return new IllegalArgumentException( "Invalid number format: '" + text + "'" );
+    }
+
+    private static Stream<Pair<String,ByteUnit>> listUnits()
+    {
+        return Arrays.stream( values() ).flatMap(
+                b -> Stream.of( b.names ).map( n -> Pair.of( n, b ) ) );
     }
 }

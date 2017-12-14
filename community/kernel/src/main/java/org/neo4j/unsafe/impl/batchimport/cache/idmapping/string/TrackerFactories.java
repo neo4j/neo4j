@@ -24,6 +24,8 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
  */
 public class TrackerFactories
 {
+    public static final long HIGHEST_ID_FOR_SMALL_TRACKER = Integer.MAX_VALUE;
+
     private TrackerFactories()
     {
     }
@@ -33,7 +35,7 @@ public class TrackerFactories
      */
     public static TrackerFactory dynamic()
     {
-        return ( arrayFactory, size ) -> size > Integer.MAX_VALUE
+        return ( arrayFactory, size ) -> size > HIGHEST_ID_FOR_SMALL_TRACKER
                 ? new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) )
                 : new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) );
     }

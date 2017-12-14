@@ -34,8 +34,10 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => Intern
     val readOnly = input.solved.readOnly
     new LogicalPlan2PlanDescription(readOnly).create(input)
       .addArgument(Version("CYPHER 3.4"))
+      .addArgument(RuntimeVersion("3.4"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
+      .addArgument(PlannerVersion(plannerName.version))
   }
 }
 

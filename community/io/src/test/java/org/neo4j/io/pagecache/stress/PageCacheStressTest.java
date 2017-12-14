@@ -60,7 +60,6 @@ public class PageCacheStressTest
     private final int numberOfThreads;
 
     private final int numberOfCachePages;
-    private final int cachePageSize;
 
     private final PageCacheTracer tracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
@@ -74,7 +73,6 @@ public class PageCacheStressTest
         this.numberOfThreads = builder.numberOfThreads;
 
         this.numberOfCachePages = builder.numberOfCachePages;
-        this.cachePageSize = builder.cachePageSize;
 
         this.tracer = builder.tracer;
         this.pageCursorTracerSupplier = builder.pageCursorTracerSupplier;
@@ -90,8 +88,8 @@ public class PageCacheStressTest
             PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
             swapperFactory.open( fs, Configuration.EMPTY );
 
-            try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, numberOfCachePages, cachePageSize,
-                    tracer, pageCursorTracerSupplier ) )
+            try ( PageCache pageCacheUnderTest = new MuninnPageCache(
+                    swapperFactory, numberOfCachePages, tracer, pageCursorTracerSupplier ) )
             {
                 PageCacheStresser pageCacheStresser =
                         new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
@@ -106,7 +104,6 @@ public class PageCacheStressTest
         int numberOfThreads = 7;
 
         int numberOfCachePages = 1000;
-        int cachePageSize = 8192;
 
         PageCacheTracer tracer = NULL;
         PageCursorTracerSupplier pageCursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;

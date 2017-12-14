@@ -23,9 +23,8 @@ import org.junit.Test;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -37,6 +36,8 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class SynchronizedArrayIdOrderingQueueStressTest
 {
+    private static final int THRESHOLD = 100;
+
     @Test
     public void shouldWithstandHighStressAndStillKeepOrder() throws Exception
     {
@@ -45,18 +46,24 @@ public class SynchronizedArrayIdOrderingQueueStressTest
                 new SynchronizedArrayIdOrderingQueue( 5 ) );
         Committer[] committers = new Committer[20];
         CountDownLatch readySignal = new CountDownLatch( committers.length );
-        AtomicLong endTime = new AtomicLong();
+        AtomicBoolean end = new AtomicBoolean();
         CountDownLatch startSignal = new CountDownLatch( 1 );
         PrimitiveLongIterator idSource = neverEndingIdStream();
         for ( int i = 0; i < committers.length; i++ )
         {
-            committers[i] = new Committer( queue, idSource, endTime, readySignal, startSignal );
+            committers[i] = new Committer( queue, idSource, end, readySignal, startSignal );
         }
 
         // WHEN GO!
         readySignal.await();
-        endTime.set( currentTimeMillis() + SECONDS.toMillis( 3 ) );
         startSignal.countDown();
+        long startTime = currentTimeMillis();
+        long endTime = startTime + SECONDS.toMillis( 20 ); // worst-case
+        while ( currentTimeMillis() < endTime && queue.getNumberOfOrderlyRemovedIds() < THRESHOLD )
+        {
+            Thread.sleep( 100 );
+        }
+        end.set( true );
         for ( Committer committer : committers )
         {
             committer.awaitFinish();
@@ -65,7 +72,7 @@ public class SynchronizedArrayIdOrderingQueueStressTest
         // THEN there should have been at least a few ids processed. The order of those
         // are verified as they go, by the VerifyingIdOrderingQueue
         assertTrue( "Would have wanted at least a few ids to be processed, but only saw " +
-                queue.getNumberOfOrderlyRemovedIds(), queue.getNumberOfOrderlyRemovedIds() > 50 );
+                queue.getNumberOfOrderlyRemovedIds(), queue.getNumberOfOrderlyRemovedIds() >= THRESHOLD );
     }
 
     private static class VerifyingIdOrderingQueue implements IdOrderingQueue
@@ -148,18 +155,18 @@ public class SynchronizedArrayIdOrderingQueueStressTest
     {
         private final Random random = new Random();
         private final IdOrderingQueue queue;
-        private final AtomicLong endTime;
+        private final AtomicBoolean end;
         private final CountDownLatch startSignal;
         private final PrimitiveLongIterator idSource;
         private final CountDownLatch readySignal;
         private volatile Exception exception;
 
-        Committer( IdOrderingQueue queue, PrimitiveLongIterator idSource, AtomicLong endTime,
+        Committer( IdOrderingQueue queue, PrimitiveLongIterator idSource, AtomicBoolean end,
                 CountDownLatch readySignal, CountDownLatch startSignal )
         {
             this.queue = queue;
             this.idSource = idSource;
-            this.endTime = endTime;
+            this.end = end;
             this.readySignal = readySignal;
             this.startSignal = startSignal;
             start();
@@ -181,7 +188,7 @@ public class SynchronizedArrayIdOrderingQueueStressTest
             {
                 readySignal.countDown();
                 awaitLatch( startSignal );
-                while ( currentTimeMillis() < endTime.get() )
+                while ( !end.get() )
                 {
                     long id;
 

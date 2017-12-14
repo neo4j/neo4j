@@ -124,7 +124,7 @@ public class ImportPanicIT
         {
             try
             {
-                return Readables.wrap( fs.openAsReader( file, StandardCharsets.UTF_8 ) );
+                return Readables.files( StandardCharsets.UTF_8, file );
             }
             catch ( IOException e )
             {

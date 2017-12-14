@@ -33,6 +33,12 @@ import org.neo4j.values.storable.Value;
 
 public class PropertyBlock implements Cloneable
 {
+    /**
+     * Size of one property block in a property record. One property may be composed by one or more property blocks
+     * and one property record contains several property blocks.
+     */
+    public static final int PROPERTY_BLOCK_SIZE = Long.BYTES;
+
     private static final long KEY_BITMASK = 0xFFFFFFL;
 
     private static final int MAX_ARRAY_TOSTRING_SIZE = 4;
@@ -149,14 +155,14 @@ public class PropertyBlock implements Cloneable
     /**
      * A property block can take a variable size of bytes in a property record.
      * This method returns the size of this block in bytes, including the header
-     * size.
+     * size. This does not include dynamic records.
      *
      * @return The size of this block in bytes, including the header.
      */
     public int getSize()
     {
         // Currently each block is a multiple of 8 in size
-        return valueBlocks == null ? 0 : valueBlocks.length * 8;
+        return valueBlocks == null ? 0 : valueBlocks.length * PROPERTY_BLOCK_SIZE;
     }
 
     @Override

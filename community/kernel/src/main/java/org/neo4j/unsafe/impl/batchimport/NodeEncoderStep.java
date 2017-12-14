@@ -23,7 +23,6 @@ import java.util.Collections;
 
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -33,6 +32,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
+
+import static java.lang.Long.max;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -47,6 +48,7 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
     private final IdGenerator idGenerator;
     private final NodeStore nodeStore;
     private final BatchingLabelTokenRepository labelHolder;
+    private volatile long highestNodeId;
 
     public NodeEncoderStep( StageControl control, Configuration config,
             IdMapper idMapper, IdGenerator idGenerator,
@@ -91,6 +93,13 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
                 InlineNodeLabels.putSorted( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
             }
         }
+        highestNodeId = max( highestNodeId, batch.records[batch.records.length - 1].getId() );
         sender.send( batch );
+    }
+
+    @Override
+    protected void done()
+    {
+        nodeStore.setHighestPossibleIdInUse( highestNodeId );
     }
 }

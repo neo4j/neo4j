@@ -57,7 +57,7 @@ import scala.util.Try
 
 object CypherReductionSupport {
   private val rewriterSequencer = RewriterStepSequencer.newValidating _
-  private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
+  private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   private val stepSequencer = RewriterStepSequencer.newPlain _
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
   private val config = CypherCompilerConfiguration(

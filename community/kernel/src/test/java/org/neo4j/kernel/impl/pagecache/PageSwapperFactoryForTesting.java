@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.config.Configuration;
@@ -35,8 +34,6 @@ public class PageSwapperFactoryForTesting
 
     public static final AtomicInteger createdCounter = new AtomicInteger();
     public static final AtomicInteger configuredCounter = new AtomicInteger();
-    public static final AtomicInteger cachePageSizeHint = new AtomicInteger( 8192 );
-    public static final AtomicBoolean cachePageSizeHintIsStrict = new AtomicBoolean();
 
     public static int countCreatedPageSwapperFactories()
     {
@@ -57,18 +54,6 @@ public class PageSwapperFactoryForTesting
     public String implementationName()
     {
         return TEST_PAGESWAPPER_NAME;
-    }
-
-    @Override
-    public int getCachePageSizeHint()
-    {
-        return cachePageSizeHint.get();
-    }
-
-    @Override
-    public boolean isCachePageSizeHintStrict()
-    {
-        return cachePageSizeHintIsStrict.get();
     }
 
     @Override

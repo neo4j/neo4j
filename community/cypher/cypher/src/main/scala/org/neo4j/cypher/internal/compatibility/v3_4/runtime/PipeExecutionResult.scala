@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import java.io.PrintWriter
 import java.util
 
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.MapBasedRow
 import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.Version
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{RuntimeVersion, Version}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
@@ -55,7 +56,8 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def executionPlanDescription(): InternalPlanDescription =
     executionPlanBuilder()
-      .addArgument(Version("CYPHER 3.4"))
+      .addArgument(Version(s"CYPHER ${CypherVersion.default.name}"))
+      .addArgument(RuntimeVersion(CypherVersion.default.name))
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext

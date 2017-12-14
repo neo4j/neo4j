@@ -40,7 +40,7 @@ import org.neo4j.logging.Log;
 public class GraphiteOutput implements Lifecycle, EventReporter
 {
     private final HostnamePort hostnamePort;
-    private long period;
+    private final long period;
     private final MetricRegistry registry;
     private final Log logger;
     private final String prefix;

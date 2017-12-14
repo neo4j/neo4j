@@ -30,13 +30,11 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.interpreted.{BeansAPIRelationshipIterator, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.runtime.interpreted.{BeansAPIRelationshipIterator, JavaConversionSupport, TransactionalContextWrapper}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
@@ -248,7 +246,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   def indexScan(index: SchemaTypes.IndexDescriptor) =
-    mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
 
   override def lockingExactUniqueIndexSearch(index: SchemaTypes.IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(index, IndexQuery.exact(index.propertyId, Values.of(value)))

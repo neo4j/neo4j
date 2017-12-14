@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
+import org.neo4j.cypher.CypherVersion.v3_3
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
@@ -35,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{Co
 import org.neo4j.cypher.internal.frontend.v3_4.{phases => phasesV3_4}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
-import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, ProcedurePlannerName}
+import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, PlannerNameWithVersion, ProcedurePlannerName}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, InputPosition}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId => LogicalPlanIdV3_3}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId => LogicalPlanIdV3_4}
@@ -146,7 +147,8 @@ object helpers {
 
   def as3_4(logicalPlan: LogicalPlanStateV3_3) : LogicalPlanState = {
     val startPosition = logicalPlan.startPosition.map(as3_4)
-    val plannerName = as3_4(logicalPlan.plannerName)
+    // Wrap the planner name to correctly report version 3.3.
+    val plannerName = PlannerNameWithVersion(as3_4(logicalPlan.plannerName), v3_3.name)
 
     def isImportant(expression: ExpressionV3_3) : Boolean = logicalPlan.maybeSemanticTable.exists(_.seen(expression))
 

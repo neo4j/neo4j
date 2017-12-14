@@ -33,6 +33,7 @@ public class ExecutionSupervisors
 
     /**
      * Using an {@link ExecutionMonitors#invisible() invisible} monitor.
+     * @param stage {@link Stage} to supervise.
      * @see #superviseDynamicExecution(ExecutionMonitor, Stage)
      */
     public static void superviseDynamicExecution( Stage stage )
@@ -42,6 +43,8 @@ public class ExecutionSupervisors
 
     /**
      * With {@link Configuration#DEFAULT}.
+     * @param monitor {@link ExecutionMonitor} notifying user about progress.
+     * @param stage {@link Stage} to supervise.
      * @see #superviseDynamicExecution(ExecutionMonitor, Configuration, Stage)
      */
     public static void superviseDynamicExecution( ExecutionMonitor monitor, Stage stage )
@@ -52,6 +55,9 @@ public class ExecutionSupervisors
     /**
      * Supervises an execution with the given monitor AND a {@link DynamicProcessorAssigner} to give
      * the execution a dynamic and optimal nature.
+     * @param monitor {@link ExecutionMonitor} notifying user about progress.
+     * @param config {@link Configuration} of the import.
+     * @param stage {@link Stage} to supervise.
      *
      * @see #superviseExecution(ExecutionMonitor, Configuration, Stage)
      */

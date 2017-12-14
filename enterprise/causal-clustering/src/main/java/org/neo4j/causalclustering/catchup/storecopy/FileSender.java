@@ -26,6 +26,7 @@ import io.netty.handler.stream.ChunkedInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Objects;
 
 import static org.neo4j.causalclustering.catchup.storecopy.FileChunk.MAX_SIZE;
 import static org.neo4j.causalclustering.catchup.storecopy.FileSender.State.FINISHED;
@@ -35,15 +36,16 @@ import static org.neo4j.causalclustering.catchup.storecopy.FileSender.State.PRE_
 
 class FileSender implements ChunkedInput<FileChunk>
 {
-    private final ReadableByteChannel channel;
+    private final StoreResource resource;
     private final ByteBuffer byteBuffer;
 
+    private ReadableByteChannel channel;
     private byte[] nextBytes;
     private State state = PRE_INIT;
 
-    FileSender( ReadableByteChannel channel ) throws IOException
+    FileSender( StoreResource resource ) throws IOException
     {
-        this.channel = channel;
+        this.resource = resource;
         this.byteBuffer = ByteBuffer.allocateDirect( MAX_SIZE );
     }
 
@@ -56,7 +58,7 @@ class FileSender implements ChunkedInput<FileChunk>
     @Override
     public void close() throws Exception
     {
-        channel.close();
+        resource.close();
     }
 
     @Override
@@ -68,6 +70,7 @@ class FileSender implements ChunkedInput<FileChunk>
         }
         else if ( state == PRE_INIT )
         {
+            channel = resource.open();
             nextBytes = prefetch();
             if ( nextBytes == null )
             {
@@ -126,6 +129,27 @@ class FileSender implements ChunkedInput<FileChunk>
     public long progress()
     {
         return 0;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        FileSender that = (FileSender) o;
+        return Objects.equals( resource, that.resource );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( resource );
     }
 
     private byte[] prefetch() throws IOException

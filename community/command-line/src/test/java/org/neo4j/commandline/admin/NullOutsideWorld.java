@@ -20,6 +20,7 @@
 package org.neo4j.commandline.admin;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -83,6 +84,12 @@ public class NullOutsideWorld implements OutsideWorld
 
     @Override
     public PrintStream outStream()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public InputStream inStream()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

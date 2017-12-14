@@ -61,7 +61,7 @@ abstract class Read implements TxStateHolder,
 {
     private final Cursors cursors;
     private final TxStateHolder txStateHolder;
-    private final AssertOpen assertOpen;
+    protected final AssertOpen assertOpen;
 
     Read( Cursors cursors, TxStateHolder txStateHolder, AssertOpen assertOpen )
     {
@@ -77,6 +77,8 @@ abstract class Read implements TxStateHolder,
             IndexOrder indexOrder,
             IndexQuery... query ) throws KernelException
     {
+        assertOpen.assertOpen();
+
         ((NodeValueIndexCursor) cursor).setRead( this );
         IndexProgressor.NodeValueClient target = (NodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index );
@@ -123,6 +125,8 @@ abstract class Read implements TxStateHolder,
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
             IndexOrder indexOrder ) throws KernelException
     {
+        assertOpen.assertOpen();
+
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
         ((NodeValueIndexCursor) cursor).setRead( this );
@@ -132,6 +136,8 @@ abstract class Read implements TxStateHolder,
     @Override
     public final void nodeLabelScan( int label, org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor )
     {
+        assertOpen.assertOpen();
+
         ((NodeLabelIndexCursor) cursor).setRead( this );
         labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithLabel( label ) );
     }
@@ -139,6 +145,8 @@ abstract class Read implements TxStateHolder,
     @Override
     public void nodeLabelUnionScan( org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor, int... labels )
     {
+        assertOpen.assertOpen();
+
         ((NodeLabelIndexCursor) cursor).setRead( this );
         labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAnyOfLabels( labels ) );
     }
@@ -146,6 +154,8 @@ abstract class Read implements TxStateHolder,
     @Override
     public void nodeLabelIntersectionScan( org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor, int... labels )
     {
+        assertOpen.assertOpen();
+
         ((NodeLabelIndexCursor) cursor).setRead( this );
         labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
     }
@@ -158,54 +168,63 @@ abstract class Read implements TxStateHolder,
     @Override
     public final Scan<org.neo4j.internal.kernel.api.NodeLabelIndexCursor> nodeLabelScan( int label )
     {
+        assertOpen.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public final void allNodesScan( org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
+        assertOpen.assertOpen();
         ((NodeCursor) cursor).scan( this );
     }
 
     @Override
     public final Scan<org.neo4j.internal.kernel.api.NodeCursor> allNodesScan()
     {
+        assertOpen.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public final void singleNode( long reference, org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
+        assertOpen.assertOpen();
         ((NodeCursor) cursor).single( reference, this );
     }
 
     @Override
     public final void singleRelationship( long reference, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
+        assertOpen.assertOpen();
         ((RelationshipScanCursor) cursor).single( reference, this );
     }
 
     @Override
     public final void allRelationshipsScan( org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
+        assertOpen.assertOpen();
         ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/, this );
     }
 
     @Override
     public final Scan<org.neo4j.internal.kernel.api.RelationshipScanCursor> allRelationshipsScan()
     {
+        assertOpen.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public final void relationshipLabelScan( int label, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
+        assertOpen.assertOpen();
         ((RelationshipScanCursor) cursor).scan( label, this );
     }
 
     @Override
     public final Scan<org.neo4j.internal.kernel.api.RelationshipScanCursor> relationshipLabelScan( int label )
     {
+        assertOpen.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
     }
 
@@ -213,6 +232,7 @@ abstract class Read implements TxStateHolder,
     public final void relationshipGroups(
             long nodeReference, long reference, org.neo4j.internal.kernel.api.RelationshipGroupCursor cursor )
     {
+        assertOpen.assertOpen();
         if ( reference == NO_ID ) // there are no relationships for this node
         {
             cursor.close();
@@ -258,6 +278,7 @@ abstract class Read implements TxStateHolder,
          *
          * This means that we need reference encodings (flags) for cases: 1, 3, 4, 5
          */
+        assertOpen.assertOpen();
         if ( reference == NO_ID ) // there are no relationships for this node
         {
             cursor.close();
@@ -279,18 +300,21 @@ abstract class Read implements TxStateHolder,
     @Override
     public final void nodeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
+        assertOpen.assertOpen();
         ((PropertyCursor) cursor).init( reference, this, assertOpen );
     }
 
     @Override
     public final void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
+        assertOpen.assertOpen();
         ((PropertyCursor) cursor).init( reference, this, assertOpen );
     }
 
     @Override
     public final void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
+        assertOpen.assertOpen();
         ((PropertyCursor) cursor).init( graphPropertiesReference(), this, assertOpen );
     }
 
@@ -300,6 +324,7 @@ abstract class Read implements TxStateHolder,
     public final void nodeExplicitIndexLookup(
             org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, String key, Value value ) throws KernelException
     {
+        assertOpen.assertOpen();
         ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).get( key, value.asObject() ) );
     }
@@ -308,6 +333,7 @@ abstract class Read implements TxStateHolder,
     public final void nodeExplicitIndexQuery(
             org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, Object query ) throws KernelException
     {
+        assertOpen.assertOpen();
         ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
                 query instanceof Value ? ((Value) query).asObject() : query ) );
@@ -317,6 +343,7 @@ abstract class Read implements TxStateHolder,
     public final void nodeExplicitIndexQuery(
             org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, String key, Object query ) throws KernelException
     {
+        assertOpen.assertOpen();
         ((NodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
                 key, query instanceof Value ? ((Value) query).asObject() : query ) );
@@ -331,6 +358,7 @@ abstract class Read implements TxStateHolder,
             long source,
             long target ) throws KernelException
     {
+        assertOpen.assertOpen();
         ((RelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (RelationshipExplicitIndexCursor) cursor,
@@ -345,6 +373,7 @@ abstract class Read implements TxStateHolder,
             long source,
             long target ) throws KernelException
     {
+        assertOpen.assertOpen();
         ((RelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (RelationshipExplicitIndexCursor) cursor,
@@ -361,6 +390,7 @@ abstract class Read implements TxStateHolder,
             long source,
             long target ) throws KernelException
     {
+        assertOpen.assertOpen();
         ((RelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (RelationshipExplicitIndexCursor) cursor,
@@ -376,21 +406,25 @@ abstract class Read implements TxStateHolder,
     @Override
     public final void futureNodeReferenceRead( long reference )
     {
+        assertOpen.assertOpen();
     }
 
     @Override
     public final void futureRelationshipsReferenceRead( long reference )
     {
+        assertOpen.assertOpen();
     }
 
     @Override
     public final void futureNodePropertyReferenceRead( long reference )
     {
+        assertOpen.assertOpen();
     }
 
     @Override
     public final void futureRelationshipPropertyReferenceRead( long reference )
     {
+        assertOpen.assertOpen();
     }
 
     abstract IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index );

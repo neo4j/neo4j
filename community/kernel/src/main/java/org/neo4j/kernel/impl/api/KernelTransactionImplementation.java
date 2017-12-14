@@ -40,7 +40,6 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -464,7 +463,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void assertOpen()
+    public void assertOpen()
     {
         Optional<Status> terminationReason = getReasonIfTerminated();
         if ( terminationReason.isPresent() )
@@ -710,7 +709,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Read dataRead()
     {
         currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
-        return operations;
+        return operations.dataRead();
     }
 
     @Override
@@ -740,7 +739,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public ExplicitIndexRead indexRead()
     {
-        return operations;
+        return operations.indexRead();
     }
 
     @Override
@@ -752,7 +751,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public SchemaRead schemaRead()
     {
-        return operations;
+        return operations.schemaRead();
     }
 
     @Override

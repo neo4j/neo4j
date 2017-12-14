@@ -159,7 +159,7 @@ public class RecordFormatSelectorTest
     {
         createNeoStoreFile();
         PageCache pageCache = mock( PageCache.class );
-        when( pageCache.pageSize() ).thenReturn( 8192 );
+        when( pageCache.pageSize() ).thenReturn( PageCache.PAGE_SIZE );
         when( pageCache.map( any(), anyInt(), any() ) ).thenThrow( new IOException( "No reading..." ) );
         assertNull( selectForStore( storeDir, fs, pageCache, LOG ) );
     }

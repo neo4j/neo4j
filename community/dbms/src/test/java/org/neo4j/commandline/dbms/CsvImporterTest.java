@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -57,7 +58,7 @@ public class CsvImporterTest
         List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
         Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
 
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
         {
             Config config = Config.builder()
                     .withSettings( additionalConfig() )

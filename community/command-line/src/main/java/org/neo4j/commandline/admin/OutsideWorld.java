@@ -20,6 +20,7 @@
 package org.neo4j.commandline.admin;
 
 import java.io.Closeable;
+import java.io.InputStream;
 import java.io.PrintStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,4 +58,6 @@ public interface OutsideWorld extends Closeable
     PrintStream errorStream();
 
     PrintStream outStream();
+
+    InputStream inStream();
 }

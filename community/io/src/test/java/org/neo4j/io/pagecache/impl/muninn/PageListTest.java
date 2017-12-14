@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 
-import org.neo4j.io.ByteUnit;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
@@ -50,7 +50,6 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -82,13 +81,13 @@ public class PageListTest
     }
 
     private static ExecutorService executor;
-    private static MemoryManager mman;
+    private static MemoryAllocator mman;
 
     @BeforeClass
     public static void setUpStatics()
     {
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
-        mman = new MemoryManager( ByteUnit.mebiBytes( 1 ), ALIGNMENT );
+        mman = MemoryAllocator.createAllocator( "1 MiB" );
     }
 
     @AfterClass
@@ -124,7 +123,8 @@ public class PageListTest
     public void setUp()
     {
         swappers = new SwapperSet();
-        pageList = new PageList( pageIds.length, pageSize, mman, swappers, VictimPageReference.getVictimPage( pageSize ) );
+        long victimPage = VictimPageReference.getVictimPage( pageSize );
+        pageList = new PageList( pageIds.length, pageSize, mman, swappers, victimPage, ALIGNMENT );
         pageRef = pageList.deref( pageId );
         prevPageRef = pageList.deref( prevPageId );
         nextPageRef = pageList.deref( nextPageId );
@@ -137,10 +137,12 @@ public class PageListTest
         long victimPage = VictimPageReference.getVictimPage( pageSize );
 
         pageCount = 3;
-        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage ).getPageCount(), is( pageCount ) );
+        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount(),
+                is( pageCount ) );
 
         pageCount = 42;
-        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage ).getPageCount(), is( pageCount ) );
+        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount(),
+                is( pageCount ) );
     }
 
     @Test
@@ -1193,7 +1195,7 @@ public class PageListTest
     @Test
     public void mustExposeCachePageSize() throws Exception
     {
-        PageList list = new PageList( 0, 42, mman, swappers, VictimPageReference.getVictimPage( 42 ) );
+        PageList list = new PageList( 0, 42, mman, swappers, VictimPageReference.getVictimPage( 42 ), ALIGNMENT );
         assertThat( list.getCachePageSize(), is( 42 ) );
     }
 
@@ -1206,9 +1208,9 @@ public class PageListTest
     @Test
     public void initialisingBufferMustConsumeMemoryFromMemoryManager() throws Exception
     {
-        long initialUsedMemory = mman.sumUsedMemory();
+        long initialUsedMemory = mman.usedMemory();
         pageList.initBuffer( pageRef );
-        long resultingUsedMemory = mman.sumUsedMemory();
+        long resultingUsedMemory = mman.usedMemory();
         int allocatedMemory = (int) (resultingUsedMemory - initialUsedMemory);
         assertThat( allocatedMemory, greaterThanOrEqualTo( pageSize ) );
         assertThat( allocatedMemory, lessThanOrEqualTo( pageSize + ALIGNMENT ) );

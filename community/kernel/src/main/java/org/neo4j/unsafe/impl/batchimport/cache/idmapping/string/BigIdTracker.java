@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
  */
 public class BigIdTracker extends AbstractTracker<ByteArray>
 {
+    static final int ID_SIZE = 6;
     static final byte[] DEFAULT_VALUE = new byte[] {-1, -1, -1, -1, -1, -1};
 
     public BigIdTracker( ByteArray array )

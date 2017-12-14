@@ -25,15 +25,16 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 
 public class RelationshipLinkforwardStep extends RelationshipLinkStep
 {
     public RelationshipLinkforwardStep( StageControl control, Configuration config, NodeRelationshipCache cache,
-            Predicate<RelationshipRecord> filter, int nodeTypes )
+            Predicate<RelationshipRecord> filter, int nodeTypes, StatsProvider... additionalStatsProvider )
     {
-        super( control, config, cache, filter, nodeTypes, true );
+        super( control, config, cache, filter, nodeTypes, true, additionalStatsProvider );
     }
 
     @Override

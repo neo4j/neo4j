@@ -23,12 +23,11 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.rewriters.LiteralExtraction
 import org.neo4j.cypher.internal.v3_4.expressions.NotEquals
 
-case class AstRewriting(
-                         sequencer: String => RewriterStepSequencer,
-                         literalExtraction: LiteralExtraction
-                       ) extends Phase[BaseContext, BaseState, BaseState] {
+case class AstRewriting(sequencer: String => RewriterStepSequencer, literalExtraction: LiteralExtraction,
+                        getDegreeRewriting: Boolean = true// This does not really belong in the front end. Should move to a planner rewriter
+) extends Phase[BaseContext, BaseState, BaseState] {
 
-  private val astRewriter = new ASTRewriter(sequencer, literalExtraction)
+  private val astRewriter = new ASTRewriter(sequencer, literalExtraction, getDegreeRewriting)
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
 

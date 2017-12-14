@@ -139,8 +139,10 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     lift(inner.executionPlanDescription()).addArgument(Version("CYPHER 2.3")).
       addArgument(Planner(planner.toTextOutput)).
       addArgument(PlannerImpl(planner.name)).
+      addArgument(PlannerVersion("2.3")).
       addArgument(Runtime(runtime.toTextOutput)).
-      addArgument(RuntimeImpl(runtime.name))
+      addArgument(RuntimeImpl(runtime.name)).
+      addArgument(RuntimeVersion("2.3"))
 
   private def lift(planDescription: planDescriptionv2_3.InternalPlanDescription): InternalPlanDescription3_4 = {
     val name: String = planDescription.name

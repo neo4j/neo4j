@@ -44,6 +44,7 @@ public class BufferedCharSeeker implements CharSeeker
 
     // index into the buffer character array to read the next time nextChar() is called
     private int bufferPos;
+    private int bufferStartPos;
     // last index (effectively length) of characters in use in the buffer
     private int bufferEnd;
     // bufferPos denoting the start of this current line that we're reading
@@ -294,6 +295,7 @@ public class BufferedCharSeeker implements CharSeeker
             dataLength = nextChunk.length();
             dataCapacity = nextChunk.maxFieldSize();
             bufferPos = nextChunk.startPosition();
+            bufferStartPos = bufferPos;
             bufferEnd = bufferPos + dataLength;
             int shift = seekStartPos - nextChunk.backPosition();
             seekStartPos = nextChunk.backPosition();
@@ -326,7 +328,7 @@ public class BufferedCharSeeker implements CharSeeker
     @Override
     public long position()
     {
-        return absoluteBufferStartPosition + bufferPos;
+        return absoluteBufferStartPosition + (bufferPos - bufferStartPos);
     }
 
     @Override

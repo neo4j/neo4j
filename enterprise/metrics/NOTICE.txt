@@ -29,6 +29,10 @@ Apache Software License, Version 2.0
   Apache Commons Collections
   Graphite Integration for Metrics
   Metrics Core
+  Prometheus Java Simpleclient
+  Prometheus Java Simpleclient Common
+  Prometheus Java Simpleclient Dropwizard
+  Prometheus Java Simpleclient Httpserver
 
 MIT License
   SLF4J API Module

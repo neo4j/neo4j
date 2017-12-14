@@ -23,10 +23,10 @@ import java.io.IOException;
 import java.time.Clock;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
-import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.core.consensus.LeaderContext;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.Timer;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 import org.neo4j.causalclustering.messaging.Outbound;
@@ -38,10 +38,12 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
-import static org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Mode.CATCHUP;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Mode.PIPELINE;
 import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.Timeouts.RESEND;
+import static org.neo4j.scheduler.JobScheduler.Groups.raft;
 
 /// Optimizations
 // TODO: Have several outstanding batches in catchup mode, to bridge the latency gap.
@@ -49,14 +51,6 @@ import static org.neo4j.causalclustering.core.consensus.shipping.RaftLogShipper.
 // TODO: Maximum bound on size of batch in bytes, not just entry count.
 
 // Production ready
-// TODO: Replace sender service with something more appropriate. No need for queue and multiplex capability, in fact
-// is it bad to have?
-//  TODO Should we drop messages to unconnected channels instead? Use UDP? Because we are not allowed to go below a
-// certain cluster size (safety)
-//  TODO then leader will keep trying to replicate to gone members, thus queuing things up is hurtful.
-
-// TODO: Replace the timeout service with something better. More efficient for the constantly rescheduling use case
-// and also useful for deterministic unit tests.
 
 // Core functionality
 // TODO: Consider making even CommitUpdate a raft-message of its own.
@@ -96,13 +90,12 @@ public class RaftLogShipper
         PIPELINE
     }
 
-    public enum Timeouts implements RenewableTimeoutService.TimeoutName
+    public enum Timeouts implements TimerService.TimerName
     {
         RESEND
     }
 
     private final Outbound<MemberId, RaftMessages.RaftMessage> outbound;
-    private final LogProvider logProvider;
     private final Log log;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
@@ -113,8 +106,8 @@ public class RaftLogShipper
     private final int maxAllowedShippingLag;
     private final InFlightCache inFlightCache;
 
-    private DelayedRenewableTimeoutService timeoutService;
-    private RenewableTimeout timeout;
+    private TimerService timerService;
+    private Timer timer;
     private long timeoutAbsoluteMillis;
     private long lastSentIndex;
     private long matchIndex = -1;
@@ -122,14 +115,14 @@ public class RaftLogShipper
     private Mode mode = Mode.MISMATCH;
 
     RaftLogShipper( Outbound<MemberId, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
-                    ReadableRaftLog raftLog, Clock clock,
+                    ReadableRaftLog raftLog, Clock clock, TimerService timerService,
                     MemberId leader, MemberId follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
                     int catchupBatchSize, int maxAllowedShippingLag, InFlightCache inFlightCache )
     {
         this.outbound = outbound;
+        this.timerService = timerService;
         this.catchupBatchSize = catchupBatchSize;
         this.maxAllowedShippingLag = maxAllowedShippingLag;
-        this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.raftLog = raftLog;
         this.clock = clock;
@@ -148,25 +141,12 @@ public class RaftLogShipper
     public synchronized void start()
     {
         log.info( "Starting log shipper: %s", statusAsString() );
-        timeoutService = new DelayedRenewableTimeoutService( clock, logProvider );
-        timeoutService.init();
-        timeoutService.start();
         sendEmpty( raftLog.appendIndex(), lastLeaderContext );
    }
 
     public synchronized void stop()
     {
         log.info( "Stopping log shipper %s", statusAsString() );
-
-        try
-        {
-            timeoutService.stop();
-            timeoutService.shutdown();
-        }
-        catch ( Throwable e )
-        {
-            log.error( "Failed to stop log shipper " + statusAsString(), e );
-        }
         abortTimeout();
     }
 
@@ -350,22 +330,21 @@ public class RaftLogShipper
 
     private void scheduleTimeout( long deltaMillis )
     {
-        // TODO: This cancel/create dance is a bit inefficient... consider something better.
-
         timeoutAbsoluteMillis = clock.millis() + deltaMillis;
 
-        if ( timeout != null )
+        if ( timer == null )
         {
-            timeout.cancel();
+            timer = timerService.create( RESEND, raft, timeout -> onScheduledTimeoutExpiry() );
         }
-        timeout = timeoutService.create( RESEND, deltaMillis, 0, timeout -> onScheduledTimeoutExpiry() );
+
+        timer.set( fixedTimeout( deltaMillis, MILLISECONDS ) );
     }
 
     private void abortTimeout()
     {
-        if ( timeout != null )
+        if ( timer != null )
         {
-            timeout.cancel();
+            timer.cancel( true, true );
         }
         timeoutAbsoluteMillis = TIMER_INACTIVE;
     }

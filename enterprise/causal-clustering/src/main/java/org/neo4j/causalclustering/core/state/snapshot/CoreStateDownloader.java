@@ -28,7 +28,6 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -45,8 +44,6 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 
 public class CoreStateDownloader
 {
-    private static final String OPERATION_NAME = "download of snapshot";
-
     private final LocalDatabase localDatabase;
     private final Lifecycle startStopOnStoreCopy;
     private final RemoteStore remoteStore;
@@ -55,14 +52,12 @@ public class CoreStateDownloader
     private final StoreCopyProcess storeCopyProcess;
     private final CoreStateMachines coreStateMachines;
     private final CoreSnapshotService snapshotService;
-    private final CommandApplicationProcess applicationProcess;
     private final TopologyService topologyService;
 
     public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
             RemoteStore remoteStore, CatchUpClient catchUpClient, LogProvider logProvider,
             StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines,
-            CoreSnapshotService snapshotService, CommandApplicationProcess applicationProcess,
-            TopologyService topologyService )
+            CoreSnapshotService snapshotService, TopologyService topologyService )
     {
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
@@ -72,13 +67,11 @@ public class CoreStateDownloader
         this.storeCopyProcess = storeCopyProcess;
         this.coreStateMachines = coreStateMachines;
         this.snapshotService = snapshotService;
-        this.applicationProcess = applicationProcess;
         this.topologyService = topologyService;
     }
 
-    public void downloadSnapshot( MemberId source ) throws StoreCopyFailedException
+    void downloadSnapshot( MemberId source ) throws StoreCopyFailedException
     {
-        applicationProcess.pauseApplier( OPERATION_NAME );
         try
         {
             /* Extract some key properties before shutting it down. */
@@ -162,10 +155,6 @@ public class CoreStateDownloader
         catch ( Throwable e )
         {
             throw new StoreCopyFailedException( e );
-        }
-        finally
-        {
-            applicationProcess.resumeApplier( OPERATION_NAME );
         }
     }
 }

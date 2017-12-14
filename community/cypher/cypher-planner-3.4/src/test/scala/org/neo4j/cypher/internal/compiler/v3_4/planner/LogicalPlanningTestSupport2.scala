@@ -57,7 +57,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
+  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   final var planner = new QueryPlanner() {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
       planSingleQuery(query)

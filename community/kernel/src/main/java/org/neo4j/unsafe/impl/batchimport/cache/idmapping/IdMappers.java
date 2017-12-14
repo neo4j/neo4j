@@ -79,6 +79,12 @@ public class IdMappers
         public void close()
         {   // Nothing to close
         }
+
+        @Override
+        public long calculateMemoryUsage( long numberOfNodes )
+        {
+            return 0;
+        }
     }
 
     private IdMappers()

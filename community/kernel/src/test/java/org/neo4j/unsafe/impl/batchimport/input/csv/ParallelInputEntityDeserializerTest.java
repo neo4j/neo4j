@@ -22,13 +22,18 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.StringReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
+import org.neo4j.csv.reader.Readables;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -41,7 +46,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+
+import static java.lang.String.format;
+
 import static org.neo4j.csv.reader.Readables.wrap;
+import static org.neo4j.helpers.collection.Iterators.count;
+import static org.neo4j.kernel.impl.util.Validators.emptyValidator;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
@@ -172,6 +182,52 @@ public class ParallelInputEntityDeserializerTest
         assertTrue( noticedPanic );
     }
 
+    @Test
+    public void shouldParseInputGroupWithSeparateHeader() throws Exception
+    {
+        // given
+        Data<InputNode> data = nodesWithSeparateHeader( 20, 3 );
+        try ( InputIterator<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data, defaultFormatNodeFileHeader(),
+                COMMAS, ACTUAL, 1, 1, defaultNodeDeserializer( new Groups(), COMMAS, ACTUAL, Collector.EMPTY ),
+                emptyValidator(), InputNode.class ) )
+        {
+            // then
+            assertEquals( 20 * 3, count( deserializer ) );
+        }
+    }
+
+    private static Data<InputNode> nodesWithSeparateHeader( int entriesPerFile, int files )
+    {
+        List<CharReadable> sources = new ArrayList<>();
+        sources.add( Readables.wrap( ":ID" ) );
+        int id = 0;
+        for ( int f = 0; f < files; f++ )
+        {
+            StringBuilder builder = new StringBuilder();
+            for ( int i = 0; i < entriesPerFile; i++ )
+            {
+                builder.append( id++ );
+                builder.append( format( "%n" ) );
+            }
+            sources.add( Readables.wrap( builder.toString() ) );
+        }
+
+        return new Data<InputNode>()
+        {
+            @Override
+            public RawIterator<CharReadable,IOException> stream()
+            {
+                return Readables.iterator( a -> a, sources.toArray( new CharReadable[sources.size()] ) );
+            }
+
+            @Override
+            public Decorator<InputNode> decorator()
+            {
+                return InputEntityDecorators.NO_NODE_DECORATOR;
+            }
+        };
+    }
+
     private Data<InputNode> testData( int entities )
     {
         StringBuilder string = new StringBuilder();
@@ -183,21 +239,8 @@ public class ParallelInputEntityDeserializerTest
         return data( string.toString() );
     }
 
-    private Data<InputNode> data( String string )
+    private static Data<InputNode> data( String string )
     {
-        return new Data<InputNode>()
-        {
-            @Override
-            public CharReadable stream()
-            {
-                return wrap( new StringReader( string ) );
-            }
-
-            @Override
-            public Decorator<InputNode> decorator()
-            {
-                return InputEntityDecorators.NO_NODE_DECORATOR;
-            }
-        };
+        return DataFactories.data( InputEntityDecorators.NO_NODE_DECORATOR, () -> wrap( string ) ).create( COMMAS );
     }
 }

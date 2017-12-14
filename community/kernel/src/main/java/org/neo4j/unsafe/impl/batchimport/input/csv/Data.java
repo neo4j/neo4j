@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.io.IOException;
+import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -29,7 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
  */
 public interface Data<ENTITY extends InputEntity>
 {
-    CharReadable stream();
+    RawIterator<CharReadable,IOException> stream();
 
     Decorator<ENTITY> decorator();
 }

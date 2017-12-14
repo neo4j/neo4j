@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPoint
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, Version => IPDVersion}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion, PlannerVersion => IPDPlannerVersion}
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.util.v3_4.Eagerly
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
@@ -355,13 +355,15 @@ object CypherComparisonSupport {
     object V3_1 extends Version("3.1")
 
     object V3_3 extends Version("3.3") {
-      override val acceptedVersionNames = Set("CYPHER 3.4")
+      // 3.3 has 3.4 runtime
+      override val acceptedRuntimeVersionNames = Set("3.4")
     }
 
     object V3_4 extends Version("3.4")
 
     object Default extends Version("") {
-      override val acceptedVersionNames = Set("2.3", "3.1", "3.3", "3.4").map("CYPHER " + _)
+      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.3", "3.4")
+      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.3", "3.4")
     }
 
   }
@@ -374,7 +376,8 @@ object CypherComparisonSupport {
       Versions(Versions.orderedVersions.slice(fromIndex, toIndex): _*)
     }
 
-    val acceptedVersionNames: Set[String] = Set("CYPHER " + name)
+    val acceptedRuntimeVersionNames: Set[String] = Set(name)
+    val acceptedPlannerVersionNames: Set[String] = Set(name)
 
   }
 
@@ -492,53 +495,55 @@ object CypherComparisonSupport {
     def prepare(): Unit = newRuntimeMonitor.clear()
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
-      val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String) = extractConfiguration(internalExecutionResult)
-      // Rule planner only exists in 3.1 and earlier
-      val rulePlannerFallback = Planners.Rule.acceptedPlannerNames.contains(reportedPlanner) && Versions.V3_1.acceptedVersionNames.contains(reportedVersion)
-
+      val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)
       if (!runtime.acceptedRuntimeNames.contains(reportedRuntime))
         fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
       if (!planner.acceptedPlannerNames.contains(reportedPlanner))
         fail(s"did not use ${planner.acceptedPlannerNames} planner - instead $reportedPlanner was used. Scenario $name")
-      if (!(version.acceptedVersionNames.contains(reportedVersion) || rulePlannerFallback))
-        fail(s"did not use ${version.acceptedVersionNames} version - instead $reportedVersion was used. Scenario $name")
+      if (!version.acceptedRuntimeVersionNames.contains(reportedVersion))
+        fail(s"did not use ${version.acceptedRuntimeVersionNames} runtime version - instead $reportedVersion was used. Scenario $name")
+      if (!version.acceptedPlannerVersionNames.contains(reportedPlannerVersion))
+        fail(s"did not use ${version.acceptedPlannerVersionNames} planner version - instead $reportedPlannerVersion was used. Scenario $name")
     }
 
     def checkResultForFailure(query: String, internalExecutionResult: Try[InternalExecutionResult]): Unit = {
       internalExecutionResult match {
         case Failure(_) => // not unexpected
         case Success(result) =>
-          val (reportedRuntimeName: String, reportedPlannerName: String, reportedVersionName: String) = extractConfiguration(result)
+          val (reportedRuntimeName: String, reportedPlannerName: String, reportedVersionName: String, reportedPlannerVersionName: String) = extractConfiguration(result)
 
           if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName)
             && planner.acceptedPlannerNames.contains(reportedPlannerName)
-            && version.acceptedVersionNames.contains(reportedVersionName)) {
+            && version.acceptedRuntimeVersionNames.contains(reportedVersionName)) {
             fail(s"Unexpectedly succeeded using $name for query $query, with $reportedVersionName and $reportedRuntimeName runtime and $reportedPlannerName planner.")
           }
       }
     }
 
-    private def extractConfiguration(result: InternalExecutionResult): (String, String, String) = {
+    private def extractConfiguration(result: InternalExecutionResult): (String, String, String, String) = {
       val arguments = result.executionPlanDescription().arguments
       val reportedRuntime = arguments.collectFirst {
-        case IPDRuntime(reportedRuntime) => reportedRuntime
+        case IPDRuntime(reported) => reported
       }
       val reportedPlanner = arguments.collectFirst {
-        case IPDPlanner(reportedPlanner) => reportedPlanner
+        case IPDPlanner(reported) => reported
       }
       val reportedVersion = arguments.collectFirst {
-        case IPDVersion(reportedVersion) => reportedVersion
+        case IPDRuntimeVersion(reported) => reported
+      }
+      val reportedPlannerVersion = arguments.collectFirst {
+        case IPDPlannerVersion(reported) => reported
       }
 
       // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
       // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
       val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_1) + Versions.Default
-      val (reportedRuntimeName, reportedPlannerName, reportedVersionName) =
+      val (reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName) =
         if (versionsWithUnreportedProcedureUsage.versions.contains(version))
-          (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"))
+          (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"), reportedPlannerVersion.getOrElse("NONE"))
         else
-          (reportedRuntime.get, reportedPlanner.get, reportedVersion.get)
-      (reportedRuntimeName, reportedPlannerName, reportedVersionName)
+          (reportedRuntime.get, reportedPlanner.get, reportedVersion.get, reportedPlannerVersion.get)
+      (reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName)
     }
 
     def +(other: TestConfiguration): TestConfiguration = other + this

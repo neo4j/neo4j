@@ -123,7 +123,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     assertRewritten(original, original, List.empty, SemanticFeature.MultipleGraphs)
   }
 
-  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never)
+  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never, getDegreeRewriting = true)
 
   private def assertRewritten(from: String, to: String, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
     val fromAst = parseAndRewrite(from, features: _*)
