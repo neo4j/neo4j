@@ -51,6 +51,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
     private static final int MINIMUM_ENTRY_SIZE_CAP = Long.SIZE;
     private final int keyValueSizeCap;
+    private final PrimitiveIntStack deadKeysOffset = new PrimitiveIntStack();
+    private final PrimitiveIntStack aliveKeysOffset = new PrimitiveIntStack();
+    private final int maxKeyCount = pageSize / bytesKeyOffset() + bytesKeySize() + bytesValueSize();
+    private final int[] oldOffset = new int[maxKeyCount];
+    private final int[] newOffset = new int[maxKeyCount];
 
     TreeNodeDynamicSize( int pageSize, Layout<KEY,VALUE> layout )
     {
@@ -303,114 +308,42 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     void defragmentLeaf( PageCursor cursor )
     {
-        // Mark all offsets
-        PrimitiveIntStack deadKeysOffset = new PrimitiveIntStack();
-        PrimitiveIntStack aliveKeysOffset = new PrimitiveIntStack();
-        recordDeadAndAliveLeaf( cursor, deadKeysOffset, aliveKeysOffset );
-
-        /*
-        BEFORE MOVE
-                          v       aliveRangeOffset
-        [X][_][_][X][_][X][_][_]
-                   ^   ^          deadRangeOffset
-                   |_____________ moveRangeOffset
-
-        AFTER MOVE
-                       v          aliveRangeOffset
-        [X][_][_][X][X][_][_][_]
-                 ^                 deadRangeOffset
-
-         */
-        int maxKeyCount = pageSize / (bytesKeySize() + bytesKeyOffset() + bytesValueSize());
-        int[] oldOffset = new int[maxKeyCount];
-        int[] newOffset = new int[maxKeyCount];
-        int oldOffsetCursor = 0;
-        int newOffsetCursor = 0;
-        int aliveRangeOffset = pageSize; // Everything after this point is alive
-        int deadRangeOffset; // Everything between this point and aliveRangeOffset is dead space
-
-        // Rightmost alive keys does not need to move
-        while ( deadKeysOffset.peek() < aliveKeysOffset.peek() )
-        {
-            aliveRangeOffset = aliveKeysOffset.poll();
-        }
-
-        do
-        {
-            // Locate next range of dead keys
-            deadRangeOffset = aliveRangeOffset;
-            while ( aliveKeysOffset.peek() < deadKeysOffset.peek() )
-            {
-                deadRangeOffset = deadKeysOffset.poll();
-            }
-
-            // Locate next range of alive keys
-            int moveOffset = deadRangeOffset;
-            while ( deadKeysOffset.peek() < aliveKeysOffset.peek() )
-            {
-                int moveKey = aliveKeysOffset.poll();
-                oldOffset[oldOffsetCursor++] = moveKey;
-                moveOffset = moveKey;
-            }
-
-            // Update offset mapping
-            int deadRangeSize = aliveRangeOffset - deadRangeOffset;
-            while ( oldOffsetCursor > newOffsetCursor )
-            {
-                newOffset[newOffsetCursor] = oldOffset[newOffsetCursor] + deadRangeSize;
-                newOffsetCursor++;
-            }
-
-            // Do move
-            while ( moveOffset < (deadRangeOffset - deadRangeSize) )
-            {
-                // Move one block
-                deadRangeOffset -= deadRangeSize;
-                aliveRangeOffset -= deadRangeSize;
-                cursor.copyTo( deadRangeOffset, cursor, aliveRangeOffset, deadRangeSize );
-            }
-            // Move the last piece
-            int lastBlockSize = deadRangeOffset - moveOffset;
-            deadRangeOffset -= lastBlockSize;
-            aliveRangeOffset -= lastBlockSize;
-            cursor.copyTo( deadRangeOffset, cursor, aliveRangeOffset, lastBlockSize );
-        }
-        while ( !aliveKeysOffset.isEmpty() );
-        // Update allocOffset
-        setAllocOffset( cursor, aliveRangeOffset );
-
-        // Update offset array
-        int keyCount = keyCount( cursor );
-        keyPos:
-        for ( int pos = 0; pos < keyCount; pos++ )
-        {
-            int keyPosOffset = keyPosOffsetLeaf( pos );
-            cursor.setOffset( keyPosOffset );
-            int keyOffset = readKeyOffset( cursor );
-            for ( int index = 0; index < oldOffsetCursor; index++ )
-            {
-                if ( keyOffset == oldOffset[index] )
-                {
-                    // Overwrite with new offset
-                    cursor.setOffset( keyPosOffset );
-                    putKeyOffset( cursor, newOffset[index] );
-                    continue keyPos;
-                }
-            }
-        }
-
-        // Update dead space
-        setDeadSpace( cursor, 0 );
+        int minSizeOfOneKey = bytesKeySize() + bytesKeyOffset() + bytesValueSize();
+        doDefragment( cursor, LEAF );
     }
 
     private void defragmentInternal( PageCursor cursor )
     {
-        // Mark all offsets
-        PrimitiveIntStack deadKeysOffset = new PrimitiveIntStack();
-        PrimitiveIntStack aliveKeysOffset = new PrimitiveIntStack();
-        recordDeadAndAliveInternal( cursor, deadKeysOffset, aliveKeysOffset );
+        int minSizeOfOneKey = bytesKeySize() + bytesKeyOffset() + childSize();
+        doDefragment( cursor, INTERNAL );
+    }
 
+    private void doDefragment( PageCursor cursor, Type type )
+    {
         /*
+        The goal is to compact all alive keys in the node
+        by reusing the space occupied by dead keys.
+
+        BEFORE
+        [8][X][1][3][X][2][X][7][5]
+
+        AFTER
+        .........[8][1][3][2][7][5]
+            ^ Reclaimed space
+
+        It works like this:
+        Work from right to left.
+        For each dead space of size X (can be multiple consecutive dead keys)
+        Move all neighbouring alive keys to the left of that dead space X bytes to the right.
+        Can only move in blocks of size X at the time.
+
+        Step by step:
+        [8][X][1][3][X][2][X][7][5]
+        [8][X][1][3][X][X][2][7][5]
+        [8][X][X][X][1][3][2][7][5]
+        [X][X][X][8][1][3][2][7][5]
+
+        Here is how the offsets work
         BEFORE MOVE
                           v       aliveRangeOffset
         [X][_][_][X][_][X][_][_]
@@ -421,13 +354,24 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
                        v          aliveRangeOffset
         [X][_][_][X][X][_][_][_]
                  ^                 deadRangeOffset
+        */
 
-         */
-        int maxKeyCount = pageSize / (bytesKeySize() + bytesKeyOffset() + childSize());
-        int[] oldOffset = new int[maxKeyCount];
-        int[] newOffset = new int[maxKeyCount];
+        // Mark all offsets
+        deadKeysOffset.clear();
+        aliveKeysOffset.clear();
+        if ( type == INTERNAL )
+        {
+            recordDeadAndAliveInternal( cursor, deadKeysOffset, aliveKeysOffset );
+        }
+        else
+        {
+            recordDeadAndAliveLeaf( cursor, deadKeysOffset, aliveKeysOffset );
+        }
+
+        // Cursors into field byte arrays
         int oldOffsetCursor = 0;
         int newOffsetCursor = 0;
+
         int aliveRangeOffset = pageSize; // Everything after this point is alive
         int deadRangeOffset; // Everything between this point and aliveRangeOffset is dead space
 
@@ -486,7 +430,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         keyPos:
         for ( int pos = 0; pos < keyCount; pos++ )
         {
-            int keyPosOffset = keyPosOffsetInternal( pos );
+            int keyPosOffset = keyPosOffset( pos, type );
             cursor.setOffset( keyPosOffset );
             int keyOffset = readKeyOffset( cursor );
             for ( int index = 0; index < oldOffsetCursor; index++ )
@@ -1043,7 +987,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap + "]";
     }
 
-    String asString( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
+    private String asString( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
     {
         int currentOffset = cursor.getOffset();
         // [header] <- dont care
