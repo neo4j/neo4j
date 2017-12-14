@@ -21,7 +21,7 @@
   </scm>
 
   <properties>
-    <scala.version>2.11.11</scala.version>
+    <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
@@ -72,6 +72,7 @@
           <args>
             <arg>-Xmax-classfile-name</arg>
             <arg>100</arg>
+            <arg>-target:jvm-${maven.compiler.target}</arg>
             <!-- arg>-deprecation</arg -->
           </args>
           <jvmArgs>

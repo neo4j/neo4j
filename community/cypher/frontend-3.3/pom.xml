@@ -24,7 +24,7 @@
 
   <properties>
     <version-package>cypher.internal.frontend.v3_1</version-package>
-    <scala.version>2.11.11</scala.version>
+    <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <license.header>${project.baseUri}/ASL-2-header.txt</license.header>
   </properties>
@@ -49,6 +49,7 @@
             <arg>-Xmax-classfile-name</arg>
             <arg>100</arg>
             <arg>-Xlint</arg>
+            <arg>-target:jvm-${maven.compiler.target}</arg>
           </args>
         </configuration>
       </plugin>
