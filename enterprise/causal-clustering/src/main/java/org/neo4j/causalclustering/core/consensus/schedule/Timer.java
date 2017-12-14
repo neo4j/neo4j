@@ -124,9 +124,15 @@ public class Timer
      *
      * @param cancelMode The mode of cancelling.
      */
-    public synchronized void cancel( CancelMode cancelMode )
+    public void cancel( CancelMode cancelMode )
     {
-        activeJobId++;
+        JobScheduler.JobHandle job;
+
+        synchronized ( this )
+        {
+            activeJobId++;
+            job = this.job;
+        }
 
         if ( job != null )
         {
