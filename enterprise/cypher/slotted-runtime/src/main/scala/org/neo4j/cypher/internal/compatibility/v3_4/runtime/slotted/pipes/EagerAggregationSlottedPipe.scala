@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
@@ -37,7 +38,7 @@ import scala.collection.mutable.{Map => MutableMap}
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationSlottedPipe(source: Pipe,
                                        slots: SlotConfiguration,
-                                       groupingExpressions: Map[Int, Expression],
+                                       groupingExpressions: Map[Slot, Expression],
                                        aggregations: Map[Int, AggregationExpression])
                                       (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) {
@@ -50,13 +51,14 @@ case class EagerAggregationSlottedPipe(source: Pipe,
     (a.toIndexedSeq, b.toIndexedSeq)
   }
 
-  private val expressionOrder: immutable.Seq[(Int, Expression)] = groupingExpressions.toIndexedSeq
+  private val expressionOrder: immutable.Seq[(Slot, Expression)] = groupingExpressions.toIndexedSeq
 
-  val groupingFunction: (ExecutionContext, QueryState) => AnyValue = {
+  private val groupingFunction: (ExecutionContext, QueryState) => AnyValue = {
     groupingExpressions.size match {
       case 1 =>
         val firstExpression = groupingExpressions.head._2
-        (ctx, state) => firstExpression(ctx, state)
+        (ctx, state) =>
+          firstExpression(ctx, state)
 
       case 2 =>
         val e1 = groupingExpressions.head._2
@@ -75,27 +77,43 @@ case class EagerAggregationSlottedPipe(source: Pipe,
     }
   }
 
-  def addGroupingValuesToResult(context: PrimitiveExecutionContext, groupingKey: AnyValue): Unit =
+  // This is assigned a specialized update function at compile time
+  private val addGroupingValuesToResult = {
+    val setInSlotFunctions = expressionOrder.map {
+      case (slot, _) =>
+        SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot)
+    }
+    val unusedSetInSlotFunction = (context: PrimitiveExecutionContext, groupingKey: AnyValue) => ???
+    val setInSlotFunction1 = if (groupingExpressions.size >= 1) setInSlotFunctions(0) else unusedSetInSlotFunction
+    val setInSlotFunction2 = if (groupingExpressions.size >= 2) setInSlotFunctions(1) else unusedSetInSlotFunction
+    val setInSlotFunction3 = if (groupingExpressions.size >= 3) setInSlotFunctions(2) else unusedSetInSlotFunction
+
     groupingExpressions.size match {
       case 1 =>
-        context.setRefAt(groupingExpressions.head._1, groupingKey)
+        setInSlotFunction1
       case 2 =>
-        val t2 = groupingKey.asInstanceOf[ListValue]
-        context.setRefAt(groupingExpressions.head._1, t2.head())
-        context.setRefAt(groupingExpressions.tail.head._1, t2.last())
+        (context: PrimitiveExecutionContext, groupingKey: AnyValue) => {
+          val t2 = groupingKey.asInstanceOf[ListValue]
+          setInSlotFunction1(context, t2.head())
+          setInSlotFunction2(context, t2.last())
+        }
       case 3 =>
-        val t3 = groupingKey.asInstanceOf[ListValue]
-        context.setRefAt(groupingExpressions.head._1, t3.value(0))
-        context.setRefAt(groupingExpressions.tail.head._1, t3.value(1))
-        context.setRefAt(groupingExpressions.last._1, t3.value(2))
+        (context: PrimitiveExecutionContext, groupingKey: AnyValue) => {
+          val t3 = groupingKey.asInstanceOf[ListValue]
+          setInSlotFunction1(context, t3.value(0))
+          setInSlotFunction2(context, t3.value(1))
+          setInSlotFunction3(context, t3.value(2))
+        }
       case _ =>
-        val listOfValues = groupingKey.asInstanceOf[ListValue]
-        for (i <- 0 until groupingExpressions.size) {
-          val (k, v) = expressionOrder(i)
-          val value: AnyValue = listOfValues.value(i)
-          context.setRefAt(k, value)
+        (context: PrimitiveExecutionContext, groupingKey: AnyValue) => {
+          val listOfValues = groupingKey.asInstanceOf[ListValue]
+          for (i <- 0 until groupingExpressions.size) {
+            val value: AnyValue = listOfValues.value(i)
+            setInSlotFunctions(i)(context, value)
+          }
         }
     }
+  }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {

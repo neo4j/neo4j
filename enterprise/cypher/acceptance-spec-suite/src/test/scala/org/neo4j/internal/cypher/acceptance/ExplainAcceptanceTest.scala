@@ -68,7 +68,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
                   |
                   |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
     val plan = result.executionPlanDescription().toString
     result.close()
 

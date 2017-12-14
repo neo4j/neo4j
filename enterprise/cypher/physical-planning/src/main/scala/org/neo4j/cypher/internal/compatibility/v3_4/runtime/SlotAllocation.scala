@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
+import org.neo4j.cypher.internal.frontend.v3_4.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, IdName, NoHeaders, ShortestPathPattern}
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.expressions.{Equals, Expression, ScopeExpression, Variable}
+import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => parserAst}
 
@@ -41,6 +42,7 @@ import scala.collection.mutable
   * whereas the knowledge of how to traverse the plan tree is store in the while loops and stacks in the `populate`
   * method.
   **/
+//noinspection NameBooleanParameters
 object SlotAllocation {
 
   private def NO_ARGUMENT() = SlotsAndArgument(SlotConfiguration.empty, Size.zero)
@@ -197,7 +199,7 @@ object SlotAllocation {
 
       case e: NestedPlanExpression =>
         acc: Accumulator => {
-          if (acc.doNotTraverseExpression == e)
+          if (acc.doNotTraverseExpression.contains(e))
             (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
           else {
             val argumentSlotConfiguration = slots.copy()
@@ -216,7 +218,7 @@ object SlotAllocation {
 
       case e: Expression =>
         acc: Accumulator => {
-          if (acc.doNotTraverseExpression == e)
+          if (acc.doNotTraverseExpression.contains(e))
             (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
           else
             (acc, TRAVERSE_INTO_CHILDREN)
@@ -229,7 +231,7 @@ object SlotAllocation {
     * Compute the slot configuration of a leaf logical plan operator {@code lp}.
     *
     * @param lp the operator to compute slots for.
-    * @param nullable
+    * @param nullable true if new slots are nullable
     * @param argument the logical plan argument slot configuration.
     * @return the slot configuration of lp
     */
@@ -243,6 +245,30 @@ object SlotAllocation {
       case _:Argument =>
         argument
 
+      case leaf: DirectedRelationshipByIdSeek =>
+        val result = argument
+        result.newLong(leaf.idName.name, nullable, CTRelationship)
+        result.newLong(leaf.startNode.name, nullable, CTNode)
+        result.newLong(leaf.endNode.name, nullable, CTNode)
+        result
+
+      case leaf: UndirectedRelationshipByIdSeek =>
+        val result = argument
+        result.newLong(leaf.idName.name, nullable, CTRelationship)
+        result.newLong(leaf.leftNode.name, nullable, CTNode)
+        result.newLong(leaf.rightNode.name, nullable, CTNode)
+        result
+
+      case leaf: NodeCountFromCountStore =>
+        val result = argument
+        result.newReference(leaf.idName.name, false, CTInteger)
+        result
+
+      case leaf: RelationshipCountFromCountStore =>
+        val result = argument
+        result.newReference(leaf.idName.name, false, CTInteger)
+        result
+
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
@@ -250,7 +276,7 @@ object SlotAllocation {
     * Compute the slot configuration of a single source logical plan operator {@code lp}.
     *
     * @param lp the operator to compute slots for.
-    * @param nullable
+    * @param nullable true if new slots are nullable
     * @param source the slot configuration of the source operator.
     * @param recordArgument function which records the argument size for the given operator
     * @return the slot configuration of lp
@@ -277,12 +303,14 @@ object SlotAllocation {
         result
 
       case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newLong(relName, nullable, CTRelationship)
         result.newLong(to, nullable, CTNode)
         result
 
       case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newLong(relName, nullable, CTRelationship)
         result
@@ -316,6 +344,7 @@ object SlotAllocation {
       case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
         // Note that OptionExpand only is optional on the expand and not on incoming rows, so
         // we do not need to record the argument here.
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newLong(rel, nullable = true, CTRelationship)
         result.newLong(to, nullable = true, CTNode)
@@ -324,6 +353,7 @@ object SlotAllocation {
       case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
         // Note that OptionExpand only is optional on the expand and not on incoming rows, so
         // we do not need to record the argument here.
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newLong(rel, nullable = true, CTRelationship)
         result
@@ -336,12 +366,13 @@ object SlotAllocation {
                        IdName(to),
                        IdName(edge),
                        _,
-                       ExpandAll,
+                       expansionMode,
                        IdName(tempNode),
                        IdName(tempEdge),
                        _,
                        _,
                        _) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
 
         // We allocate these on the incoming pipeline after cloning it, since we don't need these slots in
@@ -349,8 +380,24 @@ object SlotAllocation {
         source.newLong(tempNode, nullable = false, CTNode)
         source.newLong(tempEdge, nullable = false, CTRelationship)
 
-        result.newLong(to, nullable, CTNode)
+        if (expansionMode == ExpandAll) {
+          result.newLong(to, nullable, CTNode)
+        }
         result.newReference(edge, nullable, CTList(CTRelationship))
+        result
+
+      case PruningVarExpand(_, from, _, _, to, _, _, _) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
+        val result = source.copy()
+        result.newLong(from.name, nullable, CTNode)
+        result.newLong(to.name, nullable, CTNode)
+        result
+
+      case FullPruningVarExpand(_, from, _, _, to, _, _, _) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
+        val result = source.copy()
+        result.newLong(from.name, nullable, CTNode)
+        result.newLong(to.name, nullable, CTNode)
         result
 
       case CreateNode(_, IdName(name), _, _) =>
@@ -376,6 +423,7 @@ object SlotAllocation {
         source
 
       case UnwindCollection(_, IdName(variable), _) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newReference(variable, nullable = true, CTAny)
         result
@@ -404,6 +452,37 @@ object SlotAllocation {
       case _: LockNodes =>
         source
 
+      case ProjectEndpoints(_, _, start, startInScope, end, endInScope, _, _, _) =>
+        if (!startInScope)
+          source.newLong(start.name, nullable, CTNode)
+        if (!endInScope)
+          source.newLong(end.name, nullable, CTNode)
+        source
+
+      case LoadCSV(_, _, variableName, NoHeaders, _, _) =>
+        source.newReference(variableName.name, nullable, CTList(CTAny))
+        source
+
+      case LoadCSV(_, _, variableName, HasHeaders, _, _) =>
+        source.newReference(variableName.name, nullable, CTMap)
+        source
+
+      case ProcedureCall(_, ResolvedCall(_, _, callResults, _, _)) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
+        // Also, if the procedure is void it cannot increase cardinality.
+        // TODO: Actually perform pipeline break here if needed
+        callResults.foreach {
+          case ProcedureResultItem(output, variable) =>
+            source.newReference(variable.name, true, CTAny)
+        }
+        source
+
+      case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
+        // TODO: Actually perform pipeline break here if needed
+        allocateShortestPathPattern(shortestPathPattern, source, nullable)
+        source
+
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
@@ -412,7 +491,7 @@ object SlotAllocation {
     * Compute the slot configuration of a branching logical plan operator {@code lp}.
     *
     * @param lp the operator to compute slots for.
-    * @param nullable
+    * @param nullable true if new slots are nullable
     * @param lhs the slot configuration of the left hand side operator.
     * @param rhs the slot configuration of the right hand side operator.
     * @return the slot configuration of lp
@@ -434,7 +513,24 @@ object SlotAllocation {
            _: ConditionalApply =>
         rhs
 
+      case LetSemiApply(_, _, IdName(name)) =>
+        lhs.newReference(name, false, CTBoolean)
+        lhs
+
+      case LetAntiSemiApply(_, _, IdName(name)) =>
+        lhs.newReference(name, false, CTBoolean)
+        lhs
+
+      case LetSelectOrSemiApply(_, _, IdName(name), _) =>
+        lhs.newReference(name, false, CTBoolean)
+        lhs
+
+      case LetSelectOrAntiSemiApply(_, _, IdName(name), _) =>
+        lhs.newReference(name, false, CTBoolean)
+        lhs
+
       case _: CartesianProduct =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val result = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
@@ -446,6 +542,7 @@ object SlotAllocation {
         result
 
       case NodeHashJoin(nodes, _, _) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val nodeKeys = nodes.map(_.name)
         val result = lhs.copy()
@@ -459,6 +556,7 @@ object SlotAllocation {
         result
 
       case _: ValueHashJoin =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val slotConfig: SlotConfiguration = lhs.copy()
         // For the implementation of the slotted pipe to use array copy
@@ -468,6 +566,20 @@ object SlotAllocation {
             slotConfig.add(k, slot)
         }
         slotConfig
+
+      case OuterHashJoin(nodes, _, _) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
+        recordArgument(lp)
+        val nodeKeys = nodes.map(_.name)
+        val result = lhs.copy()
+        rhs.foreachSlotOrdered {
+          case (k, slot) if !nodeKeys(k) =>
+            result.add(k, slot)
+          // If the column is one of the join columns there is no need to add it again
+
+          case _ =>
+        }
+        result
 
       case RollUpApply(_, _, collectionName, _, _) =>
         lhs.newReference(collectionName.name, nullable, CTList(CTAny))
@@ -532,16 +644,20 @@ object SlotAllocation {
         lhs
     }
 
-  private def addGroupingMap(groupingExpressions: Map[String, Expression],
-                             source: SlotConfiguration,
-                             target: SlotConfiguration): Unit =
+  private def addGroupingMap(groupingExpressions: Map[String, Expression], incoming: SlotConfiguration, outgoing: SlotConfiguration) = {
     groupingExpressions foreach {
       case (key, parserAst.Variable(ident)) =>
-        val slotInfo = source(ident)
-        target.newReference(key, slotInfo.nullable, slotInfo.typ)
+        val slotInfo = incoming(ident)
+        slotInfo.typ match {
+          case CTNode | CTRelationship =>
+            outgoing.newLong(key, slotInfo.nullable, slotInfo.typ)
+          case _ =>
+            outgoing.newReference(key, slotInfo.nullable, slotInfo.typ)
+        }
       case (key, _) =>
-        target.newReference(key, nullable = true, CTAny)
+        outgoing.newReference(key, nullable = true, CTAny)
     }
+  }
 
   private def isAnApplyPlan(current: LogicalPlan): Boolean = current match {
     case _: AntiConditionalApply |
@@ -556,6 +672,26 @@ object SlotAllocation {
       true
 
     case _ => false
+  }
+
+  private def allocateShortestPathPattern(shortestPathPattern: ShortestPathPattern,
+                                          slots: SlotConfiguration,
+                                          nullable: Boolean) = {
+    val maybePathName = shortestPathPattern.name.map(_.name)
+    val part = shortestPathPattern.expr
+    val pathName = maybePathName.getOrElse(UnNamedNameGenerator.name(part.position))
+    val rel = part.element match {
+      case RelationshipChain(_, relationshipPattern, _) =>
+        relationshipPattern
+      case _ =>
+        throw new IllegalStateException("This should be caught during semantic checking")
+    }
+    val relIteratorName = rel.variable.map(_.name)
+
+    // Allocate slots
+    slots.newReference(pathName, nullable, CTPath)
+    if (relIteratorName.isDefined)
+      slots.newReference(relIteratorName.get, nullable, CTList(CTRelationship))
   }
 }
 

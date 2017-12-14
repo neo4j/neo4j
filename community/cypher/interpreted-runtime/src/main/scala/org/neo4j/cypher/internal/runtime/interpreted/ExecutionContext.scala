@@ -55,6 +55,8 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
     * Like newWith1 but guarantees that we will never overwrite the value of an existing key
     */
   def newScopeWith1(key1: String, value1: AnyValue): ExecutionContext
+
+  def newScopeWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
 }
 
 case class MapExecutionContext(m: MutableMap[String, AnyValue])
@@ -109,6 +111,10 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
 
   override def newScopeWith1(key1: String, value1: AnyValue): MapExecutionContext.this.type =
     newWith1(key1, value1)
+
+  override def newScopeWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): MapExecutionContext.this.type = {
+    newWith2(key1, value1, key2, value2)
+  }
 
   override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()

@@ -85,7 +85,7 @@ case object addUniquenessPredicates extends Rewriter {
       }
     }
 
-  case class UniqueRel(variable: Variable, types: Set[RelTypeName], singleLength: Boolean) {
+  case class UniqueRel(variable: LogicalVariable, types: Set[RelTypeName], singleLength: Boolean) {
     def name = variable.name
 
     def isAlwaysDifferentFrom(other: UniqueRel) =

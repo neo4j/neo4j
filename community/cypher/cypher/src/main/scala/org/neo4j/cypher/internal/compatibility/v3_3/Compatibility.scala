@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Execu
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4, _}
-import org.neo4j.cypher.internal.compatibility.v3_4.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4}
+import org.neo4j.cypher.internal.compatibility.v3_4.{LogicalPlanNotifications, ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4}
 import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{idp => idpV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.{logical => logicalV3_3}
@@ -162,6 +162,10 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         def createPlan(): ExecutionPlan_v3_4 = {
           val logicalPlanStateV3_3 = compiler.planPreparedQuery(preparedQuery, contextV3_3)
           val logicalPlanStateV3_4 = helpers.as3_4(logicalPlanStateV3_3)
+          LogicalPlanNotifications
+            .checkForNotifications(logicalPlanStateV3_4.maybeLogicalPlan.get, planContextV3_4, configV3_4)
+            .foreach(notificationLoggerV3_4.log)
+
           // Here we switch from 3.3 to 3.4
           val result = createExecPlan.transform(logicalPlanStateV3_4, contextV3_4)
           result.maybeExecutionPlan.get
@@ -174,7 +178,6 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
 
         // Log notifications/warnings from planning
         notificationLoggerV3_3.notifications.map(helpers.as3_4).foreach(notificationLoggerV3_4.log)
-        executionPlan.notifications(planContextV3_4).foreach(notificationLoggerV3_4.log)
 
         (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
       }

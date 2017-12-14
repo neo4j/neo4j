@@ -17,18 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
+package org.neo4j.cypher.internal.compatibility.v3_4
 
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, LargeLabelWithLoadCsvNotification}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LoadCSVPipe, NodeByLabelScanPipe, Pipe}
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
+import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, NameId}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LoadCSV, LogicalPlan, NodeByLabelScan}
 
-case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long) extends (Pipe => Option[InternalNotification]) {
+case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
+                                               nonIndexedLabelWarningThreshold: Long
+                                              ) extends (LogicalPlan => Option[InternalNotification]) {
 
   private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
 
-  def apply(pipe: Pipe) = {
+  def apply(plan: LogicalPlan): Option[InternalNotification] = {
     import org.neo4j.cypher.internal.util.v3_4.Foldable._
 
     sealed trait SearchState
@@ -37,12 +39,12 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
     case object LargeLabelWithLoadCsvFound extends SearchState
 
     // Walk over the pipe tree and check if a large label scan is to be executed after a LoadCsv
-    val resultState = pipe.reverseTreeFold[SearchState](NoneFound) {
-      case _: LoadCSVPipe => {
+    val resultState = plan.reverseTreeFold[SearchState](NoneFound) {
+      case _: LoadCSV => {
         case LargeLabelFound => (LargeLabelWithLoadCsvFound, Some(identity))
         case e => (e, None)
       }
-      case NodeByLabelScanPipe(_, label) if cardinality(label.getOptId(planContext)) > threshold =>
+      case NodeByLabelScan(_, label, _) if cardinality(label.name) > threshold =>
         acc => (LargeLabelFound, Some(identity))
     }
 
@@ -52,5 +54,6 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
     }
   }
 
-  private def cardinality(id: Int) = planContext.statistics.nodesWithLabelCardinality(Some(LabelId(id)))
+  private def cardinality(labelName: String): Cardinality =
+    planContext.statistics.nodesWithLabelCardinality(planContext.getOptLabelId(labelName).map(LabelId))
 }

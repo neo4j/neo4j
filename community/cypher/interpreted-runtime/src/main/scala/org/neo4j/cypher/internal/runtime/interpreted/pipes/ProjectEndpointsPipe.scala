@@ -61,8 +61,8 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
         Iterator(context.newWith2(start, startNode, end, endNode))
       case Some((startNode, endNode)) if !directed =>
         Iterator(
-          context.newWith2(start, startNode, end, endNode),
-          context.newWith2(start, endNode, end, startNode)
+          context.newScopeWith2(start, startNode, end, endNode),
+          context.newScopeWith2(start, endNode, end, startNode)
         )
       case None =>
         Iterator.empty

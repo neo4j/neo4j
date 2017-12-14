@@ -29,16 +29,14 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
   extends NullInNullOutExpression(collection) with ListSupport {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = {
-    val initMap = m.newWith1(acc, init(m, state))
     val list = makeTraversable(value)
     val iterator = list.iterator()
-    var computed = initMap
+    var contextWithAcc = m.newScopeWith1(acc, init(m, state))
     while(iterator.hasNext) {
-      val innerMap = computed.newWith1(id, iterator.next())
-      computed = innerMap.newWith1(acc, expression(innerMap, state))
+      val innerMap = contextWithAcc.newWith1(id, iterator.next())
+      contextWithAcc = contextWithAcc.newWith1(acc, expression(innerMap, state))
     }
-
-    computed(acc)
+    contextWithAcc(acc)
   }
 
   def rewrite(f: (Expression) => Expression) =

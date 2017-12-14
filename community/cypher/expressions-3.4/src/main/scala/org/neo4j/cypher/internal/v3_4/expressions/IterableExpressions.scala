@@ -109,7 +109,7 @@ case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val 
 }
 
 object AllIterablePredicate {
-  def apply(variable: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AllIterablePredicate =
+  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AllIterablePredicate =
     AllIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
@@ -118,7 +118,7 @@ case class AnyIterablePredicate(scope: FilterScope, expression: Expression)(val 
 }
 
 object AnyIterablePredicate {
-  def apply(variable: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AnyIterablePredicate =
+  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AnyIterablePredicate =
     AnyIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
@@ -127,7 +127,7 @@ case class NoneIterablePredicate(scope: FilterScope, expression: Expression)(val
 }
 
 object NoneIterablePredicate {
-  def apply(variable: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): NoneIterablePredicate =
+  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): NoneIterablePredicate =
     NoneIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
@@ -136,7 +136,7 @@ case class SingleIterablePredicate(scope: FilterScope, expression: Expression)(v
 }
 
 object SingleIterablePredicate {
-  def apply(variable: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): SingleIterablePredicate =
+  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): SingleIterablePredicate =
     SingleIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 

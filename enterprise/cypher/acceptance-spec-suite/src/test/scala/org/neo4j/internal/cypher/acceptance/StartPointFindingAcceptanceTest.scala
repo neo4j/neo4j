@@ -74,14 +74,14 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
   test("Seek relationship by id given on the left") {
     val rel = relate(createNode("a"), createNode("b"))
 
-    val result = executeWith(Configs.CommunityInterpreted, s"match ()-[r]->() where ${rel.getId} = id(r) return r")
+    val result = executeWith(Configs.Interpreted, s"match ()-[r]->() where ${rel.getId} = id(r) return r")
     result.columnAs[Node]("r").toList should equal(List(rel))
   }
 
   test("Seek relationship by id given on the right") {
     val rel = relate(createNode("a"), createNode("b"))
 
-    val result = executeWith(Configs.CommunityInterpreted, s"match ()-[r]->() where id(r) = ${rel.getId} return r")
+    val result = executeWith(Configs.Interpreted, s"match ()-[r]->() where id(r) = ${rel.getId} return r")
     result.columnAs[Node]("r").toList should equal(List(rel))
   }
 

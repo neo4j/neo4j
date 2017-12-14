@@ -40,10 +40,10 @@ object Pattern {
     }
   }
 
-  object findDuplicateRelationships extends (Pattern => Set[Seq[Variable]]) {
+  object findDuplicateRelationships extends (Pattern => Set[Seq[LogicalVariable]]) {
 
-    def apply(pattern: Pattern): Set[Seq[Variable]] = {
-      val (seen, duplicates) = pattern.fold((Set.empty[Variable], Seq.empty[Variable])) {
+    def apply(pattern: Pattern): Set[Seq[LogicalVariable]] = {
+      val (seen, duplicates) = pattern.fold((Set.empty[LogicalVariable], Seq.empty[LogicalVariable])) {
         case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _), _) =>
           (acc) =>
             val (seen, duplicates) = acc
@@ -57,7 +57,7 @@ object Pattern {
           identity
       }
 
-      val m0: Map[String, Seq[Variable]] = duplicates.groupBy(_.name)
+      val m0: Map[String, Seq[LogicalVariable]] = duplicates.groupBy(_.name)
 
       val resultMap = seen.foldLeft(m0) {
         case (m, ident @ Variable(name)) if m.contains(name) => m.updated(name, Seq(ident) ++ m(name))
@@ -104,8 +104,8 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
 }
 
 sealed abstract class PatternElement extends ASTNode {
-  def allVariables: Set[Variable]
-  def variable: Option[Variable]
+  def allVariables: Set[LogicalVariable]
+  def variable: Option[LogicalVariable]
 
   def isSingleNode = false
 }
@@ -117,9 +117,9 @@ case class RelationshipChain(
                             )(val position: InputPosition)
   extends PatternElement {
 
-  def variable: Option[Variable] = relationship.variable
+  def variable: Option[LogicalVariable] = relationship.variable
 
-  override def allVariables: Set[Variable] = element.allVariables ++ relationship.variable ++ rightNode.variable
+  override def allVariables: Set[LogicalVariable] = element.allVariables ++ relationship.variable ++ rightNode.variable
 
 }
 
@@ -129,7 +129,7 @@ object InvalidNodePattern {
 }
 
 class InvalidNodePattern(
-                          val id: Variable
+                          val id: LogicalVariable
                         )(
                           position: InputPosition
 ) extends NodePattern(Some(id), Seq.empty, None)(position) {
@@ -145,22 +145,22 @@ class InvalidNodePattern(
 
   override def hashCode(): Int = 31 * id.hashCode()
 
-  override def allVariables: Set[Variable] = Set.empty
+  override def allVariables: Set[LogicalVariable] = Set.empty
 }
 
-case class NodePattern(variable: Option[Variable],
+case class NodePattern(variable: Option[LogicalVariable],
                        labels: Seq[LabelName],
                        properties: Option[Expression])(val position: InputPosition)
   extends PatternElement {
 
-  override def allVariables: Set[Variable] = variable.toSet
+  override def allVariables: Set[LogicalVariable] = variable.toSet
 
   override def isSingleNode = true
 }
 
 
 case class RelationshipPattern(
-                                variable: Option[Variable],
+                                variable: Option[LogicalVariable],
                                 types: Seq[RelTypeName],
                                 length: Option[Option[Range]],
                                 properties: Option[Expression],

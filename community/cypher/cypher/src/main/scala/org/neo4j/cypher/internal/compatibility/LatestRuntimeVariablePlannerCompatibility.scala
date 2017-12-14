@@ -87,7 +87,7 @@ STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
 
   protected def createExecPlan: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState] = {
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
-      If((s: CompilationState) => s.maybeExecutionPlan.isEmpty) {
+      If((s: CompilationState) => s.maybeExecutionPlan.isFailure) {
         val maybeRuntimeName: Option[RuntimeName] = runtime match {
           case CypherRuntime.default => None
           case CypherRuntime.interpreted => Some(InterpretedRuntimeName)

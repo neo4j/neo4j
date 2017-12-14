@@ -17,15 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases
+package org.neo4j.cypher.internal.compatibility.v3_4
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-import scala.util.{Failure, Try}
+object LogicalPlanNotifications {
+  def checkForNotifications(logicalPlan: LogicalPlan,
+                            planContext: PlanContext,
+                            config: CypherCompilerConfiguration): Seq[InternalNotification] = {
+    val notificationCheckers = Seq(checkForEagerLoadCsv,
+      CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
 
-class CompilationState(ls: LogicalPlanState,
-                           val maybeExecutionPlan: Try[ExecutionPlan] = Failure(new UnsupportedOperationException))
-  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.maybeStatement, ls.maybeSemantics,
-                           ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan,
-                           ls.maybePeriodicCommit, ls.accumulatedConditions)
+    notificationCheckers.flatMap(_ (logicalPlan))
+  }
+}

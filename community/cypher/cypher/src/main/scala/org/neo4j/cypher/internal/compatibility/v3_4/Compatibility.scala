@@ -44,7 +44,7 @@ import org.neo4j.logging.Log
 import scala.util.Try
 
 case class Compatibility[CONTEXT <: CommunityRuntimeContext,
-                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](configV3_4: CypherCompilerConfiguration,
+                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](config: CypherCompilerConfiguration,
                                                                                    clock: Clock,
                                                                                    kernelMonitors: KernelMonitors,
                                                                                    log: Log,
@@ -53,7 +53,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                                                    updateStrategy: CypherUpdateStrategy,
                                                                                    runtimeBuilder: RuntimeBuilder[T],
                                                                                    contextCreatorV3_4: ContextCreator[CONTEXT])
-  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](configV3_4, clock, kernelMonitors, log, planner, runtime, updateStrategy, runtimeBuilder, contextCreatorV3_4) {
+  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](config, clock, kernelMonitors, log, planner, runtime, updateStrategy, runtimeBuilder, contextCreatorV3_4) {
 
   val monitors: Monitors = WrappedMonitors(kernelMonitors)
   val cacheMonitor: AstCacheMonitor[Statement] = monitors.newMonitor[AstCacheMonitor[Statement]]("cypher3.4")
@@ -78,12 +78,11 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
   }
 
   protected val compiler: v3_4.CypherCompiler[CONTEXT] =
-    new CypherCompilerFactory().costBasedCompiler(configV3_4, clock, monitors, rewriterSequencer,
+    new CypherCompilerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
       maybePlannerNameV3_4, maybeUpdateStrategy, contextCreatorV3_4)
 
-
   private def queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.
-    createQueryGraphSolver(maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default), monitors, configV3_4)
+    createQueryGraphSolver(maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default), monitors, config)
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
@@ -107,7 +106,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                         syntacticQuery.queryText, preParsedQuery.debugOptions,
                                                         Some(preParsedQuery.offset), monitors,
                                                         CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolver,
-                                                        configV3_4, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
+                                                        config, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
                                                         clock, simpleExpressionEvaluator)
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
@@ -117,6 +116,10 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
         def createPlan(): ExecutionPlan_v3_4 = {
           val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
+          LogicalPlanNotifications
+            .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+            .foreach(notificationLogger.log)
+
           val result = createExecPlan.transform(logicalPlanState, context)
           result.maybeExecutionPlan.get
         }
@@ -124,9 +127,6 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
           cache.getOrElseUpdate(syntacticQuery.statement(), syntacticQuery.queryText, isStale, createPlan())._1
         else
           createPlan()
-
-        // Log notifications/warnings from planning
-       executionPlan.notifications(planContext).foreach(notificationLogger.log)
 
         (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
       }

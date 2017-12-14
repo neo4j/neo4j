@@ -261,7 +261,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel.foo"
 
     // Correct! Eagerization happens as part of query context operation
-    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Cost2_3, query,
       executeBefore = () => counter.reset(),
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
@@ -310,7 +310,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (x), (y) CALL user.expand(x, y) YIELD relId RETURN x, y, relId"
 
     // Correct! No eagerization necessary
-    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Version2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
     result.size should equal(2)
@@ -358,7 +358,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (x), (y) CALL user.expand(x, y) WITH * MATCH (x)-[rel]->(y) RETURN *"
 
     // Correct! No eagerization necessary
-    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Version2_3, query,
       executeBefore = () => counter.reset(),
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
@@ -2533,7 +2533,7 @@ class EagerizationAcceptanceTest
   test("should not be eager for LOAD CSV followed by MERGE") {
     val query = "LOAD CSV FROM 'file:///something' AS line MERGE (b:B {p:line[0]}) RETURN b"
     val config =
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
+      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default)) +
       TestConfiguration(Versions.Default, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
       TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.Rule, Runtimes.Default) +
       Configs.Cost3_1 + Configs.Version3_3
@@ -2553,7 +2553,7 @@ class EagerizationAcceptanceTest
 
     val query = s"MATCH (a)-[t:T]-(b) LOAD CSV FROM '$url' AS line DELETE t RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 1)
@@ -2572,7 +2572,7 @@ class EagerizationAcceptanceTest
 
     val query = s"CREATE () WITH * MATCH (a)-[t:T]-(b) LOAD CSV FROM '$url' AS line DELETE t RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, nodesCreated = 1, relationshipsDeleted = 1)
@@ -2590,7 +2590,7 @@ class EagerizationAcceptanceTest
 
     val query = s"MATCH () LOAD CSV FROM '$url' AS i MATCH () UNWIND [0] as j CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
@@ -2607,7 +2607,7 @@ class EagerizationAcceptanceTest
 
     val query = s"MERGE () WITH * LOAD CSV FROM '$url' AS line MATCH () LOAD CSV FROM '$url' AS line2 CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)

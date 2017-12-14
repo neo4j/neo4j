@@ -30,6 +30,9 @@ import org.neo4j.values.virtual.ListValue
 
 import scala.collection.Seq
 
+/**
+  * These classes solve List Predicates.
+  */
 abstract class InList(collectionExpression: Expression, id: String, predicate: Predicate)
   extends Predicate
   with ListSupport
@@ -45,10 +48,11 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
     if (list == Values.NO_VALUE) None
     else {
       val seq = makeTraversable(list)
+      val innerContext = m.createClone()
 
       seqMethod(seq)(item =>
         // Since we can override an existing id here we use a method that guarantees that we do not overwrite an existing variable
-        predicate.isMatch(m.newScopeWith1(id, item), state))
+        predicate.isMatch(innerContext.newWith1(id, item), state))
     }
   }
 
@@ -73,7 +77,7 @@ case class AllInList(collection: Expression, symbolName: String, inner: Predicat
 
     val iterator = collectionValue.iterator()
     while(iterator.hasNext) {
-      predicate(iterator.next())  match {
+      predicate(iterator.next()) match {
         case Some(false) => return Some(false)
         case None        => result = None
         case _           =>

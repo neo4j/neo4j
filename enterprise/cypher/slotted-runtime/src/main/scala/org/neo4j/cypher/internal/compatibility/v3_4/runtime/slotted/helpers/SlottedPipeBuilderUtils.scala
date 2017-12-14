@@ -23,12 +23,15 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.Null
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, Slot}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, ParameterWrongTypeException}
-import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship}
+import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship, CypherType}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue, VirtualValues}
 
 object SlottedPipeBuilderUtils {
+  // TODO: Check if having try/catch blocks inside some of these generated functions prevents inlining or other JIT optimizations
+  //       If so we may want to consider moving the handling and responsibility out to the pipes that use them
+
   /**
     * Use this to make a specialized getter function for a slot,
     * that given an ExecutionContext returns an AnyValue.
@@ -66,6 +69,80 @@ object SlottedPipeBuilderUtils {
       case _ =>
         throw new InternalException(s"Do not know how to make getter for slot $slot")
     }
+
+  /**
+    * Use this to make a specialized getter function for a slot and a primitive return type (i.e. CTNode or CTRelationship),
+    * that given an ExecutionContext returns a long.
+    */
+  def makeGetPrimitiveFromSlotFunctionFor(slot: Slot, returnType: CypherType): ExecutionContext => Long =
+    (slot, returnType) match {
+      case (LongSlot(offset, _, _), CTNode | CTRelationship) =>
+        (context: ExecutionContext) =>
+          context.getLongAt(offset)
+
+      case (RefSlot(offset, false, _), CTNode) =>
+        (context: ExecutionContext) =>
+          val value = context.getRefAt(offset)
+          try {
+            value.asInstanceOf[VirtualNodeValue].id()
+          } catch {
+            case _: java.lang.ClassCastException =>
+              throw new ParameterWrongTypeException(s"Expected to find a node at ref slot $offset but found $value instead")
+          }
+
+      case (RefSlot(offset, false, _), CTRelationship) =>
+        (context: ExecutionContext) =>
+          val value = context.getRefAt(offset)
+          try {
+            value.asInstanceOf[VirtualEdgeValue].id()
+          } catch {
+            case _: java.lang.ClassCastException =>
+              throw new ParameterWrongTypeException(s"Expected to find a relationship at ref slot $offset but found $value instead")
+          }
+
+      case (RefSlot(offset, true, _), CTNode) =>
+        (context: ExecutionContext) =>
+          val value = context.getRefAt(offset)
+          try {
+            if (value == Values.NO_VALUE)
+              -1L
+            else
+              value.asInstanceOf[VirtualNodeValue].id()
+          } catch {
+            case _: java.lang.ClassCastException =>
+              throw new ParameterWrongTypeException(s"Expected to find a node at ref slot $offset but found $value instead")
+          }
+
+      case (RefSlot(offset, true, _), CTRelationship) =>
+        (context: ExecutionContext) =>
+          val value = context.getRefAt(offset)
+          try {
+            if (value == Values.NO_VALUE)
+              -1L
+            else
+              value.asInstanceOf[VirtualEdgeValue].id()
+          } catch {
+            case _: java.lang.ClassCastException =>
+              throw new ParameterWrongTypeException(s"Expected to find a relationship at ref slot $offset but found $value instead")
+          }
+
+      case _ =>
+        throw new InternalException(s"Do not know how to make a primitive getter for slot $slot with type $returnType")
+    }
+
+  /**
+    * Use this to make a specialized getter function for a slot that is expected to contain a node
+    * that given an ExecutionContext returns a long with the node id.
+    */
+  def makeGetPrimitiveNodeFromSlotFunctionFor(slot: Slot): ExecutionContext => Long =
+    makeGetPrimitiveFromSlotFunctionFor(slot, CTNode)
+
+  /**
+    * Use this to make a specialized getter function for a slot that is expected to contain a node
+    * that given an ExecutionContext returns a long with the relationship id.
+    */
+  def makeGetPrimitiveRelationshipFromSlotFunctionFor(slot: Slot): ExecutionContext => Long =
+    makeGetPrimitiveFromSlotFunctionFor(slot, CTRelationship)
 
   /**
     * Use this to make a specialized setter function for a slot,
