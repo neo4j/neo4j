@@ -47,7 +47,88 @@
     </license>
   </licenses>
 
+  <!-- com.sun.tools is special prior to java 9... -->
+  <profiles>
+    <profile>
+      <id>jigsaw</id>
+      <activation>
+        <jdk>[1.9,)</jdk>
+      </activation>
+      <!-- No dependencies needed by Jigsaw -->
+      <dependencies />
+    </profile>
+    <profile>
+      <id>default-jdk</id>
+      <activation>
+        <file>
+          <exists>${java.home}/../lib/tools.jar</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>jdk.tools</groupId>
+          <artifactId>jdk.tools</artifactId>
+          <scope>system</scope>
+          <version>1.6</version>
+          <systemPath>${java.home}/../lib/tools.jar</systemPath>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>osx-jdk</id>
+      <activation>
+        <file>
+          <exists>${java.home}/../Classes/classes.jar</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>jdk.tools</groupId>
+          <artifactId>jdk.tools</artifactId>
+          <scope>system</scope>
+          <version>1.6</version>
+          <systemPath>${java.home}/../Classes/classes.jar</systemPath>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
+  <!--<build>-->
+    <!--<plugins>-->
+      <!--<plugin>-->
+        <!--<groupId>org.apache.maven.plugins</groupId>-->
+        <!--<artifactId>maven-shade-plugin</artifactId>-->
+        <!--<executions>-->
+          <!--<execution>-->
+            <!--<phase>package</phase>-->
+            <!--<goals><goal>shade</goal></goals>-->
+            <!--<configuration>-->
+              <!--<artifactSet>-->
+                <!--<includes>-->
+                  <!--<include>org.neo4j.driver:*</include>-->
+                <!--</includes>-->
+              <!--</artifactSet>-->
+              <!--<relocations>-->
+                <!--<relocation>-->
+                  <!--<pattern>org.neo4j.driver</pattern>-->
+                  <!--<shadedPattern>org.neo4j.not.driver</shadedPattern>-->
+                <!--</relocation>-->
+              <!--</relocations>-->
+              <!--<createDependencyReducedPom>false</createDependencyReducedPom>-->
+            <!--</configuration>-->
+          <!--</execution>-->
+        <!--</executions>-->
+      <!--</plugin>-->
+    <!--</plugins>-->
+  <!--</build>-->
+
   <dependencies>
+    <!--<dependency>-->
+      <!--<groupId>org.neo4j.driver</groupId>-->
+      <!--<artifactId>neo4j-java-driver</artifactId>-->
+      <!--<scope>provided</scope> &lt;!&ndash; shaded inside the jar file &ndash;&gt;-->
+    <!--</dependency>-->
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
