@@ -159,7 +159,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     public RawBytes key( long seed )
     {
         RawBytes key = newKey();
-        key.bytes = ByteBuffer.allocate( 16 ).putLong( seed ).putLong( seed ).array();
+        key.bytes = fromSeed( seed );
         return key;
     }
 
@@ -167,7 +167,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     public RawBytes value( long seed )
     {
         RawBytes value = newValue();
-        value.bytes = ByteBuffer.allocate( 17 ).putLong( seed ).putLong( seed ).array();
+        value.bytes = fromSeed( seed );
         return value;
     }
 
@@ -178,5 +178,14 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         buffer.put( rawBytes.bytes, 0, Long.BYTES );
         buffer.flip();
         return buffer.getLong();
+    }
+
+    private byte[] fromSeed( long seed )
+    {
+        int tail = (int) Math.abs( seed % Long.BYTES );
+        ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES + tail );
+        buffer.putLong( seed );
+        buffer.put( new byte[tail] );
+        return buffer.array();
     }
 }

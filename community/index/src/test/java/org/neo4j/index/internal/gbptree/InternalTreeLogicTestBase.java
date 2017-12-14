@@ -225,7 +225,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         initialize();
         int someMiddleSeed = 1000;
         int keyCount = 0;
-        int middle = keyCount % 2 == 0 ? keyCount : someMiddleSeed * 2 - keyCount;
+        int middle = keyCount % 2 == 0 ? keyCount : someMiddleSeed - keyCount;
         KEY key = key( middle );
         VALUE value = value( middle );
         while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
@@ -233,15 +233,14 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
             insert( key, value );
 
             keyCount++;
-            middle = keyCount % 2 == 0 ? keyCount : someMiddleSeed * 2 - keyCount;
+            middle = keyCount % 2 == 0 ? keyCount : someMiddleSeed - keyCount;
             key = key( middle );
             value = value( middle );
         }
 
         // when
         generationManager.checkpoint();
-        middle = someMiddleSeed;
-        insert( key( middle ), value( middle ) );
+        insert( key, value );
 
         // then
         assertEquals( 1, numberOfRootSplits );
@@ -279,21 +278,22 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         // given
         initialize();
         int keyCount = 0;
-        KEY key = key( keyCount + 1 );
-        VALUE value = value( keyCount + 1 );
+        int someHighSeed = 1000;
+        KEY key = key( someHighSeed - keyCount );
+        VALUE value = value( someHighSeed - keyCount );
         while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
         {
             insert( key, value );
             assertFalse( structurePropagation.hasRightKeyInsert );
 
             keyCount++;
-            key = key( keyCount + 1 );
-            value = value( keyCount + 1 );
+            key = key( someHighSeed - keyCount );
+            value = value( someHighSeed - keyCount );
         }
 
         // when
         generationManager.checkpoint();
-        insert( key( 0L ), value( 0L ) );
+        insert( key, value );
 
         // then
         assertEquals( 1, numberOfRootSplits );
