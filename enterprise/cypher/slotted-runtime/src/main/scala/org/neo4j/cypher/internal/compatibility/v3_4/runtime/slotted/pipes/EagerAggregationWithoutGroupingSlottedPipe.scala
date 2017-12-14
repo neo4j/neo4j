@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
@@ -57,7 +57,7 @@ case class EagerAggregationWithoutGroupingSlottedPipe(source: Pipe,
       }
 
       // Present result
-      val context = PrimitiveExecutionContext(slots)
+      val context = SlottedExecutionContext(slots)
       (aggregationOffsets zip aggregationAccumulators).foreach {
         case (offset, value) => context.setRefAt(offset, value.result(state))
       }
@@ -67,7 +67,7 @@ case class EagerAggregationWithoutGroupingSlottedPipe(source: Pipe,
 
   // Used when we have no input and no grouping expressions. In this case, we'll return a single row
   def createEmptyResult(state: QueryState): Iterator[ExecutionContext] = {
-    val context = PrimitiveExecutionContext(slots)
+    val context = SlottedExecutionContext(slots)
     val aggregationOffsetsAndFunctions = aggregationOffsets zip aggregations
       .map(_._2.createAggregationFunction.result(state))
 

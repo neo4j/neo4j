@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -43,7 +43,7 @@ case class NodeIndexScanSlottedPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val nodes = state.query.indexScanPrimitive(descriptor)
     PrimitiveLongHelper.map(nodes, { node =>
-      val context = PrimitiveExecutionContext(slots)
+      val context = SlottedExecutionContext(slots)
       state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
       context.setLongAt(offset, node)
       context

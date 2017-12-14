@@ -44,7 +44,7 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
             val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             val matchIterator = relationships.map { r =>
                 val other = r.otherNode(n)
-                row.newWith2(relName, r, toName, other)
+                row.copyWith(relName, r, toName, other)
             }.filter(ctx => predicate.isTrue(ctx, state))
 
             if (matchIterator.isEmpty) {
@@ -63,7 +63,7 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
   }
 
   private def withNulls(row: ExecutionContext) =
-    row.newWith2(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
+    row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
 
   def getFromNode(row: ExecutionContext): AnyValue =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))

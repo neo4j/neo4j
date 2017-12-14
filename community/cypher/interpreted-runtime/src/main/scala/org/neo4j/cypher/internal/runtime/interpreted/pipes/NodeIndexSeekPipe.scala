@@ -45,7 +45,7 @@ case class NodeIndexSeekPipe(ident: String,
     val index = indexFactory(state)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
-    resultNodes.map(node => baseContext.newWith1(ident, node))
+    resultNodes.map(node => baseContext.copyWith(ident, node))
   }
 
 }

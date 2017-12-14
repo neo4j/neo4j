@@ -43,12 +43,12 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     findVarLengthRelEndpoints(context, qtx) match {
       case Some((startNode, endNode, _)) if directed =>
         Iterator(
-          context.newWith2(start, startNode, end, endNode)
+          context.set(start, startNode, end, endNode)
         )
       case Some((startNode, endNode, rels)) if !directed =>
         Iterator(
-          context.newWith2(start, startNode, end, endNode),
-          context.newWith3(start, endNode, end, startNode, relName, reverse(rels))
+          context.copyWith(start, startNode, end, endNode),
+          context.copyWith(start, endNode, end, startNode, relName, reverse(rels))
         )
       case None =>
         Iterator.empty
@@ -58,11 +58,11 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def project(qtx: QueryContext): Projector = (context: ExecutionContext) => {
     findSimpleLengthRelEndpoints(context, qtx) match {
       case Some((startNode, endNode)) if directed =>
-        Iterator(context.newWith2(start, startNode, end, endNode))
+        Iterator(context.set(start, startNode, end, endNode))
       case Some((startNode, endNode)) if !directed =>
         Iterator(
-          context.newScopeWith2(start, startNode, end, endNode),
-          context.newScopeWith2(start, endNode, end, startNode)
+          context.copyWith(start, startNode, end, endNode),
+          context.copyWith(start, endNode, end, startNode)
         )
       case None =>
         Iterator.empty

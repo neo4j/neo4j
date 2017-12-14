@@ -35,7 +35,7 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
       (outerContext) =>
         val values = makeTraversable(expression(outerContext, state))
         values.iterator().asScala.foreach { v =>
-          val innerState = state.withInitialContext(outerContext.newWith1(variable, v))
+          val innerState = state.withInitialContext(outerContext.copyWith(variable, v))
           inner.createResults(innerState).length // exhaust the iterator, in case there's a merge read increasing cardinality inside the foreach
         }
         outerContext

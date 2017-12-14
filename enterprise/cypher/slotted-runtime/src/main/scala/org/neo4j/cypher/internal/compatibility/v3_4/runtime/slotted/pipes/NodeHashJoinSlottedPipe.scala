@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
@@ -56,7 +56,7 @@ case class NodeHashJoinSlottedPipe(leftSide: Array[Int],
     Some(HashKey(key))
   }
 
-  override def copyDataFromRhs(newRow: PrimitiveExecutionContext, rhs: ExecutionContext): Unit = {
+  override def copyDataFromRhs(newRow: SlottedExecutionContext, rhs: ExecutionContext): Unit = {
     longsToCopy foreach {
       case (from, to) => newRow.setLongAt(to, rhs.getLongAt(from))
     }

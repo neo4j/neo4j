@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.computeUnionMapping
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
@@ -61,7 +61,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     })
     when(context.relationshipOps).thenReturn(relOps)
     val res = union.createResults(QueryStateHelper.emptyWith(query = context)).toList.map {
-      case e: PrimitiveExecutionContext =>
+      case e: SlottedExecutionContext =>
         e.slots.mapSlot {
           case (k, s: LongSlot) =>
             val value = if (s.typ == CTNode) nodeValue(e.getLongAt(s.offset))

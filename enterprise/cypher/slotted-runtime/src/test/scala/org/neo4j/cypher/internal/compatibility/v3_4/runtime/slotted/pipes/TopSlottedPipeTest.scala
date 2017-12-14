@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.TopSlottedPipeTestSupport._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
@@ -234,7 +234,7 @@ object TopSlottedPipeTestSupport {
 
     val results = topPipe.createResults(QueryStateHelper.empty)
     results.map {
-      case c: PrimitiveExecutionContext =>
+      case c: SlottedExecutionContext =>
         slot match {
           case RefSlot(offset, _, _) =>
             c.getRefAt(offset)
@@ -261,7 +261,7 @@ object TopSlottedPipeTestSupport {
     val topPipe = createTopPipe(source, topOrderBy, limit, withTies)
 
     topPipe.createResults(QueryStateHelper.empty).map {
-      case c: PrimitiveExecutionContext =>
+      case c: SlottedExecutionContext =>
         (slots(0), slots(1)) match {
           case (RefSlot(offset1, _, _), RefSlot(offset2, _, _)) =>
             (c.getRefAt(offset1), c.getRefAt(offset2))

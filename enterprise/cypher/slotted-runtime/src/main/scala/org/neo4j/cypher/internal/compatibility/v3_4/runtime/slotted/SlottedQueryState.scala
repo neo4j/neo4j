@@ -64,5 +64,5 @@ case class SlottedExecutionContextFactory(slots: SlotConfiguration) extends Exec
     throw new UnsupportedOperationException("Please implement")
 
   override def newExecutionContext(): ExecutionContext =
-    PrimitiveExecutionContext(slots)
+    SlottedExecutionContext(slots)
 }

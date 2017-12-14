@@ -64,7 +64,7 @@ final class NodeIdSeekIterator(ident: String,
   def hasNext: Boolean = hasNextEntity
 
   def next(): ExecutionContext =
-    baseContext.newWith1(ident, nextEntity())
+    baseContext.copyWith(ident, nextEntity())
 }
 
 final class DirectedRelationshipIdSeekIterator(ident: String,
@@ -79,7 +79,7 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
 
   def next(): ExecutionContext = {
     val rel = nextEntity()
-    baseContext.newWith3(ident, rel, fromNode, rel.startNode(), toNode, rel.endNode())
+    baseContext.copyWith(ident, rel, fromNode, rel.startNode(), toNode, rel.endNode())
   }
 }
 
@@ -101,13 +101,13 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
   def next(): ExecutionContext = {
     if (emitSibling) {
       emitSibling = false
-      baseContext.newWith3(ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
+      baseContext.copyWith(ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
     } else {
       emitSibling = true
       lastEntity = nextEntity()
       lastStart = lastEntity.startNode()
       lastEnd = lastEntity.endNode()
-      baseContext.newWith3(ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
+      baseContext.copyWith(ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
     }
   }
 }

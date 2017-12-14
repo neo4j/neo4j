@@ -577,7 +577,7 @@ object SlottedPipeBuilder {
       }
       //Create a new context and apply all transformations
       (incoming: ExecutionContext, state: QueryState) =>
-        val outgoing = PrimitiveExecutionContext(out)
+        val outgoing = SlottedExecutionContext(out)
         mapSlots.foreach(f => f(incoming, outgoing, state))
         outgoing
     }

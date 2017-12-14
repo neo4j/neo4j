@@ -72,7 +72,7 @@ case class ProcedureCallPipe(source: Pipe,
           builder += v -> javaValue
         }
         val rowEntries = builder.result()
-        val output = input.newWith(rowEntries)
+        val output = input.copyWith(rowEntries)
         builder.clear()
         output
       }

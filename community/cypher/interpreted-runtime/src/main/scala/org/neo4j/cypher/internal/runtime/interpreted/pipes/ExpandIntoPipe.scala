@@ -64,7 +64,7 @@ case class ExpandIntoPipe(source: Pipe,
                   .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, lazyTypes.types(state.query)))
 
                 if (relationships.isEmpty) Iterator.empty
-                else relationships.map(r => row.newWith1(relName, r))
+                else relationships.map(r => row.copyWith(relName, r))
               case _ => throw new InternalException(s"$toNode must be node or null")
             }
 

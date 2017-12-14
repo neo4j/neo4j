@@ -75,7 +75,7 @@ class AddedHistory(val parent: History, val pair: MatchingPair) extends History 
   def add(pair: MatchingPair) = if (contains(pair)) this else new AddedHistory(this, pair)
 
   lazy val toMap = {
-    parent.toMap.newWith(toIndexedSeq(pair))
+    parent.toMap.set(toIndexedSeq(pair))
   }
 
   def toIndexedSeq(p: MatchingPair): Seq[(String, AnyValue)] = {
