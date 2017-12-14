@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 public class HighlyAvailableEditionModuleIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    public ClusterRule clusterRule = new ClusterRule();
 
     @Test
     public void createBufferedIdComponentsByDefault() throws Exception

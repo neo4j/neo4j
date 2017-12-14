@@ -42,7 +42,7 @@ public class HACountsPropagationIT
     private static final int PULL_INTERVAL = 100;
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( HaSettings.pull_interval, PULL_INTERVAL + "ms" );
 
     @Test

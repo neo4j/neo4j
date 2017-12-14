@@ -53,7 +53,7 @@ public class ClusterLocksIT
     private static final long TIMEOUT_MILLIS = 120_000;
 
     public final ExpectedException expectedException = ExpectedException.none();
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
 
     @Rule
     public final RuleChain rules = RuleChain.outerRule( expectedException ).around( clusterRule );

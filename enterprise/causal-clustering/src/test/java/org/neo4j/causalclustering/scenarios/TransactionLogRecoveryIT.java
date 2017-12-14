@@ -52,7 +52,7 @@ public class TransactionLogRecoveryIT
     public final PageCacheRule pageCache = new PageCacheRule();
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 3 );
 

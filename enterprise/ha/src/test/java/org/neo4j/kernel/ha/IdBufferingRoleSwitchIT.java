@@ -41,7 +41,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 public class IdBufferingRoleSwitchIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
              // Disable automatic sync so that the test can control this itself
             .withSharedSetting( HaSettings.pull_interval, "0" )
             .withSharedSetting( HaSettings.tx_push_factor, "0" )

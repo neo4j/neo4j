@@ -28,8 +28,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -51,7 +51,7 @@ public class HaCountsIT
     private static final String PROPERTY_VALUE = "value";
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    public ClusterRule clusterRule = new ClusterRule();
 
     private ManagedCluster cluster;
     private HighlyAvailableGraphDatabase master;

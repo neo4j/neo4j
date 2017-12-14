@@ -36,7 +36,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 public class ClusterClientPaddingIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( ClusterSettings.heartbeat_interval, "1s" )
             .withSharedSetting( ClusterSettings.heartbeat_timeout, "10s" );
 

@@ -36,7 +36,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 public class AutoIndexConfigIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    public ClusterRule clusterRule = new ClusterRule();
 
     @Test
     public void programmaticConfigShouldSurviveMasterSwitches() throws Throwable

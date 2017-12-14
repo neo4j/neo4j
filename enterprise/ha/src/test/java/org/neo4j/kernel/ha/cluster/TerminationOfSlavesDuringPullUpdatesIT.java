@@ -65,7 +65,7 @@ public class TerminationOfSlavesDuringPullUpdatesIT
     private static final int PROPERTY_KEY_CHAIN_LENGTH = 100;
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( HaSettings.pull_interval, "0" )
             .withSharedSetting( HaSettings.tx_push_factor, "0" );
 

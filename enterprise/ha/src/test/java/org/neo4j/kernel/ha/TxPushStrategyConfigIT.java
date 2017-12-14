@@ -55,7 +55,7 @@ public class TxPushStrategyConfigIT
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
 
     /**
      * These are _indexes_ of cluster members in machineIds

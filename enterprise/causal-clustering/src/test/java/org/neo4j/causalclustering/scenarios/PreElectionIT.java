@@ -45,7 +45,7 @@ import static org.junit.Assert.fail;
 public class PreElectionIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 )
             .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "10s" )

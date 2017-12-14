@@ -41,7 +41,7 @@ public class ClusterLeaderStepDownIT
 {
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 8 ).withNumberOfReadReplicas( 0 );
+            new ClusterRule().withNumberOfCoreMembers( 8 ).withNumberOfReadReplicas( 0 );
 
     @Test
     public void leaderShouldStepDownWhenFollowersAreGone() throws Throwable

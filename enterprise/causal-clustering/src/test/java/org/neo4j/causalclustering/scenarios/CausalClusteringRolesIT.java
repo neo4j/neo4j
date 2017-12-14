@@ -32,7 +32,7 @@ import org.neo4j.test.causalclustering.ClusterRule;
 public class CausalClusteringRolesIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 1 );
 

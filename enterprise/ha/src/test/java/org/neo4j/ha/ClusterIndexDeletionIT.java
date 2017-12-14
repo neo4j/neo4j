@@ -36,7 +36,7 @@ import static org.junit.Assert.assertThat;
 public class ClusterIndexDeletionIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( HaSettings.tx_push_factor, "2" )
             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 

@@ -75,7 +75,7 @@ public class PropertyConstraintsStressIT
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @ClassRule
-    public static final ClusterRule clusterRule = new ClusterRule( PropertyConstraintsStressIT.class );
+    public static final ClusterRule clusterRule = new ClusterRule();
 
     @Rule
     public OtherThreadRule<Object> slaveWork = new OtherThreadRule<>();

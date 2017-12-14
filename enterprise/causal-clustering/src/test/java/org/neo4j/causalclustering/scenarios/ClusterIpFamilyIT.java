@@ -86,7 +86,7 @@ public class ClusterIpFamilyIT
     }
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 3 );
 

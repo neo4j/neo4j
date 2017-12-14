@@ -44,7 +44,7 @@ import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 public class ReadOnlySlaveIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( tx_push_factor, "2" )
             .withInstanceSetting( read_only, oneBasedServerId -> oneBasedServerId == 2 ? Settings.TRUE : null );
 

@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberSeesOtherMemberAsFai
 public class TwoInstanceClusterIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
 
     private ClusterManager.ManagedCluster cluster;
 

@@ -49,7 +49,7 @@ public class MeasureUpdatePullingRecordAndIndexGap
     private final int numberOfIndexes = 10;
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( HaSettings.tx_push_factor, "0" );
 
     @Test

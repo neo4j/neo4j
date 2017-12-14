@@ -50,7 +50,7 @@ import static org.neo4j.graphdb.Label.label;
 public class RestartIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
 

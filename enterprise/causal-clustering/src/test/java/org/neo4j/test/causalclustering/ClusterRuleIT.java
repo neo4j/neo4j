@@ -19,14 +19,12 @@
  */
 package org.neo4j.test.causalclustering;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
@@ -36,13 +34,16 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 public class ClusterRuleIT
 {
     private static final int NumberOfPortsUsedByCoreMember = 6;
     private static final int NumberOfPortsUsedByReadReplica = 4;
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
 
     @Test
     public void shouldAssignPortsToMembersAutomatically() throws Exception

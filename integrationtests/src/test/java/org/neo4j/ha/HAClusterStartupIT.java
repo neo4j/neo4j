@@ -59,7 +59,7 @@ public class HAClusterStartupIT
     public static class SimpleCluster
     {
         @Rule
-        public final ClusterRule clusterRule = new ClusterRule( getClass() ).withCluster( clusterOfSize( 3 ) );
+        public final ClusterRule clusterRule = new ClusterRule().withCluster( clusterOfSize( 3 ) );
         private HighlyAvailableGraphDatabase oldMaster;
         private HighlyAvailableGraphDatabase oldSlave1;
         private HighlyAvailableGraphDatabase oldSlave2;
@@ -179,7 +179,7 @@ public class HAClusterStartupIT
     public static class ClusterWithSeed
     {
         @Rule
-        public final ClusterRule clusterRule = new ClusterRule( getClass() ).withCluster( clusterOfSize( 3 ) )
+        public final ClusterRule clusterRule = new ClusterRule().withCluster( clusterOfSize( 3 ) )
                 .withSeedDir( dbWithOutLogs() );
 
         public ClusterWithSeed() throws IOException

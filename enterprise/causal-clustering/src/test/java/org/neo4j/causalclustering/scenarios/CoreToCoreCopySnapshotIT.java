@@ -58,7 +58,7 @@ public class CoreToCoreCopySnapshotIT
     protected static final int NR_CORE_MEMBERS = 3;
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( NR_CORE_MEMBERS )
             .withNumberOfReadReplicas( 0 );
 

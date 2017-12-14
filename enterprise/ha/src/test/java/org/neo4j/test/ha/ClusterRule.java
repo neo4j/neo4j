@@ -78,9 +78,9 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     private final TestDirectory testDirectory;
     private ManagedCluster cluster;
 
-    public ClusterRule( Class<?> testClass )
+    public ClusterRule()
     {
-        this.testDirectory = TestDirectory.testDirectory( testClass );
+        this.testDirectory = TestDirectory.testDirectory();
         this.clusterManagerBuilder = new ClusterManager.Builder()
                 .withSharedSetting( store_internal_log_level, "DEBUG" )
                 .withSharedSetting( default_timeout, "1s" )
