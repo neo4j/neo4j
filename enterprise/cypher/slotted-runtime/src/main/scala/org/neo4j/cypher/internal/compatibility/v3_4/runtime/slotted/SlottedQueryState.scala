@@ -65,4 +65,10 @@ case class SlottedExecutionContextFactory(slots: SlotConfiguration) extends Exec
 
   override def newExecutionContext(): ExecutionContext =
     SlottedExecutionContext(slots)
+
+  override def newExecutionContext(init: ExecutionContext): ExecutionContext = {
+    val newCtx = SlottedExecutionContext(slots)
+    init.copyTo(newCtx)
+    newCtx
+  }
 }
