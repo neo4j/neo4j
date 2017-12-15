@@ -66,9 +66,16 @@ case class SlottedExecutionContextFactory(slots: SlotConfiguration) extends Exec
   override def newExecutionContext(): ExecutionContext =
     SlottedExecutionContext(slots)
 
-  override def newExecutionContext(init: ExecutionContext): ExecutionContext = {
+  override def copyWith(row: ExecutionContext): ExecutionContext = {
     val newCtx = SlottedExecutionContext(slots)
-    init.copyTo(newCtx)
+    row.copyTo(newCtx)
+    newCtx
+  }
+
+  override def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext = {
+    val newCtx = SlottedExecutionContext(slots)
+    row.copyTo(newCtx)
+    newCtx.set(key, value)
     newCtx
   }
 }

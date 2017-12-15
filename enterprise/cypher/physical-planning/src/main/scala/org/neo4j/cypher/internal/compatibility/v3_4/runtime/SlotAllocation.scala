@@ -483,6 +483,9 @@ object SlotAllocation {
         allocateShortestPathPattern(shortestPathPattern, source, nullable)
         source
 
+      case e: ErrorPlan =>
+        source
+
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
@@ -629,14 +632,13 @@ object SlotAllocation {
         // The slot for the iteration variable of foreach needs to be available as an argument on the rhs of the apply
         // so we allocate it on the lhs (even though its value will not be needed after the foreach is done)
         val typeSpec = semanticTable.getActualTypeFor(listExpression)
-        if (typeSpec.contains(ListType(CTNode))) {
-          lhs.newLong(variableName, true, CTNode)
-        }
-        else if (typeSpec.contains(ListType(CTRelationship))) {
-          lhs.newLong(variableName, true, CTRelationship)
-        }
-        else {
-          lhs.newReference(variableName, true, CTAny)
+        val listOfNodes = typeSpec.contains(ListType(CTNode))
+        val listOfRels = typeSpec.contains(ListType(CTRelationship))
+
+        (listOfNodes, listOfRels) match {
+          case (true, false) => lhs.newLong(variableName, true, CTNode)
+          case (false, true) => lhs.newLong(variableName, true, CTRelationship)
+          case _ => lhs.newReference(variableName, true, CTAny)
         }
         lhs
 

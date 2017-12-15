@@ -50,7 +50,7 @@ class QueryState(val query: QueryContext,
 
   def newExecutionContext(factory: ExecutionContextFactory): ExecutionContext = {
     initialContext match {
-      case Some(init) => factory.newExecutionContext(init)
+      case Some(init) => factory.copyWith(init)
       case None => factory.newExecutionContext()
     }
   }
@@ -100,7 +100,8 @@ class TimeReader {
 trait ExecutionContextFactory {
   def newExecutionContext(m: mutable.Map[String, AnyValue] = MutableMaps.empty): ExecutionContext
   def newExecutionContext(): ExecutionContext
-  def newExecutionContext(init: ExecutionContext): ExecutionContext
+  def copyWith(init: ExecutionContext): ExecutionContext
+  def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext
 }
 
 case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
@@ -110,5 +111,8 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
   override def newExecutionContext(): ExecutionContext = ExecutionContext.empty
 
   // As community execution ctxs are immutable, we can simply return init here.
-  override def newExecutionContext(init: ExecutionContext): ExecutionContext = init
+  override def copyWith(init: ExecutionContext): ExecutionContext = init
+
+  override def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext =
+    row.copyWith(key, value)
 }

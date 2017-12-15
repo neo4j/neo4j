@@ -572,10 +572,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-      .length
-    val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-      .length
+    val first = executeWith(Configs.Interpreted - Configs.Cost2_3, query).length
+    val second = executeWith(Configs.Interpreted - Configs.Cost2_3, query).length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -609,10 +607,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     //WHEN
 
-    val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-      .length
-    val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-      .length
+    val first = executeWith(Configs.Interpreted - Configs.Cost2_3, query).length
+    val second = executeWith(Configs.Interpreted - Configs.Cost2_3, query).length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -637,7 +633,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     1.to(1000).foreach(_ => createNode())
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted, s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
+    val result = executeWith(Configs.Interpreted, s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
 
     // then
     result.toList should equal(List(Map("count(*)" -> 3)))
