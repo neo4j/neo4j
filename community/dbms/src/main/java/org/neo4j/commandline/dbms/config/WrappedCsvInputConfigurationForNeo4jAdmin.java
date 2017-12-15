@@ -40,12 +40,6 @@ public class WrappedCsvInputConfigurationForNeo4jAdmin extends Configuration.Ove
     }
 
     @Override
-    public boolean trimStrings()
-    {
-        return true;
-    }
-
-    @Override
     public boolean emptyQuotedStringsAsNull()
     {
         return false;

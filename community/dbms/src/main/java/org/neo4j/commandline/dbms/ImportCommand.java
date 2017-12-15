@@ -101,7 +101,9 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
                     "If relationships referring to missing nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-empty-arrays", Configuration.COMMAS.emptyArraysAsNull(),
-                    "If empty array properties should be ignored, or if 'false', stores as empty arrays." ) );
+                    "If empty array properties should be ignored, or if 'false', stores as empty arrays." ) )
+            .withArgument( new OptionalBooleanArg( "trim-strings", org.neo4j.csv.reader.Configuration.DEFAULT.trimStrings(),
+                    "If string values will be trimmed for whitespace." ) );
     private static final Arguments allArguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
@@ -145,7 +147,9 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
                     "If relationships referring to missing nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-empty-arrays", Configuration.COMMAS.emptyArraysAsNull(),
-                    "If empty array properties should be ignored, or if 'false', stores as empty arrays." ) );
+                    "If empty array properties should be ignored, or if 'false', stores as empty arrays." ) )
+            .withArgument( new OptionalBooleanArg( "trim-strings", org.neo4j.csv.reader.Configuration.DEFAULT.trimStrings(),
+                    "If string values will be trimmed for whitespace." ) );
 
     public static Arguments databaseArguments()
     {
