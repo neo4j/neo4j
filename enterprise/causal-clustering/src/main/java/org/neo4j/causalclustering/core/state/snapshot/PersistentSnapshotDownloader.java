@@ -19,13 +19,10 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
-import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.logging.Log;
 
@@ -115,9 +112,14 @@ class PersistentSnapshotDownloader implements Runnable
         }
     }
 
-    void stop()
+    void stop() throws InterruptedException
     {
         this.keepRunning = false;
+
+        while ( !hasCompleted() )
+        {
+            Thread.sleep( 100 );
+        }
     }
 
     boolean hasCompleted()
