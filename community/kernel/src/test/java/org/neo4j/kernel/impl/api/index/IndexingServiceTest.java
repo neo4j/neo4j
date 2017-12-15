@@ -90,6 +90,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.mockito.answer.AwaitAnswer;
 import org.neo4j.values.storable.Values;
@@ -226,15 +227,27 @@ public class IndexingServiceTest
         AwaitAnswer<Void> awaitAnswer = afterAwaiting( latch );
         doAnswer( awaitAnswer ).when( populator ).add( any( Collection.class ) );
 
+        Barrier.Control populationStartBarrier = new Barrier.Control();
+        IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
+        {
+            @Override
+            public void indexPopulationScanStarting()
+            {
+                populationStartBarrier.reached();
+            }
+        };
         IndexingService indexingService =
-                newIndexingServiceWithMockedDependencies( populator, accessor, withData( addNodeUpdate( 1, "value1" ) ) );
+                newIndexingServiceWithMockedDependencies( populator, accessor, withData( addNodeUpdate( 1, "value1" ) ), monitor );
 
         life.start();
 
         // when
+
         indexingService.createIndexes( IndexRule.indexRule( 0, index, PROVIDER_DESCRIPTOR ) );
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
+        populationStartBarrier.await();
+        populationStartBarrier.release();
 
         IndexEntryUpdate<?> value2 = add( 2, "value2" );
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )

@@ -112,6 +112,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         void populationCompleteOn( IndexDescriptor descriptor );
 
+        void indexPopulationScanStarting();
+
         void indexPopulationScanComplete();
 
         void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor );
@@ -121,6 +123,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         @Override
         public void populationCompleteOn( IndexDescriptor descriptor )
+        {   // Do nothing
+        }
+
+        @Override
+        public void indexPopulationScanStarting()
         {   // Do nothing
         }
 
