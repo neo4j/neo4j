@@ -189,6 +189,11 @@ class InMemoryIndex
         }
 
         @Override
+        public void refresh()
+        {
+        }
+
+        @Override
         public void drop()
         {
             indexData.drop();

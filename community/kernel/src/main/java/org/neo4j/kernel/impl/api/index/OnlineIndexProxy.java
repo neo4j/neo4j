@@ -79,6 +79,7 @@ public class OnlineIndexProxy implements IndexProxy
             IndexAccessor accessor, IndexStoreView storeView, SchemaIndexProvider.Descriptor providerDescriptor,
             boolean forcedIdempotentMode )
     {
+        assert accessor != null;
         this.indexId = indexId;
         this.descriptor = descriptor;
         this.storeView = storeView;
@@ -97,7 +98,10 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        IndexUpdater actual = accessor.newUpdater( forcedIdempotentMode ? IndexUpdateMode.RECOVERY : mode );
+        // If this proxy is flagged with taking extra care about idempotency then escalate ONLINE to ONLINE_IDEMPOTENT.
+        // At the time of writing this there's no other mode that needs to be escalated.
+        IndexUpdater actual = accessor.newUpdater(
+                mode == IndexUpdateMode.ONLINE && forcedIdempotentMode ? IndexUpdateMode.ONLINE_IDEMPOTENT : mode );
         return started ? updateCountingUpdater( actual ) : actual;
     }
 
@@ -142,6 +146,12 @@ public class OnlineIndexProxy implements IndexProxy
     public void force() throws IOException
     {
         accessor.force();
+    }
+
+    @Override
+    public void refresh() throws IOException
+    {
+        accessor.refresh();
     }
 
     @Override
