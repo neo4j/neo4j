@@ -48,6 +48,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.Overridden;
 
 import static java.lang.Runtime.getRuntime;
 import static java.util.Arrays.asList;
@@ -745,6 +746,36 @@ public class CsvInputTest
         try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
         {
             assertNode( nodes.next(), 1L, NO_PROPERTIES, labels() );
+            assertNode( nodes.next(), 2L, properties( "sprop", new String[] {"a", "b"}, "lprop", new long[] {10, 20} ),
+                    labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldIncludeEmptyArraysInEntitiesIfConfiguredTo() throws Exception
+    {
+        // GIVEN
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+                ":ID,sprop:String[],lprop:long[]\n" +
+                "1,,\n" +
+                "2,a;b,10;20"
+                ) );
+        Overridden config = new Configuration.Overridden( COMMAS )
+        {
+            @Override
+            public boolean emptyArraysAsNull()
+            {
+                return false;
+            }
+        };
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER,
+                config( config ), silentBadCollector( 0 ), getRuntime().availableProcessors(), true );
+
+        // WHEN/THEN
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            assertNode( nodes.next(), 1L, properties( "sprop", new String[0], "lprop", new long[0] ), labels() );
             assertNode( nodes.next(), 2L, properties( "sprop", new String[] {"a", "b"}, "lprop", new long[] {10, 20} ),
                     labels() );
             assertFalse( nodes.hasNext() );

@@ -83,7 +83,7 @@ public class ParallelInputEntityDeserializerTest
             }
             while ( !allThreadsStarted );
             return new InputEntityDeserializer<>( header, chunk, config.delimiter(),
-                    new InputNodeDeserialization( header, chunk, groups, idType.idsAreExternal() ), decorator,
+                    new InputNodeDeserialization( header, chunk, groups, idType.idsAreExternal(), config ), decorator,
                     validator, badCollector );
         };
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,

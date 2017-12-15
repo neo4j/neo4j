@@ -44,9 +44,10 @@ public class InputNodeDeserialization extends InputEntityDeserialization<InputNo
     private String[] labels = new String[10];
     private int labelsCursor;
 
-    public InputNodeDeserialization( Header header, SourceTraceability source, Groups groups, boolean idsAreExternal )
+    public InputNodeDeserialization( Header header, SourceTraceability source, Groups groups, boolean idsAreExternal,
+            Configuration config )
     {
-        super( source );
+        super( source, config );
         this.header = header;
         this.groups = groups;
         this.idsAreExternal = idsAreExternal;

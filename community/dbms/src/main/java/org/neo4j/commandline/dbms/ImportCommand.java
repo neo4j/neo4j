@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.server.configuration.ConfigLoader;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 
 public class ImportCommand implements AdminCommand
 {
@@ -98,7 +99,9 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
                     "If duplicate nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
-                    "If relationships referring to missing nodes should be ignored during the import." ) );
+                    "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-empty-arrays", Configuration.COMMAS.emptyArraysAsNull(),
+                    "If empty array properties should be ignored, or if 'false', stores as empty arrays." ) );
     private static final Arguments allArguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
@@ -140,7 +143,9 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
                     "If duplicate nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
-                    "If relationships referring to missing nodes should be ignored during the import." ) );
+                    "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-empty-arrays", Configuration.COMMAS.emptyArraysAsNull(),
+                    "If empty array properties should be ignored, or if 'false', stores as empty arrays." ) );
 
     public static Arguments databaseArguments()
     {

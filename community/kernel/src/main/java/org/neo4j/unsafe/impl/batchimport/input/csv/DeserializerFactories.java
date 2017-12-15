@@ -36,7 +36,7 @@ public class DeserializerFactories
         return (header,stream,decorator,validator) ->
         {
             InputNodeDeserialization deserialization =
-                    new InputNodeDeserialization( header, stream, groups, idType.idsAreExternal() );
+                    new InputNodeDeserialization( header, stream, groups, idType.idsAreExternal(), config );
             return new InputEntityDeserializer<>( header, stream, config.delimiter(),
                     deserialization, decorator, validator, badCollector );
         };
@@ -48,7 +48,7 @@ public class DeserializerFactories
         return (header,stream,decorator,validator) ->
         {
                 InputRelationshipDeserialization deserialization =
-                        new InputRelationshipDeserialization( header, stream, groups );
+                        new InputRelationshipDeserialization( header, stream, groups, config );
                 return new InputEntityDeserializer<>( header, stream, config.delimiter(),
                         deserialization, decorator, validator, badCollector );
         };

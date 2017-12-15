@@ -208,6 +208,7 @@ public class ImportCommandTest
                             "                          [--ignore-extra-columns[=<true|false>]]%n" +
                             "                          [--ignore-duplicate-nodes[=<true|false>]]%n" +
                             "                          [--ignore-missing-nodes[=<true|false>]]%n" +
+                            "                          [--ignore-empty-arrays[=<true|false>]]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
@@ -258,7 +259,10 @@ public class ImportCommandTest
                             "      If duplicate nodes should be ignored during the import. [default:false]%n" +
                             "  --ignore-missing-nodes=<true|false>%n" +
                             "      If relationships referring to missing nodes should be ignored during the%n" +
-                            "      import. [default:false]%n" ),
+                            "      import. [default:false]%n" +
+                            "  --ignore-empty-arrays=<true|false>%n" +
+                            "      If empty array properties should be ignored, or if 'false', stores as%n" +
+                            "      empty arrays. [default:true]%n" ),
                     baos.toString() );
         }
     }

@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.InputNodeDeserialization;
@@ -42,15 +43,17 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
     private final Groups groups = new Groups();
     private final IdType idType;
     private final String className = getClass().getSimpleName();
+    private final Configuration config;
 
     public SimpleDataGenerator( Header nodeHeader, Header relationshipHeader, long randomSeed,
-            long nodeCount, int labelCount, int relationshipTypeCount, IdType idType )
+            long nodeCount, int labelCount, int relationshipTypeCount, IdType idType, Configuration config )
     {
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
         this.randomSeed = randomSeed;
         this.nodeCount = nodeCount;
         this.idType = idType;
+        this.config = config;
         this.labels = new Distribution<>( tokens( "Label", labelCount ) );
         this.relationshipTypes = new Distribution<>( tokens( "TYPE", relationshipTypeCount ) );
     }
@@ -59,7 +62,7 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
     {
         return batch -> new SimpleDataGeneratorBatch<>( nodeHeader, batch.getStart(), randomSeed + batch.getStart(),
                 nodeCount, labels, relationshipTypes,
-                new InputNodeDeserialization( nodeHeader, SimpleDataGenerator.this, groups, idType.idsAreExternal() ),
+                new InputNodeDeserialization( nodeHeader, SimpleDataGenerator.this, groups, idType.idsAreExternal(), config ),
                 new InputNode[batch.getSize()] ).get();
     }
 
@@ -67,7 +70,7 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
     {
         return batch -> new SimpleDataGeneratorBatch<>( relationshipHeader, batch.getStart(),
                 randomSeed + batch.getStart(), nodeCount, labels, relationshipTypes,
-                new InputRelationshipDeserialization( relationshipHeader, SimpleDataGenerator.this, groups ),
+                new InputRelationshipDeserialization( relationshipHeader, SimpleDataGenerator.this, groups, config ),
                 new InputRelationship[batch.getSize()] ).get();
     }
 
