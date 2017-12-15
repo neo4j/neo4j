@@ -212,7 +212,7 @@ public class CatchupServer extends LifecycleAdapter
         log.info( "CatchupServer stopping and unbinding from " + listenAddress );
         try
         {
-            new ServerShutdown( log, workerGroup, channel ).shutdown();
+            ServerShutdown.shutdown( workerGroup );
         }
         finally
         {

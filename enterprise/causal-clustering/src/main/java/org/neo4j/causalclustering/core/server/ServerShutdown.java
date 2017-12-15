@@ -19,92 +19,22 @@
  */
 package org.neo4j.causalclustering.core.server;
 
-import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.logging.Log;
-
 public class ServerShutdown
 {
-    private static final int TIMEOUT = 30;
+    private static final int SHUTDOWN_TIMEOUT = 170;
+    private static final int TIMEOUT = 180;
+    private static final int QUIET_PERIOD = 2;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-    private final Log log;
-    private final EventLoopGroup eventLoopGroup;
-    private final Channel channel;
 
-    public ServerShutdown( Log log, EventLoopGroup eventLoopGroup, Channel channel )
+    public static void shutdown( EventLoopGroup eventLoopGroup ) throws Exception
     {
-        this.log = log;
-        this.eventLoopGroup = eventLoopGroup;
-        this.channel = channel;
-    }
-
-    public void shutdown() throws Throwable
-    {
-        try ( ErrorHandler errorHandler = new ErrorHandler() )
+        if ( eventLoopGroup != null )
         {
-            if ( channel != null )
-            {
-                errorHandler.execute( () -> channel.close().syncUninterruptibly() );
-            }
-            if ( eventLoopGroup != null )
-            {
-                errorHandler.execute( () ->
-                {
-                    Future<?> future = eventLoopGroup.shutdownGracefully( 2, TIMEOUT - 10, TIME_UNIT );
-                    if ( !future.awaitUninterruptibly( TIMEOUT, TIME_UNIT ) )
-                    {
-                        log.warn( String.format( "Worker group not shutdown within %s %s.", TIMEOUT, TIME_UNIT ) );
-                    }
-                    Throwable cause = future.cause();
-                    if ( cause != null )
-                    {
-                        log.error( "Exception when shutting down event loop group", cause );
-                        throw cause;
-                    }
-                } );
-            }
-        }
-    }
-
-    private interface ErrorRunner
-    {
-        void run() throws Throwable;
-    }
-
-    private class ErrorHandler implements AutoCloseable
-    {
-        private Throwable throwable = null;
-
-        void execute( ErrorRunner errorRunner )
-        {
-            try
-            {
-                errorRunner.run();
-            }
-            catch ( Throwable t )
-            {
-                if ( throwable == null )
-                {
-                    throwable = t;
-                }
-                else
-                {
-                    throwable.addSuppressed( t );
-                }
-            }
-        }
-
-        @Override
-        public void close() throws Exception
-        {
-            if ( throwable != null )
-            {
-                throw new RuntimeException( throwable );
-            }
+            eventLoopGroup.shutdownGracefully( QUIET_PERIOD, SHUTDOWN_TIMEOUT, TIME_UNIT ).get( TIMEOUT, TIME_UNIT );
         }
     }
 }

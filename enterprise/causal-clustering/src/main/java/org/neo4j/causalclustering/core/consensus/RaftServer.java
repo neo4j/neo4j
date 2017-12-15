@@ -34,7 +34,6 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
 import java.net.BindException;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
@@ -45,10 +44,10 @@ import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
 import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.RaftMessageDecoder;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -70,7 +69,6 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
     private MessageHandler<RaftMessages.ClusterIdAwareMessage> messageHandler;
     private EventLoopGroup workerGroup;
-    private Channel channel;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
@@ -95,7 +93,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     public synchronized void stop() throws Throwable
     {
         log.info( "RaftServer stopping and unbinding from " + listenAddress );
-        new ServerShutdown( log, workerGroup, channel ).shutdown();
+        ServerShutdown.shutdown( workerGroup );
     }
 
     private void startNettyServer()
@@ -133,7 +131,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
         try
         {
-            channel = bootstrap.bind().syncUninterruptibly().channel();
+            bootstrap.bind().syncUninterruptibly().channel();
         }
         catch ( Exception e )
         {
