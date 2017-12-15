@@ -31,6 +31,10 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 
+/**
+ * {@link Chunker} which parses a chunk of entities when calling {@link #nextChunk(Chunk)},
+ * injecting them into {@link EagerlyReadInputChunk}, which simply hands them out one by one.
+ */
 public class EagerParserChunker implements Chunker
 {
     private final CharSeeker seeker;

@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 
 /**
- * TODO a bit overkill to wrap a byte[] -> {@link ByteBuffer} -> {@link ReadableClosableChannel}?
+ * Wraps a byte[] -> {@link ByteBuffer} -> {@link ReadableClosableChannel}?
  */
 public class ByteBufferReadableChannel implements ReadableClosableChannel
 {

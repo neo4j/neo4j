@@ -27,6 +27,11 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
+/**
+ * Convenience for reading and assembling records w/ potential filtering into an array.
+ *
+ * @param <RECORD> type of {@link AbstractBaseRecord}.
+ */
 public class RecordDataAssembler<RECORD extends AbstractBaseRecord>
 {
     private final Supplier<RECORD> factory;

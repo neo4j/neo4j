@@ -23,15 +23,13 @@ import java.io.IOException;
 import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.csv.reader.Extractors.LongExtractor;
-import org.neo4j.csv.reader.Mark;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 /**
- * Knows how to interpret raw character data into entities according to a {@link Header}.
+ * {@link InputChunk} parsing next entry on each call to {@link #next(InputEntityVisitor)}.
  */
 public class CsvInputChunk implements InputChunk
 {

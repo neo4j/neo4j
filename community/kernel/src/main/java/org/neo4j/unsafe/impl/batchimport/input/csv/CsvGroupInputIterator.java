@@ -32,7 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
 /**
- * Iterates over one group of input data, e.g. one or more input files. A whole group conforms to the same header.
+ * Iterates over groups of input data, each group containing one or more input files. A whole group conforms has each its own header.
  */
 public class CsvGroupInputIterator extends InputIterator.Adapter
 {

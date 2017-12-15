@@ -28,7 +28,6 @@ import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.csv.reader.Extractors.LongExtractor;
-import org.neo4j.csv.reader.Extractors.StringExtractor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
@@ -38,6 +37,9 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.lang.String.format;
 
+/**
+ * CSV data to input entity parsing logic. Parsed CSV data is fed into {@link InputEntityVisitor}.
+ */
 public class CsvInputParser implements Closeable
 {
     private final CharSeeker seeker;

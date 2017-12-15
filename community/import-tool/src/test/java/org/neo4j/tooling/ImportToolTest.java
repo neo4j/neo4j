@@ -1044,7 +1044,6 @@ public class ImportToolTest
         catch ( Exception e )
         {
             // THEN
-            e.printStackTrace();
             assertExceptionContains( e, relationshipData1.getAbsolutePath(), InputException.class );
         }
     }

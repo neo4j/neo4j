@@ -39,6 +39,10 @@ import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
 import static java.util.Arrays.copyOf;
 
+/**
+ * Iterates over one stream of data, where all data items conform to the same {@link Header}.
+ * Typically created from {@link CsvGroupInputIterator}.
+ */
 class CsvInputIterator implements SourceTraceability, Closeable
 {
     private final CharReadable stream;
