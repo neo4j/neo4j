@@ -396,7 +396,6 @@ public class RecoveryCorruptedTransactionLogIT
         while ( logFiles.getHighestLogVersion() > 0 )
         {
             int bytesToTrim = 1 + random.nextInt( 100 );
-            System.out.println("Trim: " + bytesToTrim);
             truncateBytesFromLastLogFile( bytesToTrim );
             databaseFactory.newEmbeddedDatabase( storeDir ).shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
