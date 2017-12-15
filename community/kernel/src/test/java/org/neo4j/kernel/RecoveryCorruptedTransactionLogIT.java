@@ -395,7 +395,30 @@ public class RecoveryCorruptedTransactionLogIT
 
         while ( logFiles.getHighestLogVersion() > 0 )
         {
-            truncateBytesFromLastLogFile( 1 + random.nextInt( 100 ) );
+            int bytesToTrim = 1 + random.nextInt( 100 );
+            truncateBytesFromLastLogFile( bytesToTrim );
+            databaseFactory.newEmbeddedDatabase( storeDir ).shutdown();
+            int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
+            assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
+        }
+
+        File corruptedLogArchives = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
+        assertThat( corruptedLogArchives.listFiles(), not( emptyArray() ) );
+    }
+
+    @Test
+    public void repetitiveRecoveryIfCorruptedLogsSmallTailsWithCheckpoints() throws IOException
+    {
+        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        generateTransactionsAndRotate( database, 4, true );
+        database.shutdown();
+
+        byte[] trimSizes = new byte[]{4, 22};
+        int trimSize = 0;
+        while ( logFiles.getHighestLogVersion() > 0 )
+        {
+            byte bytesToTrim = trimSizes[trimSize++ % trimSizes.length];
+            truncateBytesFromLastLogFile( bytesToTrim );
             databaseFactory.newEmbeddedDatabase( storeDir ).shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
             assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
