@@ -40,6 +40,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -49,6 +50,8 @@ import static org.junit.Assert.assertThat;
 
 public class DiagnosticsReportCommandIT
 {
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 

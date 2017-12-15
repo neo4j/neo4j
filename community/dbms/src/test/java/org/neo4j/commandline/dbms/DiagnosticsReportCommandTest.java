@@ -43,6 +43,7 @@ import org.neo4j.diagnostics.DiagnosticsOfflineReportProvider;
 import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -51,9 +52,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
+import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.describeClassifier;
 
 public class DiagnosticsReportCommandTest
 {
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
@@ -146,7 +151,20 @@ public class DiagnosticsReportCommandTest
         }
     }
 
-    // TODO: test default classifiers
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
+    @Test
+    public void defaultValuesShouldBeValidClassifiers()
+    {
+        for ( String classifier : DEFAULT_CLASSIFIERS )
+        {
+            describeClassifier( classifier );
+        }
+
+        // Make sure the above actually catches bad classifiers
+        expected.expect( IllegalArgumentException.class );
+        expected.expectMessage( "Unknown classifier: invalid" );
+        describeClassifier( "invalid" );
+    }
 
     @Test
     public void listShouldDisplayAllClassifiers() throws Exception
