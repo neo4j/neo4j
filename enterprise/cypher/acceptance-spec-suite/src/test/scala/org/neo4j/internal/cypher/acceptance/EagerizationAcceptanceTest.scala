@@ -220,7 +220,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel.foo"
 
     // Correct! Eagerization happens as part of query context operation
-    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Cost2_3, query,
       executeBefore = () => counter.reset(),
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
@@ -579,7 +579,7 @@ class EagerizationAcceptanceTest
         |RETURN count(*)
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     assertStats(result, nodesCreated = 0, nodesDeleted = 2)
     result.columnAs[Long]("count(*)").next shouldBe 8
@@ -1683,7 +1683,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1, labelsAdded = 1)
@@ -1694,7 +1694,7 @@ class EagerizationAcceptanceTest
     createLabeledNode("Person")
     val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result)
@@ -1705,7 +1705,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
@@ -1715,7 +1715,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result)
@@ -1724,7 +1724,7 @@ class EagerizationAcceptanceTest
   ignore("does not need to be eager when no merge has labels, merges create") {
     val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1)

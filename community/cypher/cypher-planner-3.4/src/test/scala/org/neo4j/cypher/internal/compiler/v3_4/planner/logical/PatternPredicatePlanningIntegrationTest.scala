@@ -46,10 +46,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           case ListComprehension(ExtractScope(_, Some(NestedPlanExpression(nestedPlan, _)), _), _) =>
             nestedPlan should equal(
               Selection(
-                Seq(HasLabels(varFor("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
+                Seq(HasLabels(varFor("  NODE116"), Seq(LabelName("ComedyClub")_))_),
                 Expand(
                   Argument(Set("f"))(solved),
-                  "f", SemanticDirection.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", ExpandAll
+                  "f", SemanticDirection.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  NODE116", "  REL102", ExpandAll
                 )(solved)
               )(solved)
             )
