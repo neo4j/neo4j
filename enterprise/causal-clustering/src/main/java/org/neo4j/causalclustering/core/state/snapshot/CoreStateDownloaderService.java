@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import java.util.concurrent.CancellationException;
-
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
@@ -39,7 +37,6 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     private final Log log;
     private final TimeoutStrategy.Timeout downloaderPauseStrategy;
     private PersistentSnapshotDownloader currentJob;
-    private JobScheduler.JobHandle jobHandle;
     private boolean stopped;
 
     public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader,
@@ -65,7 +62,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         {
             currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log,
                     downloaderPauseStrategy );
-            jobHandle = jobScheduler.schedule( downloadSnapshot, currentJob );
+            jobScheduler.schedule( downloadSnapshot, currentJob );
         }
     }
 
@@ -77,17 +74,6 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         if ( currentJob != null )
         {
             currentJob.stop();
-        }
-        if ( jobHandle != null )
-        {
-            jobHandle.cancel( false );
-            try
-            {
-                jobHandle.waitTermination();
-            }
-            catch ( CancellationException ignored )
-            {
-            }
         }
     }
 }

@@ -115,9 +115,14 @@ class PersistentSnapshotDownloader implements Runnable
         }
     }
 
-    void stop()
+    void stop() throws InterruptedException
     {
         this.keepRunning = false;
+
+        while ( !hasCompleted() )
+        {
+            Thread.sleep( 100 );
+        }
     }
 
     boolean hasCompleted()
