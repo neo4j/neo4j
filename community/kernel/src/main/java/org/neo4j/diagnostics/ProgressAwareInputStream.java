@@ -34,7 +34,7 @@ public class ProgressAwareInputStream extends InputStream
     private long totalRead;
     private int lastReportedPercent;
 
-    ProgressAwareInputStream( InputStream wrappedInputStream, long size, OnProgressListener listener )
+    public ProgressAwareInputStream( InputStream wrappedInputStream, long size, OnProgressListener listener )
     {
         this.wrappedInputStream = wrappedInputStream;
         this.size = size;

@@ -22,6 +22,7 @@ package org.neo4j.dbms.report.jmx;
 import com.sun.management.HotSpotDiagnosticMXBean;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
@@ -43,6 +44,7 @@ import javax.management.remote.JMXServiceURL;
 import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.diagnostics.DiagnosticsReportSources;
 import org.neo4j.diagnostics.DiagnosticsReporterProgressCallback;
+import org.neo4j.diagnostics.ProgressAwareInputStream;
 
 /**
  * Encapsulates remoting functionality for collecting diagnostics information on running instances.
@@ -57,7 +59,7 @@ public class JmxDump
         this.mBeanServer = mBeanServer;
     }
 
-    public static JmxDump connectTo( String jmxAddress ) throws IOException, SecurityException
+    public static JmxDump connectTo( String jmxAddress ) throws IOException
     {
         JMXServiceURL url = new JMXServiceURL( jmxAddress );
         JMXConnector connect = JMXConnectorFactory.connect( url );
@@ -167,10 +169,42 @@ public class JmxDump
         return sb.toString();
     }
 
+    public DiagnosticsReportSource heapDump()
+    {
+        return new DiagnosticsReportSource()
+        {
+            @Override
+            public String destinationPath()
+            {
+                return "heapdump.hprof";
+            }
+
+            @Override
+            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor )
+                    throws IOException
+            {
+                // Heap dump has to target an actual file, we cannot stream directly to the archive
+                monitor.info( "dumping..." );
+                Path tempFile = Files.createTempFile("neo4j-heapdump", ".hprof");
+                Files.deleteIfExists( tempFile );
+                heapDump( tempFile.toAbsolutePath().toString() );
+
+                // Track progress of archiving process
+                monitor.info( "archiving..." );
+                long size = Files.size( tempFile );
+                InputStream in = Files.newInputStream( tempFile );
+                ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, monitor::percentChanged );
+                Files.copy( inStream, archiveDestination );
+
+                Files.delete( tempFile );
+            }
+        };
+    }
+
     /**
      * @param destination file path to send heap dump to, has to end with ".hprof"
      */
-    public void heapDump( String destination ) throws IOException
+    private void heapDump( String destination ) throws IOException
     {
         HotSpotDiagnosticMXBean hotSpotDiagnosticMXBean = ManagementFactory
                 .newPlatformMXBeanProxy( mBeanServer, "com.sun.management:type=HotSpotDiagnostic",

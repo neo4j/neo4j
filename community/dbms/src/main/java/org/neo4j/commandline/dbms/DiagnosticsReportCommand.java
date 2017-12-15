@@ -65,9 +65,9 @@ public class DiagnosticsReportCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     private final OutsideWorld outsideWorld;
-    private static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "configs"};
+    static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "configs"};
 
-    public DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
@@ -114,7 +114,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         if ( jmxDump != null )
         {
             reporter.registerSource( "threads", jmxDump.threadDump() );
-            //reporter.registerSource( "heap", null );
+            reporter.registerSource( "heap", jmxDump.heapDump() );
             reporter.registerSource( "sysprop", jmxDump.systemProperties() );
             //reporter.registerSource( "env", null );
         }
@@ -206,10 +206,6 @@ public class DiagnosticsReportCommand implements AdminCommand
                         catch ( IOException e )
                         {
                             out.println( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage() );
-                        }
-                        catch ( SecurityException e )
-                        {
-                            out.println( "Not allowed to connect for security reasons: " + e.getMessage() );
                         }
                     }
                     catch ( IOException e )

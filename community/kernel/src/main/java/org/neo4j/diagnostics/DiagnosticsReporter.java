@@ -27,6 +27,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,6 @@ public class DiagnosticsReporter
 
     public DiagnosticsReporter( PrintStream out )
     {
-
         this.out = out;
     }
 
@@ -115,6 +115,8 @@ public class DiagnosticsReporter
         private final String prefix;
         private final String suffix;
         private final PrintStream out;
+        private String info = "";
+        private int longestInfo;
 
         private Mon( String prefix, String suffix, PrintStream out )
         {
@@ -141,7 +143,7 @@ public class DiagnosticsReporter
                     out.print( ' ' );
                 }
             }
-            out.print( "] " + percent + "%" + suffix );
+            out.print( String.format( "] %3s%% %s %s", percent, suffix, info ) );
         }
 
         @Override
@@ -153,8 +155,21 @@ public class DiagnosticsReporter
         @Override
         public void finished()
         {
+            // Pad string to erase info string
+            info = String.join( "", Collections.nCopies( longestInfo, " " ) );
+
             percentChanged( 100 );
             out.println();
+        }
+
+        @Override
+        public void info( String info )
+        {
+            this.info = info;
+            if ( info.length() > longestInfo )
+            {
+                longestInfo = info.length();
+            }
         }
     }
 }

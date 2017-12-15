@@ -19,9 +19,34 @@
  */
 package org.neo4j.diagnostics;
 
+/**
+ * Interface for handling feedback to the user. Implementations of this should be responsible of presenting the progress
+ * to the user. Some specialised implementations can choose to omit any of the information provided here.
+ */
 public interface DiagnosticsReporterProgressCallback
 {
+    /**
+     * Calling this will notify the user that the percentage has changed.
+     *
+     * @param percent to display to the user.
+     */
     void percentChanged( int percent );
+
+    /**
+     * Adds an additional information string to the output. Useful if the task has multiple steeps and the current step
+     * should be displayed.
+     *
+     * @param info string to present to the user.
+     */
+    void info( String info );
+
+    /**
+     * @apiNote Called by dispatching class. Should not be called from diagnostics sources.
+     */
     void started();
+
+    /**
+     * @apiNote Called by dispatching class. Should not be called from diagnostics sources.
+     */
     void finished();
 }

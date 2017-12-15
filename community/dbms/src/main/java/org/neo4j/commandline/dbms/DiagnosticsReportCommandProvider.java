@@ -27,6 +27,8 @@ import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
+import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
+
 public class DiagnosticsReportCommandProvider extends AdminCommand.Provider
 {
     public DiagnosticsReportCommandProvider()
@@ -62,7 +64,8 @@ public class DiagnosticsReportCommandProvider extends AdminCommand.Provider
         return "Will collect information about the system and package everything in an archive. If you specify 'all', " +
                 "everything will be included. You can also fine tune the selection by passing classifiers to the tool, " +
                 "e.g 'logs tx threads'. For a complete list of all available classifiers call the tool with " +
-                "the '--list' flag. If no classifiers are passed, the default list of `logs configs` will be used." ;// TODO: default classifiers
+                "the '--list' flag. If no classifiers are passed, the default list of `" +
+                String.join( " ", DEFAULT_CLASSIFIERS ) + "` will be used." ;
     }
 
     @Nonnull
