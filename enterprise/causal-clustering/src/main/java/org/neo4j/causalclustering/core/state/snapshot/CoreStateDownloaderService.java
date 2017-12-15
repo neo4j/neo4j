@@ -36,7 +36,8 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     private final CommandApplicationProcess applicationProcess;
     private final Log log;
     private final TimeoutStrategy.Timeout downloaderPauseStrategy;
-    private PersistentSnapshotDownloader currentJob = null;
+    private PersistentSnapshotDownloader currentJob;
+    private boolean stopped;
 
     public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader,
             CommandApplicationProcess applicationProcess,
@@ -52,6 +53,11 @@ public class CoreStateDownloaderService extends LifecycleAdapter
 
     public synchronized void scheduleDownload( LeaderLocator leaderLocator )
     {
+        if ( stopped )
+        {
+            return;
+        }
+
         if ( currentJob == null || currentJob.hasCompleted() )
         {
             currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log,
@@ -63,7 +69,9 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     @Override
     public synchronized void stop() throws Throwable
     {
-        if (currentJob != null)
+        stopped = true;
+
+        if ( currentJob != null )
         {
             currentJob.stop();
         }
