@@ -98,6 +98,7 @@ public class IndexPopulationJob implements Runnable
                 multiPopulator.create();
                 multiPopulator.replaceIndexCounts( 0, 0, 0 );
 
+                monitor.indexPopulationScanStarting();
                 indexAllNodes();
                 monitor.indexPopulationScanComplete();
                 if ( cancelled )
