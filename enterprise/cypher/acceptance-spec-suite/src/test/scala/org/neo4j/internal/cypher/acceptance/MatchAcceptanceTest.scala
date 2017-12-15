@@ -126,7 +126,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN a, b, COLLECT( DISTINCT c) as c
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
     result.size should be(0)
     result.hasNext should be(false)
 

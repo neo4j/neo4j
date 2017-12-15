@@ -39,37 +39,37 @@ class PatternExpressionPatternElementNamerTest extends CypherFunSuite with Logic
   test("should name nodes") {
     val original = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[r]->(b)")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
-    val expected = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (`  UNNAMED50`)-[r]->(b)")
+    val expected = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (`  NODE50`)-[r]->(b)")
 
     actual should equal(expected)
-    processMap(map) should equal(Map(49 -> "  UNNAMED50"))
+    processMap(map) should equal(Map(49 -> "  NODE50"))
   }
 
   test("should name relationships") {
     val original = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[]->(b)")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
-    val expected = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[`  UNNAMED53`]->(b)")
+    val expected = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[`  REL53`]->(b)")
 
     actual should equal(expected)
-    processMap(map) should equal(Map(52 -> "  UNNAMED53"))
+    processMap(map) should equal(Map(52 -> "  REL53"))
   }
 
   test("should rename multiple nodes") {
     val original = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN ()-[r]->()")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
-    val expected = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN (`  UNNAMED30`)-[r]->(`  UNNAMED38`)")
+    val expected = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN (`  NODE30`)-[r]->(`  NODE38`)")
 
     actual should equal(expected)
-    processMap(map) should equal(Map(29 -> "  UNNAMED30", 37 -> "  UNNAMED38"))
+    processMap(map) should equal(Map(29 -> "  NODE30", 37 -> "  NODE38"))
   }
 
   test("should rename multiple relationships") {
     val original = parsePatternExpression("WITH {a} AS a, {b} AS b, {c} AS c LIMIT 1 RETURN (a)-[]-(b)-[]-(c)")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
-    val expected = parsePatternExpression("WITH {a} AS a, {b} AS b, {c} AS c LIMIT 1 RETURN (a)-[`  UNNAMED53`]-(b)-[`  UNNAMED60`]-(c)")
+    val expected = parsePatternExpression("WITH {a} AS a, {b} AS b, {c} AS c LIMIT 1 RETURN (a)-[`  REL53`]-(b)-[`  REL60`]-(c)")
 
     actual should equal(expected)
-    processMap(map) should equal(Map(52 -> "  UNNAMED53", 59 -> "  UNNAMED60"))
+    processMap(map) should equal(Map(52 -> "  REL53", 59 -> "  REL60"))
   }
 
   private def processMap(map: Map[PatternElement, Variable]) = {
