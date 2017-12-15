@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
@@ -50,7 +50,6 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor;
-    private TransactionQueue transactionsToApply;
 
     public DefaultRecoverySPI(
             StorageEngine storageEngine,
@@ -91,9 +90,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
         // Go and read more at {@link CommonAbstractStore#deleteIdGenerator()}
         storageEngine.prepareForRecoveryRequired();
 
-        transactionsToApply = new TransactionQueue( 100, (first,last) -> storageEngine.apply( first, RECOVERY ) );
-        recoveryVisitor = new RecoveryVisitor( transactionsToApply );
-
+        recoveryVisitor = new RecoveryVisitor( storageEngine, RECOVERY );
         return recoveryVisitor;
     }
 
@@ -109,7 +106,6 @@ public class DefaultRecoverySPI implements Recovery.SPI
     {
         if ( lastRecoveredTransaction != null )
         {
-            transactionsToApply.empty();
             transactionIdStore.setLastCommittedAndClosedTransactionId(
                     lastRecoveredTransaction.getCommitEntry().getTxId(),
                     LogEntryStart.checksum( lastRecoveredTransaction.getStartEntry() ),
@@ -124,11 +120,13 @@ public class DefaultRecoverySPI implements Recovery.SPI
 
     static class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,Exception>
     {
-        private final TransactionQueue transactionsToApply;
+        private final StorageEngine storageEngine;
+        private final TransactionApplicationMode mode;
 
-        RecoveryVisitor( TransactionQueue transactionsToApply )
+        RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode )
         {
-            this.transactionsToApply = transactionsToApply;
+            this.storageEngine = storageEngine;
+            this.mode = mode;
         }
 
         @Override
@@ -139,7 +137,8 @@ public class DefaultRecoverySPI implements Recovery.SPI
             TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
             tx.commitment( NO_COMMITMENT, txId );
             tx.logPosition( transaction.getStartEntry().getStartPosition() );
-            transactionsToApply.queue( tx );
+            storageEngine.apply( tx, mode );
+
             return false;
         }
     }
