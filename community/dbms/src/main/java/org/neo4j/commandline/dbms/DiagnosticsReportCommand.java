@@ -59,19 +59,29 @@ public class DiagnosticsReportCommand implements AdminCommand
 {
     private static OptionalNamedArg destinationArgument =
             new OptionalCanonicalPath( "to", "/tmp/", "reports/", "Destination directory for reports" );
-    private static final Arguments arguments =
-            new Arguments().withArgument( new OptionalListArgument() ).withArgument( destinationArgument )
-                    .withPositionalArgument( new ClassifierFiltersArgument() );
+    private static final Arguments arguments = new Arguments()
+            .withArgument( new OptionalListArgument() )
+            .withArgument( destinationArgument )
+            .withArgument( new OptionalVerboseArgument() )
+            .withPositionalArgument( new ClassifierFiltersArgument() );
+
     private final Path homeDir;
     private final Path configDir;
     private final OutsideWorld outsideWorld;
-    static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "configs"};
+    static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config"};
+    private boolean verbose;
+    private PrintStream err;
+    private PrintStream out;
+    private FileSystemAbstraction fs;
 
     DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
+        this.fs = outsideWorld.fileSystem();
+        this.out = outsideWorld.outStream();
+        this.err = outsideWorld.errorStream();
     }
 
     public static Arguments allArguments()
@@ -82,9 +92,8 @@ public class DiagnosticsReportCommand implements AdminCommand
     @Override
     public void execute( String[] stringArgs ) throws IncorrectUsage, CommandFailed
     {
-        Args args = Args.withFlags( "list", "to" ).parse( stringArgs );
-        FileSystemAbstraction fs = outsideWorld.fileSystem();
-        PrintStream out = outsideWorld.outStream();
+        Args args = Args.withFlags( "list", "to", "verbose" ).parse( stringArgs );
+        verbose = args.has( "verbose" );
 
         // Make sure we can access the configuration file
         File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
@@ -110,7 +119,7 @@ public class DiagnosticsReportCommand implements AdminCommand
                 DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", fs, configFile ) );
 
         // Online connection
-        JmxDump jmxDump = connectToNeo4jInstance( fs, out );
+        JmxDump jmxDump = connectToNeo4jInstance();
         if ( jmxDump != null )
         {
             reporter.registerSource( "threads", jmxDump.threadDump() );
@@ -179,7 +188,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
     }
 
-    private JmxDump connectToNeo4jInstance( FileSystemAbstraction fs, PrintStream out )
+    private JmxDump connectToNeo4jInstance()
     {
         out.println( "Trying to find running instance of neo4j" );
         Path pidFile = homeDir.resolve( "run/neo4j.pid" );
@@ -205,22 +214,22 @@ public class DiagnosticsReportCommand implements AdminCommand
                         }
                         catch ( IOException e )
                         {
-                            out.println( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage() );
+                            printError( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage(), e );
                         }
                     }
                     catch ( IOException e )
                     {
-                        out.println( "Unable to connect to process. Reason: " + e.getMessage() );
+                        printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
                     }
                 }
                 catch ( NumberFormatException e )
                 {
-                    out.println( pidFile.toString() + " does not contain a valid id. Found: " + pidFileContent );
+                    printError( pidFile.toString() + " does not contain a valid id. Found: " + pidFileContent );
                 }
             }
             catch ( IOException e )
             {
-                out.println( "Error reading the .pid file. Reason: " + e.getMessage() );
+                printError( "Error reading the .pid file. Reason: " + e.getMessage(), e );
             }
         }
         else
@@ -231,7 +240,21 @@ public class DiagnosticsReportCommand implements AdminCommand
         return null;
     }
 
-    private static String describeClassifier( String classifier )
+    private void printError( String message )
+    {
+        printError( message, null );
+    }
+
+    private void printError( String message, Throwable e )
+    {
+        err.println( message );
+        if ( verbose && e != null )
+        {
+            e.printStackTrace( err );
+        }
+    }
+
+    static String describeClassifier( String classifier )
     {
         switch ( classifier )
         {
@@ -261,7 +284,7 @@ public class DiagnosticsReportCommand implements AdminCommand
             return "include the output of dbms.listQueries()";
         default:
         }
-        throw new IllegalArgumentException( "Unknown classifier:" + classifier );
+        throw new IllegalArgumentException( "Unknown classifier: " + classifier );
     }
 
     /**
@@ -284,6 +307,29 @@ public class DiagnosticsReportCommand implements AdminCommand
         public String usage()
         {
             return "[--list]";
+        }
+    }
+
+    /**
+     * Helper class to format output of {@link Usage}. Parsing is done manually in this command module.
+     */
+    public static class OptionalVerboseArgument extends MandatoryNamedArg
+    {
+        OptionalVerboseArgument()
+        {
+            super( "verbose", "", "More verbose error messages" );
+        }
+
+        @Override
+        public String optionsListing()
+        {
+            return "--verbose";
+        }
+
+        @Override
+        public String usage()
+        {
+            return "[--verbose]";
         }
     }
 
