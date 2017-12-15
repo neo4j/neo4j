@@ -191,9 +191,8 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
     this
   }
 
-  // This method is used instead of newWith1 from a ScopeExpression where the key in the new scope is overriding an existing key
-  // and it has to have the same name due to syntactic constraints. In this case we actually make a copy in order to not corrupt the existing slot.
   override def copyWith(key1: String, value1: AnyValue): ExecutionContext = {
+    // This method should throw like it siblings below, as soon as reduce is changed to not use it.
     val newCopy = SlottedExecutionContext(slots)
     copyTo(newCopy)
     newCopy.setValue(key1, value1)
@@ -201,32 +200,23 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
   }
 
   override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
-    val newCopy = SlottedExecutionContext(slots)
-    copyTo(newCopy)
-    newCopy.setValue(key1, value1)
-    newCopy.setValue(key2, value2)
-    newCopy
+    throw new UnsupportedOperationException(
+      "Use ExecutionContextFactory.copyWith instead, to get the correct slot configuration"
+    )
   }
 
   override def copyWith(key1: String, value1: AnyValue,
                         key2: String, value2: AnyValue,
                         key3: String, value3: AnyValue): ExecutionContext = {
-    val newCopy = SlottedExecutionContext(slots)
-    copyTo(newCopy)
-    newCopy.setValue(key1, value1)
-    newCopy.setValue(key2, value2)
-    newCopy.setValue(key3, value3)
-    newCopy
+    throw new UnsupportedOperationException(
+      "Use ExecutionContextFactory.copyWith instead, to get the correct slot configuration"
+    )
   }
 
   override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
-    val newCopy = SlottedExecutionContext(slots)
-    copyTo(newCopy)
-    for (t <- newEntries) {
-      val (key,value) = t
-      newCopy.setValue(key, value)
-    }
-    newCopy
+    throw new UnsupportedOperationException(
+      "Use ExecutionContextFactory.copyWith instead, to get the correct slot configuration"
+    )
   }
 
   private def setValue(key1: String, value1: AnyValue): Unit = {

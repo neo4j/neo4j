@@ -44,7 +44,7 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
             val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             val matchIterator = relationships.map { r =>
                 val other = r.otherNode(n)
-                row.copyWith(relName, r, toName, other)
+                executionContextFactory.copyWith(row, relName, r, toName, other)
             }.filter(ctx => predicate.isTrue(ctx, state))
 
             if (matchIterator.isEmpty) {

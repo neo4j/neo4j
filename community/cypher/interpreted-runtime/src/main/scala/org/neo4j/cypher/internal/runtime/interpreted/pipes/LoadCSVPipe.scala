@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
+import java.util
 
 import org.neo4j.cypher.internal.util.v3_4.LoadExternalResourceException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -87,7 +88,13 @@ case class LoadCSVPipe(source: Pipe,
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
 
-        context.copyWith(variable, VirtualValues.map(internalMap.copy.mapValues(v => if (v == null) Values.NO_VALUE else v).asJava))
+        val resultCopy = new util.HashMap[String, AnyValue](internalMap.size)
+        for (kv <- internalMap) {
+          val key = kv._1
+          val value = if (kv._2 == null) Values.NO_VALUE else kv._2
+          resultCopy.put(key, value)
+        }
+        executionContextFactory.copyWith(context, variable, VirtualValues.map(resultCopy))
       } else null
     }
   }
@@ -95,7 +102,8 @@ case class LoadCSVPipe(source: Pipe,
   private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[Value]]) extends Iterator[ExecutionContext] {
     override def hasNext: Boolean = inner.hasNext
 
-    override def next(): ExecutionContext = context.copyWith(variable, VirtualValues.list(inner.next():_*))
+    override def next(): ExecutionContext =
+      executionContextFactory.copyWith(context, variable, VirtualValues.list(inner.next():_*))
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

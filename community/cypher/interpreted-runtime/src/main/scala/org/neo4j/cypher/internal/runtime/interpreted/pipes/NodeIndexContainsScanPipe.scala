@@ -44,7 +44,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     val resultNodes = value match {
       case value: TextValue =>
         queryContextCall(state, descriptor, value.stringValue()).
-          map(node => baseContext.copyWith(ident, node))
+          map(node => executionContextFactory.copyWith(baseContext, ident, node))
       case Values.NO_VALUE =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
