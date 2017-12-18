@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -370,6 +371,10 @@ public abstract class CompiledConversionUtils
         else if ( iterable == null )
         {
             return Collections.emptyIterator();
+        }
+        else if ( iterable.getClass().isArray() )
+        {
+            return new ArrayIterator( iterable );
         }
         else
         {
@@ -727,6 +732,36 @@ public abstract class CompiledConversionUtils
         catch ( ClassCastException e )
         {
             throw new CypherTypeException( "Type mismatch: expected a map but was " + object, e );
+        }
+    }
+
+    static class ArrayIterator implements Iterator
+    {
+        private int position;
+        private final int len;
+        private final Object array;
+
+        private ArrayIterator( Object array )
+        {
+            this.position = 0;
+            this.len = Array.getLength( array );
+            this.array = array;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return position < len;
+        }
+
+        @Override
+        public Object next()
+        {
+            if ( position >= len )
+            {
+                throw new NoSuchElementException();
+            }
+            return Array.get( array, position++ );
         }
     }
 }
