@@ -60,13 +60,13 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val innerPlan = newMockedLogicalPlan("b")
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
     )
     val left = newMockedLogicalPlanWithPatterns(Set(aNode))
-    val plans = outerHashJoin(optionalQg, left)
+    val plans = outerHashJoin(optionalQg, left, context)
 
     plans should equal(Some(OuterHashJoin(Set(aNode), left, innerPlan)(solved)))
   }

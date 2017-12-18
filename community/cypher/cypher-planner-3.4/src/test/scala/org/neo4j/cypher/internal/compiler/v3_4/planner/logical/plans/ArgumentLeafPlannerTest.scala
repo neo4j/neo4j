@@ -31,36 +31,36 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("should return an empty candidate list argument ids is empty") {
-    implicit val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
 
     val qg = QueryGraph(
       argumentIds = Set(),
       patternNodes = Set("a", "b")
     )
 
-    argumentLeafPlanner(qg) shouldBe empty
+    argumentLeafPlanner(qg, context) shouldBe empty
   }
 
   test("should return an empty candidate list pattern nodes is empty") {
-    implicit val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
 
     val qg = QueryGraph(
       argumentIds = Set("a", "b"),
       patternNodes = Set()
     )
 
-    argumentLeafPlanner(qg) shouldBe empty
+    argumentLeafPlanner(qg, context) shouldBe empty
   }
 
   test("should return a plan containing all the id in argument ids and in pattern nodes") {
-    implicit val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
 
     val qg = QueryGraph(
       argumentIds = Set("a", "b", "c"),
       patternNodes = Set("a", "b", "d")
     )
 
-    argumentLeafPlanner(qg) should equal(
+    argumentLeafPlanner(qg, context) should equal(
       Seq(Argument(Set("a", "b","c"))(solved))
     )
   }

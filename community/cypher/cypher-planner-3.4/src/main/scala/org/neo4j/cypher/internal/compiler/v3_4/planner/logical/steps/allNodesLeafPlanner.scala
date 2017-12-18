@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanner, Log
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 
 object allNodesLeafPlanner extends LeafPlanner {
-  def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =
+  def apply(queryGraph: QueryGraph, context: LogicalPlanningContext) =
     queryGraph.patternNodes
     .filter(!queryGraph.argumentIds.contains(_))
-    .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds)).toIndexedSeq
+    .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds, context)).toIndexedSeq
 }

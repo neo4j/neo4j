@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
-  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
+  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
     mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   val plan1 = mock[LogicalPlan]
@@ -52,7 +52,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     implicit val registry = IdRegistry[PatternRelationship]
     val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+    joinSolverStep(qg)(registry, register(pattern1, pattern2), table, context) should be(empty)
   }
 
   test("joins plans that solve a single pattern relationship") {
@@ -67,7 +67,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
+    joinSolverStep(qg)(registry, register(pattern1, pattern2), table, context).toSet should equal(Set(
       NodeHashJoin(Set('b), plan1, plan2)(PlannerQuery.empty),
       NodeHashJoin(Set('b), plan2, plan1)(PlannerQuery.empty)
     ))
@@ -85,7 +85,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
+    joinSolverStep(qg)(registry, register(pattern1, pattern2), table, context).toSet should equal(Set(
       NodeHashJoin(Set('b), plan1, plan2)(PlannerQuery.empty),
       NodeHashJoin(Set('b), plan2, plan1)(PlannerQuery.empty)
     ))
@@ -103,7 +103,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+    joinSolverStep(qg)(registry, register(pattern1, pattern2), table, context) should be(empty)
   }
 
 
@@ -119,7 +119,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+    joinSolverStep(qg)(registry, register(pattern1, pattern2), table, context) should be(empty)
   }
 
   test("does not join plans that overlap on nodes that are arguments") {
@@ -134,7 +134,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+    joinSolverStep(qg)(registry, register(pattern1, pattern2), table, context) should be(empty)
   }
 
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)

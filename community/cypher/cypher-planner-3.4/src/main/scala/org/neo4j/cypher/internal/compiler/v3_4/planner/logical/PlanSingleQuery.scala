@@ -28,23 +28,23 @@ This coordinates PlannerQuery planning and delegates work to the classes that do
 QueryGraphs and EventHorizons
  */
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
-                           planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
-                           planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail(),
-                           planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
+                           planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPlanningContext) => LogicalPlan) = PlanEventHorizon,
+                           planWithTail: ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext) => LogicalPlan) = PlanWithTail(),
+                           planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => LogicalPlan) = PlanUpdates) extends ((PlannerQuery, LogicalPlanningContext) => LogicalPlan) {
 
-  override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val (completePlan, ctx) = countStorePlanner(in) match {
+  override def apply(in: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    val (completePlan, ctx) = countStorePlanner(in, context) match {
       case Some(plan) =>
         (plan, context.recurse(plan))
       case None =>
         val partPlan = planPart(in, context)
-        val planWithUpdates = planUpdates(in, partPlan, true /*first QG*/)(context)
-        val projectedPlan = planEventHorizon(in, planWithUpdates)
+        val planWithUpdates = planUpdates(in, partPlan, true /*first QG*/, context)
+        val projectedPlan = planEventHorizon(in, planWithUpdates, context)
         val projectedContext = context.recurse(projectedPlan)
         (projectedPlan, projectedContext)
     }
 
-    val finalPlan = planWithTail(completePlan, in.tail)(ctx)
-    verifyBestPlan(finalPlan, in)
+    val finalPlan = planWithTail(completePlan, in.tail, ctx)
+    verifyBestPlan(finalPlan, in, context)
   }
 }

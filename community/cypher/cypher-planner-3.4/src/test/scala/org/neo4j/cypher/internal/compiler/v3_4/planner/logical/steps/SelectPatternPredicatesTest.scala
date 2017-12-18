@@ -68,7 +68,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -76,7 +76,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set(IdName("a")))(solved), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(SemiApply(aPlan, inner)(solved)))
@@ -100,7 +100,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -108,7 +108,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set(IdName("a")))(solved), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(AntiSemiApply(aPlan, inner)(solved)))
@@ -132,13 +132,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
     val bPlan = newMockedLogicalPlan("b")
     // When
-    val result = selectPatternPredicates(bPlan, qg)
+    val result = selectPatternPredicates(bPlan, qg, context)
 
     // Then
     result should equal(Seq.empty)
@@ -166,7 +166,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -175,7 +175,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(argument, IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(SelectOrSemiApply(aPlan, inner, equals)(solved)))
@@ -203,7 +203,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -211,7 +211,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = Expand(Argument(Set(IdName("a")))(solved), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(SelectOrAntiSemiApply(aPlan, inner, equals)(solved)))
@@ -249,7 +249,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -258,7 +258,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set(IdName("a")))(solved), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(SelectOrSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, varFor("  FRESHID0"))(solved)))
@@ -295,7 +295,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -304,7 +304,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set(IdName("a")))(solved), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, varFor("  FRESHID0"))(solved)))
@@ -341,7 +341,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -350,7 +350,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set(IdName("a")))(solved), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, varFor("  FRESHID0"))(solved)))
@@ -392,7 +392,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -401,7 +401,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set(IdName("a")))(solved), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(SelectOrAntiSemiApply(LetSelectOrSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, varFor("  FRESHID0"))(solved)))
@@ -443,7 +443,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
@@ -452,7 +452,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = Expand(Argument(Set(IdName("a")))(solved), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
-    val result = selectPatternPredicates(aPlan, qg)
+    val result = selectPatternPredicates(aPlan, qg, context)
 
     // Then
     result should equal(Seq(SelectOrSemiApply(LetSelectOrAntiSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, varFor("  FRESHID0"))(solved)))

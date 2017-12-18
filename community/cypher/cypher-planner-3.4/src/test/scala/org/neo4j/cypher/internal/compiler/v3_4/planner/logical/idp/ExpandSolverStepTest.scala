@@ -49,13 +49,13 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
 
-  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
+  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
     mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   test("does not expand based on empty table") {
     implicit val registry = IdRegistry[PatternRelationship]
 
-    expandSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+    expandSolverStep(qg)(registry, register(pattern1, pattern2), table, context) should be(empty)
   }
 
   test("expands if an unsolved pattern relationship overlaps once with a single solved plan") {
@@ -64,7 +64,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
     table.put(register(pattern1), plan1)
 
-    expandSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
+    expandSolverStep(qg)(registry, register(pattern1, pattern2), table, context).toSet should equal(Set(
       Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
     ))
   }
@@ -77,7 +77,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
 
     val patternX = PatternRelationship('r2, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should equal(Set(
+    expandSolverStep(qg)(registry, register(pattern1, patternX), table, context).toSet should equal(Set(
       Expand(plan1, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
       Expand(plan1, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
     ))
@@ -91,7 +91,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
 
     val patternX = PatternRelationship('r2, ('x, 'y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should be(empty)
+    expandSolverStep(qg)(registry, register(pattern1, patternX), table, context).toSet should be(empty)
   }
 
   test("expands if an unsolved pattern relationship overlaps with multiple solved plans") {
@@ -102,7 +102,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
 
     val pattern3 = PatternRelationship('r3, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table).toSet should equal(Set(
+    expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table, context).toSet should equal(Set(
       Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
       Expand(plan1, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
     ))

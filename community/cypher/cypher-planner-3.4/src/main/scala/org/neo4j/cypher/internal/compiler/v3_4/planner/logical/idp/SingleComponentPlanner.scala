@@ -44,8 +44,8 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
                                   solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions,
                                   optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin)) extends SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
-    val leaves = leafPlanFinder(context.config, qg)
+  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
+    val leaves = leafPlanFinder(context.config, qg, context)
 
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
@@ -63,9 +63,9 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         )
 
         monitor.initTableFor(qg)
-        val seed = initTable(qg, kit, leaves)
+        val seed = initTable(qg, kit, leaves, context)
         monitor.startIDPIterationFor(qg)
-        val solutions = solver(seed, qg.patternRelationships)
+        val solutions = solver(seed, qg.patternRelationships, context)
         val (_, result) = solutions.toSingleOption.getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
         monitor.endIDPIterationFor(qg, result)
 
@@ -90,10 +90,10 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
     (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
-  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
+  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext) = {
     for (pattern <- qg.patternRelationships)
       yield {
-        val plans = planSinglePattern(qg, pattern, leaves).map(plan => kit.select(plan, qg))
+        val plans = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
         val bestAccessor = kit.pickBest(plans).getOrElse(
           throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
         Set(pattern) -> bestAccessor
@@ -102,7 +102,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 }
 
 trait SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan
+  def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan
 }
 
 
@@ -110,34 +110,37 @@ object SingleComponentPlanner {
   def DEFAULT_SOLVERS: Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
     Seq(joinSolverStep(_), expandSolverStep(_))
 
-  def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Set[LogicalPlan])
-                       (implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
+  def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Set[LogicalPlan], context: LogicalPlanningContext): Iterable[LogicalPlan] = {
     leaves.flatMap {
       case plan if plan.solved.lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)
       case plan if plan.solved.lastQueryGraph.allCoveredIds.contains(pattern.name) =>
-        Set(planSingleProjectEndpoints(pattern, plan))
+        Set(planSingleProjectEndpoints(pattern, plan, context))
       case plan if plan.solved.lastQueryGraph.patternNodes.isEmpty && plan.solved.lastQueryGraph.hints.exists(_.isInstanceOf[RelationshipStartItem]) =>
-        Set(context.logicalPlanProducer.planEndpointProjection(plan, pattern.nodes._1, startInScope = false, pattern.nodes._2, endInScope = false, pattern))
+        Set(context.logicalPlanProducer.planEndpointProjection(plan, pattern.nodes._1, startInScope = false, pattern.nodes._2, endInScope = false, pattern, context))
       case plan =>
         val (start, end) = pattern.nodes
-        val leftExpand = planSinglePatternSide(qg, pattern, plan, start)
-        val rightExpand = planSinglePatternSide(qg, pattern, plan, end)
+        val leftExpand = planSinglePatternSide(qg, pattern, plan, start, context)
+        val rightExpand = planSinglePatternSide(qg, pattern, plan, end, context)
 
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
         val maybeStartPlan = leaves.find(_.availableSymbols == startJoinNodes)
         val maybeEndPlan = leaves.find(_.availableSymbols == endJoinNodes)
-        val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan)
-        val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan)
+        val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, context)
+        val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins
     }
   }
 
-  def planSinglePatternCartesian(qg: QueryGraph, pattern: PatternRelationship, start: IdName, maybeStartPlan: Option[LogicalPlan], maybeEndPlan: Option[LogicalPlan])
-                                (implicit context: LogicalPlanningContext): Option[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
+  def planSinglePatternCartesian(qg: QueryGraph,
+                                 pattern: PatternRelationship,
+                                 start: IdName,
+                                 maybeStartPlan: Option[LogicalPlan],
+                                 maybeEndPlan: Option[LogicalPlan],
+                                 context: LogicalPlanningContext): Option[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
     case (Some(startPlan), Some(endPlan)) =>
-      planSinglePatternSide(qg, pattern, context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan), start)
+      planSinglePatternSide(qg, pattern, context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context), start, context)
     case _ => None
   }
 
@@ -146,15 +149,14 @@ object SingleComponentPlanner {
   Creating joins if the query graph is larger will lead to too many joins.
    */
   def planSinglePatternJoins(qg: QueryGraph, leftExpand: Option[LogicalPlan], rightExpand: Option[LogicalPlan], startJoinNodes: Set[IdName],
-                             endJoinNodes: Set[IdName], maybeStartPlan: Option[LogicalPlan], maybeEndPlan: Option[LogicalPlan])
-                            (implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
+                             endJoinNodes: Set[IdName], maybeStartPlan: Option[LogicalPlan], maybeEndPlan: Option[LogicalPlan], context: LogicalPlanningContext): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
     case (Some(startPlan), Some(endPlan)) if qg.hints.nonEmpty && qg.size == 1 =>
       val startJoinHints = qg.joinHints.filter(_.coveredBy(startJoinNodes))
       val endJoinHints = qg.joinHints.filter(_.coveredBy(endJoinNodes))
-      val join1a = leftExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, expand, endPlan, endJoinHints))
-      val join1b = leftExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, endPlan, expand, endJoinHints))
-      val join2a = rightExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, startPlan, expand, startJoinHints))
-      val join2b = rightExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, expand, startPlan, startJoinHints))
+      val join1a = leftExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, expand, endPlan, endJoinHints, context))
+      val join1b = leftExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, endPlan, expand, endJoinHints, context))
+      val join2a = rightExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, startPlan, expand, startJoinHints, context))
+      val join2b = rightExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, expand, startPlan, startJoinHints, context))
       join1a ++ join1b ++ join2a ++ join2b
     case _ => None
   }

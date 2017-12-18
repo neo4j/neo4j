@@ -39,16 +39,15 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                               propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
-                              argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext): Seq[Expression] => LogicalPlan
+                              argumentIds: Set[IdName],
+                              context: LogicalPlanningContext): Seq[Expression] => LogicalPlan
 
-  protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanningContext): Iterator[IndexDescriptor]
+  protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor]
 
-  protected def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor]
+  protected def findIndexesFor(label: String, properties: Seq[String], context: LogicalPlanningContext): Option[IndexDescriptor]
 
 
-  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph)
-                             (implicit context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph, context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
     implicit val labelPredicateMap: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
     if (labelPredicateMap.isEmpty)
       Set.empty
@@ -60,22 +59,22 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         val idName = IdName(name)
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
         val nodePlannables = plannables.filter(p => p.name == name)
-        maybeLeafPlans(name, producePlansForSpecificVariable(idName, nodePlannables, labelPredicates, qg.hints, qg.argumentIds))
+        maybeLeafPlans(name, producePlansForSpecificVariable(idName, nodePlannables, labelPredicates, qg.hints, qg.argumentIds, context))
       }
 
       if (result.isEmpty) {
-        val seekableIdentifiers: Set[Variable] = findNonSeekableIdentifiers(qg.selections.flatPredicates)
-        DynamicPropertyNotifier.process(seekableIdentifiers, IndexLookupUnfulfillableNotification, qg)
+        val seekableIdentifiers: Set[Variable] = findNonSeekableIdentifiers(qg.selections.flatPredicates, context)
+        DynamicPropertyNotifier.process(seekableIdentifiers, IndexLookupUnfulfillableNotification, qg, context)
       }
       result
     }
   }
 
-  override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    producePlanFor(qg.selections.flatPredicates.toSet, qg).toSeq.flatMap(_.plans)
+  override def apply(qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    producePlanFor(qg.selections.flatPredicates.toSet, qg, context).toSeq.flatMap(_.plans)
   }
 
-  private def findNonSeekableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext): Set[Variable] =
+  private def findNonSeekableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] =
     predicates.flatMap {
       // n['some' + n.prop] IN [ ... ]
       case AsDynamicPropertyNonSeekable(nonSeekableId)
@@ -94,16 +93,16 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   private def producePlansForSpecificVariable(idName: IdName, nodePlannables: Set[IndexPlannableExpression],
                                               labelPredicates: Set[HasLabels],
-                                              hints: Set[Hint], argumentIds: Set[IdName])
-                                             (implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
+                                              hints: Set[Hint], argumentIds: Set[IdName],
+                                              context: LogicalPlanningContext): Set[LogicalPlan] = {
     implicit val semanticTable: SemanticTable = context.semanticTable
     for (labelPredicate <- labelPredicates;
          labelName <- labelPredicate.labels;
          labelId: LabelId <- semanticTable.id(labelName).toSeq;
-         indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId);
+         indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context);
          plannables: Seq[IndexPlannableExpression] <- plannablesForIndex(indexDescriptor, nodePlannables))
       yield
-        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, plannables)
+        createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, plannables, context, semanticTable)
   }
 
   private def createLogicalPlan(idName: IdName,
@@ -112,8 +111,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                   labelPredicate: HasLabels,
                   labelName: LabelName,
                   labelId: LabelId,
-                  plannables: Seq[IndexPlannableExpression])
-                 (implicit context: LogicalPlanningContext, semanticTable: SemanticTable ): LogicalPlan = {
+                  plannables: Seq[IndexPlannableExpression],
+                  context: LogicalPlanningContext,
+                  semanticTable: SemanticTable ): LogicalPlan = {
     val hint = {
       val name = idName.name
       val propertyNames = plannables.map(_.propertyKeyName.name)
@@ -127,7 +127,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
     val propertyKeyTokens = plannables.map(p => p.propertyKeyName).map(n => PropertyKeyToken(n, semanticTable.id(n).head))
     val entryConstructor: Seq[Expression] => LogicalPlan =
-      constructPlan(idName, LabelToken(labelName, labelId), propertyKeyTokens, queryExpression, hint, argumentIds)
+      constructPlan(idName, LabelToken(labelName, labelId), propertyKeyTokens, queryExpression, hint, argumentIds, context)
 
     entryConstructor(plannables.map(p => p.propertyPredicate) :+ labelPredicate)
   }

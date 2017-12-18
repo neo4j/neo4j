@@ -23,46 +23,30 @@ import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-trait LogicalPlanningFunction0[+B] {
-  def apply(implicit context: LogicalPlanningContext): B
-}
-
-trait LogicalPlanningFunction1[-A, +B] {
-  def apply(input: A)(implicit context: LogicalPlanningContext): B
-}
-
-trait LogicalPlanningFunction2[-A1, -A2, +B] {
-  def apply(input1: A1, input2: A2)(implicit context: LogicalPlanningContext): B
-}
-
-trait LogicalPlanningFunction3[-A1, -A2, -A3, +B] {
-  def apply(input1: A1, input2: A2, input3: A3)(implicit context: LogicalPlanningContext): B
-}
-
 // TODO: Return Iterator
-trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, Seq[LogicalPlan]]
+trait CandidateGenerator[T] extends ((T, QueryGraph, LogicalPlanningContext) => Seq[LogicalPlan])
 
 object CandidateGenerator {
   implicit final class RichCandidateGenerator[T](self: CandidateGenerator[T]) {
     def orElse(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
-      def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-        val ownCandidates = self(input1, input2)
-        if (ownCandidates.isEmpty) other(input1, input2) else ownCandidates
+      override def apply(input1: T, input2: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+        val ownCandidates = self(input1, input2, context)
+        if (ownCandidates.isEmpty) other(input1, input2, context) else ownCandidates
       }
     }
 
     def +||+(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
-      override def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
-        self(input1, input2) ++ other(input1, input2)
+      override def apply(input1: T, input2: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] =
+        self(input1, input2, context) ++ other(input1, input2, context)
     }
   }
 }
 
-trait PlanTransformer[-T] extends LogicalPlanningFunction2[LogicalPlan, T, LogicalPlan]
+trait PlanTransformer[-T] extends ((LogicalPlan, T, LogicalPlanningContext) => LogicalPlan)
 
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
-trait LeafPlanner extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]
+trait LeafPlanner extends ((QueryGraph, LogicalPlanningContext) => Seq[LogicalPlan])
 
 object LeafPlansForVariable {
   def maybeLeafPlans(id: String, plans: Set[LogicalPlan]): Option[LeafPlansForVariable] =
@@ -74,17 +58,15 @@ case class LeafPlansForVariable(id: IdName, plans: Set[LogicalPlan]) {
 }
 
 trait LeafPlanFromExpressions {
-  def producePlanFor(predicates: Set[Expression], qg: QueryGraph)(implicit context: LogicalPlanningContext): Set[LeafPlansForVariable]
+  def producePlanFor(predicates: Set[Expression], qg: QueryGraph, context: LogicalPlanningContext): Set[LeafPlansForVariable]
 }
 
 trait LeafPlanFromExpression extends LeafPlanFromExpressions {
 
-  def producePlanFor(e: Expression, qg: QueryGraph)
-                    (implicit context: LogicalPlanningContext): Option[LeafPlansForVariable]
+  def producePlanFor(e: Expression, qg: QueryGraph, context: LogicalPlanningContext): Option[LeafPlansForVariable]
 
 
-  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph)
-                             (implicit context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
-    predicates.flatMap(p => producePlanFor(p, qg))
+  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph, context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+    predicates.flatMap(p => producePlanFor(p, qg, context))
   }
 }
