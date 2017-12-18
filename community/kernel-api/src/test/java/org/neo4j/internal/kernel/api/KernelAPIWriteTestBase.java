@@ -54,7 +54,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     protected static GraphDatabaseService graphDb;
 
     @Rule
-    public CursorsClosedPostCondition conditionalTeardown = new CursorsClosedPostCondition( cursors );
+    public CursorsClosedPostCondition conditionalTeardown = new CursorsClosedPostCondition( () -> cursors );
 
     /**
      * Creates a new instance of WriteSupport, which will be used to execute the concrete test

@@ -91,7 +91,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     }
 
     @Rule
-    public CursorsClosedPostCondition cursorsClosedPostCondition = new CursorsClosedPostCondition( cursors );
+    public CursorsClosedPostCondition cursorsClosedPostCondition = new CursorsClosedPostCondition( () -> cursors );
 
     @After
     public void closeTransaction() throws Exception

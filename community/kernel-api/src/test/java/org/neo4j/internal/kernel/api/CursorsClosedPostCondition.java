@@ -24,11 +24,13 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.util.function.Supplier;
+
 public class CursorsClosedPostCondition implements TestRule
 {
-    private ManagedTestCursors cursors;
+    private Supplier<ManagedTestCursors> cursors;
 
-    CursorsClosedPostCondition( ManagedTestCursors c )
+    CursorsClosedPostCondition( Supplier<ManagedTestCursors> c )
     {
         this.cursors = c;
     }
@@ -41,7 +43,7 @@ public class CursorsClosedPostCondition implements TestRule
             public void evaluate() throws Throwable
             {
                 base.evaluate();
-                cursors.assertAllClosedAndReset();  // only done if test succeeds
+                cursors.get().assertAllClosedAndReset();  // only done if test succeeds
             }
         };
     }
