@@ -687,6 +687,17 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        long p = getBoundedPointer( offset, bytes );
+        if ( !outOfBounds )
+        {
+            UnsafeUtil.setMemory( p, bytes, value );
+        }
+        offset += bytes;
+    }
+
+    @Override
     public final short getShort()
     {
         long p = nextBoundedPointer( SIZE_OF_SHORT );

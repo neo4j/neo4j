@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -341,6 +342,14 @@ public class StubPageCursor extends PageCursor
         {
             handleOverflow();
         }
+    }
+
+    @Override
+    public void putBytes( int bytes, byte value )
+    {
+        byte[] byteArray = new byte[bytes];
+        Arrays.fill( byteArray, value );
+        putBytes( byteArray, 0, bytes );
     }
 
     @Override

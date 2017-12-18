@@ -261,6 +261,12 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        current.putBytes( bytes, value );
+    }
+
+    @Override
     public short getShort()
     {
         return current.getShort();
