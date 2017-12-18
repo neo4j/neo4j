@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeBui
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, StatsDivergenceCalculator, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Transformer}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.compatibility.{AstCacheMonitor, CacheAccessor}
@@ -199,7 +199,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 1, misses = 2, flushes = 1, evicted = 1))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 1))
   }
 
   test("should not evict query because of unrelated statistics change") {

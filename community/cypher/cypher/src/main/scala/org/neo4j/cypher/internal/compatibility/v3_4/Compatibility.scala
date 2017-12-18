@@ -111,22 +111,24 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
-        val isStale = (plan: ExecutionPlan_v3_4) => plan.isStale(planContext.txIdProvider, planContext.statistics)
+        val isStale = (plan: ExecutionPlan_v3_4) => plan.checkPlanResusability(planContext.txIdProvider, planContext.statistics)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
-        def createPlan(): ExecutionPlan_v3_4 = {
-          val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
-          LogicalPlanNotifications
-            .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
-            .foreach(notificationLogger.log)
+        val createPlan = new PlanProducer[ExecutionPlan_v3_4] {
+          override def produceWithExistingTX: ExecutionPlan_v3_4 = {
+            val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
+            LogicalPlanNotifications
+              .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+              .foreach(notificationLogger.log)
 
-          val result = createExecPlan.transform(logicalPlanState, context)
-          result.maybeExecutionPlan.get
+            val result = createExecPlan.transform(logicalPlanState, context)
+            result.maybeExecutionPlan.get
+          }
         }
         val executionPlan = if (preParsedQuery.debugOptions.isEmpty)
-          cache.getOrElseUpdate(syntacticQuery.statement(), syntacticQuery.queryText, isStale, createPlan())._1
+          cache.getOrElseUpdate(syntacticQuery.statement(), syntacticQuery.queryText, isStale, createPlan)._1
         else
-          createPlan()
+          createPlan.produceWithExistingTX
 
         (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
       }

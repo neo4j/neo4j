@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.{CypherCacheMonitor, LFUCache, MonitoringCacheAccessor, QueryCache}
-import org.neo4j.cypher.internal.compatibility.v3_4._
+import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_4.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper, ValueConversion}
@@ -176,13 +175,15 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           })
 
           def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
-          def producePlan() = {
-            val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
-            parsedQuery.plan(tc, phaseTracer)
+          val producePlan = new PlanProducer[(ExecutionPlan, Map[String, Any])] {
+            override def produceWithExistingTX: (ExecutionPlan, Map[String, Any]) = {
+              val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+              parsedQuery.plan(tc, phaseTracer)
+            }
           }
 
           val stateBefore = schemaState(tc)
-          var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+          var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan)
           if (!touched) {
             val labelIds: Seq[Long] = extractPlanLabels(plan, preParsedQuery.version, tc)
             if (labelIds.nonEmpty) {
