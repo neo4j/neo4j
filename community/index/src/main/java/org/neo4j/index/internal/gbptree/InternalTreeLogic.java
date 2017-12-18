@@ -31,6 +31,7 @@ import static org.neo4j.index.internal.gbptree.KeySearch.positionOf;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.BUBBLE;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.REPLACE;
+import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_LEFT_CHILD;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_MID_CHILD;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_RIGHT_CHILD;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NEED_DEFRAG;
@@ -400,7 +401,14 @@ class InternalTreeLogic<KEY,VALUE>
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
 
-        if ( bTreeNode.internalOverflow( cursor, keyCount, primKey ) )
+        doInsertInInternal( cursor, structurePropagation, keyCount, primKey, rightChild, stableGeneration, unstableGeneration );
+    }
+
+    private void doInsertInInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, int keyCount, KEY primKey,
+            long rightChild, long stableGeneration, long unstableGeneration ) throws IOException
+    {
+        Overflow overflow = bTreeNode.internalOverflow( cursor, keyCount, primKey );
+        if ( overflow == YES )
         {
             // Overflow
             // We will overwrite rightKey in structurePropagation, so copy it over to a place holder
@@ -408,6 +416,11 @@ class InternalTreeLogic<KEY,VALUE>
             splitInternal( cursor, structurePropagation, newKeyPlaceHolder, rightChild, keyCount,
                     stableGeneration, unstableGeneration );
             return;
+        }
+
+        if ( overflow == NEED_DEFRAG )
+        {
+            bTreeNode.defragmentInternal( cursor );
         }
 
         // No overflow
@@ -498,7 +511,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration );
 
-        doInsert( cursor, structurePropagation, key, value, pos, keyCount, stableGeneration, unstableGeneration );
+        doInsertInLeaf( cursor, structurePropagation, key, value, pos, keyCount, stableGeneration, unstableGeneration );
     }
 
     private void overwriteValue( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value,
@@ -513,18 +526,14 @@ class InternalTreeLogic<KEY,VALUE>
             // simple, just write the merged value right in there
             boolean couldOverwrite = bTreeNode.setValueAt( cursor, mergedValue, pos );
             //noinspection StatementWithEmptyBody
-            if ( couldOverwrite )
-            {
-                // Fine we are done
-            }
-            else
+            if ( !couldOverwrite )
             {
                 // Value could not be overwritten in a simple way because they differ in size.
                 // Delete old value
                 bTreeNode.removeKeyValueAt( cursor, pos, keyCount );
                 TreeNode.setKeyCount( cursor, keyCount - 1 );
                 boolean didSplit =
-                        doInsert( cursor, structurePropagation, key, mergedValue, pos, keyCount - 1, stableGeneration, unstableGeneration );
+                        doInsertInLeaf( cursor, structurePropagation, key, mergedValue, pos, keyCount - 1, stableGeneration, unstableGeneration );
                 if ( !didSplit && bTreeNode.leafUnderflow( cursor, keyCount ) )
                 {
                     underflowInLeaf( cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration );
@@ -533,7 +542,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    private boolean doInsert( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value, int pos,
+    private boolean doInsertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value, int pos,
             int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
         Overflow overflow = bTreeNode.leafOverflow( cursor, keyCount, key, value );
@@ -759,6 +768,17 @@ class InternalTreeLogic<KEY,VALUE>
                 }
             }
 
+            // Insert before replace because replace can lead to split and another insert in next level.
+            // Replace can only come from rebalance on lower levels and because we do no rebalance among
+            // internal nodes we will only ever have one replace on our way up.
+            if ( structurePropagation.hasRightKeyInsert )
+            {
+                structurePropagation.hasRightKeyInsert = false;
+                insertInInternal( cursor, structurePropagation, TreeNode.keyCount( cursor ),
+                        structurePropagation.rightKey, structurePropagation.rightChild,
+                        stableGeneration, unstableGeneration );
+            }
+
             if ( structurePropagation.hasLeftKeyReplace &&
                     levels[currentLevel].covers( structurePropagation.leftKey ) )
             {
@@ -766,9 +786,8 @@ class InternalTreeLogic<KEY,VALUE>
                 switch ( structurePropagation.keyReplaceStrategy )
                 {
                 case REPLACE:
-                    createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                    overwriteKeyInternal( cursor, structurePropagation, structurePropagation.leftKey, pos - 1,
                             stableGeneration, unstableGeneration );
-                    bTreeNode.setKeyAt( cursor, structurePropagation.leftKey, pos - 1, INTERNAL );
                     break;
                 case BUBBLE:
                     replaceKeyByBubbleRightmostFromSubtree( cursor, structurePropagation, pos - 1,
@@ -787,9 +806,8 @@ class InternalTreeLogic<KEY,VALUE>
                 switch ( structurePropagation.keyReplaceStrategy )
                 {
                 case REPLACE:
-                    createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                    overwriteKeyInternal( cursor, structurePropagation, structurePropagation.rightKey, pos,
                             stableGeneration, unstableGeneration );
-                    bTreeNode.setKeyAt( cursor, structurePropagation.rightKey, pos, INTERNAL );
                     break;
                 case BUBBLE:
                     replaceKeyByBubbleRightmostFromSubtree( cursor, structurePropagation, pos,
@@ -800,14 +818,24 @@ class InternalTreeLogic<KEY,VALUE>
                             structurePropagation.keyReplaceStrategy );
                 }
             }
+        }
+    }
 
-            if ( structurePropagation.hasRightKeyInsert )
-            {
-                structurePropagation.hasRightKeyInsert = false;
-                insertInInternal( cursor, structurePropagation, TreeNode.keyCount( cursor ),
-                        structurePropagation.rightKey, structurePropagation.rightChild,
-                        stableGeneration, unstableGeneration );
-            }
+    private void overwriteKeyInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY newKey, int pos,
+            long stableGeneration, long unstableGeneration ) throws IOException
+    {
+        createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                stableGeneration, unstableGeneration );
+        int keyCount = TreeNode.keyCount( cursor );
+        boolean couldOverwrite = bTreeNode.setKeyAtInternal( cursor, newKey, pos );
+        if ( !couldOverwrite )
+        {
+            // Remove key and right child
+            long rightChild = bTreeNode.childAt( cursor, pos + 1, stableGeneration, unstableGeneration );
+            bTreeNode.removeKeyAndRightChildAt( cursor, pos, keyCount );
+            TreeNode.setKeyCount( cursor, keyCount - 1 );
+
+            doInsertInInternal( cursor, structurePropagation, keyCount - 1, newKey, rightChild, stableGeneration, unstableGeneration );
         }
     }
 
@@ -862,10 +890,9 @@ class InternalTreeLogic<KEY,VALUE>
         if ( foundKeyBelow )
         {
             // A key has been bubble up to us.
-            // It's in structurePropagation.leftKey and should be inserted in subtreePosition.
-            createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+            // It's in structurePropagation.bubbleKey and should be inserted in subtreePosition.
+            overwriteKeyInternal( cursor, structurePropagation, structurePropagation.bubbleKey, subtreePosition,
                     stableGeneration, unstableGeneration );
-            bTreeNode.setKeyAt( cursor, structurePropagation.bubbleKey, subtreePosition, INTERNAL );
         }
         else
         {
@@ -1042,8 +1069,8 @@ class InternalTreeLogic<KEY,VALUE>
                 int keysToRebalance = bTreeNode.canRebalanceLeaves( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount );
                 if ( keysToRebalance > 0 )
                 {
-                    createSuccessorIfNeeded( leftSiblingCursor, structurePropagation,
-                            StructurePropagation.UPDATE_LEFT_CHILD, stableGeneration, unstableGeneration );
+                    createSuccessorIfNeeded( leftSiblingCursor, structurePropagation, UPDATE_LEFT_CHILD,
+                            stableGeneration, unstableGeneration );
                     rebalanceLeaf( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, keysToRebalance , structurePropagation );
                 }
                 else if ( keysToRebalance == -1 )

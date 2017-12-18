@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
@@ -309,7 +310,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         node.setChildAt( cursor, childId, 0, stable, unstable );
         childId++;
         KEY key = key( childId );
-        for ( ; node.internalOverflow( cursor, keyCount, key ); childId++, keyCount++, key = key( childId ) )
+        for ( ; node.internalOverflow( cursor, keyCount, key ) == Overflow.NO; childId++, keyCount++, key = key( childId ) )
         {
             node.insertKeyAndRightChildAt( cursor, key, childId, keyCount, keyCount, stable, unstable );
         }
@@ -387,6 +388,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // AND
         node.removeKeyValueAt( cursor, 1, 2 );
+        TreeNode.setKeyCount( cursor, 1 );
 
         // WHEN
         node.defragmentLeaf( cursor );
@@ -409,6 +411,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // AND
         node.removeKeyValueAt( cursor, 0, 2 );
+        TreeNode.setKeyCount( cursor, 1 );
 
         // WHEN
         node.defragmentLeaf( cursor );
@@ -434,6 +437,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // AND
         node.removeKeyValueAt( cursor, 1, 3 );
+        TreeNode.setKeyCount( cursor, 2 );
 
         // WHEN
         node.defragmentLeaf( cursor );
@@ -540,7 +544,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                 while ( contains( expectedKeys, newKey, layout ) );
                 VALUE newValue = value( random.nextLong() );
 
-                TreeNode.Overflow overflow = node.leafOverflow( cursor, expectedKeyCount, newKey, newValue );
+                Overflow overflow = node.leafOverflow( cursor, expectedKeyCount, newKey, newValue );
                 if ( overflow == NEED_DEFRAG )
                 {
                     node.defragmentLeaf( cursor );

@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
+import static java.lang.String.format;
 
 class PageAwareByteArrayCursor extends PageCursor
 {
@@ -126,8 +127,8 @@ class PageAwareByteArrayCursor extends PageCursor
     {
         if ( sourceOffset < 0 || targetOffset < 0 || lengthInBytes < 0 )
         {
-            throw new IllegalArgumentException(
-                    String.format( "sourceOffset=%d, targetOffset=%d, lengthInBytes=%d", sourceOffset, targetOffset, lengthInBytes ) );
+            throw new IllegalArgumentException( format( "sourceOffset=%d, targetOffset=%d, lengthInBytes=%d, currenPageId=%d",
+                    sourceOffset, targetOffset, lengthInBytes, currentPageId ) );
         }
         int bytesToCopy = Math.min( lengthInBytes,
                 Math.min( current.getCurrentPageSize() - sourceOffset,

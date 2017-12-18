@@ -28,6 +28,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -904,7 +905,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         // WHEN
         generationManager.checkpoint();
         remove( keyInOldRight, dontCare );
-        allKeysInOldLeftAndOldRight.remove( keyInOldRight );
+        remove( keyInOldRight, allKeysInOldLeftAndOldRight, layout );
 
         // THEN
         // oldSplitter in root should have been replaced by rightmostKeyInLeftSubtree
@@ -920,7 +921,11 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         // newRight contain all
         goToSuccessor( readCursor, oldRight );
         List<KEY> allKeysInNewRight = allKeys( readCursor, LEAF );
-        assertEquals( allKeysInOldLeftAndOldRight, allKeysInNewRight );
+        assertThat( allKeysInNewRight.size(), is( allKeysInOldLeftAndOldRight.size() ) );
+        for ( int index = 0; index < allKeysInOldLeftAndOldRight.size(); index++ )
+        {
+            assertEqualsKey( allKeysInOldLeftAndOldRight.get( index ), allKeysInNewRight.get( index ) );
+        }
     }
 
     @Test
@@ -1437,12 +1442,18 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         }
     }
 
-    private int indexOf( KEY theKey, List<KEY> keys, Layout<KEY,VALUE> layout )
+    private void remove( KEY toRemove, List<KEY> list, Comparator<KEY> comparator )
+    {
+        int i = indexOf( toRemove, list, comparator );
+        list.remove( i );
+    }
+
+    private int indexOf( KEY theKey, List<KEY> keys, Comparator<KEY> comparator )
     {
         int i = 0;
         for ( KEY key : keys )
         {
-            if ( layout.compare( theKey, key ) == 0 )
+            if ( comparator.compare( theKey, key ) == 0 )
             {
                 return i;
             }

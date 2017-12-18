@@ -186,7 +186,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         // Kill actual key
         placeCursorAtActualKey( cursor, keyPos, INTERNAL );
+        int keyOffset = cursor.getOffset();
+        int keySize = readKeySize( cursor );
+        cursor.setOffset( keyOffset );
         putTombstone( cursor );
+
+        // Update dead space
+        int deadSpace = getDeadSpace( cursor );
+        setDeadSpace( cursor, deadSpace + keySize + bytesKeySize() );
 
         // Remove for offsetArray
         removeSlotAt( cursor, keyPos, keyCount, keyPosOffsetInternal( 0 ), keyChildSize() );
@@ -197,7 +204,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         // Kill actual key
         placeCursorAtActualKey( cursor, keyPos, INTERNAL );
+        int keyOffset = cursor.getOffset();
+        int keySize = readKeySize( cursor );
+        cursor.setOffset( keyOffset );
         putTombstone( cursor );
+
+        // Update dead space
+        int deadSpace = getDeadSpace( cursor );
+        setDeadSpace( cursor, deadSpace + keySize + bytesKeySize() );
 
         // Remove for offsetArray
         removeSlotAt( cursor, keyPos, keyCount, keyPosOffsetInternal( 0 ) - childSize(), keyChildSize() );
@@ -207,9 +221,24 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void setKeyAt( PageCursor cursor, KEY key, int pos, Type type )
+    boolean setKeyAtInternal( PageCursor cursor, KEY key, int pos )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        placeCursorAtActualKey( cursor, pos, INTERNAL );
+
+        int oldKeySize = readKeySize( cursor );
+        if ( oldKeySize > keyValueSizeCap )
+        {
+            cursor.setCursorException( format( "Read unreliable key size greater than cap: keySize=%d, keyValueSizeCap=%d",
+                    oldKeySize, keyValueSizeCap ) );
+        }
+        int newKeySize = layout.keySize( key );
+        if ( newKeySize == oldKeySize )
+        {
+            // Fine, we can just overwrite
+            layout.writeKey( cursor, key );
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -220,10 +249,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Read value
         int keySize = readKeySize( cursor );
         int valueSize = readValueSize( cursor );
-        if ( valueSize > keyValueSizeCap )
+        if ( keySize + valueSize > keyValueSizeCap )
         {
-            cursor.setCursorException( format( "Read unreliable key, value size greater than cap: keySize=%d, keyValueSizeCap=%d",
-                    valueSize, keyValueSizeCap ) );
+            cursor.setCursorException(
+                    format( "Read unreliable key, value size greater than cap: keySize=%d, valueSize=%d, keyValueSizeCap=%d",
+                            keySize, valueSize, keyValueSizeCap ) );
         }
         progressCursor( cursor, keySize );
         layout.readValue( cursor, into, valueSize );
@@ -235,7 +265,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
 
-        int keySize = DynamicSizeUtil.readKeyOffset( cursor );
+        int keySize = DynamicSizeUtil.readKeySize( cursor );
         int oldValueSize = DynamicSizeUtil.readValueSize( cursor );
         int newValueSize = layout.valueSize( value );
         if ( oldValueSize == newValueSize )
@@ -293,13 +323,18 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    boolean internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey )
+    Overflow internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey )
     {
         // How much space do we have?
         int allocSpace = getAllocSpace( cursor, currentKeyCount, INTERNAL );
+        int deadSpace = getDeadSpace( cursor );
+
+        // How much space do we need?
         int neededSpace = totalSpaceOfKeyChild( newKey );
 
-        return neededSpace > allocSpace;
+        // There is your answer!
+        return neededSpace < allocSpace ? Overflow.NO :
+               neededSpace < allocSpace + deadSpace ? Overflow.NEED_DEFRAG : Overflow.YES;
     }
 
     @Override
@@ -310,10 +345,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int allocSpace = getAllocSpace( cursor, currentKeyCount, LEAF );
 
         // How much space do we need?
-        int keySize = layout.keySize( newKey );
-        int valueSize = layout.valueSize( newValue );
-        int totalOverhead = bytesKeyOffset() + bytesKeySize() + bytesValueSize();
-        int neededSpace = keySize + valueSize + totalOverhead;
+        int neededSpace = totalSpaceOfKeyValue( newKey, newValue );
 
         // There is your answer!
         return neededSpace < allocSpace ? Overflow.NO :
@@ -326,7 +358,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         doDefragment( cursor, LEAF );
     }
 
-    private void defragmentInternal( PageCursor cursor )
+    @Override
+    void defragmentInternal( PageCursor cursor )
     {
         doDefragment( cursor, INTERNAL );
     }

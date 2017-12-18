@@ -146,10 +146,11 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void setKeyAt( PageCursor cursor, KEY key, int pos, Type type )
+    boolean setKeyAtInternal( PageCursor cursor, KEY key, int pos )
     {
         cursor.setOffset( keyOffset( pos ) );
         layout.writeKey( cursor, key );
+        return true;
     }
 
     @Override
@@ -292,9 +293,9 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     /* SPLIT, MERGE and REBALANCE*/
 
     @Override
-    boolean internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey )
+    Overflow internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey )
     {
-        return currentKeyCount + 1 > internalMaxKeyCount();
+        return currentKeyCount + 1 > internalMaxKeyCount() ? Overflow.YES : Overflow.NO;
     }
 
     @Override
@@ -305,6 +306,11 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void defragmentLeaf( PageCursor cursor )
+    {   // no-op
+    }
+
+    @Override
+    void defragmentInternal( PageCursor cursor )
     {   // no-op
     }
 

@@ -237,7 +237,11 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount );
 
-    abstract void setKeyAt( PageCursor cursor, KEY key, int pos, Type type );
+    /**
+     * Overwrite key at position with given key.
+     * @return True if key was overwritten, false otherwise.
+     */
+    abstract boolean setKeyAtInternal( PageCursor cursor, KEY key, int pos );
 
     abstract VALUE valueAt( PageCursor cursor, VALUE value, int pos );
 
@@ -288,7 +292,7 @@ abstract class TreeNode<KEY,VALUE>
      * Will internal overflow if inserting new key?
      * @return true if leaf will overflow, else false.
      */
-    abstract boolean internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey );
+    abstract Overflow internalOverflow( PageCursor cursor, int currentKeyCount, KEY newKey );
 
     /**
      * Will leaf overflow if inserting new key and value?
@@ -297,9 +301,14 @@ abstract class TreeNode<KEY,VALUE>
     abstract Overflow leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue );
 
     /**
-     * Clean page from garbage to make room for further insert without having to split.
+     * Clean page with leaf node from garbage to make room for further insert without having to split.
      */
     abstract void defragmentLeaf( PageCursor cursor );
+
+    /**
+     * Clean page with internal node from garbage to make room for further insert without having to split.
+     */
+    abstract void defragmentInternal( PageCursor cursor );
 
     abstract boolean leafUnderflow( PageCursor cursor, int keyCount );
 

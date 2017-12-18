@@ -44,6 +44,12 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
+import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
+import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
+import static org.neo4j.index.internal.gbptree.TreeNode.keyCount;
+import static org.neo4j.index.internal.gbptree.TreeNode.setKeyCount;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class CrashGenerationCleanerTest
@@ -343,12 +349,13 @@ public class CrashGenerationCleanerTest
                         corruptibleTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                         long base = IdSpace.MIN_TREE_NODE_ID;
                         int keyCount;
-                        for ( keyCount = 0; !corruptibleTreeNode.internalOverflow( cursor, keyCount, layout.newKey() ); keyCount++ )
+                        for ( keyCount = 0; corruptibleTreeNode.internalOverflow( cursor, keyCount, layout.newKey() ) == Overflow.NO;
+                              keyCount++ )
                         {
                             long child = base + keyCount;
                             corruptibleTreeNode.setChildAt( cursor, child, keyCount, stableGeneration, unstableGeneration );
                         }
-                        TreeNode.setKeyCount( cursor, keyCount );
+                        setKeyCount( cursor, keyCount );
                     }
                 };
 
@@ -384,7 +391,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( PageCursor cursor, TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_LEFTSIBLING;
+                        return BYTE_POS_LEFTSIBLING;
                     }
                 },
         RIGHT_SIBLING
@@ -392,7 +399,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( PageCursor cursor, TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_RIGHTSIBLING;
+                        return BYTE_POS_RIGHTSIBLING;
                     }
                 },
         SUCCESSOR
@@ -400,7 +407,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( PageCursor cursor, TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_SUCCESSOR;
+                        return BYTE_POS_SUCCESSOR;
                     }
                 }
     }
@@ -414,7 +421,7 @@ public class CrashGenerationCleanerTest
     {
         return ( cursor, node ) ->
         {
-            int keyCount = TreeNode.keyCount( cursor );
+            int keyCount = keyCount( cursor );
             return node.childOffset( keyCount / 2 );
         };
     }
@@ -423,7 +430,7 @@ public class CrashGenerationCleanerTest
     {
         return ( cursor, node ) ->
         {
-            int keyCount = TreeNode.keyCount( cursor );
+            int keyCount = keyCount( cursor );
             return node.childOffset( keyCount );
         };
     }

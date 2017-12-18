@@ -351,7 +351,7 @@ class ConsistencyChecker<KEY>
             throws IOException
     {
         long pageId = cursor.getCurrentPageId();
-        KEY prev = layout.newKey();
+        KEY prev = null;
         KeyRange<KEY> childRange;
 
         // Check children, all except the last one
@@ -380,6 +380,10 @@ class ConsistencyChecker<KEY>
 
             TreeNode.goTo( cursor, "parent", pageId );
 
+            if ( pos == 0 )
+            {
+                prev = layout.newKey();
+            }
             layout.copyKey( readKey, prev );
             pos++;
         }
@@ -523,7 +527,15 @@ class ConsistencyChecker<KEY>
 
         KeyRange<KEY> restrictLeft( KEY left )
         {
-            if ( fromInclusive == null || comparator.compare( fromInclusive, left ) < 0 )
+            if ( fromInclusive == null )
+            {
+                return new KeyRange<>( comparator, left, toExclusive, layout, this );
+            }
+            if ( left == null )
+            {
+                return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+            }
+            if ( comparator.compare( fromInclusive, left ) < 0 )
             {
                 return new KeyRange<>( comparator, left, toExclusive, layout, this );
             }
@@ -532,7 +544,15 @@ class ConsistencyChecker<KEY>
 
         KeyRange<KEY> restrictRight( KEY right )
         {
-            if ( toExclusive == null || comparator.compare( toExclusive, right ) > 0 )
+            if ( toExclusive == null )
+            {
+                return new KeyRange<>( comparator, fromInclusive, right, layout, this );
+            }
+            if ( right == null )
+            {
+                return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+            }
+            if ( comparator.compare( toExclusive, right ) > 0 )
             {
                 return new KeyRange<>( comparator, fromInclusive, right, layout, this );
             }
