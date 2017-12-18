@@ -75,8 +75,7 @@ case class SlottedExecutionContextFactory(slots: SlotConfiguration) extends Exec
   override def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
     val newCopy = SlottedExecutionContext(slots)
     row.copyTo(newCopy)
-    for (t <- newEntries) {
-      val (key,value) = t
+    for ((key,value) <- newEntries) {
       newCopy.set(key, value)
     }
     newCopy

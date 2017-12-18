@@ -43,6 +43,6 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
     }
 
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    Seq(executionContextFactory.copyWith(baseContext, ident, Values.longValue(count))).iterator
+    Iterator(executionContextFactory.copyWith(baseContext, ident, Values.longValue(count)))
   }
 }

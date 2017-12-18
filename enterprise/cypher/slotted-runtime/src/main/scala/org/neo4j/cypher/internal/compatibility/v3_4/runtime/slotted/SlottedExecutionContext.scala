@@ -192,7 +192,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
   }
 
   override def copyWith(key1: String, value1: AnyValue): ExecutionContext = {
-    // This method should throw like it siblings below, as soon as reduce is changed to not use it.
+    // This method should throw like its siblings below as soon as reduce is changed to not use it.
     val newCopy = SlottedExecutionContext(slots)
     copyTo(newCopy)
     newCopy.setValue(key1, value1)
@@ -201,7 +201,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
 
   override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
     throw new UnsupportedOperationException(
-      "Use ExecutionContextFactory.copyWith instead, to get the correct slot configuration"
+      "Use ExecutionContextFactory.copyWith instead to get the correct slot configuration"
     )
   }
 
@@ -209,13 +209,13 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
                         key2: String, value2: AnyValue,
                         key3: String, value3: AnyValue): ExecutionContext = {
     throw new UnsupportedOperationException(
-      "Use ExecutionContextFactory.copyWith instead, to get the correct slot configuration"
+      "Use ExecutionContextFactory.copyWith instead to get the correct slot configuration"
     )
   }
 
   override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
     throw new UnsupportedOperationException(
-      "Use ExecutionContextFactory.copyWith instead, to get the correct slot configuration"
+      "Use ExecutionContextFactory.copyWith instead to get the correct slot configuration"
     )
   }
 

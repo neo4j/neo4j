@@ -89,9 +89,8 @@ case class LoadCSVPipe(source: Pipe,
         //reference, e.g. EagerPipe
 
         val resultCopy = new util.HashMap[String, AnyValue](internalMap.size)
-        for (kv <- internalMap) {
-          val key = kv._1
-          val value = if (kv._2 == null) Values.NO_VALUE else kv._2
+        for ((key, maybeNull) <- internalMap) {
+          val value = if (maybeNull == null) Values.NO_VALUE else maybeNull
           resultCopy.put(key, value)
         }
         executionContextFactory.copyWith(context, variable, VirtualValues.map(resultCopy))
