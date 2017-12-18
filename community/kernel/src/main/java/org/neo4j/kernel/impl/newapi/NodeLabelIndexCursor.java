@@ -89,4 +89,18 @@ class NodeLabelIndexCursor extends IndexCursor
     {
         return super.isClosed();
     }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "NodeLabelIndexCursor[closed state]";
+        }
+        else
+        {
+            return "NodeLabelIndexCursor[node=" + node + ", labels= " + labels +
+                    ", underlying record=" + super.toString() + " ]";
+        }
+    }
 }

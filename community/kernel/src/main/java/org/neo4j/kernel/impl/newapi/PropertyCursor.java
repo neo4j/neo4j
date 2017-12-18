@@ -495,4 +495,17 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     {
         return page == null;
     }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "PropertyCursor[closed state]";
+        }
+        else
+        {
+            return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next + ", underlying record=" + super.toString() + " ]";
+        }
+    }
 }

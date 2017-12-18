@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Arrays;
+
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
@@ -109,5 +111,19 @@ class NodeValueIndexCursor extends IndexCursor
     public boolean isClosed()
     {
         return super.isClosed();
+    }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "NodeValueIndexCursor[closed state]";
+        }
+        else
+        {
+            return "NodeValueIndexCursor[node=" + node + ", open state with: keys=" + Arrays.toString( keys ) + ", values=" + Arrays.toString( values ) +
+                    ", underlying record=" + super.toString() + " ]";
+        }
     }
 }

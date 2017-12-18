@@ -441,7 +441,36 @@ class RelationshipTraversalCursor extends RelationshipCursor
     @Override
     public boolean isClosed()
     {
-        return pageCursor == null;
+        return pageCursor == null && !hasBufferedData();
+    }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "RelationshipTraversalCursor[closed state]";
+        }
+        else
+        {
+            String dense = "denseNode=" + traversingDenseNode();
+            String mode = "mode=";
+
+            if ( hasBufferedData() )
+            {
+                mode = mode + "bufferedData";
+            }
+            else if ( filteringTraversal() )
+            {
+                mode = mode + "filteringTraversal";
+            }
+            else
+            {
+                mode = mode + "regular";
+            }
+            return "RelationshipTraversalCursor[id=" + getId() + ", open state with: " + dense + ", next=" + next + ", " + mode + ", underlying record=" +
+                    super.toString() + " ]";
+        }
     }
 
     private boolean hasBufferedData()

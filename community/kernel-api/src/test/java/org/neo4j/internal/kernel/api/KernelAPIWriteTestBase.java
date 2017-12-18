@@ -22,7 +22,11 @@ package org.neo4j.internal.kernel.api;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import java.io.IOException;
 
@@ -49,6 +53,9 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     protected ManagedTestCursors cursors;
     protected static GraphDatabaseService graphDb;
 
+    @Rule
+    public CursorsClosedPostCondition conditionalTeardown = new CursorsClosedPostCondition( () -> cursors );
+
     /**
      * Creates a new instance of WriteSupport, which will be used to execute the concrete test
      */
@@ -74,7 +81,6 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     public void closeSession()
     {
         session.close();
-        cursors.assertAllClosedAndReset();
     }
 
     @AfterClass
