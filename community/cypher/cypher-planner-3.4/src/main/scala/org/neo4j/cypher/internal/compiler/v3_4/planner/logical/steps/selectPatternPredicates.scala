@@ -112,7 +112,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
   }
 
   private def rhsPlan(lhs: LogicalPlan, pattern: PatternExpression, ctx: LogicalPlanningContext) = {
-    val context = ctx.recurse(lhs)
+    val context = ctx.withUpdatedCardinalityInformation(lhs)
     val (plan, _) = context.strategy.planPatternExpression(lhs.availableSymbols, pattern, context)
     plan
   }

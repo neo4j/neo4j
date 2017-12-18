@@ -30,17 +30,19 @@ QueryGraphs and EventHorizons
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
                            planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPlanningContext) => LogicalPlan) = PlanEventHorizon,
                            planWithTail: ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext) => LogicalPlan) = PlanWithTail(),
-                           planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => LogicalPlan) = PlanUpdates) extends ((PlannerQuery, LogicalPlanningContext) => LogicalPlan) {
+                           planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => (LogicalPlan, LogicalPlanningContext)) = PlanUpdates)
+  extends ((PlannerQuery, LogicalPlanningContext) => LogicalPlan) {
 
   override def apply(in: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val (completePlan, ctx) = countStorePlanner(in, context) match {
       case Some(plan) =>
-        (plan, context.recurse(plan))
+        (plan, context.withUpdatedCardinalityInformation(plan))
       case None =>
         val partPlan = planPart(in, context)
-        val planWithUpdates = planUpdates(in, partPlan, true /*first QG*/, context)
+        // TODO use that context
+        val (planWithUpdates, newContext) = planUpdates(in, partPlan, true /*first QG*/, context)
         val projectedPlan = planEventHorizon(in, planWithUpdates, context)
-        val projectedContext = context.recurse(projectedPlan)
+        val projectedContext = context.withUpdatedCardinalityInformation(projectedPlan)
         (projectedPlan, projectedContext)
     }
 

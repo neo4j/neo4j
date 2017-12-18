@@ -28,22 +28,22 @@ which in most cases is then rewritten away by LogicalPlan rewriting.
 */
 case class PlanWithTail(planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPlanningContext) => LogicalPlan) = PlanEventHorizon,
                         planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
-                        planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => LogicalPlan) = PlanUpdates)
+                        planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => (LogicalPlan, LogicalPlanningContext)) = PlanUpdates)
   extends ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext) => LogicalPlan) {
 
   override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext): LogicalPlan = {
     remaining match {
       case Some(plannerQuery) =>
-        val lhsContext = context.recurse(lhs)
+        val lhsContext = context.withUpdatedCardinalityInformation(lhs)
         val partPlan = planPart(plannerQuery, lhsContext)
         val firstPlannerQuery = false
-        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext)
+        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext)
 
-        val applyPlan = context.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
+        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 
-        val applyContext = lhsContext.recurse(applyPlan)
+        val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)
-        val projectedContext = applyContext.recurse(projectedPlan)
+        val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
 
         this.apply(projectedPlan, plannerQuery.tail, projectedContext)
 

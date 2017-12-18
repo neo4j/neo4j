@@ -30,7 +30,7 @@ object solveOptionalMatches {
 
 case object applyOptional extends OptionalSolver {
   override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, context: LogicalPlanningContext) = {
-    val innerContext: LogicalPlanningContext = context.recurse(lhs)
+    val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs)
     val inner = context.strategy.plan(optionalQg, innerContext)
     val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
     Some(context.logicalPlanProducer.planApply(lhs, rhs, context))

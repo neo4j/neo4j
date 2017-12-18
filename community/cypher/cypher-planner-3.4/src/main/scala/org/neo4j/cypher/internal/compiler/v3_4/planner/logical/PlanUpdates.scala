@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{LockNodes, LogicalPlan}
  * This coordinates PlannerQuery planning of updates.
  */
 case object PlanUpdates
-  extends ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => LogicalPlan) {
+  extends ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => (LogicalPlan, LogicalPlanningContext)) {
 
-  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan = if (firstPlannerQuery)
       Eagerness.headReadWriteEagerize(in, query, context)
@@ -39,22 +39,25 @@ case object PlanUpdates
     //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
       Eagerness.tailReadWriteEagerizeNonRecursive(in, query, context)
 
-    val updatePlan = query.queryGraph.mutatingPatterns.foldLeft(plan) {
-      case (acc, pattern) => planUpdate(acc, pattern, firstPlannerQuery, context)
+    val (updatePlan, finalContext) = query.queryGraph.mutatingPatterns.foldLeft((plan, context)) {
+      case ((acc, ctx), pattern) => (planUpdate(acc, pattern, firstPlannerQuery, ctx), ctx.withNextTxLayer)
     }
 
-    if (firstPlannerQuery)
+    val lp = if (firstPlannerQuery)
       Eagerness.headWriteReadEagerize(updatePlan, query, context)
     else {
       Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query, context), query, context)
     }
+    (lp, finalContext)
   }
 
   private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean, context: LogicalPlanningContext): LogicalPlan = {
 
     def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
-      query.allPlannerQueries.foldLeft((plan, true)) {
-        case ((accPlan, innerFirst), plannerQuery) => (this.apply(plannerQuery, accPlan, innerFirst, context), false)
+      query.allPlannerQueries.foldLeft((plan, true, context)) {
+        case ((accPlan, innerFirst, accCtx), plannerQuery) =>
+          val (newPlan,newCtx) = this.apply(plannerQuery, accPlan, innerFirst, context)
+          (newPlan, false, newCtx)
       }._1
     }
 
@@ -155,7 +158,7 @@ case object PlanUpdates
     val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
-      context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
+      context.withUpdatedCardinalityInformation(source).copy(config = context.config.withLeafPlanners(leafPlanners))
 
     val ids: Seq[IdName] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
 

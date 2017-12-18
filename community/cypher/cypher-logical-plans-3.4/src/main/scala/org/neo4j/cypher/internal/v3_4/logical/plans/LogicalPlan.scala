@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException}
+import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, Unchangeable}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable._
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
@@ -45,6 +45,7 @@ abstract class LogicalPlan
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
+  val transactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   /*
   A id for the logical plan operator, unique inside of the given query tree. These identifiers will be
