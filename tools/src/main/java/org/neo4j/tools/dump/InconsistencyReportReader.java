@@ -61,7 +61,7 @@ public class InconsistencyReportReader
             line = line.trim();
             if ( state == 0 )
             {
-                if ( !line.contains( " ERROR " ) && !line.contains( " WARNING " ) )
+                if ( !line.contains( "ERROR" ) && !line.contains( " WARNING " ) )
                 {
                     continue;
                 }
