@@ -59,6 +59,7 @@ public class NodeImporter extends EntityImporter
 
     private long nodeCount;
     private long highestId = -1;
+    private boolean hasLabelField;
 
     public NodeImporter( BatchingNeoStores stores, IdMapper idMapper, Monitor monitor )
     {
@@ -104,6 +105,7 @@ public class NodeImporter extends EntityImporter
     @Override
     public boolean labels( String[] labels )
     {
+        assert !hasLabelField;
         if ( labelsCursor + labels.length > this.labels.length )
         {
             this.labels = copyOf( this.labels, this.labels.length * 2 );
@@ -116,6 +118,7 @@ public class NodeImporter extends EntityImporter
     @Override
     public boolean labelField( long labelField )
     {
+        hasLabelField = true;
         nodeRecord.setLabelField( labelField, Collections.emptyList() );
         return true;
     }
@@ -130,8 +133,11 @@ public class NodeImporter extends EntityImporter
         }
 
         // Compose the labels
-        long[] labelIds = labelTokenRepository.getOrCreateIds( labels, labelsCursor );
-        InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore() );
+        if ( !hasLabelField )
+        {
+            long[] labelIds = labelTokenRepository.getOrCreateIds( labels, labelsCursor );
+            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore() );
+        }
         labelsCursor = 0;
 
         // Write data to stores
@@ -141,6 +147,7 @@ public class NodeImporter extends EntityImporter
         nodeCount++;
         nodeRecord.clear();
         nodeRecord.setId( NULL_REFERENCE.longValue() );
+        hasLabelField = false;
         super.endOfEntity();
     }
 
@@ -155,5 +162,6 @@ public class NodeImporter extends EntityImporter
     {
         super.close();
         monitor.nodesImported( nodeCount );
+        nodeStore.setHighestPossibleIdInUse( highestId ); // for the case of #id(long)
     }
 }

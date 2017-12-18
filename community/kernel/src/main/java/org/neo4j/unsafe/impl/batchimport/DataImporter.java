@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
 import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -149,12 +148,11 @@ public class DataImporter
     }
 
     public static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper,
-            NodeRelationshipCache nodeRelationshipCache, ExecutionMonitor executionMonitor, Monitor monitor )
-            throws IOException
+            ExecutionMonitor executionMonitor, Monitor monitor )
+                    throws IOException
     {
         importData( NODE_IMPORT_NAME, numRunners, input.nodes(), stores, () ->
             new NodeImporter( stores, idMapper, monitor ), executionMonitor, new MemoryUsageStatsProvider( stores, idMapper ) );
-        nodeRelationshipCache.setNodeCount( stores.getNodeStore().getHighId() );
     }
 
     public static DataStatistics importRelationships( int numRunners, Input input,

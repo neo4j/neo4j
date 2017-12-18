@@ -218,7 +218,7 @@ public class ImportLogic implements Closeable
         // Import nodes, properties, labels
         neoStore.startFlushingPageCache();
         DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
-              nodeRelationshipCache, executionMonitor, storeUpdateMonitor );
+              executionMonitor, storeUpdateMonitor );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
     }

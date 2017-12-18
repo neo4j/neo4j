@@ -389,8 +389,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     0 /*node labels left as 0 for now*/);
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), Collectors.badCollector( badOutput, 0 ), estimates ) );
-            importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(),
-                    Collectors.badCollector( badOutput, 0 ), estimates ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written
@@ -581,7 +579,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 visitor.startId( record.getFirstNode() );
                 visitor.endId( record.getSecondNode() );
                 visitor.type( record.getType() );
-                visitor.propertyId( record.getNextProp() );
                 propertyDecorator.accept( visitor, record );
                 return true;
             }
@@ -601,7 +598,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             protected boolean visitRecord( NodeRecord record, InputEntityVisitor visitor )
             {
                 visitor.id( record.getId() );
-                visitor.propertyId( record.getNextProp() );
                 visitor.labelField( record.getLabelField() );
                 propertyDecorator.accept( visitor, record );
                 return true;
@@ -614,8 +610,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         if ( !requiresPropertyMigration )
         {
-            return ( a, b ) ->
+            return ( entity, record ) ->
             {
+                entity.propertyId( record.getNextProp() );
             };
         }
 
