@@ -374,28 +374,7 @@ public abstract class CompiledConversionUtils
         }
         else if ( iterable.getClass().isArray() )
         {
-            int len = Array.getLength( iterable );
-
-            return new Iterator()
-            {
-                private int position = 0;
-
-                @Override
-                public boolean hasNext()
-                {
-                    return position < len;
-                }
-
-                @Override
-                public Object next()
-                {
-                    if ( position >= len )
-                    {
-                        throw new NoSuchElementException();
-                    }
-                    return Array.get( iterable, position++ );
-                }
-            };
+            return new ArrayIterator( iterable );
         }
         else
         {
@@ -753,6 +732,36 @@ public abstract class CompiledConversionUtils
         catch ( ClassCastException e )
         {
             throw new CypherTypeException( "Type mismatch: expected a map but was " + object, e );
+        }
+    }
+
+    static class ArrayIterator implements Iterator
+    {
+        private int position;
+        private final int len;
+        private final Object array;
+
+        private ArrayIterator( Object array )
+        {
+            this.position = 0;
+            this.len = Array.getLength( array );
+            this.array = array;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return position < len;
+        }
+
+        @Override
+        public Object next()
+        {
+            if ( position >= len )
+            {
+                throw new NoSuchElementException();
+            }
+            return Array.get( array, position++ );
         }
     }
 }
