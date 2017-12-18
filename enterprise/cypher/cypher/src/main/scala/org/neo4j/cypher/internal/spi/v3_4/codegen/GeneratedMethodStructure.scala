@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Direction, Node, Relationship}
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexQuery, NodeCursor, Read}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
@@ -558,6 +558,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def nodeCursor: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[NodeCursor], "nodeCursor"))
+
+  private def propertyCursor: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[PropertyCursor], "propertyCursor"))
 
   private def readOperations: Expression =
     invoke(generator.self(), getOrLoadReadOperations)
@@ -1388,7 +1391,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       body.assign(local,
                   invoke(
                     reboxValue,
-                    invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), body.load(propIdVar))
+                    invoke(
+                      methodReference(typeRef[CompiledCursorUtils],
+                                      typeRef[Value], "nodeGetProperty",
+                                      typeRef[Read], typeRef[NodeCursor], typeRef[Long],
+                                      typeRef[PropertyCursor], typeRef[Int]),
+                      dataRead, nodeCursor, forceLong(nodeVar, nodeVarType), propertyCursor, body.load(propIdVar))
                   ))
     } { fail =>
       fail.assign(local, constant(null))
@@ -1401,7 +1409,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       body.assign(local,
                   invoke(
                     reboxValue,
-                    invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), constant(propId))
+                    invoke(
+                      methodReference(typeRef[CompiledCursorUtils],
+                                      typeRef[Value], "nodeGetProperty",
+                                      typeRef[Read], typeRef[NodeCursor], typeRef[Long],
+                                      typeRef[PropertyCursor], typeRef[Int]),
+                      dataRead, nodeCursor, forceLong(nodeVar, nodeVarType),  propertyCursor, constant(propId))
                   ))
     }{ fail =>
       fail.assign(local, constant(null))
