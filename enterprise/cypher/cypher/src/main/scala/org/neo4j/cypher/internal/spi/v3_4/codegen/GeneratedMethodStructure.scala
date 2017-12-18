@@ -19,35 +19,34 @@
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
-import java.util.PrimitiveIterator
-import java.util.{ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet, Iterator => JIterator, Map => JMap, Set => JSet}
 import java.util.stream.{DoubleStream, IntStream, LongStream}
+import java.util.{PrimitiveIterator, ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet, Iterator => JIterator, Map => JMap, Set => JSet}
 
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
-import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
-import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Templates._
+import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
+import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Direction, Node, Relationship}
-import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexQuery, NodeCursor, Read}
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -117,6 +116,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), nextLong))
 
+  override def nodeFromNodeCursor(targetVar: String, iterVar: String) =
+    generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), method[NodeCursor, Long]("nodeReference")))
+
   override def createRelExtractor(relVar: String) =
     generator.assign(typeRef[RelationshipDataExtractor], relExtractor(relVar), newRelationshipDataExtractor)
 
@@ -152,8 +154,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(typeRef[Long], relVar, invoke(generator.load(extractor), getRelationship))
   }
 
-  override def allNodesScan(iterVar: String) =
-    generator.assign(typeRef[PrimitiveLongIterator], iterVar, invoke(readOperations, nodesGetAll))
+  override def allNodesScan(iterVar: String) = {
+    generator.assign(typeRef[NodeCursor], iterVar, invoke(cursors, method[CursorFactory, NodeCursor]("allocateNodeCursor")))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[NodeCursor, Unit]("close"))))
+    generator.expression(invoke(dataRead, method[Read, Unit]("allNodesScan", typeRef[NodeCursor]), generator.load(iterVar) ))
+  }
 
   override def labelScan(iterVar: String, labelIdVar: String) =
     generator.assign(typeRef[PrimitiveLongIterator], iterVar,
@@ -174,6 +181,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def hasNextNode(iterVar: String) =
     invoke(generator.load(iterVar), hasNextLong)
+
+  override def advanceNodeCursor(iterVar: String) =
+    invoke(generator.load(iterVar), method[NodeCursor, Boolean]("next"))
 
   override def hasNextRelationship(iterVar: String) =
     invoke(generator.load(iterVar), hasMoreRelationship)
@@ -537,8 +547,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     invoke(method, lhs, rhs)
 
-  private val getOrLoadReadOperations: MethodReference =
+  private def getOrLoadReadOperations: MethodReference =
     methodReference(generator.owner(), typeRef[ReadOperations], "getOrLoadReadOperations")
+
+  private def dataRead: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[Read], "getOrLoadDataRead"))
+
+  private def cursors: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[CursorFactory], "getOrLoadCursors"))
+
+  private def nodeCursor: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[NodeCursor], "nodeCursor"))
 
   private def readOperations: Expression =
     invoke(generator.self(), getOrLoadReadOperations)

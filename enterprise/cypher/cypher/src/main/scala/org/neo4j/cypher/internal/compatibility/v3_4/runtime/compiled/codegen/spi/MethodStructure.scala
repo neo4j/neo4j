@@ -159,9 +159,11 @@ trait MethodStructure[E] {
   def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, toNode:String, toNodeType: CodeGenType)
   def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, types: Seq[String], toNode: String, toNodeType: CodeGenType)
   def nextNode(targetVar: String, iterVar: String): Unit
+  def nodeFromNodeCursor(targetVar: String, iterVar: String): Unit
   def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String, relVar: String): Unit
   def nextRelationship(iterVar: String, direction: SemanticDirection, relVar: String): Unit
   def hasNextNode(iterVar: String): E
+  def advanceNodeCursor(iterVar: String): E
   def hasNextRelationship(iterVar: String): E
   def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
