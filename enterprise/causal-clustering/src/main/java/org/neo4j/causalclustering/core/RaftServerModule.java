@@ -110,7 +110,6 @@ public class RaftServerModule
         return clusterBindingHandler
                 .compose( leaderAvailabilityHandler )
                 .compose( batchingMessageHandler )
-                .compose( clusterBindingHandler )
                 .compose( monitoringHandler )
                 .apply( messageApplier );
     }
