@@ -64,5 +64,11 @@ case class SlottedExecutionContextFactory(slots: SlotConfiguration) extends Exec
     throw new UnsupportedOperationException("Please implement")
 
   override def newExecutionContext(): ExecutionContext =
-    PrimitiveExecutionContext(slots)
+    SlottedExecutionContext(slots)
+
+  override def newExecutionContext(init: ExecutionContext): ExecutionContext = {
+    val newCtx = SlottedExecutionContext(slots)
+    init.copyTo(newCtx)
+    newCtx
+  }
 }

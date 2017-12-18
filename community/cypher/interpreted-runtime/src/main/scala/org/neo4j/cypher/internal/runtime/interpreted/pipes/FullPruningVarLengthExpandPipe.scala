@@ -294,7 +294,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
         inputRow = null
         null
       }
-      else inputRow.newWith1(self.toName, endNode)
+      else inputRow.copyWith(self.toName, endNode)
     }
 
     def push( pruningDFS: PruningDFS ): NodeValue = {

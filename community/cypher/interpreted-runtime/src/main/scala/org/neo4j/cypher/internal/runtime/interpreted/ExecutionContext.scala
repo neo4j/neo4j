@@ -28,7 +28,7 @@ import scala.collection.{Iterator, immutable}
 object ExecutionContext {
   def empty: ExecutionContext = apply()
 
-  def from(x: (String, AnyValue)*): ExecutionContext = apply().newWith(x)
+  def from(x: (String, AnyValue)*): ExecutionContext = apply().set(x)
 
   def apply(m: MutableMap[String, AnyValue] = MutableMaps.empty) = MapExecutionContext(m)
 }
@@ -44,19 +44,17 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def getRefAt(offset: Int): AnyValue
   def refs(): Array[AnyValue]
 
-  def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext
-  def newWith1(key1: String, value1: AnyValue): ExecutionContext
-  def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
-  def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext
+  def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext
+  def set(key: String, value: AnyValue): ExecutionContext
+  def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
+  def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext
   def mergeWith(other: ExecutionContext): ExecutionContext
   def createClone(): ExecutionContext
 
-  /**
-    * Like newWith1 but guarantees that we will never overwrite the value of an existing key
-    */
-  def newScopeWith1(key1: String, value1: AnyValue): ExecutionContext
-
-  def newScopeWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
+  def copyWith(key: String, value: AnyValue): ExecutionContext
+  def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
+  def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext
+  def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext
 }
 
 case class MapExecutionContext(m: MutableMap[String, AnyValue])
@@ -98,38 +96,45 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
 
   override def toMap[T, U](implicit ev: (String, AnyValue) <:< (T, U)): immutable.Map[T, U] = m.toMap(ev)
 
-  override def newWith(newEntries: Seq[(String, AnyValue)]): MapExecutionContext.this.type =
+  override def set(newEntries: Seq[(String, AnyValue)]): MapExecutionContext.this.type =
     createWithNewMap(m.clone() ++= newEntries)
 
   // This may seem silly but it has measurable impact in tight loops
 
-  override def newWith1(key1: String, value1: AnyValue): MapExecutionContext.this.type = {
+  override def set(key: String, value: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
-    newMap.put(key1, value1)
+    newMap.put(key, value)
     createWithNewMap(newMap)
   }
 
-  override def newScopeWith1(key1: String, value1: AnyValue): MapExecutionContext.this.type =
-    newWith1(key1, value1)
-
-  override def newScopeWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): MapExecutionContext.this.type = {
-    newWith2(key1, value1, key2, value2)
-  }
-
-  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): MapExecutionContext.this.type = {
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
     createWithNewMap(newMap)
   }
 
-  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): MapExecutionContext.this.type = {
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
     newMap.put(key3, value3)
     createWithNewMap(newMap)
   }
+
+  override def copyWith(key: String, value: AnyValue): MapExecutionContext.this.type =
+    set(key, value)
+
+  override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): MapExecutionContext.this.type = {
+    set(key1, value1, key2, value2)
+  }
+
+  override def copyWith(key1: String, value1: AnyValue,
+                        key2: String, value2: AnyValue,
+                        key3: String, value3: AnyValue): ExecutionContext =
+    set(key1, value1, key2, value2, key3, value3)
+
+  override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = set(newEntries)
 
   override def createClone(): ExecutionContext = createWithNewMap(m.clone())
 

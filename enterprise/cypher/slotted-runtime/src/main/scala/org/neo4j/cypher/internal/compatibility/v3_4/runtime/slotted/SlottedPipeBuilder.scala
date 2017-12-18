@@ -471,23 +471,24 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val (lhsLongSlots, lhsRefSlots) = lhsSlots.partitionSlots((_, slot) => slot.isLongSlot)
     val (rhsLongSlots, rhsRefSlots) = rhsSlots.partitionSlots((_, slot) => slot.isLongSlot)
 
-    val lhsArgLongSlots = lhsLongSlots.filter { case (_, slot) => slot.offset < argumentSize.nLongs }
-    val lhsArgRefSlots = lhsRefSlots.filter { case (_, slot) => slot.offset < argumentSize.nReferences }
-    val rhsArgLongSlots = rhsLongSlots.filter { case (_, slot) => slot.offset < argumentSize.nLongs }
-    val rhsArgRefSlots = rhsRefSlots.filter { case (_, slot) => slot.offset < argumentSize.nReferences }
+    val lhsArgLongSlots = lhsLongSlots.filter { case (_, slot) => slot.offset < argumentSize.nLongs } sortBy(_._1)
+    val lhsArgRefSlots = lhsRefSlots.filter { case (_, slot) => slot.offset < argumentSize.nReferences } sortBy(_._1)
+    val rhsArgLongSlots = rhsLongSlots.filter { case (_, slot) => slot.offset < argumentSize.nLongs } sortBy(_._1)
+    val rhsArgRefSlots = rhsRefSlots.filter { case (_, slot) => slot.offset < argumentSize.nReferences } sortBy(_._1)
 
-    val sizesAreTheSame = lhsArgLongSlots.size == rhsArgLongSlots.size && lhsArgLongSlots.size == argumentSize.nLongs &&
+    val sizesAreTheSame =
+      lhsArgLongSlots.size == rhsArgLongSlots.size && lhsArgLongSlots.size == argumentSize.nLongs &&
       lhsArgRefSlots.size == rhsArgRefSlots.size && lhsArgRefSlots.size == argumentSize.nReferences
-    val longSlotsOk = sizesAreTheSame && lhsArgLongSlots.forall {
-      case (k, slot) =>
-        val (k2, slot2) = rhsArgLongSlots(slot.offset)
-        k == k2 && slot.isTypeCompatibleWith(slot2)
-    }
-    val refSlotsOk = sizesAreTheSame && lhsArgRefSlots.forall {
-      case (k, slot) =>
-        val (k2, slot2) = rhsArgRefSlots(slot.offset)
-        k == k2 && slot.isTypeCompatibleWith(slot2)
-    }
+
+    def sameSlotsInOrder(a: Seq[(String, Slot)], b: Seq[(String, Slot)]): Boolean =
+      a.zip(b) forall {
+        case ((k1, slot1), (k2, slot2)) =>
+          k1 == k2 && slot1.offset == slot2.offset && slot1.isTypeCompatibleWith(slot2)
+      }
+
+    val longSlotsOk = sizesAreTheSame && sameSlotsInOrder(lhsArgLongSlots, rhsArgLongSlots)
+    val refSlotsOk = sizesAreTheSame && sameSlotsInOrder(lhsArgRefSlots, rhsArgRefSlots)
+
     if (!longSlotsOk || !refSlotsOk) {
       val longSlotsMessage = if (longSlotsOk) "" else s"#long arguments=${argumentSize.nLongs} lhs: $lhsLongSlots rhs: $rhsArgLongSlots "
       val refSlotsMessage = if (refSlotsOk) "" else s"#ref arguments=${argumentSize.nReferences} lhs: $lhsRefSlots rhs: $rhsArgRefSlots "
@@ -577,7 +578,7 @@ object SlottedPipeBuilder {
       }
       //Create a new context and apply all transformations
       (incoming: ExecutionContext, state: QueryState) =>
-        val outgoing = PrimitiveExecutionContext(out)
+        val outgoing = SlottedExecutionContext(out)
         mapSlots.foreach(f => f(incoming, outgoing, state))
         outgoing
     }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
@@ -76,7 +76,7 @@ case class ExpandIntoSlottedPipe(source: Pipe,
             .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
           PrimitiveLongHelper.map(relationships, (relId: Long) => {
-            val outputRow = PrimitiveExecutionContext(slots)
+            val outputRow = SlottedExecutionContext(slots)
             inputRow.copyTo(outputRow)
             outputRow.setLongAt(relOffset, relId)
             outputRow

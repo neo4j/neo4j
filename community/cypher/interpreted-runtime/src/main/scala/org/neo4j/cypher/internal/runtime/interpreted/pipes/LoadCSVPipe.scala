@@ -87,7 +87,7 @@ case class LoadCSVPipe(source: Pipe,
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
 
-        context.newWith1(variable, VirtualValues.map(internalMap.copy.mapValues(v => if (v == null) Values.NO_VALUE else v).asJava))
+        context.copyWith(variable, VirtualValues.map(internalMap.copy.mapValues(v => if (v == null) Values.NO_VALUE else v).asJava))
       } else null
     }
   }
@@ -95,7 +95,7 @@ case class LoadCSVPipe(source: Pipe,
   private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[Value]]) extends Iterator[ExecutionContext] {
     override def hasNext: Boolean = inner.hasNext
 
-    override def next(): ExecutionContext = context.newWith1(variable, VirtualValues.list(inner.next():_*))
+    override def next(): ExecutionContext = context.copyWith(variable, VirtualValues.list(inner.next():_*))
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

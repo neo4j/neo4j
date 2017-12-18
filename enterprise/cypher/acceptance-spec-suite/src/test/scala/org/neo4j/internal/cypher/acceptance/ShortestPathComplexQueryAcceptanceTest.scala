@@ -24,8 +24,6 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlan
 
 class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost2_3
-
   test("allShortestPaths with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
     val result = executeWith(Configs.Interpreted,

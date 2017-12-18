@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.ReferenceFromSlot
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
@@ -48,7 +48,7 @@ class UnwindSlottedPipeTest extends CypherFunSuite {
     val source = FakeSlottedPipe(data.toIterator, inputPipeline)
     val unwindPipe = UnwindSlottedPipe(source, ReferenceFromSlot(x), y, outputPipeline)()
     unwindPipe.createResults(QueryStateHelper.empty).map {
-      case c: PrimitiveExecutionContext =>
+      case c: SlottedExecutionContext =>
         Map("x" -> c.getRefAt(x), "y" -> c.getRefAt(y))
     }.toList
   }

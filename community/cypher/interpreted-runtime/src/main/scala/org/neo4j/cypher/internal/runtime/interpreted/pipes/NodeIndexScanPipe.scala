@@ -34,7 +34,6 @@ case class NodeIndexScanPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
     val resultNodes = state.query.indexScan(descriptor)
-    resultNodes.map(node => baseContext.newWith1(ident, node))
+    resultNodes.map(node => baseContext.copyWith(ident, node))
   }
-
 }

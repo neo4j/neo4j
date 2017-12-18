@@ -110,7 +110,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       }
 
       if (pathLength >= self.min)
-        (whenEmptied, row.newWith1(self.toName, node))
+        (whenEmptied, row.copyWith(self.toName, node))
       else
         whenEmptied.next()
     }
@@ -220,7 +220,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
       updateMinFullExpandDepth(currentFullExpandDepth)
 
-      (whenEmptied, row.newWith1(self.toName, node))
+      (whenEmptied, row.copyWith(self.toName, node))
     }
 
     private def hasRelationships = idx < fullExpandDepths.rels.length

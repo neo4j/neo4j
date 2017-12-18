@@ -51,12 +51,12 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
       shortestPathCommand.relIterator match {
         case Some(relName) =>
           result.iterator().asScala.map {
-            case (path: PathValue) => ctx.newScopeWith2(pathName, path, relName, VirtualValues.list(path.edges():_*))
+            case path: PathValue => ctx.copyWith(pathName, path, relName, VirtualValues.list(path.edges():_*))
             case value => throw new InternalException(s"Expected path, got '$value'")
           }
         case None =>
           result.iterator().asScala.map {
-            case path: PathValue => ctx.newScopeWith1(pathName, path)
+            case path: PathValue => ctx.copyWith(pathName, path)
             case value => throw new InternalException(s"Expected path, got '$value'")
           }
       }

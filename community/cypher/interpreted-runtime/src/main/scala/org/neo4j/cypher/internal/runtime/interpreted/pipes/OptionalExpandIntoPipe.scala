@@ -46,7 +46,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
             val toNode = getRowNode(row, toName)
 
             toNode match {
-              case Values.NO_VALUE => Iterator.single(row.newWith1(relName, Values.NO_VALUE))
+              case Values.NO_VALUE => Iterator.single(row.set(relName, Values.NO_VALUE))
               case n: NodeValue =>
                 val relationships = relCache.get(fromNode, n, dir)
                   .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, types.types(state.query)))
@@ -54,17 +54,17 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 val it = relationships.toIterator
                 val filteredRows = ListBuffer.empty[ExecutionContext]
                 while (it.hasNext) {
-                  val candidateRow = row.newWith1(relName, it.next())
+                  val candidateRow = row.copyWith(relName, it.next())
                   if (predicate.isTrue(candidateRow, state)) {
                     filteredRows.append(candidateRow)
                   }
                 }
 
-                if (filteredRows.isEmpty) Iterator.single(row.newWith1(relName, Values.NO_VALUE))
+                if (filteredRows.isEmpty) Iterator.single(row.set(relName, Values.NO_VALUE))
                 else filteredRows
             }
 
-          case Values.NO_VALUE => Iterator(row.newWith1(relName, Values.NO_VALUE))
+          case Values.NO_VALUE => Iterator(row.set(relName, Values.NO_VALUE))
         }
     }
   }

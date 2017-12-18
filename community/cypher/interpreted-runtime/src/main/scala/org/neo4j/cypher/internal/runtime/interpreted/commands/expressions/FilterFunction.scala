@@ -35,7 +35,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
     val traversable = makeTraversable(value)
     val innerContext = m.createClone()
     VirtualValues.filter(traversable, new java.util.function.Function[AnyValue, java.lang.Boolean]() {
-      override def apply(v1: AnyValue): java.lang.Boolean =  predicate.isTrue(innerContext.newWith1(id, v1), state)
+      override def apply(v1: AnyValue): java.lang.Boolean =  predicate.isTrue(innerContext.set(id, v1), state)
     })
   }
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
@@ -31,7 +31,7 @@ case class EagerSlottedPipe(source: Pipe, slots: SlotConfiguration)(val id: Logi
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map { inputRow =>
       // this is necessary because Eager is the beginning of a new pipeline
-      val outputRow = PrimitiveExecutionContext(slots)
+      val outputRow = SlottedExecutionContext(slots)
       inputRow.copyTo(outputRow)
       outputRow
     }.toIndexedSeq.iterator

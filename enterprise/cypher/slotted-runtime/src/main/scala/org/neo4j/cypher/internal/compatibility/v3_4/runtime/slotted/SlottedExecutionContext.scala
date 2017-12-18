@@ -28,8 +28,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue, VirtualValues}
 
-object PrimitiveExecutionContext {
-  def empty = new PrimitiveExecutionContext(SlotConfiguration.empty)
+object SlottedExecutionContext {
+  def empty = new SlottedExecutionContext(SlotConfiguration.empty)
 }
 
 /**
@@ -37,7 +37,7 @@ object PrimitiveExecutionContext {
   *
   * @param slots the slot configuration to use.
   */
-case class PrimitiveExecutionContext(slots: SlotConfiguration) extends ExecutionContext {
+case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionContext {
 
   override val longs = new Array[Long](slots.numberOfLongs)
   //java.util.Arrays.fill(longs, -2L) // When debugging long slot issues you can uncomment this to check for uninitialized long slots (also in getLongAt below)
@@ -57,7 +57,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
 
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit =
     target match {
-      case other@PrimitiveExecutionContext(otherPipeline) =>
+      case other@SlottedExecutionContext(otherPipeline) =>
         if (slots.numberOfLongs > otherPipeline.numberOfLongs ||
           slots.numberOfReferences > otherPipeline.numberOfReferences)
           throw new InternalException("Tried to copy more data into less.")
@@ -69,7 +69,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     }
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
-    case other@PrimitiveExecutionContext(otherPipeline) =>
+    case other@SlottedExecutionContext(otherPipeline) =>
       if (nLongs > slots.numberOfLongs || nRefs > slots.numberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
       else {
@@ -165,7 +165,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
 
   // The newWith methods are called from Community pipes. We should already have allocated slots for the given keys,
   // so we just set the values in the existing slots instead of creating a new context like in the MapExecutionContext.
-  override def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
+  override def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
     newEntries.foreach {
       case (k, v) =>
         setValue(k, v)
@@ -173,18 +173,18 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     this
   }
 
-  override def newWith1(key1: String, value1: AnyValue): ExecutionContext = {
+  override def set(key1: String, value1: AnyValue): ExecutionContext = {
     setValue(key1, value1)
     this
   }
 
-  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
     setValue(key1, value1)
     setValue(key2, value2)
     this
   }
 
-  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = {
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = {
     setValue(key1, value1)
     setValue(key2, value2)
     setValue(key3, value3)
@@ -193,19 +193,40 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
 
   // This method is used instead of newWith1 from a ScopeExpression where the key in the new scope is overriding an existing key
   // and it has to have the same name due to syntactic constraints. In this case we actually make a copy in order to not corrupt the existing slot.
-  override def newScopeWith1(key1: String, value1: AnyValue): ExecutionContext = {
-    val scopeContext = PrimitiveExecutionContext(slots)
-    copyTo(scopeContext)
-    scopeContext.setValue(key1, value1)
-    scopeContext
+  override def copyWith(key1: String, value1: AnyValue): ExecutionContext = {
+    val newCopy = SlottedExecutionContext(slots)
+    copyTo(newCopy)
+    newCopy.setValue(key1, value1)
+    newCopy
   }
 
-  override def newScopeWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
-    val scopeContext = PrimitiveExecutionContext(slots)
-    copyTo(scopeContext)
-    scopeContext.setValue(key1, value1)
-    scopeContext.setValue(key2, value2)
-    scopeContext
+  override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = {
+    val newCopy = SlottedExecutionContext(slots)
+    copyTo(newCopy)
+    newCopy.setValue(key1, value1)
+    newCopy.setValue(key2, value2)
+    newCopy
+  }
+
+  override def copyWith(key1: String, value1: AnyValue,
+                        key2: String, value2: AnyValue,
+                        key3: String, value3: AnyValue): ExecutionContext = {
+    val newCopy = SlottedExecutionContext(slots)
+    copyTo(newCopy)
+    newCopy.setValue(key1, value1)
+    newCopy.setValue(key2, value2)
+    newCopy.setValue(key3, value3)
+    newCopy
+  }
+
+  override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
+    val newCopy = SlottedExecutionContext(slots)
+    copyTo(newCopy)
+    for (t <- newEntries) {
+      val (key,value) = t
+      newCopy.setValue(key, value)
+    }
+    newCopy
   }
 
   private def setValue(key1: String, value1: AnyValue): Unit = {
@@ -254,7 +275,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
     refs(offset)
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
-    case primitiveOther: PrimitiveExecutionContext =>
+    case primitiveOther: SlottedExecutionContext =>
       primitiveOther.slots.foreachSlot {
         case (key, otherSlot) =>
           val thisSlot = slots.get(key).getOrElse(
@@ -277,7 +298,7 @@ case class PrimitiveExecutionContext(slots: SlotConfiguration) extends Execution
   }
 
   override def createClone(): ExecutionContext = {
-    val clone = PrimitiveExecutionContext(slots)
+    val clone = SlottedExecutionContext(slots)
     copyTo(clone)
     clone
   }

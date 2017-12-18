@@ -29,8 +29,8 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
   private def slots(longs: Int, refs: Int) = SlotConfiguration(Map.empty, longs, refs)
 
   test("copy fills upp the first few elements") {
-    val input = PrimitiveExecutionContext(slots(2, 1))
-    val result = PrimitiveExecutionContext(slots(3, 2))
+    val input = SlottedExecutionContext(slots(2, 1))
+    val result = SlottedExecutionContext(slots(3, 2))
 
     input.setLongAt(0, 42)
     input.setLongAt(1, 666)
@@ -44,15 +44,15 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
   }
 
   test("copy fails if copy from larger") {
-    val input = PrimitiveExecutionContext(slots(4, 0))
-    val result = PrimitiveExecutionContext(slots(2, 0))
+    val input = SlottedExecutionContext(slots(4, 0))
+    val result = SlottedExecutionContext(slots(2, 0))
 
     intercept[InternalException](result.copyFrom(input, 4, 0))
   }
 
   test("copy fails if copy from larger 2") {
-    val input = PrimitiveExecutionContext(slots(0, 4))
-    val result = PrimitiveExecutionContext(slots(0, 2))
+    val input = SlottedExecutionContext(slots(0, 4))
+    val result = SlottedExecutionContext(slots(0, 2))
 
     intercept[InternalException](result.copyFrom(input, 0, 4))
   }

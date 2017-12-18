@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -128,7 +128,7 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
       inputRow =>
         val fromNode = getFromNodeFunction(inputRow)
         if (entityIsNull(fromNode)) {
-          val resultRow = PrimitiveExecutionContext(slots)
+          val resultRow = SlottedExecutionContext(slots)
           resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
           resultRow.setRefAt(relOffset, Values.NO_VALUE)
           if (shouldExpandAll)
@@ -145,7 +145,7 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
             paths collect {
               case (toNode: LNode, rels: Seq[EdgeValue])
                 if rels.length >= min && isToNodeValid(inputRow, toNode) =>
-                val resultRow = PrimitiveExecutionContext(slots)
+                val resultRow = SlottedExecutionContext(slots)
                 resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
                 if (shouldExpandAll)
                   resultRow.setLongAt(toOffset, toNode)

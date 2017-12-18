@@ -341,10 +341,11 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         planDescription.find("Argument") shouldNot be(empty)
         planDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
         planDescription.find("Expand(All)") shouldNot be(empty)
-        planDescription.cd("Expand(All)").arguments.toSet should equal(Set(
-          ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, 1, Some(1)),
-          EstimatedRows(0.25)
-        ))
+        val expandArgs = planDescription.cd("Expand(All)").arguments.toSet
+        expandArgs should contain(EstimatedRows(0.25))
+        expandArgs collect {
+          case ExpandExpression("n", _, Seq("HAS"), _, SemanticDirection.OUTGOING, 1, Some(1)) => true
+        } should not be empty
       }, Configs.AllRulePlanners + Configs.Version2_3))
   }
 

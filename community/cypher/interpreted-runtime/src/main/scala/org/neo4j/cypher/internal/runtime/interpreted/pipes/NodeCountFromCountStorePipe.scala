@@ -42,6 +42,6 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
           count *= state.query.nodeCountByCountStore(NameId.WILDCARD)
       }
     }
-    Seq(baseContext.newWith1(ident, Values.longValue(count))).iterator
+    Seq(baseContext.copyWith(ident, Values.longValue(count))).iterator
   }
 }

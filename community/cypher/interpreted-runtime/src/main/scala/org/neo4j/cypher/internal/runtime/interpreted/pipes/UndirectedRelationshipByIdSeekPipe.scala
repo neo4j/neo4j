@@ -36,7 +36,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
   relIdExpr.registerOwningPipe(this)
 
   protected override def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
+    val ctx = state.createOrGetInitialContext(executionContextFactory)
     val relIds = VirtualValues.filter(relIdExpr.expressions(ctx, state), new function.Function[AnyValue, java.lang.Boolean] {
       override def apply(t: AnyValue): lang.Boolean = t != Values.NO_VALUE
     })

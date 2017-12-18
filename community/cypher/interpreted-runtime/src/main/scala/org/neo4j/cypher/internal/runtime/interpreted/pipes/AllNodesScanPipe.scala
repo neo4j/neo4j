@@ -26,7 +26,7 @@ case class AllNodesScanPipe(ident: String)(val id: LogicalPlanId = LogicalPlanId
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    state.query.nodeOps.all.map(n => baseContext.newWith1(ident, n))
+    state.query.nodeOps.all.map(n => baseContext.copyWith(ident, n))
   }
 
 }
