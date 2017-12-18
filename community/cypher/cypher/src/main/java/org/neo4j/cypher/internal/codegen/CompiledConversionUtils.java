@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -370,6 +371,31 @@ public abstract class CompiledConversionUtils
         else if ( iterable == null )
         {
             return Collections.emptyIterator();
+        }
+        else if ( iterable.getClass().isArray() )
+        {
+            int len = Array.getLength( iterable );
+
+            return new Iterator()
+            {
+                private int position = 0;
+
+                @Override
+                public boolean hasNext()
+                {
+                    return position < len;
+                }
+
+                @Override
+                public Object next()
+                {
+                    if ( position >= len )
+                    {
+                        throw new NoSuchElementException();
+                    }
+                    return Array.get( iterable, position++ );
+                }
+            };
         }
         else
         {
