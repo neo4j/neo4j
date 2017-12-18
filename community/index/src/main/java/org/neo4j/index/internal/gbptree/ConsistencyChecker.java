@@ -390,6 +390,12 @@ class ConsistencyChecker<KEY>
         do
         {
             child = childAt( cursor, pos );
+        }
+        while ( cursor.shouldRetry() );
+        checkAfterShouldRetry( cursor );
+
+        do
+        {
             childGeneration = node.pointerGeneration( cursor, child );
         }
         while ( cursor.shouldRetry() );
@@ -448,20 +454,22 @@ class ConsistencyChecker<KEY>
         long currentNodeId = cursor.getCurrentPageId();
         // A
         long generationA = GenerationSafePointer.readGeneration( cursor );
-        long pointerA = GenerationSafePointer.readPointer( cursor );
+        long readPointerA = GenerationSafePointer.readPointer( cursor );
+        long pointerA = GenerationSafePointerPair.pointer( readPointerA );
         short checksumA = GenerationSafePointer.readChecksum( cursor );
-        boolean correctChecksumA = GenerationSafePointer.checksumOf( generationA, pointerA ) == checksumA;
+        boolean correctChecksumA = GenerationSafePointer.checksumOf( generationA, readPointerA ) == checksumA;
         byte stateA = GenerationSafePointerPair.pointerState(
-                stableGeneration, unstableGeneration, generationA, pointerA, correctChecksumA );
+                stableGeneration, unstableGeneration, generationA, readPointerA, correctChecksumA );
         boolean okA = stateA != GenerationSafePointerPair.BROKEN && stateA != GenerationSafePointerPair.CRASH;
 
         // B
         long generationB = GenerationSafePointer.readGeneration( cursor );
-        long pointerB = GenerationSafePointer.readPointer( cursor );
+        long readPointerB = GenerationSafePointer.readPointer( cursor );
+        long pointerB = GenerationSafePointerPair.pointer( readPointerA );
         short checksumB = GenerationSafePointer.readChecksum( cursor );
-        boolean correctChecksumB = GenerationSafePointer.checksumOf( generationB, pointerB ) == checksumB;
+        boolean correctChecksumB = GenerationSafePointer.checksumOf( generationB, readPointerB ) == checksumB;
         byte stateB = GenerationSafePointerPair.pointerState(
-                stableGeneration, unstableGeneration, generationB, pointerB, correctChecksumB );
+                stableGeneration, unstableGeneration, generationB, readPointerB, correctChecksumB );
         boolean okB = stateB != GenerationSafePointerPair.BROKEN && stateB != GenerationSafePointerPair.CRASH;
 
         if ( !(okA && okB) )
@@ -471,15 +479,15 @@ class ConsistencyChecker<KEY>
             cursor.setCursorException( format(
                     "GSPP state found that was not ok in %s field in %s node with id %d%n  slotA[%s]%n  slotB[%s]",
                     pointerFieldName, type, currentNodeId,
-                    stateToString( generationA, pointerA, stateA ),
-                    stateToString( generationB, pointerB, stateB ) ) );
+                    stateToString( generationA, readPointerA, pointerA, stateA ),
+                    stateToString( generationB, readPointerB, pointerB, stateB ) ) );
         }
     }
 
-    private static String stateToString( long generationA, long pointerA, byte stateA )
+    private static String stateToString( long generation, long readPointer, long pointer, byte stateA )
     {
-        return format( "generation=%d, pointer=%d, state=%s",
-                generationA, pointerA, GenerationSafePointerPair.pointerStateName( stateA ) );
+        return format( "generation=%d, readPointer=%d, pointer=%d, state=%s",
+                generation, readPointer, pointer, GenerationSafePointerPair.pointerStateName( stateA ) );
     }
 
     private static class KeyRange<KEY>
