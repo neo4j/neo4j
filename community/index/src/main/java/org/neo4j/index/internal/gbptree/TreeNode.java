@@ -30,39 +30,6 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 /**
  * Methods to manipulate single tree node such as set and get header fields,
  * insert and fetch keys, values and children.
- * <p>
- * DESIGN
- * <p>
- * Using Separate design the internal nodes should look like
- * <pre>
- * # = empty space
- *
- * [                                   HEADER   82B                           ]|[   KEYS   ]|[     CHILDREN      ]
- * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]|[[KEY]...##]|[[CHILD][CHILD]...##]
- *  0         1     2           6         10            34           58          82
- * </pre>
- * Calc offset for key i (starting from 0)
- * HEADER_LENGTH + i * SIZE_KEY
- * <p>
- * Calc offset for child i
- * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_INTERNAL + i * SIZE_CHILD
- * <p>
- * Using Separate design the leaf nodes should look like
- *
- * <pre>
- * [                                   HEADER   82B                           ]|[    KEYS  ]|[   VALUES   ]
- * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]|[[KEY]...##]|[[VALUE]...##]
- *  0         1     2           6         10            34           58          82
- * </pre>
- *
- * Calc offset for key i (starting from 0)
- * HEADER_LENGTH + i * SIZE_KEY
- * <p>
- * Calc offset for value i
- * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_LEAF + i * SIZE_VALUE
- *
- * @param <KEY> type of key
- * @param <VALUE> type of value
  */
 abstract class TreeNode<KEY,VALUE>
 {
@@ -337,8 +304,9 @@ abstract class TreeNode<KEY,VALUE>
     abstract boolean leafUnderflow( PageCursor cursor, int keyCount );
 
     /**
+     * How do we best rebalance left and right leaf?
      * Can we move keys from underflowing left to right so that none of them underflow?
-     * @return number of keys to move or -1 if not possible.
+     * @return 0, do nothing. -1, merge. 1-inf, move this number of keys from left to right.
      */
     abstract int canRebalanceLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount );
 
@@ -375,4 +343,9 @@ abstract class TreeNode<KEY,VALUE>
     abstract void moveKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
             int fromPosInLeftNode );
 
+    // Useful for debugging
+    @SuppressWarnings( "unused" )
+    void printNode( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
+    {   // default no-op
+    }
 }

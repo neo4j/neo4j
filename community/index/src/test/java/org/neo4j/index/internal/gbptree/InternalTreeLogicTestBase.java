@@ -978,6 +978,30 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         consistencyChecker.check( readCursor, rootGeneration );
     }
 
+    @Test
+    public void modifierMustProduceConsistentTreeWithRandomInsertsWithConflictingKeys() throws Exception
+    {
+        // given
+        initialize();
+        int numberOfEntries = 100_000;
+        for ( int i = 0; i < numberOfEntries; i++ )
+        {
+            // when
+            long keySeed = random.nextLong( 1000 );
+            insert( key( keySeed ), value( random.nextLong() ) );
+            if ( i == numberOfEntries / 2 )
+            {
+                generationManager.checkpoint();
+            }
+        }
+
+        // then
+        goTo( readCursor, rootId );
+        ConsistencyChecker<KEY> consistencyChecker =
+                new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
+        consistencyChecker.check( readCursor, rootGeneration );
+    }
+
     /* TEST VALUE MERGER */
 
     @Test

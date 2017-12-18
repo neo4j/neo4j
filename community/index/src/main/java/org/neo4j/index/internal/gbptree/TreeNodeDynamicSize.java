@@ -42,6 +42,20 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
+/**
+ * # = empty space
+ * K* = offset to key or key and value
+ *
+ * LEAF
+ * [                                   HEADER   86B                                                   ]|[KEY_OFFSETS]##########[KEYS_VALUES]
+ * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR][ALLOCOFFSET][DEADSPACE]|[K0*,K1*,K2*]->      <-[KV0,KV2,KV1]
+ *  0         1     2           6         10            34           58         82           84          86
+ *
+ *  INTERNAL
+ * [                                   HEADER   86B                                                   ]|[  KEY_OFFSET_CHILDREN  ]######[  KEYS  ]
+ * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR][ALLOCOFFSET][DEADSPACE]|[C0,K0*,C1,K1*,C2,K2*,C3]->  <-[K2,K0,K1]
+ *  0         1     2           6         10            34           58         82           84          86
+ */
 public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 {
     private static final int BYTE_POS_ALLOCOFFSET = BASE_HEADER_LENGTH;
@@ -76,6 +90,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     void writeAdditionalHeader( PageCursor cursor )
     {
         setAllocOffset( cursor, pageSize );
+        setDeadSpace( cursor, 0 );
     }
 
     @Override
@@ -308,13 +323,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     void defragmentLeaf( PageCursor cursor )
     {
-        int minSizeOfOneKey = bytesKeySize() + bytesKeyOffset() + bytesValueSize();
         doDefragment( cursor, LEAF );
     }
 
     private void defragmentInternal( PageCursor cursor )
     {
-        int minSizeOfOneKey = bytesKeySize() + bytesKeyOffset() + childSize();
         doDefragment( cursor, INTERNAL );
     }
 
@@ -423,7 +436,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
         while ( !aliveKeysOffset.isEmpty() );
         // Update allocOffset
+        int prevAllocOffset = getAllocOffset( cursor );
         setAllocOffset( cursor, aliveRangeOffset );
+
+        // Pad reclaimed area with zeroes
+        cursor.setOffset( prevAllocOffset );
+        cursor.putBytes( aliveRangeOffset - prevAllocOffset, (byte) 0 );
 
         // Update offset array
         int keyCount = keyCount( cursor );
@@ -468,7 +486,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         if ( leftActiveSpace + rightActiveSpace < totalSpace( pageSize ) )
         {
-            // There is no way to split this up without one of them having an underflow
+            // We can merge
             return -1;
         }
 
@@ -493,7 +511,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         int halfSpace = halfSpace();
         boolean canRebalance = leftActiveSpace > halfSpace && rightActiveSpace > halfSpace;
-        return canRebalance ? keysToMove : -1;
+        return canRebalance ? keysToMove : 0;
     }
 
     @Override
@@ -991,15 +1009,15 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         int currentOffset = cursor.getOffset();
         // [header] <- dont care
-        // LEAF:     [allocSpace=][child0,key0*,child1,...][keySize|key][keySize|key]
-        // INTERNAL: [allocSpace=][key0*,key1*,...][offset|keySize|valueSize|key][keySize|valueSize|key]
+        // LEAF:     [allocOffset=][child0,key0*,child1,...][keySize|key][keySize|key]
+        // INTERNAL: [allocOffset=][key0*,key1*,...][offset|keySize|valueSize|key][keySize|valueSize|key]
 
         Type type = isInternal( cursor ) ? INTERNAL : LEAF;
 
         // HEADER
-        int allocSpace = getAllocOffset( cursor );
+        int allocOffset = getAllocOffset( cursor );
         int deadSpace = getDeadSpace( cursor );
-        String additionalHeader = "{" + cursor.getCurrentPageId() + "} [allocSpace=" + allocSpace + " deadSpace=" + deadSpace + "] ";
+        String additionalHeader = "{" + cursor.getCurrentPageId() + "} [allocOffset=" + allocOffset + " deadSpace=" + deadSpace + "] ";
 
         // OFFSET ARRAY
         String offsetArray = readOffsetArray( cursor, stableGeneration, unstableGeneration, type );
@@ -1008,7 +1026,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         KEY readKey = layout.newKey();
         VALUE readValue = layout.newValue();
         StringJoiner keys = new StringJoiner( " ");
-        cursor.setOffset( allocSpace );
+        cursor.setOffset( allocOffset );
         while ( cursor.getOffset() < cursor.getCurrentPageSize() )
         {
             StringJoiner singleKey = new StringJoiner( "|" );
@@ -1051,6 +1069,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @SuppressWarnings( "unused" )
+    @Override
     void printNode( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
     {
         System.out.println( asString( cursor, includeValue, stableGeneration, unstableGeneration ) );

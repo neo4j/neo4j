@@ -27,6 +27,41 @@ import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_VALUE;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
+/**
+ * <p>
+ * DESIGN
+ * <p>
+ * Using Separate design the internal nodes should look like
+ * <pre>
+ * # = empty space
+ *
+ * [                                   HEADER   82B                           ]|[   KEYS   ]|[     CHILDREN      ]
+ * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]|[[KEY]...##]|[[CHILD][CHILD]...##]
+ *  0         1     2           6         10            34           58          82
+ * </pre>
+ * Calc offset for key i (starting from 0)
+ * HEADER_LENGTH + i * SIZE_KEY
+ * <p>
+ * Calc offset for child i
+ * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_INTERNAL + i * SIZE_CHILD
+ * <p>
+ * Using Separate design the leaf nodes should look like
+ *
+ * <pre>
+ * [                                   HEADER   82B                           ]|[    KEYS  ]|[   VALUES   ]
+ * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]|[[KEY]...##]|[[VALUE]...##]
+ *  0         1     2           6         10            34           58          82
+ * </pre>
+ *
+ * Calc offset for key i (starting from 0)
+ * HEADER_LENGTH + i * SIZE_KEY
+ * <p>
+ * Calc offset for value i
+ * HEADER_LENGTH + SIZE_KEY * MAX_KEY_COUNT_LEAF + i * SIZE_VALUE
+ *
+ * @param <KEY> type of key
+ * @param <VALUE> type of value
+ */
 class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 {
     private final int internalMaxKeyCount;
