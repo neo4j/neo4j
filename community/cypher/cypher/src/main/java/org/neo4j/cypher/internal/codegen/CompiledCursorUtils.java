@@ -29,7 +29,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 /**
- * Utilities for working with cursor from within generated code
+ * Utilities for working with cursors from within generated code
  */
 public final class CompiledCursorUtils
 {
@@ -38,12 +38,12 @@ public final class CompiledCursorUtils
      */
     private CompiledCursorUtils()
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
-
 
     /**
      * Fetches a given property from a node
+     *
      * @param read The current Read instance
      * @param nodeCursor The node cursor to use
      * @param node The id of the node
@@ -52,7 +52,8 @@ public final class CompiledCursorUtils
      * @return The value of the given property
      * @throws EntityNotFoundException If the node cannot be find.
      */
-    public static Value nodeGetProperty(Read read, NodeCursor nodeCursor, long node, PropertyCursor propertyCursor, int prop) throws EntityNotFoundException
+    public static Value nodeGetProperty( Read read, NodeCursor nodeCursor, long node, PropertyCursor propertyCursor,
+            int prop ) throws EntityNotFoundException
     {
         if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
@@ -73,6 +74,32 @@ public final class CompiledCursorUtils
         }
 
         return Values.NO_VALUE;
+    }
+
+    /**
+     * Checks if given node has a given label.
+     *
+     * @param read The current Read instance
+     * @param nodeCursor The node cursor to use
+     * @param node The id of the node
+     * @param label The id of the label
+     * @return <tt>true</tt> if the node has the label, otherwise <tt>false</tt>
+     * @throws EntityNotFoundException if the node is not there.
+     */
+    public static boolean nodeHasLabel( Read read, NodeCursor nodeCursor, long node, int label )
+            throws EntityNotFoundException
+    {
+        if ( label == StatementConstants.NO_SUCH_LABEL )
+        {
+            return false;
+        }
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, node );
+        }
+
+        return nodeCursor.labels().contains( label );
     }
 }
 

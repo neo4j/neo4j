@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.codegen
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.codegen.CompiledCursorUtils.nodeGetProperty
+import org.neo4j.cypher.internal.codegen.CompiledCursorUtils.{nodeGetProperty, nodeHasLabel}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read}
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException
+import org.neo4j.kernel.impl.newapi.Labels
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 
 class CompiledCursorUtilsTest extends CypherFunSuite {
@@ -58,7 +59,7 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
     value should equal(NO_VALUE)
   }
 
-  test("should throw if node is missing") {
+  test("should throw if node is missing when querying for property") {
     // Given
     val read = mock[Read]
     val nodeCursor = mock[NodeCursor]
@@ -66,5 +67,25 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
 
     // Expect
     an [EntityNotFoundException] shouldBe thrownBy(nodeGetProperty(read, nodeCursor, 42L, mock[PropertyCursor], 1337))
+  }
+
+  test("should find if a node has a label") {
+    // Given
+    val nodeCursor = mock[NodeCursor]
+    when(nodeCursor.next()).thenReturn(true)
+    when(nodeCursor.labels()).thenReturn(new Labels(Array(1337L, 42L, 13L)))
+
+    // Then
+    nodeHasLabel(mock[Read], nodeCursor, 1L, 1337) shouldBe true
+    nodeHasLabel(mock[Read], nodeCursor, 1L, 1980) shouldBe false
+  }
+
+  test("should throw when node is missing when checking label") {
+    // Given
+    val nodeCursor = mock[NodeCursor]
+    when(nodeCursor.next()).thenReturn(false)
+
+    // Expect
+    an [EntityNotFoundException] shouldBe thrownBy(nodeHasLabel(mock[Read], nodeCursor, 1L, 1337))
   }
 }

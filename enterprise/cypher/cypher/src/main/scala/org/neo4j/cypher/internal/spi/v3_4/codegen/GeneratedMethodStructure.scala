@@ -1347,8 +1347,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(predVar)
 
     handleEntityNotFound(generator, fields, _finalizers) { inner =>
-      val invoke = Expression.invoke(readOperations, nodeHasLabel, inner.load(nodeVar), inner.load(labelVar))
-      inner.assign(local, invoke)
+      val invoked =
+        invoke(
+          methodReference(typeRef[CompiledCursorUtils],
+                          typeRef[Boolean], "nodeHasLabel",
+                          typeRef[Read], typeRef[NodeCursor], typeRef[Long],
+                          typeRef[Int]),
+          dataRead, nodeCursor, inner.load(nodeVar), inner.load(labelVar))
+      inner.assign(local, invoked)
       generator.load(predVar)
     } { fail =>
       fail.assign(local, constant(false))
