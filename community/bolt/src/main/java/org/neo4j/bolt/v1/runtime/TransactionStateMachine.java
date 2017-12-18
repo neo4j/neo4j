@@ -20,9 +20,9 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
-import java.util.regex.Pattern;
-import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
@@ -31,13 +31,16 @@ import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.function.ThrowingAction.noop;
@@ -47,6 +50,7 @@ public class TransactionStateMachine implements StatementProcessor
     private static final Pattern BEGIN = Pattern.compile("(?i)^\\s*BEGIN\\s*;?\\s*$");
     private static final Pattern COMMIT = Pattern.compile("(?i)^\\s*COMMIT\\s*;?\\s*$");
     private static final Pattern ROLLBACK = Pattern.compile("(?i)^\\s*ROLLBACK\\s*;?\\s*$");
+    private static final String TX_TIMEOUT_MILLIS = "txTimeout";
 
     final SPI spi;
     final MutableTransactionState ctx;
@@ -196,7 +200,22 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         if ( BEGIN.matcher( statement ).matches() )
                         {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
+                            AnyValue txTimeoutMills = params.get( TX_TIMEOUT_MILLIS );
+                            if ( txTimeoutMills == Values.NO_VALUE )
+                            {
+                                ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
+                            }
+                            else if ( txTimeoutMills instanceof IntegralValue )
+                            {
+                                ctx.currentTransaction = spi.beginTransaction( ctx.securityContext,
+                                        ((IntegralValue) txTimeoutMills).longValue(), TimeUnit.MILLISECONDS );
+                            }
+                            else
+                            {
+                                throw new QueryExecutionKernelException( new InvalidSemanticsException(
+                                        "Invalid transaction timeout type. Expecting to be an integer, but got " +
+                                        txTimeoutMills.toString() ) );
+                            }
 
                             Bookmark bookmark = Bookmark.fromParamsOrNull( params );
                             if ( bookmark != null )
@@ -470,6 +489,8 @@ public class TransactionStateMachine implements StatementProcessor
         long newestEncounteredTxId();
 
         KernelTransaction beginTransaction( SecurityContext securityContext );
+
+        KernelTransaction beginTransaction( SecurityContext securityContext, long timeout, TimeUnit timeUnit );
 
         void bindTransactionToCurrentThread( KernelTransaction tx );
 
