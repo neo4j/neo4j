@@ -117,14 +117,14 @@ public class ConsensusModule
 
         leaderAvailabilityTimers = createElectionTiming( config, timerService, logProvider );
 
-        Integer expectedClusterSize = config.get( CausalClusteringSettings.expected_core_cluster_size );
+        Integer minimumConsensusGroupSize = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_runtime );
 
         MemberIdSetBuilder memberSetBuilder = new MemberIdSetBuilder();
 
         SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                expectedClusterSize, leaderAvailabilityTimers.getElectionTimeout(), systemClock(), config.get( join_catch_up_timeout ).toMillis(),
+                minimumConsensusGroupSize, leaderAvailabilityTimers.getElectionTimeout(), systemClock(), config.get( join_catch_up_timeout ).toMillis(),
                 raftMembershipStorage );
 
         life.add( raftMembershipManager );
