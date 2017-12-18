@@ -89,6 +89,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
@@ -897,7 +898,12 @@ public class ImportToolTest
                 {
                     while ( nodesByLabel.hasNext() )
                     {
-                        assertTrue( nodesByLabel.next().hasLabel( label ) );
+                        Node node = nodesByLabel.next();
+                        if ( !node.hasLabel( label ) )
+                        {
+                            fail( "Expected " + node + " to have label " + label.name() + ", but instead had " +
+                                    asList( node.getLabels() ) );
+                        }
                     }
                 }
             }
