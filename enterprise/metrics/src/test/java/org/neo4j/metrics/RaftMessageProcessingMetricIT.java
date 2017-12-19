@@ -46,7 +46,7 @@ public class RaftMessageProcessingMetricIT
         private static final int TIMEOUT = 15;
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 )
             .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "1s" )
