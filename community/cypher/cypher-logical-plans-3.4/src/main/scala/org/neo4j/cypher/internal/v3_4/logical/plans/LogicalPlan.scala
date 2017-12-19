@@ -112,10 +112,12 @@ abstract class LogicalPlan
       val constructor = this.copyConstructor
       val params = constructor.getParameterTypes
       val args = children.toIndexedSeq
-      if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[PlannerQuery]))
+      val resultingPlan = if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[PlannerQuery]))
         constructor.invoke(this, args :+ this.solved: _*).asInstanceOf[this.type]
       else
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
+      resultingPlan.transactionLayer.copyFrom(transactionLayer)
+      resultingPlan
     }
 
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty

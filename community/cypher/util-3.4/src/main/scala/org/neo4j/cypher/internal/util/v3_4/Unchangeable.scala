@@ -40,5 +40,9 @@ class Unchangeable[A]() {
     _value = Some(newValue)
   }
 
+  // Copy from another Unchangeable[A] iff set
+  def copyFrom(other: Unchangeable[A]) = if(other.hasValue)
+    value_=(other.value)
+
   override def toString: String = s"Unchangeable(${_value.getOrElse("NOT SET")})"
 }
