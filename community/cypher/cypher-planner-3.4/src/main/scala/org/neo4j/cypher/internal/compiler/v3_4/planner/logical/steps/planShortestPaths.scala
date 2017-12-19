@@ -94,7 +94,7 @@ case object planShortestPaths {
     val rhsArgument = lpp.planArgumentFrom(lhs, context)
 
     val rhs = if (context.errorIfShortestPathFallbackUsedAtRuntime) {
-      lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException)
+      lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException, context)
     } else {
       buildPlanShortestPathsFallbackPlans(shortestPath, rhsArgument, predicates, queryGraph, context)
     }

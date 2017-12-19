@@ -193,7 +193,7 @@ case class ListSubQueryExpressionSolver[T <: Expression](
     val key = maybeKey.getOrElse(FreshIdNameGenerator.name(expr.position.bumped()))
     val subQueryPlan = planSubQuery(source, expr, context)
     val producedPlan = context.logicalPlanProducer.planRollup(source, subQueryPlan.innerPlan, IdName(key),
-      subQueryPlan.variableToCollect, subQueryPlan.nullableIdentifiers)
+      subQueryPlan.variableToCollect, subQueryPlan.nullableIdentifiers, context)
 
     (producedPlan, Variable(key)(expr.position))
   }

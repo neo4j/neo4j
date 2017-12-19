@@ -41,7 +41,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
   def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1)
 
   def planLock(plan: LogicalPlan, nodesToLock: Set[IdName], context: LogicalPlanningContext): LogicalPlan =
-    LockNodes(plan, nodesToLock)(plan.solved)
+    annotate(LockNodes(plan, nodesToLock), plan.solved, context)
 
   def solvePredicate(plan: LogicalPlan, solved: Expression, context: LogicalPlanningContext): LogicalPlan = {
     val pq = plan.solved.amendQueryGraph(_.addPredicates(solved))
@@ -160,7 +160,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
   }
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    Selection(predicates, left)(left.solved)
+    annotate(Selection(predicates, left), left.solved, context)
   }
 
   def planNodeByIdSeek(idName: IdName, nodeIds: SeekableArgs,
@@ -313,22 +313,22 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
   }
 
   def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
-    SelectOrAntiSemiApply(outer, inner, expr)(outer.solved)
+    annotate(SelectOrAntiSemiApply(outer, inner, expr), outer.solved, context)
 
   def planLetSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: IdName, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
-    LetSelectOrAntiSemiApply(outer, inner, id, expr)(outer.solved)
+    annotate(LetSelectOrAntiSemiApply(outer, inner, id, expr), outer.solved, context)
 
   def planSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
-    SelectOrSemiApply(outer, inner, expr)(outer.solved)
+    annotate(SelectOrSemiApply(outer, inner, expr), outer.solved, context)
 
   def planLetSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: IdName, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
-    LetSelectOrSemiApply(outer, inner, id, expr)(outer.solved)
+    annotate(LetSelectOrSemiApply(outer, inner, id, expr), outer.solved, context)
 
   def planLetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, id: IdName, context: LogicalPlanningContext): LogicalPlan =
-    LetAntiSemiApply(left, right, id)(left.solved)
+    annotate(LetAntiSemiApply(left, right, id), left.solved, context)
 
   def planLetSemiApply(left: LogicalPlan, right: LogicalPlan, id: IdName, context: LogicalPlanningContext): LogicalPlan =
-    LetSemiApply(left, right, id)(left.solved)
+    annotate(LetSemiApply(left, right, id), left.solved, context)
 
   def planAntiSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: PatternExpression, expr: Expression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
@@ -348,7 +348,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
   }
 
   def planArgumentFrom(plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
-    Argument(plan.availableSymbols)(plan.solved)
+    annotate(Argument(plan.availableSymbols), plan.solved, context)
 
   def planArgument(patternNodes: Set[IdName],
                    patternRels: Set[PatternRelationship] = Set.empty,
@@ -370,7 +370,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
     annotate(Argument(Set.empty), PlannerQuery.empty, context)
 
   def planEmptyProjection(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
-    EmptyResult(inner)(inner.solved)
+    annotate(EmptyResult(inner), inner.solved, context)
 
   def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val newSolved: PlannerQuery = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported)))
@@ -384,8 +384,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
 
   def planRollup(lhs: LogicalPlan, rhs: LogicalPlan,
                  collectionName: IdName, variableToCollect: IdName,
-                 nullable: Set[IdName]): LogicalPlan = {
-    RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable)(lhs.solved)
+                 nullable: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
+    annotate(RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable), lhs.solved, context)
   }
 
   def planCountStoreNodeAggregation(query: PlannerQuery, projectedColumn: IdName, labels: List[Option[LabelName]], argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
@@ -451,7 +451,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
   }
 
   def planUnion(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    Union(left, right)(left.solved)
+    annotate(Union(left, right), left.solved, context)
     /* TODO: This is not correct in any way.
      LogicalPlan.solved contains a PlannerQuery, but to represent a Union, we'd need a UnionQuery instead
      Not very important at the moment, but dirty.
@@ -463,7 +463,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
       case AliasedReturnItem(e, Variable(key)) => key -> e // This smells awful.
     }
 
-    Distinct(left, returnAll.toMap)(left.solved)
+    annotate(Distinct(left, returnAll.toMap), left.solved, context)
   }
 
   def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
@@ -634,10 +634,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
     annotate(ForeachApply(left, innerUpdates, pattern.variable.name, pattern.expression), solved, context)
   }
 
-  def planEager(inner: LogicalPlan): LogicalPlan =     Eager(inner)(inner.solved)
+  @deprecated("We do not plan eager any more.", "3.4")
+  def planEager(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
+    annotate(Eager(inner), inner.solved, context)
 
-  def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException): LogicalPlan =
-    ErrorPlan(inner, exception)(inner.solved)
+  def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException, context: LogicalPlanningContext): LogicalPlan =
+    annotate(ErrorPlan(inner, exception), inner.solved, context)
 
   def planProduceResult(inner: LogicalPlan, columns: Seq[String]): LogicalPlan = {
     val result = ProduceResult(inner, columns)

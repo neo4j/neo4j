@@ -79,7 +79,7 @@ object Eagerness {
   def headReadWriteEagerize(inputPlan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
     if (alwaysEager || readWriteConflictInHead(inputPlan, query))
-      context.logicalPlanProducer.planEager(inputPlan)
+      context.logicalPlanProducer.planEager(inputPlan, context)
     else
       inputPlan
   }
@@ -87,7 +87,7 @@ object Eagerness {
   def tailReadWriteEagerizeNonRecursive(inputPlan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
     if (alwaysEager || readWriteConflict(query, query))
-      context.logicalPlanProducer.planEager(inputPlan)
+      context.logicalPlanProducer.planEager(inputPlan, context)
     else
       inputPlan
   }
@@ -96,7 +96,7 @@ object Eagerness {
   def tailReadWriteEagerizeRecursive(inputPlan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
     if (alwaysEager || (query.tail.isDefined && readWriteConflictInTail(query, query.tail.get)))
-      context.logicalPlanProducer.planEager(inputPlan)
+      context.logicalPlanProducer.planEager(inputPlan, context)
     else
       inputPlan
   }
@@ -105,7 +105,7 @@ object Eagerness {
     val alwaysEager = context.config.updateStrategy.alwaysEager
     val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon, context.semanticTable)
     if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInHead(query, query.tail.get, context))
-      context.logicalPlanProducer.planEager(inputPlan)
+      context.logicalPlanProducer.planEager(inputPlan, context)
     else
       inputPlan
   }
@@ -114,7 +114,7 @@ object Eagerness {
     val alwaysEager = context.config.updateStrategy.alwaysEager
     val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon, context.semanticTable)
     if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInTail(query, query.tail.get, context))
-      context.logicalPlanProducer.planEager(inputPlan)
+      context.logicalPlanProducer.planEager(inputPlan, context)
     else
       inputPlan
   }
@@ -122,7 +122,7 @@ object Eagerness {
   def horizonReadWriteEagerize(inputPlan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
     if (alwaysEager || (query.tail.nonEmpty && horizonReadWriteConflict(query, query.tail.get, context)))
-      context.logicalPlanProducer.planEager(inputPlan)
+      context.logicalPlanProducer.planEager(inputPlan, context)
     else
       inputPlan
   }
