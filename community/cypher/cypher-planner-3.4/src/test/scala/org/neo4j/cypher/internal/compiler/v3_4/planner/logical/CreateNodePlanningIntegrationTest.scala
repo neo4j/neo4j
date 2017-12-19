@@ -110,3 +110,9 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     )
   }
 }
+
+class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+  test("apa") {
+    println(planFor("MATCH (a) CREATE (b)")._2)
+  }
+}

@@ -30,8 +30,9 @@ class Unchangeable[A]() {
 
   // Getter
   def value: A = {
+    val result = _value.getOrElse(throw new InternalException("Value still not set"))
     _seen = true
-    _value.getOrElse(throw new InternalException("Value still not set"))
+    result
   }
 
   // Setter

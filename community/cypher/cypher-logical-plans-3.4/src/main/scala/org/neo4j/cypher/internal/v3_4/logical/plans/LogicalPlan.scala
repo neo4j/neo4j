@@ -138,7 +138,7 @@ abstract class LogicalPlan
           val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
           val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
           val prodPrefix = plan.productPrefix
-          sb.append(indent(level, s"""$prefix$prodPrefix($nonChildFields) {""".stripMargin))
+          sb.append(indent(level, s"""$prefix${prodPrefix}[txl=${plan.transactionLayer}]($nonChildFields) {""".stripMargin))
 
           (plan.lhs, plan.rhs) match {
             case (None, None) =>
