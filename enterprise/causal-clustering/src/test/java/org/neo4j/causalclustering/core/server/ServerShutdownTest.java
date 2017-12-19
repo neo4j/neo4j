@@ -22,7 +22,9 @@ package org.neo4j.causalclustering.core.server;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +41,9 @@ import static org.mockito.Mockito.when;
 
 public class ServerShutdownTest
 {
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     @Test
     public void shouldTerminateEventLoopGroup() throws Throwable
     {
@@ -58,6 +63,8 @@ public class ServerShutdownTest
     {
         // given
         EventLoopGroup eventExecutors = null;
+        expectedException.expect( IllegalArgumentException.class );
+        expectedException.expectMessage( "EventLoopGroup cannot be null" );
 
         // then
         ServerShutdown.shutdown( eventExecutors );

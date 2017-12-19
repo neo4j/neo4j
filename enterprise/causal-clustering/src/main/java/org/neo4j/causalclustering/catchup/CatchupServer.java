@@ -94,7 +94,6 @@ public class CatchupServer extends LifecycleAdapter
     private final ListenSocketAddress listenAddress;
 
     private EventLoopGroup workerGroup;
-    private Channel channel;
     private Supplier<CheckPointer> checkPointerSupplier;
 
     public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> storeIdSupplier,
@@ -122,11 +121,6 @@ public class CatchupServer extends LifecycleAdapter
     @Override
     public synchronized void start() throws Throwable
     {
-        if ( channel != null )
-        {
-            return;
-        }
-
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -179,7 +173,7 @@ public class CatchupServer extends LifecycleAdapter
 
         try
         {
-            channel = bootstrap.bind().syncUninterruptibly().channel();
+            bootstrap.bind().syncUninterruptibly().channel();
         }
         catch( Exception e )
         {
@@ -210,14 +204,6 @@ public class CatchupServer extends LifecycleAdapter
     public synchronized void stop() throws Throwable
     {
         log.info( "CatchupServer stopping and unbinding from " + listenAddress );
-        try
-        {
-            ServerShutdown.shutdown( workerGroup );
-        }
-        finally
-        {
-            channel = null;
-            workerGroup = null;
-        }
+        ServerShutdown.shutdown( workerGroup );
     }
 }
