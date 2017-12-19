@@ -32,9 +32,10 @@ public class ServerShutdown
 
     public static void shutdown( EventLoopGroup eventLoopGroup ) throws Exception
     {
-        if ( eventLoopGroup != null )
+        if ( eventLoopGroup == null )
         {
-            eventLoopGroup.shutdownGracefully( QUIET_PERIOD, SHUTDOWN_TIMEOUT, TIME_UNIT ).get( TIMEOUT, TIME_UNIT );
+            throw new IllegalArgumentException( "EventLoopGroup cannot be null" );
         }
+        eventLoopGroup.shutdownGracefully( QUIET_PERIOD, SHUTDOWN_TIMEOUT, TIME_UNIT ).get( TIMEOUT, TIME_UNIT );
     }
 }
