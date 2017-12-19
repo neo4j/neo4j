@@ -98,11 +98,23 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        // If this proxy is flagged with taking extra care about idempotency then escalate ONLINE to ONLINE_IDEMPOTENT.
-        // At the time of writing this there's no other mode that needs to be escalated.
-        IndexUpdater actual = accessor.newUpdater(
-                mode == IndexUpdateMode.ONLINE && forcedIdempotentMode ? IndexUpdateMode.ONLINE_IDEMPOTENT : mode );
+        IndexUpdater actual = accessor.newUpdater( escalateModeIfNecessary( mode ) );
         return started ? updateCountingUpdater( actual ) : actual;
+    }
+
+    private IndexUpdateMode escalateModeIfNecessary( IndexUpdateMode mode )
+    {
+        if ( forcedIdempotentMode )
+        {
+            // If this proxy is flagged with taking extra care about idempotency then escalate ONLINE to ONLINE_IDEMPOTENT.
+            if ( mode != IndexUpdateMode.ONLINE )
+            {
+                throw new IllegalArgumentException( "Unexpected mode " + mode + " given that " + this +
+                        " has been marked with forced idempotent mode. Expected mode " + IndexUpdateMode.ONLINE );
+            }
+            return IndexUpdateMode.ONLINE_IDEMPOTENT;
+        }
+        return mode;
     }
 
     private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
