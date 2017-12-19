@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.io.File;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.LongStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -51,19 +50,6 @@ public class LogPruningImpl implements LogPruning
         this.msgLog = logProvider.getLog( getClass() );
     }
 
-    private LongStream getLogVersionsToDelete( long upToVersion )
-    {
-        // We synchronise on the pruneStrategy because it's stateful and not thread safe, and even though we have the
-        // pruneLock, we don't want mightHaveLogsToPrune to use it because it could make pruneLogs think that pruning
-        // is taking place, when really we were just checking.
-        // The pruneLock is used to guard against actual pruning happening concurrently, while synchronising on the
-        // strategy is done to protect the internal state of the strategy.
-        synchronized ( pruneStrategy )
-        {
-            return pruneStrategy.findLogVersionsToDelete( upToVersion );
-        }
-    }
-
     private void deleteLogVersion( long version )
     {
         File logFile = logFiles.getLogFileForVersion( version );
@@ -81,7 +67,7 @@ public class LogPruningImpl implements LogPruning
             msgLog.info( prefix + " Starting log pruning." );
             try
             {
-                getLogVersionsToDelete( upToVersion ).forEachOrdered( this::deleteLogVersion );
+                pruneStrategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( this::deleteLogVersion );
             }
             finally
             {
@@ -94,6 +80,6 @@ public class LogPruningImpl implements LogPruning
     @Override
     public boolean mightHaveLogsToPrune()
     {
-        return getLogVersionsToDelete( logFiles.getHighestLogVersion() ).count() > 0;
+        return pruneStrategy.findLogVersionsToDelete( logFiles.getHighestLogVersion() ).count() > 0;
     }
 }

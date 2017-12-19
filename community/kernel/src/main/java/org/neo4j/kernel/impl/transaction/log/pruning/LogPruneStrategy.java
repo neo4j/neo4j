@@ -24,6 +24,9 @@ import java.util.stream.LongStream;
 /**
  * The LogPruneStrategy examines the current population of transaction logs, and decides which ones can be deleted,
  * up to some version.
+ * <p>
+ * Implementations of this class must be thread-safe, since they might experience multiple concurrent calls to
+ * {@link #findLogVersionsToDelete(long)} from different threads.
  */
 public interface LogPruneStrategy
 {
