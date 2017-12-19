@@ -187,7 +187,7 @@ public class FileMoveProviderTest
     }
 
     @Test
-    public void filesAreMovedBeforeDirectories() throws IOException // TODO doesnt test anything maybe
+    public void filesAreMovedBeforeDirectories() throws IOException
     {
         // given there is a file contained in a directory
         File parentDirectory = testDirectory.cleanDirectory( "parent" );
