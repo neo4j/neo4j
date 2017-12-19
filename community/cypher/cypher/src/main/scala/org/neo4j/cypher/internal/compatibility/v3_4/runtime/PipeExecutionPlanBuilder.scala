@@ -84,7 +84,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
     var comingFrom = plan
     def populate(plan: LogicalPlan) = {
       // FIXME temporary assertion
-      plan.transactionLayer.value
+      plan.readTransactionLayer.value
       var current = plan
       while (!current.isLeaf) {
         planStack.push(current)

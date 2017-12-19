@@ -45,7 +45,7 @@ abstract class LogicalPlan
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
-  val transactionLayer: Unchangeable[Int] = new Unchangeable[Int]
+  val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   /*
   A id for the logical plan operator, unique inside of the given query tree. These identifiers will be
@@ -116,7 +116,7 @@ abstract class LogicalPlan
         constructor.invoke(this, args :+ this.solved: _*).asInstanceOf[this.type]
       else
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
-      resultingPlan.transactionLayer.copyFrom(transactionLayer)
+      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
       resultingPlan
     }
 
@@ -138,7 +138,7 @@ abstract class LogicalPlan
           val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
           val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
           val prodPrefix = plan.productPrefix
-          sb.append(indent(level, s"""$prefix${prodPrefix}[txl=${plan.transactionLayer}]($nonChildFields) {""".stripMargin))
+          sb.append(indent(level, s"""$prefix${prodPrefix}[txl=${plan.readTransactionLayer}]($nonChildFields) {""".stripMargin))
 
           (plan.lhs, plan.rhs) match {
             case (None, None) =>

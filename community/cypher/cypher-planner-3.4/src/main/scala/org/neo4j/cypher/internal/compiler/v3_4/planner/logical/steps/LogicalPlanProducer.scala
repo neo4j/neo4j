@@ -643,7 +643,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
 
   def planProduceResult(inner: LogicalPlan, columns: Seq[String]): LogicalPlan = {
     val result = ProduceResult(inner, columns)
-    result.transactionLayer.value = readTransactionLayer
+    result.readTransactionLayer.value = readTransactionLayer
     result
   }
 
@@ -651,7 +651,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     val solved = CardinalityEstimation.lift(plannerQuery, cardinality)
     val p = plan(solved)
-    p.transactionLayer.value = readTransactionLayer
+    p.readTransactionLayer.value = readTransactionLayer
     p
   }
 

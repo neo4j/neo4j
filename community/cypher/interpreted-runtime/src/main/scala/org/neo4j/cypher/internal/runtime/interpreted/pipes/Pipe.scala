@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 trait Pipe {
   self: Pipe =>
 
-  val transactionLayer: Unchangeable[Int] = new Unchangeable[Int]
+  val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
