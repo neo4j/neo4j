@@ -26,6 +26,8 @@ import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.logging.Log;
 
+import static java.lang.String.format;
+
 class PersistentSnapshotDownloader implements Runnable
 {
     static final String OPERATION_NAME = "download of snapshot";
@@ -78,7 +80,7 @@ class PersistentSnapshotDownloader implements Runnable
                 }
                 catch ( StoreCopyFailedException e )
                 {
-                    log.error( "Failed to download snapshot. Retrying in {} ms.", timeout.getMillis(), e );
+                    log.error( format( "Failed to download snapshot. Retrying in %s ms.", timeout.getMillis() ), e );
                 }
                 catch ( NoLeaderFoundException e )
                 {
