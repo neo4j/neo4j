@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup.impl;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -26,13 +28,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.commandline.admin.CommandFailed;
@@ -151,11 +150,20 @@ public class OnlineBackupCommandBuilder
      */
     public boolean backup( File targetLocation ) throws CommandFailed, IncorrectUsage
     {
+        String[] args;
+        try
+        {
+            args = resolveArgs( targetLocation );
+        }
+        catch ( IOException e )
+        {
+            throw new CommandFailed( "Failed to resolve arguments", e );
+        }
         new OnlineBackupCommandProvider()
                 .create( neo4jHomeFromTarget( targetLocation ),
                         configDirFromTarget( targetLocation ),
                         resolveOutsideWorld() )
-                .execute( resolveArgs( targetLocation ) );
+                .execute( args );
         return true;
     }
 
@@ -169,12 +177,12 @@ public class OnlineBackupCommandBuilder
      * @param targetLocation relative backup location as a string
      * @return the arguments that would be passed to the backup command
      */
-    public String[] resolveArgs( String targetLocation )
+    public String[] resolveArgs( String targetLocation ) throws IOException
     {
         return resolveArgs( relativeFileFromString( targetLocation ) );
     }
 
-    public String[] resolveArgs( File targetLocation )
+    public String[] resolveArgs( File targetLocation ) throws IOException
     {
         return args(
                 argBackupName( targetLocation ),
@@ -285,7 +293,7 @@ public class OnlineBackupCommandBuilder
                 .orElse( "" );
     }
 
-    private String argAdditionalConf( File backupTarget )
+    private String argAdditionalConf( File backupTarget ) throws IOException
     {
         if ( additionalConfig == null )
         {
@@ -297,20 +305,14 @@ public class OnlineBackupCommandBuilder
         return String.format( "--additional-config=%s", configFile );
     }
 
-    private void writeConfigToFile( Config config, File file )
+    private void writeConfigToFile( Config config, File file ) throws IOException
     {
-        try
+        try ( Writer fileWriter = new BufferedWriter( new FileWriter( file ) ) )
         {
-            Writer fileWriter = new BufferedWriter( new FileWriter( file ) );
             for ( Map.Entry<String,String> entry : config.getRaw().entrySet() )
             {
                 fileWriter.write( String.format( "%s=%s\n", entry.getKey(), entry.getValue() ) );
             }
-            fileWriter.close();
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
         }
     }
 
@@ -335,13 +337,9 @@ public class OnlineBackupCommandBuilder
      */
     private static String[] args( String... args )
     {
-        List<String> cleanedArgs = Stream.of( args )
-                .filter( Objects::nonNull )
-                .filter( not( String::isEmpty ) )
-                .collect( Collectors.toList() );
-        String[] returnArgs = new String[cleanedArgs.size()];
-        cleanedArgs.toArray( returnArgs );
-        return returnArgs;
+        return Stream.of( args )
+                .filter( StringUtils::isNoneEmpty )
+                .toArray( String[]::new );
     }
 
     private static <E> Predicate<E> not( Predicate<E> predicate )
