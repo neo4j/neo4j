@@ -27,6 +27,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
@@ -50,13 +50,13 @@ public class BatchingTxApplierTest
 {
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
     private final TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
-    private final DatabaseHealth dbHealth = mock( DatabaseHealth.class );
 
     private final long startTxId = 31L;
     private final int maxBatchSize = 16;
 
-    private final BatchingTxApplier txApplier = new BatchingTxApplier( maxBatchSize, () -> idStore, () -> commitProcess,
-            new Monitors(), NullLogProvider.getInstance() );
+    private final BatchingTxApplier txApplier = new BatchingTxApplier(
+            maxBatchSize, () -> idStore, () -> commitProcess, new Monitors(), PageCursorTracerSupplier.NULL,
+            NullLogProvider.getInstance() );
 
     @Before
     public void before() throws Throwable
