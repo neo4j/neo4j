@@ -341,16 +341,16 @@ public class SeekCursorTest
         // [ 0 1... maxKeyCount-1]
         long maxKeyCount = fullLeaf();
 
-        long expectedkey = maxKeyCount - 1;
+        long expectedKey = maxKeyCount - 1;
         try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( maxKeyCount, 0 ) )
         {
             while ( seekCursor.next() )
             {
-                assertKeyAndValue( seekCursor, expectedkey );
-                expectedkey--;
+                assertKeyAndValue( seekCursor, expectedKey );
+                expectedKey--;
             }
         }
-        assertEquals( expectedkey, 0 );
+        assertEquals( expectedKey, 0 );
     }
 
     @Test
@@ -360,16 +360,16 @@ public class SeekCursorTest
         // [ 0 1... maxKeyCount-1]
         long maxKeyCount = fullLeaf();
 
-        long expectedkey = 0;
+        long expectedKey = 0;
         try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( 0, maxKeyCount + 1 ) )
         {
             while ( seekCursor.next() )
             {
-                assertKeyAndValue( seekCursor, expectedkey );
-                expectedkey++;
+                assertKeyAndValue( seekCursor, expectedKey );
+                expectedKey++;
             }
         }
-        assertEquals( expectedkey, maxKeyCount );
+        assertEquals( expectedKey, maxKeyCount );
     }
 
     @Test
@@ -379,16 +379,16 @@ public class SeekCursorTest
         // [ 0 1... maxKeyCount-1]
         long maxKeyCount = fullLeaf();
 
-        long expectedkey = maxKeyCount - 1;
+        long expectedKey = maxKeyCount - 1;
         try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( maxKeyCount - 1, -2 ) )
         {
             while ( seekCursor.next() )
             {
-                assertKeyAndValue( seekCursor, expectedkey );
-                expectedkey--;
+                assertKeyAndValue( seekCursor, expectedKey );
+                expectedKey--;
             }
         }
-        assertEquals( expectedkey, -1 );
+        assertEquals( expectedKey, -1 );
     }
 
     @Test
@@ -485,8 +485,8 @@ public class SeekCursorTest
         {
             // then
             assertTrue( seeker.next() );
-            assertEquals( i, seeker.get().key().longValue() );
-            assertEquals( value( i ), seeker.get().value() );
+            assertEqualsKey( key( i ), seeker.get().key() );
+            assertEqualsValue( value( i ), seeker.get().value() );
             assertFalse( seeker.next() );
         }
     }
@@ -1185,7 +1185,7 @@ public class SeekCursorTest
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
-            assertEquals( 0, cursor.get().key().longValue() );
+            assertEquals( key( 0 ), cursor.get().key() );
 
             // and WHEN a change happens
             append( keyCount );
@@ -1195,11 +1195,11 @@ public class SeekCursorTest
             assertTrue( cursor.next() );
 
             // and the new key should be found in the end as well
-            assertEquals( 1, cursor.get().key().longValue() );
+            assertEquals( key( 1 ), cursor.get().key() );
             long lastFoundKey = 1;
             while ( cursor.next() )
             {
-                assertEquals( lastFoundKey + 1, cursor.get().key().longValue() );
+                assertEquals( key( lastFoundKey + 1 ), cursor.get().key() );
                 lastFoundKey = cursor.get().key().longValue();
             }
             assertEquals( keyCount, lastFoundKey );
@@ -1594,13 +1594,13 @@ public class SeekCursorTest
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
-            insert( 2, 2, duplicate ); // Create successor of leaf
+            insert( i, i, duplicate ); // Create successor of leaf
             expected.add( i );
 
             while ( seek.next() )
             {
                 Hit<MutableLong,MutableLong> hit = seek.get();
-                actual.add( hit.key().getValue() );
+                actual.add( layout.getSeed( hit.key() ) );
             }
         }
 
@@ -2207,13 +2207,24 @@ public class SeekCursorTest
         assertKeyAndValue( cursor, key, value );
     }
 
-    private static void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor,
-            MutableLong expectedKey, MutableLong expectedValue )
+    private void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor, MutableLong expectedKey, MutableLong expectedValue )
     {
         MutableLong foundKey = cursor.get().key();
         MutableLong foundValue = cursor.get().value();
-        assertEquals( expectedKey, foundKey );
-        assertEquals( expectedValue, foundValue );
+        assertEqualsKey( expectedKey, foundKey );
+        assertEqualsValue( expectedValue, foundValue );
+    }
+
+    private void assertEqualsKey( MutableLong expected, MutableLong actual )
+    {
+        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
+                layout.compare( expected, actual ) == 0 );
+    }
+
+    private void assertEqualsValue( MutableLong expected, MutableLong actual )
+    {
+        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
+                layout.compareValue( expected, actual ) == 0 );
     }
 
     private void insertKeysAndValues( int keyCount )
