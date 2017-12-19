@@ -49,6 +49,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 
+@SuppressWarnings( "UnnecessaryLocalVariable" )
 public class SeekCursorTest
 {
     private static final int PAGE_SIZE = 256;
@@ -305,7 +306,6 @@ public class SeekCursorTest
 
         // GIVEN
         long i = fullLeaf();
-        long left = createRightSibling( pageCursorSpy );
         long j = fullLeaf( i );
 
         long fromInclusive = j - 1;
@@ -772,7 +772,7 @@ public class SeekCursorTest
             }
 
             // Seeker pauses and writer insert new key which causes a split
-            expected.add( (long) maxKeyCount );
+            expected.add( maxKeyCount );
             insert( maxKeyCount );
 
             seekCursor.forceRetry();
@@ -853,7 +853,7 @@ public class SeekCursorTest
             }
 
             // Seeker pauses and writer insert new key which causes a split
-            expected.add( (long) maxKeyCount );
+            expected.add( maxKeyCount );
             insert( maxKeyCount );
             seekCursor.forceRetry();
 
@@ -1524,6 +1524,7 @@ public class SeekCursorTest
 
             // then
             // we should not fail to read right sibling
+            //noinspection StatementWithEmptyBody
             while ( seek.next() )
             {
                 // ignore
@@ -1559,6 +1560,7 @@ public class SeekCursorTest
             // we should fail to read right sibling
             try
             {
+                //noinspection StatementWithEmptyBody
                 while ( seek.next() )
                 {
                     // ignore
@@ -1631,6 +1633,7 @@ public class SeekCursorTest
             // then
             try
             {
+                //noinspection StatementWithEmptyBody
                 while ( seek.next() )
                 {
                 }
@@ -1679,6 +1682,7 @@ public class SeekCursorTest
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
                 i, i + 1, breadcrumbCursor, oldStableGeneration, oldUnstableGeneration ) )
         {
+            //noinspection StatementWithEmptyBody
             while ( seek.next() )
             {
             }
@@ -1736,7 +1740,7 @@ public class SeekCursorTest
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
         PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( rootId );
         pageCursorForSeeker.next();
-        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
+        try ( SeekCursor<MutableLong,MutableLong> ignored = seekCursor(
                 i, i + 1, pageCursorForSeeker, oldStableGeneration, oldUnstableGeneration ) )
         {
             fail( "Expected throw" );
@@ -1778,6 +1782,7 @@ public class SeekCursorTest
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
                 i, i + 1, breadcrumbCursor, oldStableGeneration, oldUnstableGeneration ) )
         {
+            //noinspection StatementWithEmptyBody
             while ( seek.next() )
             {
             }
@@ -1816,7 +1821,7 @@ public class SeekCursorTest
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
         PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( rootId );
         pageCursorForSeeker.next();
-        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor(
+        try ( SeekCursor<MutableLong,MutableLong> ignored = seekCursor(
                 i, i + 1, pageCursorForSeeker, oldStableGeneration, oldUnstableGeneration ) )
         {
             fail( "Expected throw" );
@@ -1842,7 +1847,8 @@ public class SeekCursorTest
         };
 
         // when
-        try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
+        //noinspection EmptyTryBlock
+        try ( SeekCursor<MutableLong,MutableLong> ignored = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
                 exceptionDecorator ) )
         {
@@ -2291,6 +2297,7 @@ public class SeekCursorTest
     }
 
     // KEEP even if unused
+    @SuppressWarnings( "unused" )
     private void printTree() throws IOException
     {
         long currentPageId = cursor.getCurrentPageId();
