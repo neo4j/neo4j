@@ -34,13 +34,15 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 public abstract class InputEntityDeserialization<ENTITY extends InputEntity> implements Deserialization<ENTITY>
 {
     protected final SourceTraceability source;
+    private final boolean emptyArraysAsNull;
 
     private Object[] properties = new Object[10 * 2];
     private int propertiesCursor;
 
-    public InputEntityDeserialization( SourceTraceability source )
+    public InputEntityDeserialization( SourceTraceability source, Configuration config )
     {
         this.source = source;
+        this.emptyArraysAsNull = config.emptyArraysAsNull();
     }
 
     public void addProperty( String name, Object value )
@@ -67,7 +69,7 @@ public abstract class InputEntityDeserialization<ENTITY extends InputEntity> imp
         switch ( entry.type() )
         {
         case PROPERTY:
-            if ( value != null && value.getClass().isArray() && Array.getLength( value ) == 0 )
+            if ( emptyArraysAsNull && value != null && value.getClass().isArray() && Array.getLength( value ) == 0 )
             {
                 // Extractor will return empty arrays for fields that are empty. We don't need to
                 // store empty arrays as properties on entities since queries handle this while reading

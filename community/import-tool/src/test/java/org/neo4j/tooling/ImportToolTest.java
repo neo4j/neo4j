@@ -74,6 +74,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -1930,6 +1931,29 @@ public class ImportToolTest
 
             List<String> errorLines = suppressOutput.getErrorVoice().lines();
             assertContains( errorLines, "Starting a database on these store files will likely fail or observe inconsistent records" );
+        }
+    }
+
+    @Test
+    public void shouldStoreEmptyArraysIfToldTo() throws Exception
+    {
+        List<String> lines = new ArrayList<>();
+        lines.add( ":ID,strings:String[],longs:long[]" );
+        lines.add( "1,," );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
+                "--ignore-empty-arrays", "false" );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.getAllNodes().iterator().next();
+            assertArrayEquals( new String[0], (String[]) node.getProperty( "strings" ) );
+            assertArrayEquals( new long[0], (long[]) node.getProperty( "longs" ) );
         }
     }
 

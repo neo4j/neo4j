@@ -158,6 +158,9 @@ public class ImportTool
         IGNORE_EMPTY_STRINGS( "ignore-empty-strings", org.neo4j.csv.reader.Configuration.DEFAULT.emptyQuotedStringsAsNull(),
                 "<true/false>",
                 "Whether or not empty string fields, i.e. \"\" from input source are ignored, i.e. treated as null." ),
+        IGNORE_EMPTY_ARRAYS( "ignore-empty-arrays", Configuration.COMMAS.emptyArraysAsNull(),
+                "<true/false>",
+                "Whether or not empty array fields from input source are ignored, i.e. treated as null." ),
         ID_TYPE( "id-type", IdType.STRING,
                 "<id-type>",
                 "One out of " + Arrays.toString( IdType.values() )
@@ -861,6 +864,7 @@ public class ImportTool
                 CHARACTER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
+        final Boolean emptyArraysAsNull = args.getBoolean( Options.IGNORE_EMPTY_ARRAYS.key(), null );
         final Boolean trimStrings = args.getBoolean( Options.TRIM_STRINGS.key(), null);
         final Boolean legacyStyleQuoting = args.getBoolean( Options.LEGACY_STYLE_QUOTING.key(), null );
         final Number bufferSize = args.has( Options.READ_BUFFER_SIZE.key() )
@@ -906,6 +910,14 @@ public class ImportTool
                 return emptyStringsAsNull != null
                         ? emptyStringsAsNull.booleanValue()
                         : defaultConfiguration.emptyQuotedStringsAsNull();
+            }
+
+            @Override
+            public boolean emptyArraysAsNull()
+            {
+                return emptyArraysAsNull != null
+                        ? emptyArraysAsNull.booleanValue()
+                                : defaultConfiguration.emptyArraysAsNull();
             }
 
             @Override

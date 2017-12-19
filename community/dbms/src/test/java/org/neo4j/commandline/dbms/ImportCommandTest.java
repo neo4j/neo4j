@@ -189,6 +189,42 @@ public class ImportCommandTest
     }
 
     @Test
+    public void acceptsIgnoreEmptyArraysConfiguration() throws Exception
+    {
+        File homeDir = testDir.directory( "home" );
+        ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        when( mockImporterFactory
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
+                .thenReturn( mock( Importer.class ) );
+
+        ImportCommand importCommand =
+                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
+                        mockImporterFactory );
+
+        String[] arguments = {"--database=foo", "--from=bar", "--ignore-empty-arrays=false"};
+
+        importCommand.execute( arguments );
+    }
+
+    @Test
+    public void acceptsTrimStringsConfiguration() throws Exception
+    {
+        File homeDir = testDir.directory( "home" );
+        ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        when( mockImporterFactory
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
+        .thenReturn( mock( Importer.class ) );
+
+        ImportCommand importCommand =
+                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
+                        mockImporterFactory );
+
+        String[] arguments = {"--database=foo", "--from=bar", "--trim-strings=false"};
+
+        importCommand.execute( arguments );
+    }
+
+    @Test
     public void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
@@ -208,6 +244,8 @@ public class ImportCommandTest
                             "                          [--ignore-extra-columns[=<true|false>]]%n" +
                             "                          [--ignore-duplicate-nodes[=<true|false>]]%n" +
                             "                          [--ignore-missing-nodes[=<true|false>]]%n" +
+                            "                          [--ignore-empty-arrays[=<true|false>]]%n" +
+                            "                          [--trim-strings[=<true|false>]]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
@@ -258,7 +296,12 @@ public class ImportCommandTest
                             "      If duplicate nodes should be ignored during the import. [default:false]%n" +
                             "  --ignore-missing-nodes=<true|false>%n" +
                             "      If relationships referring to missing nodes should be ignored during the%n" +
-                            "      import. [default:false]%n" ),
+                            "      import. [default:false]%n" +
+                            "  --ignore-empty-arrays=<true|false>%n" +
+                            "      If empty array properties should be ignored, or if 'false', stores as%n" +
+                            "      empty arrays. [default:true]%n" +
+                            "  --trim-strings=<true|false>%n" +
+                            "      If string values will be trimmed for whitespace. [default:false]%n" ),
                     baos.toString() );
         }
     }

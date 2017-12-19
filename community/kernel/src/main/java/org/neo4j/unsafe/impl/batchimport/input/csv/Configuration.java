@@ -35,8 +35,18 @@ public interface Configuration extends org.neo4j.csv.reader.Configuration
      */
     char arrayDelimiter();
 
+    /**
+     * @return {@code true} for treating empty arrays, i.e. {@code []} as null, instead of an empty array.
+     */
+    boolean emptyArraysAsNull();
+
     abstract class Default extends org.neo4j.csv.reader.Configuration.Default implements Configuration
     {
+        @Override
+        public boolean emptyArraysAsNull()
+        {
+            return true;
+        }
     }
 
     Configuration COMMAS = new Default()
@@ -89,6 +99,12 @@ public interface Configuration extends org.neo4j.csv.reader.Configuration
         public char arrayDelimiter()
         {
             return defaults.arrayDelimiter();
+        }
+
+        @Override
+        public boolean emptyArraysAsNull()
+        {
+            return defaults.emptyArraysAsNull();
         }
     }
 }

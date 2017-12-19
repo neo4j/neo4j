@@ -102,7 +102,7 @@ public class QuickImport
         };
 
         SimpleDataGenerator generator = new SimpleDataGenerator( nodeHeader, relationshipHeader, randomSeed,
-                nodeCount, labelCount, relationshipTypeCount, idType );
+                nodeCount, labelCount, relationshipTypeCount, idType, config );
         Input input = new DataGeneratorInput(
                 nodeCount, relationshipCount,
                 generator.nodes(), generator.relationships(),
