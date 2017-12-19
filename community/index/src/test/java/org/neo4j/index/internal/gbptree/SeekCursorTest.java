@@ -78,14 +78,6 @@ public class SeekCursorTest
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final PageAwareByteArrayCursor utilCursor = cursor.duplicate();
 
-    private final MutableLong insertKey = layout.newKey();
-    private final MutableLong insertValue = layout.newValue();
-
-    private final MutableLong readKey = layout.newKey();
-
-    private final MutableLong from = layout.newKey();
-    private final MutableLong to = layout.newKey();
-
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
     private static long unstableGeneration = stableGeneration + 1;
 
@@ -1183,7 +1175,7 @@ public class SeekCursorTest
         // GIVEN
         int keyCount = 2;
         insertKeysAndValues( keyCount );
-        MutableLong from = key ( 0 );
+        MutableLong from = key( 0 );
         MutableLong to = key( keyCount + 1 ); // +1 because we're adding one more down below
 
         // WHEN
@@ -1239,8 +1231,9 @@ public class SeekCursorTest
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 1, LEAF );
-        long fromInclusive = from.longValue();
+        MutableLong readKey = layout.newKey();
+        node.keyAt( readCursor, readKey, keyCount - 1, LEAF );
+        long fromInclusive = layout.getSeed( readKey );
         long toExclusive = fromInclusive + 1;
 
         // when
@@ -1275,6 +1268,7 @@ public class SeekCursorTest
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
+        MutableLong from = layout.newKey();
         node.keyAt( readCursor, from, keyCount - 1, LEAF );
         long fromInclusive = from.longValue();
         long toExclusive = fromInclusive - 1;
@@ -1311,6 +1305,8 @@ public class SeekCursorTest
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
+        MutableLong from = layout.newKey();
+        MutableLong to = layout.newKey();
         node.keyAt( readCursor, from, keyCount - 2, LEAF );
         node.keyAt( readCursor, to, keyCount - 1, LEAF );
         long fromInclusive = from.longValue();
@@ -1348,6 +1344,8 @@ public class SeekCursorTest
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
+        MutableLong from = layout.newKey();
+        MutableLong to = layout.newKey();
         node.keyAt( readCursor, from, keyCount - 1, LEAF );
         node.keyAt( readCursor, to, keyCount - 2, LEAF );
         long fromInclusive = from.longValue();
@@ -1382,6 +1380,7 @@ public class SeekCursorTest
 
         // from first key in left child
         readCursor.next( pointer( leftChild ) );
+        MutableLong from = layout.newKey();
         node.keyAt( readCursor, from, 0, LEAF );
         long fromInclusive = from.longValue();
         long toExclusive = from.longValue() + 2;
@@ -1484,6 +1483,7 @@ public class SeekCursorTest
 
         // from first key in left child
         readCursor.next( pointer( leftChild ) );
+        MutableLong from = layout.newKey();
         node.keyAt( readCursor, from, 0, LEAF );
         long fromInclusive = from.longValue() + 2;
         long toExclusive = from.longValue();
@@ -1848,7 +1848,7 @@ public class SeekCursorTest
 
         // when
         //noinspection EmptyTryBlock
-        try ( SeekCursor<MutableLong,MutableLong> ignored = new SeekCursor<>( cursor, node, from, to, layout,
+        try ( SeekCursor<MutableLong,MutableLong> ignored = new SeekCursor<>( cursor, node, layout.newKey(), layout.newKey(), layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
                 exceptionDecorator ) )
         {
@@ -1876,8 +1876,7 @@ public class SeekCursorTest
         long rootId = cursor.getCurrentPageId();
         node.initializeInternal( cursor, stableGeneration, unstableGeneration );
         long keyInRoot = 10L;
-        insertKey.setValue( keyInRoot );
-        node.insertKeyAndRightChildAt( cursor, insertKey, rightChild, 0, 0, stableGeneration, unstableGeneration );
+        node.insertKeyAndRightChildAt( cursor, key( keyInRoot ), rightChild, 0, 0, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of child node)
         node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
@@ -1904,8 +1903,8 @@ public class SeekCursorTest
         };
 
         // when
-        from.setValue( 1L );
-        to.setValue( 2L );
+        MutableLong from = key( 1L );
+        MutableLong to = key( 2L );
         //noinspection EmptyTryBlock
         try ( SeekCursor<MutableLong,MutableLong> ignored = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
@@ -1955,15 +1954,14 @@ public class SeekCursorTest
         // a root
         node.initializeInternal( cursor, stableGeneration - 1, unstableGeneration - 1 );
         long keyInRoot = 10L;
-        insertKey.setValue( keyInRoot );
-        node.insertKeyAndRightChildAt( cursor, insertKey, oldRightChild, 0, 0, stableGeneration, unstableGeneration );
+        node.insertKeyAndRightChildAt( cursor, key( keyInRoot ), oldRightChild, 0, 0, stableGeneration, unstableGeneration );
         TreeNode.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of internal node)
         node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
 
         // when
-        from.setValue( 1L );
-        to.setValue( 20L );
+        MutableLong from = key( 1L );
+        MutableLong to = key( 20L );
         try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration,
                 exceptionDecorator ) )
@@ -2135,7 +2133,7 @@ public class SeekCursorTest
 
     private void remove( long key ) throws IOException
     {
-        treeLogic.remove( cursor, structurePropagation, key( key ), insertValue, stableGeneration, unstableGeneration );
+        treeLogic.remove( cursor, structurePropagation, key( key ), layout.newValue(), stableGeneration, unstableGeneration );
         handleAfterChange();
     }
 
@@ -2292,6 +2290,7 @@ public class SeekCursorTest
 
     private long keyAt( PageCursor cursor, int pos, TreeNode.Type type )
     {
+        MutableLong readKey = layout.newKey();
         node.keyAt( cursor, readKey, pos, type );
         return readKey.longValue();
     }
