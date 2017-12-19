@@ -203,10 +203,7 @@ object LogicalPlanConverter {
           s"Failed trying to rewrite $classNameV3_3 - 3.4 class not found ($classNameV3_4)", e)
         case Failure(e: NoSuchElementException) => throw new InternalException(
           s"Failed trying to rewrite $classNameV3_3 - this class does not have a constructor", e)
-        case Failure(e: Exception) => throw new InternalException(
-          s"Failed trying to rewrite $classNameV3_3", e)
-        case Failure(e: Throwable) => throw new InternalException(
-          s"Failed trying to rewrite $classNameV3_3")
+        case Failure(e) => throw e
       }
     })
   }
