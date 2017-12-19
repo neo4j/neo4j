@@ -99,11 +99,11 @@ public final class UnsafeUtil
         {
             dbbClass = Class.forName( "java.nio.DirectByteBuffer" );
             Class<?> bufferClass = Class.forName( "java.nio.Buffer" );
-            dbbMarkOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "mark" ) );
-            dbbPositionOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "position" ) );
-            dbbLimitOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "limit" ) );
-            dbbCapacityOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "capacity" ) );
-            dbbAddressOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "address" ) );
+            dbbMarkOffset = getFieldOffset( bufferClass, "mark" );
+            dbbPositionOffset = getFieldOffset( bufferClass, "position" );
+            dbbLimitOffset = getFieldOffset( bufferClass, "limit" );
+            dbbCapacityOffset = getFieldOffset( bufferClass, "capacity" );
+            dbbAddressOffset = getFieldOffset( bufferClass, "address" );
             ps = unsafe.pageSize();
         }
         catch ( Throwable e )
@@ -232,7 +232,8 @@ public final class UnsafeUtil
     {
         try
         {
-            return unsafe.objectFieldOffset( type.getDeclaredField( field ) );
+            long offset = unsafe.objectFieldOffset( type.getDeclaredField( field ) );
+            return offset & 0xFFFF;
         }
         catch ( NoSuchFieldException e )
         {
