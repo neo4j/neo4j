@@ -25,6 +25,9 @@ import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -92,15 +95,17 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeHeartbeats() throws Exception
     {
         // Given
+        Instant now = Instant.now();
+        Clock clock = Clock.fixed( now, ZoneOffset.UTC );
         RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
-        RaftMessageDecoder decoder = new RaftMessageDecoder( marshal );
+        RaftMessageDecoder decoder = new RaftMessageDecoder( marshal, clock );
 
         // Deserialization adds read objects in this list
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
         MemberId sender = new MemberId( UUID.randomUUID() );
-        RaftMessages.ClusterIdAwareMessage message = new RaftMessages.ClusterIdAwareMessage( clusterId,
+        RaftMessages.ClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, clusterId,
         new RaftMessages.Heartbeat( sender, 1, 2, 3 ) );
         ChannelHandlerContext ctx = setupContext();
         ByteBuf buffer = null;
@@ -154,15 +159,17 @@ public class RaftMessageEncodingDecodingTest
     private void serializeReadBackAndVerifyMessage( RaftMessages.RaftMessage message ) throws Exception
     {
         // Given
+        Instant now = Instant.now();
+        Clock clock = Clock.fixed( now, ZoneOffset.UTC );
         RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
-        RaftMessageDecoder decoder = new RaftMessageDecoder( marshal );
+        RaftMessageDecoder decoder = new RaftMessageDecoder( marshal, clock );
 
         // Deserialization adds read objects in this list
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
         RaftMessages.ClusterIdAwareMessage decoratedMessage =
-                new RaftMessages.ClusterIdAwareMessage( clusterId, message );
+                RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, clusterId, message );
         ChannelHandlerContext ctx = setupContext();
         ByteBuf buffer = null;
         try

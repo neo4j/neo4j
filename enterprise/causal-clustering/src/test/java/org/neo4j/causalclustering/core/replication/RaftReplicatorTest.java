@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.time.Clock;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -83,7 +84,8 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                        capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit,
+                        Clock.systemUTC() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -110,7 +112,8 @@ public class RaftReplicatorTest
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit,
+                Clock.systemUTC() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -140,7 +143,7 @@ public class RaftReplicatorTest
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
                         capturedProgress, noWaitTimeoutStrategy, new SpyRetryStrategy( leaderRetries ),
-                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit, Clock.systemUTC() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -165,7 +168,8 @@ public class RaftReplicatorTest
         CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit,
+                Clock.systemUTC() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );
@@ -196,7 +200,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
-                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
+                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit, Clock.systemUTC() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );

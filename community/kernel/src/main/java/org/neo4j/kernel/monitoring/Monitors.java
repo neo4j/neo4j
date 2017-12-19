@@ -81,7 +81,7 @@ public class Monitors
     }
 
     // Concurrency: Mutation of these data structures is always guarded by the monitor lock on this Monitors instance,
-    // while look-ups and reads are performed concurrently. The methodMonitorListerners lists (the map values) are
+    // while look-ups and reads are performed concurrently. The methodMonitorListeners lists (the map values) are
     // read concurrently by the proxies, while changing the listener set always produce new lists that atomically
     // replace the ones already in the methodMonitorListeners map.
     /** Monitor interface method -> Listeners */

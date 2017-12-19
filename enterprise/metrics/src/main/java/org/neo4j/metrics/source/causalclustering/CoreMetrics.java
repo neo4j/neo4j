@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.consensus.CoreMetaData;
+import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -65,6 +66,10 @@ public class CoreMetrics extends LifecycleAdapter
     public static final String HITS = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "hits" );
     @Documented("In-flight cache misses")
     public static final String MISSES = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "misses" );
+    @Documented("Delay between RAFT message receive and process")
+    public static final String DELAY = name( CAUSAL_CLUSTERING_PREFIX, "message_processing_delay" );
+    @Documented("Timer for RAFT message processing")
+    public static final String TIMER = name( CAUSAL_CLUSTERING_PREFIX, "message_processing_timer" );
 
     private Monitors monitors;
     private MetricRegistry registry;
@@ -78,6 +83,7 @@ public class CoreMetrics extends LifecycleAdapter
     private final TxRetryMetric txRetryMetric = new TxRetryMetric();
     private final MessageQueueMonitorMetric messageQueueMetric = new MessageQueueMonitorMetric();
     private final InFlightCacheMetric inFlightCacheMetric = new InFlightCacheMetric();
+    private final RaftMessageProcessingMetric raftMessageProcessingMetric = new RaftMessageProcessingMetric();
 
     public CoreMetrics( Monitors monitors, MetricRegistry registry, Supplier<CoreMetaData> coreMetaData )
     {
@@ -97,6 +103,7 @@ public class CoreMetrics extends LifecycleAdapter
         monitors.addMonitorListener( txRetryMetric );
         monitors.addMonitorListener( messageQueueMetric );
         monitors.addMonitorListener( inFlightCacheMetric );
+        monitors.addMonitorListener( raftMessageProcessingMetric );
 
         registry.register( COMMIT_INDEX, (Gauge<Long>) raftLogCommitIndexMetric::commitIndex );
         registry.register( APPEND_INDEX, (Gauge<Long>) raftLogAppendIndexMetric::appendIndex );
@@ -112,6 +119,13 @@ public class CoreMetrics extends LifecycleAdapter
         registry.register( MAX_BYTES, (Gauge<Long>) inFlightCacheMetric::getMaxBytes );
         registry.register( MAX_ELEMENTS, (Gauge<Long>) inFlightCacheMetric::getMaxElements );
         registry.register( ELEMENT_COUNT, (Gauge<Long>) inFlightCacheMetric::getElementCount );
+        registry.register( DELAY, (Gauge<Long>) raftMessageProcessingMetric::delay );
+        registry.register( TIMER, raftMessageProcessingMetric.timer() );
+
+        for ( RaftMessages.Type type : RaftMessages.Type.values() )
+        {
+            registry.register( messageTimerName( type ), raftMessageProcessingMetric.timer( type ) );
+        }
     }
 
     @Override
@@ -131,6 +145,13 @@ public class CoreMetrics extends LifecycleAdapter
         registry.remove( MAX_BYTES );
         registry.remove( MAX_ELEMENTS );
         registry.remove( ELEMENT_COUNT );
+        registry.remove( DELAY );
+        registry.remove( TIMER );
+
+        for ( RaftMessages.Type type : RaftMessages.Type.values() )
+        {
+            registry.remove( messageTimerName( type ) );
+        }
 
         monitors.removeMonitorListener( raftLogCommitIndexMetric );
         monitors.removeMonitorListener( raftLogAppendIndexMetric );
@@ -140,6 +161,12 @@ public class CoreMetrics extends LifecycleAdapter
         monitors.removeMonitorListener( txRetryMetric );
         monitors.removeMonitorListener( messageQueueMetric );
         monitors.removeMonitorListener( inFlightCacheMetric );
+        monitors.removeMonitorListener( raftMessageProcessingMetric );
+    }
+
+    private String messageTimerName( RaftMessages.Type type )
+    {
+        return name( TIMER, type.name().toLowerCase() );
     }
 
     private class LeaderGauge implements Gauge<Integer>

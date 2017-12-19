@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.consensus.explorer.action;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -31,10 +32,12 @@ import org.neo4j.causalclustering.identity.MemberId;
 public class NewEntry implements Action
 {
     private final MemberId member;
+    private final Clock clock;
 
-    public NewEntry( MemberId member )
+    public NewEntry( MemberId member, Clock clock )
     {
         this.member = member;
+        this.clock = clock;
     }
 
     @Override
