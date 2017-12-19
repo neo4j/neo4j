@@ -20,10 +20,9 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
 import org.neo4j.kernel.configuration.Settings;
 
-public class NodeValueIndexCursorNativeTest extends NodeValueIndexCursorTestBase<ReadTestSupport>
+public class NodeValueIndexCursorNativeTest extends AbstractNodeValueIndexCursorTest
 {
     @Override
     public ReadTestSupport newTestSupport()
