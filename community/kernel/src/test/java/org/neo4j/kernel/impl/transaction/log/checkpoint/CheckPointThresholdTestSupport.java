@@ -55,7 +55,7 @@ public class CheckPointThresholdTestSupport
     @Before
     public void setUp()
     {
-        config = Config.empty();
+        config = Config.defaults();
         clock = Clocks.fakeClock();
         logPruning = LogPruning.NO_PRUNING;
         logProvider = NullLogProvider.getInstance();
