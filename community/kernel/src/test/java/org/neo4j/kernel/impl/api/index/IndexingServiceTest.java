@@ -84,7 +84,6 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -165,6 +164,16 @@ public class IndexingServiceTest
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArgument( 1 ) );
+    }
+
+    @Test
+    public void noMessagesWhenThereIsNoIndexes() throws Exception
+    {
+        IndexMapReference indexMapReference = new IndexMapReference();
+        IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
+        indexingService.start();
+
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
@@ -1355,6 +1364,6 @@ public class IndexingServiceTest
                 indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
                 mock( IndexSamplingController.class ), mock( TokenNameLookup.class ),
                 mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),
-                NullLogProvider.getInstance(), IndexingService.NO_MONITOR );
+                logProvider, IndexingService.NO_MONITOR );
     }
 }
