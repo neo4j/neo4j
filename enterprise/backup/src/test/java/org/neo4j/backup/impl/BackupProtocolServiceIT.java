@@ -33,10 +33,11 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import org.neo4j.backup.IncrementalBackupNotPossibleException;
 import org.neo4j.backup.OnlineBackupExtensionFactory;
@@ -60,6 +61,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -94,6 +96,7 @@ import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -794,13 +797,19 @@ public class BackupProtocolServiceIT
     private GraphDatabaseAPI deleteLogFilesAndRestart()
             throws IOException
     {
-        final Predicate<Path> logFileFilter = p -> p.getFileName().toString().contains( "logical" );
+        List<File> logFiles = new ArrayList<>();
+        NeoStoreDataSource dataSource = dbRule.resolveDependency( NeoStoreDataSource.class );
+        try ( ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( true ) )
+        {
+            files.stream().filter( StoreFileMetadata::isLogFile )
+                 .map( StoreFileMetadata::file )
+                 .forEach( logFiles::add );
+        }
         return dbRule.restartDatabase( ( fs, storeDirectory ) ->
         {
-            Iterable<Path> logFiles = Files.list( storeDir ).filter( logFileFilter )::iterator;
-            for ( Path logFile : logFiles )
+            for ( File logFile : logFiles )
             {
-                Files.delete( logFile );
+                fs.deleteFile( logFile );
             }
         } );
     }
