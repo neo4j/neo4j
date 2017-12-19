@@ -247,7 +247,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
   // But do NOT want comparison support, for example see the query statistics support used in CompositeNodeKeyAcceptanceTests
   @deprecated("Rewrite to use executeWith instead")
   protected def innerExecuteDeprecated(queryText: String, params: Map[String, Any]): InternalExecutionResult =
-  innerExecute(queryText, params)
+    innerExecute(queryText, params)
 
   private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
     val innerResult: Result = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))
@@ -292,8 +292,8 @@ object CypherComparisonSupport {
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
-    val oldest = orderedVersions.head
-    val latest = orderedVersions.last
+    val oldest: Version = orderedVersions.head
+    val latest: Version = orderedVersions.last
     val all = Versions(orderedVersions: _*)
 
     object V2_3 extends Version("2.3")
@@ -305,7 +305,7 @@ object CypherComparisonSupport {
     object V3_3 extends Version("3.3")
 
     object Default extends Version("") {
-      override val acceptedVersionNames = Set("2.3", "3.1", "3.2", "3.3").map("CYPHER " + _)
+      override val acceptedVersionNames: Set[String] = Set("2.3", "3.1", "3.2", "3.3").map("CYPHER " + _)
     }
 
   }
