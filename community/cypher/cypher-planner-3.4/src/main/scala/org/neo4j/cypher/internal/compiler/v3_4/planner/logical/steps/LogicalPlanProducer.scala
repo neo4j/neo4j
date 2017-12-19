@@ -639,10 +639,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
   def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException): LogicalPlan =
     ErrorPlan(inner, exception)(inner.solved)
 
+  def planProduceResult(inner: LogicalPlan, columns: Seq[String]): LogicalPlan = {
+    val result = ProduceResult(inner, columns)
+    result.transactionLayer.value = readTransactionLayer
+    result
+  }
+
   private def annotate(plan: PlannerQuery with CardinalityEstimation => LogicalPlan, plannerQuery: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     val solved = CardinalityEstimation.lift(plannerQuery, cardinality)
-    plan(solved)
+    val p = plan(solved)
+    p.transactionLayer.value = readTransactionLayer
+    p
   }
 
   private def projectedDirection(pattern: PatternRelationship, from: IdName, dir: SemanticDirection): SemanticDirection = {

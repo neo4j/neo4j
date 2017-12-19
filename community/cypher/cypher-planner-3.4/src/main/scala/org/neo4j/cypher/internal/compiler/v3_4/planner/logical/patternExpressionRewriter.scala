@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.frontend.v3_4.IdentityMap
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, topDown}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.frontend.v3_4.{IdentityMap, ast}
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.NestedPlanExpression
 
@@ -67,7 +66,7 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
             acc
           } else {
             val arguments = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr)(context)
+            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr, context)
             val uniqueNamedExpr = namedExpr.copy()
             val path = EveryPath(namedExpr.pattern.element)
             val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
@@ -88,7 +87,7 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
             acc
           } else {
             val arguments = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr)(context)
+            val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr, context)
             val uniqueNamedExpr = namedExpr.copy()(expr.position)
 
             val rewrittenExpression = NestedPlanExpression(plan, projection)(uniqueNamedExpr.position)

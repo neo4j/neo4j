@@ -73,10 +73,10 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext)
         (periodicCommitHint, createProduceResultOperator(plan, unionQuery, context))
     }
 
-  private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val columns = unionQuery.returns.map(_.name)
-    ProduceResult(in, columns)
-  }
+  private def createProduceResultOperator(in: LogicalPlan,
+                                          unionQuery: UnionQuery,
+                                          context: LogicalPlanningContext): LogicalPlan =
+  context.logicalPlanProducer.planProduceResult(in, unionQuery.returns.map(_.name))
 
   private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean, context: LogicalPlanningContext) = {
     val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p, context))
