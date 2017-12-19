@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import org.hamcrest.Matcher;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +29,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+
+import org.hamcrest.Matcher;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -62,6 +62,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.track_query_allocation;
@@ -259,6 +260,39 @@ public class ListQueriesProcedureTest
                 assertEquals( locked, ids );
                 assertNotNull( "activeLockCount", lockCount );
                 assertEquals( lockCount.intValue(), rowCount ); // note: only true because query is blocked
+            }
+        }
+    }
+
+    @Test
+    public void shouldOnlyGetActiveLockCountFromCurrentQuery() throws Exception
+    {
+        // given
+        String query1 = "MATCH (x:X) SET x.v = 1";
+        String query2 = "MATCH (y:Y) SET y.v = 2 WITH count(y) AS y MATCH (z:Z) SET z.v = y";
+        try ( Resource<Node> test = test( () ->
+        {
+            for ( int i = 0; i < 5; i++ )
+            {
+                db.createNode( label( "X" ) );
+            }
+            db.createNode( label( "Y" ) );
+            return db.createNode( label( "Z" ) );
+        }, Transaction::acquireWriteLock, query1, query2 ) )
+        {
+            // when
+            try ( Result rows = db.execute( "CALL dbms.listQueries() "
+                    + "YIELD query AS queryText, queryId, activeLockCount "
+                    + "WHERE queryText = $queryText "
+                    + "RETURN *", singletonMap( "queryText", query2 ) ) )
+            {
+                assertTrue( "should have at least one row", rows.hasNext() );
+                Map<String,Object> row = rows.next();
+                Object activeLockCount = row.get( "activeLockCount" );
+                assertFalse( "should have at most one row", rows.hasNext() );
+                assertThat( "activeLockCount", activeLockCount, instanceOf( Long.class ) );
+                long lockCount = (Long) activeLockCount;
+                assertEquals( 1, lockCount );
             }
         }
     }
@@ -505,7 +539,7 @@ public class ListQueriesProcedureTest
         }
     }
 
-    private <T> Resource<T> test( Supplier<T> setup, BiConsumer<Transaction,T> lock, String query )
+    private <T> Resource<T> test( Supplier<T> setup, BiConsumer<Transaction,T> lock, String... queries )
             throws TimeoutException, InterruptedException, ExecutionException
     {
         CountDownLatch resourceLocked = new CountDownLatch( 1 ), listQueriesLatch = new CountDownLatch( 1 );
@@ -529,7 +563,14 @@ public class ListQueriesProcedureTest
 
         threads.executeAndAwait( parameter ->
         {
-            db.execute( query ).close();
+            try ( Transaction tx = db.beginTx() )
+            {
+                for ( String query : queries )
+                {
+                    db.execute( query ).close();
+                }
+                tx.success();
+            }
             return null;
         }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), SECONDS_TIMEOUT, SECONDS );
 
