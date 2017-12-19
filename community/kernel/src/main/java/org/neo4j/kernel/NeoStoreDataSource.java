@@ -118,12 +118,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholds;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CountCommittedTransactionThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.TimeCheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -634,7 +631,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         LogPruneStrategy logPruneStrategy = fromConfigValue( fs, logFileInformation, logFiles, pruningConf );
 
-        final LogPruning logPruning = new LogPruningImpl( logPruneStrategy, logProvider );
+        final LogPruning logPruning = new LogPruningImpl( fs, logPruneStrategy, logFiles, logProvider );
 
         final LogRotation logRotation =
                 new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFile, databaseHealth );
@@ -645,21 +642,13 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
 
-        int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
-        final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
-                new CountCommittedTransactionThreshold( txThreshold );
-
-        long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time ).toMillis();
-        TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( timeMillisThreshold, clock );
-
-        CheckPointThreshold threshold =
-                CheckPointThresholds.or( countCommittedTransactionThreshold, timeCheckPointThreshold );
+        CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
                 transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,
                 tracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
 
-        long recurringPeriod = Math.min( timeMillisThreshold, TimeUnit.SECONDS.toMillis( 10 ) );
+        long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
                 recurringPeriod, databaseHealth );
 
