@@ -34,6 +34,7 @@ import org.neo4j.metrics.source.causalclustering.CoreMetrics;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
@@ -77,15 +78,15 @@ public class RaftMessageProcessingMetricIT
 
         assertEventually( "message delay eventually recorded",
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.DELAY ) ),
-                greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
+                greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
         assertEventually( "message timer count eventually recorded",
                 () -> readTimerLongValueAndAssert( metricsCsv( coreMetricsDir, CoreMetrics.TIMER ), ( newValue, currentValue ) -> newValue >= currentValue,
                         MetricsTestHelper.TimerField.COUNT ),
                 greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
-        assertEventually( "message timer mean eventually recorded",
+        assertEventually( "message timer max eventually recorded",
                 () -> readTimerDoubleValue( metricsCsv( coreMetricsDir, CoreMetrics.TIMER ), MetricsTestHelper.TimerField.MAX ),
-                greaterThan( 0d ), TIMEOUT, TimeUnit.SECONDS );
+                greaterThanOrEqualTo( 0d ), TIMEOUT, TimeUnit.SECONDS );
     }
 }
