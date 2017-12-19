@@ -119,7 +119,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   private def mockLogicalPlanningContext(semanticTable: SemanticTable) = LogicalPlanningContext(
     planContext = mock[PlanContext],
-    logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel]),
+    logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel], 0),
     metrics = mock[Metrics],
     semanticTable = semanticTable,
     strategy = mock[QueryGraphSolver],

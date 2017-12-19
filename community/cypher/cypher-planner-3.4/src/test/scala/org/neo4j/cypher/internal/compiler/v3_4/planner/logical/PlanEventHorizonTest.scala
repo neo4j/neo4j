@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, ProcedureCall, Pr
 class PlanEventHorizonTest extends CypherFunSuite {
 
   val pos = DummyPosition(1)
-  val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel]),
+  val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel], 0),
     mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   test("should do projection if necessary") {

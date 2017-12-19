@@ -49,7 +49,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
 
-  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
+  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], 0),
     mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   test("does not expand based on empty table") {

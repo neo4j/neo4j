@@ -83,8 +83,6 @@ class PipeExecutionPlanBuilder(clock: Clock,
     val pipeStack = new mutable.Stack[Pipe]()
     var comingFrom = plan
     def populate(plan: LogicalPlan) = {
-      // FIXME temporary assertion
-      plan.readTransactionLayer.value
       var current = plan
       while (!current.isLeaf) {
         planStack.push(current)

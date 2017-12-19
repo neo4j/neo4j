@@ -35,8 +35,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-// TODO remove default arg
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int = 0) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int) extends ListSupport {
 
   def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1)
 
