@@ -623,7 +623,7 @@ object LdbcQueries {
 
     def expectedResult = List(Map("forumName" -> "forum1-ᚠさ丵פش", "postCount" -> 1), Map("forumName" -> "forum3-ᚠさ丵פش", "postCount" -> 1), Map("forumName" -> "forum1-ᚠさ丵פش", "postCount" -> 0))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
   }
 
@@ -701,7 +701,7 @@ object LdbcQueries {
 
     def expectedResult = List(Map("tagName" -> "tag2-ᚠさ丵פش", "postCount" -> 2), Map("tagName" -> "tag5-ᚠさ丵פش", "postCount" -> 2), Map("tagName" -> "tag1-ᚠさ丵פش", "postCount" -> 1))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
   }
 
@@ -1013,7 +1013,7 @@ object LdbcQueries {
       Map("personId" -> 2, "messageId" -> 311,
         "personLastName" -> "two-ᚠさ丵פش", "messageContent" -> "C311", "personFirstName" -> "friend", "messageCreationDate" -> 4))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
   }
 
@@ -1209,7 +1209,7 @@ object LdbcQueries {
       Map("friendLastName" -> "one one-ᚠさ丵פش", "friendId" -> 11, "companyName" -> "company zero",
         "friendFirstName" -> "friend friend", "workFromYear" -> 3))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
   }
 

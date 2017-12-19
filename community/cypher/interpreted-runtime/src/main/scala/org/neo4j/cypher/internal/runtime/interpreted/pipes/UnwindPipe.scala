@@ -39,9 +39,9 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
   }
 
   private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
-    private var context: ExecutionContext = null
-    private var unwindIterator: Iterator[AnyValue] = null
-    private var nextItem: ExecutionContext = null
+    private var context: ExecutionContext = _
+    private var unwindIterator: Iterator[AnyValue] = _
+    private var nextItem: ExecutionContext = _
 
     prefetch()
 
@@ -59,7 +59,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
     private def prefetch() {
       nextItem = null
       if (unwindIterator != null && unwindIterator.hasNext) {
-        nextItem = context.copyWith(variable, unwindIterator.next())
+        nextItem = executionContextFactory.copyWith(context, variable, unwindIterator.next())
       } else {
         if (input.hasNext) {
           context = input.next()

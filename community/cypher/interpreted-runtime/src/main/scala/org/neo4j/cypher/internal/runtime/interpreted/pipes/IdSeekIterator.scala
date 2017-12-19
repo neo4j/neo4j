@@ -57,6 +57,7 @@ abstract class IdSeekIterator[T]
 
 final class NodeIdSeekIterator(ident: String,
                                baseContext: ExecutionContext,
+                               executionContextFactory: ExecutionContextFactory,
                                protected val operations: Operations[NodeValue],
                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[NodeValue] {
@@ -64,13 +65,14 @@ final class NodeIdSeekIterator(ident: String,
   def hasNext: Boolean = hasNextEntity
 
   def next(): ExecutionContext =
-    baseContext.copyWith(ident, nextEntity())
+    executionContextFactory.copyWith(baseContext, ident, nextEntity())
 }
 
 final class DirectedRelationshipIdSeekIterator(ident: String,
                                                fromNode: String,
                                                toNode: String,
                                                baseContext: ExecutionContext,
+                                               executionContextFactory: ExecutionContextFactory,
                                                protected val operations: Operations[EdgeValue],
                                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[EdgeValue] {
@@ -79,7 +81,8 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
 
   def next(): ExecutionContext = {
     val rel = nextEntity()
-    baseContext.copyWith(ident, rel, fromNode, rel.startNode(), toNode, rel.endNode())
+    executionContextFactory.copyWith(baseContext, ident, rel, fromNode, rel.startNode(), toNode, rel.endNode()
+    )
   }
 }
 
@@ -87,6 +90,7 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  fromNode: String,
                                                  toNode: String,
                                                  baseContext: ExecutionContext,
+                                                 executionContextFactory: ExecutionContextFactory,
                                                  protected val operations: Operations[EdgeValue],
                                                  protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[EdgeValue] {
@@ -101,13 +105,13 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
   def next(): ExecutionContext = {
     if (emitSibling) {
       emitSibling = false
-      baseContext.copyWith(ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
+      executionContextFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
     } else {
       emitSibling = true
       lastEntity = nextEntity()
       lastStart = lastEntity.startNode()
       lastEnd = lastEntity.endNode()
-      baseContext.copyWith(ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
+      executionContextFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
     }
   }
 }

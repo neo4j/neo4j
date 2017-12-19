@@ -66,9 +66,47 @@ case class SlottedExecutionContextFactory(slots: SlotConfiguration) extends Exec
   override def newExecutionContext(): ExecutionContext =
     SlottedExecutionContext(slots)
 
-  override def newExecutionContext(init: ExecutionContext): ExecutionContext = {
+  override def copyWith(row: ExecutionContext): ExecutionContext = {
     val newCtx = SlottedExecutionContext(slots)
-    init.copyTo(newCtx)
+    row.copyTo(newCtx)
     newCtx
+  }
+
+  override def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext = {
+    val newCopy = SlottedExecutionContext(slots)
+    row.copyTo(newCopy)
+    for ((key,value) <- newEntries) {
+      newCopy.set(key, value)
+    }
+    newCopy
+  }
+
+  override def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext = {
+    val newCtx = SlottedExecutionContext(slots)
+    row.copyTo(newCtx)
+    newCtx.set(key, value)
+    newCtx
+  }
+
+  override def copyWith(row: ExecutionContext,
+                        key1: String, value1: AnyValue,
+                        key2: String, value2: AnyValue): ExecutionContext = {
+    val newCopy = SlottedExecutionContext(slots)
+    row.copyTo(newCopy)
+    newCopy.set(key1, value1)
+    newCopy.set(key2, value2)
+    newCopy
+  }
+
+  override def copyWith(row: ExecutionContext,
+                        key1: String, value1: AnyValue,
+                        key2: String, value2: AnyValue,
+                        key3: String, value3: AnyValue): ExecutionContext = {
+    val newCopy = SlottedExecutionContext(slots)
+    row.copyTo(newCopy)
+    newCopy.set(key1, value1)
+    newCopy.set(key2, value2)
+    newCopy.set(key3, value3)
+    newCopy
   }
 }

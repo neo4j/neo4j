@@ -50,7 +50,7 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
 
   test("should warn if shortest path fallback is planned") {
     // when
-    val result = executeWith(Configs.CommunityInterpreted,
+    val result = executeWith(Configs.Interpreted,
       s"""EXPLAIN MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin)
