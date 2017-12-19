@@ -175,6 +175,7 @@ object LogicalPlanConverter {
                                                isImportant: ExpressionV3_3 => Boolean = _ => true): (LogicalPlanV3_4, ExpressionMapping3To4) = {
     val rewriter = new LogicalPlanRewriter(isImportant = isImportant)
     val planV3_4 = new RewritableAny[LogicalPlanV3_3](logicalPlan).rewrite(rewriter, Seq.empty).asInstanceOf[T]
+    planV3_4.transactionLayer.value = 0
     (planV3_4, rewriter.expressionMap.toMap)
   }
 
