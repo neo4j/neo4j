@@ -83,7 +83,9 @@ abstract class LogicalPlan
   def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): LogicalPlan = {
     val arguments = this.children.toList :+ newSolved
     try {
-      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
+      resultingPlan
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor")
@@ -93,7 +95,9 @@ abstract class LogicalPlan
   def copyPlan(): LogicalPlan = {
     try {
       val arguments = this.children.toList :+ solved
-      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
+      resultingPlan
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor", e)

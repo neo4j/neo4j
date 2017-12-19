@@ -39,10 +39,9 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext) => L
         (plan, context.withUpdatedCardinalityInformation(plan))
       case None =>
         val partPlan = planPart(in, context)
-        // TODO use that context
         val (planWithUpdates, newContext) = planUpdates(in, partPlan, true /*first QG*/, context)
-        val projectedPlan = planEventHorizon(in, planWithUpdates, context)
-        val projectedContext = context.withUpdatedCardinalityInformation(projectedPlan)
+        val projectedPlan = planEventHorizon(in, planWithUpdates, newContext)
+        val projectedContext = newContext.withUpdatedCardinalityInformation(projectedPlan)
         (projectedPlan, projectedContext)
     }
 
