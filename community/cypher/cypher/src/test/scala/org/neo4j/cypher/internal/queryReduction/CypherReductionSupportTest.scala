@@ -65,7 +65,7 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
 
   test("removes unnecessary stuff from faulty query") {
     val setup = "CREATE (n:Label {name: 0}) RETURN n"
-    val query = "MATCH (n:Label)-[:X]->(m:Label),(p) WHERE 100/n.name > 34 AND m.name = n.name WITH n.name AS name RETURN name, $a ORDER BY name SKIP 1 LIMIT 5"
+    val query = s"MATCH (n:Label)-[:X]->(m:Label),(p) WHERE 100/n.name > 34 AND m.name = n.name WITH n.name AS name RETURN name, $$a ORDER BY name SKIP 1 LIMIT 5"
     val reduced = reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
         case Failure(e:ArithmeticException) =>

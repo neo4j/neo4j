@@ -321,7 +321,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
       val commands = exprs.map(buildPredicate)
       (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
-        keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
+        keys.zip(commands).forall { case (variable: LogicalVariable, expr: Predicate) =>
           context(variable.name) = entity
           val result = expr.isTrue(context, state)
           context.remove(variable.name)
