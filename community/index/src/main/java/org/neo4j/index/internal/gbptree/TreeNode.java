@@ -257,7 +257,8 @@ abstract class TreeNode<KEY,VALUE>
 
     static void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration )
     {
-        GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
+        long write = GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
+        GenerationSafePointerPair.assertSuccess( write );
     }
 
     abstract int leafMaxKeyCount();
