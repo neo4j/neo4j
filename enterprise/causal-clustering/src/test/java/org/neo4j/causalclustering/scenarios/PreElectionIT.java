@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -78,7 +79,7 @@ public class PreElectionIT
         {
             if ( Role.FOLLOWER == member.raft().currentRole() )
             {
-                futures.add( CompletableFuture.runAsync( Race.throwing( () -> member.raft().triggerElection() ) ) );
+                futures.add( CompletableFuture.runAsync( Race.throwing( () -> member.raft().triggerElection( Clock.systemUTC() ) ) ) );
             }
         }
 
@@ -103,7 +104,7 @@ public class PreElectionIT
         CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 1, TimeUnit.MINUTES );
 
         // when
-        follower.raft().triggerElection();
+        follower.raft().triggerElection( Clock.systemUTC() );
 
         // then
         try

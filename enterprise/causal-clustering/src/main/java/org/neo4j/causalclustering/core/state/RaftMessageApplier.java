@@ -19,19 +19,17 @@
  */
 package org.neo4j.causalclustering.core.state;
 
-import java.util.concurrent.TimeoutException;
-
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.Inbound;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RaftMessageHandler implements Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage>
+public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
     private final LocalDatabase localDatabase;
     private final Log log;
@@ -39,9 +37,7 @@ public class RaftMessageHandler implements Inbound.MessageHandler<RaftMessages.C
     private final CoreStateDownloaderService downloadService;
     private final CommandApplicationProcess applicationProcess;
 
-    private ClusterId boundClusterId;
-
-    public RaftMessageHandler( LocalDatabase localDatabase, LogProvider logProvider,
+    public RaftMessageApplier( LocalDatabase localDatabase, LogProvider logProvider,
             RaftMachine raftMachine, CoreStateDownloaderService downloadService,
             CommandApplicationProcess applicationProcess )
     {
@@ -52,50 +48,39 @@ public class RaftMessageHandler implements Inbound.MessageHandler<RaftMessages.C
         this.applicationProcess = applicationProcess;
     }
 
-    public synchronized void handle( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage )
+    @Override
+    public synchronized void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage wrappedMessage )
     {
-        if ( boundClusterId == null )
+        try
         {
-            return;
-        }
-
-        ClusterId msgClusterId = clusterIdAwareMessage.clusterId();
-        if ( msgClusterId.equals( boundClusterId ) )
-        {
-            try
+            ConsensusOutcome outcome = raftMachine.handle( wrappedMessage.message() );
+            if ( outcome.needsFreshSnapshot() )
             {
-                ConsensusOutcome outcome = raftMachine.handle( clusterIdAwareMessage.message() );
-                if ( outcome.needsFreshSnapshot() )
-                {
-                    downloadService.scheduleDownload( raftMachine );
-                }
-                else
-                {
-                    notifyCommitted( outcome.getCommitIndex() );
-                }
+                downloadService.scheduleDownload( raftMachine );
             }
-            catch ( Throwable e )
+            else
             {
-                log.error( "Error handling message", e );
-                raftMachine.panic();
-                localDatabase.panic( e );
+                notifyCommitted( outcome.getCommitIndex() );
             }
         }
-        else
+        catch ( Throwable e )
         {
-            log.info( "Discarding message[%s] owing to mismatched clusterId. Expected: %s, Encountered: %s",
-                    clusterIdAwareMessage.message(), boundClusterId, msgClusterId );
+            log.error( "Error handling message", e );
+            raftMachine.panic();
+            localDatabase.panic( e );
         }
     }
 
-    synchronized void start( ClusterId clusterId ) throws TimeoutException
+    @Override
+    public synchronized void start( ClusterId clusterId )
     {
-        boundClusterId = clusterId;
+        // no-op
     }
 
-    synchronized void stop()
+    @Override
+    public synchronized void stop()
     {
-        boundClusterId = null;
+        // no-op
     }
 
     private void notifyCommitted( long commitIndex )
