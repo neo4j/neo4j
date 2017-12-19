@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
@@ -86,7 +87,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage,
             RaftLog entryLog, LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
-            InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting,Monitors monitors )
+            InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting, Monitors monitors )
     {
         this.myself = myself;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
@@ -114,7 +115,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         if ( !refuseToBecomeLeader )
         {
-            leaderAvailabilityTimers.start( this::electionTimeout, () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) );
+            leaderAvailabilityTimers.start(
+                    this::electionTimeout,
+                    clock -> handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Heartbeat( myself ) ) )
+            );
         }
 
         inFlightCache.enable();
@@ -125,19 +129,19 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         leaderAvailabilityTimers.stop();
     }
 
-    private synchronized void electionTimeout() throws IOException
+    private synchronized void electionTimeout( Clock clock ) throws IOException
     {
         if ( leaderAvailabilityTimers.isElectionTimedOut() )
         {
-            triggerElection();
+            triggerElection( clock );
         }
     }
 
-    public void triggerElection() throws IOException
+    public void triggerElection( Clock clock ) throws IOException
     {
         if ( !refuseToBecomeLeader )
         {
-            handle( new RaftMessages.Timeout.Election( myself ) );
+            handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Election( myself ) ) );
         }
     }
 
