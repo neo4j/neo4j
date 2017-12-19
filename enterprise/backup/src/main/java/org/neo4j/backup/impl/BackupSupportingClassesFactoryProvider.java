@@ -24,6 +24,8 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.Service;
 
+import static java.util.Comparator.comparingInt;
+
 class BackupSupportingClassesFactoryProvider extends Service
 {
     /**
@@ -53,7 +55,7 @@ class BackupSupportingClassesFactoryProvider extends Service
                 load( BackupSupportingClassesFactoryProvider.class ).spliterator(), false );
         // Inject the default provider into the stream, so it participates in sorting by priority.
         providers = Stream.concat( providers, Stream.of( new BackupSupportingClassesFactoryProvider() ) );
-        return providers.sorted( ( l, r ) -> r.getPriority() - l.getPriority() );
+        return providers.sorted( comparingInt( BackupSupportingClassesFactoryProvider::getPriority ) );
     }
 
     /**
