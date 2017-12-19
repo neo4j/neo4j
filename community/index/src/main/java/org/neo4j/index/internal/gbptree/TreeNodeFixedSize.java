@@ -184,12 +184,6 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    int leafMaxKeyCount()
-    {
-        return leafMaxKeyCount;
-    }
-
-    @Override
     boolean reasonableKeyCount( int keyCount )
     {
         return keyCount >= 0 && keyCount <= Math.max( internalMaxKeyCount(), leafMaxKeyCount() );
@@ -217,6 +211,11 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         insertKeySlotsAt( cursor, pos, 1, keyCount );
         cursor.setOffset( keyOffset( pos ) );
         layout.writeKey( cursor, key );
+    }
+
+    private int leafMaxKeyCount()
+    {
+        return leafMaxKeyCount;
     }
 
     private void removeKeyAt( PageCursor cursor, int pos, int keyCount )

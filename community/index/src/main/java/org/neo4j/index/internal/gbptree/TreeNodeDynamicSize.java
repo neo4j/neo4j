@@ -298,12 +298,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    int leafMaxKeyCount()
-    {
-        throw new UnsupportedOperationException( "Implement me" );
-    }
-
-    @Override
     boolean reasonableKeyCount( int keyCount )
     {
         return keyCount >= 0 && keyCount <= totalSpace( pageSize ) / BYTE_SIZE_TOTAL_OVERHEAD;

@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -68,13 +69,13 @@ public class SeekCursorTest
     };
 
     private final SimpleIdProvider id = new SimpleIdProvider();
-    private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+    private final TestLayout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( PAGE_SIZE, layout );
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
     private final StructurePropagation<MutableLong> structurePropagation =
             new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
-    private final int maxKeyCount = node.leafMaxKeyCount();
+    private final PageAwareByteArrayCursor utilCursor = cursor.duplicate();
 
     private final MutableLong insertKey = layout.newKey();
     private final MutableLong insertValue = layout.newValue();
@@ -93,9 +94,17 @@ public class SeekCursorTest
     @Before
     public void setUp() throws IOException
     {
-        cursor.next( id.acquireNewId( stableGeneration, unstableGeneration ) );
+        long firstPage = id.acquireNewId( stableGeneration, unstableGeneration );
+        goTo( cursor, firstPage );
+        goTo( utilCursor, firstPage );
+
         node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         updateRoot();
+    }
+
+    private static void goTo( PageCursor cursor, long pageId ) throws IOException
+    {
+        PageCursorUtil.goTo( cursor, "test", pointer( pageId ) );
     }
 
     private void updateRoot()
@@ -110,12 +119,9 @@ public class SeekCursorTest
     public void mustFindEntriesWithinRangeInBeginningOfSingleLeaf() throws Exception
     {
         // GIVEN
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            append( i );
-        }
-        int fromInclusive = 0;
-        int toExclusive = maxKeyCount / 2;
+        long lastSeed = fullLeaf();
+        long fromInclusive = 0;
+        long toExclusive = lastSeed / 2;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -129,12 +135,9 @@ public class SeekCursorTest
     public void mustFindEntriesWithinRangeInBeginningOfSingleLeafBackwards() throws Exception
     {
         // GIVEN
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            append( i );
-        }
-        int fromInclusive = maxKeyCount / 2;
-        int toExclusive = -1;
+        long maxKeyCount = fullLeaf();
+        long fromInclusive = maxKeyCount / 2;
+        long toExclusive = -1;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -148,12 +151,9 @@ public class SeekCursorTest
     public void mustFindEntriesWithinRangeInEndOfSingleLeaf() throws Exception
     {
         // GIVEN
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            append( i );
-        }
-        int fromInclusive = maxKeyCount / 2;
-        int toExclusive = this.maxKeyCount;
+        long maxKeyCount = fullLeaf();
+        long fromInclusive = maxKeyCount / 2;
+        long toExclusive = maxKeyCount;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -167,12 +167,9 @@ public class SeekCursorTest
     public void mustFindEntriesWithinRangeInEndOfSingleLeafBackwards() throws Exception
     {
         // GIVEN
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            append( i );
-        }
-        int fromInclusive = this.maxKeyCount - 1;
-        int toExclusive = maxKeyCount / 2;
+        long maxKeyCount = fullLeaf();
+        long fromInclusive = maxKeyCount - 1;
+        long toExclusive = maxKeyCount / 2;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -186,13 +183,10 @@ public class SeekCursorTest
     public void mustFindEntriesWithinRangeInMiddleOfSingleLeaf() throws Exception
     {
         // GIVEN
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            append( i );
-        }
-        int middle = maxKeyCount / 2;
-        int fromInclusive = middle / 2;
-        int toExclusive = (middle + maxKeyCount) / 2;
+        long maxKeyCount = fullLeaf();
+        long middle = maxKeyCount / 2;
+        long fromInclusive = middle / 2;
+        long toExclusive = (middle + maxKeyCount) / 2;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -206,13 +200,10 @@ public class SeekCursorTest
     public void mustFindEntriesWithinRangeInMiddleOfSingleLeafBackwards() throws Exception
     {
         // GIVEN
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            append( i );
-        }
-        int middle = maxKeyCount / 2;
-        int fromInclusive = (middle + maxKeyCount) / 2;
-        int toExclusive = middle / 2;
+        long maxKeyCount = fullLeaf();
+        long middle = maxKeyCount / 2;
+        long fromInclusive = (middle + maxKeyCount) / 2;
+        long toExclusive = middle / 2;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -226,22 +217,13 @@ public class SeekCursorTest
     public void mustFindEntriesSpanningTwoLeaves() throws Exception
     {
         // GIVEN
-        int i = 0;
-        while ( i < maxKeyCount )
-        {
-            append( i );
-            i++;
-        }
+        long i = fullLeaf();
         long left = createRightSibling( cursor );
-        while ( i < maxKeyCount * 2 )
-        {
-            append( i );
-            i++;
-        }
+        i = fullLeaf( i );
         cursor.next( left );
 
-        int fromInclusive = 0;
-        int toExclusive = maxKeyCount * 2;
+        long fromInclusive = 0;
+        long toExclusive = i;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -255,21 +237,12 @@ public class SeekCursorTest
     public void mustFindEntriesSpanningTwoLeavesBackwards() throws Exception
     {
         // GIVEN
-        int i = 0;
-        while ( i < maxKeyCount )
-        {
-            append( i );
-            i++;
-        }
+        long i = fullLeaf();
         createRightSibling( cursor );
-        while ( i < maxKeyCount * 2 )
-        {
-            append( i );
-            i++;
-        }
+        i = fullLeaf( i );
 
-        int fromInclusive = maxKeyCount * 2 - 1;
-        int toExclusive = -1;
+        long fromInclusive = i - 1;
+        long toExclusive = -1;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -283,27 +256,16 @@ public class SeekCursorTest
     public void mustFindEntriesOnSecondLeafWhenStartingFromFirstLeaf() throws Exception
     {
         // GIVEN
-        int i = 0;
-        long left = cursor.getCurrentPageId();
-        while ( i < maxKeyCount * 2 )
-        {
-            if ( i == maxKeyCount )
-            {
-                createRightSibling( cursor );
-            }
-            append( i );
-            i++;
-        }
+        long i = fullLeaf();
+        long left = createRightSibling( cursor );
+        long j = fullLeaf( i );
         cursor.next( left );
 
-        int fromInclusive = maxKeyCount;
-        int toExclusive = maxKeyCount * 2;
-
         // WHEN
-        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
+        try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( i, j ) )
         {
             // THEN
-            assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
+            assertRangeInSingleLeaf( i, j, cursor );
         }
     }
 
@@ -311,19 +273,13 @@ public class SeekCursorTest
     public void mustFindEntriesOnSecondLeafWhenStartingFromFirstLeafBackwards() throws Exception
     {
         // GIVEN
-        int i = 0;
-        while ( i < maxKeyCount * 2 )
-        {
-            if ( i == maxKeyCount )
-            {
-                createRightSibling( cursor );
-            }
-            append( i );
-            i++;
-        }
+        long leftKeyCount = fullLeaf();
+        long left = createRightSibling( cursor );
+        fullLeaf( leftKeyCount );
+        cursor.next( left );
 
-        int fromInclusive = maxKeyCount - 1;
-        int toExclusive = -1;
+        long fromInclusive = leftKeyCount - 1;
+        long toExclusive = -1;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -348,19 +304,12 @@ public class SeekCursorTest
         };
 
         // GIVEN
-        int i = 0;
-        while ( i < maxKeyCount * 2 )
-        {
-            if ( i == maxKeyCount )
-            {
-                createRightSibling( pageCursorSpy );
-            }
-            append( i );
-            i++;
-        }
+        long i = fullLeaf();
+        long left = createRightSibling( pageCursorSpy );
+        long j = fullLeaf( i );
 
-        int fromInclusive = maxKeyCount * 2 - 1;
-        int toExclusive = maxKeyCount;
+        long fromInclusive = j - 1;
+        long toExclusive = i;
 
         // Reset
         nextCalled.set( false );
@@ -379,21 +328,18 @@ public class SeekCursorTest
     {
         // Given
         // [ 0 1... maxKeyCount-1]
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            insert( i );
-        }
+        long maxKeyCount = fullLeaf();
 
-        long expectedkey = 0;
+        long expectedKey = 0;
         try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( -1, maxKeyCount - 1 ) )
         {
             while ( seekCursor.next() )
             {
-                assertKeyAndValue( seekCursor, expectedkey );
-                expectedkey++;
+                assertKeyAndValue( seekCursor, expectedKey );
+                expectedKey++;
             }
         }
-        assertEquals( expectedkey, maxKeyCount - 1 );
+        assertEquals( expectedKey, maxKeyCount - 1 );
     }
 
     @Test
@@ -401,10 +347,7 @@ public class SeekCursorTest
     {
         // Given
         // [ 0 1... maxKeyCount-1]
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            insert( i );
-        }
+        long maxKeyCount = fullLeaf();
 
         long expectedkey = maxKeyCount - 1;
         try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( maxKeyCount, 0 ) )
@@ -423,10 +366,7 @@ public class SeekCursorTest
     {
         // Given
         // [ 0 1... maxKeyCount-1]
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            insert( i );
-        }
+        long maxKeyCount = fullLeaf();
 
         long expectedkey = 0;
         try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( 0, maxKeyCount + 1 ) )
@@ -445,10 +385,7 @@ public class SeekCursorTest
     {
         // Given
         // [ 0 1... maxKeyCount-1]
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            insert( i );
-        }
+        long maxKeyCount = fullLeaf();
 
         long expectedkey = maxKeyCount - 1;
         try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( maxKeyCount - 1, -2 ) )
@@ -466,10 +403,7 @@ public class SeekCursorTest
     public void mustStartReadingFromCorrectLeafWhenRangeStartWithKeyEqualToPrimKey() throws Exception
     {
         // given
-        for ( int i = 0; i < maxKeyCount + 1; i++ )
-        {
-            insert( i );
-        }
+        long lastSeed = rootWithTwoLeaves();
         MutableLong primKey = layout.newKey();
         node.keyAt( cursor, primKey, 0, INTERNAL );
         long expectedNext = primKey.longValue();
@@ -477,7 +411,7 @@ public class SeekCursorTest
                 unstableGeneration ) );
 
         // when
-        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( expectedNext, maxKeyCount + 1 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( expectedNext, lastSeed ) )
         {
             assertEquals( rightChild, cursor.getCurrentPageId() );
             while ( seek.next() )
@@ -488,17 +422,14 @@ public class SeekCursorTest
         }
 
         // then
-        assertEquals( maxKeyCount + 1, expectedNext );
+        assertEquals( lastSeed, expectedNext );
     }
 
     @Test
     public void mustStartReadingFromCorrectLeafWhenRangeStartWithKeyEqualToPrimKeyBackwards() throws Exception
     {
         // given
-        for ( int i = 0; i < maxKeyCount + 1; i++ )
-        {
-            insert( i );
-        }
+        rootWithTwoLeaves();
         MutableLong primKey = layout.newKey();
         node.keyAt( cursor, primKey, 0, INTERNAL );
         long expectedNext = primKey.longValue();
@@ -524,10 +455,7 @@ public class SeekCursorTest
     public void exactMatchInStableRoot() throws Exception
     {
         // given
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            insert( i );
-        }
+        long maxKeyCount = fullLeaf();
 
         // when
         for ( long i = 0; i < maxKeyCount; i++ )
@@ -540,16 +468,23 @@ public class SeekCursorTest
     public void exactMatchInLeaves() throws Exception
     {
         // given
-        for ( int i = 0; i < maxKeyCount + 1; i++ )
-        {
-            insert( i );
-        }
+        long lastSeed = rootWithTwoLeaves();
 
         // when
-        for ( long i = 0; i < maxKeyCount + 1; i++ )
+        for ( long i = 0; i < lastSeed; i++ )
         {
             assertExactMatch( i );
         }
+    }
+
+    private long rootWithTwoLeaves() throws IOException
+    {
+        long i = 0;
+        for ( ; numberOfRootSplits < 1; i++ )
+        {
+            insert( i );
+        }
+        return i;
     }
 
     private void assertExactMatch( long i ) throws IOException
@@ -559,7 +494,7 @@ public class SeekCursorTest
             // then
             assertTrue( seeker.next() );
             assertEquals( i, seeker.get().key().longValue() );
-            assertEquals( valueForKey( i ), seeker.get().value().longValue() );
+            assertEquals( value( i ), seeker.get().value() );
             assertFalse( seeker.next() );
         }
     }
@@ -570,13 +505,13 @@ public class SeekCursorTest
     public void mustFindNewKeyInsertedAfterOfSeekPoint() throws Exception
     {
         // GIVEN
-        int middle = maxKeyCount / 2;
+        int middle = 2;
         for ( int i = 0; i < middle; i++ )
         {
             append( i );
         }
-        int fromInclusive = 0;
-        int toExclusive = middle + 1; // Will insert middle later
+        long fromInclusive = 0;
+        long toExclusive = middle + 1; // Will insert middle later
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -607,13 +542,13 @@ public class SeekCursorTest
     public void mustFindNewKeyInsertedAfterOfSeekPointBackwards() throws Exception
     {
         // GIVEN
-        int middle = maxKeyCount / 2;
+        int middle = 2;
         for ( int i = 1; i <= middle; i++ )
         {
             append( i );
         }
-        int fromInclusive = middle;
-        int toExclusive = 0; // Will insert 0 later
+        long fromInclusive = middle;
+        long toExclusive = 0; // Will insert 0 later
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
@@ -645,14 +580,14 @@ public class SeekCursorTest
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
-        int middle = maxKeyCount / 2;
+        int middle = 2;
         for ( int i = 0; i < middle; i++ )
         {
             long key = i * 2;
             append( key );
             expected.add( key );
         }
-        int fromInclusive = 0;
+        long fromInclusive = 0;
         long toExclusive = middle * 2;
 
         // WHEN
@@ -688,14 +623,14 @@ public class SeekCursorTest
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
-        int middle = maxKeyCount / 2;
+        int middle = 2;
         for ( int i = middle; i > 0; i-- )
         {
             long key = i * 2;
-            insert( key, valueForKey( key ) );
+            insert( key );
             expected.add( key );
         }
-        int fromInclusive = middle * 2;
+        long fromInclusive = middle * 2;
         long toExclusive = 0;
 
         // WHEN
@@ -712,7 +647,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer insert new key in position where seeker will read next
             long midInsert = expected.get( stopPoint ) + 1;
-            insert( midInsert, valueForKey( midInsert ) );
+            insert( midInsert );
             expected.add( stopPoint, midInsert );
             this.cursor.forceRetry();
 
@@ -731,14 +666,14 @@ public class SeekCursorTest
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
-        int middle = maxKeyCount / 2;
+        int middle = 2;
         for ( int i = 0; i < middle; i++ )
         {
             long key = i * 2;
             append( key );
             expected.add( key );
         }
-        int fromInclusive = 0;
+        long fromInclusive = 0;
         long toExclusive = middle * 2;
 
         // WHEN
@@ -773,14 +708,14 @@ public class SeekCursorTest
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
-        int middle = maxKeyCount / 2;
+        int middle = 2;
         for ( int i = middle; i > 0; i-- )
         {
             long key = i * 2;
-            insert( key, valueForKey( key ) );
+            insert( key );
             expected.add( key );
         }
-        int fromInclusive = middle * 2;
+        long fromInclusive = middle * 2;
         long toExclusive = 0;
 
         // WHEN
@@ -797,7 +732,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer insert new key to the left of seekers next position
             long midInsert = expected.get( readKeys - 1 ) + 1;
-            insert( midInsert, valueForKey( midInsert ) );
+            insert( midInsert );
             this.cursor.forceRetry();
 
             while ( cursor.next() )
@@ -817,13 +752,8 @@ public class SeekCursorTest
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            long key = i;
-            append( key );
-            expected.add( key );
-        }
-        int fromInclusive = 0;
+        long maxKeyCount = fullLeaf( expected );
+        long fromInclusive = 0;
         long toExclusive = maxKeyCount + 1; // We will add maxKeyCount later
 
         // WHEN
@@ -831,8 +761,8 @@ public class SeekCursorTest
         seekCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            int middle = maxKeyCount / 2;
-            int stopPoint = middle / 2;
+            long middle = maxKeyCount / 2;
+            long stopPoint = middle / 2;
             int readKeys = 0;
             while ( readKeys < stopPoint && cursor.next() )
             {
@@ -862,13 +792,9 @@ public class SeekCursorTest
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
-        for ( int i = maxKeyCount; i > 0; i-- )
-        {
-            long key = i;
-            insert( key );
-            expected.add( key );
-        }
-        int fromInclusive = maxKeyCount;
+        long lastSeed = fullLeaf( 1, expected );
+        Collections.reverse( expected ); // Because backwards
+        long fromInclusive = lastSeed - 1;
         long toExclusive = -1; // We will add 0 later
 
         // WHEN
@@ -876,8 +802,8 @@ public class SeekCursorTest
         seekCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            int middle = maxKeyCount / 2;
-            int stopPoint = middle / 2;
+            long middle = lastSeed / 2;
+            long stopPoint = middle / 2;
             int readKeys = 0;
             while ( readKeys < stopPoint && seeker.next() )
             {
@@ -907,13 +833,8 @@ public class SeekCursorTest
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            long key = i;
-            insert( key );
-            expected.add( key );
-        }
-        int fromInclusive = 0;
+        long maxKeyCount = fullLeaf( expected );
+        long fromInclusive = 0;
         long toExclusive = maxKeyCount + 1; // We will add maxKeyCount later
 
         // WHEN
@@ -921,8 +842,8 @@ public class SeekCursorTest
         seekCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            int middle = maxKeyCount / 2;
-            int stopPoint = middle + (middle / 2);
+            long middle = maxKeyCount / 2;
+            long stopPoint = middle + (middle / 2);
             int readKeys = 0;
             while ( readKeys < stopPoint && cursor.next() )
             {
@@ -951,13 +872,9 @@ public class SeekCursorTest
     {
         // GIVEN
         List<Long> expected = new ArrayList<>();
-        for ( int i = maxKeyCount; i > 0; i-- )
-        {
-            long key = i;
-            insert( key );
-            expected.add( key );
-        }
-        int fromInclusive = maxKeyCount;
+        long lastSeed = fullLeaf( 1, expected );
+        Collections.reverse( expected ); // Because backwards
+        long fromInclusive = lastSeed - 1;
         long toExclusive = -1; // We will add 0 later
 
         // WHEN
@@ -965,8 +882,8 @@ public class SeekCursorTest
         seekCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            int middle = maxKeyCount / 2;
-            int stopPoint = middle + (middle / 2);
+            long middle = lastSeed / 2;
+            long stopPoint = middle + (middle / 2);
             int readKeys = 0;
             while ( readKeys < stopPoint && cursor.next() )
             {
@@ -997,18 +914,15 @@ public class SeekCursorTest
     {
         // GIVEN
         // [0 1 ... maxKeyCount-1]
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            append( i );
-        }
-        int fromInclusive = 0;
-        int toExclusive = maxKeyCount;
+        long maxKeyCount = fullLeaf();
+        long fromInclusive = 0;
+        long toExclusive = maxKeyCount;
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive ) )
         {
             // THEN
-            int middle = maxKeyCount / 2;
+            long middle = maxKeyCount / 2;
             int readKeys = 0;
             while ( readKeys < middle && cursor.next() )
             {
@@ -1019,7 +933,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer remove rightmost key
             // [0 1 ... maxKeyCount-2]
-            removeAtPos( maxKeyCount - 1 );
+            removeAtPos( (int) maxKeyCount - 1 );
             this.cursor.forceRetry();
 
             while ( cursor.next() )
@@ -1032,17 +946,60 @@ public class SeekCursorTest
         }
     }
 
+    private long fullLeaf( List<Long> expectedSeeds )
+    {
+        return fullLeaf( 0, expectedSeeds );
+    }
+
+    private long fullLeaf( long firstSeed )
+    {
+        return fullLeaf( firstSeed, new ArrayList<>() );
+    }
+
+    private long fullLeaf( long firstSeed, List<Long> expectedSeeds )
+    {
+        int keyCount = 0;
+        MutableLong key = key( firstSeed + keyCount );
+        MutableLong value = value( firstSeed + keyCount );
+        while ( node.leafOverflow( cursor, keyCount, key, value ) == TreeNode.Overflow.NO )
+        {
+            node.insertKeyValueAt( cursor, key, value, keyCount, keyCount );
+            expectedSeeds.add( firstSeed + keyCount );
+            keyCount++;
+            key = key( firstSeed + keyCount );
+            value = value( firstSeed + keyCount );
+        }
+        TreeNode.setKeyCount( cursor, keyCount );
+        return firstSeed + keyCount;
+    }
+
+    /**
+     * @return next seed to be inserted
+     */
+    private long fullLeaf()
+    {
+        return fullLeaf( 0 );
+    }
+
+    private MutableLong key( long seed )
+    {
+        return layout.key( seed );
+    }
+
+    private MutableLong value( long seed )
+    {
+        return layout.value( seed );
+    }
+
     @Test
     public void mustNotFindKeyRemovedInFrontOfSeekerBackwards() throws Exception
     {
         // GIVEN
         // [1 2 ... maxKeyCount]
-        for ( int i = 1; i <= maxKeyCount; i++ )
-        {
-            insert( i );
-        }
-        int fromInclusive = maxKeyCount;
-        int toExclusive = 0;
+        long lastSeed = fullLeaf( 1 );
+        long maxKeyCount = lastSeed - 1;
+        long fromInclusive = maxKeyCount;
+        long toExclusive = 0;
 
         // WHEN
         PageAwareByteArrayCursor seekCursor = cursor.duplicate();
@@ -1050,7 +1007,7 @@ public class SeekCursorTest
         try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
             // THEN
-            int middle = maxKeyCount / 2;
+            long middle = maxKeyCount / 2;
             int readKeys = 0;
             while ( readKeys < middle && seeker.next() )
             {
@@ -1077,12 +1034,9 @@ public class SeekCursorTest
     {
         // GIVEN
         // [0 1 ... maxKeyCount-1]
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            insert( i );
-        }
-        int fromInclusive = 0;
-        int toExclusive = maxKeyCount;
+        long maxKeyCount = fullLeaf();
+        long fromInclusive = 0;
+        long toExclusive = maxKeyCount;
 
         // WHEN
         PageAwareByteArrayCursor seekCursor = cursor.duplicate();
@@ -1090,7 +1044,7 @@ public class SeekCursorTest
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
             // THEN
-            int middle = maxKeyCount / 2;
+            long middle = maxKeyCount / 2;
             int readKeys = 0;
             while ( readKeys < middle && cursor.next() )
             {
@@ -1119,12 +1073,10 @@ public class SeekCursorTest
     {
         // GIVEN
         // [1 2... maxKeyCount]
-        for ( int i = maxKeyCount; i > 0; i-- )
-        {
-            insert( i );
-        }
-        int fromInclusive = maxKeyCount;
-        int toExclusive = 0;
+        long lastSeed = fullLeaf( 1 );
+        long maxKeyCount = lastSeed - 1;
+        long fromInclusive = maxKeyCount;
+        long toExclusive = 0;
 
         // WHEN
         PageAwareByteArrayCursor seekCursor = cursor.duplicate();
@@ -1132,7 +1084,7 @@ public class SeekCursorTest
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
             // THEN
-            int middle = maxKeyCount / 2;
+            long middle = maxKeyCount / 2;
             int readKeys = 0;
             while ( readKeys < middle && cursor.next() )
             {
@@ -1158,12 +1110,9 @@ public class SeekCursorTest
     public void mustFindKeyMovedSeekerBecauseOfRemoveOfMostRecentReturnedKey() throws Exception
     {
         // GIVEN
-        for ( int i = 0; i < maxKeyCount; i++ )
-        {
-            insert( i );
-        }
-        int fromInclusive = 0;
-        int toExclusive = maxKeyCount;
+        long maxKeyCount = fullLeaf();
+        long fromInclusive = 0;
+        long toExclusive = maxKeyCount;
 
         // WHEN
         PageAwareByteArrayCursor seekCursor = cursor.duplicate();
@@ -1171,7 +1120,7 @@ public class SeekCursorTest
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
             // THEN
-            int middle = maxKeyCount / 2;
+            long middle = maxKeyCount / 2;
             int readKeys = 0;
             while ( readKeys < middle && cursor.next() )
             {
@@ -1196,12 +1145,10 @@ public class SeekCursorTest
     public void mustFindKeyMovedSeekerBecauseOfRemoveOfMostRecentReturnedKeyBackwards() throws Exception
     {
         // GIVEN
-        for ( int i = maxKeyCount; i > 0; i-- )
-        {
-            insert( i );
-        }
-        int fromInclusive = maxKeyCount;
-        int toExclusive = 0;
+        long i = fullLeaf( 1 );
+        long maxKeyCount = i - 1;
+        long fromInclusive = i - 1;
+        long toExclusive = 0;
 
         // WHEN
         PageAwareByteArrayCursor seekCursor = cursor.duplicate();
@@ -1209,7 +1156,7 @@ public class SeekCursorTest
         try ( SeekCursor<MutableLong,MutableLong> cursor = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
             // THEN
-            int middle = maxKeyCount / 2;
+            long middle = maxKeyCount / 2;
             int readKeys = 0;
             while ( readKeys < middle && cursor.next() )
             {
@@ -1234,12 +1181,10 @@ public class SeekCursorTest
     public void mustRereadHeadersOnRetry() throws Exception
     {
         // GIVEN
-        int keyCount = maxKeyCount - 1;
+        int keyCount = 2;
         insertKeysAndValues( keyCount );
-        MutableLong from = layout.newKey();
-        MutableLong to = layout.newKey();
-        from.setValue( 2 );
-        to.setValue( keyCount + 1 ); // +1 because we're adding one more down below
+        MutableLong from = key ( 0 );
+        MutableLong to = key( keyCount + 1 ); // +1 because we're adding one more down below
 
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( this.cursor,
@@ -1248,9 +1193,7 @@ public class SeekCursorTest
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
-            assertEquals( 2, cursor.get().key().longValue() );
-            assertTrue( cursor.next() );
-            assertEquals( 3, cursor.get().key().longValue() );
+            assertEquals( 0, cursor.get().key().longValue() );
 
             // and WHEN a change happens
             append( keyCount );
@@ -1260,8 +1203,8 @@ public class SeekCursorTest
             assertTrue( cursor.next() );
 
             // and the new key should be found in the end as well
-            assertEquals( 4, cursor.get().key().longValue() );
-            long lastFoundKey = 4;
+            assertEquals( 1, cursor.get().key().longValue() );
+            long lastFoundKey = 1;
             while ( cursor.next() )
             {
                 assertEquals( lastFoundKey + 1, cursor.get().key().longValue() );
@@ -1566,7 +1509,7 @@ public class SeekCursorTest
         long i = 0L;
         while ( numberOfRootSplits == 0 )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
 
@@ -1595,7 +1538,7 @@ public class SeekCursorTest
         long i = 0L;
         while ( numberOfRootSplits == 0 )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
 
@@ -1636,20 +1579,20 @@ public class SeekCursorTest
         List<Long> expected = new ArrayList<>();
         List<Long> actual = new ArrayList<>();
         long i = 0L;
-        for ( ; i < maxKeyCount / 2; i++ )
+        for ( ; i < 2; i++ )
         {
-            insert( i, i * 10 );
+            insert( i );
             expected.add( i );
         }
 
         long currentNode = cursor.getCurrentPageId();
-        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, maxKeyCount, cursor ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, 5, cursor ) )
         {
             // when
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
-            insert( i, i * 10, duplicate ); // Create successor of leaf
+            insert( 2, 2, duplicate ); // Create successor of leaf
             expected.add( i );
 
             while ( seek.next() )
@@ -1668,19 +1611,19 @@ public class SeekCursorTest
     {
         // given
         long i = 0L;
-        for ( ; i < maxKeyCount / 2; i++ )
+        for ( ; i < 2; i++ )
         {
-            insert( i, i * 10 );
+            insert( i );
         }
 
         long currentNode = cursor.getCurrentPageId();
-        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, maxKeyCount, cursor ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, 5, cursor ) )
         {
             // when
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
-            insert( i, i * 10, duplicate ); // Create successor of leaf
+            insert( i, i, duplicate ); // Create successor of leaf
 
             // and corrupt successor pointer
             corruptGSPP( duplicate, TreeNode.BYTE_POS_SUCCESSOR );
@@ -1708,7 +1651,7 @@ public class SeekCursorTest
         long i = 0L;
         while ( numberOfRootSplits == 0 )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
 
@@ -1722,7 +1665,7 @@ public class SeekCursorTest
         // and update root with an insert in new generation
         while ( keyCount( rootId ) == keyCount )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
         TreeNode.goTo( cursor, "root", rootId );
@@ -1768,7 +1711,7 @@ public class SeekCursorTest
         long i = 0L;
         while ( numberOfRootSplits == 0 )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
 
@@ -1781,7 +1724,7 @@ public class SeekCursorTest
         // and update root with an insert in new generation
         while ( TreeNode.keyCount( cursor ) == keyCount )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
 
@@ -1813,7 +1756,7 @@ public class SeekCursorTest
         long i = 0L;
         while ( numberOfRootSplits == 0 )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
 
@@ -1823,7 +1766,7 @@ public class SeekCursorTest
         checkpoint();
 
         // and an update to root with a child pointer in new generation
-        insert( i, i * 10 );
+        insert( i );
         i++;
         long newRightChild = childAt( cursor, 1, stableGeneration, unstableGeneration );
 
@@ -1853,7 +1796,7 @@ public class SeekCursorTest
         long i = 0L;
         while ( numberOfRootSplits == 0 )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
 
@@ -1863,7 +1806,7 @@ public class SeekCursorTest
         checkpoint();
 
         // and update root with an insert in new generation
-        insert( i, i * 10 );
+        insert( i );
         i++;
 
         // and corrupt successor pointer
@@ -2060,17 +2003,17 @@ public class SeekCursorTest
         long i = 0L;
         while ( numberOfRootSplits == 0 )
         {
-            insert( i, i * 10 );
+            insert( i );
             i++;
         }
         long rootId = cursor.getCurrentPageId();
         long leftChild = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
 
         // WHEN
-        PageCursorUtil.goTo( cursor, "test", GenerationSafePointerPair.pointer( leftChild ) );
+        goTo( cursor, leftChild );
         cursor.setOffset( TreeNode.BYTE_POS_KEYCOUNT );
         cursor.putInt( keyCount ); // Bad key count
-        PageCursorUtil.goTo( cursor, "test", rootId );
+        goTo( cursor, rootId );
 
         // THEN
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, Long.MAX_VALUE ) )
@@ -2125,15 +2068,18 @@ public class SeekCursorTest
     {
         PageCursor readCursor = cursor.duplicate( nodeId );
         readCursor.next();
-        int underflowBoundary = (maxKeyCount + 1) / 2;
+
         int keyCount = TreeNode.keyCount( readCursor );
-        long toRemove = keyAt( readCursor, 0, LEAF );
-        while ( keyCount >= underflowBoundary )
+        int prevKeyCount;
+
+        do
         {
+            long toRemove = keyAt( readCursor, 0, LEAF );
             remove( toRemove );
-            toRemove++;
-            keyCount--;
+            prevKeyCount = keyCount;
+            keyCount = TreeNode.keyCount( readCursor );
         }
+        while ( keyCount < prevKeyCount );
     }
 
     private void checkpoint()
@@ -2166,7 +2112,7 @@ public class SeekCursorTest
 
     private void insert( long key ) throws IOException
     {
-        insert( key, valueForKey( key ) );
+        insert( key, key );
     }
 
     private void insert( long key, long value ) throws IOException
@@ -2176,17 +2122,14 @@ public class SeekCursorTest
 
     private void insert( long key, long value, PageCursor cursor ) throws IOException
     {
-        insertKey.setValue( key );
-        insertValue.setValue( value );
-        treeLogic.insert( cursor, structurePropagation, insertKey, insertValue, overwrite(), stableGeneration,
+        treeLogic.insert( cursor, structurePropagation, key( key ), value( value ), overwrite(), stableGeneration,
                 unstableGeneration );
         handleAfterChange();
     }
 
     private void remove( long key ) throws IOException
     {
-        insertKey.setValue( key );
-        treeLogic.remove( cursor, structurePropagation, insertKey, insertValue, stableGeneration, unstableGeneration );
+        treeLogic.remove( cursor, structurePropagation, key( key ), insertValue, stableGeneration, unstableGeneration );
         handleAfterChange();
     }
 
@@ -2217,9 +2160,7 @@ public class SeekCursorTest
     private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive,
             PageCursor pageCursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        from.setValue( fromInclusive );
-        to.setValue( toExclusive );
-        return new SeekCursor<>( pageCursor, node, from, to, layout, stableGeneration, unstableGeneration,
+        return new SeekCursor<>( pageCursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
                 generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator );
     }
 
@@ -2240,44 +2181,41 @@ public class SeekCursorTest
         return left;
     }
 
-    private static void assertRangeInSingleLeaf( int fromInclusive, int toExclusive,
+    private void assertRangeInSingleLeaf( long fromInclusive, long toExclusive,
             SeekCursor<MutableLong,MutableLong> cursor ) throws IOException
     {
         int stride = fromInclusive <= toExclusive ? 1 : -1;
-        long expectedKey = fromInclusive;
+        long expected = fromInclusive;
         while ( cursor.next() )
         {
-            assertKeyAndValue( cursor, expectedKey );
-            expectedKey += stride;
+            MutableLong key = key( expected );
+            MutableLong value = value( expected );
+            assertKeyAndValue( cursor, key, value );
+            expected += stride;
         }
-        assertEquals( toExclusive, expectedKey );
+        assertEquals( toExclusive, expected );
     }
 
-    private static void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor, long expectedKey )
+    private void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor, long expectedKeySeed )
     {
-        assertKeyAndValue( cursor, expectedKey, valueForKey( expectedKey ) );
+        MutableLong key = key( expectedKeySeed );
+        MutableLong value = value( expectedKeySeed );
+        assertKeyAndValue( cursor, key, value );
     }
 
     private static void assertKeyAndValue( SeekCursor<MutableLong,MutableLong> cursor,
-            long expectedKey, long expectedValue )
+            MutableLong expectedKey, MutableLong expectedValue )
     {
         MutableLong foundKey = cursor.get().key();
         MutableLong foundValue = cursor.get().value();
-        assertEquals( expectedKey, foundKey.longValue() );
-        assertEquals( expectedValue, foundValue.longValue() );
-    }
-
-    private static long valueForKey( long key )
-    {
-        return key * 10;
+        assertEquals( expectedKey, foundKey );
+        assertEquals( expectedValue, foundValue );
     }
 
     private void insertKeysAndValues( int keyCount )
     {
         for ( int i = 0; i < keyCount; i++ )
         {
-            insertKey.setValue( i );
-            insertValue.setValue( valueForKey( i ) );
             append( i );
         }
     }
@@ -2285,22 +2223,21 @@ public class SeekCursorTest
     private void append( long k )
     {
         int keyCount = TreeNode.keyCount( cursor );
-        insertKey.setValue( k );
-        insertValue.setValue( valueForKey( k ) );
-        node.insertKeyValueAt( cursor, insertKey, insertValue, keyCount, keyCount );
+        node.insertKeyValueAt( cursor, key( k ), value( k ), keyCount, keyCount );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void insertIn( int pos, long k )
     {
         int keyCount = TreeNode.keyCount( cursor );
-        if ( keyCount + 1 > maxKeyCount )
+        MutableLong key = key( k );
+        MutableLong value = value( k );
+        TreeNode.Overflow overflow = node.leafOverflow( cursor, keyCount, key, value );
+        if ( overflow != TreeNode.Overflow.NO )
         {
             throw new IllegalStateException( "Can not insert another key in current node" );
         }
-        insertKey.setValue( k );
-        insertValue.setValue( valueForKey( k ) );
-        node.insertKeyValueAt( cursor, insertKey, insertValue, pos, keyCount );
+        node.insertKeyValueAt( cursor, key, value, pos, keyCount );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
@@ -2351,5 +2288,14 @@ public class SeekCursorTest
     {
         node.keyAt( cursor, readKey, pos, type );
         return readKey.longValue();
+    }
+
+    // KEEP even if unused
+    private void printTree() throws IOException
+    {
+        long currentPageId = cursor.getCurrentPageId();
+        cursor.next( rootId );
+        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration ).printTree( cursor, cursor, System.out, false, false, false );
+        cursor.next( currentPageId );
     }
 }

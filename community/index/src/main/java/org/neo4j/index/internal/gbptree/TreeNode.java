@@ -261,8 +261,6 @@ abstract class TreeNode<KEY,VALUE>
         GenerationSafePointerPair.assertSuccess( write );
     }
 
-    abstract int leafMaxKeyCount();
-
     // HELPERS
 
     abstract boolean reasonableKeyCount( int keyCount );
