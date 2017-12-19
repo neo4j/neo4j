@@ -201,8 +201,8 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
     Operation("expand from all node", (m) => {
       m.createRelExtractor("r")
       m.allNodesScan("nodeIter")
-      m.whileLoop(m.hasNextNode("nodeIter")) { b1 =>
-        b1.nextNode("node", "nodeIter")
+      m.whileLoop(m.advanceNodeCursor("nodeIter")) { b1 =>
+        b1.nodeFromNodeCursor("node", "nodeIter")
         b1.nodeGetRelationshipsWithDirection("relIter", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
         b1.whileLoop(b1.hasNextRelationship("relIter")) { b2 =>
           b2.nextRelationshipAndNode("nextNode", "relIter", SemanticDirection.OUTGOING, "node", "r")
@@ -249,7 +249,9 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       using(body.generate(MethodDeclaration.method(typeRef[Unit], "foo"))) { methodBody =>
         block(new GeneratedMethodStructure(fields, methodBody, new AuxGenerator(packageName, codeGen)))
       }
+      Templates.getOrLoadDataRead(body, fields)
       Templates.getOrLoadReadOperations(body, fields)
+      Templates.getOrLoadCursors(body, fields)
       Templates.nodeCursor(body, fields)
       Templates.propertyCursor(body, fields)
       body.handle()

@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, Descending, _}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -1668,6 +1669,32 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     override def answer(invocationOnMock: InvocationOnMock): AnyRef = toObjectConverter(invocationOnMock.getArguments()(0))
   })
   when(transactionalContext.readOperations).thenReturn(ro)
+  private def nodeCursor() = {
+    val cursor = new StubNodeCursor
+
+    val properties = new util.HashMap[Integer, Value]()
+    properties.put(0, Values.stringValue("value"))
+    allNodes.foreach(n =>
+                       if (n.getId < 3) cursor.withNode(n.getId, Array.empty[Long], properties)
+                       else cursor.withNode(n.getId))
+    cursor
+  }
+  private def propertyCursor() = new StubPropertyCursor
+
+
+  private val cursors = mock[CursorFactory]
+  when(cursors.allocateNodeCursor()).thenAnswer(new Answer[NodeCursor] {
+    override def answer(invocation: InvocationOnMock): NodeCursor = nodeCursor()
+  })
+  when(cursors.allocatePropertyCursor()).thenAnswer(new Answer[PropertyCursor] {
+    override def answer(invocation: InvocationOnMock): PropertyCursor = propertyCursor()
+  })
+  when(transactionalContext.cursors).thenReturn(cursors)
+  private def read = new StubRead
+
+  when(transactionalContext.dataRead).thenAnswer(new Answer[Read] {
+    override def answer(invocation: InvocationOnMock): Read = read
+  })
   when(queryContext.entityAccessor).thenReturn(nodeManager)
   when(ro.nodeGetProperty(anyLong(), anyInt())).thenAnswer(new Answer[Value] {
     override def answer(invocationOnMock: InvocationOnMock): Value = {
