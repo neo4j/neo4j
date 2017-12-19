@@ -38,7 +38,7 @@ public class PeriodicThresholdPolicy extends CheckPointThresholdPolicy
 {
     public PeriodicThresholdPolicy()
     {
-        super( "periodically", "periodic", "interval" );
+        super( "periodic" );
     }
 
     @Override

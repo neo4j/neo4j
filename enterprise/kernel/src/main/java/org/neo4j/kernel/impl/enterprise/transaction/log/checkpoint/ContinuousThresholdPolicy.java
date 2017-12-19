@@ -33,7 +33,7 @@ public class ContinuousThresholdPolicy extends CheckPointThresholdPolicy
 {
     public ContinuousThresholdPolicy()
     {
-        super( "continuously", "continuous", "constantly", "always" );
+        super( "continuous" );
     }
 
     @Override
