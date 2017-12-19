@@ -23,10 +23,9 @@ import org.neo4j.causalclustering.core.state.CoreLife;
 import org.neo4j.causalclustering.identity.ClusterId;
 
 /**
- * A {@link Inbound.MessageHandler<M>} that can be started and stopped in {@link CoreLife}.
+ * A {@link Inbound.MessageHandler} that can be started and stopped in {@link CoreLife}.
  * It is required that if this MessageHandler delegates to another MessageHandler to handle messages
  * then the delegate will also have lifecycle methods called
- * @param <M>
  */
 public interface LifecycleMessageHandler<M extends Message> extends Inbound.MessageHandler<M>
 {
