@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,7 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -39,7 +37,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
@@ -64,7 +61,6 @@ import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -92,7 +88,6 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -101,7 +96,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.function.Predicates.awaitEx;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
@@ -598,47 +592,6 @@ public class ReadReplicaReplicationIT
             SortedMap<Long,File> logs = new FileNames( raftLogDir ).getAllFiles( fileSystem, mock( Log.class ) );
             return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
         }
-    }
-
-    @Test
-    public void pageFaultsFromReplicationMustCountInMetrics() throws Exception
-    {
-        // Given initial pin counts on all members
-        Cluster cluster = clusterRule.startCluster();
-        Function<ReadReplica,PageCacheCounters> getPageCacheCounters =
-                ccm -> ccm.database().getDependencyResolver().resolveDependency( PageCacheCounters.class );
-        List<PageCacheCounters> countersList =
-                cluster.readReplicas().stream().map( getPageCacheCounters ).collect( Collectors.toList() );
-        long[] initialPins = countersList.stream().mapToLong( PageCacheCounters::pins ).toArray();
-
-        // when the leader commits a write transaction,
-        cluster.coreTx( ( db, tx ) ->
-        {
-            Node node = db.createNode( label( "boo" ) );
-            node.setProperty( "foobar", "baz_bat" );
-            tx.success();
-        } );
-
-        // then the replication should cause pins on a majority of core members to increase.
-        // However, the commit returns as soon as the transaction has been replicated through the Raft log, which
-        // happens before the transaction is applied on the members, and then replicated to read-replicas.
-        // Therefor we are racing with the transaction application on the read-replicas, so we have to spin.
-        int minimumUpdatedMembersCount = countersList.size() / 2 + 1;
-        assertEventually( "Expected followers to eventually increase pin counts", () ->
-        {
-            long[] pinsAfterCommit = countersList.stream().mapToLong( PageCacheCounters::pins ).toArray();
-            int membersWithIncreasedPinCount = 0;
-            for ( int i = 0; i < initialPins.length; i++ )
-            {
-                long before = initialPins[i];
-                long after = pinsAfterCommit[i];
-                if ( before < after )
-                {
-                    membersWithIncreasedPinCount++;
-                }
-            }
-            return membersWithIncreasedPinCount;
-        }, Matchers.is( greaterThanOrEqualTo( minimumUpdatedMembersCount ) ), 10, SECONDS );
     }
 
     private final BiConsumer<CoreGraphDatabase,Transaction> createSomeData = ( db, tx ) ->
