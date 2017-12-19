@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -51,17 +52,16 @@ public class ConfiguringPageCacheFactoryTest
     {
         PageSwapperFactoryForTesting.createdCounter.set( 0 );
         PageSwapperFactoryForTesting.configuredCounter.set( 0 );
-        PageSwapperFactoryForTesting.cachePageSizeHint.set( 0 );
-        PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( false );
     }
 
     @Test
     public void shouldFitAsManyPagesAsItCan() throws Throwable
     {
         // Given
-        final int pageSize = 8192;
-        final long maxPages = 60;
-        Config config = Config.defaults( pagecache_memory, Long.toString( pageSize * maxPages ) );
+        long pageCount = 60;
+        long memory = MuninnPageCache.memoryRequiredForPages( pageCount );
+        Config config = Config.defaults(
+                pagecache_memory, Long.toString( memory ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
@@ -71,8 +71,8 @@ public class ConfiguringPageCacheFactoryTest
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
         {
-            assertThat( cache.pageSize(), equalTo( pageSize ) );
-            assertThat( cache.maxCachedPages(), equalTo( maxPages ) );
+            assertThat( cache.pageSize(), equalTo( PageCache.PAGE_SIZE ) );
+            assertThat( cache.maxCachedPages(), equalTo( pageCount ) );
         }
     }
 
@@ -91,7 +91,7 @@ public class ConfiguringPageCacheFactoryTest
                 PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log );
 
         // Then
-        try ( PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
+        try ( PageCache ignore = pageCacheFactory.getOrCreatePageCache() )
         {
             logProvider.assertContainsLogCallContaining(
                     "The setting unsupported.dbms.memory.pagecache.pagesize does not have any effect. It is " +
@@ -112,10 +112,7 @@ public class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory cacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, log );
-        try ( PageCache pageCache = cacheFactory.getOrCreatePageCache() )
-        {
-            // empty block
-        }
+        cacheFactory.getOrCreatePageCache().close();
 
         // Then
         assertThat( PageSwapperFactoryForTesting.countCreatedPageSwapperFactories(), is( 1 ) );
@@ -132,31 +129,7 @@ public class ConfiguringPageCacheFactoryTest
                 pagecache_swapper.name(), "non-existing" ) );
 
         // When
-        try ( PageCache pageCache = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache() )
-        {
-            //empty
-        }
-    }
-
-    @Test
-    public void mustIgnoreExplicitlySpecifiedCachePageSizeIfPageSwapperHintIsStrict() throws Exception
-    {
-        // Given
-        int cachePageSizeHint = 16 * 1024;
-        PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
-        PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
-        Config config = Config.defaults( GraphDatabaseSettings.pagecache_swapper, TEST_PAGESWAPPER_NAME );
-
-        // When
-        ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
-                fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance() );
-
-        // Then
-        try ( PageCache cache = factory.getOrCreatePageCache() )
-        {
-            assertThat( cache.pageSize(), is( cachePageSizeHint ) );
-        }
+        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
+                PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache().close();
     }
 }

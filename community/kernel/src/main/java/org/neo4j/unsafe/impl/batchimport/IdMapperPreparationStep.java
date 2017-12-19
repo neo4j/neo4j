@@ -56,7 +56,6 @@ public class IdMapperPreparationStep extends LonelyProcessingStep
             @Override
             public void started( String task )
             {
-                resetStats();
                 changeName( task );
             }
 

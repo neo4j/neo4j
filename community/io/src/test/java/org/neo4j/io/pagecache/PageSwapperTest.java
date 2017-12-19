@@ -41,11 +41,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.io.ByteUnit;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.is;
@@ -72,7 +70,7 @@ public abstract class PageSwapperTest
 
     private final ConcurrentLinkedQueue<PageSwapperFactory> openedFactories = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
-    private final MemoryManager mman = new MemoryManager( ByteUnit.kibiBytes( 32 ), 1 );
+    private final MemoryAllocator mman = MemoryAllocator.createAllocator( "32 KiB" );
 
     protected abstract PageSwapperFactory swapperFactory() throws Exception;
 
@@ -96,7 +94,7 @@ public abstract class PageSwapperTest
 
     protected long createPage( int cachePageSize )
     {
-        long address = mman.allocateAligned( cachePageSize + Integer.BYTES );
+        long address = mman.allocateAligned( cachePageSize + Integer.BYTES, 1 );
         UnsafeUtil.putInt( address, cachePageSize );
         return address + Integer.BYTES;
     }

@@ -50,7 +50,7 @@ public class SlaveStatementLocksFactoryIT
     private static final String testProperty = "testProperty";
 
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( GraphDatabaseFacadeFactory.Configuration.tracer, "slaveLocksTracer" )
             .withSharedSetting( HaSettings.tx_push_factor, "2" );
     private ClusterManager.ManagedCluster managedCluster;

@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static org.neo4j.unsafe.impl.batchimport.Configuration.withBatchSize;
@@ -61,20 +62,14 @@ public class RelationshipGroupDefragmenter
         default void defragmentingNodeRange( long fromNodeId, long toNodeId )
         {   // empty
         }
+
         Monitor EMPTY = new Monitor()
         {   // empty
         };
-
-    }
-
-    public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor,
-                                          NumberArrayFactory numberArrayFactory )
-    {
-        this( config, executionMonitor, Monitor.EMPTY, numberArrayFactory );
     }
 
     public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor, Monitor monitor,
-                                          NumberArrayFactory numberArrayFactory )
+            NumberArrayFactory numberArrayFactory )
     {
         this.config = config;
         this.executionMonitor = executionMonitor;
@@ -95,7 +90,8 @@ public class RelationshipGroupDefragmenter
             // Count all nodes, how many groups each node has each
             Configuration groupConfig =
                     withBatchSize( config, neoStore.getRelationshipGroupStore().getRecordsPerPage() );
-            executeStage( new CountGroupsStage( groupConfig, fromStore, groupCache ) );
+            StatsProvider memoryUsage = new MemoryUsageStatsProvider( neoStore, groupCache );
+            executeStage( new CountGroupsStage( groupConfig, fromStore, groupCache, memoryUsage ) );
             long fromNodeId = 0;
             long toNodeId = 0;
             while ( fromNodeId < highNodeId )
@@ -105,7 +101,7 @@ public class RelationshipGroupDefragmenter
                 toNodeId = groupCache.prepare( fromNodeId );
                 monitor.defragmentingNodeRange( fromNodeId, toNodeId );
                 // Cache those groups
-                executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache ) );
+                executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache, memoryUsage ) );
                 // And write them in sequential order in the store
                 executeStage( new WriteGroupsStage( groupConfig, groupCache, toStore ) );
 

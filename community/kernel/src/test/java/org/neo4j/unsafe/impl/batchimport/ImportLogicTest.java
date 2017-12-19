@@ -48,7 +48,7 @@ public class ImportLogicTest
         int numberOfNodes = 100;
         int numberOfTypes = 10;
         NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, denseNodeThreshold );
-        cache.setHighNodeId( numberOfNodes + 1 );
+        cache.setNodeCount( numberOfNodes + 1 );
         Direction[] directions = Direction.values();
         for ( int i = 0; i < numberOfNodes; i++ )
         {
@@ -65,7 +65,7 @@ public class ImportLogicTest
             numberOfRelationships += count;
         }
         types.sort( ( t1, t2 ) -> Long.compare( t2.other(), t1.other() ) );
-        RelationshipTypeDistribution typeDistribution = new RelationshipTypeDistribution( types.stream().toArray( Pair[]::new ) );
+        DataStatistics typeDistribution = new DataStatistics( 0, 0, types.stream().toArray( Pair[]::new ) );
 
         // WHEN enough memory for all types
         {

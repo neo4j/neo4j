@@ -57,7 +57,7 @@ import scala.util.Try
 
 object CypherReductionSupport {
   private val rewriterSequencer = RewriterStepSequencer.newValidating _
-  private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
+  private val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   private val stepSequencer = RewriterStepSequencer.newPlain _
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
   private val config = CypherCompilerConfiguration(
@@ -111,7 +111,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   private val rewriting = PreparatoryRewriting andThen
     SemanticAnalysis(warn = true).adds(BaseContains[SemanticState])
   private val createExecPlan = ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
-    If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
+    If((s: CompilationState) => s.maybeExecutionPlan.isFailure)(
       CommunityRuntimeBuilder.create(None, CypherReductionSupport.config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan]))
 
 
@@ -167,7 +167,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   private def executeInTx(query: String, statement: Statement, parsingBaseState: BaseState, implicitTx: InternalTransaction): InternalExecutionResult = {
     val neo4jtxContext = contextFactory.newContext(EMBEDDED_CONNECTION, implicitTx, query, EMPTY_MAP)
     val txContextWrapper = TransactionalContextWrapper(neo4jtxContext)
-    val planContext = new TransactionBoundPlanContext(txContextWrapper, devNullLogger)
+    val planContext = TransactionBoundPlanContext(txContextWrapper, devNullLogger)
 
     var baseState = parsingBaseState.withStatement(statement)
     val planningContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, planContext, CypherReductionSupport.queryGraphSolver)

@@ -48,7 +48,7 @@ public class ConnectionInfoIT
 
     @Rule
     public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
+            new ClusterRule().withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
 
     @After
     public void teardown() throws IOException

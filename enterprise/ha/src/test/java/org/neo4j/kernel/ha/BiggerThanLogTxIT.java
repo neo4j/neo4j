@@ -42,7 +42,7 @@ public class BiggerThanLogTxIT
     private static final String ROTATION_THRESHOLD = "1M";
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( GraphDatabaseSettings.logical_log_rotation_threshold, ROTATION_THRESHOLD );
 
     protected ClusterManager.ManagedCluster cluster;

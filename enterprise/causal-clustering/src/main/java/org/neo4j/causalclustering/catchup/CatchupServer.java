@@ -43,6 +43,9 @@ import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 import org.neo4j.causalclustering.catchup.storecopy.FileChunkEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderEncoder;
+import org.neo4j.causalclustering.catchup.storecopy.StoreResourceStreamFactory;
+import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProcess;
+import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProtocol;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponseEncoder;
@@ -178,7 +181,8 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
                                 transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors, logProvider ) );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
-                                checkPointerSupplier, fs, pageCache, logProvider, storeCopyCheckPointMutex ) );
+                                new StoreStreamingProcess( new StoreStreamingProtocol(), checkPointerSupplier, storeCopyCheckPointMutex,
+                                        new StoreResourceStreamFactory( pageCache, fs, dataSourceSupplier ) ) ) );
 
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
 

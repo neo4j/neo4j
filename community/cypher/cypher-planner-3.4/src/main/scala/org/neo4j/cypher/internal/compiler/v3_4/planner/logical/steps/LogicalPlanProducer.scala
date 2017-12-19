@@ -363,7 +363,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   }
 
   def planArgumentFrom(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
-    Argument(plan.availableSymbols)(plan.solved)(Map.empty)
+    Argument(plan.availableSymbols)(plan.solved)
 
   def planArgument(patternNodes: Set[IdName],
                    patternRels: Set[PatternRelationship] = Set.empty,
@@ -371,10 +371,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                   (implicit context: LogicalPlanningContext): LogicalPlan = {
     val relIds = patternRels.map(_.name)
     val coveredIds = patternNodes ++ relIds ++ other
-    val typeInfoSeq = patternNodes.toIndexedSeq.map((x: IdName) => x.name -> CTNode) ++
-      relIds.toIndexedSeq.map((x: IdName) => x.name -> CTRelationship) ++
-      other.toIndexedSeq.map((x: IdName) => x.name -> CTAny)
-    val typeInfo = typeInfoSeq.toMap
 
     val solved = RegularPlannerQuery(queryGraph =
       QueryGraph(
@@ -383,11 +379,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
         patternRelationships = Set.empty
       ))
 
-    Argument(coveredIds)(solved)(typeInfo)
+    Argument(coveredIds)(solved)
   }
 
   def planArgument()(implicit context: LogicalPlanningContext): LogicalPlan =
-    Argument(Set.empty)(PlannerQuery.empty)(Map.empty)
+    Argument(Set.empty)(PlannerQuery.empty)
 
   def planEmptyProjection(inner: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
     EmptyResult(inner)(inner.solved)

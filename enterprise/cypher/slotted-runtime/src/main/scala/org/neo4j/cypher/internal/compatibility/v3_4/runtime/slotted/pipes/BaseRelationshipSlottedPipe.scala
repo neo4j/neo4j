@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import java.util.function.BiConsumer
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
@@ -35,19 +36,28 @@ import org.neo4j.values.virtual.MapValue
 
 abstract class BaseRelationshipSlottedPipe(src: Pipe,
                                            RelationshipKey: String,
-                                           startNode: Int,
+                                           startNode: Slot,
                                            typ: LazyType,
-                                           endNode: Int,
+                                           endNode: Slot,
                                            slots: SlotConfiguration,
                                            properties: Option[Expression]) extends PipeWithSource(src) {
 
+  //===========================================================================
+  // Compile-time initializations
+  //===========================================================================
+  private val getStartNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(startNode)
+  private val getEndNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(endNode)
   private val offset = slots.getLongOffsetFor(RelationshipKey)
+
+  //===========================================================================
+  // Runtime code
+  //===========================================================================
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map {
       row =>{
-        val start = getNode(row, startNode)
-        val end = getNode(row, endNode)
+        val start = getStartNodeFunction(row)
+        val end = getEndNodeFunction(row)
         val typeId = typ.typ(state.query)
         val relationship = state.query.createRelationship(start, end, typeId)
 
@@ -59,11 +69,6 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe,
         row
       }
     }
-
-
-  private def getNode(row: ExecutionContext, offset: Int): Long ={
-    row.getLongAt(offset)
-  }
 
   private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
     properties.foreach { expr =>
@@ -98,9 +103,9 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe,
 
 case class CreateRelationshipSlottedPipe(src: Pipe,
                                          RelationshipKey: String,
-                                         startNode: Int,
+                                         startNode: Slot,
                                          typ: LazyType,
-                                         endNode: Int,
+                                         endNode: Slot,
                                          slots: SlotConfiguration,
                                          properties: Option[Expression])
                                         (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
@@ -112,9 +117,9 @@ case class CreateRelationshipSlottedPipe(src: Pipe,
 
 case class MergeCreateRelationshipSlottedPipe(src: Pipe,
                                               RelationshipKey: String,
-                                              startNode: Int,
+                                              startNode: Slot,
                                               typ: LazyType,
-                                              endNode: Int,
+                                              endNode: Slot,
                                               slots: SlotConfiguration,
                                               properties: Option[Expression])
                                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT)

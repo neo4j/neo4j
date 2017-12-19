@@ -235,7 +235,7 @@ case object PlanUpdates
       def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
         val lockThese = nodesToLock intersect plan.availableSymbols
         if (lockThese.nonEmpty)
-          LockNodes(plan, lockThese)(plan.solved)
+          producer.planLock(plan, lockThese)(context)
         else
           plan
       }

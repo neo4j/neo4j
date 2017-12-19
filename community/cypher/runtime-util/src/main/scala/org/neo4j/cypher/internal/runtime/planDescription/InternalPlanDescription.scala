@@ -165,9 +165,16 @@ object InternalPlanDescription {
                          args: Seq[ast.Expression],
                          results: Seq[(String, CypherType)]) extends Argument
 
+    // This is the version of cypher and will equal the planner version
+    // that is being used.
     case class Version(value: String) extends Argument {
 
       override def name = "version"
+    }
+
+    case class RuntimeVersion(value: String) extends Argument {
+
+      override def name = "runtime-version"
     }
 
     case class Planner(value: String) extends Argument {
@@ -178,6 +185,11 @@ object InternalPlanDescription {
     case class PlannerImpl(value: String) extends Argument {
 
       override def name = "planner-impl"
+    }
+
+    case class PlannerVersion(value: String) extends Argument {
+
+      override def name = "planner-version"
     }
 
     case class Runtime(value: String) extends Argument {
@@ -285,7 +297,11 @@ final case class PlanDescriptionImpl(id: LogicalPlanId,
     val runtime = arguments.collectFirst {
       case Runtime(n) => s"Runtime ${n.toUpperCase}$NL"
     }
-    val prefix = version ++ planner ++ runtime
+
+    val runtimeVersion = arguments.collectFirst {
+      case RuntimeVersion(n) => s"Runtime version ${n.toUpperCase}$NL"
+    }
+    val prefix = version ++ planner ++ runtime ++ runtimeVersion
     s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this)}$NL${renderSummary(this)}$renderSources"
   }
 
@@ -371,21 +387,4 @@ final case class ArgumentPlanDescription(id: LogicalPlanId,
   def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = f(this)
 
   def toIndexedSeq: Seq[InternalPlanDescription] = Seq(this)
-}
-
-final case class LegacyPlanDescription(name: String,
-                                       arguments: Seq[Argument],
-                                       variables: Set[String],
-                                       stringRep: String
-                                      ) extends InternalPlanDescription {
-
-  override def id: LogicalPlanId = LogicalPlanId.DEFAULT
-
-  override def children: Children = NoChildren
-
-  override def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = this
-
-  override def find(searchedName: String): Seq[InternalPlanDescription] = if (searchedName == name) Seq(this) else Seq.empty
-
-  override def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
 }

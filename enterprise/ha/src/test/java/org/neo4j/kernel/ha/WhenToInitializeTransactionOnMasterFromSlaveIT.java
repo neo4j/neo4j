@@ -46,7 +46,7 @@ import static org.neo4j.helpers.collection.Iterables.count;
 public class WhenToInitializeTransactionOnMasterFromSlaveIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    public ClusterRule clusterRule = new ClusterRule();
 
     private GraphDatabaseService slave;
     private ClusterManager.ManagedCluster cluster;

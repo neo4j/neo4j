@@ -72,7 +72,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val node3 = IdName("c")
     val rel1 = IdName("r1")
     val rel2 = IdName("r2")
-    val argument = Argument(Set(node1, node2, node3, rel1, rel2))(solved)()
+    val argument = Argument(Set(node1, node2, node3, rel1, rel2))(solved)
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
@@ -106,7 +106,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val node3 = IdName("c")
     val rel1 = IdName("r1")
     val rel2 = IdName("r2")
-    val argument = Argument(Set(node1, node2, node3, rel1, rel2))(solved)()
+    val argument = Argument(Set(node1, node2, node3, rel1, rel2))(solved)
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
@@ -145,7 +145,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val node1 = IdName("a")
     val node2 = IdName("b")
     val rel = IdName("r")
-    val argument = Argument(Set(node1, node2, rel))(solved)()
+    val argument = Argument(Set(node1, node2, rel))(solved)
     val predicate = Equals(varFor("r"), varFor("a"))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
@@ -233,7 +233,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val node1 = IdName("a")
     val node2 = IdName("b")
     val edge = IdName("r")
-    val argument = Argument(Set(node1, node2, edge))(solved)()
+    val argument = Argument(Set(node1, node2, edge))(solved)
     val predicate = Equals(prop("r", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     selection.assignIds()
@@ -338,8 +338,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   }
 
   test("argument on two sides of Apply") {
-    val sr1 = Argument()(solved)()
-    val sr2 = Argument()(solved)()
+    val sr1 = Argument()(solved)
+    val sr2 = Argument()(solved)
     val pr1A = Projection(sr1, Map("x" -> literalInt(42)))(solved)
     val pr1B = Projection(pr1A, Map("xx" -> varFor("x")))(solved)
     val pr2 = Projection(sr2, Map("y" -> literalInt(666)))(solved)
@@ -446,7 +446,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
   test("selection between two references") {
     // given
-    val arg = Argument(Set(IdName("x"), IdName("z")))(solved)()
+    val arg = Argument(Set(IdName("x"), IdName("z")))(solved)
     val predicate1 = Equals(varFor("x"), varFor("z"))(pos)
     val predicate2 = Not(Equals(varFor("x"), varFor("z"))(pos))(pos)
     val selection = Selection(Seq(predicate1, predicate2), arg)(solved)
@@ -477,7 +477,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
   test("should be able to rewrite expressions declared as Variable or Property") {
     // given
-    val arg = Argument()(solved)()
+    val arg = Argument()(solved)
     val predicate = AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(LessThan(literalInt(42), varFor("z"))(pos)))
     val selection = Selection(Seq(predicate), arg)(solved)
     selection.assignIds()

@@ -45,13 +45,13 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
 
   override def refs(): Array[AnyValue] = ???
 
-  override def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = ???
+  override def set(newEntries: Seq[(String, AnyValue)]): ExecutionContext = ???
 
-  override def newWith1(key1: String, value1: AnyValue): ExecutionContext = ???
+  override def set(key1: String, value1: AnyValue): ExecutionContext = ???
 
-  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = ???
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = ???
 
-  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = ???
+  override def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = ???
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = ???
 
@@ -65,5 +65,11 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
 
   override def iterator: Iterator[(String, AnyValue)] = ???
 
-  override def newScopeWith1(key1: String, value1: AnyValue) = ???
+  override def copyWith(key1: String, value1: AnyValue) = ???
+
+  override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue) = ???
+
+  override def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = ???
+
+  override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = ???
 }

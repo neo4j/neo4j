@@ -35,12 +35,9 @@ import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 import static org.neo4j.causalclustering.helpers.DataCreator.createLabelledNodesWithProperty;
 import static org.neo4j.causalclustering.scenarios.ReadReplicaToReadReplicaCatchupIT.checkDataHasReplicatedToReadReplicas;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterables.count;
 
 public class ReadReplicaHierarchicalCatchupIT
 {
@@ -62,7 +59,7 @@ public class ReadReplicaHierarchicalCatchupIT
 
     @Rule
     public ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 )
+            new ClusterRule().withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 )
                     .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
                     .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" )
                     .withSharedReadReplicaParam( CausalClusteringSettings.multi_dc_license, "true" )

@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 
+import scala.util.{Failure, Try}
+
 class CompilationState(ls: LogicalPlanState,
-                           val maybeExecutionPlan: Option[ExecutionPlan] = None)
+                           val maybeExecutionPlan: Try[ExecutionPlan] = Failure(new UnsupportedOperationException))
   extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.maybeStatement, ls.maybeSemantics,
                            ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan,
-                           ls.maybePeriodicCommit, ls.accumulatedConditions) {
-  def withMaybeExecutionPlan(e: Option[ExecutionPlan]): CompilationState = new CompilationState(ls, e)
-}
+                           ls.maybePeriodicCommit, ls.accumulatedConditions)

@@ -42,7 +42,7 @@ public class BasicHaOperationsIT
     @ClassRule
     public static LoggerRule logger = new LoggerRule( Level.OFF );
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() ).withSharedSetting( HaSettings.tx_push_factor, "2" );
+    public ClusterRule clusterRule = new ClusterRule().withSharedSetting( HaSettings.tx_push_factor, "2" );
 
     @Test
     public void testBasicFailover() throws Throwable

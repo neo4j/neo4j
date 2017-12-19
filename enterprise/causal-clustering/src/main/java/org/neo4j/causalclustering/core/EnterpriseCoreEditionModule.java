@@ -255,15 +255,17 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
-        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
-                messageLogger, databaseHealthSupplier, pipelineHandlerAppender );
+        RaftServerModule raftServerModule = new RaftServerModule( platformModule, consensusModule, identityModule, localDatabase, pipelineHandlerAppender,
+                monitors, messageLogger );
+
+        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
+                replicationModule, raftServerModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(),
+                pipelineHandlerAppender );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
         dependencies.satisfyDependency( lockManager );
 
-        life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup.tx;
 
 import java.util.function.Supplier;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -44,6 +45,7 @@ public class BatchingTxApplier extends LifecycleAdapter
     private final Supplier<TransactionCommitProcess> commitProcessSupplier;
 
     private final PullRequestMonitor monitor;
+    private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final Log log;
 
     private TransactionQueue txQueue;
@@ -53,12 +55,13 @@ public class BatchingTxApplier extends LifecycleAdapter
     private volatile boolean stopped;
 
     public BatchingTxApplier( int maxBatchSize, Supplier<TransactionIdStore> txIdStoreSupplier,
-            Supplier<TransactionCommitProcess> commitProcessSupplier,
-            Monitors monitors, LogProvider logProvider )
+                              Supplier<TransactionCommitProcess> commitProcessSupplier, Monitors monitors,
+                              PageCursorTracerSupplier pageCursorTracerSupplier, LogProvider logProvider )
     {
         this.maxBatchSize = maxBatchSize;
         this.txIdStoreSupplier = txIdStoreSupplier;
         this.commitProcessSupplier = commitProcessSupplier;
+        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.log = logProvider.getLog( getClass() );
         this.monitor = monitors.newMonitor( PullRequestMonitor.class );
     }
@@ -68,7 +71,11 @@ public class BatchingTxApplier extends LifecycleAdapter
     {
         stopped = false;
         refreshFromNewStore();
-        txQueue = new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
+        txQueue = new TransactionQueue( maxBatchSize, ( first, last ) ->
+        {
+            commitProcess.commit( first, NULL, EXTERNAL );
+            pageCursorTracerSupplier.get().reportEvents();  // Report paging metrics for the commit
+        } );
     }
 
     @Override

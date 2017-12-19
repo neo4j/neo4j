@@ -279,7 +279,7 @@ class CommandPrimer
                     {
                         cursor.setOffset( pageOffset );
                         Record actualRecord = recordFormat.readRecord( cursor );
-                        assertThat( actualRecord, isOneOf( expectedRecord, recordFormat.zeroRecord() ) );
+                        assertThat( toString(), actualRecord, isOneOf( expectedRecord, recordFormat.zeroRecord() ) );
                         performInnerAction();
                     }
                 }

@@ -35,6 +35,8 @@ import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.graphiteEnabled;
 import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
 import static org.neo4j.metrics.MetricsSettings.graphiteServer;
+import static org.neo4j.metrics.MetricsSettings.prometheusEnabled;
+import static org.neo4j.metrics.MetricsSettings.prometheusEndpoint;
 
 public class EventReporterBuilder
 {
@@ -76,6 +78,14 @@ public class EventReporterBuilder
             GraphiteOutput graphiteOutput = new GraphiteOutput( server, period, registry, logger, prefix );
             reporter.add( graphiteOutput );
             life.add( graphiteOutput );
+        }
+
+        if ( config.get( prometheusEnabled ) )
+        {
+            HostnamePort server = config.get( prometheusEndpoint );
+            PrometheusOutput prometheusOutput = new PrometheusOutput( server, registry, logger );
+            reporter.add( prometheusOutput );
+            life.add( prometheusOutput );
         }
 
         return reporter;

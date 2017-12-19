@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should unnest apply with a single Argument on the lhs") {
     val rhs = newMockedLogicalPlan()
-    val argument = Argument()(solved)()
+    val argument = Argument()(solved)
     val input = Apply(argument, rhs)(solved)
 
     rewrite(input) should equal(rhs)
@@ -37,7 +37,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should unnest apply with a single Argument on the rhs") {
     val lhs = newMockedLogicalPlan()
-    val argument = Argument(Set.empty)(solved)()
+    val argument = Argument(Set.empty)(solved)
     val input = Apply(lhs, argument)(solved)
 
     rewrite(input) should equal(lhs)
@@ -45,7 +45,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should unnest also when deeper in the structure") {
     val lhs = newMockedLogicalPlan()
-    val argument = Argument(Set.empty)(solved)()
+    val argument = Argument(Set.empty)(solved)
     val apply = Apply(lhs, argument)(solved)
     val optional = Optional(apply)(solved)
 
@@ -58,7 +58,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
          LHS  OuterJoin
               Arg   RHS
      */
-    val argPlan = Argument(Set(IdName("a")))(solved)()
+    val argPlan = Argument(Set(IdName("a")))(solved)
     val lhs = newMockedLogicalPlan("a")
     val rhs = newMockedLogicalPlan("a")
 
@@ -76,7 +76,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should not cross OPTIONAL boundaries") {
-    val argPlan = Argument(Set(IdName("a")))(solved)()
+    val argPlan = Argument(Set(IdName("a")))(solved)
     val lhs = newMockedLogicalPlan("a")
     val rhs = Selection(Seq(propEquality("a", "prop", 42)), argPlan)(solved)
     val optional = Optional(rhs)(solved)
@@ -96,8 +96,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // Given
     val lhs = newMockedLogicalPlan("a")
-    val arg1 = Argument(Set(IdName("a")))(solved)()
-    val arg2 = Argument(Set(IdName("a")))(solved)()
+    val arg1 = Argument(Set(IdName("a")))(solved)
+    val arg2 = Argument(Set(IdName("a")))(solved)
     val expand = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val apply2 = Apply(arg1, expand)(solved)
     val apply = Apply(lhs, apply2)(solved)
@@ -175,7 +175,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // Given
     val lhs = newMockedLogicalPlan("a")
-    val arg = Argument(Set(IdName("a")))(solved)()
+    val arg = Argument(Set(IdName("a")))(solved)
     val expand = VarExpand(arg, IdName("a"), SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val apply = Apply(lhs, expand)(solved)
 
@@ -197,8 +197,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // Given
     val lhs = newMockedLogicalPlan("a")
-    val arg1 = Argument(Set(IdName("a")))(solved)()
-    val arg2 = Argument(Set(IdName("a")))(solved)()
+    val arg1 = Argument(Set(IdName("a")))(solved)
+    val arg2 = Argument(Set(IdName("a")))(solved)
     val expand = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val optional = Optional(expand)(solved)
     val apply2 = Apply(arg1, optional)(solved)
@@ -226,8 +226,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // Given
     val lhs = newMockedLogicalPlan("a")
-    val arg1 = Argument(Set(IdName("a")))(solved)()
-    val arg2 = Argument(Set(IdName("a")))(solved)()
+    val arg1 = Argument(Set(IdName("a")))(solved)
+    val arg2 = Argument(Set(IdName("a")))(solved)
     val expand = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val optional = Optional(expand)(solved)
     val apply2 = Apply(arg1, optional)(solved)

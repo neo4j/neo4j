@@ -1,139 +1,14 @@
-Directed match of a simple relationship, count
-Directed match on self-relationship graph, count
-
-Keeping used expression 1
-Simple counting of nodes
-Support column renaming for aggregates as well
-Support multiple divisions in aggregate function
-Aggregates in aggregates
-Aggregates with arithmetics
-Fail at runtime when attempting to index with an Int into a Map
-Fail at runtime when trying to index into a map with a non-string
-Fail at runtime when attempting to index with a String into a Collection
-Fail at runtime when trying to index into a list with a list
-Fail at runtime when trying to index something which is not a map or collection
-Functions should return null if they get path containing unbound
-`exists()` with literal maps
-IS NOT NULL with literal maps
-`percentileCont()` failing on bad arguments
-`percentileDisc()` failing on bad arguments
-`percentileDisc()` failing in more involved query
-`type()` failing on invalid arguments
-Optionally matching named paths with single and variable length patterns
-Optionally matching named paths with variable length patterns
-Variable length relationship in OPTIONAL MATCH
-Matching using a relationship that is already bound
-Matching using a relationship that is already bound, in conjunction with aggregation
-Matching using a relationship that is already bound, in conjunction with aggregation and ORDER BY
-Matching with LIMIT and optionally matching using a relationship that is already bound
-Matching with LIMIT and optionally matching using a relationship and node that are both already bound
-Matching with LIMIT, then matching again using a relationship and node that are both already bound along with an additional predicate
-Matching with LIMIT and predicates, then matching again using a relationship and node that are both already bound along with a duplicate predicate
-Matching twice with conflicting relationship types on same relationship
-Matching twice with duplicate relationship types on same relationship
-Matching relationships into a list and matching variable length using the list
-Matching relationships into a list and matching variable length using the list, with bound nodes
-Matching relationships into a list and matching variable length using the list, with bound nodes, wrong direction
-Matching and optionally matching with bound nodes in reverse direction
-Matching and optionally matching with unbound nodes and equality predicate in reverse direction
-Fail when using property access on primitive type
-Counting an empty graph
-Variable length pattern checking labels on endnodes
-Variable length patterns and nulls
-Failing on merging node with null property
-Failing when setting a list of maps as a property
-MATCH after OPTIONAL MATCH
-Variable length optional relationships
-Variable length optional relationships with length predicates
-Variable length optional relationships with bound nodes
-Variable length optional relationships with bound nodes, no matches
-Returning a pattern comprehension with bound nodes
-Using a variable-length pattern comprehension in a WITH
-Pattern comprehension inside list comprehension
-Fail when returning properties of deleted nodes
-Fail when returning labels of deleted nodes
-Fail when returning properties of deleted relationships
-Fail when sorting on variable removed by DISTINCT
-Arithmetic expressions inside aggregation
-Concatenating and returning the size of literal lists
-Concatenating and returning the size of literal lists
-Failing when performing property access on a non-map 1
-Failing when performing property access on a non-map 2
-Bad arguments for `range()`
-Using `rand()` in aggregations
-`toBoolean()` on invalid types
-`toInteger()` failing on invalid arguments
-`toFloat()` failing on invalid arguments
-`toString()` failing on invalid arguments
-Creating nodes from an unwound parameter list
-Unwind does not remove variables from scope
-Fail when asterisk operator is missing
-Fail on negative bound
-Handling relationships that are already bound in variable length paths
-A simple pattern with one bound endpoint
-Fail at compile time when attempting to index with a non-integer into a list
-`properties()` failing on an integer literal
-`properties()` failing on a string literal
-`properties()` failing on a list of booleans
-Fail when adding a new label predicate on a node that is already bound 1
-Fail when adding new label predicate on a node that is already bound 2
-Fail when adding new label predicate on a node that is already bound 3
-Fail when adding new label predicate on a node that is already bound 4
-Fail when adding new label predicate on a node that is already bound 5
-Failing on incorrect unicode literal
-Failing on aggregation in WHERE
-Failing when not aliasing expressions in WITH
-Failing when using undefined variable in pattern
-Failing when using undefined variable in SET
-Failing when using undefined variable in DELETE
-Failing when using a variable that is already bound in CREATE
-
-// Updating queries
-Fail when imposing new predicates on a variable that is already bound
-Create a relationship with the correct direction
-Deleting connected nodes
-Detach deleting connected nodes and relationships
-Detach deleting paths
-Create and delete in same query
-Delete nodes from a map
-Delete paths from nested map/list
-Delete relationship with bidirectional matching
-Updating one property with ON CREATE
-Null-setting one property with ON CREATE
-Copying properties from literal map with ON CREATE
-Copying properties from literal map with ON MATCH
-Copying properties from node with ON CREATE
-Copying properties from node with ON MATCH
-Should be able to use properties from match in ON MATCH and ON CREATE
-Merges should not be able to match on deleted nodes
-UNWIND with multiple merges
-Do not match on deleted entities
-Do not match on deleted relationships
-Set a property
-Set a property to an expression
-Concatenate elements onto a list property
-Concatenate elements in reverse onto a list property
-Overwrite values when using +=
-Non-existent values in a property map are removed with SET =
-Unwind with merge
-Fail when trying to create using an undirected relationship pattern
-
-Many CREATE clauses
-
-`labels()` failing on invalid arguments
-In-query call to procedure that takes no arguments
-Calling the same procedure twice using the same outputs in each call
-In-query call to VOID procedure that takes no arguments
-In-query call to VOID procedure does not consume rows
+// unsupported YIELD -
 In-query call to procedure that takes no arguments and yields no results
-In-query call to procedure with explicit arguments
 In-query call to procedure with explicit arguments that drops all result fields
-In-query call to procedure with argument of type NUMBER accepts value of type INTEGER
-In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
-In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
+
+// type hierarchy bugs/coercion rules
 Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
 In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
-In-query call to procedure with null argument
+
+// TODO tck enforces specific order of `keys`, remove from blacklist when tck has been updated.
+Copying properties from literal map with ON CREATE
+Copying properties from literal map with ON MATCH
 
 // TCK side effects are incorrectly specified -- need update
 In-query call to procedure with explicit arguments
@@ -146,7 +21,6 @@ Delete paths from nested map/list
 Delete relationship with bidirectional matching
 Generate the movie graph correctly
 Many CREATE clauses
-Copying properties from literal map with ON MATCH
 Merge node should create when it doesn't match, properties and label
 Should work when finding multiple elements
 Should be able to use properties from match in ON MATCH and ON CREATE
@@ -155,9 +29,6 @@ Merge must properly handle multiple labels
 UNWIND with multiple merges
 Do not match on deleted entities
 Do not match on deleted relationships
-In-query call to procedure with explicit arguments
-In-query call to procedure with explicit arguments that drops all result fields
-Standalone call to procedure with explicit arguments
 Set a property
 Set a property to an expression
 Concatenate elements onto a list property

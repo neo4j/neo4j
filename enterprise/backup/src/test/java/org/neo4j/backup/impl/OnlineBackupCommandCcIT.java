@@ -66,7 +66,7 @@ public class OnlineBackupCommandCcIT
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
+    public ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 3 )
             .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" );

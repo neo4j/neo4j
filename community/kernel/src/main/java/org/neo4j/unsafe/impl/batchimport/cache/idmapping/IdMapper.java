@@ -79,4 +79,12 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable
     long get( Object inputId, Group group );
 
     void close();
+
+    /**
+     * Calculates memory required to keep {@code numberOfNodes}.
+     *
+     * @param numberOfNodes number of nodes to calculate memory for.
+     * @return memory usage for the given number of nodes.
+     */
+    long calculateMemoryUsage( long numberOfNodes );
 }

@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
@@ -27,13 +28,13 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembershipManager;
 import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.shipping.RaftLogShippingManager;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.core.consensus.state.RaftState;
@@ -62,7 +63,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
     private InFlightCache inFlightCache;
 
-    public enum Timeouts implements RenewableTimeoutService.TimeoutName
+    public enum Timeouts implements TimerService.TimerName
     {
         ELECTION,
         HEARTBEAT
@@ -86,7 +87,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage,
             RaftLog entryLog, LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
-            InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting,Monitors monitors )
+            InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting, Monitors monitors )
     {
         this.myself = myself;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
@@ -114,7 +115,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         if ( !refuseToBecomeLeader )
         {
-            leaderAvailabilityTimers.start( this::electionTimeout, () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) );
+            leaderAvailabilityTimers.start(
+                    this::electionTimeout,
+                    clock -> handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Heartbeat( myself ) ) )
+            );
         }
 
         inFlightCache.enable();
@@ -125,19 +129,19 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         leaderAvailabilityTimers.stop();
     }
 
-    private synchronized void electionTimeout() throws IOException
+    private synchronized void electionTimeout( Clock clock ) throws IOException
     {
         if ( leaderAvailabilityTimers.isElectionTimedOut() )
         {
-            triggerElection();
+            triggerElection( clock );
         }
     }
 
-    public void triggerElection() throws IOException
+    public void triggerElection( Clock clock ) throws IOException
     {
         if ( !refuseToBecomeLeader )
         {
-            handle( new RaftMessages.Timeout.Election( myself ) );
+            handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Election( myself ) ) );
         }
     }
 

@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Links relationship chains together, the "prev" pointers of them. "next" pointers are set when
@@ -38,15 +39,34 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
     private final int nodeTypes;
     private final Predicate<RelationshipRecord> filter;
     private final boolean forwards;
+    private final RelationshipLinkingProgress progress;
 
     public RelationshipLinkStep( StageControl control, Configuration config,
-            NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes, boolean forwards )
+            NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes, boolean forwards,
+            StatsProvider... additionalStatsProvider )
     {
-        super( control, "LINK", config );
+        super( control, "LINK", config, additionalStatsProvider );
         this.cache = cache;
         this.filter = filter;
         this.nodeTypes = nodeTypes;
         this.forwards = forwards;
+        this.progress = findLinkingProgressStatsProvider();
+    }
+
+    /**
+     * There should be a {@link RelationshipLinkingProgress} injected from the outside to better keep track of global
+     * progress of relationship linking even when linking in multiple passes.
+     */
+    private RelationshipLinkingProgress findLinkingProgressStatsProvider()
+    {
+        for ( StatsProvider provider : additionalStatsProvider )
+        {
+            if ( provider instanceof RelationshipLinkingProgress )
+            {
+                return (RelationshipLinkingProgress) provider;
+            }
+        }
+        throw new IllegalStateException( "Expected to have a specific stats provider about progress" );
     }
 
     @Override
@@ -55,33 +75,40 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
         int stride = forwards ? 1 : -1;
         int start = forwards ? 0 : batch.length - 1;
         int end = forwards ? batch.length : -1;
-
+        int localChangeCount = 0;
         for ( int i = start; i != end; i += stride )
         {
             RelationshipRecord item = batch[i];
             if ( item != null && item.inUse() )
             {
-                if ( !process( item, id, processors ) )
+                int changeCount = process( item, id, processors );
+                if ( changeCount == -1 )
                 {
                     // No change for this record, it's OK, all the processors will reach the same conclusion
                     batch[i] = null;
                 }
+                else
+                {
+                    localChangeCount += changeCount;
+                }
             }
         }
+        progress.add( localChangeCount );
     }
 
-    public boolean process( RelationshipRecord record, int id, int processors )
+    public int process( RelationshipRecord record, int id, int processors )
     {
         long startNode = record.getFirstNode();
         long endNode = record.getSecondNode();
         boolean processFirst = startNode % processors == id;
         boolean processSecond = endNode % processors == id;
+        int changeCount = 0;
         if ( !processFirst && !processSecond )
         {
             // We won't process this relationship, but we cannot return false because that means
             // that it won't even be updated. Arriving here merely means that this thread won't process
             // this record at all and so we won't even have to ask cache about dense or not (which is costly)
-            return true;
+            return changeCount;
         }
 
         boolean firstIsDense = cache.isDense( startNode );
@@ -95,6 +122,7 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
                 if ( processFirst )
                 {
                     linkLoop( record );
+                    changeCount += 2;
                 }
                 changed = true;
             }
@@ -107,6 +135,7 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
                 if ( processFirst )
                 {
                     linkStart( record );
+                    changeCount++;
                 }
                 changed = true;
             }
@@ -118,12 +147,13 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
                 if ( processSecond )
                 {
                     linkEnd( record );
+                    changeCount++;
                 }
                 changed = true;
             }
         }
 
-        return changed;
+        return changed ? changeCount : -1;
     }
 
     protected abstract void linkStart( RelationshipRecord record );

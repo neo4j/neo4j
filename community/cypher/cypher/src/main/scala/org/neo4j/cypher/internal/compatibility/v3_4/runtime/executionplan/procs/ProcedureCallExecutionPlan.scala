@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext, ProcedurePlannerName}
+import org.neo4j.cypher.internal.compiler.v3_4.FineToReuse
+import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, ProcedurePlannerName}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -131,19 +130,19 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                                                RuntimeImpl(runtimeUsed.name),
                                                                Planner(plannerUsed.toTextOutput),
                                                                PlannerImpl(plannerUsed.name),
-                                                               Version(s"CYPHER ${CypherVersion.default.name}"))
+                                                               PlannerVersion(plannerUsed.version),
+                                                               Version(s"CYPHER ${CypherVersion.default.name}"),
+                                                               RuntimeVersion(CypherVersion.default.name))
 
 
   private def createSignatureArgument: Argument =
     Signature(signature.name, Seq.empty, resultSymbols)
 
-  override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
-
   override def isPeriodicCommit: Boolean = false
 
   override def runtimeUsed = ProcedureRuntimeName
 
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = CacheCheckResult.empty
+  override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics) = FineToReuse
 
   override def plannerUsed = ProcedurePlannerName
 }

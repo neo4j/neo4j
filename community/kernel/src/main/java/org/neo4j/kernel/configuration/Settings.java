@@ -49,6 +49,7 @@ import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.ByteUnit;
 
 import static java.lang.Character.isDigit;
 import static java.lang.Double.parseDouble;
@@ -659,39 +660,22 @@ public class Settings
         @Override
         public Long apply( String value )
         {
+            long bytes;
             try
             {
-                String mem = value.toLowerCase();
-                long multiplier = 1;
-                if ( mem.endsWith( "k" ) )
-                {
-                    multiplier = 1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-                else if ( mem.endsWith( "m" ) )
-                {
-                    multiplier = 1024 * 1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-                else if ( mem.endsWith( "g" ) )
-                {
-                    multiplier = 1024 * 1024 * 1024;
-                    mem = mem.substring( 0, mem.length() - 1 );
-                }
-
-                long bytes = parseLong( mem.trim() ) * multiplier;
-                if ( bytes < 0 )
-                {
-                    throw new IllegalArgumentException(
-                            value + " is not a valid number of bytes. Must be positive or zero." );
-                }
-                return bytes;
+                bytes = ByteUnit.parse( value );
             }
-            catch ( NumberFormatException e )
+            catch ( IllegalArgumentException e )
             {
-                throw new IllegalArgumentException( format( "%s is not a valid size, must be e.g. 10, 5K, 1M, " +
-                        "11G", value ) );
+                throw new IllegalArgumentException( format(
+                        "%s is not a valid size, must be e.g. 10, 5K, 1M, 11G", value ) );
             }
+            if ( bytes < 0 )
+            {
+                throw new IllegalArgumentException(
+                        value + " is not a valid number of bytes. Must be positive or zero." );
+            }
+            return bytes;
         }
 
         @Override

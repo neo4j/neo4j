@@ -108,7 +108,6 @@ Find a shortest path among paths that fulfill a predicate on all relationships 2
 Find a shortest path among paths that fulfill a predicate
 Find a shortest path without loosing context information at runtime
 Find a shortest path in an expression context
-Find a shortest path among paths that fulfill a predicate on all relationships
 Finds shortest path
 Optionally finds shortest path
 Optionally finds shortest path using previously bound nodes
@@ -178,6 +177,7 @@ max() over integers
 min() over integers
 max() over floats
 min() over floats
+Multiple aggregations should work
 
 //MatchAcceptance.feature
 difficult to plan query number 1
@@ -189,9 +189,6 @@ Should handle EXISTS on node property when node is null
 Should handle NOT EXISTS on node property when node is null
 Should handle simple IS NOT NULL on node property when node is null
 Should handle complex IS NOT NULL on node property when node is null
-
-//AggregationAcceptance.feature
-Multiple aggregations should work
 
 //UnwindAcceptance.feature
 Flat type support in list literal

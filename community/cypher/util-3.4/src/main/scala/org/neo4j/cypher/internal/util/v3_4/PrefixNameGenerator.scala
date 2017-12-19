@@ -20,6 +20,10 @@ object FreshIdNameGenerator extends PrefixNameGenerator("FRESHID")
 
 object AggregationNameGenerator extends PrefixNameGenerator("AGGREGATION")
 
+object NodeNameGenerator extends PrefixNameGenerator("NODE")
+
+object RelNameGenerator extends PrefixNameGenerator("REL")
+
 object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   implicit class NameString(name: String) {
     def isNamed = UnNamedNameGenerator.isNamed(name)

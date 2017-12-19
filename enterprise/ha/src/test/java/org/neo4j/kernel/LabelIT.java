@@ -39,7 +39,7 @@ import static org.neo4j.graphdb.Label.label;
 public class LabelIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
 
     protected ClusterManager.ManagedCluster cluster;
 

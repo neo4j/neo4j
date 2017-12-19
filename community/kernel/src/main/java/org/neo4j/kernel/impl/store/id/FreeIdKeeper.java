@@ -22,9 +22,8 @@ package org.neo4j.kernel.impl.store.id;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Deque;
 
+import org.neo4j.collection.primitive.PrimitiveLongArrayQueue;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -50,8 +49,8 @@ public class FreeIdKeeper implements Closeable
 {
     private static final int ID_ENTRY_SIZE = Long.BYTES;
 
-    private final Deque<Long> freeIds = new ArrayDeque<>();
-    private final Deque<Long> readFromDisk = new ArrayDeque<>();
+    private final PrimitiveLongArrayQueue freeIds = new PrimitiveLongArrayQueue();
+    private final PrimitiveLongArrayQueue readFromDisk = new PrimitiveLongArrayQueue();
     private final StoreChannel channel;
     private final int batchSize;
     private final boolean aggressiveMode;
@@ -103,7 +102,7 @@ public class FreeIdKeeper implements Closeable
 
     public void freeId( long id )
     {
-        freeIds.add( id );
+        freeIds.enqueue( id );
         freeIdCount++;
 
         if ( freeIds.size() >= batchSize )
@@ -133,7 +132,7 @@ public class FreeIdKeeper implements Closeable
         long result;
         if ( freeIds.size() > 0 && aggressiveMode )
         {
-            result = freeIds.removeFirst();
+            result = freeIds.dequeue();
             freeIdCount--;
         }
         else
@@ -158,7 +157,7 @@ public class FreeIdKeeper implements Closeable
         int cursor = 0;
         while ( (cursor < reusableIds) && !freeIds.isEmpty() )
         {
-            ids[cursor++] = freeIds.removeFirst();
+            ids[cursor++] = freeIds.dequeue();
         }
         while ( cursor < reusableIds )
         {
@@ -176,7 +175,7 @@ public class FreeIdKeeper implements Closeable
         }
         if ( !readFromDisk.isEmpty() )
         {
-            return readFromDisk.removeFirst();
+            return readFromDisk.dequeue();
         }
         else
         {
@@ -224,7 +223,7 @@ public class FreeIdKeeper implements Closeable
         for ( int i = 0; i < idsRead; i++ )
         {
             long id = readBuffer.getLong();
-            readFromDisk.add( id );
+            readFromDisk.enqueue( id );
         }
         if ( aggressiveMode )
         {
@@ -253,7 +252,7 @@ public class FreeIdKeeper implements Closeable
         writeBuffer.clear();
         while ( !freeIds.isEmpty() )
         {
-            long id = freeIds.removeFirst();
+            long id = freeIds.dequeue();
             if ( id == NO_RESULT )
             {
                 continue;

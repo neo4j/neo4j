@@ -36,7 +36,7 @@ import static org.junit.Assert.fail;
 public class ConstraintsInHAIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    public ClusterRule clusterRule = new ClusterRule();
 
     @Test
     public void creatingConstraintOnSlaveIsNotAllowed() throws Exception

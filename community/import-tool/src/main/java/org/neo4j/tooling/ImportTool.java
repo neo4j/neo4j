@@ -20,8 +20,10 @@
 package org.neo4j.tooling;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
@@ -85,6 +87,7 @@ import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
+import static org.neo4j.kernel.impl.store.PropertyType.EMPTY_BYTE_ARRAY;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
@@ -413,6 +416,7 @@ public class ImportTool
         File badFile = null;
         Long maxMemory;
         Boolean defaultHighIO;
+        InputStream in;
 
         boolean success = false;
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
@@ -470,8 +474,9 @@ public class ImportTool
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
                     configuration.maxNumberOfProcessors(), !skipBadRelationships );
+            in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
 
-            doImport( out, err, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
+            doImport( out, err, in, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration );
 
             success = true;
@@ -540,7 +545,7 @@ public class ImportTool
         return null;
     }
 
-    public static void doImport( PrintStream out, PrintStream err, File storeDir, File logsDir, File badFile,
+    public static void doImport( PrintStream out, PrintStream err, InputStream in, File storeDir, File logsDir, File badFile,
                                  FileSystemAbstraction fs, Collection<Option<File[]>> nodesFiles,
                                  Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
                                  Config dbConfig, OutputStream badOutput,
@@ -559,7 +564,7 @@ public class ImportTool
                 null, // no external page cache
                 configuration,
                 logService,
-                ExecutionMonitors.defaultVisible(),
+                ExecutionMonitors.defaultVisible( in ),
                 EMPTY,
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ) );

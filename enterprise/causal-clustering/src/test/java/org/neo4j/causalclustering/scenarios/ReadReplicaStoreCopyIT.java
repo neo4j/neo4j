@@ -52,7 +52,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class ReadReplicaStoreCopyIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withSharedCoreParam( GraphDatabaseSettings.keep_logical_logs, FALSE )
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 1 );

@@ -33,6 +33,14 @@ object Foldable {
       case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
 
+    def childrenWithListsAsSeq: Iterator[AnyRef] = that match {
+      case s: Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case m: Map[_, _] => m.iterator.asInstanceOf[Iterator[AnyRef]]
+      case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+    }
+
     def reverseChildren: Iterator[AnyRef] = that match {
       case p: Product => reverseProductIterator(p)
       case s: Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]

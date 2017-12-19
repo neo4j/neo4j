@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, _}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => logicalPlans}
 
+//noinspection NameBooleanParameters
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val x = IdName("x")
@@ -37,6 +38,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   private val z = IdName("z")
   private val LABEL = LabelName("label")(pos)
   private val r = IdName("r")
+  private val r2 = IdName("r2")
   private val semanticTable = SemanticTable()
 
   test("only single allnodes scan") {
@@ -216,8 +218,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
     // then we'll end up with two pipelines
     allocations should have size 2
-    val labelScanAllocations = allocations(allNodesScan.assignedId)
-    labelScanAllocations should equal(
+    val allNodeScanAllocations = allocations(allNodesScan.assignedId)
+    allNodeScanAllocations should equal(
       SlotConfiguration(Map(
         "x" -> LongSlot(0, nullable = false, CTNode),
         "r_NODES" -> LongSlot(1, nullable = false, CTNode),
@@ -230,6 +232,48 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
         "x" -> LongSlot(0, nullable = false, CTNode),
         "r" -> RefSlot(0, nullable = false, CTList(CTRelationship)),
         "z" -> LongSlot(1, nullable = false, CTNode)), numberOfLongs = 2, numberOfReferences = 1))
+  }
+
+  test("single node with var length expand into") {
+    // given
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val expand = Expand(allNodesScan, x, SemanticDirection.OUTGOING, Seq.empty, y, r, ExpandAll)(solved)
+    val varLength = VarPatternLength(1, Some(15))
+    val tempNode = IdName("r_NODES")
+    val tempEdge = IdName("r_EDGES")
+    val varExpand = VarExpand(expand, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty, y, r2,
+      varLength, ExpandInto, tempNode, tempEdge, True()(pos), True()(pos), Seq.empty)(solved)
+    varExpand.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(varExpand, semanticTable).slotConfigurations
+
+    // then we'll end up with three pipelines
+    allocations should have size 3
+    val allNodeScanAllocations = allocations(allNodesScan.assignedId)
+    allNodeScanAllocations should equal(
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode)),
+        numberOfLongs = 1, numberOfReferences = 0))
+
+    val expandAllocations = allocations(expand.assignedId)
+    expandAllocations should equal(
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "r" -> LongSlot(1, nullable = false, CTRelationship),
+        "y" -> LongSlot(2, nullable = false, CTNode),
+        "r_NODES" -> LongSlot(3, nullable = false, CTNode),
+        "r_EDGES" -> LongSlot(4, nullable = false, CTRelationship)),
+        numberOfLongs = 5, numberOfReferences = 0))
+
+    val varExpandAllocations = allocations(varExpand.assignedId)
+    varExpandAllocations should equal(
+      SlotConfiguration(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "r" -> LongSlot(1, nullable = false, CTRelationship),
+        "y" -> LongSlot(2, nullable = false, CTNode),
+        "r2" -> RefSlot(0, nullable = false, CTList(CTRelationship))),
+        numberOfLongs = 3, numberOfReferences = 1))
   }
 
   test("let's skip this one") {
@@ -289,12 +333,11 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val allocations = SlotAllocation.allocateSlots(distinct, semanticTable).slotConfigurations
 
     // then
-    allocations should have size 2
-    allocations(leaf.assignedId) should equal(
-      SlotConfiguration(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+    val expected = SlotConfiguration.empty.newLong("x", false, CTNode)
 
-    allocations(distinct.assignedId) should equal(
-      SlotConfiguration(Map("x" -> RefSlot(0, nullable = false, CTNode)), numberOfLongs = 0, numberOfReferences = 1))
+    allocations should have size 2
+    allocations(leaf.assignedId) should equal(expected)
+    allocations(distinct.assignedId) should equal(expected)
   }
 
   test("optional travels through aggregation used for distinct") {
@@ -308,15 +351,16 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val allocations = SlotAllocation.allocateSlots(distinct, semanticTable).slotConfigurations
 
     // then
-    allocations should have size 3
-    allocations(leaf.assignedId) should equal(
-      SlotConfiguration(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+    val leafExpected = SlotConfiguration.empty.newLong("x", true, CTNode)
+    val distinctExpected =
+      SlotConfiguration.empty
+        .newLong("x", true, CTNode)
+        .newReference("x.propertyKey", true, CTAny)
 
-    allocations(optional.assignedId) should be theSameInstanceAs allocations(leaf.assignedId)
-    allocations(distinct.assignedId) should equal(SlotConfiguration(numberOfLongs = 0, numberOfReferences = 2, slots = Map(
-      "x" -> RefSlot(0, nullable = true, CTNode),
-      "x.propertyKey" -> RefSlot(1, nullable = true, CTAny)
-    )))
+    allocations should have size 3
+    allocations(leaf.assignedId) should equal(leafExpected)
+    allocations(optional.assignedId) should equal(leafExpected)
+    allocations(distinct.assignedId) should equal(distinctExpected)
   }
 
   test("optional travels through aggregation") {
@@ -333,17 +377,18 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val allocations = SlotAllocation.allocateSlots(countStar, semanticTable).slotConfigurations
 
     // then
+    val leafExpected = SlotConfiguration.empty.newLong("x", true, CTNode)
+    val aggrExpected =
+      SlotConfiguration.empty
+        .newLong("x", true, CTNode)
+        .newReference("x.propertyKey", true, CTAny)
+        .newReference("count(*)", true, CTAny)
+
     allocations should have size 3
-    allocations(leaf.assignedId) should equal(
-      SlotConfiguration(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+    allocations(leaf.assignedId) should equal(leafExpected)
 
     allocations(optional.assignedId) should be theSameInstanceAs allocations(leaf.assignedId)
-    allocations(countStar.assignedId) should equal(
-      SlotConfiguration(numberOfLongs = 0, numberOfReferences = 3, slots = Map(
-        "x" -> RefSlot(0, nullable = true, CTNode),
-        "x.propertyKey" -> RefSlot(1, nullable = true, CTAny),
-        "count(*)" -> RefSlot(2, nullable = true, CTAny)
-      )))
+    allocations(countStar.assignedId) should equal(aggrExpected)
   }
 
   test("labelscan with projection") {
@@ -487,7 +532,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("that argument does not apply here") {
     // given MATCH (x) MATCH (x)<-[r]-(y)
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
-    val arg = Argument(Set(x))(solved)()
+    val arg = Argument(Set(x))(solved)
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
 
     val apply = Apply(lhs, rhs)(solved)
@@ -516,7 +561,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("unwind and project") {
     // given UNWIND [1,2,3] as x RETURN x
-    val leaf = Argument()(solved)()
+    val leaf = Argument()(solved)
     val unwind = UnwindCollection(leaf, IdName("x"), listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val produceResult = ProduceResult(unwind, Seq("x"))
     produceResult.assignIds()
@@ -539,7 +584,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // given UNWIND [1,2,3] as x RETURN x ORDER BY x
     val xVar = varFor("x")
     val xVarName = IdName.fromVariable(xVar)
-    val leaf = Argument()(solved)()
+    val leaf = Argument()(solved)
     val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val sort = Sort(unwind, List(Ascending(xVarName)))(solved)
     val produceResult = ProduceResult(sort, Seq("x"))
@@ -576,7 +621,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
                        PlannerQuery with CardinalityEstimation => AbstractSemiApply
                    ): Unit = {
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
-    val arg = Argument(Set(x))(solved)()
+    val arg = Argument(Set(x))(solved)
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
     val semiApply = semiApplyBuilder(lhs, rhs)(solved)
     semiApply.assignIds()
@@ -602,8 +647,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   }
 
   test("argument on two sides of Apply") {
-    val arg1 = Argument()(solved)()
-    val arg2 = Argument()(solved)()
+    val arg1 = Argument()(solved)
+    val arg2 = Argument()(solved)
     val pr1 = Projection(arg1, Map("x" -> literalInt(42)))(solved)
     val pr2 = Projection(arg2, Map("y" -> literalInt(666)))(solved)
     val apply = Apply(pr1, pr2)(solved)
@@ -614,8 +659,12 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
     // then
     allocations should have size 5
-    val lhsPipeline = SlotConfiguration(Map("x" -> RefSlot(0, nullable = true, CTAny)), 0, 1)
-    val rhsPipeline = SlotConfiguration(Map("x" -> RefSlot(0, nullable = true, CTAny), "y" -> RefSlot(1, nullable = true, CTAny)), 0, 2)
+    val lhsPipeline = SlotConfiguration.empty.newReference("x", true, CTAny)
+    val rhsPipeline =
+      SlotConfiguration.empty
+        .newReference("x", true, CTAny)
+        .newReference("y", true, CTAny)
+
     allocations(arg1.assignedId) should equal(lhsPipeline)
     allocations(pr1.assignedId) should equal(lhsPipeline)
     allocations(arg2.assignedId) should equal(rhsPipeline)
@@ -643,26 +692,23 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
     allocations should have size 3
     allocations(expand.assignedId) should equal(
-      SlotConfiguration(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode),
-        "r" -> LongSlot(1, nullable = false, CTRelationship),
-        "y" -> LongSlot(2, nullable = false, CTNode)
-      ), numberOfLongs = 3, numberOfReferences = 0)
-    )
+      SlotConfiguration.empty
+        .newLong("x", false, CTNode)
+        .newLong("r", false, CTRelationship)
+        .newLong("y", false, CTNode))
+
     allocations(aggregation.assignedId) should equal(
-      SlotConfiguration(Map(
-        "x" -> RefSlot(0, nullable = false, CTNode),
-        "x.prop" -> RefSlot(1, nullable = true, CTAny),
-        "count(r.prop)" -> RefSlot(2, nullable = true, CTAny)
-      ), numberOfLongs = 0, numberOfReferences = 3)
-    )
+      SlotConfiguration.empty
+        .newLong("x", false, CTNode)
+        .newReference("x.prop", true, CTAny)
+        .newReference("count(r.prop)", true, CTAny))
   }
 
   test("should allocate RollUpApply") {
     // Given RollUpApply with RHS ~= MATCH (x)-[r:R]->(y) WITH x, x.prop as prop, r ...
 
     // LHS
-    val lhsLeaf = Argument()(solved)()
+    val lhsLeaf = Argument()(solved)
 
     // RHS
     val labelScan = NodeByLabelScan(x, LABEL, Set.empty)(solved)
@@ -727,7 +773,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("should handle UNION of projected variables") {
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
     val lhs = Projection(allNodesScan, Map("A" -> varFor("x")))(solved)
-    val rhs = Projection(Argument()(solved)(), Map("A" -> literalInt(42)))(solved)
+    val rhs = Projection(Argument()(solved), Map("A" -> literalInt(42)))(solved)
     val plan = Union(lhs, rhs)(solved)
     plan.assignIds()
 
@@ -743,7 +789,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("should handle nested plan expression") {
     val nestedPlan = AllNodesScan(x, Set.empty)(solved)
     val nestedProjection = Expression
-    val argument = Argument()(solved)()
+    val argument = Argument()(solved)
     val plan = Projection(argument, Map("z" -> NestedPlanExpression(nestedPlan, StringLiteral("foo")(pos))(pos)))(solved)
     plan.assignIds()
 
@@ -766,7 +812,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // given
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val label = LabelToken("label2", LabelId(0))
-    val argument = Argument()(solved)()
+    val argument = Argument()(solved)
     val list = literalIntList(1, 2, 3)
     val rhs = CreateNode(argument, z, Seq.empty, None)(solved)
     val foreach = ForeachApply(lhs, rhs, "i", list)(solved)
@@ -802,7 +848,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // given
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val label = LabelToken("label2", LabelId(0))
-    val argument = Argument()(solved)()
+    val argument = Argument()(solved)
     val list = literalList(Variable("x")(pos))
     val rhs = CreateNode(argument, z, Seq.empty, None)(solved)
     val foreach = ForeachApply(lhs, rhs, "i", list)(solved)

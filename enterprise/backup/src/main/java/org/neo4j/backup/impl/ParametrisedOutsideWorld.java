@@ -21,12 +21,12 @@ package org.neo4j.backup.impl;
 
 import java.io.Console;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
@@ -37,37 +37,17 @@ class ParametrisedOutsideWorld implements OutsideWorld
 
     private final PrintStream stdout;
     private final PrintStream stderr;
-    private final Console stdin;
+    private final Console console;
+    private final InputStream stdin;
     private final FileSystemAbstraction fileSystemAbstraction;
 
-    ParametrisedOutsideWorld( StringBuilder stdout, StringBuilder stderr )
-    {
-        this( System.console(), streamFromBuilder( stdout ), streamFromBuilder( stderr ), new DefaultFileSystemAbstraction() );
-    }
-
-    private static OutputStream streamFromBuilder( StringBuilder stringBuilder )
-    {
-        return new OutputStream()
-        {
-            @Override
-            public void write( int i ) throws IOException
-            {
-                stringBuilder.append( (char) i );
-            }
-        };
-    }
-
-    ParametrisedOutsideWorld( Console stdin, OutputStream stdout, OutputStream stderr, FileSystemAbstraction fileSystemAbstraction )
+    ParametrisedOutsideWorld( Console console, OutputStream stdout, OutputStream stderr, InputStream stdin, FileSystemAbstraction fileSystemAbstraction )
     {
         this.stdout = new PrintStream( stdout );
         this.stderr = new PrintStream( stderr );
-        this.fileSystemAbstraction = fileSystemAbstraction;
         this.stdin = stdin;
-    }
-
-    ParametrisedOutsideWorld( PrintStream stdout, PrintStream stderr )
-    {
-        this( System.console(), stdout, stderr, new DefaultFileSystemAbstraction() );
+        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.console = console;
     }
 
     @Override
@@ -85,19 +65,19 @@ class ParametrisedOutsideWorld implements OutsideWorld
     @Override
     public String readLine()
     {
-        return stdin.readLine();
+        return console.readLine();
     }
 
     @Override
     public String promptLine( String fmt, Object... args )
     {
-        return stdin.readLine( fmt, args );
+        return console.readLine( fmt, args );
     }
 
     @Override
     public char[] promptPassword( String fmt, Object... args )
     {
-        return stdin.readPassword( fmt, args );
+        return console.readPassword( fmt, args );
     }
 
     @Override
@@ -128,6 +108,12 @@ class ParametrisedOutsideWorld implements OutsideWorld
     public PrintStream outStream()
     {
         return stdout;
+    }
+
+    @Override
+    public InputStream inStream()
+    {
+        return stdin;
     }
 
     @Override

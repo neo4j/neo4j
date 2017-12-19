@@ -90,9 +90,11 @@ public class LogTailScanner
             oldestVersionFound = version;
             CheckPoint latestCheckPoint = null;
             try ( LogVersionedStoreChannel channel = logFiles.openForVersion( version );
-                  LogEntryCursor cursor = new LogEntryCursor( logEntryReader, new ReadAheadLogChannel( channel ) ) )
+                  ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
+                  LogEntryCursor cursor = new LogEntryCursor( logEntryReader, readAheadLogChannel ) )
             {
                 LogEntry entry;
+                long maxEntryReadPosition = 0;
                 while ( cursor.next() )
                 {
                     entry = cursor.get();
@@ -124,6 +126,11 @@ public class LogTailScanner
                     {
                         latestLogEntryVersion = entry.getVersion();
                     }
+                    maxEntryReadPosition = readAheadLogChannel.position();
+                }
+                if ( hasUnreadableBytes( channel, maxEntryReadPosition ) )
+                {
+                    corruptedTransactionLogs = true;
                 }
             }
             catch ( Throwable t )
@@ -153,6 +160,11 @@ public class LogTailScanner
 
         return new LogTailInformation( corruptedTransactionLogs || startRecordAfterCheckpoint,
                 oldestStartEntryTransaction, oldestVersionFound, highestLogVersion, latestLogEntryVersion );
+    }
+
+    private boolean hasUnreadableBytes( LogVersionedStoreChannel channel, long maxEntryReadEndPosition ) throws IOException
+    {
+        return channel.position() > maxEntryReadEndPosition;
     }
 
     protected LogTailInformation checkpointTailInformation( long highestLogVersion, LogEntryStart latestStartEntry,

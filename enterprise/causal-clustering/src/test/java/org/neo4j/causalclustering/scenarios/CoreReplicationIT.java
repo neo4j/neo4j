@@ -60,7 +60,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class CoreReplicationIT
 {
     private final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
+            new ClusterRule().withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
     private final VerboseTimeout timeout = VerboseTimeout.builder()
             .withTimeout( 1000, SECONDS )
             .build();

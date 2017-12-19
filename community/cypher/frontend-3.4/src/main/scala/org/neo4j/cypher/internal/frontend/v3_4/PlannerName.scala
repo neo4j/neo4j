@@ -22,4 +22,5 @@ package org.neo4j.cypher.internal.frontend.v3_4
 trait PlannerName {
   def name: String
   def toTextOutput: String
+  def version: String
 }

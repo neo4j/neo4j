@@ -44,9 +44,7 @@ public class CompatibilitySpecSuiteTest
     // If you want to run only a single feature, put the name of the feature file in `FEATURE_TO_RUN` (including .feature)
     // If you want to run only a single scenario, put (part of) its name in the `SCENARIO_NAME_REQUIRED` constant
     // Do not forget to clear these strings to empty strings before you commit!!
-    @SuppressWarnings( "WeakerAccess" )
     public static final String FEATURE_TO_RUN = "";
-    @SuppressWarnings( "WeakerAccess" )
     public static final String SCENARIO_NAME_REQUIRED = "";
 
     private CompatibilitySpecSuiteTest()
@@ -203,6 +201,23 @@ public class CompatibilitySpecSuiteTest
             strict = true
     )
     public static class Compatibility31 extends Base
+    {
+    }
+
+    @RunWith( Cucumber.class )
+    @CucumberOptions(
+            plugin = {
+                    DB_CONFIG + "compatibility-33.json",
+                    HTML_REPORT + SUITE_NAME + "/compatibility-33",
+                    JSON_REPORT + SUITE_NAME + "/compatibility-33",
+                    BLACKLIST_PLUGIN + "compatibility-33.txt"
+            },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
+            strict = true
+    )
+    public static class Compatibility33 extends Base
     {
     }
 

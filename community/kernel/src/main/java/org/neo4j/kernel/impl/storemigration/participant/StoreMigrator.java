@@ -52,6 +52,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreFile;
+import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
@@ -71,6 +73,7 @@ import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -94,6 +97,7 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
+import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -114,6 +118,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_L
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -376,9 +381,19 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
             InputIterable<InputRelationship> relationships =
                     legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors );
+            long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
+                storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
+                storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
+            Estimates estimates = knownEstimates(
+                    legacyStore.getNodeStore().getNumberOfIdsInUse(),
+                    legacyStore.getRelationshipStore().getNumberOfIdsInUse(),
+                    legacyStore.getPropertyStore().getNumberOfIdsInUse(),
+                    legacyStore.getPropertyStore().getNumberOfIdsInUse(),
+                    propertyStoreSize / 2, propertyStoreSize / 2,
+                    0 /*node labels left as 0 for now*/);
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
-                            Collectors.badCollector( badOutput, 0 ) ) );
+                            Collectors.badCollector( badOutput, 0 ), estimates ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written
@@ -424,6 +439,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 // This means that we had no files only present in the page cache, this is fine.
             }
         }
+    }
+
+    private static long storeSize( CommonAbstractStore<? extends AbstractBaseRecord,? extends StoreHeader> store )
+    {
+        return store.getNumberOfIdsInUse() * store.getRecordSize();
     }
 
     private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )

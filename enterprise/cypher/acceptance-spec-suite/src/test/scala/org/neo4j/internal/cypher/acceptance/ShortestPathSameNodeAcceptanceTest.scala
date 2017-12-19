@@ -25,16 +25,16 @@ import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, Rewinda
 import org.neo4j.cypher.{ExecutionEngineFunSuite, RunWithConfigTestSupport, ShortestPathCommonEndNodesForbiddenException}
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V3_1, V3_3}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.logging.NullLogProvider
 
 class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTestSupport with CypherComparisonSupport {
 
   val expectedToFail = TestConfiguration(
-    Versions(Versions.Default, V3_1),
+    Versions(Versions.Default, V3_1, V3_3),
     Planners(Planners.Cost, Planners.Rule, Planners.Default),
-    Runtimes(Runtimes.Interpreted, Runtimes.Default, Runtimes.ProcedureOrSchema))
+    Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default, Runtimes.ProcedureOrSchema))
 
   def setupModel(db: GraphDatabaseCypherService) {
     db.inTx {
@@ -97,7 +97,7 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ru
   test("shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should not throw exception by default") {
     setupModel(graph)
     val query = "MATCH (a), (b) MATCH p=shortestPath((a)-[*0..]-(b)) RETURN p"
-    executeWith(Configs.CommunityInterpreted, query).toList.length should be(9)
+    executeWith(Configs.Interpreted, query).toList.length should be(9)
   }
 
   test("shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should throw exception even when when configured to do so") {

@@ -41,7 +41,7 @@ import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
-import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor, PropertyCursor}
+import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -103,6 +103,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   private def writes() = transactionalContext.kernelTransaction.dataWrite()
   private def reads() = transactionalContext.kernelTransaction.dataRead()
   private def cursors = transactionalContext.kernelTransaction.cursors()
+  private val nodeCursor = allocateAndTraceNodeCursor()
+  private val propertyCursor = allocateAndTracePropertyCursor()
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
 
@@ -134,47 +136,32 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     transactionalContext.statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
 
-  override def getLabelsForNode(node: Long): ListValue = try {
-    var nodeCursor: NodeCursor = null
-    try {
-      nodeCursor = cursors.allocateNodeCursor()
-      reads().singleNode(node, nodeCursor)
-      if (!nodeCursor.next()) {
-        if (nodeOps.isDeletedInThisTx(node))
-          throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
-        else
-          VirtualValues.EMPTY_LIST
-      }
-      val labelSet = nodeCursor.labels()
-      val labelArray = new Array[TextValue](labelSet.numberOfLabels())
-      var i = 0
-      while (i < labelSet.numberOfLabels()) {
-        labelArray(i) = Values.stringValue(tokenRead.labelGetName(labelSet.label(i)))
-        i += 1
-      }
-      VirtualValues.list(labelArray: _*)
-    } finally {
-      if (nodeCursor != null) {
-        nodeCursor.close()
-      }
+  override def getLabelsForNode(node: Long): ListValue = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) {
+      if (nodeOps.isDeletedInThisTx(node))
+        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
+      else
+        VirtualValues.EMPTY_LIST
     }
+    val labelSet = nodeCursor.labels()
+    val labelArray = new Array[TextValue](labelSet.numberOfLabels())
+    var i = 0
+    while (i < labelSet.numberOfLabels()) {
+      labelArray(i) = Values.stringValue(tokenRead.labelGetName(labelSet.label(i)))
+      i += 1
+    }
+    VirtualValues.list(labelArray: _*)
   }
+
 
   override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
     JavaConversionSupport.asScala(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(relId))
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = {
-    var nodeCursor: NodeCursor = null;
-    try {
-      nodeCursor = cursors.allocateNodeCursor()
-      reads().singleNode(node, nodeCursor)
-      if (!nodeCursor.next()) false
-      else nodeCursor.labels().contains(label)
-    } finally {
-      if (nodeCursor != null) {
-        nodeCursor.close()
-      }
-    }
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) false
+    else nodeCursor.labels().contains(label)
   }
 
   override def getOrCreateLabelId(labelName: String): Int = {
@@ -413,80 +400,42 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = {
-      var nodeCursor: NodeCursor = null
-      var propertyCursor: PropertyCursor = null
-      try {
-        nodeCursor = cursors.allocateNodeCursor()
-        propertyCursor = cursors.allocatePropertyCursor()
-        reads().singleNode(id, nodeCursor)
-        if (!nodeCursor.next()) Iterator.empty
-        else {
-          val buffer = ArrayBuffer[Int]()
-          nodeCursor.properties(propertyCursor)
-          while (propertyCursor.next()) {
-            buffer.append(propertyCursor.propertyKey())
-          }
-          buffer.iterator
+      reads().singleNode(id, nodeCursor)
+      if (!nodeCursor.next()) Iterator.empty
+      else {
+        val buffer = ArrayBuffer[Int]()
+        nodeCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          buffer.append(propertyCursor.propertyKey())
         }
-      } finally {
-        if (nodeCursor != null) {
-          nodeCursor.close()
-        }
-        if (propertyCursor != null) {
-          propertyCursor.close()
-        }
+        buffer.iterator
       }
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Value = {
-      var nodeCursor: NodeCursor = null
-      var propertyCursor: PropertyCursor = null
-      try {
-        nodeCursor = cursors.allocateNodeCursor()
-        propertyCursor = cursors.allocatePropertyCursor()
-        reads().singleNode(id, nodeCursor)
-        if (!nodeCursor.next()) {
-          if (isDeletedInThisTx(id)) throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction")
-          else  Values.NO_VALUE
-        } else {
-          nodeCursor.properties(propertyCursor)
-          while (propertyCursor.next()) {
-            if (propertyCursor.propertyKey() == propertyKeyId) return propertyCursor.propertyValue()
-          }
-          Values.NO_VALUE
+      reads().singleNode(id, nodeCursor)
+      if (!nodeCursor.next()) {
+        if (isDeletedInThisTx(id)) throw new EntityNotFoundException(
+          s"Node with id $id has been deleted in this transaction")
+        else Values.NO_VALUE
+      } else {
+        nodeCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          if (propertyCursor.propertyKey() == propertyKeyId) return propertyCursor.propertyValue()
         }
-      } finally {
-        if (nodeCursor != null) {
-          nodeCursor.close()
-        }
-        if (propertyCursor != null) {
-          propertyCursor.close()
-        }
+        Values.NO_VALUE
       }
     }
 
     override def hasProperty(id: Long, propertyKey: Int): Boolean = {
-      var nodeCursor: NodeCursor = null
-      var propertyCursor: PropertyCursor = null
-      try {
-        nodeCursor = cursors.allocateNodeCursor()
-        propertyCursor = cursors.allocatePropertyCursor()
-        reads().singleNode(id, nodeCursor)
-        if (!nodeCursor.next()) false
-        else {
-          nodeCursor.properties(propertyCursor)
-          while (propertyCursor.next()) {
-            if (propertyCursor.propertyKey() == propertyKey) return true
-          }
-          false
+      reads().singleNode(id, nodeCursor)
+      if (!nodeCursor.next()) false
+      else {
+        nodeCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          if (propertyCursor.propertyKey() == propertyKey) return true
         }
-      } finally {
-        if (nodeCursor != null) {
-          nodeCursor.close()
-        }
-        if (propertyCursor != null) {
-          propertyCursor.close()
-        }
+        false
       }
     }
 
@@ -984,6 +933,12 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   private def allocateAndTraceNodeCursor() = {
     val cursor = cursors.allocateNodeCursor()
+    resources.trace(cursor)
+    cursor
+  }
+
+  private def allocateAndTracePropertyCursor() = {
+    val cursor = cursors.allocatePropertyCursor()
     resources.trace(cursor)
     cursor
   }

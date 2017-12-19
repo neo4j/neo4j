@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +66,7 @@ public class ImportCommandTest
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
                 .thenReturn( mock( Importer.class ) );
 
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
+        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
         {
             ImportCommand importCommand =
                     new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld,
@@ -90,8 +91,8 @@ public class ImportCommandTest
                 .thenReturn( mock( Importer.class ) );
 
         ImportCommand importCommand =
-                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
-                        mockImporterFactory );
+                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
+                        new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ), mockImporterFactory );
 
         String[] arguments = {"--database=foo", "--from=bar", "--nodes:PERSON:FRIEND=mock.csv"};
 
@@ -111,8 +112,8 @@ public class ImportCommandTest
                 .thenReturn( mock( Importer.class ) );
 
         ImportCommand importCommand =
-                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
-                        mockImporterFactory );
+                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
+                        new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ), mockImporterFactory );
 
         String[] arguments = {"--database=foo", "--from=bar", "--relationships:LIKES:HATES=mock.csv"};
 

@@ -29,7 +29,7 @@ import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_
  * An {@link IdSequence} which does internal batching by using another {@link IdSequence} as source of batches.
  * Meant to be used by a single thread at a time.
  */
-class RenewableBatchIdSequence implements IdSequence, Resource
+public class RenewableBatchIdSequence implements IdSequence, Resource
 {
     private final IdSequence source;
     private final int batchSize;
@@ -37,7 +37,7 @@ class RenewableBatchIdSequence implements IdSequence, Resource
     private IdSequence currentBatch;
     private boolean closed;
 
-    RenewableBatchIdSequence( IdSequence source, int batchSize, LongConsumer excessIdConsumer )
+    public RenewableBatchIdSequence( IdSequence source, int batchSize, LongConsumer excessIdConsumer )
     {
         this.source = source;
         this.batchSize = batchSize;

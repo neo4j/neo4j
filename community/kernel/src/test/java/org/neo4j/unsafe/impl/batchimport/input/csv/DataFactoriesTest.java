@@ -21,14 +21,14 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-
+import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.csv.reader.MultiReadable;
+import org.neo4j.csv.reader.Readables;
+import org.neo4j.function.IOFunctions;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -38,7 +38,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.csv.reader.Readables.sources;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
@@ -177,24 +176,15 @@ public class DataFactoriesTest
     public void shouldParseHeaderFromFirstLineOfFirstInputFile() throws Exception
     {
         // GIVEN
-        final Reader firstSource = new StringReader( "id:ID\tname:String\tbirth_date:long" );
-        final Reader secondSource = new StringReader( "0\tThe node\t123456789" );
-        DataFactory<InputNode> dataFactory = data( value -> value, () ->
-        {
-            try
-            {
-                return sources( firstSource, secondSource );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        } );
+        final CharReadable firstSource = wrap( "id:ID\tname:String\tbirth_date:long" );
+        final CharReadable secondSource = wrap( "0\tThe node\t123456789" );
+        DataFactory<InputNode> dataFactory = data( value -> value,
+                () -> new MultiReadable( Readables.iterator( IOFunctions.identity(), firstSource, secondSource ) ) );
         Header.Factory headerFactory = defaultFormatNodeFileHeader();
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
-        CharSeeker seeker = CharSeekers.charSeeker( dataFactory.create( TABS ).stream(), TABS, false );
+        CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( dataFactory.create( TABS ).stream() ), TABS, false );
         Header header = headerFactory.create( seeker, TABS, IdType.ACTUAL );
 
         // THEN
@@ -278,7 +268,7 @@ public class DataFactoriesTest
 
     private CharSeeker seeker( String data )
     {
-        return CharSeekers.charSeeker( wrap( new StringReader( data ) ), SEEKER_CONFIG, false );
+        return CharSeekers.charSeeker( wrap( data ), SEEKER_CONFIG, false );
     }
 
     private static Configuration withBufferSize( Configuration config, final int bufferSize )

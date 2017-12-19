@@ -57,9 +57,9 @@ public class ClusterRule extends ExternalResource
     private IpFamily ipFamily = IPV4;
     private boolean useWildcard;
 
-    public ClusterRule( Class<?> testClass )
+    public ClusterRule()
     {
-        this.testDirectory = TestDirectory.testDirectory( testClass );
+        this.testDirectory = TestDirectory.testDirectory();
     }
 
     @Override

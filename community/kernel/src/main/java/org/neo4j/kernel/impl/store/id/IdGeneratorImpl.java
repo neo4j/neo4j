@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -97,7 +97,7 @@ public class IdGeneratorImpl implements IdGenerator
      *             If no such file exist or if the id generator is sticky
      */
     public IdGeneratorImpl( FileSystemAbstraction fs, File file, int grabSize, long max, boolean aggressiveReuse,
-            IdType idType, Supplier<Long> highId )
+            IdType idType, LongSupplier highId )
     {
         this.max = max;
         this.idType = idType;
@@ -114,7 +114,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         else
         {
-            this.highId = highId.get();
+            this.highId = highId.getAsLong();
         }
     }
 

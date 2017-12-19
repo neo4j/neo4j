@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -27,9 +28,13 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.CleanupRule;
 
 public class DiagnosticsLoggingTest
 {
+    @Rule
+    public CleanupRule cleanupRule = new CleanupRule();
+
     @Test
     public void shouldSeeExpectedDiagnostics()
     {
@@ -40,13 +45,14 @@ public class DiagnosticsLoggingTest
                 .setConfig( GraphDatabaseSettings.dump_configuration, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "4M" )
                 .newGraphDatabase();
+        cleanupRule.add( db );
 
         // THEN we should have logged
         logProvider.assertContainsMessageContaining( "Network information" );
         logProvider.assertContainsMessageContaining( "Disk space on partition" );
         logProvider.assertContainsMessageContaining( "Local timezone" );
         // page cache info
-        logProvider.assertContainsMessageContaining( "Page cache size: 4 MiB" );
+        logProvider.assertContainsMessageContaining( "Page cache: 4M" );
         // neostore records
         for ( MetaDataStore.Position position : MetaDataStore.Position.values() )
         {
@@ -54,6 +60,5 @@ public class DiagnosticsLoggingTest
         }
         // transaction log info
         logProvider.assertContainsMessageContaining( "Transaction log" );
-        db.shutdown();
     }
 }

@@ -21,7 +21,8 @@ package org.neo4j.tooling;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
+import java.util.Collections;
+
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractors;
@@ -32,7 +33,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -44,8 +46,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.lang.System.currentTimeMillis;
-import static java.util.Collections.emptyList;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -106,7 +106,7 @@ public class QuickImport
 
         boolean highIo = args.getBoolean( ImportTool.Options.HIGH_IO.key() );
 
-        FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
+        LogProvider logging = NullLogProvider.getInstance();
         long pageCacheMemory = args.getNumber( "pagecache-memory",
                 org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY ).longValue();
         org.neo4j.unsafe.impl.batchimport.Configuration importConfig =
@@ -164,9 +164,9 @@ public class QuickImport
             else
             {
                 consumer = new ParallelBatchImporter( dir, fileSystem, null, importConfig,
-                        new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), EMPTY, dbConfig,
-                        RecordFormatSelector.selectForConfig( dbConfig, sysoutLogProvider ) );
-                ImportTool.printOverview( dir, emptyList(), emptyList(), importConfig, System.out );
+                        new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
+                        RecordFormatSelector.selectForConfig( dbConfig, logging ) );
+                ImportTool.printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
             }
             consumer.doImport( input );
         }
@@ -198,7 +198,7 @@ public class QuickImport
 
     private static CharSeeker seeker( String definition, Configuration config )
     {
-        return CharSeekers.charSeeker( Readables.wrap( new StringReader( definition ) ),
+        return CharSeekers.charSeeker( Readables.wrap( definition ),
                 new org.neo4j.csv.reader.Configuration.Overridden( config )
         {
             @Override

@@ -21,6 +21,7 @@ package org.neo4j.scheduler;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -152,6 +153,11 @@ public interface JobScheduler extends Lifecycle
         public static final Group metricsEvent = new Group( "MetricsEvent" );
 
         /**
+         * Snapshot downloader
+         */
+        public static final Group downloadSnapshot = new JobScheduler.Group( "DownloadSnapshot" );
+
+        /**
          * UDC timed events.
          */
         public static Group udc  = new Group( "UsageDataCollection" );
@@ -160,6 +166,11 @@ public interface JobScheduler extends Lifecycle
          * Storage maintenance.
          */
         public static Group storageMaintenance = new Group( "StorageMaintenance" );
+
+        /**
+         * Raft timers.
+         */
+        public static Group raft = new Group( "RaftTimer" );
 
         /**
          * Native security.
@@ -195,7 +206,7 @@ public interface JobScheduler extends Lifecycle
     {
         void cancel( boolean mayInterruptIfRunning );
 
-        void waitTermination() throws InterruptedException, ExecutionException;
+        void waitTermination() throws InterruptedException, ExecutionException, CancellationException;
 
         default void registerCancelListener( CancelListener listener )
         {

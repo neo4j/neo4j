@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.util.v3_4.InvalidArgumentException
 import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator}
-import org.neo4j.cypher.internal.compatibility.v3_4.{Compatibility, CostCompatibility}
-import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1}
+import org.neo4j.cypher.internal.compatibility.v3_3.{CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorV3_3}
+import org.neo4j.cypher.internal.compatibility.v3_4.Compatibility
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorV3_4}
+import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.util.v3_4.InvalidArgumentException
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -44,6 +45,8 @@ trait CompatibilityFactory {
   def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility
 
   def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility
+
+  def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_]
 
   def create(spec: PlannerSpec_v3_4, config: CypherCompilerConfiguration): Compatibility[_,_]
 }
@@ -67,20 +70,31 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
       v3_1.CostCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 
+  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration) =
+    (spec.planner, spec.runtime) match {
+      case (CypherPlanner.rule, _) =>
+        throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.3. If you need to use it, please select compatibility mode Cypher 3.1")
+      case _ =>
+        v3_3compat.Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
+          spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
+          CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorV3_4)
+    }
+
   override def create(spec: PlannerSpec_v3_4, config: CypherCompilerConfiguration): Compatibility[_,_] =
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) =>
-        throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.4. If you need to use it, please compatibility mode Cypher 3.1")
+        throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.4. If you need to use it, please select compatibility mode Cypher 3.1")
       case _ =>
-        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
+        Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
                           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
-                          CommunityRuntimeContextCreator)
+                          CommunityRuntimeContextCreatorV3_4)
     }
 }
 
 class CompatibilityCache(factory: CompatibilityFactory) extends CompatibilityFactory {
   private val cache_v2_3 = new mutable.HashMap[PlannerSpec_v2_3, v2_3.Compatibility]
   private val cache_v3_1 = new mutable.HashMap[PlannerSpec_v3_1, v3_1.Compatibility]
+  private val cache_v3_3 = new mutable.HashMap[PlannerSpec_v3_3, v3_3compat.Compatibility[_,_,_]]
   private val cache_v3_4 = new mutable.HashMap[PlannerSpec_v3_4, Compatibility[_,_]]
 
   override def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility =
@@ -88,6 +102,9 @@ class CompatibilityCache(factory: CompatibilityFactory) extends CompatibilityFac
 
   override def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility =
     cache_v3_1.getOrElseUpdate(spec, factory.create(spec, config))
+
+  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_] =
+    cache_v3_3.getOrElseUpdate(spec, factory.create(spec, config))
 
   override def create(spec: PlannerSpec_v3_4, config: CypherCompilerConfiguration): Compatibility[_,_] =
     cache_v3_4.getOrElseUpdate(spec, factory.create(spec, config))

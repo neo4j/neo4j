@@ -105,7 +105,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
       Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI).toFile)
     } else {
       val inputStream = openStream(url)
-      Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
+      Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8, 0 /*length doesn't matter in this context*/)
     }
     reader
   } catch {

@@ -19,10 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.util.function.ToIntFunction;
+
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 public class Inputs
 {
@@ -32,7 +37,7 @@ public class Inputs
 
     public static Input input(
             final InputIterable<InputNode> nodes, final InputIterable<InputRelationship> relationships,
-            final IdMapper idMapper, final IdGenerator idGenerator, final Collector badCollector )
+            final IdMapper idMapper, final IdGenerator idGenerator, final Collector badCollector, Estimates estimates )
     {
         return new Input()
         {
@@ -65,6 +70,80 @@ public class Inputs
             {
                 return badCollector;
             }
+
+            @Override
+            public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator )
+            {
+                return estimates;
+            }
         };
+    }
+
+    public static Estimates knownEstimates(
+            long numberOfNodes, long numberOfRelationships,
+            long numberOfNodeProperties, long numberOfRelationshipProperties,
+            long nodePropertiesSize, long relationshipPropertiesSize,
+            long numberOfNodeLabels )
+    {
+        return new Estimates()
+        {
+            @Override
+            public long numberOfNodes()
+            {
+                return numberOfNodes;
+            }
+
+            @Override
+            public long numberOfRelationships()
+            {
+                return numberOfRelationships;
+            }
+
+            @Override
+            public long numberOfNodeProperties()
+            {
+                return numberOfNodeProperties;
+            }
+
+            @Override
+            public long sizeOfNodeProperties()
+            {
+                return nodePropertiesSize;
+            }
+
+            @Override
+            public long numberOfNodeLabels()
+            {
+                return numberOfNodeLabels;
+            }
+
+            @Override
+            public long numberOfRelationshipProperties()
+            {
+                return numberOfRelationshipProperties;
+            }
+
+            @Override
+            public long sizeOfRelationshipProperties()
+            {
+                return relationshipPropertiesSize;
+            }
+        };
+    }
+
+    public static int calculatePropertySize( InputEntity entity, ToIntFunction<Value[]> valueSizeCalculator )
+    {
+        int size = 0;
+        int propertyCount = entity.propertyCount();
+        if ( propertyCount > 0 )
+        {
+            Value[] values = new Value[propertyCount];
+            for ( int i = 0; i < propertyCount; i++ )
+            {
+                values[i] = Values.of( entity.propertyValue( i ) );
+            }
+            size += valueSizeCalculator.applyAsInt( values );
+        }
+        return size;
     }
 }

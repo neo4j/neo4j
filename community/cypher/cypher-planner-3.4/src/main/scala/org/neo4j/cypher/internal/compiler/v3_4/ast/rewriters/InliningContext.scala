@@ -49,7 +49,7 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
     copy(projections = resultProjections, seenVariables = seenVariables ++ newProjections.keys)
   }
 
-  def spoilVariable(variable: Variable): InliningContext =
+  def spoilVariable(variable: LogicalVariable): InliningContext =
     copy(projections = projections - variable)
 
   def variableRewriter: Rewriter = bottomUp(Rewriter.lift {
@@ -74,9 +74,9 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
       }
   })
 
-  def isAliasedVarible(variable: Variable) = alias(variable).nonEmpty
+  def isAliasedVarible(variable: LogicalVariable) = alias(variable).nonEmpty
 
-  def alias(variable: Variable): Option[Variable] = projections.get(variable) match {
+  def alias(variable: LogicalVariable): Option[LogicalVariable] = projections.get(variable) match {
     case Some(other: Variable) => Some(other.copyId)
     case _                       => None
   }

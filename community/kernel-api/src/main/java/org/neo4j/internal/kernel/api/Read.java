@@ -74,6 +74,13 @@ public interface Read
     void singleNode( long reference, NodeCursor cursor );
 
     /**
+     * Checks if a node exists in the database
+     * @param id The id of the node to check
+     * @return <tt>true</tt> if the node exists, otherwise <tt>false</tt>
+     */
+    boolean nodeExists( long id );
+
+    /**
      * @param reference
      *         a reference from {@link RelationshipDataAccessor#relationshipReference()}.
      * @param cursor

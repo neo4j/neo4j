@@ -194,7 +194,10 @@ public class OnlineBackupCommandBuilder
     private OutsideWorld resolveOutsideWorld()
     {
         Optional<OutputStream> output = Optional.ofNullable( this.output );
-        return new ParametrisedOutsideWorld( System.console(), output.orElse( System.out ), output.orElse( System.err ), new DefaultFileSystemAbstraction() );
+        return new ParametrisedOutsideWorld(
+                System.console(), output.orElse( System.out ),
+                output.orElse( System.err ),
+                System.in, new DefaultFileSystemAbstraction() );
     }
 
     /**

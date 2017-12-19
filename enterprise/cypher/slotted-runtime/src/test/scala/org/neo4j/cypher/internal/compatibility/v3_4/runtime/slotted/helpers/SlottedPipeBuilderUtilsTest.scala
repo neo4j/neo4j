@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.util.v3_4.ParameterWrongTypeException
@@ -41,7 +41,7 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
   // GETTING
 
   private def assertGetLong(slot: Slot, longValue: Long, expectedValue: AnyValue) = {
-    val context = PrimitiveExecutionContext(slots)
+    val context = SlottedExecutionContext(slots)
     val getter = makeGetValueFromSlotFunctionFor(slot)
 
     context.setLongAt(slot.offset, longValue)
@@ -79,7 +79,7 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
   test("getter for ref slot") {
     val slot = slots("x")
 
-    val context = PrimitiveExecutionContext(slots)
+    val context = SlottedExecutionContext(slots)
     val getter = makeGetValueFromSlotFunctionFor(slot)
 
     val expectedValue = Values.stringValue("the value")
@@ -91,7 +91,7 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
   // SETTING
 
   private def assertSetLong(slot: Slot, value: AnyValue, expected: Long): Unit = {
-    val context = PrimitiveExecutionContext(slots)
+    val context = SlottedExecutionContext(slots)
     val setter = makeSetValueInSlotFunctionFor(slot)
 
     setter(context, value)
@@ -102,7 +102,7 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
   private def assertSetRelationship(slot: Slot, id: Long) = assertSetLong(slot, VirtualValues.edge(id), id)
 
   private def assertSetFails(slot: Slot, value: AnyValue): Unit = {
-    val context = PrimitiveExecutionContext(slots)
+    val context = SlottedExecutionContext(slots)
     val setter = makeSetValueInSlotFunctionFor(slot)
 
     a [ParameterWrongTypeException] should be thrownBy(setter(context, value))
@@ -151,7 +151,7 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
   test("setter for ref slot") {
     val slot = slots("x")
 
-    val context = PrimitiveExecutionContext(slots)
+    val context = SlottedExecutionContext(slots)
     val setter = makeSetValueInSlotFunctionFor(slot)
 
     val expectedValue = Values.stringValue("the value")

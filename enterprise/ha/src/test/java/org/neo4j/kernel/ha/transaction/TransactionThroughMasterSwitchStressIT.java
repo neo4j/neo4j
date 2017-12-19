@@ -76,7 +76,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 public class TransactionThroughMasterSwitchStressIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withInstanceSetting( HaSettings.slave_only,
                     value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE );
 

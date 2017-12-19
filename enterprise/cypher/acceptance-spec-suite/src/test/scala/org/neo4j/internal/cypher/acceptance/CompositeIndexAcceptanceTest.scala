@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -33,6 +33,8 @@ import scala.collection.JavaConverters._
   * [[org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LeafPlanningIntegrationTest]]
   */
 class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+
+  val planFailConfig = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1
 
   test("should succeed in creating and deleting composite index") {
     // When
@@ -63,7 +65,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators("NodeIndexSeek")
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
 
     // Then
     result.toComparableResult should equal(List(Map("n" -> n1)))
@@ -111,7 +113,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         plan should useOperatorWithText("NodeIndexSeek", ":User(firstname,lastname)")
         plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname)"))
         plan should not(useOperatorWithText("NodeIndexSeek", ":User(lastname)"))
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
 
     // Then
     result.toComparableResult should equal(List(Map("n" -> n1)))
@@ -182,7 +184,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators("NodeIndexSeek")
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
     result.toComparableResult should equal(List(Map("n" -> n)))
   }
 
@@ -195,7 +197,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Person(firstname,lastname)")
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
   }
 
   test("should use composite index correctly given two IN predicates") {
@@ -217,7 +219,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
 
     // Then
     result.toComparableResult should equal((0 to 99).map(i => Map("x" -> i)).toList)
@@ -240,7 +242,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
 
     // Then
     result.toComparableResult should equal((0 to 9).map(i => Map("x" -> i)).toList)
@@ -263,7 +265,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
 
     // Then
     result.toComparableResult should equal(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
@@ -283,7 +285,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":L(foo,bar,baz")
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
   }
 
@@ -301,7 +303,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":L(foo,bar,baz)")
-      }, Configs.AllRulePlanners + Configs.Cost))
+      }, planFailConfig))
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
   }
 
@@ -355,7 +357,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
               planComparisonStrategy = ComparePlansWithAssertion((plan) => {
                 //THEN
                 plan should useOperatorWithText("NodeIndexSeek", ":User(name,surname,age,active)")
-              }, Configs.AllRulePlanners + Configs.Cost))
+              }, planFailConfig))
           else
             executeWith(testConfig, query,
               planComparisonStrategy = ComparePlansWithAssertion((plan) => {
@@ -390,11 +392,11 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val b = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
 
     // 2.3 excluded because the params syntax was not supported in that version
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":X(p1,p2)")
-      }, Configs.AllRulePlanners + Configs.Cost), params = Map("id" -> a.getId))
+      }, planFailConfig), params = Map("id" -> a.getId))
 
     result.toComparableResult should equal(Seq(Map("b" -> b)))
   }

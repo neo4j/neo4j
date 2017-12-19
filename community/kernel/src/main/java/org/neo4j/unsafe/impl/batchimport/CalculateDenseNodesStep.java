@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Increments counts for each visited relationship, once for start node and once for end node
@@ -32,9 +33,10 @@ public class CalculateDenseNodesStep extends ForkedProcessorStep<RelationshipRec
 {
     private final NodeRelationshipCache cache;
 
-    public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache )
+    public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache,
+            StatsProvider... statsProviders )
     {
-        super( control, "CALCULATE", config );
+        super( control, "CALCULATE", config, statsProviders );
         this.cache = cache;
     }
 

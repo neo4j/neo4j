@@ -408,7 +408,7 @@ case class SemanticState(currentScope: ScopeLocation,
         Left(SemanticError(s"`${variable.name}` already declared as variable", variable.position, symbol.positions.toSeq: _*))
     }
 
-  def implicitVariable(variable: Variable, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
+  def implicitVariable(variable: LogicalVariable, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
       case None =>
         Right(updateVariable(variable, possibleTypes, Set(variable.position)))

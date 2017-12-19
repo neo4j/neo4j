@@ -54,7 +54,7 @@ import static org.neo4j.test.ha.ClusterRule.stringWithIntBase;
 public class HaBeanIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( HaBeanIT.class )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withInstanceSetting( setting( "jmx.port", STRING, Settings.NO_DEFAULT ), intBase( 9912 ) )
             .withInstanceSetting( HaSettings.ha_server, stringWithIntBase( ":", 1136 ) )
             .withInstanceSetting( GraphDatabaseSettings.forced_kernel_id, stringWithIntBase( "kernel", 0 ) );

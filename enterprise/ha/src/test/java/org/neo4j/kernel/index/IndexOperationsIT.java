@@ -49,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 public class IndexOperationsIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    public ClusterRule clusterRule = new ClusterRule();
 
     protected ClusterManager.ManagedCluster cluster;
 

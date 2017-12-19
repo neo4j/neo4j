@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.time.Clocks;
 
 /**
@@ -31,12 +32,21 @@ import org.neo4j.time.Clocks;
 public interface ExecutionMonitor
 {
     /**
+     * Signals start of import. Called only once and before any other method.
+     *
+     * @param dependencyResolver {@link DependencyResolver} for getting dependencies from.
+     */
+    default void initialize( DependencyResolver dependencyResolver )
+    {   // empty by default
+    }
+
+    /**
      * Signals the start of a {@link StageExecution}.
      */
     void start( StageExecution execution );
 
     /**
-     * Signals the end of the execution previously {@link #start(StageExecution) started}.
+     * Signals the end of the execution previously {@link #start(StageExecution,DependencyResolver) started}.
      */
     void end( StageExecution execution, long totalTimeMillis );
 

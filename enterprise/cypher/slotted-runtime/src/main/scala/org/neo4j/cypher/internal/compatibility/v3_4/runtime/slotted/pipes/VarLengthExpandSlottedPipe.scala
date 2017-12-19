@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyTypes, Pipe, PipeWithSource, QueryState}
@@ -29,14 +31,16 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{EdgeValue, VirtualValues}
+import org.neo4j.values.storable.Values
 
 import scala.collection.mutable
 
 case class VarLengthExpandSlottedPipe(source: Pipe,
-                                      fromOffset: Int,
+                                      fromSlot: Slot,
                                       relOffset: Int,
-                                      toOffset: Int,
+                                      toSlot: Slot,
                                       dir: SemanticDirection,
                                       projectedDir: SemanticDirection,
                                       types: LazyTypes,
@@ -51,6 +55,19 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
                                       argumentSize: SlotConfiguration.Size)
                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
   type LNode = Long
+
+  //===========================================================================
+  // Compile-time initializations
+  //===========================================================================
+  private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(fromSlot)
+  private val getToNodeFunction =
+    if (shouldExpandAll) null // We only need this getter in the ExpanInto case
+    else makeGetPrimitiveNodeFromSlotFunctionFor(toSlot)
+  private val toOffset = toSlot.offset
+
+  //===========================================================================
+  // Runtime code
+  //===========================================================================
 
   private def varLengthExpand(node: LNode,
                               state: QueryState,
@@ -109,30 +126,40 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
       inputRow =>
-        val fromNode = inputRow.getLongAt(fromOffset)
-
-        // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
-        // the start node is valid
-        inputRow.setLongAt(tempNodeOffset, fromNode)
-        if (nodePredicate.isTrue(inputRow, state)) {
-
-          val paths: Iterator[(LNode, Seq[EdgeValue])] = varLengthExpand(fromNode, state, inputRow)
-          paths collect {
-            case (toNode: LNode, rels: Seq[EdgeValue])
-              if rels.length >= min && isToNodeValid(inputRow, toNode) =>
-              val resultRow = PrimitiveExecutionContext(slots)
-              resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
-              resultRow.setLongAt(toOffset, toNode)
-              resultRow.setRefAt(relOffset, VirtualValues.list(rels.toArray:_*))
-              resultRow
-          }
+        val fromNode = getFromNodeFunction(inputRow)
+        if (entityIsNull(fromNode)) {
+          val resultRow = SlottedExecutionContext(slots)
+          resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
+          resultRow.setRefAt(relOffset, Values.NO_VALUE)
+          if (shouldExpandAll)
+            resultRow.setLongAt(toOffset, -1L)
+          Iterator(resultRow)
         }
-        else
-          Iterator.empty
+        else {
+          // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
+          // the start node is valid
+          inputRow.setLongAt(tempNodeOffset, fromNode)
+          if (nodePredicate.isTrue(inputRow, state)) {
+
+            val paths: Iterator[(LNode, Seq[EdgeValue])] = varLengthExpand(fromNode, state, inputRow)
+            paths collect {
+              case (toNode: LNode, rels: Seq[EdgeValue])
+                if rels.length >= min && isToNodeValid(inputRow, toNode) =>
+                val resultRow = SlottedExecutionContext(slots)
+                resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
+                if (shouldExpandAll)
+                  resultRow.setLongAt(toOffset, toNode)
+                resultRow.setRefAt(relOffset, VirtualValues.list(rels.toArray: _*))
+                resultRow
+            }
+          }
+          else
+            Iterator.empty
+        }
     }
   }
 
 
   private def isToNodeValid(row: ExecutionContext, node: LNode): Boolean =
-    shouldExpandAll || row.getLongAt(toOffset) == node
+    shouldExpandAll || getToNodeFunction(row) == node
 }

@@ -32,7 +32,6 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
@@ -54,27 +53,17 @@ public class GraphDatabaseSettingsTest
     @Test
     public void mustHaveNullDefaultPageCacheMemorySizeInBytes() throws Exception
     {
-        Long bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
+        String bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
         assertThat( bytes, is( nullValue() ) );
     }
 
     @Test
     public void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue() throws Exception
     {
-        Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
-        assertThat( Config.defaults( setting, "245760" ).get( setting ),
-                is( ByteUnit.kibiBytes( 240 ) ) );
-        assertThat( Config.defaults( setting, "2244g" ).get( setting ),
-                is( ByteUnit.gibiBytes( 2244 ) ) );
-    }
-
-    @Test( expected = InvalidSettingException.class )
-    public void pageCacheSettingMustRejectOverlyConstrainedMemorySetting() throws Exception
-    {
-        long pageSize = Config.defaults().get( GraphDatabaseSettings.mapped_memory_page_size );
-        Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
-        // We configure the page cache to have one byte less than two pages worth of memory. This must throw:
-        Config.defaults( setting, "" + ( pageSize * 2 - 1 ) ).get( setting );
+        Setting<String> setting = GraphDatabaseSettings.pagecache_memory;
+        assertThat( Config.defaults( setting, "245760" ).get( setting ), is( "245760" ) );
+        assertThat( Config.defaults( setting, "2244g" ).get( setting ), is( "2244g" ) );
+        assertThat( Config.defaults( setting, "string" ).get( setting ), is( "string" ) );
     }
 
     @Test

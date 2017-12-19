@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -29,10 +30,11 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -44,8 +46,12 @@ import static org.neo4j.helpers.Exceptions.rootCause;
 
 public class GraphDatabaseShutdownTest
 {
-
     private GraphDatabaseAPI db;
+
+    @Rule
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
+    @Rule
+    public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3" );
 
     @Before
     public void setUp()
@@ -102,16 +108,21 @@ public class GraphDatabaseShutdownTest
         }
 
         final CountDownLatch nodeLockedLatch = new CountDownLatch( 1 );
+        final CountDownLatch shutdownCalled = new CountDownLatch( 1 );
 
         // WHEN
-        // one thread locks previously create node and initiates graph db shutdown
-        Future<Void> shutdownFuture = newSingleThreadExecutor().submit( () ->
+        // one thread locks previously created node and initiates graph db shutdown
+        Future<Void> shutdownFuture = t2.execute( state ->
         {
             try ( Transaction tx = db.beginTx() )
             {
                 node.addLabel( label( "ABC" ) );
                 nodeLockedLatch.countDown();
-                Thread.sleep( 1_000 ); // Let the second thread attempt to lock same node
+
+                // Wait for T3 to start waiting for this node write lock
+                t3.get().waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
+
+                shutdownCalled.countDown();
                 db.shutdown();
                 tx.success();
             }
@@ -119,12 +130,15 @@ public class GraphDatabaseShutdownTest
         } );
 
         // other thread tries to lock the same node while it has been locked and graph db is being shutdown
-        Future<Void> secondTxResult = newSingleThreadExecutor().submit( () ->
+        Future<Void> secondTxResult = t3.execute( state ->
         {
             try ( Transaction tx = db.beginTx() )
             {
                 nodeLockedLatch.await();
+
+                // T2 awaits this thread to get into a waiting state for this node write lock
                 node.addLabel( label( "DEF" ) );
+
                 tx.success();
             }
             return null;
@@ -132,6 +146,8 @@ public class GraphDatabaseShutdownTest
 
         // THEN
         // tx in second thread should fail in reasonable time
+        shutdownCalled.await();
+        // start waiting when the trap has been triggered
         try
         {
             secondTxResult.get( 60, SECONDS );

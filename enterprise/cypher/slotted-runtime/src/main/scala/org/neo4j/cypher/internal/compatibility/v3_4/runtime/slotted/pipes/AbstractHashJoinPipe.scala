@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 
@@ -55,7 +55,7 @@ abstract class AbstractHashJoinPipe[Key, T](left: Pipe,
         val matchesFromLhs: mutable.Seq[ExecutionContext] = table.getOrElse(joinKey, mutable.MutableList.empty)
 
         matchesFromLhs.map { lhs =>
-          val newRow = PrimitiveExecutionContext(slots)
+          val newRow = SlottedExecutionContext(slots)
           lhs.copyTo(newRow)
           copyDataFromRhs(newRow, rhs)
           newRow
@@ -79,5 +79,5 @@ abstract class AbstractHashJoinPipe[Key, T](left: Pipe,
 
   def computeKey(context: ExecutionContext, keyColumns: T, queryState: QueryState): Option[Key]
 
-  def copyDataFromRhs(newRow: PrimitiveExecutionContext, rhs: ExecutionContext): Unit
+  def copyDataFromRhs(newRow: SlottedExecutionContext, rhs: ExecutionContext): Unit
 }

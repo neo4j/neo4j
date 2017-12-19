@@ -84,7 +84,10 @@ class BlacklistPlugin(blacklistFile: URI) extends CucumberAdapter {
       BlacklistPlugin._blacklist = itr.foldLeft(Set.empty[String]) {
         case (set, scenarioName) =>
           val normalizedName = BlacklistPlugin.normalizedScenarioName(scenarioName)
-          if (normalizedName.isEmpty || normalizedName.startsWith("//")) set else set + normalizedName
+          if (normalizedName.isEmpty || normalizedName.startsWith("//")) set
+          else if (set.contains(normalizedName))
+            throw new IllegalStateException(s"Scenario '$normalizedName' is present more than once in the blacklist '$blacklistFile'")
+          else set + normalizedName
       }
     }
   }

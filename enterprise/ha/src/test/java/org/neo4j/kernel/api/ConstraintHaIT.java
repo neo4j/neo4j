@@ -212,7 +212,7 @@ public class ConstraintHaIT
     public abstract static class AbstractConstraintHaIT
     {
         @Rule
-        public ClusterRule clusterRule = new ClusterRule( getClass() )
+        public ClusterRule clusterRule = new ClusterRule()
                 .withSharedSetting( HaSettings.read_timeout, "4000s" );
 
         private static final String TYPE = "Type";

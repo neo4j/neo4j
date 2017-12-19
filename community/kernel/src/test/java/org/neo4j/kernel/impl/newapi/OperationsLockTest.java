@@ -30,24 +30,29 @@ import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -81,9 +86,15 @@ public class OperationsLockTest
         when( cursors.allocatePropertyCursor() ).thenReturn( propertyCursor );
         AutoIndexing autoindexing = mock( AutoIndexing.class );
         when( autoindexing.nodes() ).thenReturn( mock( AutoIndexOperations.class ) );
-        allStoreHolder = mock( AllStoreHolder.class );
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        StorageEngine engine = mock( StorageEngine.class );
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
+        when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
+        allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
+                ExplicitIndexStore.class ), AssertOpen.ALWAYS_OPEN );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                mock( StorageStatement.class ), transaction, cursors, autoindexing );
+                storageStatement, transaction, cursors, autoindexing );
         operations.initialize();
     }
 

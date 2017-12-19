@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
@@ -140,7 +140,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
             log.debug( "Waiting " + AWAIT_TIMEOUT_MINUTES + " minutes for all submitted and active " +
                        "flush tasks to complete." + EOL + this );
 
-            Supplier<Boolean> allSubmittedTasksCompleted = () -> activeTasks.get() == 0;
+            BooleanSupplier allSubmittedTasksCompleted = () -> activeTasks.get() == 0;
             Predicates.await( allSubmittedTasksCompleted, AWAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES );
         }
         catch ( TimeoutException e )

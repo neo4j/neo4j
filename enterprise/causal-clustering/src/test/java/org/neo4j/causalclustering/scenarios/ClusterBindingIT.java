@@ -59,7 +59,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 
 public class ClusterBindingIT
 {
-    private final ClusterRule clusterRule = new ClusterRule( ClusterBindingIT.class )
+    private final ClusterRule clusterRule = new ClusterRule()
                         .withNumberOfCoreMembers( 3 )
                         .withNumberOfReadReplicas( 0 )
                         .withSharedCoreParam( CausalClusteringSettings.raft_log_pruning_strategy, "3 entries" )

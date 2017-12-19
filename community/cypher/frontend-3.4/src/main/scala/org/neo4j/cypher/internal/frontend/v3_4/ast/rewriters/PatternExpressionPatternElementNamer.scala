@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_4.{ASTNode, Rewriter, UnNamedNameGenerator, topDown}
+import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.IdentityMap
 import org.neo4j.cypher.internal.v3_4.expressions._
 
@@ -40,9 +40,9 @@ object PatternExpressionPatternElementNamer {
     val unnamedElements = findPatternElements(pattern).filter(_.variable.isEmpty)
     IdentityMap(unnamedElements.map {
       case elem: NodePattern =>
-        elem -> Variable(UnNamedNameGenerator.name(elem.position.bumped()))(elem.position)
+        elem -> Variable(NodeNameGenerator.name(elem.position.bumped()))(elem.position)
       case elem@RelationshipChain(_, relPattern, _) =>
-        elem -> Variable(UnNamedNameGenerator.name(relPattern.position.bumped()))(relPattern.position)
+        elem -> Variable(RelNameGenerator.name(relPattern.position.bumped()))(relPattern.position)
     }: _*)
   }
 

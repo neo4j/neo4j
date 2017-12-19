@@ -70,7 +70,7 @@ import static org.neo4j.metrics.MetricsTestHelper.readLongValueAndAssert;
 public class MetricsKernelExtensionFactoryIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withSharedSetting( GraphDatabaseSettings.record_id_batch_size, "1" );
 
     private HighlyAvailableGraphDatabase db;

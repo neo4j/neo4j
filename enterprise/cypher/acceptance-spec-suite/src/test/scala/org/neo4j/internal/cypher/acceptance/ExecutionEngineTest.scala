@@ -33,7 +33,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.ProcedureOrSchema
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1, V3_2, V3_3, V3_4}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1, V3_4}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.NeoStoreDataSource
@@ -48,14 +48,14 @@ import scala.collection.mutable
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport {
 
   val createConf = Configs.Interpreted - Configs.Cost2_3
-  val startConf = TestConfiguration(Versions(V3_2, V3_3, V3_4, Versions.Default), Planners(Planners.Rule, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
+  val startConf = TestConfiguration(Versions(V3_4, Versions.Default), Planners(Planners.Rule, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
                   TestConfiguration(Versions(V2_3, V3_1), Planners.all, Runtimes.Default)
 
   test("shouldGetRelationshipById") {
     val n = createNode()
     val r = relate(n, createNode(), "KNOWS")
 
-    val result = executeWith(Configs.CommunityInterpreted, "match ()-[r]->() where id(r) = 0 return r")
+    val result = executeWith(Configs.Interpreted, "match ()-[r]->() where id(r) = 0 return r")
 
     result.columnAs[Relationship]("r").toList should equal(List(r))
   }
@@ -89,7 +89,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val node: Node = createNode()
     val rel: Relationship = relate(createNode(), node, "yo")
 
-    val result = executeWith(Configs.CommunityInterpreted, s"match ()-[rel]->() where id(rel) = ${rel.getId} return rel")
+    val result = executeWith(Configs.Interpreted, s"match ()-[rel]->() where id(rel) = ${rel.getId} return rel")
 
     result.columnAs[Relationship]("rel").toList should equal(List(rel))
   }
@@ -253,7 +253,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("B" -> "FRIEND" -> "C")
 
 
-    val result = executeWith(Configs.CommunityInterpreted, "match (a)-[:CONTAINS*0..1]->(b)-[:FRIEND*0..1]->(c) where id(a) = 0 return a,b,c")
+    val result = executeWith(Configs.Interpreted, "match (a)-[:CONTAINS*0..1]->(b)-[:FRIEND*0..1]->(c) where id(a) = 0 return a,b,c")
 
     result.toSet should equal(
       Set(
@@ -279,7 +279,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |return pA, pB, pC, pD, pE
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted, query, params = Map(
+    val result = executeWith(Configs.Interpreted, query, params = Map(
       "a" -> Seq[Long](a),
       "b" -> b.toInt,
       "c" -> Seq(c).asJava,
@@ -451,7 +451,7 @@ order by a.COL1""".format(a, b))
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
-    val result = executeWith(Configs.CommunityInterpreted, "match (a), ()-[r]->() where id(a) = 0 and id(r) = 0 return a,r")
+    val result = executeWith(Configs.Interpreted, "match (a), ()-[r]->() where id(a) = 0 and id(r) = 0 return a,r")
 
     result.toList should equal(List(Map("a" -> a, "r" -> r)))
   }
@@ -514,7 +514,7 @@ order by a.COL1""".format(a, b))
 
     val q = "match (n)-[f]->() where id(n)= 0 with n, max(f.age) as age match (n)-[f]->(m) where f.age = age return m"
 
-    executeWith(Configs.CommunityInterpreted, q).toList should equal(List(Map("m" -> c)))
+    executeWith(Configs.Interpreted, q).toList should equal(List(Map("m" -> c)))
   }
 
   test("issue 432") {
@@ -725,7 +725,7 @@ order by a.COL1""".format(a, b))
     val labelName = "Person"
     val propertyKeys = Seq("name")
 
-    val testconfiguration = TestConfiguration(Versions(V3_1, V3_2, V3_4, Versions.Default), Planners.Default, Runtimes(ProcedureOrSchema, Runtimes.Default)) + Configs.Rule2_3
+    val testconfiguration = TestConfiguration(Versions(V3_1, V3_4, Versions.Default), Planners.Default, Runtimes(ProcedureOrSchema, Runtimes.Default)) + Configs.Rule2_3
     // WHEN
     executeWith(testconfiguration, s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
@@ -832,7 +832,7 @@ order by a.COL1""".format(a, b))
     val n = createNode("n")
     val m = createNode("m")
     relate(n,m,"link")
-    val result = executeWith(Configs.CommunityInterpreted, "match (n) where id(n) = 0 with coalesce(n,n) as n match (n)--() return n")
+    val result = executeWith(Configs.Interpreted, "match (n) where id(n) = 0 with coalesce(n,n) as n match (n)--() return n")
 
     result.toList should equal(List(Map("n" -> n)))
   }

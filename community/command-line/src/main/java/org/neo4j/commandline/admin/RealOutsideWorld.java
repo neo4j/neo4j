@@ -20,6 +20,7 @@
 package org.neo4j.commandline.admin;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 
 import org.neo4j.io.IOUtils;
@@ -29,17 +30,32 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 public class RealOutsideWorld implements OutsideWorld
 {
     FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+    private final InputStream in;
+    private final PrintStream out;
+    private final PrintStream err;
+
+    public RealOutsideWorld()
+    {
+        this( System.out, System.err, System.in );
+    }
+
+    public RealOutsideWorld( PrintStream out, PrintStream err, InputStream inStream )
+    {
+        this.in = inStream;
+        this.out = out;
+        this.err = err;
+    }
 
     @Override
     public void stdOutLine( String text )
     {
-        System.out.println( text );
+        out.println( text );
     }
 
     @Override
     public void stdErrLine( String text )
     {
-        System.err.println( text );
+        err.println( text );
     }
 
     @Override
@@ -82,7 +98,7 @@ public class RealOutsideWorld implements OutsideWorld
     @Override
     public PrintStream errorStream()
     {
-        return System.err;
+        return err;
     }
 
     @Override
@@ -94,6 +110,12 @@ public class RealOutsideWorld implements OutsideWorld
     @Override
     public PrintStream outStream()
     {
-        return System.out;
+        return out;
+    }
+
+    @Override
+    public InputStream inStream()
+    {
+        return in;
     }
 }

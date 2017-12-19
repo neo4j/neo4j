@@ -295,11 +295,12 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val b = createLabeledNode("End")
     relate(a, b)
 
-    executeWith(Configs.CommunityInterpreted, "match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c",
+    executeWith(Configs.Interpreted, "match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
         expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
   }
 
+  // FAIL: <default version> <default planner> runtime=slotted returned different results than <default version> <default planner> runtime=interpreted List() did not contain the same elements as List(Map("r" -> (20000)-[T,0]->(20001)))
   test("should not use a label scan as starting point when statistics are bad") {
     graph.inTx {
       (1 to 10000).foreach { i =>
@@ -309,7 +310,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     }
     relate(createNode(), createLabeledNode("A"), "T")
 
-    executeWith(Configs.CommunityInterpreted, "PROFILE MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r",
+    executeWith(Configs.Interpreted, "PROFILE MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("NodeByLabelScan")))
   }
 
@@ -340,10 +341,11 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         planDescription.find("Argument") shouldNot be(empty)
         planDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
         planDescription.find("Expand(All)") shouldNot be(empty)
-        planDescription.cd("Expand(All)").arguments.toSet should equal(Set(
-          ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, 1, Some(1)),
-          EstimatedRows(0.25)
-        ))
+        val expandArgs = planDescription.cd("Expand(All)").arguments.toSet
+        expandArgs should contain(EstimatedRows(0.25))
+        expandArgs collect {
+          case ExpandExpression("n", _, Seq("HAS"), _, SemanticDirection.OUTGOING, 1, Some(1)) => true
+        } should not be empty
       }, Configs.AllRulePlanners + Configs.Version2_3))
   }
 

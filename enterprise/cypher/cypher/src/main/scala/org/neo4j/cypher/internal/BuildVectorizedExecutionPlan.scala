@@ -28,14 +28,15 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{NewRu
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.notification.{ExperimentalFeatureNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v3_4.notification.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
@@ -47,6 +48,8 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.virtual.MapValue
+
+import scala.util.{Failure, Success}
 
 object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = CompilationPhase.PIPE_BUILDING
@@ -72,11 +75,11 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
       val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
                                              dispatcher, context.notificationLogger)
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
-      new CompilationState(from, Some(execPlan))
+      new CompilationState(from, Success(execPlan))
     } catch {
       case e: CantCompileQueryException =>
         runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, e)
-        new CompilationState(from, None)
+        new CompilationState(from, Failure(e))
     }
   }
 
@@ -117,13 +120,10 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
     override def isPeriodicCommit: Boolean = false
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = CacheCheckResult.empty
+    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = FineToReuse // TODO: This is a lie.
 
     override def runtimeUsed: RuntimeName = MorselRuntimeName
-
-    override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
   }
-
 }
 
 class VectorizedOperatorExecutionResult(operators: Pipeline,

@@ -51,9 +51,24 @@ public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
         return offHeapUsage;
     }
 
+    public long getTotalUsage()
+    {
+        return heapUsage + offHeapUsage;
+    }
+
     @Override
     public String toString()
     {
         return "Memory usage[heap:" + bytes( heapUsage ) + ", off-heap:" + bytes( offHeapUsage ) + "]";
+    }
+
+    public static long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... memoryUsers )
+    {
+        GatheringMemoryStatsVisitor memoryVisitor = new GatheringMemoryStatsVisitor();
+        for ( MemoryStatsVisitor.Visitable memoryUser : memoryUsers )
+        {
+            memoryUser.acceptMemoryStatsVisitor( memoryVisitor );
+        }
+        return memoryVisitor.getTotalUsage();
     }
 }

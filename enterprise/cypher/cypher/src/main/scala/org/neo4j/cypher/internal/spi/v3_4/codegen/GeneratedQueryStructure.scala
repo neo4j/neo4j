@@ -82,12 +82,12 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
     def saveSourceCode = new SourceVisitor {
       override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
-        _source = _source :+ (reference.name(), sourceCode.toString)
+        _source = _source :+ (reference.name() -> sourceCode.toString)
     }
 
     def saveByteCode = new DisassemblyVisitor {
       override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
-        _bytecode = _bytecode :+ (className, disassembly.toString)
+        _bytecode = _bytecode :+ (className -> disassembly.toString)
     }
 
     def sourceCode: Seq[(String, String)] = _source

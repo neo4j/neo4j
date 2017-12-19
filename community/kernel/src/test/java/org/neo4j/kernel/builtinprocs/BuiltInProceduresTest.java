@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -451,7 +451,7 @@ public class BuiltInProceduresTest
 
     private Integer token( String name, Map<Integer,String> tokens )
     {
-        Supplier<Integer> allocateFromMap = () ->
+        IntSupplier allocateFromMap = () ->
         {
             int newIndex = tokens.size();
             tokens.put( newIndex, name );
@@ -459,7 +459,7 @@ public class BuiltInProceduresTest
         };
         return tokens.entrySet().stream()
                      .filter( entry -> entry.getValue().equals( name ) )
-                     .map( Map.Entry::getKey )
+                     .mapToInt( Map.Entry::getKey )
                      .findFirst().orElseGet( allocateFromMap );
     }
 

@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -76,7 +77,7 @@ public class BoltCausalClusteringIT
 {
     private static final long DEFAULT_TIMEOUT_MS = 15_000;
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 );
+    public final ClusterRule clusterRule = new ClusterRule().withNumberOfCoreMembers( 3 );
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
@@ -811,7 +812,7 @@ public class BoltCausalClusteringIT
         {
             if ( !coreClusterMember.equals( initialLeader ) )
             {
-                coreClusterMember.raft().triggerElection();
+                coreClusterMember.raft().triggerElection( Clock.systemUTC() );
                 return cluster.awaitLeader();
             }
         }

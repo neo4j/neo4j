@@ -19,12 +19,9 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Timer;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.StartupStatistics;
@@ -67,7 +64,6 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
             throws Throwable
     {
         Config config = dependencies.config();
-        config.augment( loadUdcProperties() );
         return new UdcKernelExtension(
                 config,
                 dependencies.dataSourceManager(),
@@ -80,17 +76,5 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     private boolean isAlwaysDaemon()
     {
         return true;
-    }
-
-    private Map<String, String> loadUdcProperties()
-    {
-        try
-        {
-            return MapUtil.load( getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" ) );
-        }
-        catch ( Exception e )
-        {
-            return new HashMap<>();
-        }
     }
 }

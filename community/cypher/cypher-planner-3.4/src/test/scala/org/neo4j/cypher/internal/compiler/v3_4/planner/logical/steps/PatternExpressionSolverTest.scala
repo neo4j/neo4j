@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.v3_4.expressions._
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("Rewrites single pattern expression") {
     // given MATCH (a) RETURN (a)-->() as x
-    val otherSide = newMockedLogicalPlan("  UNNAMED1")
+    val otherSide = newMockedLogicalPlan("  NODE1")
     val strategy = createStrategy(otherSide)
     val source = newMockedLogicalPlan("a")
     val pathStep = mock[PathStep]
@@ -142,8 +142,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   private val patExpr1 = newPatExpr("a", 0, 1, 2, SemanticDirection.OUTGOING)
   private val patExpr2 = newPatExpr("a", 3, 4, 5, SemanticDirection.INCOMING)
-  private val namedPatExpr1 = newPatExpr("a", 0, Right("  UNNAMED2"), Right("  UNNAMED3"), SemanticDirection.OUTGOING)
-  private val namedPatExpr2 = newPatExpr("a", 3, Right("  UNNAMED5"), Right("  UNNAMED6"), SemanticDirection.INCOMING)
+  private val namedPatExpr1 = newPatExpr("a", 0, Right("  NODE2"), Right("  REL3"), SemanticDirection.OUTGOING)
+  private val namedPatExpr2 = newPatExpr("a", 3, Right("  NODE5"), Right("  REL6"), SemanticDirection.INCOMING)
 
   private def newPatExpr(left: String, position: Int, rightOffset: Int, relOffset: Int, dir: SemanticDirection): PatternExpression =
     newPatExpr(left, position, Left(rightOffset), Left(relOffset), dir)

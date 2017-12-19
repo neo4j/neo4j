@@ -48,7 +48,7 @@ public class UniquenessConstraintValidationHAIT
     @Rule
     public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    public final ClusterRule clusterRule = new ClusterRule()
             .withInitialDataset( uniquenessConstraint( LABEL, PROPERTY_KEY ) );
 
     @Test

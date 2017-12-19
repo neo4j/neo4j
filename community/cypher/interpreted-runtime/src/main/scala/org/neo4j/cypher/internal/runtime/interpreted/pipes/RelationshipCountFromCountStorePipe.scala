@@ -42,7 +42,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
     }
 
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    Seq(baseContext.newWith1(ident, Values.longValue(count))).iterator
+    Seq(baseContext.set(ident, Values.longValue(count))).iterator
   }
 
   private def getLabelId(lazyLabel: Option[LazyLabel], state: QueryState): Option[Int] = lazyLabel match {

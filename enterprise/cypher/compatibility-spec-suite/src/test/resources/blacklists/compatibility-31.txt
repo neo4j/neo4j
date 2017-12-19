@@ -31,9 +31,6 @@ Merge must properly handle multiple labels
 UNWIND with multiple merges
 Do not match on deleted entities
 Do not match on deleted relationships
-In-query call to procedure with explicit arguments
-In-query call to procedure with explicit arguments that drops all result fields
-Standalone call to procedure with explicit arguments
 Set a property
 Set a property to an expression
 Concatenate elements onto a list property

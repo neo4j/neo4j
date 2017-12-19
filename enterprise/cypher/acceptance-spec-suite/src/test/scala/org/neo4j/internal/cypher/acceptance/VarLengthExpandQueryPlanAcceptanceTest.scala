@@ -52,7 +52,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("Plan pruning var expand on distinct var-length match") {
     val query = "MATCH (a)-[*1..2]->(c) RETURN DISTINCT c"
-    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
       }, expectPlansToFail = ignoreConfiguration))
@@ -60,7 +60,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("Plan pruning var expand on distinct var-length match with projection and aggregation") {
     val query = "MATCH (a)-[*1..2]->(c) WITH DISTINCT c RETURN count(*)"
-    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
       }, expectPlansToFail = ignoreConfiguration))
@@ -68,7 +68,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("query with distinct aggregation") {
     val query = "MATCH (from)-[*1..3]->(to) RETURN count(DISTINCT to)"
-    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
       }, expectPlansToFail = ignoreConfiguration))
@@ -76,7 +76,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("Simple query that filters between expand and distinct") {
     val query = "MATCH (a)-[*1..3]->(b:X) RETURN DISTINCT b"
-    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
       }, expectPlansToFail = ignoreConfiguration))
@@ -93,7 +93,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("Double var expand with distinct result") {
     val query = "MATCH (a)-[:R*1..3]->(b)-[:T*1..3]->(c) RETURN DISTINCT c"
-    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
       }, expectPlansToFail = ignoreConfiguration))
@@ -101,7 +101,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("var expand followed by normal expand") {
     val query = "MATCH (a)-[:R*1..3]->(b)-[:T]->(c) RETURN DISTINCT c"
-    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
       }, expectPlansToFail = ignoreConfiguration))
@@ -109,7 +109,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("optional match can be solved with PruningVarExpand") {
     val query = "MATCH (a) OPTIONAL MATCH (a)-[:R*1..3]->(b)-[:T]->(c) RETURN DISTINCT c"
-    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
       }, expectPlansToFail = ignoreConfiguration))
@@ -126,7 +126,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("on longer var-lengths, we use FullPruningVarExpand") {
     val query = "MATCH (a)-[*4..5]->(b) RETURN DISTINCT b"
-    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(FullPruning)")
       }, expectPlansToFail = ignoreConfiguration))

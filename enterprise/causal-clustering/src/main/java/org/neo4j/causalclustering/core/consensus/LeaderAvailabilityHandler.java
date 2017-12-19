@@ -19,81 +19,149 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import java.util.Objects;
 import java.util.function.LongSupplier;
 
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
 
-public class LeaderAvailabilityHandler implements Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage>
+public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
-    private final Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler;
+    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler;
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
-    private final LongSupplier term;
-    private final Log log;
-    private volatile ClusterId boundClusterId;
+    private final ShouldRenewElectionTimeout shouldRenewElectionTimeout;
 
-    public LeaderAvailabilityHandler( Inbound.MessageHandler<RaftMessages.ClusterIdAwareMessage> delegateHandler,
-            LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term, LogProvider logProvider )
+    public LeaderAvailabilityHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler,
+            LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
     {
         this.delegateHandler = delegateHandler;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
-        this.term = term;
-        this.log = logProvider.getLog( getClass() );
+        this.shouldRenewElectionTimeout = new ShouldRenewElectionTimeout( term );
     }
 
-    public synchronized void start( ClusterId clusterId )
+    public static ComposableMessageHandler composable( LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
     {
-        boundClusterId = clusterId;
-    }
-
-    public synchronized void stop()
-    {
-        boundClusterId = null;
+        return ( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate ) ->
+                new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term );
     }
 
     @Override
-    public void handle( RaftMessages.ClusterIdAwareMessage message )
+    public synchronized void start( ClusterId clusterId ) throws Throwable
     {
-        if ( Objects.isNull( boundClusterId ) )
-        {
-            log.debug( "This pre handler has been stopped, dropping the message: %s", message.message() );
-        }
-        else if ( !Objects.equals( message.clusterId(), boundClusterId ) )
-        {
-            log.info( "Discarding message[%s] owing to mismatched clusterId. Expected: %s, Encountered: %s",
-                    message.message(), boundClusterId, message.clusterId() );
-        }
-        else
-        {
-            handleTimeouts( message );
-
-            delegateHandler.handle( message );
-        }
+        delegateHandler.start( clusterId );
     }
 
-    private void handleTimeouts( RaftMessages.ClusterIdAwareMessage message )
+    @Override
+    public synchronized void stop() throws Throwable
     {
-        if ( shouldRenewElectionTimeout( message.message() ) )
+        delegateHandler.stop();
+    }
+
+    @Override
+    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
+    {
+        handleTimeouts( message );
+        delegateHandler.handle( message );
+    }
+
+    private void handleTimeouts( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
+    {
+        if ( message.dispatch( shouldRenewElectionTimeout ) )
         {
             leaderAvailabilityTimers.renewElection();
         }
     }
 
-    // TODO replace with visitor pattern
-    private boolean shouldRenewElectionTimeout( RaftMessages.RaftMessage message )
+    private static class ShouldRenewElectionTimeout implements RaftMessages.Handler<Boolean, RuntimeException>
     {
-        switch ( message.type() )
+        private final LongSupplier term;
+
+        private ShouldRenewElectionTimeout( LongSupplier term )
         {
-        case HEARTBEAT:
-            RaftMessages.Heartbeat heartbeat = (RaftMessages.Heartbeat) message;
-            return heartbeat.leaderTerm() >= term.getAsLong();
-        case APPEND_ENTRIES_REQUEST:
-            RaftMessages.AppendEntries.Request request = (RaftMessages.AppendEntries.Request) message;
+            this.term = term;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.AppendEntries.Request request )
+        {
             return request.leaderTerm() >= term.getAsLong();
-        default:
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Heartbeat heartbeat )
+        {
+            return heartbeat.leaderTerm() >= term.getAsLong();
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Vote.Request request )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Vote.Response response )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.PreVote.Request request )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.PreVote.Response response )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.AppendEntries.Response response )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.LogCompactionInfo logCompactionInfo )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.HeartbeatResponse heartbeatResponse )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Timeout.Election election )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.Timeout.Heartbeat heartbeat )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.NewEntry.Request request )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.NewEntry.BatchRequest batchRequest )
+        {
+            return false;
+        }
+
+        @Override
+        public Boolean handle( RaftMessages.PruneRequest pruneRequest )
+        {
             return false;
         }
     }

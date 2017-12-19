@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -1131,9 +1132,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public void prepareForCommit( RECORD record )
     {
+        prepareForCommit( record, this );
+    }
+
+    @Override
+    public void prepareForCommit( RECORD record, IdSequence idSequence )
+    {
         if ( record.inUse() )
         {
-            recordFormat.prepare( record, recordSize, this );
+            recordFormat.prepare( record, recordSize, idSequence );
         }
     }
 

@@ -23,8 +23,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.ToIntFunction;
 
+import org.neo4j.collection.RawIterator;
+import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -36,14 +41,21 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
+import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.impl.util.Validators.emptyValidator;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.noDecorator;
+import static org.neo4j.unsafe.impl.batchimport.input.Inputs.calculatePropertySize;
+import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultRelationshipDeserializer;
 
@@ -54,6 +66,8 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.
  */
 public class CsvInput implements Input
 {
+    private static final long ESTIMATE_SAMPLE_SIZE = mebiBytes( 1 );
+
     private final Iterable<DataFactory<InputNode>> nodeDataFactory;
     private final Header.Factory nodeHeaderFactory;
     private final Iterable<DataFactory<InputRelationship>> relationshipDataFactory;
@@ -116,7 +130,7 @@ public class CsvInput implements Input
             // parse all node headers and remember all ID spaces
             for ( DataFactory<InputNode> dataFactory : nodeDataFactory )
             {
-                try ( CharSeeker dataStream = charSeeker( dataFactory.create( config ).stream(), config, true ) )
+                try ( CharSeeker dataStream = charSeeker( new MultiReadable( dataFactory.create( config ).stream() ), config, true ) )
                 {
                     Header header = nodeHeaderFactory.create( dataStream, config, idType );
                     Header.Entry idHeader = header.entry( Type.ID );
@@ -131,7 +145,7 @@ public class CsvInput implements Input
             // parse all relationship headers and verify all ID spaces
             for ( DataFactory<InputRelationship> dataFactory : relationshipDataFactory )
             {
-                try ( CharSeeker dataStream = charSeeker( dataFactory.create( config ).stream(), config, true ) )
+                try ( CharSeeker dataStream = charSeeker( new MultiReadable( dataFactory.create( config ).stream() ), config, true ) )
                 {
                     Header header = relationshipHeaderFactory.create( dataStream, config, idType );
                     verifyRelationshipHeader( header, Type.START_ID, dataStream.sourceDescription() );
@@ -236,5 +250,77 @@ public class CsvInput implements Input
     public Collector badCollector()
     {
         return badCollector;
+    }
+
+    @Override
+    public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator ) throws IOException
+    {
+        long[] nodeSample = sample( nodeDataFactory, nodeHeaderFactory,
+                ( header, data ) -> new InputNodeDeserialization( header, data, groups, idType.idsAreExternal() ), valueSizeCalculator,
+                node -> node.labels().length );
+        long[] relationshipSample = sample( relationshipDataFactory, relationshipHeaderFactory,
+                ( header, data ) -> new InputRelationshipDeserialization( header, data, groups ), valueSizeCalculator, entity -> 0 );
+        return knownEstimates(
+                nodeSample[0], relationshipSample[0],
+                nodeSample[1], relationshipSample[1],
+                nodeSample[2], relationshipSample[2],
+                nodeSample[3] );
+    }
+
+    private <E extends InputEntity> long[] sample( Iterable<DataFactory<E>> dataFactories,
+            Header.Factory headerFactory, BiFunction<Header,CharSeeker,InputEntityDeserialization<E>> deserialization,
+            ToIntFunction<Value[]> valueSizeCalculator, ToIntFunction<E> additionalCalculator ) throws IOException
+    {
+        long[] estimates = new long[4]; // [entity count, property count, property size, labels (for nodes only)]
+        for ( DataFactory<E> dataFactory : dataFactories ) // one input group
+        {
+            // One group of input files
+            Header header = null;
+            RawIterator<CharReadable,IOException> dataItems = dataFactory.create( config ).stream();
+            while ( dataItems.hasNext() )
+            {
+                CharReadable stream = dataItems.next();
+                // A maximum of 1MB chunk from the start of each file is sampled.
+                try ( CharSeeker dataStream = charSeeker( stream, config, true ) ) // sample it
+                {
+                    if ( header == null )
+                    {
+                        // Extract the header from the first file in this group
+                        header = headerFactory.create( dataStream, config, idType );
+                    }
+                    sample( estimates, stream.length(), dataStream, header,
+                            deserialization.apply( header, dataStream ), valueSizeCalculator, additionalCalculator );
+                }
+            }
+        }
+        return estimates;
+    }
+
+    private <E extends InputEntity> void sample( long[] estimates, long length, CharSeeker dataStream, Header header,
+            InputEntityDeserialization<E> deserialization, ToIntFunction<Value[]> valueSizeCalculator,
+            ToIntFunction<E> additionalCalculator )
+    {
+        try ( InputEntityDeserializer<E> deserializer = new InputEntityDeserializer<>(
+                header, dataStream, config.delimiter(), deserialization, noDecorator(), emptyValidator(), Collector.EMPTY ) )
+        {
+            long lastPos = 0;
+            int entities = 0;
+            int properties = 0;
+            int propertySize = 0;
+            int additional = 0;
+            for ( ; lastPos < ESTIMATE_SAMPLE_SIZE && deserializer.hasNext(); entities++ )
+            {
+                E entity = deserializer.next();
+                lastPos = entity.position();
+                properties += entity.properties().length / 2;
+                propertySize += calculatePropertySize( entity, valueSizeCalculator );
+                additional += additionalCalculator.applyAsInt( entity );
+            }
+            long entityCount = entities > 0 ? (long) (((double) length / lastPos) * entities) : 0;
+            estimates[0] += entityCount;
+            estimates[1] += ((double) properties / entities) * entityCount;
+            estimates[2] += ((double) propertySize / entities) * entityCount;
+            estimates[3] += ((double) additional / entities) * entityCount;
+        }
     }
 }

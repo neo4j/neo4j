@@ -64,7 +64,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("zero size argument for argument operator") {
-    val argument = Argument(Set.empty)(solved)()
+    val argument = Argument(Set.empty)(solved)
     argument.assignIds()
 
     // when
@@ -247,7 +247,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     arguments(optional.assignedId) should equal(Size(1, 0))
   }
 
-  private def leaf() = Argument(Set.empty)(solved)()
+  private def leaf() = Argument(Set.empty)(solved)
   private def applyRight(lhs:LogicalPlan, rhs:LogicalPlan) = Apply(lhs, rhs)(solved)
   private def applyLeft(lhs:LogicalPlan, rhs:LogicalPlan) = SemiApply(lhs, rhs)(solved)
   private def break(source:LogicalPlan) = Eager(source)(solved)

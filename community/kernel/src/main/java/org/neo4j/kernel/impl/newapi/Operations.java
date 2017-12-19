@@ -20,34 +20,17 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Map;
-import java.util.Optional;
 
-import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
-import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
-import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.IndexEntityType;
@@ -63,7 +46,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
  */
-public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, ExplicitIndexWrite
+public class Operations implements Write, ExplicitIndexWrite
 {
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
@@ -95,246 +78,10 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         this.propertyCursor = cursors.allocatePropertyCursor();
     }
 
-    // READ
-
-    @Override
-    public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor,
-            IndexOrder order, IndexQuery... query )
-            throws KernelException
-    {
-        assertOpen();
-        allStoreHolder.nodeIndexSeek( index, cursor, order, query );
-    }
-
-    @Override
-    public void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder order )
-            throws KernelException
-    {
-        assertOpen();
-        allStoreHolder.nodeIndexScan( index, cursor, order );
-    }
-
-    @Override
-    public void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.nodeLabelScan( label, cursor );
-    }
-
-    @Override
-    public void nodeLabelUnionScan( NodeLabelIndexCursor cursor, int... labels )
-    {
-        assertOpen();
-        allStoreHolder.nodeLabelUnionScan( cursor, labels );
-    }
-
-    @Override
-    public void nodeLabelIntersectionScan( NodeLabelIndexCursor cursor, int... labels )
-    {
-        assertOpen();
-        allStoreHolder.nodeLabelIntersectionScan( cursor, labels );
-    }
-
-    @Override
-    public Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
-    {
-        assertOpen();
-        return allStoreHolder.nodeLabelScan( label );
-    }
-
-    @Override
-    public void allNodesScan( NodeCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.allNodesScan( cursor );
-    }
-
-    @Override
-    public Scan<NodeCursor> allNodesScan()
-    {
-        assertOpen();
-        return allStoreHolder.allNodesScan();
-    }
-
-    @Override
-    public void singleNode( long reference, NodeCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.singleNode( reference, cursor );
-    }
-
-    @Override
-    public void singleRelationship( long reference, RelationshipScanCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.singleRelationship( reference, cursor );
-    }
-
-    @Override
-    public void allRelationshipsScan( RelationshipScanCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.allRelationshipsScan( cursor );
-    }
-
-    @Override
-    public Scan<RelationshipScanCursor> allRelationshipsScan()
-    {
-        assertOpen();
-        return allStoreHolder.allRelationshipsScan();
-    }
-
-    @Override
-    public void relationshipLabelScan( int label, RelationshipScanCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.relationshipLabelScan( label, cursor );
-    }
-
-    @Override
-    public Scan<RelationshipScanCursor> relationshipLabelScan( int label )
-    {
-        assertOpen();
-        return allStoreHolder.relationshipLabelScan( label );
-    }
-
-    @Override
-    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.relationshipGroups( nodeReference, reference, cursor );
-    }
-
-    @Override
-    public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.relationships( nodeReference, reference, cursor );
-    }
-
-    @Override
-    public void nodeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.nodeProperties( reference, cursor );
-    }
-
-    @Override
-    public void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.relationshipProperties( reference, cursor );
-    }
-
-    @Override
-    public void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
-    {
-        assertOpen();
-        allStoreHolder.graphProperties( cursor );
-    }
-
-    @Override
-    public void futureNodeReferenceRead( long reference )
-    {
-        assertOpen();
-        allStoreHolder.futureNodeReferenceRead( reference );
-    }
-
-    @Override
-    public void futureRelationshipsReferenceRead( long reference )
-    {
-        assertOpen();
-        allStoreHolder.futureRelationshipsReferenceRead( reference );
-    }
-
-    @Override
-    public void futureNodePropertyReferenceRead( long reference )
-    {
-        assertOpen();
-        allStoreHolder.futureNodePropertyReferenceRead( reference );
-    }
-
-    @Override
-    public void futureRelationshipPropertyReferenceRead( long reference )
-    {
-        assertOpen();
-        allStoreHolder.futureRelationshipPropertyReferenceRead( reference );
-    }
-
-    // EXPLICIT INDEX READ
-
-    @Override
-    public void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value )
-            throws KernelException
-    {
-        assertOpen();
-        allStoreHolder.nodeExplicitIndexLookup( cursor, index, key, value );
-    }
-
-    @Override
-    public void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query )
-            throws KernelException
-    {
-        assertOpen();
-        allStoreHolder.nodeExplicitIndexQuery( cursor, index, query );
-    }
-
-    @Override
-    public void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query )
-            throws KernelException
-    {
-        assertOpen();
-        allStoreHolder.nodeExplicitIndexQuery( cursor, index, key, query );
-    }
-
-    @Override
-    public void relationshipExplicitIndexGet( RelationshipExplicitIndexCursor cursor, String index, String key,
-            Value value, long source, long target ) throws KernelException
-    {
-        assertOpen();
-        allStoreHolder.relationshipExplicitIndexGet( cursor, index, key, value, source, target );
-    }
-
-    @Override
-    public void relationshipExplicitIndexQuery( RelationshipExplicitIndexCursor cursor, String index, Object query,
-            long source, long target ) throws KernelException
-    {
-        assertOpen();
-        allStoreHolder.relationshipExplicitIndexQuery( cursor, index, query, source, target );
-    }
-
-    @Override
-    public void relationshipExplicitIndexQuery( RelationshipExplicitIndexCursor cursor, String index, String key,
-            Object query, long source, long target ) throws KernelException
-    {
-        assertOpen();
-        allStoreHolder.relationshipExplicitIndexQuery( cursor, index, key, query, source, target );
-    }
-
-    // SCHEMA READ
-
-    @Override
-    public CapableIndexReference index( int label, int... properties )
-    {
-        assertOpen();
-        return allStoreHolder.index( label, properties );
-    }
-
-    private void assertOpen()
-    {
-        if ( ktx.isTerminated() )
-        {
-            Status terminationReason = ktx.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-            throw new TransactionTerminatedException( terminationReason );
-        }
-    }
-
-    // WRITE
-
     @Override
     public long nodeCreate()
     {
-        assertOpen();
+        ktx.assertOpen();
         long nodeId = statement.reserveNode();
         ktx.txState().nodeDoCreate( nodeId );
         return nodeId;
@@ -343,7 +90,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     @Override
     public boolean nodeDelete( long node ) throws AutoIndexingKernelException
     {
-        assertOpen();
+        ktx.assertOpen();
 
         if ( ktx.hasTxStateWithChanges() )
         {
@@ -375,14 +122,14 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     @Override
     public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode )
     {
-        assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void relationshipDelete( long relationship )
     {
-        assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException();
     }
 
@@ -392,7 +139,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
         acquireSharedLabelLock( nodeLabel );
         acquireExclusiveNodeLock( node );
 
-        assertOpen();
+        ktx.assertOpen();
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
@@ -415,7 +162,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public boolean nodeRemoveLabel( long node, int nodeLabel ) throws EntityNotFoundException
     {
         acquireExclusiveNodeLock( node );
-        assertOpen();
+        ktx.assertOpen();
 
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
@@ -439,7 +186,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             throws EntityNotFoundException, AutoIndexingKernelException
     {
         acquireExclusiveNodeLock( node );
-        assertOpen();
+        ktx.assertOpen();
 
         Value existingValue = readNodeProperty( node, propertyKey );
 
@@ -469,7 +216,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
             throws EntityNotFoundException, AutoIndexingKernelException
     {
         acquireExclusiveNodeLock( node );
-        assertOpen();
+        ktx.assertOpen();
         Value existingValue = readNodeProperty( node, propertyKey );
 
         if ( existingValue != NO_VALUE )
@@ -486,28 +233,28 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     @Override
     public Value relationshipSetProperty( long relationship, int propertyKey, Value value )
     {
-        assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public Value relationshipRemoveProperty( long node, int propertyKey )
     {
-        assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public Value graphSetProperty( int propertyKey, Value value )
     {
-        assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public Value graphRemoveProperty( int propertyKey )
     {
-        assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException();
     }
 
@@ -515,14 +262,14 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
             throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
     {
-        assertOpen();
+        ktx.assertOpen();
         ktx.explicitIndexTxState().nodeChanges( indexName ).addNode( node, key, value );
     }
 
     @Override
     public void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen();
+        ktx.assertOpen();
         ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node );
     }
 
@@ -530,7 +277,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
             throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen();
+        ktx.assertOpen();
         ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node, key, value );
     }
 
@@ -538,21 +285,21 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public void nodeRemoveFromExplicitIndex( String indexName, long node, String key )
             throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen();
+        ktx.assertOpen();
         ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node, key );
     }
 
     @Override
     public void nodeExplicitIndexCreate( String indexName, Map<String,String> customConfig )
     {
-        assertOpen();
+        ktx.assertOpen();
         ktx.explicitIndexTxState().createIndex( IndexEntityType.Node, indexName, customConfig );
     }
 
     @Override
     public void nodeExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
-        assertOpen();
+        ktx.assertOpen();
         allStoreHolder.getOrCreateNodeIndexConfig( indexName, customConfig );
     }
 
@@ -567,7 +314,7 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
     {
-        assertOpen();
+        ktx.assertOpen();
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key, value );
     }
 
@@ -589,14 +336,14 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     @Override
     public void relationshipExplicitIndexCreate( String indexName, Map<String,String> customConfig )
     {
-        assertOpen();
+        ktx.assertOpen();
         ktx.explicitIndexTxState().createIndex( IndexEntityType.Relationship, indexName, customConfig );
     }
 
     @Override
     public void relationshipExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
-        assertOpen();
+        ktx.assertOpen();
         allStoreHolder.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
@@ -658,5 +405,30 @@ public class Operations implements Read, ExplicitIndexRead, SchemaRead, Write, E
     private void acquireSharedLabelLock( int labelId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+    }
+
+    public ExplicitIndexRead indexRead()
+    {
+        return allStoreHolder;
+    }
+
+    public SchemaRead schemaRead()
+    {
+        return allStoreHolder;
+    }
+
+    public Read dataRead()
+    {
+        return allStoreHolder;
+    }
+
+    public NodeCursor nodeCursor()
+    {
+        return nodeCursor;
+    }
+
+    public PropertyCursor propertyCursor()
+    {
+        return propertyCursor;
     }
 }

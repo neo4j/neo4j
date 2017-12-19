@@ -26,7 +26,6 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
@@ -65,7 +64,8 @@ public class UdcSettings implements LoadableConfig
 
     /** Configuration key for overriding the source parameter in UDC */
     @Internal
-    public static final Setting<String> udc_source = buildSetting( "unsupported.dbms.udc.source", STRING, Settings.NO_DEFAULT ).constraint(
+    public static final Setting<String> udc_source = buildSetting( "unsupported.dbms.udc.source", STRING, "maven" )
+            .constraint(
             illegalValueMessage( "Must be a valid source", matches( ANY ) ) ).build();
 
     /** Unique registration id */

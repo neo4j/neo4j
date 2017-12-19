@@ -90,21 +90,8 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     }
 
     @Override
-    public int getCachePageSizeHint()
-    {
-        return 8192;
-    }
-
-    @Override
-    public boolean isCachePageSizeHintStrict()
-    {
-        return false;
-    }
-
-    @Override
     public long getRequiredBufferAlignment()
     {
         return 1;
     }
-
 }

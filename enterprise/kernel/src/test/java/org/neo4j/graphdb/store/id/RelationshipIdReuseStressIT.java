@@ -48,6 +48,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.rule.DatabaseRule;
@@ -55,15 +56,17 @@ import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
 import static org.junit.Assert.assertThat;
 
+import static java.lang.System.currentTimeMillis;
+
 public class RelationshipIdReuseStressIT
 {
     @Rule
     public DatabaseRule embeddedDatabase = new EnterpriseDatabaseRule()
             .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.RELATIONSHIP.name() );
 
-    private ExecutorService executorService = Executors.newCachedThreadPool();
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    private String NAME_PROPERTY = "name";
+    private final String NAME_PROPERTY = "name";
     private static final int NUMBER_OF_BANDS = 3;
     private static final int NUMBER_OF_CITIES = 10;
 
@@ -83,18 +86,25 @@ public class RelationshipIdReuseStressIT
 
         AtomicBoolean stopFlag = new AtomicBoolean( false );
         RelationshipsCreator relationshipsCreator = new RelationshipsCreator( stopFlag, bandLabel, cityLabel );
+        RelationshipRemover relationshipRemover = new RelationshipRemover( bandLabel, cityLabel, stopFlag );
+        IdController idController = embeddedDatabase.getDependencyResolver().resolveDependency( IdController.class );
 
-        List<Future> futures = new ArrayList<>();
-        futures.add( startRelationshipRemoval( bandLabel, cityLabel, stopFlag ) );
-        futures.add( startRelationshipsCreator( relationshipsCreator ) );
+        List<Future<?>> futures = new ArrayList<>();
+        futures.add( executorService.submit( relationshipRemover ) );
+        futures.add( executorService.submit( relationshipsCreator ) );
         futures.add( startRelationshipTypesCalculator( bandLabel, stopFlag ) );
         futures.add( startRelationshipCalculator( bandLabel, stopFlag ) );
 
-        TimeUnit.SECONDS.sleep( 5 );
+        long startTime = currentTimeMillis();
+        while ( (currentTimeMillis() - startTime) < 5_000 ||
+                relationshipsCreator.getCreatedRelationships() < 1_000 ||
+                relationshipRemover.getRemovedRelationships() < 100 )
+        {
+            TimeUnit.MILLISECONDS.sleep( 500 );
+            idController.maintenance(); // just to make sure maintenance happens
+        }
         stopFlag.set( true );
         executorService.shutdown();
-        executorService.awaitTermination( 5, TimeUnit.SECONDS );
-
         completeFutures( futures );
 
         long highestPossibleIdInUse = getHighestUsedIdForRelationships();
@@ -109,10 +119,10 @@ public class RelationshipIdReuseStressIT
         return idGeneratorFactory.get( IdType.RELATIONSHIP ).getHighestPossibleIdInUse();
     }
 
-    private void completeFutures( List<Future> futures )
+    private void completeFutures( List<Future<?>> futures )
             throws InterruptedException, ExecutionException
     {
-        for ( Future future : futures )
+        for ( Future<?> future : futures )
         {
             future.get();
         }
@@ -142,26 +152,14 @@ public class RelationshipIdReuseStressIT
         }
     }
 
-    private Future<?> startRelationshipsCreator( RelationshipsCreator relationshipsCreator )
-    {
-        return executorService.submit( relationshipsCreator );
-    }
-
     private Future<?> startRelationshipCalculator( final Label bandLabel, final AtomicBoolean stopFlag )
-            throws ExecutionException, InterruptedException
     {
         return executorService.submit( new RelationshipCalculator( stopFlag, bandLabel ) );
     }
 
     private Future<?> startRelationshipTypesCalculator( final Label bandLabel, final AtomicBoolean stopFlag )
-            throws ExecutionException, InterruptedException
     {
         return executorService.submit( new RelationshipTypeCalculator( stopFlag, bandLabel ) );
-    }
-
-    private Future<?> startRelationshipRemoval( final Label bandLabel, final Label cityLabel, AtomicBoolean stopFlag )
-    {
-        return executorService.submit( new RelationshipRemover( bandLabel, cityLabel, stopFlag ) );
     }
 
     private Direction getRandomDirection()
@@ -353,7 +351,9 @@ public class RelationshipIdReuseStressIT
     {
         private final Label bandLabel;
         private final Label cityLabel;
-        private AtomicBoolean stopFlag;
+        private final AtomicBoolean stopFlag;
+
+        private volatile int removalCount;
 
         RelationshipRemover( Label bandLabel, Label cityLabel, AtomicBoolean stopFlag )
         {
@@ -380,6 +380,7 @@ public class RelationshipIdReuseStressIT
 
                     }
                     transaction.success();
+                    removalCount++;
                 }
                 catch ( DeadlockDetectedException | NotFoundException ignored )
                 {
@@ -387,6 +388,11 @@ public class RelationshipIdReuseStressIT
                 }
                 LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 15 ) );
             }
+        }
+
+        int getRemovedRelationships()
+        {
+            return removalCount;
         }
 
         private void deleteRelationshipOfRandomType()

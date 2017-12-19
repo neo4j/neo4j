@@ -50,7 +50,7 @@ import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -87,7 +87,9 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
  */
 public class UdcExtensionImplIT extends LocalServerTestBase
 {
-    private static final String VersionPattern = "(\\d\\.\\d+((\\.|\\-).*)?)|(dev)";
+    private static final String VersionPattern = "(\\d\\.\\d+(([.-]).*)?)|(dev)";
+    private static final Condition<Integer> IS_ZERO = value -> value == 0;
+    private static final Condition<Integer> IS_GREATER_THAN_ZERO = value -> value > 0;
 
     @Rule
     public TestDirectory path = TestDirectory.testDirectory();
@@ -161,7 +163,6 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         // When
         graphdb = new TestGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ) ).
-                loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
@@ -186,6 +187,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     public void shouldBeAbleToSpecifySourceWithConfig() throws Exception
     {
         // When
+        config.put( UdcSettings.udc_source.name(), "unit-testing" );
         graphdb = createDatabase( config );
 
         // Then
@@ -252,20 +254,6 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldNotBeAbleToSpecifyRegistrationIdWithConfig() throws Exception
-    {
-        // Given
-        config.put( UdcSettings.udc_registration_key.name(), "marketoid" );
-
-        // When
-        graphdb = createDatabase( config );
-
-        // Then
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
-    }
-
-    @Test
     public void shouldBeAbleToReadDefaultRegistration() throws Exception
     {
         // When
@@ -273,7 +261,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
 
         // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
+        assertEquals( "unreg", handler.getQueryMap().get( REGISTRATION ) );
     }
 
     @Test
@@ -404,15 +392,6 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldReadSourceFromJar() throws Exception
-    {
-        graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        String source = handler.getQueryMap().get( SOURCE );
-        assertEquals( "unit-testing", source );
-    }
-
-    @Test
     public void shouldOverrideSourceWithSystemProperty() throws Exception
     {
         withSystemProperty( UdcSettings.udc_source.name(), "overridden", () ->
@@ -442,15 +421,6 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void testUdcPropertyFileKeysMatchSettings() throws Exception
-    {
-        Map<String,String> config =
-                MapUtil.load( getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc" + ".properties" ) );
-        assertEquals( "test-reg", config.get( UdcSettings.udc_registration_key.name() ) );
-        assertEquals( "unit-testing", config.get( UdcSettings.udc_source.name() ) );
-    }
-
-    @Test
     public void shouldFilterPlusBuildNumbers() throws Exception
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9.0-M01+00001" ),
@@ -471,14 +441,27 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ), is( equalTo( "1.9" ) ) );
     }
 
+    @Test
+    public void shouldUseTheCustomConfiguration() throws Exception
+    {
+        // Given
+        config.put( UdcSettings.udc_source.name(), "my_source" );
+        config.put( UdcSettings.udc_registration_key.name(), "my_key" );
+
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
+        Config config = ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency( Config.class );
+
+        assertEquals( "my_source", config.get( UdcSettings.udc_source ) );
+        assertEquals( "my_key", config.get( UdcSettings.udc_registration_key ) );
+    }
+
     private interface Condition<T>
     {
         boolean isTrue( T value );
     }
-
-    private static final Condition<Integer> IS_ZERO = value -> value == 0;
-
-    private static final Condition<Integer> IS_GREATER_THAN_ZERO = value -> value > 0;
 
     private void assertGotSuccessWithRetry( Condition<Integer> condition ) throws Exception
     {
@@ -521,8 +504,6 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         GraphDatabaseBuilder graphDatabaseBuilder =
                 (storeDir != null) ? factory.newImpermanentDatabaseBuilder( storeDir )
                                    : factory.newImpermanentDatabaseBuilder();
-        graphDatabaseBuilder.loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
-
         if ( config != null )
         {
             graphDatabaseBuilder.setConfig( config );

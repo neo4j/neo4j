@@ -20,8 +20,10 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Collection;
+import java.util.function.LongFunction;
 
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -31,6 +33,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
+import org.neo4j.unsafe.impl.batchimport.store.PrepareIdSequence;
 
 /**
  * Updates a batch of records to a store.
@@ -41,34 +44,33 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
 {
     protected final RecordStore<RECORD> store;
     private final int recordSize;
+    private final PrepareIdSequence prepareIdSequence;
     private long recordsUpdated;
 
-    public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store )
+    public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
+            PrepareIdSequence prepareIdSequence )
     {
         super( control, "v", config, config.parallelRecordWrites() ? 0 : 1 );
         this.store = store;
+        this.prepareIdSequence = prepareIdSequence;
         this.recordSize = store.getRecordSize();
     }
 
     @Override
     protected void process( RECORD[] batch, BatchSender sender ) throws Throwable
     {
+        LongFunction<IdSequence> idSequence = prepareIdSequence.apply( store );
         int recordsUpdatedInThisBatch = 0;
         for ( RECORD record : batch )
         {
             if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
             {
-                update( record );
+                store.prepareForCommit( record, idSequence.apply( record.getId() ) );
+                store.updateRecord( record );
                 recordsUpdatedInThisBatch++;
             }
         }
         recordsUpdated += recordsUpdatedInThisBatch;
-    }
-
-    protected void update( RECORD record ) throws Throwable
-    {
-        store.prepareForCommit( record );
-        store.updateRecord( record );
     }
 
     @Override
