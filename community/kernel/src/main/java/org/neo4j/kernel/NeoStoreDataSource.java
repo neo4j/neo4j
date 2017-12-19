@@ -648,7 +648,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,
                 tracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
 
-        long recurringPeriod = threshold.checkFrequencyMillis().min().orElse( TimeUnit.SECONDS.toMillis( 10 ) );
+        long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
                 recurringPeriod, databaseHealth );
 

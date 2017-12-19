@@ -47,4 +47,10 @@ public class VolumetricCheckPointThreshold extends AbstractCheckPointThreshold
     public void checkPointHappened( long transactionId )
     {
     }
+
+    @Override
+    public long checkFrequencyMillis()
+    {
+        return DEFAULT_CHECKING_FREQUENCY_MILLIS;
+    }
 }

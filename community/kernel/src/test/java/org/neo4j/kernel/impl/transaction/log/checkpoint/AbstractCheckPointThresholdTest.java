@@ -81,6 +81,12 @@ public class AbstractCheckPointThresholdTest
         }
 
         @Override
+        public long checkFrequencyMillis()
+        {
+            return DEFAULT_CHECKING_FREQUENCY_MILLIS;
+        }
+
+        @Override
         protected boolean thresholdReached( long lastCommittedTransactionId )
         {
             return reached;

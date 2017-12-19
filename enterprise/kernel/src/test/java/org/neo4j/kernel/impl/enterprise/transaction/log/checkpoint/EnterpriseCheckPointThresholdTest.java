@@ -84,11 +84,11 @@ public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSu
     @Test
     public void continuousPolicyMustAlwaysTriggerCheckPoints() throws Exception
     {
-        withPolicy( "continuously" );
+        withPolicy( "continuous" );
         CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
-        assertThat( threshold.checkFrequencyMillis().min().getAsLong(), is( 0L ) );
+        assertThat( threshold.checkFrequencyMillis(), is( 0L ) );
 
         assertTrue( threshold.isCheckPointingNeeded( 2, triggered ) );
         threshold.checkPointHappened( 3 );

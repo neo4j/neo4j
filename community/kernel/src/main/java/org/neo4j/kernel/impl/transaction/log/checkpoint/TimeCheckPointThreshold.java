@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.time.Clock;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.LongStream;
 
 class TimeCheckPointThreshold extends AbstractCheckPointThreshold
 {
@@ -63,8 +62,8 @@ class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     }
 
     @Override
-    public LongStream checkFrequencyMillis()
+    public long checkFrequencyMillis()
     {
-        return LongStream.of( timeMillisThreshold );
+        return timeMillisThreshold;
     }
 }

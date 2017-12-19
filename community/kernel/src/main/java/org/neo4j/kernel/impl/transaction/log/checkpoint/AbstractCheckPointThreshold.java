@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.util.function.Consumer;
-import java.util.stream.LongStream;
 
 /**
  * Abstract class that implement common logic for making the consumer to consume the description of this
@@ -44,12 +43,6 @@ public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
             return true;
         }
         return false;
-    }
-
-    @Override
-    public LongStream checkFrequencyMillis()
-    {
-        return LongStream.empty();
     }
 
     protected abstract boolean thresholdReached( long lastCommittedTransactionId );

@@ -204,9 +204,9 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     public void timeBasedThresholdMustSuggestSchedulingFrequency() throws Exception
     {
         long defaultInterval = intervalTime.toMillis();
-        assertThat( createThreshold().checkFrequencyMillis().min().getAsLong(), is( defaultInterval ) );
+        assertThat( createThreshold().checkFrequencyMillis(), is( defaultInterval ) );
 
         withIntervalTime( "100ms" );
-        assertThat( createThreshold().checkFrequencyMillis().min().getAsLong(), is( 100L ) );
+        assertThat( createThreshold().checkFrequencyMillis(), is( 100L ) );
     }
 }

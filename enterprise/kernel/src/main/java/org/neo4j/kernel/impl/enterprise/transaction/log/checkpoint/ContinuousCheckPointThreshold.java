@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 
-import java.util.stream.LongStream;
-
 import org.neo4j.kernel.impl.transaction.log.checkpoint.AbstractCheckPointThreshold;
 
 class ContinuousCheckPointThreshold extends AbstractCheckPointThreshold
@@ -47,8 +45,8 @@ class ContinuousCheckPointThreshold extends AbstractCheckPointThreshold
     }
 
     @Override
-    public LongStream checkFrequencyMillis()
+    public long checkFrequencyMillis()
     {
-        return LongStream.of( 0 );
+        return 0;
     }
 }
