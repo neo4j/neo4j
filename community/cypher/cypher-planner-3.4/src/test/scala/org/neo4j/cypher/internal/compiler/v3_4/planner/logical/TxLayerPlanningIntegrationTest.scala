@@ -28,34 +28,42 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
 
   test("MATCH and CREATE") {
     val plan = planFor("MATCH (a) CREATE (b)")._2
-    plan.asInstanceOf[EmptyResult] should readFromLayer(1)
-    plan.lhs.get.asInstanceOf[CreateNode] should writeToLayer(1)
-    plan.lhs.get.lhs.get.asInstanceOf[AllNodesScan] should readFromLayer(0)
+    inSeqAssert(plan,
+      (classOf[AllNodesScan], _ should readFromLayer(0)),
+      (classOf[CreateNode], _ should writeToLayer(1)),
+      (classOf[EmptyResult], _ should readFromLayer(1))
+    )
   }
 
   test("MATCH SET RETURN") {
     val plan = planFor("MATCH (n)-[r]-(m) SET r.val = r.val + 1 RETURN r.val AS rv")._2
-    plan.asInstanceOf[Projection] should readFromLayer(1)
-    plan.lhs.get.lhs.get.asInstanceOf[SetRelationshipPropery] should writeToLayer(1)
-    plan.lhs.get.lhs.get.lhs.get.asInstanceOf[Expand] should readFromLayer(0)
+    inSeqAssert(plan,
+      (classOf[Expand], _ should readFromLayer(0)),
+      (classOf[SetRelationshipPropery], _ should writeToLayer(1)),
+      (classOf[Projection], _ should readFromLayer(1))
+    )
   }
 
   test("MATCH and triple SET") {
     val plan = planFor("MATCH (a:A),(b:B),(c:C) SET a.prop = b.prop SET b.prop = c.prop SET c.prop = 42")._2
-    plan.asInstanceOf[EmptyResult] should readFromLayer(3)
-    plan.lhs.get.asInstanceOf[SetNodeProperty] should writeToLayer(3)
-    plan.lhs.get.lhs.get.asInstanceOf[SetNodeProperty] should writeToLayer(2)
-    plan.lhs.get.lhs.get.lhs.get.asInstanceOf[SetNodeProperty] should writeToLayer(1)
-    plan.lhs.get.lhs.get.lhs.get.lhs.get.asInstanceOf[CartesianProduct] should readFromLayer(0)
+    inSeqAssert(plan,
+      (classOf[CartesianProduct], _ should readFromLayer(0)),
+      (classOf[SetNodeProperty], _ should writeToLayer(1)),
+      (classOf[SetNodeProperty], _ should writeToLayer(2)),
+      (classOf[SetNodeProperty], _ should writeToLayer(3)),
+      (classOf[EmptyResult], _ should readFromLayer(3))
+    )
   }
 
   test("DELETE and MERGE") {
     val plan = planFor("MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)")._2
-    plan.asInstanceOf[Aggregation] should readFromLayer(2)
-    plan.lhs.get.rhs.get.lhs.get.lhs.get.lhs.get.asInstanceOf[AllNodesScan] should readFromLayer(1) // MATCH part of merge
-    plan.lhs.get.rhs.get.rhs.get.asInstanceOf[SetNodeProperty] should writeToLayer(2) // Set property for CREATE part of merge
-    plan.lhs.get.lhs.get.lhs.get.asInstanceOf[DeleteNode] should writeToLayer(1)
-    plan.lhs.get.lhs.get.lhs.get.lhs.get.asInstanceOf[AllNodesScan] should readFromLayer(0) // First match
+    inSeqAssert(plan,
+      (classOf[AllNodesScan], _ should readFromLayer(0)), // First match
+      (classOf[DeleteNode], _ should writeToLayer(1)),
+      (classOf[AllNodesScan], _ should readFromLayer(1)), // MATCH part of merge
+      (classOf[SetNodeProperty], _ should writeToLayer(2)), // Set property for CREATE part of merge
+      (classOf[Aggregation], _ should readFromLayer(2))
+    )
   }
 
   def readFromLayer(i: Int): Matcher[LogicalPlan] = new Matcher[LogicalPlan] {
@@ -76,6 +84,28 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
         rawNegatedFailureMessage = s"Plan $plan should read write to $i"
       )
     }
+  }
+
+  def depthFirstLeftToRight(lp: LogicalPlan): List[LogicalPlan] = {
+    lp.lhs.fold(List.empty[LogicalPlan])(depthFirstLeftToRight) ++
+      lp.rhs.fold(List.empty[LogicalPlan])(depthFirstLeftToRight) :+
+      lp
+  }
+
+  def inSeqAssert(plan: LogicalPlan, assertions: (Class[_ <: LogicalPlan], (LogicalPlan) => Unit)*): Unit = {
+    val plans = depthFirstLeftToRight(plan)
+
+    def recAssert(restOfPlans: List[LogicalPlan], restOfAssertions: List[(Class[_ <: LogicalPlan], (LogicalPlan) => Unit)]): Unit = (restOfPlans, restOfAssertions) match {
+      case (_, Nil) => //Done
+      case (Nil, as :: _) => fail(s"Expected ${as._1.getSimpleName} in the rest of the plan, but not found")
+      case (p :: moreP, as :: moreA) if p.getClass == as._1 =>
+        val assertIt = as._2
+        assertIt(p)
+        recAssert(moreP, moreA)
+      case (_ :: moreP, _) => recAssert(moreP, restOfAssertions)
+    }
+
+    recAssert(plans, assertions.toList)
   }
 
 }
