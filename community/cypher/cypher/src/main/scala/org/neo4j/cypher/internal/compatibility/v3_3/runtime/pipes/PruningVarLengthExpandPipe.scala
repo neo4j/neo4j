@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
@@ -264,11 +265,20 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     def next(): ExecutionContext = {
       val endNode =
         if (depth == -1) {
-          push( node = getNodeFromRow(inputRow),
-                pathLength = 0,
-                expandMap = Primitive.longObjectMap[NodeState](),
-                prevLocalRelIndex = -1,
-                prevNodeState = NodeState.NOOP )
+          val fromValue = inputRow.getOrElse(fromName, error(s"Required variable `$fromName` is not in context"))
+          fromValue match {
+            case node: NodeValue =>
+              push( node = node,
+                    pathLength = 0,
+                    expandMap = Primitive.longObjectMap[NodeState](),
+                    prevLocalRelIndex = -1,
+                    prevNodeState = NodeState.NOOP )
+
+            case x: Value if x == Values.NO_VALUE =>
+              null
+
+            case _ => error(s"Expected variable `$fromName` to be a node, got $fromValue")
+          }
         } else {
           var maybeEndNode: NodeValue = null
           while ( depth >= 0 && maybeEndNode == null ) {
@@ -301,8 +311,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       depth -= 1
     }
 
-    private def getNodeFromRow(row: ExecutionContext): NodeValue =
-      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[NodeValue]
+    private def error(msg: String) = throw new InternalException(msg)
   }
 
   class FullyPruningIterator(
