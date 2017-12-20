@@ -412,7 +412,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // Overflow
             // We will overwrite rightKey in structurePropagation, so copy it over to a place holder
-            layout.copyKey( structurePropagation.rightKey, newKeyPlaceHolder );
+            layout.copyKey( primKey, newKeyPlaceHolder );
             splitInternal( cursor, structurePropagation, newKeyPlaceHolder, rightChild, keyCount,
                     stableGeneration, unstableGeneration );
             return;

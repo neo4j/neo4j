@@ -433,8 +433,9 @@ class ConsistencyChecker<KEY>
             node.keyAt( cursor, readKey, pos, type );
             if ( !range.inRange( readKey ) )
             {
-                cursor.setCursorException( "Expected range for this node is " + range + " but found " + readKey +
-                        " in position " + pos + ", with key count " + keyCount );
+                cursor.setCursorException(
+                        format( "Expected range for this node is %n%s%n but found %s in position %d, with keyCount %d on page %d",
+                        range, readKey, pos, keyCount, cursor.getCurrentPageId() ) );
             }
             if ( !first )
             {

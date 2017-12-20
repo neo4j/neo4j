@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.util.Arrays;
 import java.util.StringJoiner;
 
 import org.neo4j.collection.primitive.PrimitiveIntStack;
@@ -197,6 +198,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // Remove for offsetArray
         removeSlotAt( cursor, keyPos, keyCount, keyPosOffsetInternal( 0 ), keyChildSize() );
+
+        // Zero pad empty area
+        zeroPad( cursor, keyPosOffsetInternal( keyCount - 1 ), bytesKeyOffset() + childSize() );
     }
 
     @Override
@@ -218,6 +222,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // Move last child
         cursor.copyTo( childOffset( keyCount ), cursor, childOffset( keyCount - 1 ), childSize() );
+
+        // Zero pad empty area
+        zeroPad( cursor, keyPosOffsetInternal( keyCount - 1 ), bytesKeyOffset() + childSize() );
     }
 
     @Override
@@ -466,9 +473,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int prevAllocOffset = getAllocOffset( cursor );
         setAllocOffset( cursor, aliveRangeOffset );
 
-        // Pad reclaimed area with zeroes
-        cursor.setOffset( prevAllocOffset );
-        cursor.putBytes( aliveRangeOffset - prevAllocOffset, (byte) 0 );
+        // Zero pad reclaimed area
+        zeroPad( cursor, prevAllocOffset, aliveRangeOffset - prevAllocOffset );
 
         // Update offset array
         int keyCount = keyCount( cursor );
@@ -763,6 +769,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int targetOffset = includeLeftMostChild ? childOffset( 0 ) : childOffset( 1 );
         fromCursor.copyTo( childFromOffset, toCursor, targetOffset, lengthInBytes );
 
+        // Move actual keys and update pointers
         int toAllocOffset = getAllocOffset( toCursor );
         for ( int i = 0; i < count; i++, toPos++ )
         {
@@ -772,6 +779,15 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             putKeyOffset( toCursor, toAllocOffset );
         }
         setAllocOffset( toCursor, toAllocOffset );
+
+        // Zero pad empty area
+        zeroPad( fromCursor, childFromOffset, lengthInBytes );
+    }
+
+    private void zeroPad( PageCursor fromCursor, int childFromOffset, int lengthInBytes )
+    {
+        fromCursor.setOffset( childFromOffset );
+        fromCursor.putBytes( lengthInBytes, (byte) 0 );
     }
 
     private int transferRawKey( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toAllocOffset )
@@ -1032,7 +1048,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return "TreeNodeDynamicSize[pageSize:" + pageSize + ", keyValueSizeCap:" + keyValueSizeCap + "]";
     }
 
-    private String asString( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
+    private String asString( PageCursor cursor, boolean includeValue, boolean includeAllocSpace,
+            long stableGeneration, long unstableGeneration )
     {
         int currentOffset = cursor.getOffset();
         // [header] <- dont care
@@ -1048,6 +1065,13 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // OFFSET ARRAY
         String offsetArray = readOffsetArray( cursor, stableGeneration, unstableGeneration, type );
+
+        // ALLOC SPACE
+        String allocSpace = "";
+        if ( includeAllocSpace )
+        {
+            allocSpace = readAllocSpace( cursor, allocOffset, type );
+        }
 
         // KEYS
         KEY readKey = layout.newKey();
@@ -1092,14 +1116,32 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
 
         cursor.setOffset( currentOffset );
-        return additionalHeader + offsetArray + " " + keys;
+        return additionalHeader + offsetArray + " " + allocSpace + " " + keys;
     }
 
     @SuppressWarnings( "unused" )
     @Override
-    void printNode( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
+    void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration )
     {
-        System.out.println( asString( cursor, includeValue, stableGeneration, unstableGeneration ) );
+        System.out.println( asString( cursor, includeValue, includeAllocSpace, stableGeneration, unstableGeneration ) );
+    }
+
+    private String readAllocSpace( PageCursor cursor, int allocOffset, Type type )
+    {
+        int keyCount = keyCount( cursor );
+        int endOfOffsetArray = type == INTERNAL ? keyPosOffsetInternal( keyCount ) : keyPosOffsetLeaf( keyCount );
+        cursor.setOffset( endOfOffsetArray );
+        int bytesToRead = allocOffset - endOfOffsetArray;
+        byte[] allocSpace = new byte[bytesToRead];
+        cursor.getBytes( allocSpace );
+        for ( byte b : allocSpace )
+        {
+            if ( b != 0 )
+            {
+                return "v" + endOfOffsetArray + ">" + bytesToRead + "|" + Arrays.toString( allocSpace );
+            }
+        }
+        return "v" + endOfOffsetArray + ">" + bytesToRead + "|[0...]";
     }
 
     private String readOffsetArray( PageCursor cursor, long stableGeneration, long unstableGeneration, Type type )

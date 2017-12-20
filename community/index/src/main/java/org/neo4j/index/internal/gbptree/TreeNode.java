@@ -353,7 +353,7 @@ abstract class TreeNode<KEY,VALUE>
 
     // Useful for debugging
     @SuppressWarnings( "unused" )
-    void printNode( PageCursor cursor, boolean includeValue, long stableGeneration, long unstableGeneration )
+    void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration )
     {   // default no-op
     }
 }
