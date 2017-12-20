@@ -189,3 +189,24 @@ Feature: IndexAcceptance
       | p                             |
     And no side effects
 
+  Scenario: Index seek should handle null value
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :Person(name)
+      """
+    And having executed:
+      """
+      CREATE (:Person {name: 'Jack'})
+      CREATE (:Person {name: 'Jill'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      WHERE p.name = null
+      RETURN p
+      """
+    Then the result should be:
+      | p                             |
+    And no side effects
+
