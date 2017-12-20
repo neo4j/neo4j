@@ -18,7 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-Feature: ConstraintAcceptance
+Feature: IndexAcceptance
 
   Scenario: Handling numerical literal on the left when using an index
     Given an empty graph
@@ -167,4 +167,25 @@ Feature: ConstraintAcceptance
       | +nodes      | 1 |
       | +labels     | 2 |
       | +properties | 1 |
+
+  Scenario: STARTS WITH should handle null prefix
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :Person(name)
+      """
+    And having executed:
+      """
+      CREATE (:Person {name: 'Jack'})
+      CREATE (:Person {name: 'Jill'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      WHERE p.name STARTS WITH null
+      RETURN p
+      """
+    Then the result should be:
+      | p                             |
+    And no side effects
 
