@@ -62,3 +62,6 @@ Ordering for lists, descending
 
 //SkipLimitAcceptance.feature - Unsupported limit syntax
 Negative parameter for LIMIT should not generate errors
+
+//IndexAcceptance.feature
+STARTS WITH should handle null prefix
