@@ -665,6 +665,10 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private void logIndexStateSummary( String method, Map<InternalIndexState,List<IndexLogRecord>> indexStates )
     {
+        if ( indexStates.isEmpty() )
+        {
+            return;
+        }
         int mostPopularStateCount = Integer.MIN_VALUE;
         InternalIndexState mostPopularState = null;
         for ( Map.Entry<InternalIndexState,List<IndexLogRecord>> indexStateEntry : indexStates.entrySet() )
