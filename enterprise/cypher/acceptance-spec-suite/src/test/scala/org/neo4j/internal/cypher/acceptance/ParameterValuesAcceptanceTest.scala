@@ -119,4 +119,28 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
       r.hasProperty("name") should equal(false)
     }
   }
+
+  test("match with missing parameter should return error for empty db") {
+    // all versions of 3.3
+    val config = Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+
+    failWithError(config, "MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected a parameter named name"))
+  }
+
+  test("match with missing parameter should return error for non-empty db") {
+    val config = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
+    failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected a parameter named name"))
+  }
+
+  test("match with misspelled parameter should return error for empty db") {
+    // all versions of 3.3
+    val config = Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+
+    failWithError(config, "MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected a parameter named name"), params = "nam" -> "Neo")
+  }
+
+  test("match with misspelled parameter should return error for non-empty db") {
+    val config = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
+    failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected a parameter named name"), params = "nam" -> "Neo")
+  }
 }
