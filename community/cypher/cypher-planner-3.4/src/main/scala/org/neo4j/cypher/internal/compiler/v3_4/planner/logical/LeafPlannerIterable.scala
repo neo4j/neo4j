@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 trait LeafPlannerIterable {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan, context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
+  def candidates(qg: QueryGraph,
+                 f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
+                 context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
 }
 
 case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {

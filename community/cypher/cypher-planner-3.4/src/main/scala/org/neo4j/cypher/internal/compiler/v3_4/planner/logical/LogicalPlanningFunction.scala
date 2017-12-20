@@ -26,22 +26,6 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 // TODO: Return Iterator
 trait CandidateGenerator[T] extends ((T, QueryGraph, LogicalPlanningContext) => Seq[LogicalPlan])
 
-object CandidateGenerator {
-  implicit final class RichCandidateGenerator[T](self: CandidateGenerator[T]) {
-    def orElse(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
-      override def apply(input1: T, input2: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
-        val ownCandidates = self(input1, input2, context)
-        if (ownCandidates.isEmpty) other(input1, input2, context) else ownCandidates
-      }
-    }
-
-    def +||+(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
-      override def apply(input1: T, input2: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] =
-        self(input1, input2, context) ++ other(input1, input2, context)
-    }
-  }
-}
-
 trait PlanTransformer[-T] extends ((LogicalPlan, T, LogicalPlanningContext) => LogicalPlan)
 
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]

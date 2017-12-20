@@ -39,7 +39,7 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext)
   override def postConditions = Set(CompilationContains[LogicalPlan])
 
   override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
-    val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, 0)
+    val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER)
     val logicalPlanningContext = LogicalPlanningContext(
       planContext = context.planContext,
       logicalPlanProducer = logicalPlanProducer,

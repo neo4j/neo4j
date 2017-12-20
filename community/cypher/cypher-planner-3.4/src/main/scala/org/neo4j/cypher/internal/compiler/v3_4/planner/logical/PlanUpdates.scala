@@ -44,9 +44,9 @@ case object PlanUpdates
     }
 
     val lp = if (firstPlannerQuery)
-      Eagerness.headWriteReadEagerize(updatePlan, query, context)
+      Eagerness.headWriteReadEagerize(updatePlan, query, finalContext)
     else {
-      Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query, context), query, context)
+      Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query, context), query, finalContext)
     }
     (lp, finalContext)
   }

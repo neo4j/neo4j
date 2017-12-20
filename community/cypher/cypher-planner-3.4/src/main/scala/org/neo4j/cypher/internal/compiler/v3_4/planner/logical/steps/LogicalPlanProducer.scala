@@ -51,7 +51,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                       grouping: Map[String, Expression],
                       aggregation: Map[String, Expression],
                       reportedGrouping: Map[String, Expression],
-                      reportedAggregation: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
+                      reportedAggregation: Map[String, Expression],
+                      context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
@@ -86,7 +87,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                                        endNode: IdName,
                                        pattern: PatternRelationship,
                                        argumentIds: Set[IdName],
-                                       solvedPredicates: Seq[Expression] = Seq.empty, context: LogicalPlanningContext): LogicalPlan = {
+                                       solvedPredicates: Seq[Expression] = Seq.empty,
+                                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
@@ -101,7 +103,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                                          rightNode: IdName,
                                          pattern: PatternRelationship,
                                          argumentIds: Set[IdName],
-                                         solvedPredicates: Seq[Expression] = Seq.empty, context: LogicalPlanningContext): LogicalPlan = {
+                                         solvedPredicates: Seq[Expression] = Seq.empty,
+                                         context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
@@ -115,7 +118,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                        dir: SemanticDirection,
                        to: IdName,
                        pattern: PatternRelationship,
-                       mode: ExpansionMode, context: LogicalPlanningContext): LogicalPlan = {
+                       mode: ExpansionMode,
+                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.amendQueryGraph(_.addPatternRelationship(pattern))
     annotate(Expand(left, from, dir, pattern.types, to, pattern.name, mode), solved, context)
   }
@@ -131,7 +135,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                     nodePredicate: Expression,
                     solvedPredicates: Seq[Expression],
                     legacyPredicates: Seq[(LogicalVariable, Expression)] = Seq.empty,
-                    mode: ExpansionMode, context: LogicalPlanningContext): LogicalPlan = pattern.length match {
+                    mode: ExpansionMode,
+                    context: LogicalPlanningContext): LogicalPlan = pattern.length match {
     case l: VarPatternLength =>
       val projectedDir = projectedDirection(pattern, from, dir)
 
@@ -190,7 +195,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                         valueExpr: QueryExpression[Expression],
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
-                        argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
+                        argumentIds: Set[IdName],
+                        context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
@@ -205,7 +211,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                         propertyKey: PropertyKeyToken,
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
-                        argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
+                        argumentIds: Set[IdName],
+                        context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
@@ -221,7 +228,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
-                                argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
+                                argumentIds: Set[IdName],
+                                context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
@@ -237,7 +245,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
-                                argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
+                                argumentIds: Set[IdName],
+                                context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
@@ -266,7 +275,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
-                              argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
+                              argumentIds: Set[IdName],
+                              context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
@@ -288,7 +298,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                          pattern: PatternRelationship,
                          mode: ExpansionMode = ExpandAll,
                          predicates: Seq[Expression] = Seq.empty,
-                         solvedQueryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = {
+                         solvedQueryGraph: QueryGraph,
+                         context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(solvedQueryGraph))
     annotate(OptionalExpand(left, from, dir, pattern.types, to, pattern.name, mode, predicates), solved, context)
   }
@@ -351,7 +362,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
 
   def planArgument(patternNodes: Set[IdName],
                    patternRels: Set[PatternRelationship] = Set.empty,
-                   other: Set[IdName] = Set.empty, context: LogicalPlanningContext): LogicalPlan = {
+                   other: Set[IdName] = Set.empty,
+                   context: LogicalPlanningContext): LogicalPlan = {
     val relIds = patternRels.map(_.name)
     val coveredIds = patternNodes ++ relIds ++ other
 
@@ -381,9 +393,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
     annotate(Projection(inner, expressions), solved, context)
   }
 
-  def planRollup(lhs: LogicalPlan, rhs: LogicalPlan,
-                 collectionName: IdName, variableToCollect: IdName,
-                 nullable: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
+  def planRollup(lhs: LogicalPlan,
+                 rhs: LogicalPlan,
+                 collectionName: IdName,
+                 variableToCollect: IdName,
+                 nullable: Set[IdName],
+                 context: LogicalPlanningContext): LogicalPlan = {
     annotate(RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable), lhs.solved, context)
   }
 
@@ -492,7 +507,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
                            seenId: IdName,
                            targetId: IdName,
                            right: LogicalPlan,
-                           predicate: Expression, context: LogicalPlanningContext): LogicalPlan = {
+                           predicate: Expression,
+                           context: LogicalPlanningContext): LogicalPlan = {
     val solved = (left.solved ++ right.solved).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
     annotate(TriadicSelection(left, right, positivePredicate, sourceId, seenId, targetId), solved, context)
   }
@@ -633,7 +649,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
     annotate(ForeachApply(left, innerUpdates, pattern.variable.name, pattern.expression), solved, context)
   }
 
-  @deprecated("We do not plan eager any more.", "3.4")
   def planEager(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
     annotate(Eager(inner), inner.solved, context)
 

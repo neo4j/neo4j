@@ -27,6 +27,10 @@ import org.neo4j.cypher.internal.util.v3_4.Rewritable._
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
+object LogicalPlan {
+  val LOWEST_TX_LAYER = 0
+}
+
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
 non-leaf nodes are algebraic operators like selections, projections, and joins. An intermediate node indicates the
