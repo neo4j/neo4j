@@ -19,8 +19,6 @@
  */
 package org.neo4j.register;
 
-import java.util.function.BiPredicate;
-
 public class Registers
 {
     private Registers()
@@ -61,12 +59,6 @@ public class Registers
             public boolean hasValues( long first, long second )
             {
                 return this.first == first && this.second == second;
-            }
-
-            @Override
-            public boolean satisfies( BiPredicate<Long, Long> condition )
-            {
-                return condition.test( first, second );
             }
 
             @Override

@@ -19,8 +19,6 @@
  */
 package org.neo4j.register;
 
-import java.util.function.BiPredicate;
-
 /**
  * Collection of common register types.
  */
@@ -48,8 +46,6 @@ public interface Register
             void copyTo( DoubleLong.Out target );
 
             boolean hasValues( long first, long second );
-
-            boolean satisfies( BiPredicate<java.lang.Long,java.lang.Long> condition );
         }
 
         interface Out
@@ -58,10 +54,6 @@ public interface Register
 
             void increment( long firstDelta, long secondDelta );
         }
-    }
-
-    interface LongRegister extends Long.In, Long.Out
-    {
     }
 
     interface Long
@@ -79,10 +71,6 @@ public interface Register
         }
     }
 
-    interface IntRegister extends Int.In, Int.Out
-    {
-    }
-
     interface Int
     {
         interface In
@@ -96,10 +84,6 @@ public interface Register
 
             int increment( int delta );
         }
-    }
-
-    interface ObjectRegister<T> extends Object.In<T>, Object.Out<T>
-    {
     }
 
     interface Object
