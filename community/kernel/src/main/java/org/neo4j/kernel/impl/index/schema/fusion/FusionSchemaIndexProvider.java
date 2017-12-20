@@ -171,7 +171,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    static IndexSample combineSamples( IndexSample... samples )
+    public static IndexSample combineSamples( IndexSample... samples )
     {
         long indexSize = Arrays.stream(samples).mapToLong( IndexSample::indexSize ).sum();
         long uniqueValues = Arrays.stream(samples).mapToLong( IndexSample::uniqueValues ).sum();

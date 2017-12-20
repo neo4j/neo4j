@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Queue;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -182,75 +180,5 @@ class FusionIndexReader implements IndexReader
                     luceneReader.hasFullNumberPrecision( predicates ), value );
         }
         return predicates[0] instanceof NumberRangePredicate && nativeReader.hasFullNumberPrecision( predicates );
-    }
-
-    /**
-     * Combine multiple progressor to act like one single logical progressor seen from clients perspective.
-     */
-    private class BridgingIndexProgressor implements IndexProgressor.NodeValueClient, IndexProgressor
-    {
-        private final NodeValueClient client;
-        private final int[] keys;
-        private final Queue<IndexProgressor> progressors;
-        private IndexProgressor current;
-
-        BridgingIndexProgressor( NodeValueClient client, int[] keys )
-        {
-            this.client = client;
-            this.keys = keys;
-            progressors = new ArrayDeque<>();
-        }
-
-        @Override
-        public boolean next()
-        {
-            if ( current == null )
-            {
-                current = progressors.poll();
-            }
-            while ( current != null )
-            {
-                if ( current.next() )
-                {
-                    return true;
-                }
-                else
-                {
-                    current.close();
-                    current = progressors.poll();
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public void close()
-        {
-            progressors.forEach( IndexProgressor::close );
-        }
-
-        @Override
-        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
-        {
-            assertKeysAlign( descriptor.schema().getPropertyIds() );
-            progressors.add( progressor );
-        }
-
-        private void assertKeysAlign( int[] keys )
-        {
-            for ( int i = 0; i < this.keys.length; i++ )
-            {
-                if ( this.keys[i] != keys[i] )
-                {
-                    throw new UnsupportedOperationException( "Can not chain multiple progressors with different key set." );
-                }
-            }
-        }
-
-        @Override
-        public boolean acceptNode( long reference, Value[] values )
-        {
-            return client.acceptNode( reference, values );
-        }
     }
 }
