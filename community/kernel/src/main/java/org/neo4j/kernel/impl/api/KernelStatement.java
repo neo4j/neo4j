@@ -309,7 +309,6 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     {
         // closing is done by KTI
         storeStatement.release();
-        versionContext.clear();
         executingQueryList = ExecutingQueryList.EMPTY;
     }
 
