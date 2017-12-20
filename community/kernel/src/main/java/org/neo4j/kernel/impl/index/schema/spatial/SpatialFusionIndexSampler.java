@@ -23,7 +23,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
-import static org.neo4j.kernel.impl.index.schema.spatial.SpatialFusionSchemaIndexProvider.combineSamples;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
 
 class SpatialFusionIndexSampler implements IndexSampler
 {

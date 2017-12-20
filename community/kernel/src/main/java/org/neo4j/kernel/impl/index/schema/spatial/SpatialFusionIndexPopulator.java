@@ -32,26 +32,24 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexProvider.KnownSpatialIndex;
-import org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexProvider.KnownSpatialIndexFactory;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
-import static org.neo4j.kernel.impl.index.schema.spatial.SpatialFusionSchemaIndexProvider.combineSamples;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
 
 class SpatialFusionIndexPopulator implements IndexPopulator
 {
     private final long indexId;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private final KnownSpatialIndexFactory indexFactory;
+    private final KnownSpatialIndex.Factory indexFactory;
     private final Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap;
 
     SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, KnownSpatialIndexFactory indexFactory )
+            IndexSamplingConfig samplingConfig, KnownSpatialIndex.Factory indexFactory )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
@@ -87,9 +85,9 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         {
             select( batchMap, update.values() ).add( update );
         }
-        for ( Map.Entry<CoordinateReferenceSystem,KnownSpatialIndex> index : indexMap.entrySet() )
+        for ( CoordinateReferenceSystem crs : batchMap.keySet() )
         {
-            index.getValue().getPopulator( descriptor, samplingConfig ).add( batchMap.get( index.getKey() ) );
+            indexFactory.selectAndCreate( indexMap, indexId, crs ).getPopulator( descriptor, samplingConfig ).add( batchMap.get( crs ) );
         }
     }
 
@@ -129,12 +127,13 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        indexFactory.select( indexMap, indexId, update.values() ).getPopulator( descriptor, samplingConfig ).includeSample( update );
+        indexFactory.selectAndCreate( indexMap, indexId, update.values() ).getPopulator( descriptor, samplingConfig ).includeSample( update );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( populatorMap.values().stream().map( IndexPopulator::sampleResult ).toArray( IndexSample[]::new ) );
+        return combineSamples(
+                indexMap.values().stream().map( i -> i.getPopulator( descriptor, samplingConfig ).sampleResult() ).toArray( IndexSample[]::new ) );
     }
 }
