@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.spatial;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
@@ -29,7 +27,6 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -125,8 +122,6 @@ class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends Spati
     @Override
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
     {
-        validateQuery( indexOrder, predicates );
-
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
 
@@ -155,24 +150,18 @@ class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends Spati
         }
     }
 
-    private void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates )
+    public static void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates ) throws IndexNotApplicableKernelException
     {
         if ( predicates.length != 1 )
         {
-            throw new UnsupportedOperationException();
+            throw new IndexNotApplicableKernelException( "Spatial index doesn't handle composite queries" );
         }
 
         if ( indexOrder != IndexOrder.NONE )
         {
-            ValueGroup valueGroup = predicates[0].valueGroup();
-            IndexOrder[] capability = SpatialSchemaIndexProvider.CAPABILITY.orderCapability( valueGroup );
-            if ( !ArrayUtil.contains( capability, indexOrder ) )
-            {
-                capability = ArrayUtils.add( capability, IndexOrder.NONE );
-                throw new UnsupportedOperationException(
-                        format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.",
-                                indexOrder, Arrays.toString( predicates ), Arrays.toString( capability ) ) );
-            }
+            throw new UnsupportedOperationException(
+                    format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.", indexOrder, Arrays.toString( predicates ),
+                            IndexOrder.NONE ) );
         }
     }
 

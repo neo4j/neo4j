@@ -23,13 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -43,20 +43,14 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
-
-import static org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexPopulator.BYTE_FAILED;
-import static org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexPopulator.BYTE_ONLINE;
-import static org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexPopulator.BYTE_POPULATING;
 
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements SpatialSchemaIndexProvider.KnownSpatialIndexFactory
+public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements KnownSpatialIndex.Factory
 {
     public static final String KEY = "spatial";
     public static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
-    static final IndexCapability CAPABILITY = new SpatialIndexCapability();
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -66,9 +60,8 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements S
 
     private Map<Long,Map<CoordinateReferenceSystem,KnownSpatialIndex>> indexes = new HashMap<>();
 
-    public SpatialSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean readOnly )
+    public SpatialSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
         this.pageCache = pageCache;
@@ -76,6 +69,7 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements S
         this.monitor = monitor;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
+        findAndCreateKnownSpatialIndexes();
     }
 
     @Override
@@ -85,17 +79,18 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements S
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap = indexes.computeIfAbsent( indexId, k -> new HashMap<>() );
-
-        return new SpatialFusionIndexPopulator( indexMap, indexId, descriptor, samplingConfig, this );
+        return new SpatialFusionIndexPopulator( indexesFor( indexId ), indexId, descriptor, samplingConfig, this );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor(
-            long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap = indexes.computeIfAbsent( indexId, k -> new HashMap<>() );
-        return new SpatialFusionIndexAccessor( indexMap, indexId, descriptor, samplingConfig, this );
+        return new SpatialFusionIndexAccessor( indexesFor( indexId ), indexId, descriptor, samplingConfig, this );
+    }
+
+    private Map<CoordinateReferenceSystem,KnownSpatialIndex> indexesFor( long indexId )
+    {
+        return indexes.computeIfAbsent( indexId, k -> new HashMap<>() );
     }
 
     @Override
@@ -103,12 +98,17 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements S
     {
         try
         {
-            String failureMessage = readPopulationFailure( indexId );
-            if ( failureMessage == null )
+            // This assumes a previous call to getInitialState returned that at least one index was failed
+            // We find the first failed index failure message
+            for ( KnownSpatialIndex index : indexesFor( indexId ).values() )
             {
-                throw new IllegalStateException( "Index " + indexId + " isn't failed" );
+                String indexFailure = index.readPopupationFailure();
+                if ( indexFailure != null )
+                {
+                    return indexFailure;
+                }
             }
-            return failureMessage;
+            throw new IllegalStateException( "Index " + indexId + " isn't failed" );
         }
         catch ( IOException e )
         {
@@ -116,18 +116,11 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements S
         }
     }
 
-    private String readPopulationFailure( long indexId ) throws IOException
-    {
-        SpatialSchemaIndexHeaderReader headerReader = new SpatialSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, spatialIndexFileFromIndexId( indexId ), new ReadOnlyMetaNumberLayout(),
-                headerReader );
-        return headerReader.failureMessage;
-    }
-
     @Override
     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
         // loop through all files, check if file exists, then check state
+        // if any have failed, return failed, else if any are populating return populating, else online
         InternalIndexState state = InternalIndexState.ONLINE;
         if ( !indexes.containsKey( indexId ) )
         {
@@ -160,7 +153,8 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements S
     @Override
     public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
-        return CAPABILITY;
+        // Spatial indexes are not ordered, nor do they return complete values
+        return IndexCapability.NO_CAPABILITY;
     }
 
     @Override
@@ -171,170 +165,85 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements S
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    private File spatialIndexFileFromIndexId( long indexId )
+    @Override
+    public KnownSpatialIndex selectAndCreate( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, Value... values )
     {
-        return new File( directoryStructure().directoryForIndex( indexId ), indexFileName( indexId ) );
-    }
-
-    private static String indexFileName( long indexId )
-    {
-        return "index-" + indexId;
+        assert (values.length == 1);
+        PointValue pointValue = (PointValue) values[0];
+        CoordinateReferenceSystem crs = pointValue.getCoordinateReferenceSystem();
+        return selectAndCreate( indexMap, indexId, crs );
     }
 
     @Override
-    public KnownSpatialIndex select( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, Value... values )
+    public KnownSpatialIndex selectAndCreate( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
     {
-        assert(values.length == 1);
-        PointValue pointValue = (PointValue) values[0];
-        CoordinateReferenceSystem crs = pointValue.getCoordinateReferenceSystem();
-        return indexMap.computeIfAbsent( crs, k -> new KnownSpatialIndex( directoryStructure(), crs, indexId, pageCache, fs, monitor, recoveryCleanupWorkCollector ) );
+        return indexMap.computeIfAbsent( crs,
+                k -> new KnownSpatialIndex( directoryStructure(), crs, indexId, pageCache, fs, monitor, recoveryCleanupWorkCollector ) );
     }
 
-    private static class ReadOnlyMetaNumberLayout extends Layout.ReadOnlyMetaLayout
+    private void findAndCreateKnownSpatialIndexes()
+    {
+        Pattern pattern = Pattern.compile( "(\\d+)-(\\d+)" );
+        File[] files = this.directoryStructure().rootDirectory().listFiles();
+        if ( files != null )
+        {
+            for ( File file : files )
+            {
+                if ( file.isDirectory() )
+                {
+                    Integer indexId = Integer.parseInt( file.getName() );
+                    File[] subdirs = this.directoryStructure().directoryForIndex( indexId ).listFiles();
+                    if ( subdirs != null )
+                    {
+                        for ( File subdir : subdirs )
+                        {
+                            Matcher m = pattern.matcher( subdir.getName() );
+                            if ( m.matches() )
+                            {
+                                int tableId = Integer.parseInt( m.group( 1 ) );
+                                int code = Integer.parseInt( m.group( 2 ) );
+                                CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
+                                KnownSpatialIndex index = selectAndCreate( indexesFor( indexId ), indexId, crs );
+                                if ( index.indexExists() )
+                                {
+                                    System.out.println( "Created " + index );
+                                    System.out.println( "Exists: " + index.indexExists() );
+                                    try
+                                    {
+                                        System.out.println( "Status: " + index.readState() );
+                                    }
+                                    catch ( IOException e )
+                                    {
+                                        System.out.println( "Failed to read index state:" + e );
+                                        e.printStackTrace();
+                                    }
+                                }
+                                else
+                                {
+                                    System.out.println( "Found CRS directory, but no GBPTree - removing index from map" );
+                                    indexesFor( indexId ).remove( crs );
+                                }
+                            }
+                            else
+                            {
+                                System.out.println( "File does not match CRS pattern: " + subdir );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    static class ReadOnlyMetaNumberLayout extends Layout.ReadOnlyMetaLayout
     {
         @Override
         public boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion )
         {
-            return (layoutIdentifier == UniqueSpatialLayout.IDENTIFIER &&
-                    majorVersion == UniqueSpatialLayout.MAJOR_VERSION &&
+            return (layoutIdentifier == UniqueSpatialLayout.IDENTIFIER && majorVersion == UniqueSpatialLayout.MAJOR_VERSION &&
                     minorVersion == UniqueSpatialLayout.MINOR_VERSION) ||
-                    (layoutIdentifier == NonUniqueSpatialLayout.IDENTIFIER &&
-                            majorVersion == NonUniqueSpatialLayout.MAJOR_VERSION &&
+                    (layoutIdentifier == NonUniqueSpatialLayout.IDENTIFIER && majorVersion == NonUniqueSpatialLayout.MAJOR_VERSION &&
                             minorVersion == NonUniqueSpatialLayout.MINOR_VERSION);
-        }
-    }
-
-    private static class SpatialIndexCapability implements IndexCapability
-    {
-        private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
-        private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
-
-        @Override
-        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
-        {
-            if ( support( valueGroups ) )
-            {
-                return SUPPORTED_ORDER;
-            }
-            return EMPTY_ORDER;
-        }
-
-        @Override
-        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
-        {
-            if ( support( valueGroups ) )
-            {
-                return IndexValueCapability.YES;
-            }
-            if ( singleWildcard( valueGroups ) )
-            {
-                return IndexValueCapability.PARTIAL;
-            }
-            return IndexValueCapability.NO;
-        }
-
-        private boolean singleWildcard( ValueGroup[] valueGroups )
-        {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
-        }
-
-        private boolean support( ValueGroup[] valueGroups )
-        {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.GEOMETRY;
-        }
-    }
-
-    interface KnownSpatialIndexFactory
-    {
-        KnownSpatialIndex select( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, Value... values );
-    }
-
-    static class KnownSpatialIndex
-    {
-        private final File indexFile;
-        private final PageCache pageCache;
-        private final CoordinateReferenceSystem crs;
-        private final long indexId;
-        private final FileSystemAbstraction fs;
-        private final Monitor monitor;
-        private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-
-        public KnownSpatialIndex( IndexDirectoryStructure directoryStructure, CoordinateReferenceSystem crs, long indexId, PageCache pageCache,
-                FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
-        {
-            this.crs = crs;
-            this.indexId = indexId;
-            this.pageCache = pageCache;
-            this.fs = fs;
-            this.monitor = monitor;
-            this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
-
-            // Depends on crs
-            Descriptor crsDescriptor = new Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
-            IndexDirectoryStructure indexDir = IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
-            indexFile = new File( indexDir.directoryForIndex( indexId ), indexFileName( indexId ) );
-        }
-
-        private File spatialIndexFile()
-        {
-            return indexFile;
-        }
-
-        boolean indexExists()
-        {
-            return fs.fileExists( indexFile );
-        }
-
-        InternalIndexState readState() throws IOException
-        {
-            SpatialSchemaIndexHeaderReader headerReader = new SpatialSchemaIndexHeaderReader();
-            GBPTree.readHeader( pageCache, indexFile, new ReadOnlyMetaNumberLayout(), headerReader );
-            switch ( headerReader.state )
-            {
-            case BYTE_FAILED:
-                return InternalIndexState.FAILED;
-            case BYTE_ONLINE:
-                return InternalIndexState.ONLINE;
-            case BYTE_POPULATING:
-                return InternalIndexState.POPULATING;
-            default:
-                throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
-            }
-        }
-
-        IndexPopulator getPopulator(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig)
-        {
-            // TODO should probably only have one alive / gbptree
-            switch ( descriptor.type() )
-            {
-            case GENERAL:
-                return new SpatialNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new NonUniqueSpatialLayout(), samplingConfig,
-                        monitor, descriptor, indexId );
-            case UNIQUE:
-                return new SpatialUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new UniqueSpatialLayout(), monitor, descriptor,
-                        indexId );
-            default:
-                throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
-            }
-        }
-
-        IndexAccessor getOnlineAccessor(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig) throws IOException
-        {
-            // TODO should probably only have one alive / gbptree
-            SpatialLayout layout;
-            switch ( descriptor.type() )
-            {
-            case GENERAL:
-                layout = new NonUniqueSpatialLayout();
-                break;
-            case UNIQUE:
-                layout = new UniqueSpatialLayout();
-                break;
-            default:
-                throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
-            }
-            return new SpatialSchemaIndexAccessor<>( pageCache, fs, indexFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId,
-                    samplingConfig );
         }
     }
 }

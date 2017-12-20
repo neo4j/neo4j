@@ -186,6 +186,10 @@ public abstract class SpatialSchemaIndexPopulator<KEY extends SpatialSchemaKey, 
     {
         try
         {
+            if ( workSync == null )
+            {
+                throw new IllegalStateException( "Trying to populate an index without first calling create()" );
+            }
             workSync.apply( new IndexUpdateWork<>( updates ) );
         }
         catch ( ExecutionException e )

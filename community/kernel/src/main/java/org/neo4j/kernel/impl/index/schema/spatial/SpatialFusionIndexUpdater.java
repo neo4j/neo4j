@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema.spatial;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -29,24 +30,21 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexProvider.KnownSpatialIndex;
-import org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexProvider.KnownSpatialIndexFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
-
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class SpatialFusionIndexUpdater implements IndexUpdater
 {
     private final Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap;
+    private final HashSet<IndexUpdater> currentUpdaters = new HashSet<>();
     private final long indexId;
-    private final KnownSpatialIndexFactory indexFactory;
+    private final KnownSpatialIndex.Factory indexFactory;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
     private final IndexUpdateMode mode;
     private final PropertyAccessor accessor;
 
-    SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, KnownSpatialIndexFactory indexFactory,
+    SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, KnownSpatialIndex.Factory indexFactory,
             IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexUpdateMode mode )
     {
         this.indexMap = indexMap;
@@ -58,7 +56,7 @@ class SpatialFusionIndexUpdater implements IndexUpdater
         this.accessor = null;
     }
 
-    SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, KnownSpatialIndexFactory indexFactory,
+    SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, KnownSpatialIndex.Factory indexFactory,
             IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, PropertyAccessor accessor )
     {
         this.indexMap = indexMap;
@@ -80,9 +78,8 @@ class SpatialFusionIndexUpdater implements IndexUpdater
             selectUpdater( update.values() ).process( update );
             break;
         case CHANGED:
-            // Hmm, here's a little conundrum. What if we change from a value that goes into native
-            // to a value that goes into fallback, or vice versa? We also don't want to blindly pass
-            // all CHANGED updates to both updaters since not all values will work in them.
+            // By this stage we should only have points, but they could be of different CRS, so we
+            // have to check if they belong to different sub-indexes and remove/add accordingly
             IndexUpdater from = selectUpdater( update.beforeValues() );
             IndexUpdater to = selectUpdater( update.values() );
             // There are two cases:
@@ -110,20 +107,33 @@ class SpatialFusionIndexUpdater implements IndexUpdater
 
     private IndexUpdater selectUpdater(Value... values) throws IOException
     {
-        if (mode != null)
+        if ( mode != null )
         {
-            return indexFactory.select( indexMap, indexId, values ).getOnlineAccessor( descriptor, samplingConfig ).newUpdater( mode );
+            return remember( indexFactory.selectAndCreate( indexMap, indexId, values ).getOnlineAccessor( descriptor, samplingConfig ).newUpdater( mode ) );
         }
         else
         {
-            return indexFactory.select( indexMap, indexId, values ).getPopulator( descriptor, samplingConfig ).newPopulatingUpdater( accessor );
+            return remember(
+                    indexFactory.selectAndCreate( indexMap, indexId, values ).getPopulator( descriptor, samplingConfig ).newPopulatingUpdater( accessor ) );
         }
+    }
+
+    private IndexUpdater remember(IndexUpdater indexUpdader)
+    {
+        currentUpdaters.add( indexUpdader );
+        return indexUpdader;
     }
 
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        // TODO this should close the updaters we have used
-        forAll( ( updater ) -> ((IndexUpdater) updater).close(), indexMap.values().toArray() );
+        while ( !currentUpdaters.isEmpty() )
+        {
+            for ( IndexUpdater updater : currentUpdaters )
+            {
+                updater.close();
+            }
+            currentUpdaters.clear();
+        }
     }
 }
