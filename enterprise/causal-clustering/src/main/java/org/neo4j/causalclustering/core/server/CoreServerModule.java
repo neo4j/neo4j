@@ -37,7 +37,6 @@ import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.IdentityModule;
-import org.neo4j.causalclustering.core.RaftServerModule;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.pruning.PruningScheduler;
@@ -86,7 +85,6 @@ public class CoreServerModule
     private final CoreStateMachinesModule coreStateMachinesModule;
     private final ConsensusModule consensusModule;
     private final ClusteringModule clusteringModule;
-    private final RaftServerModule raftServerModule;
     private final LocalDatabase localDatabase;
     private final Supplier<DatabaseHealth> dbHealthSupplier;
     private final CommandApplicationProcess commandApplicationProcess;
@@ -100,14 +98,13 @@ public class CoreServerModule
 
     public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
             CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule, ReplicationModule replicationModule,
-            RaftServerModule raftServerModule, LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier,
+            LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier,
             File clusterStateDirectory, PipelineHandlerAppender pipelineAppender )
     {
         this.identityModule = identityModule;
         this.coreStateMachinesModule = coreStateMachinesModule;
         this.consensusModule = consensusModule;
         this.clusteringModule = clusteringModule;
-        this.raftServerModule = raftServerModule;
         this.localDatabase = localDatabase;
         this.dbHealthSupplier = dbHealthSupplier;
         this.platformModule = platformModule;
@@ -176,9 +173,8 @@ public class CoreServerModule
 
         CoreStateDownloader downloader = createCoreStateDownloader( servicesToStopOnStoreCopy );
 
-        this.downloadService = platformModule.life.add(
-                new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess, logProvider,
-                        new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() ) );
+        this.downloadService = new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess, logProvider,
+                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() );
 
         this.membershipWaiterLifecycle = createMembershipWaiterLifecycle();
 
@@ -198,8 +194,6 @@ public class CoreServerModule
         dependencies.satisfyDependency( catchupServer );
 
         servicesToStopOnStoreCopy.add( catchupServer );
-
-        this.raftServerModule.create( this );
     }
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )
