@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, ShortestPathPattern}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Find the shortest paths between two nodes, as specified by 'shortestPath'. For each shortest path found produce a
@@ -29,8 +30,8 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
 case class FindShortestPaths(source: LogicalPlan, shortestPath: ShortestPathPattern,
                              predicates: Seq[Expression] = Seq.empty,
                              withFallBack: Boolean = false, disallowSameNode: Boolean = true)
-                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+                            (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(source)
   def rhs = None

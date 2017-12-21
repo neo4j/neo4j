@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Triadic selection is used to solve a common query pattern:
@@ -62,8 +63,8 @@ case class TriadicSelection(
                              right: LogicalPlan,
                              positivePredicate: Boolean,
                              sourceId: IdName, seenId: IdName, targetId: IdName
-                           )(val solved: PlannerQuery with CardinalityEstimation)
-extends LogicalPlan with LazyLogicalPlan {
+                           )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(left)
   override def rhs: Option[LogicalPlan] = Some(right)

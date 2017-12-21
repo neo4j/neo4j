@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SameId, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -225,7 +226,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 }
 
 case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+  extends LogicalPlan(SameId(Id.INVALID_ID)) with LazyLogicalPlan {
   def rhs = None
   def lhs = None
 }

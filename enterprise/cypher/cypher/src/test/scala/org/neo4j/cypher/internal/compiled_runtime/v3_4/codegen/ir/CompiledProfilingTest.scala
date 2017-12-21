@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.runtime.{ProfileMode, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
@@ -47,6 +48,8 @@ import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
+
+  implicit val idGen = SequentialIdGen
 
   test("should count db hits and rows") {
     // given

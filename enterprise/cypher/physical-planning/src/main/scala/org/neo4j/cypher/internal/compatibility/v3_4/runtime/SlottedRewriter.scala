@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.util.v3_4.AssertionUtils.ifAssertionsEnabled
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter, topDown}
 import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, _}
@@ -56,13 +57,13 @@ class SlottedRewriter(tokenContext: TokenContext) {
        */
       case oldPlan@Projection(_, expressions) =>
         val slotConfiguration = slotConfigurations(oldPlan.assignedId)
-        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations)
+        val rewriter = rewriteCreator(slotConfiguration, oldPlan.selfThis, slotConfigurations)
 
         val newExpressions = expressions collect {
           case (column, expression) => column -> expression.endoRewrite(rewriter)
         }
 
-        val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)
+        val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)(SameId(oldPlan.id))
         newSlotConfigurations += (newPlan -> slotConfiguration)
 
         newPlan
@@ -82,7 +83,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
           nodePredicate = newNodePredicate,
           edgePredicate = newEdgePredicate,
           legacyPredicates = Seq.empty // If we use the legacy predicates, we are not on the slotted runtime
-        )(oldPlan.solved)
+        )(oldPlan.solved)(SameId(oldPlan.id))
 
         /*
         Since the logical plan SlotConfiguration is about the output rows we still need to remember the
@@ -94,11 +95,11 @@ class SlottedRewriter(tokenContext: TokenContext) {
         newPlan
 
       case plan@ValueHashJoin(lhs, rhs, e@Equals(lhsExp, rhsExp)) =>
-        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.assignedId), plan, slotConfigurations)
-        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.assignedId), plan, slotConfigurations)
+        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.assignedId), plan.selfThis, slotConfigurations)
+        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.assignedId), plan.selfThis, slotConfigurations)
         val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
         val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
-        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(plan.solved)
+        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(plan.solved)(SameId(plan.id))
 
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))

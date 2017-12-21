@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.Equals
 
 /**
@@ -27,7 +28,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.Equals
   * have different, non-empty variable-dependency sets.
   */
 case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)
-                        (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with EagerLogicalPlan {
+                        (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
   override val lhs = Some(left)
   override val rhs = Some(right)
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.v3_4.logical.plans.Selection
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 
@@ -28,6 +29,6 @@ case object fuseSelections extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case topSelection@Selection(predicates1, Selection(predicates2, lhs)) =>
-      Selection(predicates1 ++ predicates2, lhs)(topSelection.solved)
+      Selection(predicates1 ++ predicates2, lhs)(topSelection.solved)(SameId(topSelection.id))
   })
 }

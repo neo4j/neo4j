@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DoNotIncludeTies, Limit, Sort, Top}
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 
@@ -29,7 +30,7 @@ case object useTop extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case o @ Limit(Sort(src, sortDescriptions), limit, DoNotIncludeTies) =>
-      Top(src, sortDescriptions, limit)(o.solved)
+      Top(src, sortDescriptions, limit)(o.solved)(SameId(o.id))
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

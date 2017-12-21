@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Condition, Phase}
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{ListLiteral, StringLiteral, Variable}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, LogicalPlan, ProduceResult, UnwindCollection}
 
@@ -53,6 +54,7 @@ object DebugPrinter extends Phase[CompilerContext, LogicalPlanState, LogicalPlan
   }
 
   private def stringToLogicalPlan(string: String): (LogicalPlan, Statement) = {
+    implicit val idGen = SequentialIdGen
     val pos = InputPosition(0, 0, 0)
     val solved = CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty), 0.0)
     val stringValues = string.split("\n").map(s => StringLiteral(s)(pos))

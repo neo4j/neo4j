@@ -25,12 +25,15 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class PlanEventHorizonTest extends CypherFunSuite {
+
+  implicit val idGen = SequentialIdGen
 
   val pos = DummyPosition(1)
   val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER),

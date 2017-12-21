@@ -28,11 +28,14 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.Argument
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
+  implicit val idGen = SequentialIdGen
+
   val PlannerName = IDPPlannerName
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   val logicalPlan = {

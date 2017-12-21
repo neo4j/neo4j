@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * RollUp is the inverse of the Unwind operator. For each left row,
@@ -38,8 +39,8 @@ case class RollUpApply(left: LogicalPlan,
                        collectionName: IdName,
                        variableToCollect: IdName,
                        nullableVariables: Set[IdName]
-                      )(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+                      )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override def lhs = Some(left)
 

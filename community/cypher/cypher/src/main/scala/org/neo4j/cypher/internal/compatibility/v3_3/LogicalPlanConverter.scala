@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
 import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -54,6 +55,8 @@ object LogicalPlanConverter {
     override def apply(v1: (AnyRef, Seq[AnyRef])): AnyRef = rewriter.apply(v1)
 
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
+      implicit val idGen = SequentialIdGen
+
       val rewritten = RewriterWithArgs.lift {
         case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
           plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(new PlannerQueryWrapper(plan.solved))

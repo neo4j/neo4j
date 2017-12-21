@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IDPPlannerName, IndexDescriptor}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.internal.v3_4.expressions.PatternExpression

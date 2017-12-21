@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
@@ -36,6 +37,8 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  * much testing
  */
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int) extends ListSupport {
+
+  implicit val idGen = SequentialIdGen
 
   def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1)
 

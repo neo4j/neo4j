@@ -23,6 +23,7 @@ import java.util.Locale
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
@@ -32,6 +33,7 @@ import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   implicit val windowsSafe = WindowsStringSafe
+  implicit val idGen = SequentialIdGen
 
   private val defaultLocale = Locale.getDefault
   override def beforeAll() {

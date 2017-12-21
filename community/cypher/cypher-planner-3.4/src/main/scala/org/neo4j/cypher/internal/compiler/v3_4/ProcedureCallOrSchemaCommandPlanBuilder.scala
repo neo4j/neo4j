@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ResolvedCall}
 
@@ -41,6 +42,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
   override def postConditions: Set[Condition] = Set.empty
 
   override def process(from: BaseState, context: CompilerContext): LogicalPlanState = {
+    implicit val idGen = SequentialIdGen
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // Global call: CALL foo.bar.baz("arg1", 2)
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>

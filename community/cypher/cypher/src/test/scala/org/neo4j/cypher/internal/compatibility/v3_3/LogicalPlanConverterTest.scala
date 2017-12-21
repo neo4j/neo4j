@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName => IdNameV3_4}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, NonEmptyList, symbols => symbolsV3_4}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
@@ -42,6 +43,8 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 class LogicalPlanConverterTest extends FunSuite with Matchers {
+
+  implicit val idGen = SequentialIdGen
 
   val pos3_3 = InputPositionV3_3(0,0,0)
   val pos3_4 = InputPosition(0,0,0)

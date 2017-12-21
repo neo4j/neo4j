@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelToken, PropertyKeyToken}
 
 /**
@@ -33,8 +34,8 @@ case class NodeIndexContainsScan(idName: IdName,
                                  propertyKey: PropertyKeyToken,
                                  valueExpr: Expression,
                                  argumentIds: Set[IdName])
-                                (val solved: PlannerQuery with CardinalityEstimation)
-  extends NodeLogicalLeafPlan {
+                                (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends NodeLogicalLeafPlan(idGen) {
 
   def availableSymbols: Set[IdName] = argumentIds + idName
 }

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
 import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{SemanticDirection, LabelName => AstLabelName, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -34,6 +35,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     implicit def emptySolvedWithCardinality(i: Int): PlannerQuery with CardinalityEstimation =
       CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(i))
+    implicit val idGen = SequentialIdGen
 
     val lhsLP = AllNodesScan(IdName("a"), Set.empty)(2)
     val lhsPD = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "AllNodesScan", NoChildren, Seq(EstimatedRows(2)), Set("a"))

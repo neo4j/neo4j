@@ -26,12 +26,13 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SameId}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.time.Clocks
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
-  abstract class FakePlan extends LogicalPlan {
+  abstract class FakePlan extends LogicalPlan(idGen = SameId(Id.INVALID_ID)) {
     private val pq = PlannerQuery.empty
 
     def solved = CardinalityEstimation.lift(pq, Cardinality(1.0))

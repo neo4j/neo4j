@@ -162,15 +162,14 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple expand") {
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")_
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(_: PlannerQuery with CardinalityEstimation)(idGen)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)())
   }
 
   test("simple expand into existing variable MATCH a-[r]->a ") {
-    val logicalPlan = Expand(
-      AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)_
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(_: PlannerQuery with CardinalityEstimation)(idGen)
     val pipeInfo = build(logicalPlan)
 
     val inner: Pipe = ExpandIntoPipe( AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty)()
@@ -179,8 +178,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("optional expand into existing variable MATCH a OPTIONAL MATCH a-[r]->a ") {
-    val logicalPlan = OptionalExpand(
-      AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)_
+    val logicalPlan = OptionalExpand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(_: PlannerQuery with CardinalityEstimation)(idGen)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, topDown}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -51,49 +52,49 @@ case object unnestApply extends Rewriter {
 
     // L Ax (Arg Ax R) => L Ax R
     case original@Apply(lhs, Apply(_: Argument, rhs)) =>
-      Apply(lhs, rhs)(original.solved)
+      Apply(lhs, rhs)(original.solved)(SameId(original.id))
 
     // L Ax (Arg FE R) => L FE R
     case original@Apply(lhs, foreach@ForeachApply(_: Argument, rhs, _, _)) =>
-      foreach.copy(left = lhs, right = rhs)(original.solved)
+      foreach.copy(left = lhs, right = rhs)(original.solved)(SameId(foreach.id))
 
     // L Ax (Arg Ax R) => L Ax R
     case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
-      original.copy(lhs, rhs)(original.solved)
+      original.copy(lhs, rhs)(original.solved)(SameId(original.id))
 
     // L Ax (σ R) => σ(L Ax R)
     case o@Apply(lhs, sel@Selection(predicates, rhs)) =>
-      Selection(predicates, Apply(lhs, rhs)(o.solved))(o.solved)
+      Selection(predicates, Apply(lhs, rhs)(o.solved)(SameId(o.id)))(o.solved)(SameId(sel.id))
 
     // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L
     case original@Apply(lhs, Apply(sel@Selection(predicates, lhs2), rhs))
       if predicates.forall(lhs.satisfiesExpressionDependencies)=>
-      val selectionLHS = Selection(predicates, lhs)(original.solved)
-      val apply2 = Apply(lhs2, rhs)(original.solved)
-      Apply(selectionLHS, apply2)(original.solved)
+      val selectionLHS = Selection(predicates, lhs)(original.solved)(SameId(sel.id))
+      val apply2 = Apply(lhs2, rhs)(original.solved)(SameId(lhs.id))
+      Apply(selectionLHS, apply2)(original.solved)(SameId(original.id))
 
     // L Ax (π R) => π(L Ax R)
     case origApply@Apply(lhs, p@Projection(rhs, _)) =>
-      val newApply = Apply(lhs, rhs)(origApply.solved)
-      p.copy(source = newApply)(origApply.solved)
+      val newApply = Apply(lhs, rhs)(origApply.solved)(SameId(origApply.id))
+      p.copy(source = newApply)(origApply.solved)(SameId(p.id))
 
     // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
     case apply@Apply(lhs, expand: Expand) =>
-      val newApply = apply.copy(right = expand.source)(apply.solved)
-      expand.copy(source = newApply)(apply.solved)
+      val newApply = apply.copy(right = expand.source)(apply.solved)(SameId(apply.id))
+      expand.copy(source = newApply)(apply.solved)(SameId(expand.id))
 
     // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
     case apply@Apply(lhs, expand: VarExpand) =>
-      val newApply = apply.copy(right = expand.source)(apply.solved)
-      expand.copy(source = newApply)(apply.solved)
+      val newApply = apply.copy(right = expand.source)(apply.solved)(SameId(apply.id))
+      expand.copy(source = newApply)(apply.solved)(SameId(expand.id))
 
     // L Ax (Arg LOJ R) => L LOJ R
     case apply@Apply(lhs, join@OuterHashJoin(_, _:Argument, rhs)) =>
-      join.copy(left = lhs)(apply.solved)
+      join.copy(left = lhs)(apply.solved)(SameId(join.id))
 
     // L Ax (CN R) => CN Ax (L R)
     case apply@Apply(lhs, create@CreateNode(rhs, name, labels, props)) =>
-      CreateNode(Apply(lhs, rhs)(apply.solved), name, labels, props)(apply.solved)
+      CreateNode(Apply(lhs, rhs)(apply.solved)(SameId(apply.id)), name, labels, props)(apply.solved)(SameId(create.id))
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

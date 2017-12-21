@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, QueryGraph}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.v3_4.logical.plans.{NodeHashJoin, Selection}
 
 /*
@@ -41,11 +42,11 @@ case object predicateRemovalThroughJoins extends Rewriter {
       val newSelection = rhsPredicates.filterNot(lhsPredicates)
 
       if (newSelection.isEmpty)
-        NodeHashJoin(nodeIds, lhs, rhsLeaf)(n.solved)
+        NodeHashJoin(nodeIds, lhs, rhsLeaf)(n.solved)(SameId(n.id))
       else {
         val newRhsPlannerQuery = rhsLeaf.solved.amendQueryGraph(_.addPredicates(newSelection:_*))
         val newRhsSolved = CardinalityEstimation.lift(newRhsPlannerQuery, rhsLeaf.solved.estimatedCardinality)
-        NodeHashJoin(nodeIds, lhs, Selection(newSelection, rhsLeaf)(newRhsSolved))(n.solved)
+        NodeHashJoin(nodeIds, lhs, Selection(newSelection, rhsLeaf)(newRhsSolved)(SameId(rhs.id)))(n.solved)(SameId(n.id))
       }
   })
 

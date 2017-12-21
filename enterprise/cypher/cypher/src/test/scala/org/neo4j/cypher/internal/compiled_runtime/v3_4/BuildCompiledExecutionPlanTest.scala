@@ -29,11 +29,14 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, QueryGraph, RegularPlannerQuery}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, LogicalPlan, ProduceResult}
 import org.neo4j.kernel.monitoring.Monitors
 
 class BuildCompiledExecutionPlanTest extends CypherFunSuite {
+
+  implicit val idGen = SequentialIdGen
 
   private val solved = CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty), 0.0)
 
