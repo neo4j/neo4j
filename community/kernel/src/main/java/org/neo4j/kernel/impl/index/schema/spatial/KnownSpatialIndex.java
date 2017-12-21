@@ -104,7 +104,6 @@ public class KnownSpatialIndex
     {
         SpatialSchemaIndexHeaderReader headerReader = new SpatialSchemaIndexHeaderReader();
         GBPTree.readHeader( pageCache, indexFile, new SpatialSchemaIndexProvider.ReadOnlyMetaNumberLayout(), headerReader );
-        System.out.println( "Reading index state: " + headerReader.state );
         switch ( headerReader.state )
         {
         case BYTE_FAILED:
@@ -151,6 +150,12 @@ public class KnownSpatialIndex
         return indexPopulator;
     }
 
+    void closePopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populationCompletedSuccessfully ) throws IOException
+    {
+        getPopulator( descriptor, samplingConfig ).close( populationCompletedSuccessfully );
+        this.indexPopulator = null;
+    }
+
     private SpatialSchemaIndexAccessor makeOnlineAccessor(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig) throws IOException
     {
         SpatialLayout layout;
@@ -173,6 +178,12 @@ public class KnownSpatialIndex
     {
         if ( indexAccessor == null )
         {
+            if ( !indexExists() )
+            {
+                // No CRS specific index was created during normal population (due to no data of that CRS being in the database)
+                // We need to create the index as if it was created by normal index populating, but empty
+                getPopulator( descriptor, samplingConfig ).close( true );
+            }
             indexAccessor = makeOnlineAccessor( descriptor, samplingConfig );
         }
         return indexAccessor;

@@ -19,16 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.io.File
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.graphdb.{GraphDatabaseService, Label}
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
+import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -352,65 +350,16 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // When
-//    val result = executeWith(Configs.Interpreted, "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
-//      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-//        plan should useOperatorWithText("Projection", "point")
-//        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-//      }, expectPlansToFail = Configs.AllRulePlanners))
-    val result = innerExecuteDeprecated("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+    val result = executeWith(expectedToSucceed - Configs.AllRulePlanners, "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "point")
+        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4))
 
     println(result.executionPlanDescription())
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
     point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
-    // And CRS names should equal
-    point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
-  }
-
-  ignore("persisted indexed point should be readable from node property") {
-    var graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File("test"))
-    // Given
-    graph.execute("CREATE INDEX ON :Place(location)")
-    var tx = graph.beginTx()
-    try {
-      println("Waiting for index to come online")
-      graph.schema().awaitIndexesOnline(60, TimeUnit.SECONDS)
-      tx.success()
-    } finally {
-      tx.close()
-    }
-    tx = graph.beginTx()
-    try {
-      println("Creating node")
-      graph.createNode(Label.label("Place"))
-      tx.success()
-    } finally {
-      tx.close()
-    }
-    println("Assigning property to node")
-    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
-
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
-
-    graph.shutdown()
-
-    graph = new GraphDatabaseFactory().newEmbeddedDatabase(new File("test"))
-
-    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
-
-    graph.shutdown()
-
-  }
-
-  private def testPointRead(query: String, expected: PointValue): Unit = {
-    println("Testing index for node")
-
-    val result = innerExecuteDeprecated(query, Map.empty)
-
-    println(result.executionPlanDescription())
-    // Then
-    val point = result.columnAs("point").toList.head.asInstanceOf[Point]
-    point should equal(expected)
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }

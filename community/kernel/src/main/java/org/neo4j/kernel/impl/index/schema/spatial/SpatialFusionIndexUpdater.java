@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema.spatial;
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -31,12 +31,13 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
 class SpatialFusionIndexUpdater implements IndexUpdater
 {
     private final Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap;
-    private final HashSet<IndexUpdater> currentUpdaters = new HashSet<>();
+    private final Map<CoordinateReferenceSystem, IndexUpdater> currentUpdaters = new HashMap<>();
     private final long indexId;
     private final KnownSpatialIndex.Factory indexFactory;
     private final IndexDescriptor descriptor;
@@ -67,7 +68,6 @@ class SpatialFusionIndexUpdater implements IndexUpdater
         this.mode = null;
         this.accessor = accessor;
     }
-
 
     @Override
     public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
@@ -107,20 +107,29 @@ class SpatialFusionIndexUpdater implements IndexUpdater
 
     private IndexUpdater selectUpdater(Value... values) throws IOException
     {
+        assert (values.length == 1);
+        PointValue pointValue = (PointValue) values[0];
+        CoordinateReferenceSystem crs = pointValue.getCoordinateReferenceSystem();
+        IndexUpdater updater = currentUpdaters.get( crs );
+        if (updater != null)
+        {
+            return updater;
+        }
         if ( mode != null )
         {
-            return remember( indexFactory.selectAndCreate( indexMap, indexId, values ).getOnlineAccessor( descriptor, samplingConfig ).newUpdater( mode ) );
+            return remember( crs,
+                    indexFactory.selectAndCreate( indexMap, indexId, crs ).getOnlineAccessor( descriptor, samplingConfig ).newUpdater( mode ) );
         }
         else
         {
-            return remember(
-                    indexFactory.selectAndCreate( indexMap, indexId, values ).getPopulator( descriptor, samplingConfig ).newPopulatingUpdater( accessor ) );
+            return remember( crs,
+                    indexFactory.selectAndCreate( indexMap, indexId, crs ).getPopulator( descriptor, samplingConfig ).newPopulatingUpdater( accessor ) );
         }
     }
 
-    private IndexUpdater remember(IndexUpdater indexUpdader)
+    private IndexUpdater remember(CoordinateReferenceSystem crs, IndexUpdater indexUpdader)
     {
-        currentUpdaters.add( indexUpdader );
+        currentUpdaters.put(crs, indexUpdader );
         return indexUpdader;
     }
 
@@ -129,7 +138,7 @@ class SpatialFusionIndexUpdater implements IndexUpdater
     {
         while ( !currentUpdaters.isEmpty() )
         {
-            for ( IndexUpdater updater : currentUpdaters )
+            for ( IndexUpdater updater : currentUpdaters.values() )
             {
                 updater.close();
             }
