@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -76,7 +75,7 @@ public class DefaultRecoveryService implements RecoveryService
     @Override
     public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception
     {
-        return new RecoveryVisitor( new TransactionQueue( 100, ( first, last ) -> storageEngine.apply( first, mode ) ) );
+        return new RecoveryVisitor( storageEngine, mode );
     }
 
     @Override
@@ -112,11 +111,13 @@ public class DefaultRecoveryService implements RecoveryService
 
     static class RecoveryVisitor implements RecoveryApplier
     {
-        private final TransactionQueue transactionsToApply;
+        private final StorageEngine storageEngine;
+        private final TransactionApplicationMode mode;
 
-        RecoveryVisitor( TransactionQueue transactionsToApply )
+        RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode )
         {
-            this.transactionsToApply = transactionsToApply;
+            this.storageEngine = storageEngine;
+            this.mode = mode;
         }
 
         @Override
@@ -127,14 +128,13 @@ public class DefaultRecoveryService implements RecoveryService
             TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
             tx.commitment( NO_COMMITMENT, txId );
             tx.logPosition( transaction.getStartEntry().getStartPosition() );
-            transactionsToApply.queue( tx );
+            storageEngine.apply( tx, mode );
             return false;
         }
 
         @Override
         public void close() throws Exception
-        {
-            transactionsToApply.empty();
+        {   // nothing to close
         }
     }
 }
