@@ -61,10 +61,9 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void create() throws IOException
     {
-        for ( KnownSpatialIndex pop : indexMap.values() )
-        {
-            pop.getPopulator(descriptor, samplingConfig).create();
-        }
+        // When an index is first created using `CREATE INDEX` or `graph.schema.for*` then a call will be made here,
+        // however, the KnownSpatialIndex will not yet exist, since that can only be created on demand
+        assert indexMap.isEmpty();
     }
 
     @Override
@@ -83,7 +82,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         }
         for ( IndexEntryUpdate<?> update : updates )
         {
-            select( batchMap, update.values() ).add( update );
+            selectUpdates( batchMap, update.values() ).add( update );
         }
         for ( CoordinateReferenceSystem crs : batchMap.keySet() )
         {
@@ -91,11 +90,11 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         }
     }
 
-    private <T> T select( Map<CoordinateReferenceSystem,T> instances, Value... values )
+    private Collection<IndexEntryUpdate<?>> selectUpdates( Map<CoordinateReferenceSystem,Collection<IndexEntryUpdate<?>>> instances, Value... values )
     {
-        assert(values.length == 1);
+        assert (values.length == 1);
         PointValue pointValue = (PointValue) values[0];
-        return instances.get( pointValue.getCoordinateReferenceSystem() );
+        return instances.computeIfAbsent( pointValue.getCoordinateReferenceSystem(), k -> new ArrayList<>() );
     }
 
     @Override
@@ -115,7 +114,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( ( entry ) -> ((KnownSpatialIndex) entry).getPopulator( descriptor, samplingConfig ).close( populationCompletedSuccessfully ), indexMap.values().toArray() );
+        forAll( ( entry ) -> ((KnownSpatialIndex) entry).closePopulator( descriptor, samplingConfig, populationCompletedSuccessfully ), indexMap.values().toArray() );
     }
 
     @Override
