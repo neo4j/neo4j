@@ -43,17 +43,17 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
   test("logicalplan-tostring works") {
     val textResult = graph.execute(queryWithOutputOf("logicalPlan")).resultAsString()
 
-    textResult should equal("""+-----------------------------------------------------------------------------------------------------------+
-                              || col                                                                                                       |
-                              |+-----------------------------------------------------------------------------------------------------------+
-                              || "ProduceResult(Vector(a, b)) {"                                                                           |
-                              || "  LHS -> Expand(IdName(b), INCOMING, List(RelTypeName(T)), IdName(a), IdName(  UNNAMED10), ExpandAll) {" |
-                              || "    LHS -> AllNodesScan(IdName(b), Set()) {}"                                                            |
-                              || "  }"                                                                                                     |
-                              || "}"                                                                                                       |
-                              |+-----------------------------------------------------------------------------------------------------------+
-                              |5 rows
-                              |""".stripMargin)
+    textResult should equal( """+--------------------------------------------------------------------------------------------------------------------------------+
+                               || col                                                                                                                            |
+                               |+--------------------------------------------------------------------------------------------------------------------------------+
+                               || "ProduceResult[txl=Unchangeable(0)](Vector(a, b)) {"                                                                           |
+                               || "  LHS -> Expand[txl=Unchangeable(0)](IdName(b), INCOMING, List(RelTypeName(T)), IdName(a), IdName(  UNNAMED10), ExpandAll) {" |
+                               || "    LHS -> AllNodesScan[txl=Unchangeable(0)](IdName(b), Set()) {}"                                                            |
+                               || "  }"                                                                                                                          |
+                               || "}"                                                                                                                            |
+                               |+--------------------------------------------------------------------------------------------------------------------------------+
+                               |5 rows
+                               |""".stripMargin)
   }
 
   test("queryGraph-tostring works") {
