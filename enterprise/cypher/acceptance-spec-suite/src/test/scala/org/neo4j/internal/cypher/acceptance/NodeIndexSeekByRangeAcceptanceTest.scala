@@ -1051,7 +1051,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)
-      }, Configs.AllRulePlanners))
+      }, Configs.AllRulePlanners), params = Map("param" -> Array[Int](1, 2, 3)))
     result.toList should be(empty)
 
     an[IllegalArgumentException] should be thrownBy {
