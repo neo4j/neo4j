@@ -443,10 +443,11 @@ public class NeoStores implements AutoCloseable
 
     public void makeStoreOk()
     {
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        visitStore( store ->
         {
             store.makeStoreOk();
-        }
+            return false;
+        } );
     }
 
     /**
@@ -464,30 +465,28 @@ public class NeoStores implements AutoCloseable
     public void logVersions( Logger msgLog )
     {
         msgLog.log( "Store versions:" );
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        visitStore( store ->
         {
             store.logVersions( msgLog );
-        }
+            return false;
+        } );
     }
 
     public void logIdUsage( Logger msgLog )
     {
         msgLog.log( "Id usage:" );
-        for ( CommonAbstractStore store : instantiatedRecordStores() )
+        visitStore( store ->
         {
             store.logIdUsage( msgLog );
-        }
+            return false;
+        } );
     }
 
     /**
      * Visits this store, and any other store managed by this store.
      * TODO this could, and probably should, replace all override-and-do-the-same-thing-to-all-my-managed-stores
      * methods like:
-     * {@link #makeStoreOk()},
-     * {@link #close()} (where that method could be deleted all together and do a visit in {@link #close()}),
-     * {@link #logIdUsage(Logger)},
-     * {@link #logVersions(Logger)},
-     * For a good samaritan to pick up later.
+     * {@link #close()} (where that method could be deleted all together, note a specific behaviour of Counts'Store'})
      */
     public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
     {
