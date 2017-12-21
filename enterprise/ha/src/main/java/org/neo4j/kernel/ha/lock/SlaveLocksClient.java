@@ -20,11 +20,16 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongList;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -45,9 +50,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.kernel.impl.locking.LockType.READ;
 import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 
@@ -248,17 +250,22 @@ class SlaveLocksClient implements Locks.Client
     void acquireDeferredSharedLocks( LockTracer tracer )
     {
         assertNotStopped();
-        Map<ResourceType,List<Long>> deferredLocksMap =
-                client.activeLocks().filter( activeLock -> ActiveLock.SHARED_MODE.equals( activeLock.mode() ) )
-                        .filter( this::isLabelOrRelationshipType )
-                        .collect( groupingBy( ActiveLock::resourceType, mapping( ActiveLock::resourceId, toList() ) ) );
-
+        Map<ResourceType,PrimitiveLongList> deferredLocksMap = new HashMap<>();
+        List<? extends ActiveLock> activeLocks = client.activeLocks()
+                        .filter( activeLock -> ActiveLock.SHARED_MODE.equals( activeLock.mode() ) )
+                        .filter( this::isLabelOrRelationshipType ).collect( Collectors.toList() );
+        for ( ActiveLock activeLock : activeLocks )
+        {
+            Function<ResourceType,PrimitiveLongList> listCreator = resourceType -> Primitive.longList();
+            deferredLocksMap.computeIfAbsent( activeLock.resourceType(), listCreator )
+                            .add( activeLock.resourceId() );
+        }
         deferredLocksMap.forEach( ( type, ids ) -> lockResourcesOnMaster( tracer, type, ids ) );
     }
 
-    private void lockResourcesOnMaster( LockTracer tracer, ResourceType type, List<Long> ids )
+    private void lockResourcesOnMaster( LockTracer tracer, ResourceType type, PrimitiveLongList ids )
     {
-        long[] resourceIds = PrimitiveLongCollections.asArray( ids.iterator() );
+        long[] resourceIds = ids.toArray();
         try ( LockWaitEvent event = tracer.waitForLock( false, type, resourceIds ) )
         {
             acquireSharedOnMaster( type, resourceIds );
