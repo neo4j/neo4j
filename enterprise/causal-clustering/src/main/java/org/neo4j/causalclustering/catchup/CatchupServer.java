@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.catchup;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -33,7 +32,6 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.net.BindException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -53,7 +51,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.server.ServerShutdown;
+import org.neo4j.causalclustering.core.server.AbstractServer;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequest;
@@ -70,12 +68,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class CatchupServer extends LifecycleAdapter
+public class CatchupServer extends AbstractServer
 {
     private final LogProvider logProvider;
     private final Log log;
@@ -119,8 +116,18 @@ public class CatchupServer extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    protected EventLoopGroup getEventLoopGroup()
     {
+        return workerGroup;
+    }
+
+    @Override
+    protected ServerBootstrap bootstrapServer()
+    {
+        if ( !workerGroup.isShutdown() )
+        {
+            throw new IllegalStateException( "Current worker group is not shutdown. Cannot bootsrtap server" );
+        }
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -157,8 +164,10 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( decoders( protocol ) );
 
                         pipeline.addLast( new ChunkedWriteHandler() );
-                        pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
-                                transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors, logProvider ) );
+                        pipeline.addLast(
+                                new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
+                                        transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors,
+                                        logProvider ) );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier, fs, logProvider ) );
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
@@ -166,7 +175,8 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                         pipeline.addLast( new ExceptionMonitoringHandler(
-                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, CatchupServer.class ) ) );
+                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class,
+                                        CatchupServer.class ) ) );
                         pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
@@ -175,15 +185,19 @@ public class CatchupServer extends LifecycleAdapter
         {
             bootstrap.bind().syncUninterruptibly().channel();
         }
-        catch( Exception e )
+        catch ( Exception e )
         {
             // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
             // checked exception but it still throws them with some black magic at runtime.
             //noinspection ConstantConditions
             if ( e instanceof BindException )
             {
-                userLog.error( "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address + " with value: " + listenAddress );
-                log.error( "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address + " with value: " + listenAddress, e );
+                userLog.error(
+                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
+                        " with value: " + listenAddress );
+                log.error(
+                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
+                        " with value: " + listenAddress, e );
                 throw e;
             }
         }
@@ -196,14 +210,7 @@ public class CatchupServer extends LifecycleAdapter
         decoderDispatcher.register( State.TX_PULL, new TxPullRequestDecoder() );
         decoderDispatcher.register( State.GET_STORE, new GetStoreRequestDecoder() );
         decoderDispatcher.register( State.GET_STORE_ID, new SimpleRequestDecoder( GetStoreIdRequest::new ) );
-        decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new SimpleRequestDecoder( CoreSnapshotRequest::new) );
+        decoderDispatcher.register( State.GET_CORE_SNAPSHOT, new SimpleRequestDecoder( CoreSnapshotRequest::new ) );
         return decoderDispatcher;
-    }
-
-    @Override
-    public synchronized void stop() throws Throwable
-    {
-        log.info( "CatchupServer stopping and unbinding from " + listenAddress );
-        ServerShutdown.shutdown( workerGroup );
     }
 }

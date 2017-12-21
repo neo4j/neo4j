@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -39,7 +38,7 @@ import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.core.server.ServerShutdown;
+import org.neo4j.causalclustering.core.server.AbstractServer;
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
@@ -50,14 +49,13 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.ClusterIdAwareMessage>
+public class RaftServer extends AbstractServer implements Inbound<RaftMessages.ClusterIdAwareMessage>
 {
     private static final Setting<ListenSocketAddress> setting = CausalClusteringSettings.raft_listen_address;
     private final ChannelMarshal<ReplicatedContent> marshal;
@@ -84,20 +82,18 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    protected EventLoopGroup getEventLoopGroup()
     {
-        startNettyServer();
+        return workerGroup;
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    protected void bootstrapServer()
     {
-        log.info( "RaftServer stopping and unbinding from " + listenAddress );
-        ServerShutdown.shutdown( workerGroup );
-    }
-
-    private void startNettyServer()
-    {
+        if ( !workerGroup.isShutdown() )
+        {
+            throw new IllegalStateException( "Current worker group is not shutdown. Cannot bootstrap server" );
+        }
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         log.info( "Starting server at: " + listenAddress );
@@ -157,7 +153,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     {
         @Override
         protected void channelRead0( ChannelHandlerContext channelHandlerContext,
-                                     RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage ) throws Exception
+                RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage ) throws Exception
         {
             try
             {
