@@ -44,7 +44,7 @@ public class HighLimitFormatSettings
     @SuppressWarnings( "unused" )
     static final int LABEL_TOKEN_MAXIMUM_ID_BITS = StandardFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS;
     @SuppressWarnings( "unused" )
-    static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = StandardFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS;
+    static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = Byte.SIZE * 3;
 
     private HighLimitFormatSettings()
     {
