@@ -204,7 +204,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(input)
   }
 
-  test("on longer var-lengths, we use FullPruningVarExpand") {
+  test("on longer var-lengths, we also use PruningVarExpand") {
     // Simplest query:
     // match (a)-[*4..5]->(b) return distinct b
 
@@ -217,7 +217,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val input = Distinct(originalExpand, Map("to" -> Variable("to")(pos)))(solved)
 
-    val rewrittenExpand = FullPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 4, 5)(solved)
+    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 4, 5)(solved)
     val expectedOutput = Distinct(rewrittenExpand, Map("to" -> Variable("to")(pos)))(solved)
 
     rewrite(input) should equal(expectedOutput)

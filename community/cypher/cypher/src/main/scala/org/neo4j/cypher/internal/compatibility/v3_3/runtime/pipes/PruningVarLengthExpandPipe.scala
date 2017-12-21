@@ -40,109 +40,6 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
   assert(min <= max)
 
-  /*
-  This algorithm has been implemented using a state machine. This Cypher statement shows the static connections between the states.
-
-  create (ln:State  {name: "LoadNext", loads: "The start node of the expansion.", checksRelationshipUniqueness: false}),
-         (pre:State {name: "PrePruning", loads: "The relationship iterator of the nodes before min length has been reached.", checksRelationshipUniqueness: true}),
-         (pru:State {name: "Pruning", loads: "The relationship iterator of the nodes after min length has been reached.", checksRelationshipUniqueness: true}),
-         (nil:State {name: "Empty", signals: "End of the line. No more expansions to be done."}),
-         (ln)-[:GOES_TO {if: "Input iterator is not empty, load next input row and the start node from it"}]->(pre),
-         (ln)-[:GOES_TO {if: "Input iterator is not empty"}]->(nil),
-         (nil)-[:GOES_TO]->(nil),
-         (pre)-[:GOES_TO {if: "Next step is still less than min"}]->(pre),
-         (pre)-[:GOES_TO {if: "Next step is min or greater"}]->(pru),
-         (pru)-[:GOES_TO {if: "Next step is still less than max"}]->(pru)
-
-   Missing from this picture are the dynamic connections between the states - both `pre` and `pru` have a `whenEmptied`
-   field that is followed once the loaded iterator has been emptied.
- */
-
-  sealed trait State {
-    // Note that the ExecutionContext part here can be null.
-    // This code is used in a hot spot, and avoiding object creation is important.
-    def next(): (State, ExecutionContext)
-  }
-
-  case object Empty extends State {
-    override def next() = (this, null)
-  }
-
-  /**
-    * Performs regular DFS for traversal of the var-length paths up to length (min-1), mapping to one node of the path.
-    *
-    * @param whenEmptied The state to return to when this node is done
-    * @param node        The current node
-    * @param path        The path so far. Only the first pathLength elements are valid.
-    * @param pathLength  Length of the path so far
-    * @param state       The QueryState
-    * @param row         The current row we are adding reachable nodes to
-    * @param expandMap   maps NodeID -> FullExpandDepths
-    */
-  class PrePruningDFS(whenEmptied: State,
-                      node: NodeValue,
-                      val path: Array[Long],
-                      val pathLength: Int,
-                      val state: QueryState,
-                      row: ExecutionContext,
-                      expandMap: PrimitiveLongObjectMap[FullExpandDepths]
-                     ) extends State with Expandable with CheckPath {
-
-    private var rels: Iterator[EdgeValue] = _
-
-    /*
-    Loads the relationship iterator of the nodes before min length has been reached.
-     */
-    override def next(): (State, ExecutionContext) = {
-
-      if (rels == null)
-        rels = expand(row, node)
-
-      while (rels.hasNext) {
-        val r = rels.next()
-        val relId = r.id
-
-        if (!seenRelationshipInPath(relId)) {
-          val nextState: State = traverseRelationship(r, relId)
-
-          return nextState.next()
-        }
-      }
-
-      if (pathLength >= self.min)
-        (whenEmptied, row.newWith1(self.toName, node))
-      else
-        whenEmptied.next()
-    }
-
-    /**
-      * Creates the appropriate state for following a relationship to the next node.
-      */
-    private def traverseRelationship(r: EdgeValue, relId: Long): State = {
-      val nextNode = r.otherNode(node)
-      path(pathLength) = relId
-      val nextPathLength = pathLength + 1
-      if (nextPathLength >= self.min)
-        new PruningDFS(whenEmptied = this,
-          node = nextNode,
-          path = path,
-          pathLength = nextPathLength,
-          state = state,
-          row = row,
-          expandMap = expandMap,
-          updateMinFullExpandDepth = _ => {})
-      else
-        new PrePruningDFS(whenEmptied = this,
-          node = nextNode,
-          path = path,
-          pathLength = nextPathLength,
-          state = state,
-          row = row,
-          expandMap = expandMap)
-    }
-  }
-
-
   /**
     * Performs DFS traversal, but omits traversing relationships that have been completely traversed (to the
     * remaining depth) before.
@@ -156,135 +53,93 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     *
     * Before emitting a node (after relationship traversals), the PruningDFS updates the full expand depth of the
     * incoming relationship on the previous node in the path. The full expand depth is computed as
-    * 1                 if the max path length is reached
-    * A_VERY_BIG_VALUE  if the node has no relationships except the incoming one
-    * d+1               otherwise, where d is the minimum outgoing full expand depth
     *
-    * @param whenEmptied              The state to return to when this node is done
+    *   1                 if the max path length is reached
+    *   inf               if the node has no relationships except the incoming one
+    *   d+1               if at or above minLength, or if the node has been emitted
+    *                       d is the minimum outgoing full expand depth
+    *   0                 otherwise
+    *
+    * Full expand depth always increase, so if a newly computed full expand depth is smaller than the previous value,
+    * the new depth is ignored.
+    *
+    * @param state                    The state to return to when this node is done
     * @param node                     The current node
     * @param path                     The path so far. Only the first pathLength elements are valid.
     * @param pathLength               Length of the path so far
-    * @param state                    The QueryState
+    * @param queryState               The QueryState
     * @param row                      The current row we are adding reachable nodes to
-    * @param expandMap                maps NodeID -> FullExpandDepths
-    * @param updateMinFullExpandDepth Method that is called on node completion. Updates the FullExpandDepth for
-    *                                 incoming relationship in the previous node.
+    * @param expandMap                maps NodeID -> NodeState
+    * @param prevLocalRelIndex        index of the incoming relationship in the NodeState
+    * @param prevNodeState            The NodeState of the previous node in the path
     *
-    *                                 For this algorithm the incoming relationship is the one traversed to reach this
-    *                                 node, while outgoing relationships are all other relationships connected to this
-    *                                 node.
+    * For this algorithm the incoming relationship is the one traversed to reach this
+    * node, while outgoing relationships are all other relationships connected to this
+    * node.
     **/
-  class PruningDFS(whenEmptied: State,
-                   node: NodeValue,
+  class PruningDFS(val state: FullPruneState,
+                   val node: NodeValue,
                    val path: Array[Long],
                    val pathLength: Int,
-                   val state: QueryState,
-                   row: ExecutionContext,
-                   expandMap: PrimitiveLongObjectMap[FullExpandDepths],
-                   updateMinFullExpandDepth: Int => Unit) extends State with Expandable with CheckPath {
+                   val queryState: QueryState,
+                   val row: ExecutionContext,
+                   val expandMap: PrimitiveLongObjectMap[NodeState],
+                   val prevLocalRelIndex: Int,
+                   val prevNodeState: NodeState ) {
 
-    import FullExpandDepths.UNINITIALIZED
+    var nodeState: NodeState = NodeState.UNINITIALIZED
+    var relationshipCursor = 0
 
-    var idx = 0
-    var fullExpandDepths: FullExpandDepths = UNINITIALIZED
+    def nextEndNode(): NodeValue = {
 
-    override def next(): (State, ExecutionContext) = {
+      initiate()
 
       if (pathLength < self.max) {
-        if (fullExpandDepths == UNINITIALIZED)
-          initiateRecursion()
 
-        while (hasRelationships) {
+        nodeState.ensureExpanded(queryState, row, node)
+
+        while (hasRelationship) {
           val currentRelIdx = nextRelationship()
-          if (!haveFullyExploredTheRemainingDepthBefore(currentRelIdx)) {
-            val rel = fullExpandDepths.rels(currentRelIdx)
-            val relId = rel.id
+          if (!haveFullyExploredTheRemainingStepsBefore(currentRelIdx)) {
+            val rel = nodeState.rels(currentRelIdx)
+            val relId = rel.id()
             if (!seenRelationshipInPath(relId)) {
               val nextNode = rel.otherNode(node)
               path(pathLength) = relId
-              val nextState = new PruningDFS(whenEmptied = this,
-                node = nextNode,
-                path = path,
-                pathLength = pathLength + 1,
-                state = state,
-                row = row,
-                expandMap = expandMap,
-                updateMinFullExpandDepth = fullExpandDepths.depths(currentRelIdx) = _)
-              return nextState.next()
+              val endNode = state.push( node = nextNode,
+                                        pathLength = pathLength + 1,
+                                        expandMap = expandMap,
+                                        prevLocalRelIndex = currentRelIdx,
+                                        prevNodeState = nodeState )
+
+              if (endNode != null)
+                return endNode
+              else
+                state.pop()
             }
           }
         }
-
-        expandMap.put(node.id(), fullExpandDepths)
       }
 
-      updateMinFullExpandDepth(currentFullExpandDepth)
+      updatePrevFullExpandDepth()
 
-      (whenEmptied, row.newWith1(self.toName, node))
-    }
-
-    private def hasRelationships = idx < fullExpandDepths.rels.length
-
-    private def nextRelationship() = {
-      val i = idx
-      idx += 1
-      i
-    }
-
-    private def depthLeft = self.max - pathLength
-
-    private def haveFullyExploredTheRemainingDepthBefore(i: Int) = fullExpandDepths.depths(i) >= depthLeft
-
-    private def currentFullExpandDepth: Int =
-      if (pathLength == self.max) 1
-      else {
-        // The maximum amount of steps that have been fully explored is the minimum full expand depth of the
-        // next relationships. The incoming relationship is not included, as that is the relationship that will be
-        // updated.
-        val incomingRelationship = path(pathLength - 1)
-        fullExpandDepths.minOutgoingDepth(incomingRelationship) + 1
-      }
-
-    private def initiateRecursion() = {
-      fullExpandDepths = expandMap.get(node.id())
-      if (fullExpandDepths == null) {
-        val relIter = expand(row, node)
-        fullExpandDepths = FullExpandDepths(relIter.toArray)
-      }
-    }
-  }
-
-  class LoadNext(private val input: Iterator[ExecutionContext], val state: QueryState) extends State with Expandable {
-
-    override def next(): (State, ExecutionContext) =
-      if (input.isEmpty) {
-        (Empty, null)
+      if (!nodeState.isEmitted && pathLength >= self.min) {
+        nodeState.isEmitted = true
+        node
       } else {
-        val row = input.next()
-        row.get(fromName) match {
-          case Some(node: NodeValue) =>
-            val nextState = new PrePruningDFS(whenEmptied = this,
-                                              node = node,
-                                              path = new Array[Long](max),
-                                              pathLength = 0,
-                                              state = state,
-                                              row = row,
-                                              expandMap = Primitive.longObjectMap[FullExpandDepths]())
-            nextState.next()
-          case Some(x: Value) if x == Values.NO_VALUE =>
-            (Empty, null)
-          case _ =>
-            throw new InternalException(s"Expected a node on `$fromName`")
-        }
+        null
       }
-  }
+    }
 
-  trait CheckPath {
-    def pathLength: Int
+    private def hasRelationship: Boolean = relationshipCursor < nodeState.rels.length
 
-    val path: Array[Long]
+    private def nextRelationship(): Int = {
+      val next = relationshipCursor
+      relationshipCursor += 1
+      next
+    }
 
-    def seenRelationshipInPath(r: Long): Boolean = {
+    private def seenRelationshipInPath(r: Long): Boolean = {
       if (pathLength == 0) return false
       var idx = 0
       while (idx < pathLength) {
@@ -293,33 +148,68 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       }
       false
     }
-  }
 
-  trait Expandable {
-    def state: QueryState
+    private def haveFullyExploredTheRemainingStepsBefore(i: Int) = {
+      val stepsLeft = self.max - pathLength
+      nodeState.depths(i) >= stepsLeft
+    }
 
-    /**
-      * List all relationships of a node, given the predicates of this pipe.
-      */
-    def expand(row: ExecutionContext, node: NodeValue) = {
-      val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query)).map(ValueUtils.fromRelationshipProxy)
-      relationships.filter(r => {
-        filteringStep.filterRelationship(row, state)(r) &&
-          filteringStep.filterNode(row, state)(r.otherNode(node))
-      })
+    private def updatePrevFullExpandDepth() = {
+      if ( pathLength > 0 ) {
+        val requiredStepsFromPrev = math.max(0, self.min - pathLength + 1)
+        if (requiredStepsFromPrev <= 1 || nodeState.isEmitted) {
+          prevNodeState.updateFullExpandDepth(prevLocalRelIndex, currentOutgoingFullExpandDepth() + 1)
+        }
+      }
+    }
+
+    private def currentOutgoingFullExpandDepth(): Int = {
+      assert(pathLength > 0)
+      if (pathLength == self.max) 0
+      else {
+        // The maximum amount of steps that have been fully explored is the minimum full expand depth of the
+        // outgoing relationships. The incoming relationship is not included, as that is the relationship that will be
+        // updated.
+        val incomingRelationship = path(pathLength - 1)
+        nodeState.minOutgoingDepth(incomingRelationship)
+      }
+    }
+
+    private def initiate(): Unit = {
+      nodeState = expandMap.get(node.id())
+      if (nodeState == NodeState.UNINITIALIZED) {
+        nodeState = new NodeState()
+        expandMap.put(node.id(), nodeState)
+      }
     }
   }
 
-  object FullExpandDepths {
-    def apply(rels: Array[EdgeValue]) = new FullExpandDepths(rels)
+  object NodeState {
+    val UNINITIALIZED: NodeState = null
 
-    val UNINITIALIZED: FullExpandDepths = null
+    val NOOP_REL: Int = 0
+
+    val NOOP: NodeState = {
+      val noop = new NodeState()
+      noop.rels = Array(null)
+      noop.depths = Array[Byte](0)
+      noop
+    }
   }
 
-  class FullExpandDepths(// all relationships that connect to this node, filtered by the var-length predicates
-                         val rels: Array[EdgeValue]) {
+  /**
+    * The state of expansion for one node
+    */
+  class NodeState() {
+
+    // All relationships that connect to this node, filtered by the var-length predicates
+    var rels: Array[EdgeValue] = _
+
     // The fully expanded depth for each relationship in rels
-    val depths = new Array[Int](rels.length)
+    var depths:Array[Byte] = _
+
+    // True if this node has been emitted before
+    var isEmitted = false
 
     /**
       * Computes the minimum outgoing full expanded depth.
@@ -331,31 +221,153 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
       var i = 0
       while (i < rels.length) {
-        if (rels(i).id() != incomingRelId)
+        if (rels(i).id() != incomingRelId) {
           min = math.min(depths(i), min)
+        }
         i += 1
       }
       min
     }
-  }
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    new Iterator[ExecutionContext] {
+    def updateFullExpandDepth(relIndex:Int, depth:Int ): Unit = {
+      depths(relIndex) = depth.toByte
+    }
 
-      var (stateMachine, current) = new LoadNext(input, state).next()
-
-      override def hasNext = current != null
-
-      override def next() = {
-        if (current == null) {
-          // fail
-          Iterator.empty.next()
-        }
-        val temp = current
-        val (nextState, nextCurrent) = stateMachine.next()
-        stateMachine = nextState
-        current = nextCurrent
-        temp
+    /**
+      * If not already done, list all relationships of a node, given the predicates of this pipe.
+      */
+    def ensureExpanded(queryState: QueryState, row: ExecutionContext, node: NodeValue): Unit = {
+      if ( rels == null ) {
+        val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query)).map(ValueUtils.fromRelationshipProxy)
+        rels = allRels.filter(r => {
+          filteringStep.filterRelationship(row, queryState)(r) &&
+            filteringStep.filterNode(row, queryState)(r.otherNode(node))
+        }).toArray
+        depths = new Array[Byte](rels.length)
       }
     }
+  }
+
+  /**
+    * The overall state of the full pruning var expand. Mostly manages stack of PruningDFS nodes.
+    */
+  class FullPruneState(queryState:QueryState ) {
+    private var inputRow:ExecutionContext = _
+    private val nodeState = new Array[PruningDFS](self.max + 1)
+    private val path = new Array[Long](max)
+    private var depth = -1
+
+    def startRow( inputRow:ExecutionContext ): Unit = {
+      this.inputRow = inputRow
+      depth = -1
+    }
+    def canContinue: Boolean = inputRow != null
+    def next(): ExecutionContext = {
+      val endNode =
+        if (depth == -1) {
+          val fromValue = inputRow.getOrElse(fromName, error(s"Required variable `$fromName` is not in context"))
+          fromValue match {
+            case node: NodeValue =>
+              push( node = node,
+                    pathLength = 0,
+                    expandMap = Primitive.longObjectMap[NodeState](),
+                    prevLocalRelIndex = -1,
+                    prevNodeState = NodeState.NOOP )
+
+            case x: Value if x == Values.NO_VALUE =>
+              null
+
+            case _ => error(s"Expected variable `$fromName` to be a node, got $fromValue")
+          }
+        } else {
+          var maybeEndNode: NodeValue = null
+          while ( depth >= 0 && maybeEndNode == null ) {
+            maybeEndNode = nodeState(depth).nextEndNode()
+            if (maybeEndNode == null) pop()
+          }
+          maybeEndNode
+        }
+      if (endNode == null) {
+        inputRow = null
+        null
+      }
+      else inputRow.newWith1(self.toName, endNode)
+    }
+
+    def push( node: NodeValue,
+              pathLength: Int,
+              expandMap: PrimitiveLongObjectMap[NodeState],
+              prevLocalRelIndex: Int,
+              prevNodeState: NodeState ): NodeValue = {
+      depth += 1
+      nodeState(depth) =
+        new PruningDFS(this, node, path, pathLength, queryState, inputRow, expandMap, prevLocalRelIndex, prevNodeState)
+
+      nodeState(depth).nextEndNode()
+    }
+
+    def pop(): Unit = {
+      nodeState(depth) = null // not needed, but nice for debugging
+      depth -= 1
+    }
+
+    private def error(msg: String) = throw new InternalException(msg)
+  }
+
+  class FullyPruningIterator(
+                       private val input: Iterator[ExecutionContext],
+                       private val queryState: QueryState
+  ) extends Iterator[ExecutionContext] {
+
+    var outputRow:ExecutionContext = _
+    var fullPruneState:FullPruneState = new FullPruneState( queryState )
+    var hasPrefetched = false
+
+    override def hasNext: Boolean = {
+      prefetch()
+      outputRow != null
+    }
+
+    override def next(): ExecutionContext = {
+      prefetch()
+      if (outputRow == null) {
+        // fail
+        Iterator.empty.next()
+      }
+      consumePrefetched()
+    }
+
+    private def consumePrefetched(): ExecutionContext = {
+      val temp = outputRow
+      hasPrefetched = false
+      outputRow = null
+      temp
+    }
+
+    private def prefetch(): Unit =
+      if (!hasPrefetched) {
+        outputRow = fetch()
+        hasPrefetched = true
+      }
+
+    private def fetch(): ExecutionContext = {
+      while (fullPruneState.canContinue || input.nonEmpty) {
+        if (!fullPruneState.canContinue) {
+          fullPruneState.startRow(input.next())
+        } else {
+          val row = fullPruneState.next()
+          if (row != null) return row
+        }
+      }
+      null
+    }
+
+    private def getNodeFromRow(row: ExecutionContext): NodeValue =
+      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[NodeValue]
+  }
+
+  override protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
+    new FullyPruningIterator(input, state)
+  }
 }

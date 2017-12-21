@@ -76,23 +76,7 @@ case class PruningVarExpand(left: LogicalPlan,
   override val lhs = Some(left)
   override def rhs = None
 
-  override def availableSymbols = left.availableSymbols + to
-}
-
-case class FullPruningVarExpand(left: LogicalPlan,
-                                from: IdName,
-                                dir: SemanticDirection,
-                                types: Seq[RelTypeName],
-                                to: IdName,
-                                minLength: Int,
-                                maxLength: Int,
-                                predicates: Seq[(Variable, Expression)] = Seq.empty)
-                               (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
-
-  override val lhs = Some(left)
-  override def rhs = None
-
-  override def availableSymbols = left.availableSymbols + to
+  override def availableSymbols: Set[IdName] = left.availableSymbols + to
 }
 
 sealed trait ExpansionMode
