@@ -73,7 +73,9 @@ public class BufferedCharSeeker implements CharSeeker
         this.lineStartPos = this.bufferPos;
         this.multilineFields = config.multilineFields();
         this.legacyStyleQuoting = config.legacyStyleQuoting();
-        this.trim = config.trimStrings();
+        // Cypher compatibility can result in older Cypher 2.3 code being passed here with older implementations of
+        // Configuration. So we need to ignore the fact that those implementations do not include trimStrings().
+        this.trim = getTrimStringIgnoreErrors( config, Configuration.DEFAULT.trimStrings() );
     }
 
     @Override
@@ -248,6 +250,19 @@ public class BufferedCharSeeker implements CharSeeker
     {
         mark.set( -1, -1, Mark.END_OF_LINE_CHARACTER, false );
         return false;
+    }
+
+    private boolean getTrimStringIgnoreErrors( Configuration config, boolean defaultValue )
+    {
+        try
+        {
+            return config.trimStrings();
+        }
+        catch ( Throwable t )
+        {
+            System.err.println( "Error extracting 'trimStrings' setting from configuration: " + config );
+        }
+        return defaultValue;
     }
 
     @Override
