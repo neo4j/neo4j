@@ -306,6 +306,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
 
         // GIVEN
         long i = fullLeaf();
+        long left = createRightSibling( cursor );
         long j = fullLeaf( i );
 
         long fromInclusive = j - 1;
@@ -1198,7 +1199,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
-            assertEquals( key( 0 ), cursor.get().key() );
+            assertEqualsKey( key( 0 ), cursor.get().key() );
 
             // and WHEN a change happens
             append( keyCount );
@@ -1208,11 +1209,11 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
             assertTrue( cursor.next() );
 
             // and the new key should be found in the end as well
-            assertEquals( key( 1 ), cursor.get().key() );
+            assertEqualsKey( key( 1 ), cursor.get().key() );
             long lastFoundKey = 1;
             while ( cursor.next() )
             {
-                assertEquals( key( lastFoundKey + 1 ), cursor.get().key() );
+                assertEqualsKey( key( lastFoundKey + 1 ), cursor.get().key() );
                 lastFoundKey = getSeed( cursor.get().key() );
             }
             assertEquals( keyCount, lastFoundKey );
@@ -1733,25 +1734,26 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         }
 
         // a checkpoint
+        long oldRootId = rootId;
         long oldStableGeneration = stableGeneration;
         long oldUnstableGeneration = unstableGeneration;
         checkpoint();
         int keyCount = TreeNode.keyCount( cursor );
 
         // and update root with an insert in new generation
-        while ( TreeNode.keyCount( cursor ) == keyCount )
+        while ( keyCount( rootId ) == keyCount )
         {
             insert( i );
             i++;
         }
 
         // and corrupt successor pointer
-        cursor.next( rootId );
+        cursor.next( oldRootId );
         corruptGSPP( cursor, TreeNode.BYTE_POS_SUCCESSOR );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
-        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( rootId );
+        PageAwareByteArrayCursor pageCursorForSeeker = cursor.duplicate( oldRootId );
         pageCursorForSeeker.next();
         try ( SeekCursor<KEY,VALUE> ignored = seekCursor(
                 i, i + 1, pageCursorForSeeker, oldStableGeneration, oldUnstableGeneration ) )
@@ -1861,7 +1863,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
 
         // when
         //noinspection EmptyTryBlock
-        try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, layout.newKey(), layout.newKey(), layout,
+        try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, key( 0 ), key( 1 ), layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
                 exceptionDecorator ) )
         {
@@ -2083,20 +2085,41 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
 
     private void triggerUnderflow( long nodeId ) throws IOException
     {
+        // On underflow keys will move from left to right
+        // and key count of the right will increase.
+        // We don't know if keys will move from nodeId to
+        // right sibling or to nodeId from left sibling.
+        // So we monitor both nodeId and rightSibling.
         PageCursor readCursor = cursor.duplicate( nodeId );
         readCursor.next();
+        int midKeyCount = TreeNode.keyCount( readCursor );
+        int prevKeyCount = midKeyCount + 1;
 
-        int keyCount = TreeNode.keyCount( readCursor );
-        int prevKeyCount;
+        PageCursor rightSiblingCursor = null;
+        long rightSibling = TreeNode.rightSibling( readCursor, stableGeneration, unstableGeneration );
+        int rightKeyCount = 0;
+        int prevRightKeyCount = 1;
+        boolean monitorRight = TreeNode.isNode( rightSibling );
+        if ( monitorRight )
+        {
+            rightSiblingCursor = cursor.duplicate( GenerationSafePointerPair.pointer( rightSibling ) );
+            rightSiblingCursor.next();
+            rightKeyCount = TreeNode.keyCount( rightSiblingCursor );
+            prevRightKeyCount = rightKeyCount + 1;
+        }
 
-        do
+        while ( midKeyCount < prevKeyCount && rightKeyCount <= prevRightKeyCount )
         {
             long toRemove = keyAt( readCursor, 0, LEAF );
             remove( toRemove );
-            prevKeyCount = keyCount;
-            keyCount = TreeNode.keyCount( readCursor );
+            prevKeyCount = midKeyCount;
+            midKeyCount = TreeNode.keyCount( readCursor );
+            if ( monitorRight )
+            {
+                prevRightKeyCount = rightKeyCount;
+                rightKeyCount = TreeNode.keyCount( rightSiblingCursor );
+            }
         }
-        while ( keyCount < prevKeyCount );
     }
 
     private void checkpoint()

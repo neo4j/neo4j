@@ -513,7 +513,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( verifyExpectedFirstAfterGoToNext )
                 {
                     pos = seekForward ? 0 : keyCount - 1;
-                    bTreeNode.keyAt( cursor,firstKeyInNode, pos, INTERNAL );
+                    bTreeNode.keyAt( cursor,firstKeyInNode, pos, LEAF );
                 }
 
                 if ( concurrentWriteHappened )
@@ -545,8 +545,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( 0 <= pos && pos < keyCount )
                 {
                     // Read the next value in this leaf
-                    bTreeNode.keyAt( cursor, mutableKey, pos, INTERNAL );
-                    bTreeNode.valueAt( cursor, mutableValue, pos );
+                    bTreeNode.keyValueAt( cursor, mutableKey, mutableValue, pos );
                 }
             }
             while ( concurrentWriteHappened = cursor.shouldRetry() );

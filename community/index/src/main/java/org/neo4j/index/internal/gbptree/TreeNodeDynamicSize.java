@@ -105,6 +105,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         {
             cursor.setCursorException( format( "Read unreliable key, keySize=%d, keyValueSizeCap=%d, keyHasTombstone=%b",
                     keySize, keyValueSizeCap, hasTombstone( keySize ) ) );
+            return into;
         }
         if ( type == LEAF )
         {
@@ -112,6 +113,23 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
         layout.readKey( cursor, into, keySize );
         return into;
+    }
+
+    @Override
+    void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos )
+    {
+        placeCursorAtActualKey( cursor, pos, LEAF );
+
+        int keySize = readKeySize( cursor );
+        int valueSize = readValueSize( cursor );
+        if ( keySize + valueSize > keyValueSizeCap || keySize < 0 || valueSize < 0 )
+        {
+            cursor.setCursorException( format( "Read unreliable key, keySize=%d, valueSize=%d, keyValueSizeCap=%d, keyHasTombstone=%b",
+                    keySize, valueSize, keyValueSizeCap, hasTombstone( keySize ) ) );
+            return;
+        }
+        layout.readKey( cursor, intoKey, keySize );
+        layout.readValue( cursor, intoValue, valueSize );
     }
 
     @Override
@@ -256,11 +274,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Read value
         int keySize = readKeySize( cursor );
         int valueSize = readValueSize( cursor );
-        if ( keySize + valueSize > keyValueSizeCap )
+        if ( keySize + valueSize > keyValueSizeCap || keySize < 0 || valueSize < 0 )
         {
             cursor.setCursorException(
                     format( "Read unreliable key, value size greater than cap: keySize=%d, valueSize=%d, keyValueSizeCap=%d",
                             keySize, valueSize, keyValueSizeCap ) );
+            return into;
         }
         progressCursor( cursor, keySize );
         layout.readValue( cursor, into, valueSize );

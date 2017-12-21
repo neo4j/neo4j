@@ -110,6 +110,13 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
+    void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos )
+    {
+        keyAt( cursor, intoKey, pos, LEAF );
+        valueAt( cursor, intoValue, pos );
+    }
+
+    @Override
     void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount, long stableGeneration,
             long unstableGeneration )
     {

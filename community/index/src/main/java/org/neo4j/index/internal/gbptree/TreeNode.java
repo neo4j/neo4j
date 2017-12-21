@@ -226,6 +226,8 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract KEY keyAt( PageCursor cursor, KEY into, int pos, Type type );
 
+    abstract void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos );
+
     abstract void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount,
             long stableGeneration, long unstableGeneration );
 
