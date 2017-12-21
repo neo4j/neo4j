@@ -43,6 +43,7 @@ object literalReplacement {
          _: SetClause |
          _: Return |
          _: With |
+         _: Unwind |
          _: CallClause =>
       acc => (acc, Some(identity))
     case _: Clause |

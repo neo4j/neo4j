@@ -125,6 +125,14 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite("CALL foo(12)", "CALL foo({`  AUTOINT0`})", Map("  AUTOINT0" -> 12))
   }
 
+  test("should extract from UNWIND") {
+    assertRewrite(
+      "UNWIND [1, 2, 3] AS list RETURN list",
+      "UNWIND $`  AUTOLIST0` AS list RETURN list",
+      Map("  AUTOLIST0" -> Vector(1, 2, 3))
+    )
+  }
+
   private def assertDoesNotRewrite(query: String): Unit = {
     assertRewrite(query, query, Map.empty)
   }
