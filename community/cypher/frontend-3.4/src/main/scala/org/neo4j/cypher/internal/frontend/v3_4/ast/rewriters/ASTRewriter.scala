@@ -18,8 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Statement, UnaliasedReturnItem}
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
-import org.neo4j.cypher.internal.frontend.v3_4.rewriters.{LiteralExtraction, literalReplacement}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.{RewriterCondition, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.v3_4.expressions.NotEquals
 
