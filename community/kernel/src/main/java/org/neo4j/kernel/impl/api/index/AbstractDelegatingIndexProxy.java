@@ -91,6 +91,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
+    public void refresh() throws IOException
+    {
+        getDelegate().refresh();
+    }
+
+    @Override
     public Future<Void> close() throws IOException
     {
         return getDelegate().close();

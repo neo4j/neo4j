@@ -193,7 +193,7 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).close( true );
-        order.verify( accessor ).newUpdater( IndexUpdateMode.RECOVERY );
+        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -400,6 +400,8 @@ public class IndexingServiceTest
                 .thenReturn( InternalIndexState.POPULATING );
         when( provider.getInitialState( failedIndex.getId(), failedIndex.getIndexDescriptor() ) )
                 .thenReturn( InternalIndexState.FAILED );
+        when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenAnswer(
+                invocation -> mock( IndexAccessor.class ) );
 
         indexingService.init();
 
@@ -1047,6 +1049,29 @@ public class IndexingServiceTest
         expectedException.expectMessage( "Unable to force" );
         expectedException.expect( UnderlyingStorageException.class );
         indexingService.forceAll();
+    }
+
+    @Test
+    public void shouldRefreshIndexesOnStart() throws Exception
+    {
+        // given
+        IndexRule rule = IndexRule.indexRule( 0, index, PROVIDER_DESCRIPTOR );
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), rule );
+
+        IndexAccessor accessor = mock( IndexAccessor.class );
+        IndexUpdater updater = mock( IndexUpdater.class );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
+        when( indexProvider.getOnlineAccessor( eq( rule.getId() ), any( IndexDescriptor.class ),
+                any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+
+        life.init();
+
+        verify( accessor, times( 0 ) ).refresh();
+
+        life.start();
+
+        // Then
+        verify( accessor, times( 1 ) ).refresh();
     }
 
     private IndexProxy createIndexProxyMock()
