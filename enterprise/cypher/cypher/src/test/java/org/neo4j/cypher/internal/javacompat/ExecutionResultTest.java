@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -136,6 +137,19 @@ public class ExecutionResultTest
             // Then
             // just close result without consuming it
         }
+    }
+
+    @Test
+    public void shouldReturnCorrectArrayType()
+    {
+        // Given
+        db.execute( "CREATE (p:Person {names:['adsf', 'adf' ]})" );
+
+        // When
+        Object result = db.execute( "MATCH (n) RETURN n.names" ).next().get( "n.names" );
+
+        // Then
+        assertThat( result, CoreMatchers.instanceOf( String[].class ) );
     }
 
     private void createNode()
