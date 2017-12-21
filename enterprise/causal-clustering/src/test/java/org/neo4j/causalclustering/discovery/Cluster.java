@@ -77,7 +77,6 @@ public class Cluster
     private static final int DEFAULT_CLUSTER_SIZE = 3;
 
     private final File parentDir;
-    private final Monitors monitors;
     private final DiscoveryServiceFactory discoveryServiceFactory;
     private final String listenAddress;
     private final String advertisedAddress;
@@ -89,22 +88,20 @@ public class Cluster
             DiscoveryServiceFactory discoveryServiceFactory,
             Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
             Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
-            String recordFormat, Monitors monitors )
+            String recordFormat )
     {
         this( parentDir, noOfCoreMembers, noOfReadReplicas, discoveryServiceFactory, coreParams,
-                instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, IpFamily.IPV4,
-                false, monitors );
+                instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, IpFamily.IPV4, false );
     }
 
     public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
             DiscoveryServiceFactory discoveryServiceFactory,
             Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
             Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
-            String recordFormat, IpFamily ipFamily, boolean useWildcard, Monitors monitors )
+            String recordFormat, IpFamily ipFamily, boolean useWildcard )
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
-        this.monitors = monitors;
         HashSet<Integer> coreServerIds = new HashSet<>();
         for ( int i = 0; i < noOfCoreMembers; i++ )
         {
@@ -338,7 +335,7 @@ public class Cluster
         List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
         CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialHosts,
                 discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
-                listenAddress, advertisedAddress, monitors );
+                listenAddress, advertisedAddress );
         coreMembers.put( memberId, coreClusterMember );
         return coreClusterMember;
     }
@@ -429,7 +426,7 @@ public class Cluster
         {
             CoreClusterMember coreClusterMember = new CoreClusterMember( i, noOfCoreMembers, addresses,
                     discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
-                    listenAddress, advertisedAddress, monitors );
+                    listenAddress, advertisedAddress );
             coreMembers.put( i, coreClusterMember );
         }
     }
@@ -481,7 +478,7 @@ public class Cluster
         for ( int i = 0; i < noOfReadReplicas; i++ )
         {
             readReplicas.put( i, new ReadReplica( parentDir, i, discoveryServiceFactory, coreMemberAddresses, extraParams,
-                    instanceExtraParams, recordFormat, monitors, advertisedAddress, listenAddress ) );
+                    instanceExtraParams, recordFormat, new Monitors(), advertisedAddress, listenAddress ) );
         }
     }
 
