@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateSelector, LogicalPlanningContext, LogicalPlanningFunction0}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateSelector, LogicalPlanningContext}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateSelector] {
+object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => CandidateSelector) {
   val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
   private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
-  override def apply(implicit context: LogicalPlanningContext): CandidateSelector = new CandidateSelector {
+  override def apply(context: LogicalPlanningContext): CandidateSelector = new CandidateSelector {
     override def apply[X](projector: (X) => LogicalPlan, input: Iterable[X]): Option[X] = {
       val inputOrdering = new Ordering[X] {
-        override def compare(x: X, y: X): Int = baseOrdering.compare(score(projector, x), score(projector, y))
+        override def compare(x: X, y: X): Int = baseOrdering.compare(score(projector, x, context), score(projector, y, context))
       }
 
       if (VERBOSE) {
@@ -67,7 +67,7 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
     }
   }
 
-  private def score[X](projector: (X) => LogicalPlan, input: X)(implicit context: LogicalPlanningContext) = {
+  private def score[X](projector: (X) => LogicalPlan, input: X, context: LogicalPlanningContext) = {
     val costs = context.cost
     val plan = projector(input)
     (-plan.solved.numHints, costs(plan, context.input).gummyBears, -plan.availableSymbols.size)

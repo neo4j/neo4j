@@ -28,20 +28,19 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
 
   import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.expandSolverStep._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])
-                    (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
       for (patternId <- goal.iterator;
            pattern <- registry.lookup(patternId);
            plan <- table(goal - patternId)) yield {
         if (plan.availableSymbols.contains(pattern.name))
           Iterator(
-            planSingleProjectEndpoints(pattern, plan)
+            planSingleProjectEndpoints(pattern, plan, context)
           )
         else
           Iterator(
-            planSinglePatternSide(qg, pattern, plan, pattern.left),
-            planSinglePatternSide(qg, pattern, plan, pattern.right)
+            planSinglePatternSide(qg, pattern, plan, pattern.left, context),
+            planSinglePatternSide(qg, pattern, plan, pattern.right, context)
           ).flatten
       }
 
@@ -51,19 +50,17 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
 
 object expandSolverStep {
 
-  def planSingleProjectEndpoints(patternRel: PatternRelationship, plan: LogicalPlan)
-                                (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSingleProjectEndpoints(patternRel: PatternRelationship, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val (start, end) = patternRel.inOrder
     val isStartInScope = plan.availableSymbols(start)
     val isEndInScope = plan.availableSymbols(end)
-    context.logicalPlanProducer.planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
+    context.logicalPlanProducer.planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel, context)
   }
 
-  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, sourcePlan: LogicalPlan, nodeId: IdName)
-                           (implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
+  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, sourcePlan: LogicalPlan, nodeId: IdName, context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
     if (availableSymbols(nodeId)) {
-      Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols))
+      Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, context))
     } else {
       None
     }
@@ -73,8 +70,8 @@ object expandSolverStep {
                                  patternRel: PatternRelationship,
                                  sourcePlan: LogicalPlan,
                                  nodeId: IdName,
-                                 availableSymbols: Set[IdName])
-                                (implicit context: LogicalPlanningContext): LogicalPlan = {
+                                 availableSymbols: Set[IdName],
+                                 context: LogicalPlanningContext): LogicalPlan = {
     val dir = patternRel.directionRelativeTo(nodeId)
     val otherSide = patternRel.otherSide(nodeId)
     val overlapping = availableSymbols.contains(otherSide)
@@ -82,7 +79,7 @@ object expandSolverStep {
 
     patternRel.length match {
       case SimplePatternLength =>
-        context.logicalPlanProducer.planSimpleExpand(sourcePlan, nodeId, dir, otherSide, patternRel, mode)
+        context.logicalPlanProducer.planSimpleExpand(sourcePlan, nodeId, dir, otherSide, patternRel, mode, context)
 
       case _: VarPatternLength =>
         val availablePredicates: Seq[Expression] =
@@ -112,7 +109,8 @@ object expandSolverStep {
           nodePredicate = nodePredicate,
           solvedPredicates = solvedPredicates,
           mode = mode,
-          legacyPredicates = legacyPredicates)
+          legacyPredicates = legacyPredicates,
+          context = context)
     }
   }
 

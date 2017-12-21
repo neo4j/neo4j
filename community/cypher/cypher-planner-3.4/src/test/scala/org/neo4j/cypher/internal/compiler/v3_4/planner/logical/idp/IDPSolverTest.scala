@@ -27,7 +27,7 @@ import scala.collection.immutable.BitSet
 
 class IDPSolverTest extends CypherFunSuite {
 
-  private implicit val context = ()
+  private val context = ()
 
   test("Solves a small toy problem") {
     val monitor = mock[IDPSolverMonitor]
@@ -46,7 +46,7 @@ class IDPSolverTest extends CypherFunSuite {
       Set('d') -> "d"
     )
 
-    val solution = solver(seed, Set('a', 'b', 'c', 'd'))
+    val solution = solver(seed, Set('a', 'b', 'c', 'd'), context)
 
     solution.toList should equal(List(Set('a', 'b', 'c', 'd') -> "abcd"))
     verify(monitor).foundPlanAfter(1)
@@ -78,7 +78,7 @@ class IDPSolverTest extends CypherFunSuite {
       Set('h') -> "h"
     )
 
-    solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'))
+    solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'), context)
 
     verify(monitor).startIteration(1)
     verify(monitor).endIteration(1, 2, 16)
@@ -139,7 +139,7 @@ class IDPSolverTest extends CypherFunSuite {
       acc ++ t._1
     }.toSet
 
-    solver(seed, result)
+    solver(seed, result, context)
 
     monitor.maxStartIteration should equal(monitor.foundPlanIteration)
     monitor.maxStartIteration
@@ -159,8 +159,7 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   private object stringAppendingSolverStep extends IDPSolverStep[Char, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String])
-                      (implicit context: Unit): Iterator[String] = {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit): Iterator[String] = {
       val goalSize = goal.size
       for (
         leftGoal <- goal.subsets if leftGoal.size <= goalSize;

@@ -26,10 +26,9 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object projection {
 
-  def apply(in: LogicalPlan, projs: Map[String, Expression])
-           (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def apply(in: LogicalPlan, projs: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
 
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs)
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs, context)
 
     val ids = plan.availableSymbols
 
@@ -39,9 +38,9 @@ object projection {
     val projections: Set[(String, Expression)] = projectionsMap.toIndexedSeq.toSet
 
     if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds) {
-      context.logicalPlanProducer.planStarProjection(plan, projectionsMap, projs)
+      context.logicalPlanProducer.planStarProjection(plan, projectionsMap, projs, context)
     } else {
-      context.logicalPlanProducer.planRegularProjection(plan, projectionsMap, projs)
+      context.logicalPlanProducer.planRegularProjection(plan, projectionsMap, projs, context)
     }
   }
 }

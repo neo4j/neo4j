@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, ProcedureCall, Projection, ResolvedCall}
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class PlanEventHorizonTest extends CypherFunSuite {
 
   val pos = DummyPosition(1)
-  implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel]),
+  val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER),
     mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   test("should do projection if necessary") {
@@ -43,7 +43,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
     val inputPlan = Argument()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))
 
     // When
-    val producedPlan = PlanEventHorizon(pq, inputPlan)
+    val producedPlan = PlanEventHorizon(pq, inputPlan, context)
 
     // Then
     producedPlan should equal(Projection(inputPlan, Map("a" -> literal))(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1))))
@@ -57,7 +57,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
     val inputPlan = Argument()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))
 
     // When
-    val producedPlan = PlanEventHorizon(pq, inputPlan)
+    val producedPlan = PlanEventHorizon(pq, inputPlan, context)
 
     // Then
     producedPlan should equal(ProcedureCall(inputPlan, call)(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1))))

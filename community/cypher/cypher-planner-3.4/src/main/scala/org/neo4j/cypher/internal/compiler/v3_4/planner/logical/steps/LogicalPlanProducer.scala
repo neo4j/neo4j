@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
@@ -36,47 +35,50 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListSupport {
-  def planLock(plan: LogicalPlan, nodesToLock: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan =
-    LockNodes(plan, nodesToLock)(plan.solved)
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int) extends ListSupport {
 
-  def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext): LogicalPlan =
-    plan.updateSolved(_.amendQueryGraph(_.addPredicates(solved)))
+  def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1)
+
+  def planLock(plan: LogicalPlan, nodesToLock: Set[IdName], context: LogicalPlanningContext): LogicalPlan =
+    annotate(LockNodes(plan, nodesToLock), plan.solved, context)
+
+  def solvePredicate(plan: LogicalPlan, solved: Expression, context: LogicalPlanningContext): LogicalPlan = {
+    val pq = plan.solved.amendQueryGraph(_.addPredicates(solved))
+    annotate(plan.updateSolved, pq, context)
+  }
 
   def planAggregation(left: LogicalPlan,
                       grouping: Map[String, Expression],
                       aggregation: Map[String, Expression],
                       reportedGrouping: Map[String, Expression],
-                      reportedAggregation: Map[String, Expression])
-                     (implicit context: LogicalPlanningContext): LogicalPlan = {
+                      reportedAggregation: Map[String, Expression],
+                      context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
-    Aggregation(left, grouping, aggregation)(solved)
+    annotate(Aggregation(left, grouping, aggregation), solved, context)
   }
 
-  def planAllNodesScan(idName: IdName, argumentIds: Set[IdName])
-                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planAllNodesScan(idName: IdName, argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds, patternNodes = Set(idName)))
-    AllNodesScan(idName, argumentIds)(solved)
+    annotate(AllNodesScan(idName, argumentIds), solved, context)
   }
 
-  def planApply(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     // We don't want to keep the arguments that this Apply is inserting on the RHS, so we remove them here.
     val rhsSolved: PlannerQuery = right.solved.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
     val solved: PlannerQuery = left.solved ++ rhsSolved
-    Apply(left, right)(solved = solved)
+    annotate(Apply(left, right), solved, context)
   }
 
-  def planTailApply(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.withTail(right.solved))
-    Apply(left, right)(solved = solved)
+    annotate(Apply(left, right), solved, context)
   }
 
-  def planCartesianProduct(left: LogicalPlan, right: LogicalPlan)
-                          (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planCartesianProduct(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = left.solved ++ right.solved
-    CartesianProduct(left, right)(solved)
+    annotate(CartesianProduct(left, right), solved, context)
   }
 
   def planDirectedRelationshipByIdSeek(idName: IdName,
@@ -85,14 +87,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                                        endNode: IdName,
                                        pattern: PatternRelationship,
                                        argumentIds: Set[IdName],
-                                       solvedPredicates: Seq[Expression] = Seq.empty)
-                                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+                                       solvedPredicates: Seq[Expression] = Seq.empty,
+                                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, argumentIds)(solved)
+    annotate(DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, argumentIds), solved, context)
   }
 
   def planUndirectedRelationshipByIdSeek(idName: IdName,
@@ -101,14 +103,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                                          rightNode: IdName,
                                          pattern: PatternRelationship,
                                          argumentIds: Set[IdName],
-                                         solvedPredicates: Seq[Expression] = Seq.empty)
-                                        (implicit context: LogicalPlanningContext): LogicalPlan = {
+                                         solvedPredicates: Seq[Expression] = Seq.empty,
+                                         context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode, argumentIds)(solved)
+    annotate(UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode, argumentIds), solved, context)
   }
 
   def planSimpleExpand(left: LogicalPlan,
@@ -116,9 +118,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                        dir: SemanticDirection,
                        to: IdName,
                        pattern: PatternRelationship,
-                       mode: ExpansionMode)(implicit context: LogicalPlanningContext): LogicalPlan = {
+                       mode: ExpansionMode,
+                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.amendQueryGraph(_.addPatternRelationship(pattern))
-    Expand(left, from, dir, pattern.types, to, pattern.name, mode)(solved)
+    annotate(Expand(left, from, dir, pattern.types, to, pattern.name, mode), solved, context)
   }
 
   def planVarExpand(source: LogicalPlan,
@@ -132,7 +135,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                     nodePredicate: Expression,
                     solvedPredicates: Seq[Expression],
                     legacyPredicates: Seq[(LogicalVariable, Expression)] = Seq.empty,
-                    mode: ExpansionMode)(implicit context: LogicalPlanningContext): LogicalPlan = pattern.length match {
+                    mode: ExpansionMode,
+                    context: LogicalPlanningContext): LogicalPlan = pattern.length match {
     case l: VarPatternLength =>
       val projectedDir = projectedDirection(pattern, from, dir)
 
@@ -140,7 +144,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
         .addPatternRelationship(pattern)
         .addPredicates(solvedPredicates: _*)
       )
-      VarExpand(
+      annotate(VarExpand(
         source = source,
         from = from,
         dir = dir,
@@ -154,37 +158,35 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
         tempEdge = temporaryEdge,
         nodePredicate = nodePredicate,
         edgePredicate = edgePredicate,
-        legacyPredicates = legacyPredicates)(solved)
+        legacyPredicates = legacyPredicates), solved, context)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
   }
 
-  def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan)
-                         (implicit context: LogicalPlanningContext): LogicalPlan = {
-    Selection(predicates, left)(left.solved)
+  def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    annotate(Selection(predicates, left), left.solved, context)
   }
 
   def planNodeByIdSeek(idName: IdName, nodeIds: SeekableArgs,
                        solvedPredicates: Seq[Expression] = Seq.empty,
-                       argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
+                       argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeByIdSeek(idName, nodeIds, argumentIds)(solved)
+    annotate(NodeByIdSeek(idName, nodeIds, argumentIds), solved, context)
   }
 
   def planNodeByLabelScan(idName: IdName, label: LabelName, solvedPredicates: Seq[Expression],
-                          solvedHint: Option[UsingScanHint] = None, argumentIds: Set[IdName])
-                         (implicit context: LogicalPlanningContext): LogicalPlan = {
+                          solvedHint: Option[UsingScanHint] = None, argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeByLabelScan(idName, label, argumentIds)(solved)
+    annotate(NodeByLabelScan(idName, label, argumentIds), solved, context)
   }
 
   def planNodeIndexSeek(idName: IdName,
@@ -193,14 +195,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                         valueExpr: QueryExpression[Expression],
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
-                        argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
+                        argumentIds: Set[IdName],
+                        context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)(solved)
+    annotate(NodeIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds), solved, context)
   }
 
   def planNodeIndexScan(idName: IdName,
@@ -208,14 +211,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                         propertyKey: PropertyKeyToken,
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
-                        argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
+                        argumentIds: Set[IdName],
+                        context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeIndexScan(idName, label, propertyKey, argumentIds)(solved)
+    annotate(NodeIndexScan(idName, label, propertyKey, argumentIds), solved, context)
   }
 
   def planNodeIndexContainsScan(idName: IdName,
@@ -224,14 +228,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
-                                argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
+                                argumentIds: Set[IdName],
+                                context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeIndexContainsScan(idName, label, propertyKey, valueExpr, argumentIds)(solved)
+    annotate(NodeIndexContainsScan(idName, label, propertyKey, valueExpr, argumentIds), solved, context)
   }
 
   def planNodeIndexEndsWithScan(idName: IdName,
@@ -240,29 +245,28 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
-                                argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
+                                argumentIds: Set[IdName],
+                                context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeIndexEndsWithScan(idName, label, propertyKey, valueExpr, argumentIds)(solved)
+    annotate(NodeIndexEndsWithScan(idName, label, propertyKey, valueExpr, argumentIds), solved, context)
   }
 
-  def planNodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint])
-                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planNodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
 
     val plannerQuery = left.solved ++ right.solved
     val solved = plannerQuery.amendQueryGraph(_.addHints(hints))
-    NodeHashJoin(nodes, left, right)(solved)
+    annotate(NodeHashJoin(nodes, left, right), solved, context)
   }
 
-  def planValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals, originalPredicate: Equals)
-                       (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals, originalPredicate: Equals, context: LogicalPlanningContext): LogicalPlan = {
     val plannerQuery = left.solved ++ right.solved
     val solved = plannerQuery.amendQueryGraph(_.addPredicates(originalPredicate))
-    ValueHashJoin(left, right, join)(solved)
+    annotate(ValueHashJoin(left, right, join), solved, context)
   }
 
   def planNodeUniqueIndexSeek(idName: IdName,
@@ -271,20 +275,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
-                              argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
+                              argumentIds: Set[IdName],
+                              context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)(solved)
+    annotate(NodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds), solved, context)
   }
 
-  def planAssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)
-                        (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planAssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = left.solved ++ right.solved
-    AssertSameNode(node, left, right)(solved)
+    annotate(AssertSameNode(node, left, right), solved, context)
   }
 
   def planOptionalExpand(left: LogicalPlan,
@@ -294,81 +298,72 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                          pattern: PatternRelationship,
                          mode: ExpansionMode = ExpandAll,
                          predicates: Seq[Expression] = Seq.empty,
-                         solvedQueryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
+                         solvedQueryGraph: QueryGraph,
+                         context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(solvedQueryGraph))
-    OptionalExpand(left, from, dir, pattern.types, to, pattern.name, mode, predicates)(solved)
+    annotate(OptionalExpand(left, from, dir, pattern.types, to, pattern.name, mode, predicates), solved, context)
   }
 
-  def planOptional(inputPlan: LogicalPlan, ids: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planOptional(inputPlan: LogicalPlan, ids: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .withAddedOptionalMatch(inputPlan.solved.queryGraph)
       .withArgumentIds(ids)
     )
-    Optional(inputPlan, ids)(solved)
+    annotate(Optional(inputPlan, ids), solved, context)
   }
 
-  def planOuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
-                       (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planOuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(right.solved.queryGraph))
-    OuterHashJoin(nodes, left, right)(solved)
+    annotate(OuterHashJoin(nodes, left, right), solved, context)
   }
 
-  def planSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression])
-                   (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(reported: _*)))
-    Selection(predicates, left)(solved)
+    annotate(Selection(predicates, left), solved, context)
   }
 
-  def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression)
-                               (implicit context: LogicalPlanningContext): LogicalPlan =
-    SelectOrAntiSemiApply(outer, inner, expr)(outer.solved)
+  def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
+    annotate(SelectOrAntiSemiApply(outer, inner, expr), outer.solved, context)
 
-  def planLetSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: IdName, expr: Expression)
-                                  (implicit context: LogicalPlanningContext): LogicalPlan =
-    LetSelectOrAntiSemiApply(outer, inner, id, expr)(outer.solved)
+  def planLetSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: IdName, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
+    annotate(LetSelectOrAntiSemiApply(outer, inner, id, expr), outer.solved, context)
 
-  def planSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression)
-                           (implicit context: LogicalPlanningContext): LogicalPlan =
-    SelectOrSemiApply(outer, inner, expr)(outer.solved)
+  def planSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
+    annotate(SelectOrSemiApply(outer, inner, expr), outer.solved, context)
 
-  def planLetSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: IdName, expr: Expression)
-                              (implicit context: LogicalPlanningContext): LogicalPlan =
-    LetSelectOrSemiApply(outer, inner, id, expr)(outer.solved)
+  def planLetSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, id: IdName, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
+    annotate(LetSelectOrSemiApply(outer, inner, id, expr), outer.solved, context)
 
-  def planLetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, id: IdName)
-                          (implicit context: LogicalPlanningContext): LogicalPlan =
-    LetAntiSemiApply(left, right, id)(left.solved)
+  def planLetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, id: IdName, context: LogicalPlanningContext): LogicalPlan =
+    annotate(LetAntiSemiApply(left, right, id), left.solved, context)
 
-  def planLetSemiApply(left: LogicalPlan, right: LogicalPlan, id: IdName)
-                      (implicit context: LogicalPlanningContext): LogicalPlan =
-    LetSemiApply(left, right, id)(left.solved)
+  def planLetSemiApply(left: LogicalPlan, right: LogicalPlan, id: IdName, context: LogicalPlanningContext): LogicalPlan =
+    annotate(LetSemiApply(left, right, id), left.solved, context)
 
-  def planAntiSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: PatternExpression, expr: Expression)
-                       (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planAntiSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: PatternExpression, expr: Expression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
-    AntiSemiApply(left, right)(solved)
+    annotate(AntiSemiApply(left, right), solved, context)
   }
 
-  def planSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: Expression)
-                   (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSemiApply(left: LogicalPlan, right: LogicalPlan, predicate: Expression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-    SemiApply(left, right)(solved)
+    annotate(SemiApply(left, right), solved, context)
   }
 
-  def planQueryArgument(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planQueryArgument(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
     val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
     val otherIds = queryGraph.argumentIds -- patternNodes
-    planArgument(patternNodes, patternRels, otherIds)
+    planArgument(patternNodes, patternRels, otherIds, context)
   }
 
-  def planArgumentFrom(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
-    Argument(plan.availableSymbols)(plan.solved)
+  def planArgumentFrom(plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
+    annotate(Argument(plan.availableSymbols), plan.solved, context)
 
   def planArgument(patternNodes: Set[IdName],
                    patternRels: Set[PatternRelationship] = Set.empty,
-                   other: Set[IdName] = Set.empty)
-                  (implicit context: LogicalPlanningContext): LogicalPlan = {
+                   other: Set[IdName] = Set.empty,
+                   context: LogicalPlanningContext): LogicalPlan = {
     val relIds = patternRels.map(_.name)
     val coveredIds = patternNodes ++ relIds ++ other
 
@@ -379,124 +374,119 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
         patternRelationships = Set.empty
       ))
 
-    Argument(coveredIds)(solved)
+    annotate(Argument(coveredIds), solved, context)
   }
 
-  def planArgument()(implicit context: LogicalPlanningContext): LogicalPlan =
-    Argument(Set.empty)(PlannerQuery.empty)
+  def planArgument(context: LogicalPlanningContext): LogicalPlan =
+    annotate(Argument(Set.empty), PlannerQuery.empty, context)
 
-  def planEmptyProjection(inner: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
-    EmptyResult(inner)(inner.solved)
+  def planEmptyProjection(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
+    annotate(EmptyResult(inner), inner.solved, context)
 
-  def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression])
-                        (implicit context: LogicalPlanningContext): LogicalPlan =
-    inner.updateSolved(_.updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported))))
+  def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
+    val newSolved: PlannerQuery = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported)))
+    annotate(inner.updateSolved, newSolved, context)
+  }
 
-  def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression])
-                           (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported)))
-    Projection(inner, expressions)(solved)
+    annotate(Projection(inner, expressions), solved, context)
   }
 
-  def planRollup(lhs: LogicalPlan, rhs: LogicalPlan,
-                 collectionName: IdName, variableToCollect: IdName,
-                 nullable: Set[IdName]): LogicalPlan = {
-    RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable)(lhs.solved)
+  def planRollup(lhs: LogicalPlan,
+                 rhs: LogicalPlan,
+                 collectionName: IdName,
+                 variableToCollect: IdName,
+                 nullable: Set[IdName],
+                 context: LogicalPlanningContext): LogicalPlan = {
+    annotate(RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable), lhs.solved, context)
   }
 
-  def planCountStoreNodeAggregation(query: PlannerQuery, projectedColumn: IdName, labels: List[Option[LabelName]], argumentIds: Set[IdName])
-                                   (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planCountStoreNodeAggregation(query: PlannerQuery, projectedColumn: IdName, labels: List[Option[LabelName]], argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(query.queryGraph, query.horizon)
-    NodeCountFromCountStore(projectedColumn, labels, argumentIds)(solved)
+    annotate(NodeCountFromCountStore(projectedColumn, labels, argumentIds), solved, context)
   }
 
   def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: IdName, startLabel: Option[LabelName],
-                                            typeNames: Seq[RelTypeName], endLabel: Option[LabelName], argumentIds: Set[IdName])
-                                           (implicit context: LogicalPlanningContext): LogicalPlan = {
+                                            typeNames: Seq[RelTypeName], endLabel: Option[LabelName], argumentIds: Set[IdName], context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.horizon)
-    RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds)(solved)
+    annotate(RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds), solved, context)
   }
 
-  def planSkip(inner: LogicalPlan, count: Expression)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSkip(inner: LogicalPlan, count: Expression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSkipExpression(count))))
-    SkipPlan(inner, count)(solved)
+    annotate(SkipPlan(inner, count), solved, context)
   }
 
-  def planLoadCSV(inner: LogicalPlan, variableName: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral])
-                 (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planLoadCSV(inner: LogicalPlan, variableName: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral], context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.withHorizon(LoadCSVProjection(variableName, url, format, fieldTerminator)))
-    LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping)(solved)
+    annotate(LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping), solved, context)
   }
 
-  def planUnwind(inner: LogicalPlan, name: IdName, expression: Expression)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planUnwind(inner: LogicalPlan, name: IdName, expression: Expression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
-    UnwindCollection(inner, name, expression)(solved)
+    annotate(UnwindCollection(inner, name, expression), solved, context)
   }
 
-  def planCallProcedure(inner: LogicalPlan, call: ResolvedCall)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planCallProcedure(inner: LogicalPlan, call: ResolvedCall, context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.withHorizon(ProcedureCallProjection(call)))
-    ProcedureCall(inner, call)(solved)
+    annotate(ProcedureCall(inner, call), solved, context)
   }
 
-  def planPassAll(inner: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planPassAll(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.withHorizon(PassthroughAllHorizon()))
-    inner.updateSolved(solved)
+    annotate(inner.updateSolved, solved, context)
   }
 
-  def planLimit(inner: LogicalPlan, count: Expression, ties: Ties = DoNotIncludeTies)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planLimit(inner: LogicalPlan, count: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withLimitExpression(count))))
-    LimitPlan(inner, count, ties)(solved)
+    annotate(LimitPlan(inner, count, ties), solved, context)
   }
 
-  def planSort(inner: LogicalPlan, descriptions: Seq[ColumnOrder], items: Seq[ast.SortItem])
-              (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSort(inner: LogicalPlan, descriptions: Seq[ColumnOrder], items: Seq[ast.SortItem], context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))))
-    Sort(inner, descriptions)(solved)
+    annotate(Sort(inner, descriptions), solved, context)
   }
 
   def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression],
-                       withFallBack: Boolean, disallowSameNode: Boolean = true)
-                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+                       withFallBack: Boolean, disallowSameNode: Boolean = true, context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
-    FindShortestPaths(inner, shortestPaths, predicates, withFallBack, disallowSameNode)(solved)
+    annotate(FindShortestPaths(inner, shortestPaths, predicates, withFallBack, disallowSameNode), solved, context)
   }
 
-  def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship)
-                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship, context: LogicalPlanningContext): LogicalPlan = {
     val relTypes = patternRel.types.asNonEmptyOption
     val directed = patternRel.dir != SemanticDirection.BOTH
     val solved = inner.solved.amendQueryGraph(_.addPatternRelationship(patternRel))
-    ProjectEndpoints(inner, patternRel.name,
+    annotate(ProjectEndpoints(inner, patternRel.name,
       start, startInScope,
       end, endInScope,
-      relTypes, directed, patternRel.length)(solved)
+      relTypes, directed, patternRel.length), solved, context)
   }
 
-  def planUnion(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    Union(left, right)(left.solved)
+  def planUnion(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    annotate(Union(left, right), left.solved, context)
     /* TODO: This is not correct in any way.
      LogicalPlan.solved contains a PlannerQuery, but to represent a Union, we'd need a UnionQuery instead
      Not very important at the moment, but dirty.
      */
   }
 
-  def planDistinctStar(left: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planDistinctStar(left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val returnAll = QueryProjection.forIds(left.availableSymbols) map {
       case AliasedReturnItem(e, Variable(key)) => key -> e // This smells awful.
     }
 
-    Distinct(left, returnAll.toMap)(left.solved)
+    annotate(Distinct(left, returnAll.toMap), left.solved, context)
   }
 
-  def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression])
-                  (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
 
     val solved: PlannerQuery = left.solved.updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
-    Distinct(left, expressions)(solved)
+    annotate(Distinct(left, expressions), solved, context)
   }
 
-  def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression])
-                       (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved = orPlan.solved.updateTailOrSelf { that =>
 
       /*
@@ -517,168 +507,166 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                            seenId: IdName,
                            targetId: IdName,
                            right: LogicalPlan,
-                           predicate: Expression)
-                          (implicit context: LogicalPlanningContext): LogicalPlan = {
+                           predicate: Expression,
+                           context: LogicalPlanningContext): LogicalPlan = {
     val solved = (left.solved ++ right.solved).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-    TriadicSelection(left, right, positivePredicate, sourceId, seenId, targetId)(solved)
+    annotate(TriadicSelection(left, right, positivePredicate, sourceId, seenId, targetId), solved, context)
   }
 
-  def planCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)
-                    (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planCreateNode(inner: LogicalPlan, pattern: CreateNodePattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    CreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties)(solved)
+    annotate(CreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties), solved, context)
   }
 
-  def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)
-                         (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNodePattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    MergeCreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties)(solved)
+    annotate(MergeCreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties), solved, context)
   }
 
-  def planCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
-                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    CreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
-      pattern.endNode, pattern.properties)(solved)
+    annotate(CreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
+      pattern.endNode, pattern.properties), solved, context)
   }
 
-  def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
-                                 (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    MergeCreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
-      pattern.endNode, pattern.properties)(solved)
+    annotate(MergeCreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
+      pattern.endNode, pattern.properties), solved, context)
   }
 
-  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[IdName])
-                          (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[IdName], context: LogicalPlanningContext): LogicalPlan = {
     val solved = lhs.solved ++ rhs.solved
 
-    ConditionalApply(lhs, rhs, idNames)(solved)
+    annotate(ConditionalApply(lhs, rhs, idNames), solved, context)
   }
 
-  def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idNames: Seq[IdName])
-                              (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = inner.solved ++ outer.solved
 
-    AntiConditionalApply(inner, outer, idNames)(solved)
+  def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idNames: Seq[IdName], context: LogicalPlanningContext, maybeSolved: Option[PlannerQuery] = None): LogicalPlan = {
+    val solved = maybeSolved.getOrElse(inner.solved ++ outer.solved)
+
+    annotate(AntiConditionalApply(inner, outer, idNames), solved, context)
   }
 
-  def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)
-                    (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 
-    if (delete.forced) DetachDeleteNode(inner, delete.expression)(solved)
-    else DeleteNode(inner, delete.expression)(solved)
+    if (delete.forced)
+      annotate(DetachDeleteNode(inner, delete.expression), solved, context)
+    else
+      annotate(DeleteNode(inner, delete.expression), solved, context)
   }
 
-  def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression)
-                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 
-    DeleteRelationship(inner, delete.expression)(solved)
+    annotate(DeleteRelationship(inner, delete.expression), solved, context)
   }
 
-  def planDeletePath(inner: LogicalPlan, delete: DeleteExpression)
-                    (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planDeletePath(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 
-    if (delete.forced) DetachDeletePath(inner, delete.expression)(solved)
-    else DeletePath(inner, delete.expression)(solved)
+    if (delete.forced)
+      annotate(DetachDeletePath(inner, delete.expression), solved, context)
+    else
+      annotate(DeletePath(inner, delete.expression), solved, context)
   }
 
-  def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpression)
-                          (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 
-    if (delete.forced) DetachDeleteExpression(inner, delete.expression)(solved)
-    else DeleteExpressionPlan(inner, delete.expression)(solved)
+    if (delete.forced)
+      annotate(DetachDeleteExpression(inner, delete.expression), solved, context)
+    else
+      annotate(DeleteExpressionPlan(inner, delete.expression), solved, context)
   }
 
-  def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern)
-                  (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    SetLabels(inner, pattern.idName, pattern.labels)(solved)
+    annotate(SetLabels(inner, pattern.idName, pattern.labels), solved, context)
   }
 
-  def planSetNodeProperty(inner: LogicalPlan, pattern: SetNodePropertyPattern)
-                         (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSetNodeProperty(inner: LogicalPlan, pattern: SetNodePropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    SetNodeProperty(inner, pattern.idName, pattern.propertyKey, pattern.expression)(solved)
+    annotate(SetNodeProperty(inner, pattern.idName, pattern.propertyKey, pattern.expression), solved, context)
   }
 
   def planSetNodePropertiesFromMap(inner: LogicalPlan,
-                                   pattern: SetNodePropertiesFromMapPattern)
-                                  (implicit context: LogicalPlanningContext): LogicalPlan = {
+                                   pattern: SetNodePropertiesFromMapPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    SetNodePropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps)(solved)
+    annotate(SetNodePropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps), solved, context)
   }
 
-  def planSetRelationshipProperty(inner: LogicalPlan, pattern: SetRelationshipPropertyPattern)
-                                 (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSetRelationshipProperty(inner: LogicalPlan, pattern: SetRelationshipPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    SetRelationshipPropery(inner, pattern.idName, pattern.propertyKey, pattern.expression)(solved)
+    annotate(SetRelationshipPropery(inner, pattern.idName, pattern.propertyKey, pattern.expression), solved, context)
   }
 
   def planSetRelationshipPropertiesFromMap(inner: LogicalPlan,
-                                           pattern: SetRelationshipPropertiesFromMapPattern)
-                                          (implicit context: LogicalPlanningContext): LogicalPlan = {
+                                           pattern: SetRelationshipPropertiesFromMapPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    SetRelationshipPropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps)(solved)
+    annotate(SetRelationshipPropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps), solved, context)
   }
 
-  def planSetProperty(inner: LogicalPlan, pattern: SetPropertyPattern)
-                     (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planSetProperty(inner: LogicalPlan, pattern: SetPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    SetProperty(inner, pattern.entityExpression, pattern.propertyKeyName, pattern.expression)(solved)
+    annotate(SetProperty(inner, pattern.entityExpression, pattern.propertyKeyName, pattern.expression), solved, context)
   }
 
-  def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern)
-                     (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    RemoveLabels(inner, pattern.idName, pattern.labels)(solved)
+    annotate(RemoveLabels(inner, pattern.idName, pattern.labels), solved, context)
   }
 
-  def planForeachApply(left: LogicalPlan, innerUpdates: LogicalPlan, pattern: ForeachPattern)
-                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planForeachApply(left: LogicalPlan, innerUpdates: LogicalPlan, pattern: ForeachPattern, context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = left.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    ForeachApply(left, innerUpdates, pattern.variable.name, pattern.expression)(solved)
+    annotate(ForeachApply(left, innerUpdates, pattern.variable.name, pattern.expression), solved, context)
   }
 
-  def planEager(inner: LogicalPlan): LogicalPlan =     Eager(inner)(inner.solved)
+  def planEager(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
+    annotate(Eager(inner), inner.solved, context)
 
-  def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException): LogicalPlan =
-    ErrorPlan(inner, exception)(inner.solved)
+  def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException, context: LogicalPlanningContext): LogicalPlan =
+    annotate(ErrorPlan(inner, exception), inner.solved, context)
 
-  implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)
-                                   (implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
+  def planProduceResult(inner: LogicalPlan, columns: Seq[String]): LogicalPlan = {
+    val result = ProduceResult(inner, columns)
+    result.readTransactionLayer.value = readTransactionLayer
+    result
+  }
+
+  private def annotate(plan: PlannerQuery with CardinalityEstimation => LogicalPlan, plannerQuery: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
-    CardinalityEstimation.lift(plannerQuery, cardinality)
+    val solved = CardinalityEstimation.lift(plannerQuery, cardinality)
+    val p = plan(solved)
+    p.readTransactionLayer.value = readTransactionLayer
+    p
   }
 
   private def projectedDirection(pattern: PatternRelationship, from: IdName, dir: SemanticDirection): SemanticDirection = {

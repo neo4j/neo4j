@@ -45,7 +45,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query)
+    val result = sortSkipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Skip(startPlan, x)(solved))
@@ -59,7 +59,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query)
+    val result = sortSkipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Limit(startPlan, x, DoNotIncludeTies)(solved))
@@ -74,7 +74,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query)
+    val result = sortSkipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Limit(Skip(startPlan, y)(solved), x, DoNotIncludeTies)(solved))
@@ -88,7 +88,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query)
+    val result = sortSkipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(startPlan, Seq(columnOrder))(solved))
@@ -105,7 +105,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query)
+    val result = sortSkipAndLimit(startPlan, query, context)
 
     // then
     val sorted = Sort(startPlan, Seq(columnOrder))(solved)
