@@ -28,7 +28,7 @@ public class PrimitiveLongList implements PrimitiveLongCollection
 {
     private static final int DEFAULT_SIZE = 8;
 
-    private long[] elements = PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+    private long[] elements;
     private int size;
 
     PrimitiveLongList()
@@ -111,20 +111,14 @@ public class PrimitiveLongList implements PrimitiveLongCollection
         elements = Arrays.copyOf( elements, newCapacity );
     }
 
-    private class PrimitiveLongListIterator implements PrimitiveLongIterator
+    private class PrimitiveLongListIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
     {
         int cursor;
 
         @Override
-        public boolean hasNext()
+        protected boolean fetchNext()
         {
-            return cursor < size;
-        }
-
-        @Override
-        public long next()
-        {
-            return elements[cursor++];
+            return cursor < size && next( elements[cursor++] );
         }
     }
 }
