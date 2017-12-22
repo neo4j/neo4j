@@ -58,7 +58,6 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
   private def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
     val logicalPlan = f(solved)
-    logicalPlan.assignIds()
     planBuilder.build(None, logicalPlan)
   }
 

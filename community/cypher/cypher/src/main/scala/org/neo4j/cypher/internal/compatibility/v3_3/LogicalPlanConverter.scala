@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
 import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
-import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, IdGen, SameId, SequentialIdGen}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -55,27 +55,25 @@ object LogicalPlanConverter {
     override def apply(v1: (AnyRef, Seq[AnyRef])): AnyRef = rewriter.apply(v1)
 
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
-      implicit val idGen = SequentialIdGen
-
       val rewritten = RewriterWithArgs.lift {
         case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
-          plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(new PlannerQueryWrapper(plan.solved))
+          plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.SingleRow, _) =>
-          plansV3_4.Argument()(new PlannerQueryWrapper(plan.solved))
-        case (_: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
+          plansV3_4.Argument()(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
+        case (plan: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
           plansV3_4.ProduceResult(source = children(1).asInstanceOf[LogicalPlanV3_4],
-            columns = children(0).asInstanceOf[Seq[String]])
+            columns = children(0).asInstanceOf[Seq[String]])(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>
           plansV3_4.TriadicSelection(left = children(1).asInstanceOf[LogicalPlanV3_4],
             right = children(5).asInstanceOf[LogicalPlanV3_4],
             positivePredicate = children(0).asInstanceOf[Boolean],
             sourceId = children(2).asInstanceOf[IdNameV3_4],
             seenId = children(3).asInstanceOf[IdNameV3_4],
-            targetId = children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))
+            targetId = children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
-          convertVersion("v3_3", "v3_4", plan, children, idGen, classOf[IdGen])
+          convertVersion("v3_3", "v3_4", plan, children, SameId(Id(plan.assignedId.underlying)), classOf[IdGen])
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
-          convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery], idGen, classOf[IdGen])
+          convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery], SameId(Id(plan.assignedId.underlying)), classOf[IdGen])
 
         case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
           new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
@@ -164,7 +162,6 @@ object LogicalPlanConverter {
         case plan: LogicalPlanV3_3 =>
           try {
             val plan3_4 = rewritten.asInstanceOf[LogicalPlanV3_4]
-            plan3_4.setIdTo(helpers.as3_4(plan.assignedId))
             // 3.3 does not know about transaction layers, it plans Eagers instead.
             plan3_4.readTransactionLayer.value = 0
           } catch {

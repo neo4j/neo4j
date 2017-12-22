@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{SlotConfiguration, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.IdName
@@ -28,10 +28,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-class PipelineBuilder(slotConfigurations: Map[LogicalPlanId, SlotConfiguration], converters: ExpressionConverters)
+class PipelineBuilder(slotConfigurations: Map[Id, SlotConfiguration], converters: ExpressionConverters)
   extends TreeBuilder[Pipeline] {
 
   override def create(plan: LogicalPlan): Pipeline = {
@@ -40,7 +41,7 @@ class PipelineBuilder(slotConfigurations: Map[LogicalPlanId, SlotConfiguration],
   }
 
   override protected def build(plan: LogicalPlan): Pipeline = {
-    val slots = slotConfigurations(plan.assignedId)
+    val slots = slotConfigurations(plan.id)
 
     val thisOp = plan match {
       case plans.AllNodesScan(IdName(column), _) =>
@@ -58,7 +59,7 @@ class PipelineBuilder(slotConfigurations: Map[LogicalPlanId, SlotConfiguration],
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
     var source = from
-    val slots = slotConfigurations(plan.assignedId)
+    val slots = slotConfigurations(plan.id)
 
       val thisOp = plan match {
         case plans.ProduceResult(_, columns) =>
@@ -72,7 +73,7 @@ class PipelineBuilder(slotConfigurations: Map[LogicalPlanId, SlotConfiguration],
           val fromOffset = slots.getLongOffsetFor(fromName)
           val relOffset = slots.getLongOffsetFor(relName)
           val toOffset = slots.getLongOffsetFor(to)
-          val fromPipe = slotConfigurations(lhs.assignedId)
+          val fromPipe = slotConfigurations(lhs.id)
           val lazyTypes = LazyTypes(types.toArray)(SemanticTable())
           new ExpandAllOperator(slots, fromPipe, fromOffset, relOffset, toOffset, dir, lazyTypes)
 
@@ -95,7 +96,7 @@ class PipelineBuilder(slotConfigurations: Map[LogicalPlanId, SlotConfiguration],
               throw new InternalException("Weird slot found for UNWIND")
           }
           val runtimeExpression = converters.toCommandExpression(collection)
-          new UnwindOperator(runtimeExpression, offset, slotConfigurations(src.assignedId), slots)
+          new UnwindOperator(runtimeExpression, offset, slotConfigurations(src.id), slots)
 
         case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
       }

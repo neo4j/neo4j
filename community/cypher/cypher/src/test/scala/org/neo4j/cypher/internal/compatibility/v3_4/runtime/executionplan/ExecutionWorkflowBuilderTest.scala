@@ -34,15 +34,11 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.Argument
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
-  implicit val idGen = SequentialIdGen
+  implicit val idGen = new SequentialIdGen()
 
   val PlannerName = IDPPlannerName
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-  val logicalPlan = {
-    val x = Argument()(solved)
-    x.assignIds()
-    x
-  }
+  val logicalPlan = Argument()(solved)
 
   test("produces eager results for updating queries") {
     // GIVEN

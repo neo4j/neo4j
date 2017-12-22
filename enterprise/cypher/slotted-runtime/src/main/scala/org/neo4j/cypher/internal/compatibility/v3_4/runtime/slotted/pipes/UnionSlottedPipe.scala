@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.RowMapping
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe,
                             lhsMapping: RowMapping,
                             rhsMapping: RowMapping)
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+                           (val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val left = lhs.createResults(state)

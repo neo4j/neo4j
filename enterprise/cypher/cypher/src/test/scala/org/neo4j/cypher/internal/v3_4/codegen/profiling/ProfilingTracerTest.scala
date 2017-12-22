@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.codegen.profiling
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 
@@ -35,10 +35,12 @@ class ProfilingTracerTest extends CypherFunSuite {
     }
   }
 
+  val id = Id.INVALID_ID
+
   test("shouldReportExecutionTimeOfQueryExecution") {
     // given
     val clock = new Clock
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val tracer = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
@@ -53,7 +55,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   test("multiple uses of the same Id should aggregate spent time") {
     // given
     val clock = new Clock
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val tracer = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
 
     // when
@@ -71,7 +73,7 @@ class ProfilingTracerTest extends CypherFunSuite {
 
   test("shouldReportDbHitsOfQueryExecution") {
     // given
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val tracer = new ProfilingTracer(EmptyKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
@@ -88,7 +90,7 @@ class ProfilingTracerTest extends CypherFunSuite {
 
   test("shouldReportRowsOfQueryExecution") {
     // given
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val tracer = new ProfilingTracer(EmptyKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
@@ -105,7 +107,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   }
 
   test("report page cache hits as part of profiling statistics") {
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val cursorTracer = new DefaultPageCursorTracer
     val tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)
@@ -124,7 +126,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   }
 
   test("report page cache misses as part of profiling statistics") {
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val cursorTracer = new DefaultPageCursorTracer
     val tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)

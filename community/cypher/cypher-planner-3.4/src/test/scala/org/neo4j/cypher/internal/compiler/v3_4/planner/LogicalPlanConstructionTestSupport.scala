@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import scala.language.implicitConversions
 
 trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
-  implicit val idGen = SequentialIdGen
+  implicit val idGen = new SequentialIdGen()
   implicit protected def idName(name: String): IdName = IdName(name)
   implicit protected def idSymbol(name: Symbol): IdName = IdName(name.name)
 }

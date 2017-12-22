@@ -26,8 +26,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.indexQuery
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QueryExpression}
+import org.neo4j.cypher.internal.v3_4.logical.plans.QueryExpression
 
 case class NodeIndexSeekSlottedPipe(ident: String,
                                     label: LabelToken,
@@ -36,7 +37,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
                                     indexMode: IndexSeekMode = IndexSeek,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
-                                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+                                   (val id: Id = Id.INVALID_ID) extends Pipe {
 
   private val offset = slots.getLongOffsetFor(ident)
 

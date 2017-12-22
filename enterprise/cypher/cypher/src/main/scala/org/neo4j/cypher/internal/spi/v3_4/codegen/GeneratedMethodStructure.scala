@@ -36,12 +36,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionC
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Templates._
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api.IndexQuery
@@ -369,7 +369,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def traceEvent(planStepId: String) =
     invoke(tracer, executeOperator,
-           getStatic(FieldReference.staticField(generator.owner(), typeRef[LogicalPlanId], planStepId)))
+           getStatic(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
 
   override def incrementDbHits() = if (tracing) generator.expression(invoke(loadEvent, Methods.dbHit))
 

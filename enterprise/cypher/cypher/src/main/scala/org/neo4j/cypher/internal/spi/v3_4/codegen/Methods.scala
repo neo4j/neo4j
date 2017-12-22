@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.QueryExecutionEvent
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.javacompat.ResultRecord
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
@@ -105,7 +105,7 @@ object Methods {
   val relId = method[RelationshipIdWrapper, Long]("id")
   val set = method[ResultRecord, Unit]("set", typeRef[Int], typeRef[AnyValue])
   val visit = method[QueryResultVisitor[_], Boolean]("visit", typeRef[Record])
-  val executeOperator = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[LogicalPlanId])
+  val executeOperator = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[Id])
   val dbHit = method[QueryExecutionEvent, Unit]("dbHit")
   val row = method[QueryExecutionEvent, Unit]("row")
   val unboxInteger = method[java.lang.Integer, Int]("intValue")

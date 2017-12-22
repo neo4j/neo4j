@@ -47,7 +47,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
   override protected def build(plan: LogicalPlan): InternalPlanDescription = {
     assert(plan.isLeaf)
 
-    val id = plan.assignedId
+    val id = plan.id
     val variables = plan.availableSymbols.map(_.name)
 
     val result: InternalPlanDescription = plan match {
@@ -121,7 +121,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.isEmpty)
 
-    val id = plan.assignedId
+    val id = plan.id
     val variables = plan.availableSymbols.map(_.name)
     val children = if (source.isInstanceOf[ArgumentPlanDescription]) NoChildren else SingleChild(source)
 
@@ -158,17 +158,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "DropResult", children, Seq.empty, variables)
 
       case NodeCountFromCountStore(IdName(id), labelName, arguments) =>
-        PlanDescriptionImpl(id = plan.assignedId, "NodeCountFromCountStore", NoChildren,
+        PlanDescriptionImpl(id = plan.id, "NodeCountFromCountStore", NoChildren,
                             Seq(CountNodesExpression(id, labelName.map(l => l.map(_.name)))), variables)
 
       case RelationshipCountFromCountStore(IdName(id), start, types, end, arguments) =>
-        PlanDescriptionImpl(id = plan.assignedId, "RelationshipCountFromCountStore", NoChildren,
+        PlanDescriptionImpl(id = plan.id, "RelationshipCountFromCountStore", NoChildren,
                             Seq(
                               CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
                             variables)
 
       case NodeUniqueIndexSeek(IdName(id), label, propKeys, value, arguments) =>
-        PlanDescriptionImpl(id = plan.assignedId, "NodeUniqueIndexSeek", NoChildren,
+        PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
                             Seq(Index(label.name, propKeys.map(_.name))), variables)
 
       case _: ErrorPlan =>
@@ -299,7 +299,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.nonEmpty)
 
-    val id = plan.assignedId
+    val id = plan.id
     val variables = plan.availableSymbols.map(_.name)
     val children = TwoChildren(lhs, rhs)
 
@@ -332,7 +332,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
 
       case row: plans.Argument =>
-        ArgumentPlanDescription(id = plan.assignedId, Seq.empty, row.argumentIds.map(_.name))
+        ArgumentPlanDescription(id = plan.id, Seq.empty, row.argumentIds.map(_.name))
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)

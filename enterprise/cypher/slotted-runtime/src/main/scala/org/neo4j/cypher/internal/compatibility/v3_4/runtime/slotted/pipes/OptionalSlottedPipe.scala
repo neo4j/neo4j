@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.Values
 
 case class OptionalSlottedPipe(source: Pipe,
                                nullableSlots: Seq[Slot],
                                slots: SlotConfiguration,
                                argumentSize: SlotConfiguration.Size)
-                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                              (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with Pipe {
 
   //===========================================================================

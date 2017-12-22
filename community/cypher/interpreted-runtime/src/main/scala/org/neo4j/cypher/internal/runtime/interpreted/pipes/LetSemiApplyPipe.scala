@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.Values
 
 case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negated: Boolean)
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
+                           (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       (outerContext) =>

@@ -36,7 +36,7 @@ import org.neo4j.kernel.monitoring.Monitors
 
 class BuildCompiledExecutionPlanTest extends CypherFunSuite {
 
-  implicit val idGen = SequentialIdGen
+  implicit val idGen = new SequentialIdGen()
 
   private val solved = CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty), 0.0)
 
@@ -66,7 +66,6 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
   }
 
   private def process(monitors: WrappedMonitors, plan: LogicalPlan) = {
-    plan.assignIds()
     val context = codegen.CompiledRuntimeContextHelper.create(
       monitors = monitors,
       planContext = new NotImplementedPlanContext {

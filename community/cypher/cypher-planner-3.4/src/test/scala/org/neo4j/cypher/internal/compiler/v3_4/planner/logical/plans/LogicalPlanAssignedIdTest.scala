@@ -26,26 +26,24 @@ import org.neo4j.cypher.internal.util.v3_4.{CypherException, Rewriter, topDown}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{NestedPlanExpression, _}
 
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  test("assignedId survives rewriting") {
+  test("id survives rewriting") {
     val sr1 = Argument()(solved)
     val pr = Projection(sr1, Map.empty)(solved)
-    pr.assignIds()
 
     val prPrim = pr.endoRewrite(topDown(Rewriter.lift {
       case sr: Argument => Argument()(solved)
     }))
 
-    pr.assignedId should equal(prPrim.assignedId)
-    pr.lhs.get.assignedId should equal(prPrim.lhs.get.assignedId)
+    pr.id should equal(prPrim.id)
+    pr.lhs.get.id should equal(prPrim.lhs.get.id)
   }
 
-  test("assignedIds are different between plans") {
+  test("ids are different between plans") {
     val sr1 = Argument()(solved)
     val sr2 = Argument()(solved)
     val apply = Apply(sr1, sr2)(solved)
-    apply.assignIds()
 
-    sr1.assignedId shouldNot equal(sr2.assignedId)
+    sr1.id shouldNot equal(sr2.id)
   }
 
   test("tree structure is assigned ids in a predictable way") {
@@ -62,32 +60,12 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
     val applyB = Apply(sr1B, sr2B)(solved)
     val applyAll = Apply(applyA, applyB)(solved) // I heard you guys like Apply, so we applied an Apply in your Apply
 
-    applyAll.assignIds()
-
-    applyAll.assignedId.underlying should equal(0)
-    applyA.assignedId.underlying should equal(1)
-    sr1A.assignedId.underlying should equal(2)
-    sr2A.assignedId.underlying should equal(3)
-    applyB.assignedId.underlying should equal(4)
-    sr1B.assignedId.underlying should equal(5)
-    sr2B.assignedId.underlying should equal(6)
+    applyAll.id.x should equal(0)
+    applyA.id.x should equal(1)
+    sr1A.id.x should equal(2)
+    sr2A.id.x should equal(3)
+    applyB.id.x should equal(4)
+    sr1B.id.x should equal(5)
+    sr2B.id.x should equal(6)
   }
-
-  test("cant assign ids twice") {
-    val sr1 = Argument()(solved)
-    val pr = Projection(sr1, Map.empty)(solved)
-    pr.assignIds()
-    intercept[CypherException](pr.assignIds())
-  }
-
-  test("can assign inside expressions as well") {
-    val argument = Argument()(solved)
-    val inner = AllNodesScan(IdName("x"), Set.empty)(solved)
-    val filter = Selection(Seq(NestedPlanExpression(inner, literalInt(42))(pos)), argument)(solved)
-
-    filter.assignIds()
-
-    val x = inner.assignedId // should not fail
-  }
-
 }

@@ -26,7 +26,7 @@ trait IdGen {
   def id(): Id
 }
 
-object SequentialIdGen extends IdGen {
+class SequentialIdGen() extends IdGen {
   var i = 0
 
   def id(): Id = {

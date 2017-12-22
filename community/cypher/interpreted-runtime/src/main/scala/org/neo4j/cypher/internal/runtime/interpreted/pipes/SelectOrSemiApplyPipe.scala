@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate, negated: Boolean)
-                                (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
   predicate.registerOwningPipe(this)

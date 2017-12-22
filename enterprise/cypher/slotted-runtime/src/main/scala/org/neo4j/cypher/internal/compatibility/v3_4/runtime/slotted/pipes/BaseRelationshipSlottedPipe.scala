@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap, makeValueNeoSafe}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemanticsException}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -108,7 +108,7 @@ case class CreateRelationshipSlottedPipe(src: Pipe,
                                          endNode: Slot,
                                          slots: SlotConfiguration,
                                          properties: Option[Expression])
-                                        (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                        (val id: Id = Id.INVALID_ID)
   extends BaseRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, slots, properties) {
   override protected def handleNull(key: String) {
     //do nothing
@@ -122,7 +122,7 @@ case class MergeCreateRelationshipSlottedPipe(src: Pipe,
                                               endNode: Slot,
                                               slots: SlotConfiguration,
                                               properties: Option[Expression])
-                                             (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                             (val id: Id = Id.INVALID_ID)
   extends BaseRelationshipSlottedPipe(src, RelationshipKey, startNode, typ: LazyType, endNode, slots, properties) {
 
   override protected def handleNull(key: String) {

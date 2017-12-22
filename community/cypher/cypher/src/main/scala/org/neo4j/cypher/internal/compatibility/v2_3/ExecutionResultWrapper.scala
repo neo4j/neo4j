@@ -34,8 +34,8 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, Argument => Argument3_4, InternalPlanDescription => InternalPlanDescription3_4}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, SCHEMA_WRITE, ExecutionMode => ExecutionModeV3_4, _}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb.Result.ResultVisitor
@@ -194,7 +194,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
       case planDescriptionv2_3.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
         Arguments.SourceCode(className, sourceCode)
     }
-    PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.identifiers)
+    PlanDescriptionImpl(Id.INVALID_ID, name, children, arguments, planDescription.identifiers)
   }
 
   override def hasNext: Boolean = inner.hasNext

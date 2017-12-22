@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, Unchangeable}
+import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, Rewritable, Unchangeable}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable._
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
-import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SameId}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
 object LogicalPlan {
@@ -42,7 +42,7 @@ abstract class LogicalPlan(idGen: IdGen)
   extends Product
   with Foldable
   with Strictness
-  with RewritableWithMemory {
+  with Rewritable {
 
   self =>
 
@@ -56,36 +56,6 @@ abstract class LogicalPlan(idGen: IdGen)
   val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   val id = idGen.id()
-  // --------
-  /*
-  A id for the logical plan operator, unique inside of the given query tree. These identifiers will be
-  copied to a rewritten version of the logical plan, as long as there is a one-to-one mapping between
-  rewritten plans. In other words - once ids have been assigned, plan rewriting should not collapse multiple
-  operators into one, or split a single one into multiple new ones.
-   */
-  def assignedId: LogicalPlanId = _id.getOrElse(throw new InternalException("Plan has not had an id assigned yet"))
-
-  def assignIds(): Unit = {
-    if (_id.nonEmpty)
-      throw new InternalException("Id has already been assigned")
-
-    var count = 0
-    val plans = this.findByAllClass[LogicalPlan]
-    plans.foreach { lp =>
-      lp._id = Some(new LogicalPlanId(count))
-      count = count + 1
-    }
-    assignedId
-  }
-
-  private var _id: Option[LogicalPlanId] = None
-
-  override def rememberMe(old: AnyRef): Unit = _id = old.asInstanceOf[LogicalPlan]._id
-
-  // This should only be used for converting old versions of LogicalPlans
-  def setIdTo(id: LogicalPlanId) : Unit = _id = Some(id)
-  // ^ TODO DIE
-  // ---------
 
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
@@ -93,7 +63,7 @@ abstract class LogicalPlan(idGen: IdGen)
   }
 
   def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): LogicalPlan = {
-    val arguments = this.children.toList :+ newSolved :+ idGen
+    val arguments = this.children.toList :+ newSolved :+ SameId(this.id)
     try {
       val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
       resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
@@ -106,7 +76,7 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def copyPlan(): LogicalPlan = {
     try {
-      val arguments = this.children.toList :+ solved :+ idGen
+      val arguments = this.children.toList :+ solved :+ SameId(this.id)
       val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
       resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
       resultingPlan
@@ -131,11 +101,11 @@ abstract class LogicalPlan(idGen: IdGen)
       val resultingPlan =
         if (params.length == args.length + 1
           && params.last.isAssignableFrom(classOf[IdGen]))
-          constructor.invoke(this, args :+ this.idGen: _*).asInstanceOf[this.type]
+          constructor.invoke(this, args :+ SameId(this.id): _*).asInstanceOf[this.type]
         else if ((params.length == args.length + 2)
           && params(params.length - 2).isAssignableFrom(classOf[PlannerQuery])
           && params(params.length - 1).isAssignableFrom(classOf[IdGen]))
-          constructor.invoke(this, args :+ this.solved :+ this.idGen: _*).asInstanceOf[this.type]
+          constructor.invoke(this, args :+ this.solved :+ SameId(this.id): _*).asInstanceOf[this.type]
         else
           constructor.invoke(this, args: _*).asInstanceOf[this.type]
       resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
@@ -230,19 +200,3 @@ final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: 
 final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKey: String) extends IndexUsage
 final case class ExplicitNodeIndexUsage(identifier: String, index: String) extends IndexUsage
 final case class ExplicitRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage
-
-object LogicalPlanId {
-  // This is probably a safe way of assigning ids, but should only be used in tests
-  private var counter = 0
-  def DEFAULT: LogicalPlanId = {
-    val id = new LogicalPlanId(counter)
-    counter += 1
-    id
-  }
-}
-
-class LogicalPlanId(val underlying: Int) extends AnyVal {
-  def ++ : LogicalPlanId = new LogicalPlanId(underlying + 1)
-
-  override def toString: String = s"id:$underlying"
-}

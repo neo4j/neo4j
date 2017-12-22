@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.JoinData
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 import scala.collection.mutable
 
@@ -36,7 +37,7 @@ class CodeGenContext(val semanticTable: SemanticTable,
   private val projectedVariables: mutable.Map[String, Variable] = mutable.Map.empty
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
-  val operatorIds: mutable.Map[LogicalPlanId, String] = mutable.Map()
+  val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
   def addVariable(queryVariable: String, variable: Variable) {
     //assert(!variables.isDefinedAt(queryVariable)) // TODO: Make the cases where overwriting the value is ok explicit (by using updateVariable)
@@ -90,7 +91,7 @@ class CodeGenContext(val semanticTable: SemanticTable,
   def popParent(): CodeGenPlan = parents.pop()
 
   def registerOperator(plan: LogicalPlan): String = {
-    operatorIds.getOrElseUpdate(plan.assignedId, namer.newOpName(plan.getClass.getSimpleName))
+    operatorIds.getOrElseUpdate(plan.id, namer.newOpName(plan.getClass.getSimpleName))
   }
 }
 

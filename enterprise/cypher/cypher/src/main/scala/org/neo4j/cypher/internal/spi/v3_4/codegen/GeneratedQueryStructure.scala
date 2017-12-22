@@ -35,11 +35,11 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Completable, Provider}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
@@ -96,7 +96,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   override def generateQuery(className: String,
                              columns: Seq[String],
-                             operatorIds: Map[String, LogicalPlanId],
+                             operatorIds: Map[String, Id],
                              conf: CodeGenConfiguration)
                             (methodStructure: MethodStructure[_] => Unit)
                             (implicit codeGenContext: CodeGenContext): GeneratedQueryStructureResult = {
@@ -185,9 +185,9 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     clazz.generate(Templates.FIELD_NAMES)
   }
 
-  private def setOperatorIds(clazz: ClassGenerator, operatorIds: Map[String, LogicalPlanId]) = {
+  private def setOperatorIds(clazz: ClassGenerator, operatorIds: Map[String, Id]) = {
     operatorIds.keys.foreach { opId =>
-      clazz.staticField(typeRef[LogicalPlanId], opId)
+      clazz.staticField(typeRef[Id], opId)
     }
   }
 

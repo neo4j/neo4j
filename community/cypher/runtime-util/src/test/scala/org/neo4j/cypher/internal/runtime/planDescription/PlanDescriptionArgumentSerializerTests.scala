@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   private val pos = DummyPosition(0)
-  implicit val idGen = SequentialIdGen
+  implicit val idGen = new SequentialIdGen()
 
   test("serialization should leave numeric arguments as numbers") {
     serialize(DbHits(12)) shouldBe a [java.lang.Number]

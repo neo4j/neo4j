@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class PlanEventHorizonTest extends CypherFunSuite {
 
-  implicit val idGen = SequentialIdGen
+  implicit val idGen = new SequentialIdGen()
 
   val pos = DummyPosition(1)
   val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER),

@@ -35,10 +35,11 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{InstrumentedGraphStatistics, 
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.{Eagerly, TaskCloser}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId, ProduceResult}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.values.virtual.MapValue
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, conf: CodeGenConfiguration = CodeGenConfiguration() ) {
@@ -99,7 +100,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
     implicit val context = new CodeGenContext(semantics, lookup)
     val (_, instructions) = asCodeGenPlan(plan).produce(context)
     generateCode(structure)(instructions, context.operatorIds.map {
-      case (id: LogicalPlanId, field: String) => field -> id
+      case (id: Id, field: String) => field -> id
     }.toMap, columns, conf)
   }
 
@@ -124,7 +125,7 @@ object CodeGenerator {
   type SourceSink = Option[(String, String) => Unit]
 
   def generateCode[T](structure: CodeStructure[T])(instructions: Seq[Instruction],
-                                                   operatorIds: Map[String, LogicalPlanId],
+                                                   operatorIds: Map[String, Id],
                                                    columns: Seq[String],
                                                    conf: CodeGenConfiguration)(implicit context: CodeGenContext): CodeStructureResult[T] = {
     structure.generateQuery(Namer.newClassName(), columns, operatorIds, conf) { accept =>

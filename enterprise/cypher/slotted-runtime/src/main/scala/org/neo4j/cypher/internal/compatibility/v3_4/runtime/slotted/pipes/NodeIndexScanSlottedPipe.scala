@@ -25,15 +25,15 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecu
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class NodeIndexScanSlottedPipe(ident: String,
                                     label: LabelToken,
                                     propertyKey: PropertyKeyToken,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
-                                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                   (val id: Id = Id.INVALID_ID)
   extends Pipe {
 
   private val offset = slots.getLongOffsetFor(ident)

@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QuerySta
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{PlanDescriptionImpl, _}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.storable.Values.NO_VALUE
 
@@ -320,7 +320,7 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
                             hits: Long = 0,
                             misses: Long = 0)
     extends PipeWithSource(source) {
-  var id = LogicalPlanId.DEFAULT
+  var id: Id = Id.INVALID_ID
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.size

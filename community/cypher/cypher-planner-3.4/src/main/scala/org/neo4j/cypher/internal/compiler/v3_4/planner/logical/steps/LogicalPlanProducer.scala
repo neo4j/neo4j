@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  */
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int) extends ListSupport {
 
-  implicit val idGen = SequentialIdGen
+  implicit val idGen = new SequentialIdGen()
 
   def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1)
 

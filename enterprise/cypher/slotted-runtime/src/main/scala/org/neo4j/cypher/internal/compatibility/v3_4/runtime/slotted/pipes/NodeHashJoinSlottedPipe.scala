@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecu
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 case class NodeHashJoinSlottedPipe(leftSide: Array[Int],
                                    rightSide: Array[Int],
@@ -35,7 +35,7 @@ case class NodeHashJoinSlottedPipe(leftSide: Array[Int],
                                    slots: SlotConfiguration,
                                    longsToCopy: Array[(Int, Int)],
                                    refsToCopy: Array[(Int, Int)])
-                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                  (val id: Id = Id.INVALID_ID)
   extends AbstractHashJoinPipe[HashKey, Array[Int]](left, right, slots) {
 
   /**

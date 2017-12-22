@@ -54,7 +54,6 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   implicit private val table = SemanticTable()
 
   private def build(beforeRewrite: LogicalPlan): Pipe = {
-    beforeRewrite.assignIds()
     val planContext = mock[PlanContext]
     when(planContext.statistics).thenReturn(HardcodedGraphStatistics)
     when(planContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(0))
