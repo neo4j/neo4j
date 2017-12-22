@@ -27,13 +27,14 @@ public interface WorkerFactory
 {
     default BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor )
     {
-        return newWorker( connectionDescriptor, null );
+        return newWorker( connectionDescriptor, null, null );
     }
 
     /**
      * @param connectionDescriptor describes the underlying medium (TCP, HTTP, ...)
+     * @param queueMonitor         object that will be notified of changes (enqueue, dequeue, drain) in worker job queue
      * @param onClose              callback for closing the underlying connection in case of protocol violation.
      * @return a new job queue
      */
-    BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose );
+    BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, BoltWorkerQueueMonitor queueMonitor, Runnable onClose );
 }
