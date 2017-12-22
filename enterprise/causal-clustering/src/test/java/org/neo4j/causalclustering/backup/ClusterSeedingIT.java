@@ -27,14 +27,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
-import org.neo4j.causalclustering.catchup.tx.PullRequestMonitor;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -51,7 +46,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
@@ -62,12 +56,9 @@ public class ClusterSeedingIT
     private Cluster backupCluster;
     private Cluster cluster;
     private FileSystemAbstraction fsa;
-    private DetectFileCopyMonitor detectFileCopyMonitor;
-    private PullRequestMonitor pullRequestMonitor;
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
     public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private File baseBackupDir;
 
@@ -75,25 +66,15 @@ public class ClusterSeedingIT
     public void setup() throws Exception
     {
         fsa = fileSystemRule.get();
-        Monitors monitors = new Monitors();
-        addMonitorListeners( monitors );
         backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
                 new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard
-                .LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                .LATEST_NAME, IpFamily.IPV4, false );
 
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
                 new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME,
-                IpFamily.IPV4, false, monitors );
+                IpFamily.IPV4, false );
 
         baseBackupDir = testDir.directory( "backups" );
-    }
-
-    private void addMonitorListeners( Monitors monitors )
-    {
-        this.detectFileCopyMonitor = new DetectFileCopyMonitor();
-        this.pullRequestMonitor = new DetectPullRequestMonitor();
-        monitors.addMonitorListener( detectFileCopyMonitor );
-        monitors.addMonitorListener( pullRequestMonitor );
     }
 
     private Map<String,IntFunction<String>> backupParams()
@@ -151,24 +132,20 @@ public class ClusterSeedingIT
 
         // then
         dataMatchesEventually( before, cluster.coreMembers() );
-        assertFalse( detectFileCopyMonitor.fileCopyDetected.get() );
-        assertEquals( 4, pullRequestMonitor.numberOfRequests() );
     }
 
     @Test
     public void shouldSeedNewMemberFromEmptyIdleCluster() throws Throwable
     {
         // given
-        Monitors monitors = new Monitors();
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
                 new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard
-                .LATEST_NAME, IpFamily.IPV4, false, monitors );
+                .LATEST_NAME, IpFamily.IPV4, false );
+
         cluster.start();
 
         // when: creating a backup
         File backupDir = createBackup( cluster.getCoreMemberById( 0 ).database(), "the-backup" );
-        // we are only interested in monitoring the new instance
-        addMonitorListeners( monitors );
 
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
@@ -177,9 +154,6 @@ public class ClusterSeedingIT
 
         // then
         dataMatchesEventually( DbRepresentation.of( newMember.database() ), cluster.coreMembers() );
-        assertFalse( detectFileCopyMonitor.fileCopyDetected.get() );
-        assertEquals( 1, pullRequestMonitor.numberOfRequests() );
-        assertEquals( 1, pullRequestMonitor.lastRequestedTxId() );
     }
 
     @Test
@@ -189,14 +163,12 @@ public class ClusterSeedingIT
         Monitors monitors = new Monitors();
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
                 new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard
-                .LATEST_NAME, IpFamily.IPV4, false, monitors );
+                .LATEST_NAME, IpFamily.IPV4, false );
         cluster.start();
         createEmptyNodes( cluster, 100 );
 
         // when: creating a backup
         File backupDir = createBackup( cluster.getCoreMemberById( 0 ).database(), "the-backup" );
-        // we are only interested in monitoring the new instance
-        addMonitorListeners( monitors );
 
         // and: seeding new member with said backup
         CoreClusterMember newMember = cluster.addCoreMemberWithId( 3 );
@@ -205,8 +177,6 @@ public class ClusterSeedingIT
 
         // then
         dataMatchesEventually( DbRepresentation.of( newMember.database() ), cluster.coreMembers() );
-        assertFalse( detectFileCopyMonitor.fileCopyDetected.get() );
-        assertEquals( 1, pullRequestMonitor.numberOfRequests() );
     }
 
     @Test
@@ -226,54 +196,5 @@ public class ClusterSeedingIT
 
         // then
         dataMatchesEventually( before, cluster.coreMembers() );
-    }
-
-    private class DetectPullRequestMonitor implements PullRequestMonitor
-    {
-
-        private final AtomicLong lastPullRequest = new AtomicLong();
-        private final AtomicInteger numberOfRequest = new AtomicInteger();
-
-        @Override
-        public void txPullRequest( long txId )
-        {
-            lastPullRequest.set( txId );
-            numberOfRequest.incrementAndGet();
-        }
-
-        @Override
-        public void txPullResponse( long txId )
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public long lastRequestedTxId()
-        {
-            return lastPullRequest.get();
-        }
-
-        @Override
-        public long lastReceivedTxId()
-        {
-            throw new UnsupportedOperationException( "not implemented" );
-        }
-
-        @Override
-        public long numberOfRequests()
-        {
-            return numberOfRequest.get();
-        }
-    }
-
-    private class DetectFileCopyMonitor implements FileCopyMonitor
-    {
-        private final AtomicBoolean fileCopyDetected = new AtomicBoolean( false );
-
-        @Override
-        public void copyFile( File file )
-        {
-            fileCopyDetected.compareAndSet( false, true );
-        }
     }
 }
