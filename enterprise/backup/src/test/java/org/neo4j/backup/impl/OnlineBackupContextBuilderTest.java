@@ -35,7 +35,6 @@ import java.util.List;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -253,7 +252,7 @@ public class OnlineBackupContextBuilderTest
         OnlineBackupContext context = contextBuilder.createContext( requiredAnd() );
 
         // then
-        assertThat( context.getConfig().get( pagecache_memory ), is( ByteUnit.mebiBytes( 8 ) ) );
+        assertThat( context.getConfig().get( pagecache_memory ), is( "8m" ) );
     }
 
     @Test
@@ -268,7 +267,7 @@ public class OnlineBackupContextBuilderTest
         OnlineBackupContext context = builder.createContext( requiredAnd("--additional-config=" + additionalConf ) );
 
         // then
-        assertThat( context.getConfig().get( pagecache_memory ), is( ByteUnit.mebiBytes( 8 ) ) );
+        assertThat( context.getConfig().get( pagecache_memory ), is( "8m" ) );
     }
 
     @Test
@@ -279,7 +278,7 @@ public class OnlineBackupContextBuilderTest
         OnlineBackupContext context = builder.createContext( requiredAnd("--pagecache=42m" ) );
 
         // then
-        assertThat( context.getConfig().get( pagecache_memory ), is( ByteUnit.mebiBytes( 42 ) ) );
+        assertThat( context.getConfig().get( pagecache_memory ), is( "42m" ) );
     }
 
     @Test
