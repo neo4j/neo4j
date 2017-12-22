@@ -124,7 +124,7 @@ public class PrimitiveLongArrayQueue implements PrimitiveLongCollection
         int newCapacity = values.length << 1;
         if ( newCapacity < 0 )
         {
-            throw new IllegalStateException( "Fail to increase capacity queue capacity." );
+            throw new IllegalStateException( "Fail to increase queue capacity." );
         }
         long[] newValues = new long[newCapacity];
         int elementsFromHeadTillEnd = values.length - head;

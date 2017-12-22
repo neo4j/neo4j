@@ -39,10 +39,10 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val pathStep = mock[PathStep]
 
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep))
-    implicit val context = logicalPlanningContext(strategy)
+    val context = logicalPlanningContext(strategy)
 
     // when
-    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1))
+    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1), context)
 
     // then
     val expectedInnerPlan = Projection(otherSide, Map("  FRESHID0" -> PathExpression(pathStep)(pos)))(solved)
@@ -56,7 +56,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("incoming-inner-plan")
     val strategy = createStrategy(b1, b2)
-    implicit val context = logicalPlanningContext(strategy)
+    val context = logicalPlanningContext(strategy)
     val source = newMockedLogicalPlan("a")
     val pathStep1 = mock[PathStep]
     val pathStep2 = mock[PathStep]
@@ -64,7 +64,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
-    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1, "y" -> patExpr2))
+    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1, "y" -> patExpr2), context)
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
@@ -82,7 +82,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("both-inner-plan")
     val strategy = createStrategy(b1, b2)
-    implicit val context = logicalPlanningContext(strategy)
+    val context = logicalPlanningContext(strategy)
     val source = newMockedLogicalPlan("a")
     val pathStep1 = mock[PathStep]
     val pathStep2 = mock[PathStep]
@@ -91,7 +91,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val stringToEquals1: Map[String, Expression] = Map("x" -> Equals(patExpr1, patExpr2)(pos))
-    val (resultPlan, expressions) = expressionSolver(source, stringToEquals1)
+    val (resultPlan, expressions) = expressionSolver(source, stringToEquals1, context)
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
@@ -109,7 +109,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("both-inner-plan")
     val strategy = createStrategy(b1, b2)
-    implicit val context = logicalPlanningContext(strategy)
+    val context = logicalPlanningContext(strategy)
     val source = newMockedLogicalPlan("a")
     val pathStep1 = mock[PathStep]
     val pathStep2 = mock[PathStep]
@@ -118,7 +118,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val predicate = Equals(patExpr1, patExpr2)(pos)
-    val (resultPlan, expressions) = expressionSolver(source, Seq(predicate))
+    val (resultPlan, expressions) = expressionSolver(source, Seq(predicate), context)
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
@@ -165,7 +165,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   private def createStrategy(plan: LogicalPlan*): QueryGraphSolver = {
     val strategy = mock[QueryGraphSolver]
-    when(strategy.plan(any[QueryGraph])(any[LogicalPlanningContext])).thenReturn(plan.head, plan.tail:_*)
+    when(strategy.plan(any[QueryGraph], any[LogicalPlanningContext])).thenReturn(plan.head, plan.tail:_*)
     strategy
   }
 }

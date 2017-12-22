@@ -17,13 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster;
+package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 
-public interface Verifier<STATE>
+import org.neo4j.kernel.impl.transaction.log.checkpoint.AbstractCheckPointThreshold;
+
+class ContinuousCheckPointThreshold extends AbstractCheckPointThreshold
 {
-    /**
-     * Throws an {@link IllegalStateException} if it doesn't verify correctly.
-     * @param state the state to verify.
-     */
-    void verify( STATE state );
+    ContinuousCheckPointThreshold()
+    {
+        super( "continuous threshold" );
+    }
+
+    @Override
+    protected boolean thresholdReached( long lastCommittedTransactionId )
+    {
+        return true;
+    }
+
+    @Override
+    public void initialize( long transactionId )
+    {
+    }
+
+    @Override
+    public void checkPointHappened( long transactionId )
+    {
+    }
+
+    @Override
+    public long checkFrequencyMillis()
+    {
+        return 0;
+    }
 }

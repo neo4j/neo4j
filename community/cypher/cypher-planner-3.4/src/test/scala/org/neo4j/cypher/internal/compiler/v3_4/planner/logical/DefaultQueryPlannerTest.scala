@@ -58,7 +58,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   private def createProduceResultOperator(columns: Seq[String], semanticTable: SemanticTable): ProduceResult = {
-    implicit val planningContext = mockLogicalPlanningContext(semanticTable)
+    val planningContext = mockLogicalPlanningContext(semanticTable)
 
     val inputPlan = mock[LogicalPlan]
     when(inputPlan.availableSymbols).thenReturn(columns.map(IdName.apply).toSet)
@@ -69,7 +69,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val union = UnionQuery(Seq(pq), distinct = false, columns.map(IdName.apply), periodicCommit = None)
 
-    val (_, result) = queryPlanner.plan(union)
+    val (_, result) = queryPlanner.plan(union, planningContext)
 
     result shouldBe a [ProduceResult]
 
@@ -96,30 +96,30 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(context.config).thenReturn(QueryPlannerConfiguration.default)
     when(context.input).thenReturn(QueryGraphSolverInput.empty)
     when(context.strategy).thenReturn(new QueryGraphSolver with PatternExpressionSolving {
-      override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = lp
+      override def plan(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = lp
     })
     when(context.withStrictness(any())).thenReturn(context)
     val producer = mock[LogicalPlanProducer]
-    when(producer.planStarProjection(any(), any(), any())(any())).thenReturn(lp)
-    when(producer.planEmptyProjection(any())(any())).thenReturn(lp)
+    when(producer.planStarProjection(any(), any(), any(), any())).thenReturn(lp)
+    when(producer.planEmptyProjection(any(),any())).thenReturn(lp)
     when(context.logicalPlanProducer).thenReturn(producer)
     val queryPlanner = QueryPlanner(planSingleQuery = PlanSingleQuery())
 
     // when
     val query = UnionQuery(Seq(plannerQuery), distinct = false, Seq.empty, None)
-    queryPlanner.plan(query)(context)
+    queryPlanner.plan(query, context)
 
     // then
     verify(context, times(1)).withStrictness(LazyMode)
   }
 
-  class FakePlanner(result: LogicalPlan) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
-    def apply(input: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = result
+  class FakePlanner(result: LogicalPlan) extends ((PlannerQuery, LogicalPlanningContext) => LogicalPlan) {
+    def apply(input: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = result
   }
 
   private def mockLogicalPlanningContext(semanticTable: SemanticTable) = LogicalPlanningContext(
     planContext = mock[PlanContext],
-    logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel]),
+    logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER),
     metrics = mock[Metrics],
     semanticTable = semanticTable,
     strategy = mock[QueryGraphSolver],

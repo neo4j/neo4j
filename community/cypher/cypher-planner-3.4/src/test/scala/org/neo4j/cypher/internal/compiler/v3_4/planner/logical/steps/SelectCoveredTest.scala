@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Equals, Expression, PatternEx
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   private implicit val planContext = newMockedPlanContext
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
-  private implicit val context = newMockedLogicalPlanningContext(planContext)
+  private val context = newMockedLogicalPlanningContext(planContext)
 
   test("when a predicate that isn't already solved is solvable it should be applied") {
     // Given
@@ -40,7 +40,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(inner, qg)
+    val result = selectCovered(inner, qg, context)
 
     // Then
     result should equal(Seq(Selection(Seq(predicate), inner)(solved)))
@@ -56,7 +56,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(inner, qg)
+    val result = selectCovered(inner, qg, context)
 
     // Then
     result should be (empty)
@@ -73,7 +73,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(inner, qg)
+    val result = selectCovered(inner, qg, context)
 
     // Then
     result should equal(Seq(Selection(Seq(predicate1, predicate2), inner)(solved)))
@@ -87,7 +87,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val inner = newMockedLogicalPlanWithProjections("x").updateSolved(solved)
 
     // When
-    val result = selectCovered(inner, qg)
+    val result = selectCovered(inner, qg, context)
 
     // Then
     result should equal(Seq())
@@ -101,7 +101,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(inner, qg)
+    val result = selectCovered(inner, qg, context)
 
     // Then
     result should equal(Seq())

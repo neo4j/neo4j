@@ -116,13 +116,13 @@ public interface StorageStatement extends AutoCloseable
             Direction direction, IntPredicate relTypeFilter );
 
     /**
-     -     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     -     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     -     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     -     * through the selection.
-     -     *
-     -     * @return a {@link Cursor} over all stored relationships.
-     -     */
+     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
+     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
+     * will have to be made to place the cursor over the first item and then more calls to move the cursor
+     * through the selection.
+     *
+     * @return a {@link Cursor} over all stored relationships.
+     */
     Cursor<RelationshipItem> relationshipsGetAllCursor();
 
     Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, AssertOpen assertOpen );
@@ -206,7 +206,7 @@ public interface StorageStatement extends AutoCloseable
          * @param reference the initial node reference to access.
          * @return the opened PageCursor
          */
-        PageCursor openPageCursor( long reference );
+        PageCursor openPageCursorForReading( long reference );
 
         /**
          * Load a node {@code record} with the node corresponding to the given node {@code reference}.
@@ -220,7 +220,7 @@ public interface StorageStatement extends AutoCloseable
          * @param cursor the PageCursor to use for record loading.
          * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
          */
-        void loadRecordByCursor( long reference, RECORD record, RecordLoad mode, PageCursor cursor )
+        void getRecordByCursor( long reference, RECORD record, RecordLoad mode, PageCursor cursor )
                 throws InvalidRecordException;
 
         long getHighestPossibleIdInUse();

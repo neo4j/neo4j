@@ -25,15 +25,15 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 import scala.annotation.tailrec
 
-case class Selector(pickBestFactory: LogicalPlanningFunction0[CandidateSelector],
+case class Selector(pickBestFactory: LogicalPlanningContext => CandidateSelector,
                     planGenerators: CandidateGenerator[LogicalPlan]*) extends PlanTransformer[QueryGraph] {
-  def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def apply(input: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = {
     val pickBest = pickBestFactory(context)
 
     @tailrec
     def selectIt(plan: LogicalPlan): LogicalPlan = {
       val plans = planGenerators.
-        flatMap(generator => generator(plan, queryGraph))
+        flatMap(generator => generator(plan, queryGraph, context))
 
       pickBest(plans) match {
         case Some(p) => selectIt(p)

@@ -60,6 +60,16 @@ public class Primitive
     {
     }
 
+    public static PrimitiveLongList longList()
+    {
+        return new PrimitiveLongList();
+    }
+
+    public static PrimitiveLongList longList( int size )
+    {
+        return new PrimitiveLongList( size );
+    }
+
     // Some example would be...
     public static PrimitiveLongSet longSet()
     {

@@ -26,26 +26,26 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
 which in most cases is then rewritten away by LogicalPlan rewriting.
 */
-case class PlanWithTail(planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
+case class PlanWithTail(planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPlanningContext) => LogicalPlan) = PlanEventHorizon,
                         planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
-                        planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates)
-  extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
+                        planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => (LogicalPlan, LogicalPlanningContext)) = PlanUpdates)
+  extends ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext) => LogicalPlan) {
 
-  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext): LogicalPlan = {
     remaining match {
       case Some(plannerQuery) =>
-        val lhsContext = context.recurse(lhs)
+        val lhsContext = context.withUpdatedCardinalityInformation(lhs)
         val partPlan = planPart(plannerQuery, lhsContext)
         val firstPlannerQuery = false
-        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
+        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext)
 
-        val applyPlan = context.logicalPlanProducer.planTailApply(lhs, planWithUpdates)
+        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 
-        val applyContext = lhsContext.recurse(applyPlan)
-        val projectedPlan = planEventHorizon(plannerQuery, applyPlan)(applyContext)
-        val projectedContext = applyContext.recurse(projectedPlan)
+        val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
+        val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)
+        val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
 
-        this.apply(projectedPlan, plannerQuery.tail)(projectedContext)
+        this.apply(projectedPlan, plannerQuery.tail, projectedContext)
 
       case None =>
         lhs.endoRewrite(Eagerness.unnestEager)

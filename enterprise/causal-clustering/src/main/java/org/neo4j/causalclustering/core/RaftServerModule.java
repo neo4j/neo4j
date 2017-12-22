@@ -53,8 +53,8 @@ public class RaftServerModule
     private final LogProvider logProvider;
     private final PipelineHandlerAppender pipelineHandlerAppender;
 
-    RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, LocalDatabase localDatabase,
-            PipelineHandlerAppender pipelineHandlerAppender, Monitors monitors, MessageLogger<MemberId> messageLogger )
+    RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
+            LocalDatabase localDatabase, PipelineHandlerAppender pipelineHandlerAppender, Monitors monitors, MessageLogger<MemberId> messageLogger )
     {
         this.platformModule = platformModule;
         this.consensusModule = consensusModule;
@@ -64,10 +64,7 @@ public class RaftServerModule
         this.messageLogger = messageLogger;
         this.logProvider = platformModule.logging.getInternalLogProvider();
         this.pipelineHandlerAppender = pipelineHandlerAppender;
-    }
 
-    public void create( CoreServerModule coreServerModule )
-    {
         LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> messageHandlerChain = createMessageHandlerChain( coreServerModule );
 
         createRaftServer( coreServerModule, messageHandlerChain );
@@ -85,6 +82,7 @@ public class RaftServerModule
         platformModule.life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         platformModule.life.add( coreServerModule.createCoreLife( messageHandlerChain ) );
         platformModule.life.add( coreServerModule.catchupServer() ); // must start last and stop first, since it handles external requests
+        platformModule.life.add( coreServerModule.downloadService() );
     }
 
     private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> createMessageHandlerChain( CoreServerModule coreServerModule )

@@ -30,8 +30,10 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageStatement;
 
-public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGroupRecord,IntStoreHeader>
+public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGroupRecord,IntStoreHeader> implements
+        StorageStatement.Groups
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
 

@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, Variable}
 
 case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
 
-  def apply(plan: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =
+  def apply(plan: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] =
     unsolvedPreds(queryGraph.selections, plan).collect {
       case s@HasLabels(id: Variable, Seq(labelName)) =>
-        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(IdName(id.name), labelName, Seq(s), None, Set.empty)
-        context.logicalPlanProducer.planNodeHashJoin(Set(IdName(id.name)), plan, labelScan, Set.empty)
+        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(IdName(id.name), labelName, Seq(s), None, Set.empty, context)
+        context.logicalPlanProducer.planNodeHashJoin(Set(IdName(id.name)), plan, labelScan, Set.empty, context)
     }
 }

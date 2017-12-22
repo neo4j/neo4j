@@ -158,7 +158,10 @@ object LogicalPlanConverter {
       before._1 match {
         case plan: LogicalPlanV3_3 =>
           try {
-            rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
+            val plan3_4 = rewritten.asInstanceOf[LogicalPlanV3_4]
+            plan3_4.setIdTo(helpers.as3_4(plan.assignedId))
+            // 3.3 does not know about transaction layers, it plans Eagers instead.
+            plan3_4.readTransactionLayer.value = 0
           } catch {
             case (e: frontendV3_3.InternalException) =>
             // ProcedureOrSchema plans have no assigned IDs. That's ok.

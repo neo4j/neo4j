@@ -73,6 +73,11 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
+    public void refresh()
+    {
+    }
+
+    @Override
     public Future<Void> close()
     {
         return VOID;

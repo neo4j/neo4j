@@ -84,7 +84,6 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -168,6 +167,16 @@ public class IndexingServiceTest
     }
 
     @Test
+    public void noMessagesWhenThereIsNoIndexes() throws Exception
+    {
+        IndexMapReference indexMapReference = new IndexMapReference();
+        IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
+        indexingService.start();
+
+        logProvider.assertNoLoggingOccurred();
+    }
+
+    @Test
     public void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception
     {
         // given
@@ -194,7 +203,7 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).close( true );
-        order.verify( accessor ).newUpdater( IndexUpdateMode.RECOVERY );
+        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -401,6 +410,8 @@ public class IndexingServiceTest
                 .thenReturn( InternalIndexState.POPULATING );
         when( provider.getInitialState( failedIndex.getId(), failedIndex.getIndexDescriptor() ) )
                 .thenReturn( InternalIndexState.FAILED );
+        when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenAnswer(
+                invocation -> mock( IndexAccessor.class ) );
 
         indexingService.init();
 
@@ -1050,6 +1061,29 @@ public class IndexingServiceTest
         indexingService.forceAll();
     }
 
+    @Test
+    public void shouldRefreshIndexesOnStart() throws Exception
+    {
+        // given
+        IndexRule rule = IndexRule.indexRule( 0, index, PROVIDER_DESCRIPTOR );
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), rule );
+
+        IndexAccessor accessor = mock( IndexAccessor.class );
+        IndexUpdater updater = mock( IndexUpdater.class );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
+        when( indexProvider.getOnlineAccessor( eq( rule.getId() ), any( IndexDescriptor.class ),
+                any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+
+        life.init();
+
+        verify( accessor, times( 0 ) ).refresh();
+
+        life.start();
+
+        // Then
+        verify( accessor, times( 1 ) ).refresh();
+    }
+
     private IndexProxy createIndexProxyMock()
     {
         IndexProxy proxy = mock( IndexProxy.class );
@@ -1355,6 +1389,6 @@ public class IndexingServiceTest
                 indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
                 mock( IndexSamplingController.class ), mock( TokenNameLookup.class ),
                 mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),
-                NullLogProvider.getInstance(), IndexingService.NO_MONITOR );
+                logProvider, IndexingService.NO_MONITOR );
     }
 }

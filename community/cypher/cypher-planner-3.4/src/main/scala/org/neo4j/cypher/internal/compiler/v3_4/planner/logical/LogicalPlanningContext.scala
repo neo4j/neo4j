@@ -45,7 +45,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   leafPlanUpdater: LogicalPlan => LogicalPlan = identity) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
 
-  def recurse(plan: LogicalPlan) = copy(input = input.recurse(plan))
+  def withUpdatedCardinalityInformation(plan: LogicalPlan) = copy(input = input.recurse(plan))
+
+  def withNextTxLayer = copy(logicalPlanProducer = logicalPlanProducer.withNextTxLayer)
 
   def forExpressionPlanning(nodes: Iterable[Variable], rels: Iterable[Variable]): LogicalPlanningContext = {
     val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
@@ -64,14 +66,14 @@ case class LogicalPlanningContext(planContext: PlanContext,
 }
 
 object NodeIdName {
-  def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[IdName] = v match {
+  def unapply(v: Any, context: LogicalPlanningContext): Option[IdName] = v match {
     case variable@Variable(name) if context.semanticTable.isNode(variable) => Some(IdName(variable.name))
     case _ => None
   }
 }
 
 object RelationshipIdName {
-  def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[IdName] = v match {
+  def unapply(v: Any, context: LogicalPlanningContext): Option[IdName] = v match {
     case variable@Variable(name) if context.semanticTable.isRelationship(variable) => Some(IdName(variable.name))
     case _ => None
   }

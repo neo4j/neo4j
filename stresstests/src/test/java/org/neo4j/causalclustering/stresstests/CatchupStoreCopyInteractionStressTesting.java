@@ -40,7 +40,6 @@ import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.PageCacheRule;
@@ -108,7 +107,7 @@ public class CatchupStoreCopyInteractionStressTesting
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         Cluster cluster =
                 new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
-                        emptyMap(), edgeParams, emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                        emptyMap(), edgeParams, emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );

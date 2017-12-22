@@ -1,0 +1,2 @@
+org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.VolumetricCheckPointPolicy
+org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ContinuousThresholdPolicy

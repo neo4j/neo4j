@@ -215,7 +215,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "ShortestPath", children, Seq(Expressions(args.toMap)), variables)
 
       case Limit(_, count, _) =>
-        PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq(Expression(count)), variables)
+        PlanDescriptionImpl(id, "Limit", children, Seq(Expression(count)), variables)
 
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", children, Seq.empty, variables)
@@ -335,7 +335,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         ArgumentPlanDescription(id = plan.assignedId, Seq.empty, row.argumentIds.map(_.name))
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
-        PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
+        PlanDescriptionImpl(id, "LetSelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)
 
       case _: LetSemiApply =>
         PlanDescriptionImpl(id, "LetSemiApply", children, Seq.empty, variables)
@@ -353,7 +353,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)
 
       case SelectOrSemiApply(_, _, predicate) =>
-        PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)
+        PlanDescriptionImpl(id, "SelectOrSemiApply", children, Seq(Expression(predicate)), variables)
 
       case _: SemiApply =>
         PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables)

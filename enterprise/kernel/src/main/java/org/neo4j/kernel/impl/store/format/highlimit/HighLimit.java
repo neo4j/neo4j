@@ -37,6 +37,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+import static org.neo4j.kernel.impl.store.format.highlimit.HighLimitFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS;
+
 /**
  * Record format with very high limits, 50-bit per ID, while at the same time keeping store size small.
  *
@@ -95,7 +97,7 @@ public class HighLimit extends BaseRecordFormats
     @Override
     public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
     {
-        return new RelationshipTypeTokenRecordFormat();
+        return new RelationshipTypeTokenRecordFormat( RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
     }
 
     @Override

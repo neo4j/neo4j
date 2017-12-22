@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.io.File;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongConsumer;
 
-import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy.Monitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -32,29 +35,61 @@ import org.neo4j.logging.LogProvider;
 public class LogPruningImpl implements LogPruning
 {
     private final Lock pruneLock = new ReentrantLock();
+    private final FileSystemAbstraction fs;
     private final LogPruneStrategy pruneStrategy;
+    private final LogFiles logFiles;
     private final Log msgLog;
-    private final Monitor monitor;
 
-    public LogPruningImpl( LogPruneStrategy pruneStrategy, LogProvider logProvider )
+    public LogPruningImpl( FileSystemAbstraction fs,
+                           LogPruneStrategy pruneStrategy,
+                           LogFiles logFiles,
+                           LogProvider logProvider )
     {
+        this.fs = fs;
         this.pruneStrategy = pruneStrategy;
+        this.logFiles = logFiles;
         this.msgLog = logProvider.getLog( getClass() );
-        this.monitor = new LogPruneStrategy.Monitor()
-        {
-            @Override
-            public void logsPruned( long upToVersion, long fromVersion, long toVersion )
-            {
-                msgLog.info( "Pruned log versions " + fromVersion + "-" + toVersion +
-                        ", last checkpoint was made in version " + upToVersion );
-            }
+    }
 
-            @Override
-            public void noLogsPruned( long upToVersion )
+    private static class CountingDeleter implements LongConsumer
+    {
+        private static final int NO_VERSION = -1;
+        private final LogFiles logFiles;
+        private final FileSystemAbstraction fs;
+        private final long upToVersion;
+        private long fromVersion;
+        private long toVersion;
+
+        private CountingDeleter( LogFiles logFiles, FileSystemAbstraction fs, long upToVersion )
+        {
+            this.logFiles = logFiles;
+            this.fs = fs;
+            this.upToVersion = upToVersion;
+            fromVersion = NO_VERSION;
+            toVersion = NO_VERSION;
+        }
+
+        @Override
+        public void accept( long version )
+        {
+            fromVersion = fromVersion == NO_VERSION ? version : Math.min( fromVersion, version );
+            toVersion = toVersion == NO_VERSION ? version : Math.max( toVersion, version );
+            File logFile = logFiles.getLogFileForVersion( version );
+            fs.deleteFile( logFile );
+        }
+
+        public String describeResult()
+        {
+            if ( fromVersion == NO_VERSION )
             {
-                msgLog.info( "No log version pruned, last checkpoint was made in version " + upToVersion );
+                return "No log version pruned, last checkpoint was made in version " + upToVersion;
             }
-        };
+            else
+            {
+                return "Pruned log versions " + fromVersion + "-" + toVersion +
+                       ", last checkpoint was made in version " + upToVersion;
+            }
+        }
     }
 
     @Override
@@ -66,12 +101,20 @@ public class LogPruningImpl implements LogPruning
         {
             try
             {
-                pruneStrategy.prune( upToVersion, monitor );
+                CountingDeleter deleter = new CountingDeleter( logFiles, fs, upToVersion );
+                pruneStrategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( deleter );
+                msgLog.info( deleter.describeResult() );
             }
             finally
             {
                 pruneLock.unlock();
             }
         }
+    }
+
+    @Override
+    public boolean mightHaveLogsToPrune()
+    {
+        return pruneStrategy.findLogVersionsToDelete( logFiles.getHighestLogVersion() ).count() > 0;
     }
 }

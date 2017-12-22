@@ -22,10 +22,14 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException}
+import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, Unchangeable}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable._
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
+
+object LogicalPlan {
+  val LOWEST_TX_LAYER = 0
+}
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -45,6 +49,7 @@ abstract class LogicalPlan
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
+  val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   /*
   A id for the logical plan operator, unique inside of the given query tree. These identifiers will be
@@ -82,7 +87,9 @@ abstract class LogicalPlan
   def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): LogicalPlan = {
     val arguments = this.children.toList :+ newSolved
     try {
-      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
+      resultingPlan
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor")
@@ -92,7 +99,9 @@ abstract class LogicalPlan
   def copyPlan(): LogicalPlan = {
     try {
       val arguments = this.children.toList :+ solved
-      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
+      resultingPlan
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor", e)
@@ -111,10 +120,12 @@ abstract class LogicalPlan
       val constructor = this.copyConstructor
       val params = constructor.getParameterTypes
       val args = children.toIndexedSeq
-      if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[PlannerQuery]))
+      val resultingPlan = if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[PlannerQuery]))
         constructor.invoke(this, args :+ this.solved: _*).asInstanceOf[this.type]
       else
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
+      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
+      resultingPlan
     }
 
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
@@ -135,7 +146,7 @@ abstract class LogicalPlan
           val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
           val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
           val prodPrefix = plan.productPrefix
-          sb.append(indent(level, s"""$prefix$prodPrefix($nonChildFields) {""".stripMargin))
+          sb.append(indent(level, s"""$prefix${prodPrefix}[txl=${plan.readTransactionLayer}]($nonChildFields) {""".stripMargin))
 
           (plan.lhs, plan.rhs) match {
             case (None, None) =>

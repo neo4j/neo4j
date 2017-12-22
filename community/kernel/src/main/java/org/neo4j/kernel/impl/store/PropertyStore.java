@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +34,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -45,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -53,6 +57,7 @@ import org.neo4j.values.storable.ValueWriter;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
@@ -121,7 +126,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  *            values in next dimension long blocks
  * </pre>
  */
-public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader>
+public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader> implements StorageStatement.Properties
 {
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
 
@@ -316,6 +321,71 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         {
             value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, allowStorePoints ) );
         }
+    }
+
+    @Override
+    public PageCursor openStringPageCursor( long reference )
+    {
+        return stringStore.openPageCursorForReading( reference );
+    }
+
+    @Override
+    public PageCursor openArrayPageCursor( long reference )
+    {
+        return arrayStore.openPageCursorForReading( reference );
+    }
+
+    @Override
+    public ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page )
+    {
+        return readDynamic( stringStore, reference, buffer, page );
+    }
+
+    @Override
+    public ByteBuffer loadArray( long reference, ByteBuffer buffer, PageCursor page )
+    {
+        return readDynamic( arrayStore, reference, buffer, page );
+    }
+
+    private static ByteBuffer readDynamic( AbstractDynamicStore store, long reference, ByteBuffer buffer,
+            PageCursor page )
+    {
+        if ( buffer == null )
+        {
+            buffer = ByteBuffer.allocate( 512 );
+        }
+        else
+        {
+            buffer.clear();
+        }
+        DynamicRecord record = store.newRecord();
+        do
+        {
+            //We need to load forcefully here since otherwise we can have inconsistent reads
+            //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
+            store.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
+            reference = record.getNextBlock();
+            byte[] data = record.getData();
+            if ( buffer.remaining() < data.length )
+            {
+                buffer = grow( buffer, data.length );
+            }
+            buffer.put( data, 0, data.length );
+        }
+        while ( reference != NO_ID );
+        return buffer;
+    }
+
+    private static ByteBuffer grow( ByteBuffer buffer, int required )
+    {
+        buffer.flip();
+        int capacity = buffer.capacity();
+        do
+        {
+            capacity *= 2;
+        }
+        while ( capacity - buffer.limit() < required );
+        return ByteBuffer.allocate( capacity ).order( ByteOrder.LITTLE_ENDIAN ).put( buffer );
     }
 
     private static class PropertyBlockValueWriter implements ValueWriter<IllegalArgumentException>
