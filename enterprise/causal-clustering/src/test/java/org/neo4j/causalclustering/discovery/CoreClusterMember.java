@@ -44,7 +44,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
 import static java.lang.String.format;
@@ -63,7 +62,6 @@ public class CoreClusterMember implements ClusterMember
     private final File raftLogDir;
     private final Map<String,String> config = stringMap();
     private final int serverId;
-    private final Monitors monitors;
     private final String boltAdvertisedSocketAddress;
     private CoreGraphDatabase database;
 
@@ -75,11 +73,9 @@ public class CoreClusterMember implements ClusterMember
                               Map<String, String> extraParams,
                               Map<String, IntFunction<String>> instanceExtraParams,
                               String listenAddress,
-                              String advertisedAddress,
-                              Monitors monitors)
+                              String advertisedAddress)
     {
         this.serverId = serverId;
-        this.monitors = monitors;
         int hazelcastPort = 5000 + serverId;
         int txPort = 6000 + serverId;
         int raftPort = 7000 + serverId;
@@ -150,7 +146,7 @@ public class CoreClusterMember implements ClusterMember
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, Config.embeddedDefaults( config ),
-                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
     }
 
     @Override

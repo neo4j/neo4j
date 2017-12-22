@@ -86,7 +86,7 @@ public class ServerGroupsIT
         int nServers = 3;
         cluster = new Cluster( testDir.directory( "cluster" ), nServers, nServers,
                 new HazelcastDiscoveryServiceFactory(), emptyMap(), instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         // when
         cluster.start();

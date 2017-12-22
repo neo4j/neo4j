@@ -35,7 +35,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -61,7 +60,7 @@ public class ClusterCommunityToEnterpriseIT
 
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 0,
                 new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), HighLimit.NAME,
-                IpFamily.IPV4, false, new Monitors() );
+                IpFamily.IPV4, false );
     }
 
     @After

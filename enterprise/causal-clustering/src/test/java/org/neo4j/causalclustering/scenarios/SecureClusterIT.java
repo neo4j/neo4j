@@ -85,7 +85,7 @@ public class SecureClusterIT
 
         cluster = new Cluster( testDir.absolutePath(), noOfCoreMembers, noOfReadReplicas,
                 new HazelcastDiscoveryServiceFactory(), coreParams, emptyMap(), readReplicaParams,
-                emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         // install the cryptographic objects for each core
         for ( CoreClusterMember core : cluster.coreMembers() )
