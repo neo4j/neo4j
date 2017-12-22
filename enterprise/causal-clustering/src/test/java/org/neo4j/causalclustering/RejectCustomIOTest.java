@@ -67,7 +67,7 @@ public class RejectCustomIOTest
                     stringMap( GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME );
             CoreClusterMember clusterMember = new CoreClusterMember( 0, 3, emptyList(), discovery,
                     defaultFormat().toString(), storeDir.directory(), extraParams, emptyMap(),
-                    "127.0.0.1", "localhost", new Monitors() );
+                    "127.0.0.1", "localhost" );
             clusterMember.start();
             fail( "Should not have created database with custom IO configuration in Core Mode." );
         }
