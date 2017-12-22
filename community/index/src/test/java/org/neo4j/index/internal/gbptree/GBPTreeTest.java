@@ -50,9 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
@@ -1116,115 +1113,6 @@ public class GBPTreeTest
             catch ( ExecutionException e )
             {
                 assertThat( e.getMessage(), allOf( containsString( "cleaning" ), containsString( "failed" ) ) );
-            }
-        }
-    }
-
-    // todo checkpointMustRecognizeFailedCleaning
-
-    /* Insertion and read tests */
-
-    @Test
-    public void shouldSeeSimpleInsertions() throws Exception
-    {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            int count = 1000;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    writer.put( new MutableLong( i ), new MutableLong( i ) );
-                }
-            }
-
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    assertTrue( cursor.next() );
-                    assertEquals( i, cursor.get().key().longValue() );
-                }
-                assertFalse( cursor.next() );
-            }
-        }
-    }
-
-    @Test
-    public void shouldSeeSimpleInsertionsWithExactMatch() throws Exception
-    {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            int count = 1000;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    writer.put( new MutableLong( i ), new MutableLong( i ) );
-                }
-            }
-
-            for ( int i = 0; i < count; i++ )
-            {
-                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                              index.seek( new MutableLong( i ), new MutableLong( i ) ) )
-                {
-                    assertTrue( cursor.next() );
-                    assertEquals( i, cursor.get().key().longValue() );
-                    assertFalse( cursor.next() );
-                }
-            }
-        }
-    }
-
-    /* Randomized tests */
-
-    @Test
-    public void shouldSplitCorrectly() throws Exception
-    {
-        // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            // WHEN
-            int count = 1_000;
-            PrimitiveLongSet seen = Primitive.longSet( count );
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    MutableLong key;
-                    do
-                    {
-                        key = new MutableLong( random.nextInt( 100_000 ) );
-                    }
-                    while ( !seen.add( key.longValue() ) );
-                    MutableLong value = new MutableLong( i );
-                    writer.put( key, value );
-                    seen.add( key.longValue() );
-                }
-            }
-
-            // THEN
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
-            {
-                long prev = -1;
-                while ( cursor.next() )
-                {
-                    MutableLong hit = cursor.get().key();
-                    if ( hit.longValue() < prev )
-                    {
-                        fail( hit + " smaller than prev " + prev );
-                    }
-                    prev = hit.longValue();
-                    assertTrue( seen.remove( hit.longValue() ) );
-                }
-
-                if ( !seen.isEmpty() )
-                {
-                    fail( "expected hits " + Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
-                }
             }
         }
     }
