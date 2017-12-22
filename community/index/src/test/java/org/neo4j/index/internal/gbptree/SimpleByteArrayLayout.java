@@ -94,6 +94,12 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     }
 
     @Override
+    public boolean fixedSize()
+    {
+        return false;
+    }
+
+    @Override
     public long identifier()
     {
         return 666;

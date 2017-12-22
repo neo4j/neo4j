@@ -107,6 +107,11 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     void readValue( PageCursor cursor, VALUE into, int valueSize );
 
     /**
+     * Indicate if keys and values are fixed or dynamix size.
+     * @return true if keys and values are fixed size, otherwise true.
+     */
+    boolean fixedSize();
+    /**
      * Used as verification when loading an index after creation, to verify that the same layout is used,
      * as the one it was initially created with.
      *
@@ -274,6 +279,12 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
 
         @Override
         public void readValue( PageCursor cursor, Object into, int valueSize )
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public boolean fixedSize()
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }

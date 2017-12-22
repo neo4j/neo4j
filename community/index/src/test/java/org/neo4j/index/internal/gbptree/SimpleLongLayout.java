@@ -115,6 +115,12 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     }
 
     @Override
+    public boolean fixedSize()
+    {
+        return true;
+    }
+
+    @Override
     public long identifier()
     {
         return 999;

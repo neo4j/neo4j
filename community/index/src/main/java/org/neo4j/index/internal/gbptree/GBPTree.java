@@ -424,7 +424,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
             this.pageSize = pagedFile.pageSize();
             closed = false;
-            this.bTreeNode = new TreeNodeFixedSize<>( pageSize, layout );
+            this.bTreeNode = layout.fixedSize() ? new TreeNodeFixedSize<>( pageSize, layout )
+                                                : new TreeNodeDynamicSize<>( pageSize, layout );
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 

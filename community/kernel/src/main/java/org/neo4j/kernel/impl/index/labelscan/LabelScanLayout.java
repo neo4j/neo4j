@@ -130,6 +130,12 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
+    public boolean fixedSize()
+    {
+        return true;
+    }
+
+    @Override
     public long identifier()
     {
         return Layout.namedIdentifier( IDENTIFIER_NAME, LabelScanValue.RANGE_SIZE );

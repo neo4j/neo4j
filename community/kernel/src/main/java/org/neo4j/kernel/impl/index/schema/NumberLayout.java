@@ -86,4 +86,10 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     public void readValue( PageCursor cursor, NativeSchemaValue into, int valueSize )
     {
     }
+
+    @Override
+    public boolean fixedSize()
+    {
+        return true;
+    }
 }
