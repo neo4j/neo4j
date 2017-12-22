@@ -19,13 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.Map;
@@ -48,38 +48,34 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public class GBPTreeIT
+public abstract class GBPTreeITBase<KEY,VALUE>
 {
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final RandomRule random = new RandomRule();
+    final RandomRule random = new RandomRule();
 
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    private Layout<MutableLong,MutableLong> layout;
-    private GBPTree<MutableLong,MutableLong> index;
+    private TestLayout<KEY,VALUE> layout;
+    private GBPTree<KEY,VALUE> index;
     private final ExecutorService threadPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-    private PageCache pageCache;
 
-    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
-            throws IOException
-    {
-        return createIndex( pageSize, NO_MONITOR );
-    }
-
-    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, GBPTree.Monitor monitor )
+    private GBPTree<KEY,VALUE> createIndex()
             throws IOException
     {
         // some random padding
-        layout = new SimpleLongLayout( random.intBetween( 0, 10 ) );
-        pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
+        layout = getLayout( random );
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( 512 ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
     }
+
+    abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
+
+    abstract Class<KEY> getKeyClass();
 
     @After
     public void consistencyCheckAndClose() throws IOException
@@ -99,20 +95,20 @@ public class GBPTreeIT
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        GBPTree<MutableLong,MutableLong> index = createIndex( 512 );
-        Comparator<MutableLong> keyComparator = layout;
-        Map<MutableLong,MutableLong> data = new TreeMap<>( keyComparator );
+        GBPTree<KEY,VALUE> index = createIndex();
+        Comparator<KEY> keyComparator = layout;
+        Map<KEY,VALUE> data = new TreeMap<>( keyComparator );
         int count = 100;
         int totalNumberOfRounds = 10;
         for ( int i = 0; i < count; i++ )
         {
-            data.put( randomKey( random.random() ), randomKey( random.random() ) );
+            data.put( randomKey( random.random() ), randomValue( random.random() ) );
         }
 
         // WHEN
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        try ( Writer<KEY,VALUE> writer = index.writer() )
         {
-            for ( Map.Entry<MutableLong,MutableLong> entry : data.entrySet() )
+            for ( Map.Entry<KEY,VALUE> entry : data.entrySet() )
             {
                 writer.put( entry.getKey(), entry.getValue() );
             }
@@ -123,11 +119,11 @@ public class GBPTreeIT
             // THEN
             for ( int i = 0; i < count; i++ )
             {
-                MutableLong first = randomKey( random.random() );
-                MutableLong second = randomKey( random.random() );
-                MutableLong from;
-                MutableLong to;
-                if ( first.longValue() < second.longValue() )
+                KEY first = randomKey( random.random() );
+                KEY second = randomKey( random.random() );
+                KEY from;
+                KEY to;
+                if ( layout.getSeed( first ) < layout.getSeed( second ) )
                 {
                     from = first;
                     to = second;
@@ -137,12 +133,12 @@ public class GBPTreeIT
                     from = second;
                     to = first;
                 }
-                Map<MutableLong,MutableLong> expectedHits = expectedHits( data, from, to, keyComparator );
-                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> result = index.seek( from, to ) )
+                Map<KEY,VALUE> expectedHits = expectedHits( data, from, to, keyComparator );
+                try ( RawCursor<Hit<KEY,VALUE>,IOException> result = index.seek( from, to ) )
                 {
                     while ( result.next() )
                     {
-                        MutableLong key = result.get().key();
+                        KEY key = result.get().key();
                         if ( expectedHits.remove( key ) == null )
                         {
                             fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
@@ -171,21 +167,19 @@ public class GBPTreeIT
     public void shouldHandleRemoveEntireTree() throws Exception
     {
         // given
-        GBPTree<MutableLong,MutableLong> index = createIndex( 512 );
+        GBPTree<KEY,VALUE> index = createIndex();
         int numberOfNodes = 200_000;
-        MutableLong value = new MutableLong();
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        try ( Writer<KEY,VALUE> writer = index.writer() )
         {
             for ( int i = 0; i < numberOfNodes; i++ )
             {
-                value.setValue( i );
-                writer.put( value, value );
+                writer.put( key( i ), value( i ) );
             }
         }
 
         // when
         BitSet removed = new BitSet();
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        try ( Writer<KEY,VALUE> writer = index.writer() )
         {
             for ( int i = 0; i < numberOfNodes - numberOfNodes / 10; i++ )
             {
@@ -197,8 +191,7 @@ public class GBPTreeIT
                 while ( removed.get( candidate ) );
                 removed.set( candidate );
 
-                value.setValue( candidate );
-                writer.remove( value );
+                writer.remove( key( candidate ) );
             }
 
             int next = 0;
@@ -206,37 +199,36 @@ public class GBPTreeIT
             {
                 next = removed.nextClearBit( next );
                 removed.set( next );
-                value.setValue( next );
-                writer.remove( value );
+                writer.remove( key( next ) );
             }
         }
 
         // then
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = index.seek( new MutableLong( 0 ), new MutableLong( numberOfNodes ) ) )
+        try ( RawCursor<Hit<KEY,VALUE>,IOException> seek = index.seek( key(0 ), key( numberOfNodes ) ) )
         {
             assertFalse( seek.next() );
         }
     }
 
-    private static void randomlyModifyIndex( GBPTree<MutableLong,MutableLong> index,
-            Map<MutableLong,MutableLong> data, Random random, double removeProbability ) throws IOException
+    private void randomlyModifyIndex( GBPTree<KEY,VALUE> index, Map<KEY,VALUE> data, Random random, double removeProbability )
+            throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        try ( Writer<KEY,VALUE> writer = index.writer() )
         {
             for ( int i = 0; i < changeCount; i++ )
             {
                 if ( random.nextDouble() < removeProbability && data.size() > 0 )
                 {   // remove
-                    MutableLong key = randomKey( data, random );
-                    MutableLong value = data.remove( key );
-                    MutableLong removedValue = writer.remove( key );
+                    KEY key = randomKey( data, random );
+                    VALUE value = data.remove( key );
+                    VALUE removedValue = writer.remove( key );
                     assertEquals( "For " + key, value, removedValue );
                 }
                 else
                 {   // put
-                    MutableLong key = randomKey( random );
-                    MutableLong value = randomKey( random );
+                    KEY key = randomKey( random );
+                    VALUE value = randomValue( random );
                     writer.put( key, value );
                     data.put( key, value );
                 }
@@ -244,11 +236,10 @@ public class GBPTreeIT
         }
     }
 
-    private static Map<MutableLong,MutableLong> expectedHits( Map<MutableLong,MutableLong> data,
-            MutableLong from, MutableLong to, Comparator<MutableLong> comparator )
+    private Map<KEY,VALUE> expectedHits( Map<KEY,VALUE> data, KEY from, KEY to, Comparator<KEY> comparator )
     {
-        Map<MutableLong,MutableLong> hits = new TreeMap<>( comparator );
-        for ( Map.Entry<MutableLong,MutableLong> candidate : data.entrySet() )
+        Map<KEY,VALUE> hits = new TreeMap<>( comparator );
+        for ( Map.Entry<KEY,VALUE> candidate : data.entrySet() )
         {
             if ( comparator.compare( from, to ) == 0 && comparator.compare( candidate.getKey(), from ) == 0 )
             {
@@ -263,14 +254,30 @@ public class GBPTreeIT
         return hits;
     }
 
-    private static MutableLong randomKey( Map<MutableLong,MutableLong> data, Random random )
+    private KEY randomKey( Map<KEY,VALUE> data, Random random )
     {
-        MutableLong[] keys = data.keySet().toArray( new MutableLong[data.size()] );
+        //noinspection unchecked
+        KEY[] keys = data.keySet().toArray( (KEY[]) Array.newInstance( getKeyClass(), data.size() ) );
         return keys[random.nextInt( keys.length )];
     }
 
-    private static MutableLong randomKey( Random random )
+    private KEY randomKey( Random random )
     {
-        return new MutableLong( random.nextInt( 1_000 ) );
+        return key( random.nextInt( 1_000 ) );
+    }
+
+    private VALUE randomValue( Random random )
+    {
+        return value( random.nextInt( 1_000 ) );
+    }
+
+    private VALUE value( long seed )
+    {
+        return layout.value( seed );
+    }
+
+    private KEY key( long seed )
+    {
+        return layout.key( seed );
     }
 }
