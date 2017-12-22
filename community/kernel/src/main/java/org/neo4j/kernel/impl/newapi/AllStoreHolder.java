@@ -475,5 +475,4 @@ public class AllStoreHolder extends Read implements Token
     {
         return storeReadLayer.indexGetFailure( descriptor.schema() );
     }
-
 }

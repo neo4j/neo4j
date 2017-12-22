@@ -22,17 +22,21 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.IntFunction;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.values.storable.Value;
 
+import static java.util.Arrays.stream;
 import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertOnlyExactPredicates;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
@@ -193,7 +197,8 @@ class NodeValueIndexCursor extends IndexCursor
         }
         else
         {
-            return "NodeValueIndexCursor[node=" + node + ", open state with: keys=" + Arrays.toString( query ) +
+            return "NodeValueIndexCursor[node=" + node + ", open state with: keys=" +
+                   Arrays.toString( stream( query ).map( IndexQuery::propertyKeyId ).toArray( Integer[]::new ) ) +
                    ", values=" + Arrays.toString( values ) +
                    ", underlying record=" + super.toString() + " ]";
         }

@@ -491,7 +491,7 @@ abstract class Read implements TxStateHolder,
         return ktx.hasTxStateWithChanges();
     }
 
-    protected void sharedOptimisticLock( ResourceType resource, long resourceId )
+    void sharedOptimisticLock( ResourceType resource, long resourceId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), resource, resourceId );
     }

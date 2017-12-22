@@ -713,7 +713,6 @@ public class NodeProxy implements Node
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-
     }
 
     @Override

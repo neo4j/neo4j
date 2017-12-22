@@ -111,5 +111,4 @@ public interface IndexReader extends Resource
             return true;
         }
     };
-
 }

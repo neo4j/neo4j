@@ -181,8 +181,8 @@ public class Operations implements Write, ExplicitIndexWrite
             return false;
         }
 
-        //Check so that that we are not breaking uniqueness constraints
-        //We do this by looking if there is an existing node in the index that
+        //Check so that we are not breaking uniqueness constraints
+        //We do this by checking if there is an existing node in the index that
         //with the same label and property combination.
         Iterator<ConstraintDescriptor> constraints = allStoreHolder.constraintsGetForLabel( nodeLabel );
         while ( constraints.hasNext() )
