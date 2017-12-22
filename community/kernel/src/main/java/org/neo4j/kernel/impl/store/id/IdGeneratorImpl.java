@@ -151,11 +151,29 @@ public class IdGeneratorImpl implements IdGenerator
     public synchronized IdRange nextIdBatch( int size )
     {
         assertStillOpen();
-        long[] reusableIds = idContainer.getReusableIds( size );
-        int sizeLeftForRange = size - reusableIds.length;
+
+        // Get from defrag list
+        int count = 0;
+        long[] defragIds = new long[size];
+        while ( count < size )
+        {
+            long id = idContainer.getReusableId();
+            if ( id == -1 )
+            {
+                break;
+            }
+            defragIds[count++] = id;
+        }
+
+        // Shrink the array to actual size
+        long[] tmpArray = defragIds;
+        defragIds = new long[count];
+        System.arraycopy( tmpArray, 0, defragIds, 0, count );
+
+        int sizeLeftForRange = size - count;
         long start = highId;
         setHighId( start + sizeLeftForRange );
-        return new IdRange( reusableIds, start, sizeLeftForRange );
+        return new IdRange( defragIds, start, sizeLeftForRange );
     }
 
     /**

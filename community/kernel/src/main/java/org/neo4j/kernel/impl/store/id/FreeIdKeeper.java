@@ -29,7 +29,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.impl.store.id.IdContainer.NO_RESULT;
 
@@ -135,52 +134,21 @@ public class FreeIdKeeper implements Closeable
             result = freeIds.dequeue();
             freeIdCount--;
         }
+        else if ( readFromDisk.size() > 0 )
+        {
+            result = readFromDisk.dequeue();
+            freeIdCount--;
+        }
+        else if ( freeIdCount > 0 && readIdBatch() )
+        {
+            result = readFromDisk.dequeue();
+            freeIdCount--;
+        }
         else
         {
-            result = getIdFromDisk();
-            if ( result != NO_RESULT )
-            {
-                freeIdCount--;
-            }
+            result = NO_RESULT;
         }
         return result;
-    }
-
-    public long[] getIds( int numberOfIds )
-    {
-        if ( freeIdCount == 0 )
-        {
-            return PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-        }
-        int reusableIds = (int) min( numberOfIds, freeIdCount );
-        long[] ids = new long[reusableIds];
-        int cursor = 0;
-        while ( (cursor < reusableIds) && !freeIds.isEmpty() )
-        {
-            ids[cursor++] = freeIds.dequeue();
-        }
-        while ( cursor < reusableIds )
-        {
-            ids[cursor++] = getIdFromDisk();
-        }
-        freeIdCount -= reusableIds;
-        return ids;
-    }
-
-    private long getIdFromDisk()
-    {
-        if ( readFromDisk.isEmpty() )
-        {
-            readIdBatch();
-        }
-        if ( !readFromDisk.isEmpty() )
-        {
-            return readFromDisk.dequeue();
-        }
-        else
-        {
-            return NO_RESULT;
-        }
     }
 
     public long getCount()
@@ -191,11 +159,11 @@ public class FreeIdKeeper implements Closeable
     /*
      * After this method returns, if there were any entries found, they are placed in the readFromDisk list.
      */
-    private void readIdBatch()
+    private boolean readIdBatch()
     {
         try
         {
-            readIdBatch0();
+            return readIdBatch0();
         }
         catch ( IOException e )
         {
@@ -203,11 +171,11 @@ public class FreeIdKeeper implements Closeable
         }
     }
 
-    private void readIdBatch0() throws IOException
+    private boolean readIdBatch0() throws IOException
     {
         if ( stackPosition == 0 )
         {
-            return;
+            return false;
         }
 
         long startPosition = max( stackPosition - batchSize * ID_ENTRY_SIZE, 0 );
@@ -229,6 +197,7 @@ public class FreeIdKeeper implements Closeable
         {
             truncate( startPosition );
         }
+        return true;
     }
 
     /**

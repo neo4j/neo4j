@@ -30,17 +30,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -57,8 +55,11 @@ public class FreeIdKeeperTest
     public void newlyConstructedInstanceShouldReportProperDefaultValues() throws Exception
     {
         // Given
-        FreeIdKeeper keeper = getFreeIdKeeperAggressive();
+        StoreChannel channel = mock( StoreChannel.class );
+        int batchSize = 10;
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, batchSize );
 
+        // when
         // then
         assertEquals( NO_RESULT, keeper.getId() );
         assertEquals( 0, keeper.getCount() );
@@ -68,7 +69,9 @@ public class FreeIdKeeperTest
     public void freeingAnIdShouldReturnThatIdAndUpdateTheCountWhenAggressiveModeIsSet() throws Exception
     {
         // Given
-        FreeIdKeeper keeper = getFreeIdKeeperAggressive();
+        StoreChannel channel = mock( StoreChannel.class );
+        int batchSize = 10;
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, batchSize );
 
         // when
         keeper.freeId( 13 );
@@ -88,7 +91,9 @@ public class FreeIdKeeperTest
     public void shouldReturnMinusOneWhenRunningOutOfIds() throws Exception
     {
         // Given
-        FreeIdKeeper keeper = getFreeIdKeeperAggressive();
+        StoreChannel channel = mock( StoreChannel.class );
+        int batchSize = 10;
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, batchSize );
 
         // when
         keeper.freeId( 13 );
@@ -287,7 +292,10 @@ public class FreeIdKeeperTest
     public void shouldNotReturnNewlyReleasedIdsIfAggressiveIsFalse() throws Exception
     {
         // given
-        FreeIdKeeper keeper = getFreeIdKeeper();
+        StoreChannel channel = getStoreChannel();
+
+        int batchSize = 10;
+        FreeIdKeeper keeper = getFreeIdKeeper( channel, batchSize );
 
         // when
         keeper.freeId( 1 );
@@ -509,90 +517,14 @@ public class FreeIdKeeperTest
         assertEquals( channel.size(),  6 * batchSize * Long.BYTES );
     }
 
-    @Test
-    public void allocateEmptyBatchWhenNoIdsAreAvailable() throws IOException
-    {
-        FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
-        long[] ids = freeIdKeeper.getIds( 1024 );
-        assertSame( PrimitiveLongCollections.EMPTY_LONG_ARRAY, ids );
-        assertEquals( 0, freeIdKeeper.getCount() );
-    }
-
-    @Test
-    public void allocateBatchWhenHaveMoreIdsInMemory() throws IOException
-    {
-        FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
-        for ( long id = 1L; id < 7L; id++ )
-        {
-            freeIdKeeper.freeId( id );
-        }
-        long[] ids = freeIdKeeper.getIds( 5 );
-        assertArrayEquals( new long[]{1L, 2L, 3L, 4L, 5L}, ids);
-        assertEquals( 1, freeIdKeeper.getCount() );
-    }
-
-    @Test
-    public void allocateBatchWhenHaveLessIdsInMemory() throws IOException
-    {
-        FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive();
-        for ( long id = 1L; id < 4L; id++ )
-        {
-            freeIdKeeper.freeId( id );
-        }
-        long[] ids = freeIdKeeper.getIds( 5 );
-        assertArrayEquals( new long[]{1L, 2L, 3L}, ids );
-        assertEquals( 0, freeIdKeeper.getCount() );
-    }
-
-    @Test
-    public void allocateBatchWhenHaveLessIdsInMemoryButHaveOnDiskMore() throws IOException
-    {
-        FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive( 4 );
-        for ( long id = 1L; id < 11L; id++ )
-        {
-            freeIdKeeper.freeId( id );
-        }
-        long[] ids = freeIdKeeper.getIds( 7 );
-        assertArrayEquals( new long[]{9L, 10L, 5L, 6L, 7L, 8L, 1L}, ids );
-        assertEquals( 3, freeIdKeeper.getCount() );
-    }
-
-    @Test
-    public void allocateBatchWhenHaveLessIdsInMemoryAndOnDisk() throws IOException
-    {
-        FreeIdKeeper freeIdKeeper = getFreeIdKeeperAggressive( 4 );
-        for ( long id = 1L; id < 10L; id++ )
-        {
-            freeIdKeeper.freeId( id );
-        }
-        long[] ids = freeIdKeeper.getIds( 15 );
-        assertArrayEquals( new long[]{9L, 5L, 6L, 7L, 8L, 1L, 2L, 3L, 4L}, ids );
-        assertEquals( 0, freeIdKeeper.getCount() );
-    }
-
-    private FreeIdKeeper getFreeIdKeeperAggressive() throws IOException
-    {
-        return getFreeIdKeeperAggressive( getStoreChannel(), 10 );
-    }
-
-    private FreeIdKeeper getFreeIdKeeperAggressive( int batchSize ) throws IOException
-    {
-        return getFreeIdKeeperAggressive( getStoreChannel(), batchSize );
-    }
-
-    private FreeIdKeeper getFreeIdKeeperAggressive( StoreChannel channel, int batchSize ) throws IOException
-    {
-        return getFreeIdKeeper( channel, batchSize, true );
-    }
-
     private FreeIdKeeper getFreeIdKeeper( StoreChannel channel, int batchSize ) throws IOException
     {
         return getFreeIdKeeper( channel, batchSize, false );
     }
 
-    private FreeIdKeeper getFreeIdKeeper() throws IOException
+    private FreeIdKeeper getFreeIdKeeperAggressive( StoreChannel channel, int batchSize ) throws IOException
     {
-        return getFreeIdKeeper( getStoreChannel(), 10 );
+        return getFreeIdKeeper( channel, batchSize, true );
     }
 
     private FreeIdKeeper getFreeIdKeeper( StoreChannel channel, int batchSize, boolean aggressiveMode ) throws IOException
