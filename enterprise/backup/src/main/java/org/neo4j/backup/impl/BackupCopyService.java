@@ -32,24 +32,26 @@ import java.util.stream.Stream;
 
 import org.neo4j.com.storecopy.FileMoveAction;
 import org.neo4j.com.storecopy.FileMoveProvider;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 
 import static java.lang.String.format;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 
 class BackupCopyService
 {
     private static final int MAX_OLD_BACKUPS = 1000;
 
+    private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-
     private final FileMoveProvider fileMoveProvider;
 
-    BackupCopyService( PageCache pageCache, FileMoveProvider fileMoveProvider )
+    BackupCopyService( FileSystemAbstraction fs, PageCache pageCache,
+                       FileMoveProvider fileMoveProvider )
     {
+        this.fs = fs;
         this.pageCache = pageCache;
         this.fileMoveProvider = fileMoveProvider;
     }
@@ -72,10 +74,31 @@ class BackupCopyService
         }
     }
 
-    public void clearLogs( Path neo4jHome )
+    public void clearIdFiles( Path backupLocation ) throws IOException
     {
-        File logsDirectory = Config.defaults( logs_directory, neo4jHome.toString() ).get( store_internal_log_path );
-        logsDirectory.delete();
+        IOException exception = null;
+        File targetDirectory = backupLocation.toFile();
+        File[] files = fs.listFiles( targetDirectory );
+        for ( File file : files )
+        {
+            if ( !fs.isDirectory( file ) && file.getName().endsWith( ".id" ) )
+            {
+                try
+                {
+                    long highId = IdGeneratorImpl.readHighId( fs, file );
+                    fs.deleteFile( file );
+                    IdGeneratorImpl.createGenerator( fs, file, highId, true );
+                }
+                catch ( IOException e )
+                {
+                    exception = Exceptions.chain( exception, e );
+                }
+            }
+        }
+        if ( exception != null )
+        {
+            throw exception;
+        }
     }
 
     boolean backupExists( Path destination )

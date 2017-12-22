@@ -367,7 +367,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void logsAreClearedAfterIncrementalBackup()
+    public void logsAreClearedAfterIncrementalBackup() throws IOException
     {
         // given backup exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -379,11 +379,11 @@ public class BackupStrategyWrapperTest
         subject.doBackup( onlineBackupContext );
 
         // then
-        verify( backupCopyService ).clearLogs( any() );
+        verify( backupCopyService ).clearIdFiles( any() );
     }
 
     @Test
-    public void logsAreNotClearedWhenIncrementalNotSuccessful()
+    public void logsAreNotClearedWhenIncrementalNotSuccessful() throws IOException
     {
         // given backup exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -395,11 +395,11 @@ public class BackupStrategyWrapperTest
         subject.doBackup( onlineBackupContext );
 
         // then do not
-        verify( backupCopyService, never() ).clearLogs( any() );
+        verify( backupCopyService, never() ).clearIdFiles( any() );
     }
 
     @Test
-    public void logsAreClearedWhenFullBackupIsSuccessful()
+    public void logsAreClearedWhenFullBackupIsSuccessful() throws IOException
     {
         // given a backup doesn't exist
         when( backupCopyService.backupExists( any() ) ).thenReturn( false );
@@ -411,11 +411,11 @@ public class BackupStrategyWrapperTest
         subject.doBackup( onlineBackupContext );
 
         // then
-        verify( backupCopyService ).clearLogs( any() );
+        verify( backupCopyService ).clearIdFiles( any() );
     }
 
     @Test
-    public void logsAreNotClearedWhenFullBackupIsNotSuccessful()
+    public void logsAreNotClearedWhenFullBackupIsNotSuccessful() throws IOException
     {
         // given a backup doesn't exist
         when( backupCopyService.backupExists( any() ) ).thenReturn( false );
@@ -427,7 +427,7 @@ public class BackupStrategyWrapperTest
         subject.doBackup( onlineBackupContext );
 
         // then
-        verify( backupCopyService, never() ).clearLogs( any() );
+        verify( backupCopyService, never() ).clearIdFiles( any() );
     }
 
     @Test

@@ -90,7 +90,7 @@ class BackupStrategyWrapper
 
             if ( fullBackupWontWork || incrementalWasSuccessful )
             {
-                backupCopyService.clearLogs( backupLocation );
+                clearIdFiles( backupLocation );
                 return describeOutcome( state );
             }
             if ( !onlineBackupContext.getRequiredArguments().isFallbackToFull() )
@@ -107,6 +107,18 @@ class BackupStrategyWrapper
             return describeOutcome( fullBackupWithTemporaryFolderResolutions( onlineBackupContext ) );
         }
         return new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, null );
+    }
+
+    private void clearIdFiles( Path backupLocation )
+    {
+        try
+        {
+            backupCopyService.clearIdFiles( backupLocation );
+        }
+        catch ( IOException e )
+        {
+            log.warn( "Failed to delete some or all id files.", e );
+        }
     }
 
     /**
@@ -154,7 +166,7 @@ class BackupStrategyWrapper
                     return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
                 }
             }
-            backupCopyService.clearLogs( userSpecifiedBackupLocation );
+            clearIdFiles( userSpecifiedBackupLocation );
         }
         return state;
     }
