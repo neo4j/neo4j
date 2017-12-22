@@ -23,7 +23,7 @@ import java.lang.reflect.Constructor
 
 import org.neo4j.cypher.internal.compatibility.v3_3.SemanticTableConverter.ExpressionMapping3To4
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3, InputPosition => InputPositionV3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, IdName => IdNameV3_4}
@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
 import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
-import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -72,8 +72,10 @@ object LogicalPlanConverter {
             sourceId = children(2).asInstanceOf[IdNameV3_4],
             seenId = children(3).asInstanceOf[IdNameV3_4],
             targetId = children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))
+        case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
+          convertVersion("v3_3", "v3_4", plan, children, idGen, classOf[IdGen])
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
-          convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery])
+          convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery], idGen, classOf[IdGen])
 
         case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
           new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
@@ -214,14 +216,30 @@ object LogicalPlanConverter {
     })
   }
 
-  private def convertVersion(oldPackage: String, newPackage: String, thing: AnyRef, children: Seq[AnyRef], extraArg: AnyRef = null, assignableClazzForArg: Class[_] = null): AnyRef = {
+  private def convertVersion(oldPackage: String,
+                             newPackage: String,
+                             thing: AnyRef,
+                             children: Seq[AnyRef],
+                             extraArg: AnyRef = null,
+                             assignableClazzForArg: Class[_] = null,
+                             extraArg2: AnyRef = null,
+                             assignableClazzForArg2: Class[_] = null): AnyRef = {
     val thingClass = thing.getClass
     val classNameV3_3 = thingClass.getName
     val constructor = getConstructor(classNameV3_3, oldPackage, newPackage)
 
     val params = constructor.getParameterTypes
     val args = children.toVector
-    val ctorArgs = if (params.length == args.length + 1 && params.last.isAssignableFrom(assignableClazzForArg)) args :+ extraArg else args
+    val ctorArgs =
+      if (params.length == args.length + 1
+        && params.last.isAssignableFrom(assignableClazzForArg))
+        args :+ extraArg
+      else if (params.length == args.length + 2
+        && params(params.length - 2).isAssignableFrom(assignableClazzForArg)
+        && params(params.length - 1).isAssignableFrom(assignableClazzForArg2))
+        args :+ extraArg :+ extraArg2
+      else
+        args
 
     Try(constructor.newInstance(ctorArgs: _*).asInstanceOf[AnyRef]) match {
       case Success(i) => i

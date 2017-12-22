@@ -55,7 +55,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def availableSymbols: Set[IdName]
   val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
-  val id = ??? //idGen.id()
+  val id = idGen.id()
   // --------
   /*
   A id for the logical plan operator, unique inside of the given query tree. These identifiers will be
@@ -93,7 +93,7 @@ abstract class LogicalPlan(idGen: IdGen)
   }
 
   def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): LogicalPlan = {
-    val arguments = this.children.toList :+ newSolved
+    val arguments = this.children.toList :+ newSolved :+ idGen
     try {
       val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
       resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
@@ -106,13 +106,13 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def copyPlan(): LogicalPlan = {
     try {
-      val arguments = this.children.toList :+ solved
+      val arguments = this.children.toList :+ solved :+ idGen
       val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
       resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
       resultingPlan
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
-        throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor", e)
+        throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor and the IdGen in yet another", e)
     }
   }
 
@@ -128,10 +128,16 @@ abstract class LogicalPlan(idGen: IdGen)
       val constructor = this.copyConstructor
       val params = constructor.getParameterTypes
       val args = children.toIndexedSeq
-      val resultingPlan = if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[PlannerQuery]))
-        constructor.invoke(this, args :+ this.solved: _*).asInstanceOf[this.type]
-      else
-        constructor.invoke(this, args: _*).asInstanceOf[this.type]
+      val resultingPlan =
+        if (params.length == args.length + 1
+          && params.last.isAssignableFrom(classOf[IdGen]))
+          constructor.invoke(this, args :+ this.idGen: _*).asInstanceOf[this.type]
+        else if ((params.length == args.length + 2)
+          && params(params.length - 2).isAssignableFrom(classOf[PlannerQuery])
+          && params(params.length - 1).isAssignableFrom(classOf[IdGen]))
+          constructor.invoke(this, args :+ this.solved :+ this.idGen: _*).asInstanceOf[this.type]
+        else
+          constructor.invoke(this, args: _*).asInstanceOf[this.type]
       resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
       resultingPlan
     }
