@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,21 +26,18 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class GBPTreeReadWriteTest
+public abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
 {
     private RandomRule random = new RandomRule();
     private PageCacheAndDependenciesRule deps = new PageCacheAndDependenciesRule();
@@ -49,7 +45,7 @@ public class GBPTreeReadWriteTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( random ).around( deps );
 
-    private Layout<MutableLong,MutableLong> layout;
+    private TestLayout<KEY,VALUE> layout;
     private File indexFile;
 
     @Before
@@ -59,32 +55,28 @@ public class GBPTreeReadWriteTest
         layout = getLayout();
     }
 
-    private Layout<MutableLong,MutableLong> getLayout()
-    {
-        return new SimpleLongLayout();
-    }
+    abstract TestLayout<KEY,VALUE> getLayout();
 
     @Test
     public void shouldSeeSimpleInsertions() throws Exception
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index() )
+        try ( GBPTree<KEY,VALUE> index = index() )
         {
             int count = 1000;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 for ( int i = 0; i < count; i++ )
                 {
-                    writer.put( new MutableLong( i ), new MutableLong( i ) );
+                    writer.put( key( i ), value( i ) );
                 }
             }
 
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
+            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ) ) )
             {
                 for ( int i = 0; i < count; i++ )
                 {
                     assertTrue( cursor.next() );
-                    assertEquals( i, cursor.get().key().longValue() );
+                    assertEqualsKey( key( i ), cursor.get().key() );
                 }
                 assertFalse( cursor.next() );
             }
@@ -94,24 +86,23 @@ public class GBPTreeReadWriteTest
     @Test
     public void shouldSeeSimpleInsertionsWithExactMatch() throws Exception
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index() )
+        try ( GBPTree<KEY,VALUE> index = index() )
         {
             int count = 1000;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 for ( int i = 0; i < count; i++ )
                 {
-                    writer.put( new MutableLong( i ), new MutableLong( i ) );
+                    writer.put( key( i ), value( i ) );
                 }
             }
 
             for ( int i = 0; i < count; i++ )
             {
-                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                              index.seek( new MutableLong( i ), new MutableLong( i ) ) )
+                try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor = index.seek( key( i ), key( i ) ) )
                 {
                     assertTrue( cursor.next() );
-                    assertEquals( i, cursor.get().key().longValue() );
+                    assertEqualsKey( key( i ), cursor.get().key() );
                     assertFalse( cursor.next() );
                 }
             }
@@ -124,53 +115,94 @@ public class GBPTreeReadWriteTest
     public void shouldSplitCorrectly() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = index() )
+        try ( GBPTree<KEY,VALUE> index = index() )
         {
             // WHEN
             int count = 1_000;
-            PrimitiveLongSet seen = Primitive.longSet( count );
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            List<KEY> seen = new ArrayList<>( count );
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 for ( int i = 0; i < count; i++ )
                 {
-                    MutableLong key;
+                    KEY key;
                     do
                     {
-                        key = new MutableLong( random.nextInt( 100_000 ) );
+                        key = key( random.nextInt( 100_000 ) );
                     }
-                    while ( !seen.add( key.longValue() ) );
-                    MutableLong value = new MutableLong( i );
+                    while ( listContains( seen, key ) );
+                    VALUE value = value( i );
                     writer.put( key, value );
-                    seen.add( key.longValue() );
+                    seen.add( key );
                 }
             }
 
             // THEN
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
+            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor = index.seek( key( 0 ), key( Long.MAX_VALUE ) ) )
             {
                 long prev = -1;
                 while ( cursor.next() )
                 {
-                    MutableLong hit = cursor.get().key();
-                    if ( hit.longValue() < prev )
+                    KEY hit = cursor.get().key();
+                    long hitSeed = layout.getSeed( hit );
+                    if ( hitSeed < prev )
                     {
                         fail( hit + " smaller than prev " + prev );
                     }
-                    prev = hit.longValue();
-                    assertTrue( seen.remove( hit.longValue() ) );
+                    prev = hitSeed;
+                    assertTrue( removeFromList( seen, hit ) );
                 }
 
                 if ( !seen.isEmpty() )
                 {
-                    fail( "expected hits " + Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
+                    fail( "expected hits " + seen );
                 }
             }
         }
     }
 
-    private GBPTree<MutableLong,MutableLong> index() throws IOException
+    private GBPTree<KEY,VALUE> index() throws IOException
     {
         return new GBPTreeBuilder<>( deps.pageCache(), indexFile, layout ).build();
+    }
+
+    private boolean removeFromList( List<KEY> list, KEY item )
+    {
+        for ( int i = 0; i < list.size(); i++ )
+        {
+            if ( layout.compare( list.get( i ), item ) == 0 )
+            {
+                list.remove( i );
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean listContains( List<KEY> list, KEY item )
+    {
+        for ( KEY key : list )
+        {
+            if ( layout.compare( key, item ) == 0 )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private VALUE value( long seed )
+    {
+        return layout.value( seed );
+    }
+
+    private KEY key( long seed )
+    {
+        return layout.key( seed );
+    }
+
+    private void assertEqualsKey( KEY expected, KEY actual )
+    {
+        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
+                layout.compare( expected, actual ) == 0 );
     }
 }
