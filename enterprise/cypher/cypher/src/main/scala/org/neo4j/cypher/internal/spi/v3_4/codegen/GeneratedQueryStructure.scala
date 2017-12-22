@@ -23,26 +23,27 @@ import java.lang.reflect.Modifier
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.Expression.{constant, invoke, newArray, newInstance}
-import org.neo4j.codegen.MethodReference.constructorReference
+import org.neo4j.codegen.MethodReference.{constructorReference, methodReference}
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.bytecode.ByteCode.{BYTECODE, VERIFY_GENERATED_BYTECODE}
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
-import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Completable, Provider}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRecord
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
+import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.virtual.MapValue
@@ -162,9 +163,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         Seq((success: Boolean) => (block: CodeBlock) => {
           val target = Expression.get(block.self(), fields.closeable)
           val reference = method[Completable, Unit]("completed", typeRef[Boolean])
-          val constant1 = Expression.constant(success)
-          val invoke1 = invoke(target, reference, constant1)
-          block.expression(invoke1)
+          block.expression(invoke(target, reference, Expression.constant(success)))
+          block.expression(invoke(block.self(), methodReference(block.owner(), TypeReference.VOID, "closeCursors")))
         }))
       codeBlock.assign(typeRef[ResultRecord], "row",
                        invoke(newInstance(typeRef[ResultRecord]),
@@ -179,6 +179,11 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   private def addSimpleMethods(clazz: ClassGenerator, fields: Fields) = {
     clazz.generate(Templates.constructor(clazz.handle()))
     Templates.getOrLoadReadOperations(clazz, fields)
+    Templates.getOrLoadDataRead(clazz, fields)
+    Templates.getOrLoadCursors(clazz, fields)
+    Templates.nodeCursor(clazz, fields)
+    Templates.propertyCursor(clazz, fields)
+    Templates.closeCursors(clazz, fields)
     clazz.generate(Templates.setCompletable(clazz.handle()))
     clazz.generate(Templates.executionMode(clazz.handle()))
     clazz.generate(Templates.executionPlanDescription(clazz.handle()))
@@ -205,7 +210,11 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       params = clazz.field(typeRef[MapValue], "params"),
       closeable = clazz.field(typeRef[Completable], "closeable"),
       queryContext = clazz.field(typeRef[QueryContext], "queryContext"),
-      skip = clazz.field(typeRef[Boolean], "skip"))
+      skip = clazz.field(typeRef[Boolean], "skip"),
+      cursors = clazz.field(typeRef[CursorFactory], "cursors"),
+      nodeCursor = clazz.field(typeRef[NodeCursor], "nodeCursor"),
+      propertyCursor = clazz.field(typeRef[PropertyCursor], "propertyCursor"),
+      dataRead =  clazz.field(typeRef[Read], "dataRead"))
   }
 
   def method[O <: AnyRef, R](name: String, params: TypeReference*)

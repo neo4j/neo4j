@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, QueryTran
 import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, TaskCloser}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
-import org.neo4j.internal.kernel.api.TokenNameLookup
+import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup}
@@ -217,6 +217,35 @@ object Templates {
     }
   }
 
+  def getOrLoadCursors(clazz: ClassGenerator, fields: Fields) = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[CursorFactory], "getOrLoadCursors")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val cursors = Expression.get(generate.self(), fields.cursors)
+      using(generate.ifStatement(Expression.isNull(cursors))) { block =>
+        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
+        val cursors: MethodReference = method[QueryTransactionalContext, CursorFactory]("cursors")
+        val queryContext = Expression.get(block.self(), fields.queryContext)
+        block.put(block.self(), fields.cursors,
+                  Expression.invoke(Expression.invoke(queryContext, transactionalContext), cursors))
+      }
+      generate.returns(cursors)
+    }
+  }
+  def getOrLoadDataRead(clazz: ClassGenerator, fields: Fields) = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[Read], "getOrLoadDataRead")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val dataRead = Expression.get(generate.self(), fields.dataRead)
+      using(generate.ifStatement(Expression.isNull(dataRead))) { block =>
+        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
+        val dataRead: MethodReference = method[QueryTransactionalContext, Read]("dataRead")
+        val queryContext = Expression.get(block.self(), fields.queryContext)
+        block.put(block.self(), fields.dataRead,
+                  Expression.invoke(Expression.invoke(queryContext, transactionalContext), dataRead))
+      }
+      generate.returns(dataRead)
+    }
+  }
+
   def setCompletable(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "setCompletable",
                                                                                param[Completable]("closeable")).
     put(self(classHandle), typeRef[Completable], "closeable", load("closeable", typeRef[Completable])).
@@ -231,6 +260,51 @@ object Templates {
       invoke(get(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description"),
                    method[Provider[InternalPlanDescription], Object]("get")))).
     build()
+
+  def nodeCursor(clazz: ClassGenerator,  fields: Fields): Unit = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[NodeCursor], "nodeCursor")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val nodeCursor = Expression.get(generate.self(), fields.nodeCursor)
+        Expression.get(generate.self(), fields.cursors)
+      val cursors = Expression.invoke(generate.self(),
+                                      methodReference(generate.owner(), typeRef[CursorFactory], "getOrLoadCursors" ))
+      using(generate.ifStatement(Expression.isNull(nodeCursor))) { block =>
+        block.put(block.self(), fields.nodeCursor,
+        Expression.invoke(cursors, method[CursorFactory, NodeCursor]("allocateNodeCursor")))
+
+      }
+      generate.returns(nodeCursor)
+    }
+  }
+
+  def closeCursors(clazz: ClassGenerator, fields: Fields): Unit = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[Unit], "closeCursors")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val nodeCursor = Expression.get(generate.self(), fields.nodeCursor)
+      using(generate.ifStatement(Expression.notNull(nodeCursor))) { block =>
+        block.expression(Expression.invoke(nodeCursor, method[NodeCursor, Unit]("close")))
+      }
+      val propertyCursor = Expression.get(generate.self(), fields.propertyCursor)
+      using(generate.ifStatement(Expression.notNull(propertyCursor))) { block =>
+        block.expression(Expression.invoke(propertyCursor, method[PropertyCursor, Unit]("close")))
+      }
+    }
+  }
+
+  def propertyCursor(clazz: ClassGenerator,  fields: Fields): Unit = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[PropertyCursor], "propertyCursor")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val propertyCursor = Expression.get(generate.self(), fields.propertyCursor)
+      val cursors = Expression.invoke(generate.self(),
+                                      methodReference(generate.owner(), typeRef[CursorFactory], "getOrLoadCursors" ))
+      using(generate.ifStatement(Expression.isNull(propertyCursor))) { block =>
+        block.put(block.self(), fields.propertyCursor,
+                  Expression.invoke(cursors, method[CursorFactory, PropertyCursor]("allocatePropertyCursor")))
+
+      }
+      generate.returns(propertyCursor)
+    }
+  }
 
   val FIELD_NAMES = MethodTemplate.method(TypeReference.typeReference(classOf[Array[String]]), "fieldNames").
     returns(get(TypeReference.typeReference(classOf[Array[String]]), "COLUMNS")).

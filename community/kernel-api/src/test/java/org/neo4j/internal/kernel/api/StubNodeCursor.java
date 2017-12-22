@@ -31,6 +31,23 @@ public class StubNodeCursor implements NodeCursor
     private int offset = -1;
     private List<Node> nodes = new ArrayList<>();
 
+    void single( long reference )
+    {
+        offset = Integer.MAX_VALUE;
+        for ( int i = 0; i < nodes.size(); i++ )
+        {
+            if ( reference == nodes.get( i ).id )
+            {
+                offset = i - 1;
+            }
+        }
+    }
+
+    void scan()
+    {
+        offset = -1;
+    }
+
     public StubNodeCursor withNode( long id )
     {
         nodes.add( new Node( id, new long[]{}, Collections.emptyMap() ) );
