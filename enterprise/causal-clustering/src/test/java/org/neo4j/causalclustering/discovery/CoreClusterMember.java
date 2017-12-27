@@ -44,6 +44,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
 import static java.lang.String.format;
@@ -64,6 +65,7 @@ public class CoreClusterMember implements ClusterMember
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
     private CoreGraphDatabase database;
+    private final Monitors monitors = new Monitors();
 
     public CoreClusterMember( int serverId, int clusterSize,
                               List<AdvertisedSocketAddress> addresses,
@@ -146,7 +148,7 @@ public class CoreClusterMember implements ClusterMember
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, Config.embeddedDefaults( config ),
-                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
     @Override
@@ -216,6 +218,11 @@ public class CoreClusterMember implements ClusterMember
         return ClientConnectorAddresses.extractFromConfig( Config.embeddedDefaults( this.config ) );
     }
 
+    public Monitors monitors()
+    {
+        return monitors;
+    }
+
     public File clusterStateDirectory()
     {
         return clusterStateDir;
@@ -228,6 +235,11 @@ public class CoreClusterMember implements ClusterMember
 
     public void stopCatchupServer() throws Throwable
     {
-        database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
+        database.getDependencyResolver().resolveDependency( CatchupServer.class ).stop();
+    }
+
+    public Config config()
+    {
+        return Config.embeddedDefaults( config );
     }
 }
