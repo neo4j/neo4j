@@ -20,6 +20,8 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.codehaus.jackson.JsonNode;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -29,7 +31,7 @@ import java.io.Reader;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
@@ -37,7 +39,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -48,6 +52,7 @@ import org.neo4j.server.web.XForwardUtil;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
+import static java.lang.Math.max;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -67,6 +72,19 @@ import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 public class TransactionIT extends AbstractRestFunctionalTestBase
 {
     private final HTTP.Builder http = HTTP.withBaseUri( server().baseUri() );
+    private ExecutorService executors;
+
+    @Before
+    public void setUp()
+    {
+        executors = Executors.newFixedThreadPool( max( 2, Runtime.getRuntime().availableProcessors() ) );
+    }
+
+    @After
+    public void tearDown()
+    {
+        executors.shutdown();
+    }
 
     @Test
     public void begin__execute__commit() throws Exception
@@ -572,11 +590,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         final String statement =
                 "WITH range(0, 100000) AS r UNWIND r AS i CREATE (n {number: i}) RETURN count(n)";
 
-        final CountDownLatch latch = new CountDownLatch( 1 );
-
-        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( () ->
+        final Future<Response> executeFuture = executors.submit( () ->
         {
-            latch.countDown();
             Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
                                                                         statement + "' } ] }" ) );
             assertThat( response.status(), equalTo( 200 ) );
@@ -585,17 +600,10 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         } );
 
         // terminate
-        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( () ->
+        final Future<Response> interruptFuture = executors.submit( () ->
         {
-            try
-            {
-                latch.await();
-                Thread.sleep( 100 );
-            }
-            catch ( InterruptedException ignored )
-            {
-                // go
-            }
+            waitForStatementExecution( statement );
+
             Response response = http.DELETE( begin.location() );
             assertThat( response.status(), equalTo( 200 ) );
             return response;
@@ -966,5 +974,22 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     private void assertHasTxLocation( Response begin )
     {
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+    }
+
+    private static void waitForStatementExecution( String statement )
+    {
+        KernelTransactions kernelTransactions =
+                server().getDatabase().getGraph().getDependencyResolver().resolveDependency( KernelTransactions.class );
+        while ( !isStatementExecuting( kernelTransactions, statement ) )
+        {
+            Thread.yield();
+        }
+    }
+
+    private static boolean isStatementExecuting( KernelTransactions kernelTransactions, String statement )
+    {
+        return kernelTransactions.activeTransactions().stream()
+                .flatMap( KernelTransactionHandle::executingQueries )
+                .anyMatch( executingQuery -> statement.equals( executingQuery.queryText() ) );
     }
 }
