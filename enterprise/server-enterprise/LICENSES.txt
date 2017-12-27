@@ -381,11 +381,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Common Development and Distribution License Version 1.1
   Java Servlet API
   jersey-core
-  jersey-multipart
   jersey-server
   jersey-servlet
   jsr311-api
-  MIME streaming extension
 ------------------------------------------------------------------------------
 
 COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1 

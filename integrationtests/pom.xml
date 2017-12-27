@@ -15,6 +15,10 @@
   <packaging>jar</packaging>
   <description>A package for cross-module integration tests.</description>
 
+  <properties>
+    <moduleName>org.neo4j.integrationtests</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

@@ -79,11 +79,9 @@ Bouncy Castle License
 Common Development and Distribution License Version 1.1
   Java Servlet API
   jersey-core
-  jersey-multipart
   jersey-server
   jersey-servlet
   jsr311-api
-  MIME streaming extension
 
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API

@@ -18,6 +18,10 @@
 
   <packaging>jar</packaging>
 
+  <properties>
+    <moduleName>org.neo4j.server.enterprise</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

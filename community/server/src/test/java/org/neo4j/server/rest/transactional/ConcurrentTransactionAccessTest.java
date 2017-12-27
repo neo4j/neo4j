@@ -33,7 +33,7 @@ import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAcc
 import org.neo4j.server.rest.web.TransactionUriScheme;
 import org.neo4j.test.DoubleLatch;
 
-import static javax.xml.bind.DatatypeConverter.parseLong;
+import static java.lang.Long.parseLong;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;

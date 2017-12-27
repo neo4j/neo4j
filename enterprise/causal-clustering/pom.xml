@@ -19,6 +19,10 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
     <packaging>jar</packaging>
 
+    <properties>
+        <moduleName>org.neo4j.causalclustering</moduleName>
+    </properties>
+
     <scm>
         <url>https://github.com/neo4j/neo4j/tree/3.1/enterprise/causal-clustering</url>
     </scm>

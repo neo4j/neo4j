@@ -21,6 +21,7 @@
 
     <properties>
         <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
+        <moduleName>org.neo4j.harness.enterprise</moduleName>
     </properties>
 
     <scm>

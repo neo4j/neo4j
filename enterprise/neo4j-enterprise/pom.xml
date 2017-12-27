@@ -17,6 +17,10 @@
   <description>A meta package containing the most used Neo4j Enterprise libraries. Intended use: as a Maven dependency.
   </description>
 
+  <properties>
+    <moduleName>org.neo4j.enterprise</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

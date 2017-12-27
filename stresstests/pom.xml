@@ -15,6 +15,10 @@
   <packaging>jar</packaging>
   <description>A package for stress tests.</description>
 
+  <properties>
+    <moduleName>org.neo4j.stresstests</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

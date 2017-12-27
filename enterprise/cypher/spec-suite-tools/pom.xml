@@ -44,6 +44,10 @@
     </license>
   </licenses>
 
+  <properties>
+    <moduleName>org.neo4j.internal.cypher.spec.suite.tools</moduleName>
+  </properties>
+  
   <build>
     <plugins>
       <plugin>
