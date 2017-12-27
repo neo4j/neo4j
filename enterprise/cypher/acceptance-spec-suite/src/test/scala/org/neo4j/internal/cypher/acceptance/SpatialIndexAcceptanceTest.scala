@@ -20,11 +20,11 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.File
+import java.util.stream.Collectors
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.spatial.Point
@@ -63,11 +63,9 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
   }
 
   test("persisted indexed point should be readable from node property") {
-    // Given
     graph.createIndex("Place", "location")
-    createLabeledNode(Map("name" -> "Malmoe"), "Place")
 
-    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
 
@@ -77,10 +75,7 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
   }
 
   test("create index after adding node and also survive restart") {
-    // Given
-    createLabeledNode(Map("name" -> "Malmoe"), "Place")
-
-    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
     graph.createIndex("Place", "location")
 
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
@@ -90,8 +85,21 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
   }
 
+  test("should handle multiple different types of points and also survive restart") {
+    graph.createIndex("Place", "location")
+
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'})")
+
+    val query = "MATCH (p:Place) WHERE EXISTS(p.location) RETURN p.location AS point"
+    testPointScan(query, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7), Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
+
+    restartGraphDatabase()
+
+    testPointScan(query, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7), Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
+  }
+
   test("overwriting indexed property should work") {
-    // Given
     graph.createIndex("Place", "location")
     createLabeledNode("Place")
 
@@ -107,14 +115,10 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
   }
 
   test("create index before and after adding node and also survive restart") {
-    // Given
-    createLabeledNode(Map("name" -> "Malmoe"), "Place")
-    createLabeledNode(Map("name" -> "London"), "Place")
-
-    graph.execute("MATCH (p:Place) WHERE p.name = 'Malmoe' SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
     graph.createIndex("Place", "location")
 
-    graph.execute("MATCH (p:Place) WHERE p.name = 'London' SET p.location = point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point")
 
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.0, 56.0))
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
@@ -139,4 +143,15 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
 
+  private def testPointScan(query: String, expected: PointValue*): Unit = {
+    val result = graph.execute(query)
+
+    val plan = result.getExecutionPlanDescription.toString
+    plan should include ("NodeIndexScan")
+    plan should include (":Place(location)")
+
+    val points = result.columnAs("point").stream().collect(Collectors.toSet)
+    expected.foreach(p => assert(points.contains(p)))
+    points.size() should be(expected.size)
+  }
 }
