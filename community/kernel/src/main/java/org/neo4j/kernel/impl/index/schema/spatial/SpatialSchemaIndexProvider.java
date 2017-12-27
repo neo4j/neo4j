@@ -206,7 +206,7 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
                                 KnownSpatialIndex index = selectAndCreate( indexesFor( indexId ), indexId, crs );
                                 if ( index.indexExists() )
                                 {
-                                    System.out.println( "Created " + index );
+                                    System.out.println( "Created " + index + " crs: " + crs.getName());
                                     System.out.println( "Exists: " + index.indexExists() );
                                     try
                                     {
