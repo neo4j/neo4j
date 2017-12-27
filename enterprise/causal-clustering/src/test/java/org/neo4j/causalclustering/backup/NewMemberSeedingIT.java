@@ -41,18 +41,16 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.neo4j.causalclustering.helpers.BackupUtil.restoreFromBackup;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
+import static org.neo4j.causalclustering.helpers.BackupUtil.restoreFromBackup;
 
 @RunWith( Parameterized.class )
-public class ClusterSeedingIT
+public class NewMemberSeedingIT
 {
-    private Cluster backupCluster;
     private Cluster cluster;
     private DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
 
@@ -64,14 +62,13 @@ public class ClusterSeedingIT
 
     private static Iterable<BackupStore> stores()
     {
-        return Arrays.asList(
-                new EmptyBackupStore(),
-                new BackupStoreWithSomeData(),
-                new BackupStoreWithSomeDataButNoTransactionLogs() );
+        return Arrays
+                .asList( new EmptyBackupStore(), new BackupStoreWithSomeData(),
+                        new BackupStoreWithSomeDataButNoTransactionLogs() );
     }
 
     @Parameterized.Parameter()
-    public BackupStore initialStore;
+    public BackupStore seedStore;
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -80,11 +77,8 @@ public class ClusterSeedingIT
     @Before
     public void setup() throws Exception
     {
-        backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), StandardV3_0.NAME );
-
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), StandardV3_0.NAME );
+                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), StandardV3_0.NAME );
 
         baseBackupDir = testDir.directory( "backups" );
     }
@@ -99,10 +93,6 @@ public class ClusterSeedingIT
     @After
     public void after() throws Exception
     {
-        if ( backupCluster != null )
-        {
-            backupCluster.shutdown();
-        }
         if ( cluster != null )
         {
             cluster.shutdown();
@@ -110,23 +100,18 @@ public class ClusterSeedingIT
     }
 
     @Test
-    public void shouldSeedNewCluster() throws Exception
+    public void shouldSeedNewMemberToCluster() throws Exception
     {
         // given
-        backupCluster.start();
-        File backup = initialStore.get( baseBackupDir, backupCluster );
-
-        backupCluster.shutdown();
-
-        for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
-        {
-            restoreFromBackup( backup, fsa, coreClusterMember );
-        }
-
-        // when
         cluster.start();
 
-        //then
-        dataMatchesEventually( DbRepresentation.of( backup ), cluster.coreMembers() );
+        // when
+        File backup = seedStore.get( baseBackupDir, cluster );
+        CoreClusterMember newCoreClusterMember = cluster.addCoreMemberWithId( 3 );
+        restoreFromBackup( backup, fsa, newCoreClusterMember );
+        newCoreClusterMember.start();
+
+        // then
+        dataMatchesEventually( newCoreClusterMember, cluster.coreMembers() );
     }
 }

@@ -22,12 +22,24 @@ package org.neo4j.causalclustering.helpers;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class DataCreator
 {
+    public static CoreGraphDatabase createSomeData( Cluster cluster ) throws Exception
+    {
+        return cluster.coreTx( ( db, tx ) ->
+        {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } ).database();
+    }
+
     public static CoreClusterMember createNodes( Cluster cluster, int numberOfNodes ) throws Exception
     {
         CoreClusterMember last = null;
