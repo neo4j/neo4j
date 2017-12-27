@@ -43,14 +43,14 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.backupArguments;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.createSomeData;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.getConfig;
+import static org.neo4j.causalclustering.helpers.BackupUtil.backupArguments;
+import static org.neo4j.causalclustering.helpers.BackupUtil.getConfig;
+import static org.neo4j.causalclustering.helpers.DataCreator.createSomeData;
 import static org.neo4j.function.Predicates.awaitEx;
 
 public class BackupReadReplicaIT
 {
-    private int backupPort = findFreePort( 22000, 23000);
+    private int backupPort = findFreePort( 22000, 23000 );
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( BackupReadReplicaIT.class ).withNumberOfCoreMembers( 3 )
