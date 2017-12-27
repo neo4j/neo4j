@@ -350,18 +350,42 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // When
-    val result = executeWith(expectedToSucceed - Configs.AllRulePlanners, "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
+    val result = executeWith(expectedToSucceed - Configs.AllRulePlanners,
+      "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4))
 
-    println(result.executionPlanDescription())
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
     point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
+  }
+
+  test("with multiple indexed points only exact match should be returned") {
+    // Given
+    graph.inTx {
+      graph.schema().indexFor(Label.label("Place")).on("location").create()
+    }
+    graph.inTx {
+      graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS)
+    }
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 50.7, longitude: 12.78, crs: 'WGS-84'})")
+
+    // When
+    val result = executeWith(Configs.Version3_4 - Configs.Compiled - Configs.AllRulePlanners,
+      "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "point")
+        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4))
+
+    // Then
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
   test("array of points should be assignable to node property") {

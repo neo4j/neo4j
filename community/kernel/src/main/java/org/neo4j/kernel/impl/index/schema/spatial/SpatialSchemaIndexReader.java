@@ -196,7 +196,7 @@ class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends Spati
     @Override
     public boolean hasFullNumberPrecision( IndexQuery... predicates )
     {
-        return true;
+        return false;
     }
 
     private void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo )
