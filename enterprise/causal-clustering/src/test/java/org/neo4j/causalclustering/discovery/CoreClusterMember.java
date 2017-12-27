@@ -219,4 +219,9 @@ public class CoreClusterMember implements ClusterMember
     {
         return raftLogDir;
     }
+
+    public Config config()
+    {
+        return new Config( config );
+    }
 }
