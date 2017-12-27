@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTFloat;

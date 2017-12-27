@@ -34,7 +34,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.kernel.impl.store.StoreId;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class LenientObjectOutputStreamTest
 {

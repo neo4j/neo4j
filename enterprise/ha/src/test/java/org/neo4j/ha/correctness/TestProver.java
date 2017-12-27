@@ -32,7 +32,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
 
 public class TestProver
