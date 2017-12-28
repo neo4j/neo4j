@@ -26,33 +26,22 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServer;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreState;
-import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.Collections.singletonMap;
 
 import static org.mockito.Mockito.mock;
 
-import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_listen_address;
-import static org.neo4j.kernel.configuration.Config.defaults;
 
 public class ConnectionInfoIT
 {

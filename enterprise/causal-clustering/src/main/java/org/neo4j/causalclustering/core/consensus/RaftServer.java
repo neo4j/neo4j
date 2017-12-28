@@ -32,13 +32,13 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import java.net.BindException;
+import java.net.InetSocketAddress;
 
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.core.server.AbstractServer;
+import org.neo4j.causalclustering.core.server.AbstractNettyApplication;
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
@@ -55,7 +55,8 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class RaftServer extends AbstractServer implements Inbound<RaftMessages.ClusterIdAwareMessage>
+public class RaftServer extends AbstractNettyApplication<ServerBootstrap>
+        implements Inbound<RaftMessages.ClusterIdAwareMessage>
 {
     private static final Setting<ListenSocketAddress> setting = CausalClusteringSettings.raft_listen_address;
     private final ChannelMarshal<ReplicatedContent> marshal;
@@ -73,6 +74,7 @@ public class RaftServer extends AbstractServer implements Inbound<RaftMessages.C
     public RaftServer( ChannelMarshal<ReplicatedContent> marshal, Config config, LogProvider logProvider,
             LogProvider userLogProvider, Monitors monitors )
     {
+        super( logProvider, userLogProvider );
         this.marshal = marshal;
         this.listenAddress = config.get( setting );
         this.logProvider = logProvider;
@@ -88,7 +90,7 @@ public class RaftServer extends AbstractServer implements Inbound<RaftMessages.C
     }
 
     @Override
-    protected void bootstrapServer()
+    protected ServerBootstrap bootstrap()
     {
         if ( !workerGroup.isShutdown() )
         {
@@ -98,11 +100,10 @@ public class RaftServer extends AbstractServer implements Inbound<RaftMessages.C
 
         log.info( "Starting server at: " + listenAddress );
 
-        ServerBootstrap bootstrap = new ServerBootstrap()
+        return new ServerBootstrap()
                 .group( workerGroup )
                 .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, true )
-                .localAddress( listenAddress.socketAddress() )
                 .childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
@@ -120,27 +121,17 @@ public class RaftServer extends AbstractServer implements Inbound<RaftMessages.C
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                         pipeline.addLast( new ExceptionMonitoringHandler(
-                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, RaftServer.class ) ) );
+                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class,
+                                        RaftServer.class ) ) );
                         pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
+    }
 
-        try
-        {
-            bootstrap.bind().syncUninterruptibly().channel();
-        }
-        catch ( Exception e )
-        {
-            // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
-            // checked exception but it still throws them with some black magic at runtime.
-            //noinspection ConstantConditions
-            if ( e instanceof BindException )
-            {
-                userLog.error( "Address is already bound for setting: " + setting + " with value: " + listenAddress );
-                log.error( "Address is already bound for setting: " + setting + " with value: " + listenAddress, e );
-                throw e;
-            }
-        }
+    @Override
+    protected InetSocketAddress bindAddress()
+    {
+        return listenAddress.socketAddress();
     }
 
     @Override

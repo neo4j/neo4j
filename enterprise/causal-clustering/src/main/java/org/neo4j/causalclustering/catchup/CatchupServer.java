@@ -31,7 +31,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
-import java.net.BindException;
+import java.net.InetSocketAddress;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -51,7 +51,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.server.AbstractServer;
+import org.neo4j.causalclustering.core.server.AbstractNettyApplication;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequest;
@@ -72,7 +72,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class CatchupServer extends AbstractServer
+public class CatchupServer extends AbstractNettyApplication<ServerBootstrap>
 {
     private final LogProvider logProvider;
     private final Log log;
@@ -100,6 +100,7 @@ public class CatchupServer extends AbstractServer
             CoreState coreState, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
             FileSystemAbstraction fs )
     {
+        super(logProvider, userLogProvider);
         this.coreState = coreState;
         this.listenAddress = config.get( CausalClusteringSettings.transaction_listen_address );
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
@@ -122,7 +123,7 @@ public class CatchupServer extends AbstractServer
     }
 
     @Override
-    protected ServerBootstrap bootstrapServer()
+    protected ServerBootstrap bootstrap()
     {
         if ( !workerGroup.isShutdown() )
         {
@@ -130,10 +131,9 @@ public class CatchupServer extends AbstractServer
         }
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
-        ServerBootstrap bootstrap = new ServerBootstrap()
+        return new ServerBootstrap()
                 .group( workerGroup )
                 .channel( NioServerSocketChannel.class )
-                .localAddress( listenAddress.socketAddress() )
                 .childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
@@ -180,27 +180,12 @@ public class CatchupServer extends AbstractServer
                         pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
+    }
 
-        try
-        {
-            bootstrap.bind().syncUninterruptibly().channel();
-        }
-        catch ( Exception e )
-        {
-            // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
-            // checked exception but it still throws them with some black magic at runtime.
-            //noinspection ConstantConditions
-            if ( e instanceof BindException )
-            {
-                userLog.error(
-                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
-                        " with value: " + listenAddress );
-                log.error(
-                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
-                        " with value: " + listenAddress, e );
-                throw e;
-            }
-        }
+    @Override
+    protected InetSocketAddress bindAddress()
+    {
+        return listenAddress.socketAddress();
     }
 
     private ChannelInboundHandler decoders( CatchupServerProtocol protocol )
