@@ -24,7 +24,11 @@ import java.util.Optional;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 
-public interface BackupStore
+public class NoStore implements BackupStore
 {
-    Optional<File> generate(File backupDir, Cluster backupCluster) throws Exception;
+    @Override
+    public Optional<File> generate( File backupDir, Cluster backupCluster ) throws Exception
+    {
+        return Optional.empty();
+    }
 }

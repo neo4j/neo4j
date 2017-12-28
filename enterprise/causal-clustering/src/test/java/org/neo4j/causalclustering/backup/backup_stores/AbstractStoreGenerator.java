@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.backup.backup_stores;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -29,27 +30,17 @@ import static org.neo4j.causalclustering.helpers.BackupUtil.createBackupFromCore
 
 public abstract class AbstractStoreGenerator implements BackupStore
 {
-    private File backup;
-
     abstract CoreGraphDatabase createData( Cluster cluster ) throws Exception;
 
     abstract void modify( File backup );
 
-    private void generate( File backupDir, Cluster backupCluster ) throws Exception
+    @Override
+    public Optional<File> generate( File backupDir, Cluster backupCluster ) throws Exception
     {
         CoreGraphDatabase db = createData( backupCluster );
-        this.backup = createBackupFromCore( db, backupName(), backupDir );
-        modify( backup );
-    }
-
-    @Override
-    public File get( File backupDir, Cluster backupCluster ) throws Exception
-    {
-        if ( backup == null )
-        {
-            generate( backupDir, backupCluster );
-        }
-        return backup;
+        File backupFromCore = createBackupFromCore( db, backupName(), backupDir );
+        modify( backupFromCore );
+        return Optional.of( backupFromCore );
     }
 
     private String backupName()
