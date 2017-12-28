@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -29,7 +30,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.SuperReadableDiffSets;
 
@@ -215,7 +215,7 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
 
     private Set<T> newSet()
     {
-        return newSetFromMap( new VersionedHashMap<>() );
+        return newSetFromMap( new HashMap<>() );
     }
 
     private Set<T> resultSet( Set<T> coll )

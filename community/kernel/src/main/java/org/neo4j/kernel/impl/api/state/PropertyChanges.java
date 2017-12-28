@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
  */
 public class PropertyChanges
 {
-    private VersionedHashMap<Integer, Map<Object, DiffSets<Long>>> changes;
+    private HashMap<Integer, Map<Object, DiffSets<Long>>> changes;
 
     public ReadableDiffSets<Long> changesForProperty( int propertyKeyId, Object value )
     {
@@ -70,10 +70,10 @@ public class PropertyChanges
     {
         if ( changes == null )
         {
-            changes = new VersionedHashMap<>();
+            changes = new HashMap<>();
         }
 
-        return changes.computeIfAbsent( propertyKeyId, k -> new VersionedHashMap<>() );
+        return changes.computeIfAbsent( propertyKeyId, k -> new HashMap<>() );
     }
 
     private DiffSets<Long> valueChanges( Object newValue, Map<Object, DiffSets<Long>> keyChanges )
