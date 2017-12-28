@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive.base;
 
+import java.util.Collections;
+
 import org.neo4j.collection.primitive.PrimitiveCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
@@ -196,6 +198,12 @@ public class Empty
         @Override
         public <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<T,E> visitor ) throws E
         {   // No entries to visit
+        }
+
+        @Override
+        public Iterable<T> values()
+        {
+            return Collections.emptyList();
         }
 
         @Override
