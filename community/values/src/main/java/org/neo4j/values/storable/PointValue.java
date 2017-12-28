@@ -125,7 +125,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
 
         for ( int i = 0; i < coordinate.length; i++ )
         {
-            int cmpVal = (int) (this.coordinate[i] - other.coordinate[i]);
+            int cmpVal = Double.compare(this.coordinate[i], other.coordinate[i]);
             if ( cmpVal != 0 )
             {
                 return cmpVal;
