@@ -19,12 +19,31 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public class NativeNonUniqueSchemaNumberIndexAccessorTest
-        extends NativeSchemaNumberIndexAccessorTest<SchemaNumberKey,SchemaNumberValue>
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.values.storable.Value;
+
+/**
+ * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
+ *
+ * NOTE:  For the time being no data exists in {@link NativeSchemaValue}, but since the layout is under development
+ * it's very convenient to have this class still exist so that it's very easy to try out different types
+ * of layouts without changing the entire stack of arguments. In the end it may just be that this class
+ * will be deleted, but for now it sticks around.
+ */
+public class NativeSchemaValue
 {
-    @Override
-    protected LayoutTestUtil<SchemaNumberKey,SchemaNumberValue> createLayoutTestUtil()
+    public static final int SIZE = 0;
+
+    public static final NativeSchemaValue INSTANCE = new NativeSchemaValue();
+
+    public void from( Value... values )
     {
-        return new NonUniqueLayoutTestUtil();
+        // not needed a.t.m.
+    }
+
+    @Override
+    public String toString()
+    {
+        return "[no value]";
     }
 }

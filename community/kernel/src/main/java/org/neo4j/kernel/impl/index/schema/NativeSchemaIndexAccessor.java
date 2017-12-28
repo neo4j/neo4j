@@ -44,13 +44,13 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
-public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
-        extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexAccessor
+public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+        extends NativeSchemaIndex<KEY,VALUE> implements IndexAccessor
 {
-    private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
-    private final IndexSamplingConfig samplingConfig;
+    private final NativeSchemaIndexUpdater<KEY,VALUE> singleUpdater;
+    protected final IndexSamplingConfig samplingConfig;
 
-    NativeSchemaNumberIndexAccessor(
+    NativeSchemaIndexAccessor(
             PageCache pageCache,
             FileSystemAbstraction fs,
             File storeFile,
@@ -62,7 +62,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
-        singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
+        singleUpdater = new NativeSchemaIndexUpdater<>( layout.newKey(), layout.newValue() );
         this.samplingConfig = samplingConfig;
         instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
     }
@@ -107,17 +107,12 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
         closeTree();
     }
 
-    @Override
-    public IndexReader newReader()
-    {
-        assertOpen();
-        return new NativeSchemaNumberIndexReader<>( tree, layout, samplingConfig, descriptor );
-    }
+    public abstract IndexReader newReader();
 
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        return new NumberAllEntriesReader<>( tree, layout );
+        return new NativeAllEntriesReader<>( tree, layout );
     }
 
     @Override

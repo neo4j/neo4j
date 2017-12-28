@@ -55,7 +55,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
-public class NativeSchemaNumberIndexProviderTest
+public class NumberSchemaIndexProviderTest
 {
     @Rule
     public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule();
@@ -63,7 +63,7 @@ public class NativeSchemaNumberIndexProviderTest
     private static final int indexId = 1;
     private static final int labelId = 1;
     private static final int propId = 1;
-    private NativeSchemaNumberIndexProvider provider;
+    private NumberSchemaIndexProvider provider;
     private final AssertableLogProvider logging = new AssertableLogProvider();
     private SchemaIndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
 
@@ -105,7 +105,7 @@ public class NativeSchemaNumberIndexProviderTest
         IndexPopulator populator = provider.getPopulator( indexId, descriptorUnique(), samplingConfig() );
 
         // then
-        assertTrue( "Expected populator to be unique populator", populator instanceof NativeUniqueSchemaNumberIndexPopulator );
+        assertTrue( "Expected populator to be unique populator", populator instanceof NativeUniqueSchemaIndexPopulator );
     }
 
     @Test
@@ -118,7 +118,7 @@ public class NativeSchemaNumberIndexProviderTest
         IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
 
         // then
-        assertTrue( "Expected populator to be non-unique populator", populator instanceof NativeNonUniqueSchemaNumberIndexPopulator );
+        assertTrue( "Expected populator to be non-unique populator", populator instanceof NativeNonUniqueSchemaIndexPopulator );
     }
 
     /* getOnlineAccessor */
@@ -203,7 +203,7 @@ public class NativeSchemaNumberIndexProviderTest
         // given
         provider = newProvider();
 
-        int nonFailedIndexId = NativeSchemaNumberIndexProviderTest.indexId;
+        int nonFailedIndexId = NumberSchemaIndexProviderTest.indexId;
         IndexPopulator nonFailedPopulator = provider.getPopulator( nonFailedIndexId, descriptor(), samplingConfig() );
         nonFailedPopulator.create();
         nonFailedPopulator.close( true );
@@ -387,14 +387,14 @@ public class NativeSchemaNumberIndexProviderTest
         return IndexDescriptorFactory.uniqueForLabel( labelId, propId );
     }
 
-    private NativeSchemaNumberIndexProvider newProvider()
+    private NumberSchemaIndexProvider newProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, false );
+        return new NumberSchemaIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, false );
     }
 
-    private NativeSchemaNumberIndexProvider newReadOnlyProvider()
+    private NumberSchemaIndexProvider newReadOnlyProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, true );
+        return new NumberSchemaIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, true );
     }
 
     private PageCache pageCache()

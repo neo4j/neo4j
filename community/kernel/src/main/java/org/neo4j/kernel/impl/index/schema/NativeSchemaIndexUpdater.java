@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.values.storable.ValueTuple;
 
-class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
+public class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         implements IndexUpdater
 {
     private final KEY treeKey;
@@ -38,14 +38,14 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     private boolean closed = true;
     private boolean manageClosingOfWriter;
 
-    NativeSchemaNumberIndexUpdater( KEY treeKey, VALUE treeValue )
+    public NativeSchemaIndexUpdater( KEY treeKey, VALUE treeValue )
     {
         this.treeKey = treeKey;
         this.treeValue = treeValue;
         this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
     }
 
-    NativeSchemaNumberIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer, boolean manageClosingOfWriter )
+    public NativeSchemaIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer, boolean manageClosingOfWriter )
     {
         if ( !closed )
         {
@@ -83,7 +83,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         }
     }
 
-    static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void processUpdate( KEY treeKey, VALUE treeValue,
+    public static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processUpdate( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
@@ -103,7 +103,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         }
     }
 
-    private static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void processRemove( KEY treeKey,
+    private static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processRemove( KEY treeKey,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer ) throws IOException
     {
         // todo Do we need to verify that we actually removed something at all?
@@ -112,7 +112,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         writer.remove( treeKey );
     }
 
-    private static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void processChange( KEY treeKey, VALUE treeValue,
+    private static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processChange( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
@@ -127,7 +127,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         assertNoConflict( update, conflictDetectingValueMerger );
     }
 
-    static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void processAdd( KEY treeKey, VALUE treeValue,
+    public static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processAdd( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
@@ -138,7 +138,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         assertNoConflict( update, conflictDetectingValueMerger );
     }
 
-    private static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void assertNoConflict( IndexEntryUpdate<?> update,
+    private static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void assertNoConflict( IndexEntryUpdate<?> update,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger ) throws IndexEntryConflictException
     {
         if ( conflictDetectingValueMerger.wasConflict() )

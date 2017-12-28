@@ -29,9 +29,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class ConflictDetectingValueMergerTest
+public class NumberConflictDetectingValueMergerTest
 {
-    private final ConflictDetectingValueMerger<SchemaNumberKey,SchemaNumberValue> detector = new ConflictDetectingValueMerger<>();
+    private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger<>();
 
     @Test
     public void shouldReportConflictOnSameValueAndDifferentEntityIds() throws Exception
@@ -42,11 +42,11 @@ public class ConflictDetectingValueMergerTest
         long entityId2 = 20;
 
         // when
-        SchemaNumberValue merged = detector.merge(
+        NativeSchemaValue merged = detector.merge(
                 key( entityId1, value ),
                 key( entityId2, value ),
-                SchemaNumberValue.INSTANCE,
-                SchemaNumberValue.INSTANCE );
+                NativeSchemaValue.INSTANCE,
+                NativeSchemaValue.INSTANCE );
 
         // then
         assertNull( merged );
@@ -63,20 +63,20 @@ public class ConflictDetectingValueMergerTest
         long entityId = 10;
 
         // when
-        SchemaNumberValue merged = detector.merge(
+        NativeSchemaValue merged = detector.merge(
                 key( entityId, value ),
                 key( entityId, value ),
-                SchemaNumberValue.INSTANCE,
-                SchemaNumberValue.INSTANCE );
+                NativeSchemaValue.INSTANCE,
+                NativeSchemaValue.INSTANCE );
 
         // then
         assertNull( merged );
         assertFalse( detector.wasConflict() );
     }
 
-    private static SchemaNumberKey key( long entityId, Value... value )
+    private static NumberSchemaKey key( long entityId, Value... value )
     {
-        SchemaNumberKey key = new SchemaNumberKey();
+        NumberSchemaKey key = new NumberSchemaKey();
         key.from( entityId, value );
         return key;
     }

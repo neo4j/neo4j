@@ -30,7 +30,7 @@ import org.neo4j.index.internal.gbptree.Writer;
  *
  * @param <VALUE> type of values being merged.
  */
-class ConflictDetectingValueMerger<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> implements ValueMerger<KEY,VALUE>
+public class ConflictDetectingValueMerger<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> implements ValueMerger<KEY,VALUE>
 {
     private boolean conflict;
     private long existingNodeId;
@@ -51,7 +51,7 @@ class ConflictDetectingValueMerger<KEY extends SchemaNumberKey, VALUE extends Sc
     /**
      * @return whether or not merge conflicted with an existing key. This call also clears the conflict flag.
      */
-    boolean wasConflict()
+    public boolean wasConflict()
     {
         boolean result = conflict;
         if ( conflict )
@@ -61,12 +61,12 @@ class ConflictDetectingValueMerger<KEY extends SchemaNumberKey, VALUE extends Sc
         return result;
     }
 
-    long existingNodeId()
+    public long existingNodeId()
     {
         return existingNodeId;
     }
 
-    long addedNodeId()
+    public long addedNodeId()
     {
         return addedNodeId;
     }

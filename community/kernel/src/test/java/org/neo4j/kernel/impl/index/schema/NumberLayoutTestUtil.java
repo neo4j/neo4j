@@ -19,31 +19,27 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
-/**
- * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
- *
- * NOTE:  For the time being no data exists in {@link SchemaNumberValue}, but since the layout is under development
- * it's very convenient to have this class still exist so that it's very easy to try out different types
- * of layouts without changing the entire stack of arguments. In the end it may just be that this class
- * will be deleted, but for now it sticks around.
- */
-class SchemaNumberValue
+abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,NativeSchemaValue>
 {
-    static final int SIZE = 0;
-
-    static final SchemaNumberValue INSTANCE = new SchemaNumberValue();
-
-    void from( Value... values )
+    NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
-        // not needed a.t.m.
+        super( indexDescriptor );
     }
 
     @Override
-    public String toString()
+    IndexQuery rangeQuery( Number from, boolean fromInclusive, Number to, boolean toInclusive )
     {
-        return "[no value]";
+        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
+    }
+
+    @Override
+    Value asValue( Number value )
+    {
+        return Values.of( value );
     }
 }

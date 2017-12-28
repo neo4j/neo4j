@@ -40,14 +40,14 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_POPULATING;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
 
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
+public class NumberSchemaIndexProvider extends SchemaIndexProvider
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -59,7 +59,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    public NativeSchemaNumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+    public NumberSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly )
     {
@@ -83,10 +83,10 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new NonUniqueNumberLayout(), samplingConfig,
+            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, new NumberLayoutNonUnique(), samplingConfig,
                     monitor, descriptor, indexId );
         case UNIQUE:
-            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new UniqueNumberLayout(), monitor, descriptor,
+            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, storeFile, new NumberLayoutUnique(), monitor, descriptor,
                     indexId );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
@@ -102,15 +102,15 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         switch ( descriptor.type() )
         {
         case GENERAL:
-            layout = new NonUniqueNumberLayout();
+            layout = new NumberLayoutNonUnique();
             break;
         case UNIQUE:
-            layout = new UniqueNumberLayout();
+            layout = new NumberLayoutUnique();
             break;
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
         }
-        return new NativeSchemaNumberIndexAccessor<>(
+        return new NumberSchemaIndexAccessor<>(
                 pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId,
                 samplingConfig );
     }
@@ -197,12 +197,12 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         @Override
         public boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion )
         {
-            return (layoutIdentifier == UniqueNumberLayout.IDENTIFIER &&
-                    majorVersion == UniqueNumberLayout.MAJOR_VERSION &&
-                    minorVersion == UniqueNumberLayout.MINOR_VERSION) ||
-                    (layoutIdentifier == NonUniqueNumberLayout.IDENTIFIER &&
-                            majorVersion == NonUniqueNumberLayout.MAJOR_VERSION &&
-                            minorVersion == NonUniqueNumberLayout.MINOR_VERSION);
+            return (layoutIdentifier == NumberLayoutUnique.IDENTIFIER &&
+                    majorVersion == NumberLayoutUnique.MAJOR_VERSION &&
+                    minorVersion == NumberLayoutUnique.MINOR_VERSION) ||
+                    (layoutIdentifier == NumberLayoutNonUnique.IDENTIFIER &&
+                            majorVersion == NumberLayoutNonUnique.MAJOR_VERSION &&
+                            minorVersion == NumberLayoutNonUnique.MINOR_VERSION);
         }
     }
 

@@ -24,17 +24,17 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
-class NonUniqueLayoutTestUtil extends LayoutTestUtil<SchemaNumberKey,SchemaNumberValue>
+class NumberNonUniqueLayoutTestUtil extends NumberLayoutTestUtil
 {
-    NonUniqueLayoutTestUtil()
+    NumberNonUniqueLayoutTestUtil()
     {
         super( IndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 
     @Override
-    Layout<SchemaNumberKey,SchemaNumberValue> createLayout()
+    Layout<NumberSchemaKey,NativeSchemaValue> createLayout()
     {
-        return new NonUniqueNumberLayout();
+        return new NumberLayoutNonUnique();
     }
 
     @Override

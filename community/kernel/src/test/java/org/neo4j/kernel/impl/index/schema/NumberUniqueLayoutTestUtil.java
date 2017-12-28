@@ -19,12 +19,33 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public class NativeUniqueSchemaNumberIndexAccessorTest
-        extends NativeSchemaNumberIndexAccessorTest<SchemaNumberKey,SchemaNumberValue>
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+
+public class NumberUniqueLayoutTestUtil extends NumberLayoutTestUtil
 {
-    @Override
-    protected LayoutTestUtil<SchemaNumberKey,SchemaNumberValue> createLayoutTestUtil()
+    NumberUniqueLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil();
+        super( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
+    }
+
+    @Override
+    public Layout<NumberSchemaKey,NativeSchemaValue> createLayout()
+    {
+        return new NumberLayoutUnique();
+    }
+
+    @Override
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    {
+        return someUpdatesNoDuplicateValues();
+    }
+
+    @Override
+    protected double fractionDuplicates()
+    {
+        return 0.0;
     }
 }

@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -35,7 +33,7 @@ import static java.lang.String.format;
  * Distinction between double and float exists because coersions between each other and long may differ.
  * TODO this should be figured out and potentially reduced to long, double types only.
  */
-class SchemaNumberKey extends ValueWriter.Adapter<RuntimeException>
+class NumberSchemaKey extends NativeSchemaKey
 {
     static final int SIZE =
             Byte.BYTES + /* type of value */
@@ -44,27 +42,8 @@ class SchemaNumberKey extends ValueWriter.Adapter<RuntimeException>
             // TODO this could use 6 bytes instead and have the highest 2 bits stored in the type byte
             Long.BYTES;  /* entityId */
 
-    byte type;
-    long rawValueBits;
-    long entityId;
-
-    /**
-     * Marks that comparisons with this key requires also comparing entityId, this allows functionality
-     * of inclusive/exclusive bounds of range queries.
-     * This is because {@link GBPTree} only support from inclusive and to exclusive.
-     * <p>
-     * Note that {@code entityIdIsSpecialTieBreaker} is only an in memory state.
-     */
-    boolean entityIdIsSpecialTieBreaker;
-
-    void from( long entityId, Value... values )
-    {
-        extractRawBitsAndType( assertValidSingleNumber( values ) );
-        this.entityId = entityId;
-        entityIdIsSpecialTieBreaker = false;
-    }
-
-    private static NumberValue assertValidSingleNumber( Value... values )
+    @Override
+    public NumberValue assertValidValue( Value... values )
     {
         // TODO: support multiple values, right?
         if ( values.length > 1 )
@@ -83,50 +62,26 @@ class SchemaNumberKey extends ValueWriter.Adapter<RuntimeException>
         return (NumberValue) values[0];
     }
 
-    String propertiesAsString()
-    {
-        return asValue().toString();
-    }
-
-    NumberValue asValue()
+    @Override
+    public NumberValue asValue()
     {
         return RawBits.asNumberValue( rawValueBits, type );
     }
 
-    void initAsLowest()
+    @Override
+    public void initAsLowest()
     {
         writeFloatingPoint( Double.NEGATIVE_INFINITY );
         entityId = Long.MIN_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
 
-    void initAsHighest()
+    @Override
+    public void initAsHighest()
     {
         writeFloatingPoint( Double.POSITIVE_INFINITY );
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
-    }
-
-    /**
-     * Compares the value of this key to that of another key.
-     * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
-     *
-     * @param other the {@link SchemaNumberKey} to compare to.
-     * @return comparison against the {@code other} {@link SchemaNumberKey}.
-     */
-    int compareValueTo( SchemaNumberKey other )
-    {
-        return RawBits.compare( rawValueBits, type, other.rawValueBits, other.type );
-    }
-
-    /**
-     * Extracts raw bits and type from a {@link NumberValue} and store as state of this {@link SchemaNumberKey} instance.
-     *
-     * @param value actual {@link NumberValue} value.
-     */
-    private void extractRawBitsAndType( NumberValue value )
-    {
-        value.writeTo( this );
     }
 
     @Override

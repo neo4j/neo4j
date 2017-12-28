@@ -21,16 +21,20 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 
-public class NonUniqueNumberLayout extends NumberLayout
+/**
+ * {@link Layout} for numbers where numbers need to be unique.
+ */
+class NumberLayoutUnique extends NumberLayout
 {
-    private static final String IDENTIFIER_NAME = "NUNI";
+    private static final String IDENTIFIER_NAME = "UNI";
     static final int MAJOR_VERSION = 0;
     static final int MINOR_VERSION = 1;
-    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberValue.SIZE );
+    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NumberSchemaKey.SIZE );
 
     @Override
     public long identifier()
     {
+        // todo Is Number.Value.SIZE a good checksum?
         return IDENTIFIER;
     }
 
@@ -47,9 +51,17 @@ public class NonUniqueNumberLayout extends NumberLayout
     }
 
     @Override
-    public int compare( SchemaNumberKey o1, SchemaNumberKey o2 )
+    public int compare( NumberSchemaKey o1, NumberSchemaKey o2 )
     {
         int comparison = o1.compareValueTo( o2 );
-        return comparison != 0 ? comparison : Long.compare( o1.entityId, o2.entityId );
+        if ( comparison == 0 )
+        {
+            // This is a special case where we need also compare entityId to support inclusive/exclusive
+            if ( o1.entityIdIsSpecialTieBreaker || o2.entityIdIsSpecialTieBreaker )
+            {
+                return Long.compare( o1.entityId, o2.entityId );
+            }
+        }
+        return comparison;
     }
 }

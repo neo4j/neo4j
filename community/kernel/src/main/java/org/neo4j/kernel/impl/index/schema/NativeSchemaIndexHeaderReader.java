@@ -24,12 +24,12 @@ import java.nio.charset.StandardCharsets;
 
 import org.neo4j.index.internal.gbptree.Header;
 
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 
-class NativeSchemaIndexHeaderReader implements Header.Reader
+public class NativeSchemaIndexHeaderReader implements Header.Reader
 {
-    byte state;
-    String failureMessage;
+    public byte state;
+    public String failureMessage;
 
     @Override
     public void read( ByteBuffer headerData )

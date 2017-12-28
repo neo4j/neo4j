@@ -25,17 +25,17 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
-abstract class NumberLayout extends Layout.Adapter<SchemaNumberKey,SchemaNumberValue>
+abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaValue>
 {
     @Override
-    public SchemaNumberKey newKey()
+    public NumberSchemaKey newKey()
     {
-        return new SchemaNumberKey();
+        return new NumberSchemaKey();
     }
 
     @Override
-    public SchemaNumberKey copyKey( SchemaNumberKey key,
-            SchemaNumberKey into )
+    public NumberSchemaKey copyKey( NumberSchemaKey key,
+            NumberSchemaKey into )
     {
         into.type = key.type;
         into.rawValueBits = key.rawValueBits;
@@ -45,25 +45,25 @@ abstract class NumberLayout extends Layout.Adapter<SchemaNumberKey,SchemaNumberV
     }
 
     @Override
-    public SchemaNumberValue newValue()
+    public NativeSchemaValue newValue()
     {
-        return SchemaNumberValue.INSTANCE;
+        return NativeSchemaValue.INSTANCE;
     }
 
     @Override
     public int keySize()
     {
-        return SchemaNumberKey.SIZE;
+        return NumberSchemaKey.SIZE;
     }
 
     @Override
     public int valueSize()
     {
-        return SchemaNumberValue.SIZE;
+        return NativeSchemaValue.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, SchemaNumberKey key )
+    public void writeKey( PageCursor cursor, NumberSchemaKey key )
     {
         cursor.putByte( key.type );
         cursor.putLong( key.rawValueBits );
@@ -71,12 +71,12 @@ abstract class NumberLayout extends Layout.Adapter<SchemaNumberKey,SchemaNumberV
     }
 
     @Override
-    public void writeValue( PageCursor cursor, SchemaNumberValue value )
+    public void writeValue( PageCursor cursor, NativeSchemaValue value )
     {
     }
 
     @Override
-    public void readKey( PageCursor cursor, SchemaNumberKey into )
+    public void readKey( PageCursor cursor, NumberSchemaKey into )
     {
         into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
@@ -84,7 +84,7 @@ abstract class NumberLayout extends Layout.Adapter<SchemaNumberKey,SchemaNumberV
     }
 
     @Override
-    public void readValue( PageCursor cursor, SchemaNumberValue into )
+    public void readValue( PageCursor cursor, NativeSchemaValue into )
     {
     }
 }

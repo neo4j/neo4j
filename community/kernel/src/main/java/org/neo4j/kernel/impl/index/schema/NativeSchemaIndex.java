@@ -38,19 +38,19 @@ import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
+public class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
 {
     final PageCache pageCache;
-    final File storeFile;
-    final Layout<KEY,VALUE> layout;
-    final GBPTreeFileUtil gbpTreeFileUtil;
-    final IndexDescriptor descriptor;
+    protected final File storeFile;
+    protected final Layout<KEY,VALUE> layout;
+    protected final GBPTreeFileUtil gbpTreeFileUtil;
+    protected final IndexDescriptor descriptor;
     private final long indexId;
     private final SchemaIndexProvider.Monitor monitor;
 
-    GBPTree<KEY,VALUE> tree;
+    protected GBPTree<KEY,VALUE> tree;
 
-    NativeSchemaNumberIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+    public NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
             SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         this.pageCache = pageCache;
@@ -62,7 +62,7 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
         this.monitor = monitor;
     }
 
-    void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
+    public void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
             throws IOException
     {
         ensureDirectoryExist();
@@ -92,12 +92,12 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
         gbpTreeFileUtil.mkdirs( storeFile.getParentFile() );
     }
 
-    void closeTree() throws IOException
+    public void closeTree() throws IOException
     {
         tree = closeIfPresent( tree );
     }
 
-    <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
+    public <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
     {
         if ( closeable != null )
         {
@@ -106,7 +106,7 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
         return null;
     }
 
-    void assertOpen()
+    public void assertOpen()
     {
         if ( tree == null )
         {

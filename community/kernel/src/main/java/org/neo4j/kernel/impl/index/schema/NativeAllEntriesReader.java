@@ -30,13 +30,13 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 
-public class NumberAllEntriesReader<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue> implements BoundedIterable<Long>
+public class NativeAllEntriesReader<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue> implements BoundedIterable<Long>
 {
     private final GBPTree<KEY,VALUE> tree;
     private final Layout<KEY,VALUE> layout;
     private RawCursor<Hit<KEY,VALUE>,IOException> seeker;
 
-    NumberAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
+    public NativeAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
     {
         this.tree = tree;
         this.layout = layout;
