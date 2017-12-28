@@ -23,7 +23,6 @@ import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -37,11 +36,13 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
 import java.time.Clock;
+import java.net.InetSocketAddress;
 
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
+import org.neo4j.causalclustering.core.server.AbstractNettyApplication;
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
@@ -53,14 +54,14 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+public class RaftServer extends AbstractNettyApplication<ServerBootstrap>
+        implements Inbound<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
     private static final Setting<ListenSocketAddress> setting = CausalClusteringSettings.raft_listen_address;
     private final ChannelMarshal<ReplicatedContent> marshal;
@@ -74,13 +75,13 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
     private MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> messageHandler;
     private EventLoopGroup workerGroup;
-    private Channel channel;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
     public RaftServer( ChannelMarshal<ReplicatedContent> marshal, PipelineHandlerAppender pipelineAppender, Config config, LogProvider logProvider,
             LogProvider userLogProvider, Monitors monitors, Clock clock )
     {
+        super( logProvider, userLogProvider );
         this.marshal = marshal;
         this.pipelineAppender = pipelineAppender;
         this.listenAddress = config.get( setting );
@@ -92,42 +93,26 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    protected EventLoopGroup getEventLoopGroup()
     {
-        startNettyServer();
+        return workerGroup;
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    protected ServerBootstrap bootstrap()
     {
-        log.info( "RaftServer stopping and unbinding from " + listenAddress );
-        try
+        if ( !workerGroup.isShutdown() )
         {
-            channel.close().sync();
+            throw new IllegalStateException( "Current worker group is not shutdown. Cannot bootstrap server" );
         }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-            log.warn( "Interrupted while closing channel." );
-        }
-
-        if ( workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
-        {
-            log.warn( "Worker group not shutdown within 10 seconds." );
-        }
-    }
-
-    private void startNettyServer()
-    {
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         log.info( "Starting server at: " + listenAddress );
 
-        ServerBootstrap bootstrap = new ServerBootstrap()
+        return new ServerBootstrap()
                 .group( workerGroup )
                 .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, true )
-                .localAddress( listenAddress.socketAddress() )
                 .childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
@@ -148,27 +133,17 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                         pipeline.addLast( new ExceptionMonitoringHandler(
-                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, RaftServer.class ) ) );
+                                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class,
+                                        RaftServer.class ) ) );
                         pipeline.addLast( new ExceptionSwallowingHandler() );
                     }
                 } );
+    }
 
-        try
-        {
-            channel = bootstrap.bind().syncUninterruptibly().channel();
-        }
-        catch ( Exception e )
-        {
-            // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
-            // checked exception but it still throws them with some black magic at runtime.
-            //noinspection ConstantConditions
-            if ( e instanceof BindException )
-            {
-                userLog.error( "Address is already bound for setting: " + setting + " with value: " + listenAddress );
-                log.error( "Address is already bound for setting: " + setting + " with value: " + listenAddress, e );
-                throw e;
-            }
-        }
+    @Override
+    protected InetSocketAddress bindAddress()
+    {
+        return listenAddress.socketAddress();
     }
 
     @Override
@@ -181,7 +156,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     {
         @Override
         protected void channelRead0( ChannelHandlerContext channelHandlerContext,
-                                     RaftMessages.ReceivedInstantClusterIdAwareMessage incomingMessage ) throws Exception
+                RaftMessages.ReceivedInstantClusterIdAwareMessage incomingMessage ) throws Exception
         {
             try
             {
