@@ -94,14 +94,14 @@ class SpatialSchemaKey
 
     void initAsLowest()
     {
-        writePoint( Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ) );
+        writePoint( Values.pointValue( CoordinateReferenceSystem.WGS84, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY ) );
         entityId = Long.MIN_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
 
     void initAsHighest()
     {
-        writePoint( Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ) );
+        writePoint( Values.pointValue( CoordinateReferenceSystem.WGS84, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ) );
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
