@@ -105,7 +105,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
                     KEY second = randomKey( random.random() );
                     KEY from;
                     KEY to;
-                    if ( layout.getSeed( first ) < layout.getSeed( second ) )
+                    if ( layout.keySeed( first ) < layout.keySeed( second ) )
                     {
                         from = first;
                         to = second;

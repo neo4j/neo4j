@@ -210,8 +210,14 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     }
 
     @Override
-    public long getSeed( MutableLong key )
+    public long keySeed( MutableLong key )
     {
         return key.getValue();
+    }
+
+    @Override
+    public long valueSeed( MutableLong value )
+    {
+        return value.getValue();
     }
 }

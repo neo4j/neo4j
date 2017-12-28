@@ -143,7 +143,7 @@ public abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
                 while ( cursor.next() )
                 {
                     KEY hit = cursor.get().key();
-                    long hitSeed = layout.getSeed( hit );
+                    long hitSeed = layout.keySeed( hit );
                     if ( hitSeed < prev )
                     {
                         fail( hit + " smaller than prev " + prev );

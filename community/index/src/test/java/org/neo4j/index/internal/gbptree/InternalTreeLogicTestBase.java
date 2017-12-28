@@ -1661,7 +1661,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 
     private long getSeed( KEY key )
     {
-        return layout.getSeed( key );
+        return layout.keySeed( key );
     }
 
     private void newRootFromSplit( StructurePropagation<KEY> split ) throws IOException

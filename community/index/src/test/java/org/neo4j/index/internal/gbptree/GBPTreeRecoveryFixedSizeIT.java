@@ -19,30 +19,15 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawBytes,RawBytes>
+import org.apache.commons.lang3.mutable.MutableLong;
+
+import org.neo4j.test.rule.RandomRule;
+
+public class GBPTreeRecoveryFixedSizeIT extends GBPTreeRecoveryITBase<MutableLong,MutableLong>
 {
-    private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
-
     @Override
-    protected ValueMerger<RawBytes,RawBytes> getAdder()
+    protected TestLayout<MutableLong,MutableLong> getLayout( RandomRule random )
     {
-        return ( existingKey, newKey, base, add ) ->
-        {
-            long baseSeed = layout.keySeed( base );
-            long addSeed = layout.keySeed( add );
-            return layout.value( baseSeed + addSeed );
-        };
-    }
-
-    @Override
-    protected TreeNode<RawBytes,RawBytes> getTreeNode( int pageSize, Layout<RawBytes,RawBytes> layout )
-    {
-        return new TreeNodeDynamicSize<>( pageSize, layout );
-    }
-
-    @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout()
-    {
-        return layout;
+        return new SimpleLongLayout( random.intBetween( 0, 10 ) );
     }
 }

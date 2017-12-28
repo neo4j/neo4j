@@ -25,5 +25,7 @@ interface KeyValueSeeder<KEY, VALUE>
 
     VALUE value( long seed );
 
-    long getSeed( KEY key );
+    long keySeed( KEY key );
+
+    long valueSeed( VALUE value );
 }

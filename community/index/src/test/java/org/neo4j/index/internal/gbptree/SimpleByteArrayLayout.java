@@ -120,7 +120,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     @Override
     public int compare( RawBytes o1, RawBytes o2 )
     {
-        int compare = Long.compare( getSeed( o1 ), getSeed( o2 ) );
+        int compare = Long.compare( keySeed( o1 ), keySeed( o2 ) );
         return compare != 0 ? compare : byteArrayCompare( o1.bytes, o2.bytes, Long.BYTES );
     }
 
@@ -178,7 +178,18 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     }
 
     @Override
-    public long getSeed( RawBytes rawBytes )
+    public long keySeed( RawBytes rawBytes )
+    {
+        return toSeed( rawBytes );
+    }
+
+    @Override
+    public long valueSeed( RawBytes rawBytes )
+    {
+        return toSeed( rawBytes );
+    }
+
+    private long toSeed( RawBytes rawBytes )
     {
         ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES );
         // Because keySearch is done inside the same shouldRetry block as keyCount()

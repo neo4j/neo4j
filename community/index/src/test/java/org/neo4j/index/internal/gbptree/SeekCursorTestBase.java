@@ -994,7 +994,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
 
     private long getSeed( KEY primKey )
     {
-        return layout.getSeed( primKey );
+        return layout.keySeed( primKey );
     }
 
     @Test
