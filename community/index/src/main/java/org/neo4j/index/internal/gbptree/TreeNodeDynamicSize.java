@@ -483,9 +483,12 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             }
             // Move the last piece
             int lastBlockSize = deadRangeOffset - moveOffset;
-            deadRangeOffset -= lastBlockSize;
-            aliveRangeOffset -= lastBlockSize;
-            cursor.copyTo( deadRangeOffset, cursor, aliveRangeOffset, lastBlockSize );
+            if ( lastBlockSize > 0 )
+            {
+                deadRangeOffset -= lastBlockSize;
+                aliveRangeOffset -= lastBlockSize;
+                cursor.copyTo( deadRangeOffset, cursor, aliveRangeOffset, lastBlockSize );
+            }
         }
         while ( !aliveKeysOffset.isEmpty() );
         // Update allocOffset
@@ -540,6 +543,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         {
             // We can merge
             return -1;
+        }
+        if ( leftActiveSpace < rightActiveSpace )
+        {
+            // Moving keys to the right will only create more imbalance
+            return 0;
         }
 
         int prevDelta;
@@ -765,9 +773,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
     }
 
+    // NOTE: Does update keyCount
     private void moveKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
     {
         int toAllocOffset = getAllocOffset( toCursor );
+        int firstAllocOffset = toAllocOffset;
         for ( int i = 0; i < count; i++, toPos++ )
         {
             toAllocOffset = transferRawKeyValue( fromCursor, fromPos + i, toCursor, toAllocOffset );
@@ -775,8 +785,17 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             putKeyOffset( toCursor, toAllocOffset );
         }
         setAllocOffset( toCursor, toAllocOffset );
+
+        // Update deadspace
+        int deadSpace = getDeadSpace( fromCursor );
+        int totalMovedBytes = firstAllocOffset - toAllocOffset;
+        setDeadSpace( fromCursor, deadSpace + totalMovedBytes );
+
+        // Key count
+        setKeyCount( fromCursor, fromPos );
     }
 
+    // NOTE: Does NOT update keyCount
     private void moveKeysAndChildren( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count,
             boolean includeLeftMostChild )
     {
@@ -790,6 +809,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // Move actual keys and update pointers
         int toAllocOffset = getAllocOffset( toCursor );
+        int firstAllocOffset = toAllocOffset;
         for ( int i = 0; i < count; i++, toPos++ )
         {
             // Key
@@ -799,13 +819,18 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
         setAllocOffset( toCursor, toAllocOffset );
 
+        // Update deadspace
+        int deadSpace = getDeadSpace( fromCursor );
+        int totalMovedBytes = firstAllocOffset - toAllocOffset;
+        setDeadSpace( fromCursor, deadSpace + totalMovedBytes );
+
         // Zero pad empty area
         zeroPad( fromCursor, childFromOffset, lengthInBytes );
     }
 
-    private void zeroPad( PageCursor fromCursor, int childFromOffset, int lengthInBytes )
+    private void zeroPad( PageCursor fromCursor, int fromOffset, int lengthInBytes )
     {
-        fromCursor.setOffset( childFromOffset );
+        fromCursor.setOffset( fromOffset );
         fromCursor.putBytes( lengthInBytes, (byte) 0 );
     }
 

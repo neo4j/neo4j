@@ -180,10 +180,18 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     @Override
     public long getSeed( RawBytes rawBytes )
     {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.put( rawBytes.bytes, 0, Long.BYTES );
-        buffer.flip();
-        return buffer.getLong();
+        ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES );
+        // Because keySearch is done inside the same shouldRetry block as keyCount()
+        // We risk reading crap data. This is not a problem because we will retry
+        // but buffer will throw here if we don't take that into consideration.
+        byte[] bytes = rawBytes.bytes;
+        if ( bytes.length >= Long.BYTES )
+        {
+            buffer.put( bytes, 0, Long.BYTES );
+            buffer.flip();
+            return buffer.getLong();
+        }
+        return 0;
     }
 
     private byte[] fromSeed( long seed )
