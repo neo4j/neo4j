@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -58,12 +59,12 @@ public interface ReadableTransactionState
     /**
      * Returns nodes that have been added and removed in this tx.
      */
-    ReadableDiffSets<Long> addedAndRemovedNodes();
+    PrimitiveLongDiffSets addedAndRemovedNodes();
 
     /**
      * Returns rels that have been added and removed in this tx.
      */
-    ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships();
+    PrimitiveLongDiffSets addedAndRemovedRelationships();
 
     /**
      * Nodes that have had labels, relationships, or properties modified in this tx.

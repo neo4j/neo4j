@@ -26,7 +26,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -34,7 +37,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -100,25 +103,25 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     @Override
     public Iterable<Node> createdNodes()
     {
-        return map2Nodes( state.addedAndRemovedNodes().getAdded() );
+        return mapNodes( state.addedAndRemovedNodes().getAdded() );
     }
 
     @Override
     public Iterable<Node> deletedNodes()
     {
-        return map2Nodes( state.addedAndRemovedNodes().getRemoved() );
+        return mapNodes( state.addedAndRemovedNodes().getRemoved() );
     }
 
     @Override
     public Iterable<Relationship> createdRelationships()
     {
-        return map2Rels( state.addedAndRemovedRelationships().getAdded() );
+        return mapRels( state.addedAndRemovedRelationships().getAdded() );
     }
 
     @Override
     public Iterable<Relationship> deletedRelationships()
     {
-        return map2Rels( state.addedAndRemovedRelationships().getRemoved() );
+        return mapRels( state.addedAndRemovedRelationships().getRemoved() );
     }
 
     @Override
@@ -204,8 +207,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     {
         try
         {
-            for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
+            PrimitiveLongIterator removedNodes = state.addedAndRemovedNodes().getRemoved().iterator();
+            while ( removedNodes.hasNext() )
             {
+                long nodeId = removedNodes.next();
                 try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
                 {
                     if ( node.next() )
@@ -230,8 +235,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     }
                 }
             }
-            for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
+            PrimitiveLongIterator removedRelationships = state.addedAndRemovedRelationships().getRemoved().iterator();
+            while ( removedRelationships.hasNext() )
             {
+                long relId = removedRelationships.next();
                 Relationship relationshipProxy = relationship( relId );
                 try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
                 {
@@ -332,28 +339,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return relationship;
     }
 
-    private Iterable<Node> map2Nodes( Iterable<Long> added )
+    private Iterable<Node> mapNodes( PrimitiveLongSet nodeSet )
     {
-        return new IterableWrapper<Node, Long>( added )
-        {
-            @Override
-            protected Node underlyingObjectToObject( Long id )
-            {
-                return new NodeProxy( nodeActions, id );
-            }
-        };
+        return Iterators.asIterable( PrimitiveLongCollections.map( id -> new NodeProxy( nodeActions, id ), nodeSet.iterator() ) );
     }
 
-    private Iterable<Relationship> map2Rels( Iterable<Long> ids )
+    private Iterable<Relationship> mapRels( PrimitiveLongSet relationshipSet )
     {
-        return new IterableWrapper<Relationship, Long>( ids )
-        {
-            @Override
-            protected Relationship underlyingObjectToObject( Long id )
-            {
-                return relationship( id );
-            }
-        };
+        return Iterators.asIterable( PrimitiveLongCollections.map( this::relationship, relationshipSet.iterator() ) );
     }
 
     private Value committedValue( NodeState nodeState, int property )

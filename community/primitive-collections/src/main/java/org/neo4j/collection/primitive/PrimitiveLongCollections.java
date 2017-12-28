@@ -47,6 +47,15 @@ public class PrimitiveLongCollections
 {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
+    private static final PrimitiveLongIterator EMPTY = new PrimitiveLongBaseIterator()
+    {
+        @Override
+        protected boolean fetchNext()
+        {
+            return false;
+        }
+    };
+
     private PrimitiveLongCollections()
     {
     }
@@ -634,6 +643,17 @@ public class PrimitiveLongCollections
         return set;
     }
 
+    public static PrimitiveLongSet asSet( PrimitiveLongSet set )
+    {
+        PrimitiveLongSet result = Primitive.longSet( set.size() );
+        PrimitiveLongIterator iterator = set.iterator();
+        while ( iterator.hasNext() )
+        {
+            result.add( iterator.next() );
+        }
+        return result;
+    }
+
     public static int count( PrimitiveLongIterator iterator )
     {
         int count = 0;
@@ -682,15 +702,6 @@ public class PrimitiveLongCollections
         }
         return array;
     }
-
-    private static final PrimitiveLongIterator EMPTY = new PrimitiveLongBaseIterator()
-    {
-        @Override
-        protected boolean fetchNext()
-        {
-            return false;
-        }
-    };
 
     public static PrimitiveLongIterator emptyIterator()
     {

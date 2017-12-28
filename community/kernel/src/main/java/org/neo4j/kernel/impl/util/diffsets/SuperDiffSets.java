@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -131,17 +130,6 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
     public Set<T> getAdded()
     {
         return resultSet( addedElements );
-    }
-
-    @Override
-    public Set<T> getAddedSnapshot()
-    {
-        if ( addedElements == null )
-        {
-            return Collections.emptySet();
-        }
-        //TODO VersionedHashMap can probably do this more efficiently, but it is hidden behind layers
-        return new HashSet<>( addedElements );
     }
 
     @Override

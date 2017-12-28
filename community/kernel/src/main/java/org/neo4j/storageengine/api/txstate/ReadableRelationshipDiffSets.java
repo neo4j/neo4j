@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 /**
@@ -70,12 +69,6 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
         }
 
         @Override
-        public Set<T> getAddedSnapshot()
-        {
-            return Collections.emptySet();
-        }
-
-        @Override
         public Set<T> getRemoved()
         {
             return Collections.emptySet();
@@ -101,18 +94,6 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
 
         @Override
         public RelationshipIterator augment( RelationshipIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveIntIterator augment( PrimitiveIntIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public RelationshipIterator augmentWithRemovals( RelationshipIterator source )
         {
             return source;
         }

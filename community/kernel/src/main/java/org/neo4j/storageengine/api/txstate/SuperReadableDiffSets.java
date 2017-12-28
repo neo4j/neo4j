@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -40,8 +39,6 @@ public interface SuperReadableDiffSets<T,LONGITERATOR extends PrimitiveLongItera
 
     Set<T> getAdded();
 
-    Set<T> getAddedSnapshot();
-
     Set<T> getRemoved();
 
     boolean isEmpty();
@@ -51,10 +48,6 @@ public interface SuperReadableDiffSets<T,LONGITERATOR extends PrimitiveLongItera
     int delta();
 
     LONGITERATOR augment( LONGITERATOR source );
-
-    PrimitiveIntIterator augment( PrimitiveIntIterator source );
-
-    LONGITERATOR augmentWithRemovals( LONGITERATOR source );
 
     SuperReadableDiffSets<T,LONGITERATOR> filterAdded( Predicate<T> addedFilter );
 
