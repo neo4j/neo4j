@@ -91,7 +91,6 @@ public class FusionIndexAccessorTest
         verifyFailOnSingleDropFailure( nativeAccessor, fusionIndexAccessor );
     }
 
-
     @Test
     public void dropMustThrowIfDropSpatialFail() throws Exception
     {

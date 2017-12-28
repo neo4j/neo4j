@@ -17,20 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.spatial;
+package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 
-public class NonUniqueSpatialLayout extends SpatialLayout
+/**
+ * {@link Layout} for numbers where numbers need to be unique.
+ */
+public class SpatialLayoutUnique extends SpatialLayout
 {
-    private static final String IDENTIFIER_NAME = "NUNI";
-    static final int MAJOR_VERSION = 0;
-    static final int MINOR_VERSION = 1;
-    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, SpatialSchemaValue.SIZE );
+    private static final String IDENTIFIER_NAME = "UNI";
+    public static final int MAJOR_VERSION = 0;
+    public static final int MINOR_VERSION = 1;
+    public static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
     @Override
     public long identifier()
     {
+        // todo Is Number.Value.SIZE a good checksum?
         return IDENTIFIER;
     }
 
@@ -50,6 +54,14 @@ public class NonUniqueSpatialLayout extends SpatialLayout
     public int compare( SpatialSchemaKey o1, SpatialSchemaKey o2 )
     {
         int comparison = o1.compareValueTo( o2 );
-        return comparison != 0 ? comparison : Long.compare( o1.entityId, o2.entityId );
+        if ( comparison == 0 )
+        {
+            // This is a special case where we need also compare entityId to support inclusive/exclusive
+            if ( o1.getEntityIdIsSpecialTieBreaker() || o2.getEntityIdIsSpecialTieBreaker() )
+            {
+                return Long.compare( o1.getEntityId(), o2.getEntityId() );
+            }
+        }
+        return comparison;
     }
 }

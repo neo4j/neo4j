@@ -52,7 +52,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
  * @param <KEY> type of {@link NativeSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
  */
-public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndex<KEY,VALUE> implements IndexPopulator
 {
     static final byte BYTE_FAILED = 0;

@@ -176,7 +176,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         long indexSize = Arrays.stream(samples).mapToLong( IndexSample::indexSize ).sum();
         long uniqueValues = Arrays.stream(samples).mapToLong( IndexSample::uniqueValues ).sum();
         long sampleSize = Arrays.stream(samples).mapToLong( IndexSample::sampleSize ).sum();
-        return new IndexSample(indexSize, uniqueValues, sampleSize);
+        return new IndexSample( indexSize, uniqueValues, sampleSize );
     }
 
     /**

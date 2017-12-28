@@ -83,6 +83,6 @@ class FusionIndexUpdater implements IndexUpdater
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        forAll( ( updater ) -> ((IndexUpdater) updater).close(), nativeUpdater, spatialUpdater, luceneUpdater );
+        forAll( updater -> ((IndexUpdater) updater).close(), nativeUpdater, spatialUpdater, luceneUpdater );
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.spatial;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.Map;
 
@@ -28,8 +28,9 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
-import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
+import org.neo4j.kernel.impl.index.schema.SpatialSchemaIndexReader;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -42,17 +43,17 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 class SpatialFusionIndexReader implements IndexReader
 {
     private final Map<CoordinateReferenceSystem,IndexReader> readerMap;
-    private final int[] propertyKeys;
+    private final IndexDescriptor descriptor;
 
-    SpatialFusionIndexReader( Map<CoordinateReferenceSystem,IndexReader> readerMap, int[] propertyKeys )
+    SpatialFusionIndexReader( Map<CoordinateReferenceSystem,IndexReader> readerMap, IndexDescriptor descriptor )
     {
         this.readerMap = readerMap;
-        this.propertyKeys = propertyKeys;
+        this.descriptor = descriptor;
     }
 
     private <T> T select( Map<CoordinateReferenceSystem,T> instances, Value... values )
     {
-        assert(values.length == 1);
+        assert values.length == 1;
         PointValue pointValue = (PointValue) values[0];
         return instances.get( pointValue.getCoordinateReferenceSystem() );
     }
@@ -60,22 +61,22 @@ class SpatialFusionIndexReader implements IndexReader
     @Override
     public void close()
     {
-        forAll( ( reader ) -> ((IndexReader) reader).close(), readerMap.values().toArray() );
+        forAll( reader -> ((IndexReader) reader).close(), readerMap.values().toArray() );
     }
 
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        Long ans = selectAndRun( ( reader ) -> reader.countIndexedNodes( nodeId, propertyValues ), propertyValues );
+        Long ans = selectAndRun( reader -> reader.countIndexedNodes( nodeId, propertyValues ), propertyValues );
         return ans == null ? 0L : ans;
     }
 
     interface ActionableWithResult<R>
     {
-        R doIt(IndexReader reader);
+        R doIt( IndexReader reader );
     }
 
-    private <R> R selectAndRun(ActionableWithResult<R> actionable, Value... values)
+    private <R> R selectAndRun( ActionableWithResult<R> actionable, Value... values )
     {
         IndexReader reader = select( readerMap, values );
         if ( reader != null )
@@ -99,8 +100,7 @@ class SpatialFusionIndexReader implements IndexReader
         return nodeValueIterator;
     }
 
-    private IndexReader selectIf(IndexQuery... predicates)
-            throws IndexNotApplicableKernelException
+    private IndexReader selectIf( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         if ( predicates[0] instanceof ExactPredicate )
         {
@@ -114,15 +114,13 @@ class SpatialFusionIndexReader implements IndexReader
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
-            throws IndexNotApplicableKernelException
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        SpatialSchemaIndexReader.validateQuery( indexOrder, predicates );
         if ( predicates[0] instanceof ExistsPredicate )
         {
-            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, propertyKeys );
-            cursor.initialize( multiProgressor, propertyKeys );
-            for (IndexReader reader : readerMap.values())
+            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
+            cursor.initialize( descriptor, multiProgressor, predicates );
+            for ( IndexReader reader : readerMap.values() )
             {
                 reader.query( multiProgressor, indexOrder, predicates[0] );
             }
