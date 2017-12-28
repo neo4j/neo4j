@@ -29,6 +29,7 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.IntFunction;
 
 import org.neo4j.backup.OnlineBackupSettings;
@@ -36,6 +37,7 @@ import org.neo4j.causalclustering.backup.backup_stores.BackupStore;
 import org.neo4j.causalclustering.backup.backup_stores.BackupStoreWithSomeData;
 import org.neo4j.causalclustering.backup.backup_stores.BackupStoreWithSomeDataButNoTransactionLogs;
 import org.neo4j.causalclustering.backup.backup_stores.EmptyBackupStore;
+import org.neo4j.causalclustering.backup.backup_stores.NoStore;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
@@ -69,6 +71,7 @@ public class ClusterSeedingIT
     private static Iterable<BackupStore> stores()
     {
         return Arrays.asList(
+                new NoStore(),
                 new EmptyBackupStore(),
                 new BackupStoreWithSomeData(),
                 new BackupStoreWithSomeDataButNoTransactionLogs() );
@@ -123,12 +126,15 @@ public class ClusterSeedingIT
     {
         // given
         backupCluster.start();
-        File backup = initialStore.get( baseBackupDir, backupCluster );
+        Optional<File> backup = initialStore.generate( baseBackupDir, backupCluster );
         backupCluster.shutdown();
 
-        for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
+        if ( backup.isPresent() )
         {
-            restoreFromBackup( backup, fsa, coreClusterMember );
+            for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
+            {
+                restoreFromBackup( backup.get(), fsa, coreClusterMember );
+            }
         }
 
         // we want the cluster to seed from backup. No instance should delete and re-copy the store.
@@ -138,7 +144,10 @@ public class ClusterSeedingIT
         cluster.start();
 
         //then
-        dataMatchesEventually( DbRepresentation.of( backup ), cluster.coreMembers() );
+        if ( backup.isPresent() )
+        {
+            dataMatchesEventually( DbRepresentation.of( backup.get() ), cluster.coreMembers() );
+        }
         assertFalse( fileCopyDetector.hasDetectedAnyFileCopied() );
     }
 }

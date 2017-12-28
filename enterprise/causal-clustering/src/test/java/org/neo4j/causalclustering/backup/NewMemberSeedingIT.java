@@ -27,8 +27,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.IntFunction;
 
 import org.neo4j.backup.OnlineBackupSettings;
@@ -36,6 +38,9 @@ import org.neo4j.causalclustering.backup.backup_stores.BackupStore;
 import org.neo4j.causalclustering.backup.backup_stores.BackupStoreWithSomeData;
 import org.neo4j.causalclustering.backup.backup_stores.BackupStoreWithSomeDataButNoTransactionLogs;
 import org.neo4j.causalclustering.backup.backup_stores.EmptyBackupStore;
+import org.neo4j.causalclustering.backup.cluster_load.ClusterLoad;
+import org.neo4j.causalclustering.backup.cluster_load.NoLoad;
+import org.neo4j.causalclustering.backup.cluster_load.SmallBurst;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
@@ -57,10 +62,31 @@ public class NewMemberSeedingIT
     private DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
     private FileCopyDetector fileCopyDetector;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static Iterable<BackupStore> data() throws Exception
+    @Parameterized.Parameters( name = "{0} with {1}" )
+    public static Iterable<Object[]> data() throws Exception
     {
-        return stores();
+        return combine( stores(), loads() );
+    }
+
+    private static Iterable<Object[]> combine( Iterable<BackupStore> stores, Iterable<ClusterLoad> loads )
+    {
+        ArrayList<Object[]> params = new ArrayList<>();
+        for ( BackupStore store : stores )
+        {
+            for ( ClusterLoad load : loads )
+            {
+                params.add( new Object[]{store, load} );
+            }
+        }
+        return params;
+    }
+
+    private static Iterable<ClusterLoad> loads()
+    {
+        return Arrays.asList(
+                new NoLoad(),
+                new SmallBurst()
+        );
     }
 
     private static Iterable<BackupStore> stores()
@@ -72,6 +98,9 @@ public class NewMemberSeedingIT
 
     @Parameterized.Parameter()
     public BackupStore seedStore;
+
+    @Parameterized.Parameter( 1 )
+    public ClusterLoad intermediateLoad;
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -110,14 +139,24 @@ public class NewMemberSeedingIT
         cluster.start();
 
         // when
-        File backup = seedStore.get( baseBackupDir, cluster );
+        Optional<File> backup = seedStore.generate( baseBackupDir, cluster );
+
+        // then
+        // possibly add load to cluster in between backup
+        intermediateLoad.start( cluster );
+
+        // when
         CoreClusterMember newCoreClusterMember = cluster.addCoreMemberWithId( 3 );
-        restoreFromBackup( backup, fsa, newCoreClusterMember );
+        if ( backup.isPresent() )
+        {
+            restoreFromBackup( backup.get(), fsa, newCoreClusterMember );
+        }
         // we want the new instance to seed from backup and not delete and re-download the store
         newCoreClusterMember.monitors().addMonitorListener( fileCopyDetector );
         newCoreClusterMember.start();
 
         // then
+        intermediateLoad.stop();
         dataMatchesEventually( newCoreClusterMember, cluster.coreMembers() );
         assertFalse( fileCopyDetector.hasDetectedAnyFileCopied() );
     }
