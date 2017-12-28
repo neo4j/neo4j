@@ -355,7 +355,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4))
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3))
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
@@ -376,16 +376,71 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 50.7, longitude: 12.78, crs: 'WGS-84'})")
 
+    val configuration = TestConfiguration(Versions(Versions.V3_3, Versions.V3_4, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default))
     // When
-    val result = executeWith(Configs.Version3_4 - Configs.Compiled - Configs.AllRulePlanners,
+    val result = executeWith(configuration,
       "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
         plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4))
+      }, expectPlansToFail = Configs.AbsolutelyAll - configuration))
 
     // Then
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+  }
+
+  test("indexed point - range query") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 50.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
+
+    // When
+    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location > point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    plan should useOperatorWithText("Projection", "point")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)")
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+  }
+
+  test("indexed point - range query 2") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 50.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
+
+    // When
+    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location >= point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    plan should useOperatorWithText("Projection", "point")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)")
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+  }
+
+  test("indexed point - range query 3") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 50.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
+
+    // When
+    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location > point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    plan should useOperatorWithText("Projection", "point")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)")
+    assert(result.isEmpty)
   }
 
   test("array of points should be assignable to node property") {

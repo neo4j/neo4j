@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -139,8 +139,8 @@ class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends Spati
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo );
             break;
-        case rangeNumeric:
-            NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
+        case rangeGeometric:
+            GeometryRangePredicate rangePredicate = (GeometryRangePredicate) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo );
@@ -165,7 +165,7 @@ class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends Spati
         }
     }
 
-    private void initToForRange( NumberRangePredicate rangePredicate, KEY treeKeyTo )
+    private void initToForRange( GeometryRangePredicate rangePredicate, KEY treeKeyTo )
     {
         Value toValue = rangePredicate.toAsValue();
         if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
@@ -179,7 +179,7 @@ class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends Spati
         }
     }
 
-    private void initFromForRange( NumberRangePredicate rangePredicate, KEY treeKeyFrom )
+    private void initFromForRange( GeometryRangePredicate rangePredicate, KEY treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromAsValue();
         if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
