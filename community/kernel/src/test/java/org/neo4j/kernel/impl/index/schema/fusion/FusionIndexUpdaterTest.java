@@ -121,7 +121,7 @@ public class FusionIndexUpdaterTest
 
         // when
         // ... value supported by spatial
-        for ( Value value : supportedBySpatial)
+        for ( Value value : supportedBySpatial )
         {
             //then
             verifyRemoveWithCorrectUpdater( spatialUpdater, value );

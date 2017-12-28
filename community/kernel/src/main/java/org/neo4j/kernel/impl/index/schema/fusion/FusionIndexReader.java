@@ -27,8 +27,8 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
@@ -62,7 +62,7 @@ class FusionIndexReader implements IndexReader
     @Override
     public void close()
     {
-        forAll( ( reader ) -> ((IndexReader) reader).close(), nativeReader, spatialReader, luceneReader );
+        forAll( reader -> ((IndexReader) reader).close(), nativeReader, spatialReader, luceneReader );
     }
 
     @Override

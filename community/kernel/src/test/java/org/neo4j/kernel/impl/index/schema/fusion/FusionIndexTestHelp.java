@@ -161,7 +161,8 @@ class FusionIndexTestHelp
         return IndexEntryUpdate.change( 0, indexKey, before, after );
     }
 
-    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable, AutoCloseable... successfulCloseables ) throws Exception
+    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable, AutoCloseable... successfulCloseables )
+            throws Exception
     {
         IOException failure = new IOException( "fail" );
         doThrow( failure ).when( failingCloseable ).close();
@@ -203,7 +204,7 @@ class FusionIndexTestHelp
     {
         // given
         IOException[] failures = new IOException[autoCloseables.length];
-        for(int i=0;i<autoCloseables.length;i++)
+        for ( int i = 0; i < autoCloseables.length; i++ )
         {
             failures[i] = new IOException( "unknown" );
             doThrow( failures[i] ).when( autoCloseables[i] ).close();
@@ -219,9 +220,9 @@ class FusionIndexTestHelp
         {
             // then
             List<Matcher<? super IOException>> matchers = new ArrayList<>();
-            for ( int i = 0; i < failures.length; i++ )
+            for ( IOException failure : failures )
             {
-                matchers.add( sameInstance( failures[i] ) );
+                matchers.add( sameInstance( failure ) );
             }
             assertThat( e, anyOf( matchers ) );
         }

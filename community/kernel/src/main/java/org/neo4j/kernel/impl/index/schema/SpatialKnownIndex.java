@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.spatial;
+package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,33 +25,35 @@ import java.util.Map;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionSchemaIndexProvider;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexPopulator.BYTE_FAILED;
-import static org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexPopulator.BYTE_ONLINE;
-import static org.neo4j.kernel.impl.index.schema.spatial.SpatialSchemaIndexPopulator.BYTE_POPULATING;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
 
 /**
  * An instance of this class represents a dynamically created sub-index specific to a particular coordinate reference system.
  * This allows the fusion index design to be extended to an unknown number of sub-indexes, one for each CRS.
  */
-public class KnownSpatialIndex
+public class SpatialKnownIndex
 {
 
-    interface Factory
+    public interface Factory
     {
-        KnownSpatialIndex selectAndCreate( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, Value... values );
-        KnownSpatialIndex selectAndCreate( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, CoordinateReferenceSystem crs );
+        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value... values );
+
+        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, CoordinateReferenceSystem crs );
     }
 
     private final File indexFile;
@@ -62,12 +64,12 @@ public class KnownSpatialIndex
     private final SchemaIndexProvider.Monitor monitor;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private SpatialSchemaIndexAccessor indexAccessor;
-    private SpatialSchemaIndexPopulator indexPopulator;
+    private NativeSchemaIndexPopulator indexPopulator;
 
     /**
      * Create a representation of a spatial index for a specific coordinate reference system. This constructure should be used for first time creation.
      */
-    KnownSpatialIndex( IndexDirectoryStructure directoryStructure, CoordinateReferenceSystem crs, long indexId, PageCache pageCache,
+    public SpatialKnownIndex( IndexDirectoryStructure directoryStructure, CoordinateReferenceSystem crs, long indexId, PageCache pageCache,
             FileSystemAbstraction fs, SchemaIndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         this.crs = crs;
@@ -78,7 +80,8 @@ public class KnownSpatialIndex
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
 
         // Depends on crs
-        SchemaIndexProvider.Descriptor crsDescriptor = new SchemaIndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
+        SchemaIndexProvider.Descriptor crsDescriptor =
+                new SchemaIndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
         IndexDirectoryStructure indexDir = IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
         indexFile = new File( indexDir.directoryForIndex( indexId ), indexFileName( indexId ) );
     }
@@ -88,22 +91,22 @@ public class KnownSpatialIndex
         return "index-" + indexId;
     }
 
-    boolean indexExists()
+    public boolean indexExists()
     {
         return fs.fileExists( indexFile );
     }
 
     public String readPopupationFailure() throws IOException
     {
-        SpatialSchemaIndexHeaderReader headerReader = new SpatialSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, new SpatialSchemaIndexProvider.ReadOnlyMetaNumberLayout(), headerReader );
+        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
+        GBPTree.readHeader( pageCache, indexFile, new SpatialFusionSchemaIndexProvider.ReadOnlyMetaNumberLayout(), headerReader );
         return headerReader.failureMessage;
     }
 
-    InternalIndexState readState() throws IOException
+    public InternalIndexState readState() throws IOException
     {
-        SpatialSchemaIndexHeaderReader headerReader = new SpatialSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, new SpatialSchemaIndexProvider.ReadOnlyMetaNumberLayout(), headerReader );
+        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
+        GBPTree.readHeader( pageCache, indexFile, new SpatialFusionSchemaIndexProvider.ReadOnlyMetaNumberLayout(), headerReader );
         switch ( headerReader.state )
         {
         case BYTE_FAILED:
@@ -117,21 +120,21 @@ public class KnownSpatialIndex
         }
     }
 
-    private SpatialSchemaIndexPopulator makeIndexPopulator(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig)
+    private NativeSchemaIndexPopulator makeIndexPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return new SpatialNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new NonUniqueSpatialLayout(), samplingConfig, monitor, descriptor,
+            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutNonUnique(), samplingConfig, monitor, descriptor,
                     indexId );
         case UNIQUE:
-            return new SpatialUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new UniqueSpatialLayout(), monitor, descriptor, indexId );
+            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutUnique(), monitor, descriptor, indexId );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
         }
     }
 
-    IndexPopulator getPopulator(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig)
+    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( indexPopulator == null )
         {
@@ -150,31 +153,30 @@ public class KnownSpatialIndex
         return indexPopulator;
     }
 
-    void closePopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populationCompletedSuccessfully ) throws IOException
+    public void closePopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populationCompletedSuccessfully ) throws IOException
     {
         getPopulator( descriptor, samplingConfig ).close( populationCompletedSuccessfully );
         this.indexPopulator = null;
     }
 
-    private SpatialSchemaIndexAccessor makeOnlineAccessor(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig) throws IOException
+    private SpatialSchemaIndexAccessor makeOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         SpatialLayout layout;
         switch ( descriptor.type() )
         {
         case GENERAL:
-            layout = new NonUniqueSpatialLayout();
+            layout = new SpatialLayoutNonUnique();
             break;
         case UNIQUE:
-            layout = new UniqueSpatialLayout();
+            layout = new SpatialLayoutUnique();
             break;
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
         }
-        return new SpatialSchemaIndexAccessor<>( pageCache, fs, indexFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId,
-                samplingConfig );
+        return new SpatialSchemaIndexAccessor<>( pageCache, fs, indexFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
     }
 
-    IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         if ( indexAccessor == null )
         {

@@ -65,7 +65,7 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
-        forAll( ( accessor ) -> ((IndexAccessor) accessor).drop(), nativeAccessor, spatialAccessor, luceneAccessor );
+        forAll( accessor -> ((IndexAccessor) accessor).drop(), nativeAccessor, spatialAccessor, luceneAccessor );
         dropAction.drop( indexId );
     }
 
@@ -93,7 +93,7 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public void close() throws IOException
     {
-        forAll( ( accessor ) -> ((IndexAccessor) accessor).close(), nativeAccessor, spatialAccessor, luceneAccessor );
+        forAll( accessor -> ((IndexAccessor) accessor).close(), nativeAccessor, spatialAccessor, luceneAccessor );
     }
 
     @Override
@@ -123,7 +123,7 @@ class FusionIndexAccessor implements IndexAccessor
             @Override
             public void close() throws Exception
             {
-                forAll( ( entries ) -> ((BoundedIterable) entries).close(), nativeAllEntries, spatialAllEntries, luceneAllEntries );
+                forAll( entries -> ((BoundedIterable) entries).close(), nativeAllEntries, spatialAllEntries, luceneAllEntries );
             }
 
             @Override

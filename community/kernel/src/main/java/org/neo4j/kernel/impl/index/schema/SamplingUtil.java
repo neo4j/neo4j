@@ -26,11 +26,11 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 /**
  * Utilities for implementing {@link IndexSampler sampling}.
  */
-public class SamplingUtil
+class SamplingUtil
 {
     private static final String DELIMITER = "\u001F";
 
-    public static String encodedStringValuesForSampling( Object... values )
+    static String encodedStringValuesForSampling( Object... values )
     {
         return StringUtils.join( values, DELIMITER );
     }

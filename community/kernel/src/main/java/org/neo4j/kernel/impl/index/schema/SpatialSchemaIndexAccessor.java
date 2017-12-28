@@ -17,43 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.spatial;
+package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
-import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
-/**
- * {@link SpatialSchemaIndexPopulator} which can enforces unique values.
- */
-class SpatialUniqueSchemaIndexPopulator<KEY extends SpatialSchemaKey, VALUE extends SpatialSchemaValue>
-        extends SpatialSchemaIndexPopulator<KEY,VALUE>
+class SpatialSchemaIndexAccessor<KEY extends SpatialSchemaKey, VALUE extends NativeSchemaValue>
+        extends NativeSchemaIndexAccessor<KEY,VALUE>
 {
-    private final UniqueIndexSampler sampler;
-
-    SpatialUniqueSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
+    SpatialSchemaIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
-        this.sampler = new UniqueIndexSampler();
+        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
     }
 
     @Override
-    public void includeSample( IndexEntryUpdate<?> update )
+    public IndexReader newReader()
     {
-        sampler.increment( 1 );
-    }
-
-    @Override
-    public IndexSample sampleResult()
-    {
-        return sampler.result();
+        assertOpen();
+        return new SpatialSchemaIndexReader<>( tree, layout, samplingConfig, descriptor );
     }
 }

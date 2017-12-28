@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.spatial;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -45,11 +46,11 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     private final long indexId;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private final KnownSpatialIndex.Factory indexFactory;
-    private final Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap;
+    private final SpatialKnownIndex.Factory indexFactory;
+    private final Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap;
 
-    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, KnownSpatialIndex.Factory indexFactory )
+    SpatialFusionIndexPopulator( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig, SpatialKnownIndex.Factory indexFactory )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
@@ -69,14 +70,14 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void drop() throws IOException
     {
-        forAll( ( entry ) -> ((KnownSpatialIndex) entry).getPopulator( descriptor, samplingConfig ).drop(), indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).getPopulator( descriptor, samplingConfig ).drop(), indexMap.values().toArray() );
     }
 
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
         Map<CoordinateReferenceSystem,Collection<IndexEntryUpdate<?>>> batchMap = new HashMap<>();
-        for ( Map.Entry<CoordinateReferenceSystem,KnownSpatialIndex> index : indexMap.entrySet() )
+        for ( Map.Entry<CoordinateReferenceSystem,SpatialKnownIndex> index : indexMap.entrySet() )
         {
             batchMap.put( index.getKey(), new ArrayList<>() );
         }
@@ -92,7 +93,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
 
     private Collection<IndexEntryUpdate<?>> selectUpdates( Map<CoordinateReferenceSystem,Collection<IndexEntryUpdate<?>>> instances, Value... values )
     {
-        assert (values.length == 1);
+        assert values.length == 1;
         PointValue pointValue = (PointValue) values[0];
         return instances.computeIfAbsent( pointValue.getCoordinateReferenceSystem(), k -> new ArrayList<>() );
     }
@@ -101,7 +102,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        forAll( ( entry ) -> ((KnownSpatialIndex) entry).getPopulator( descriptor, samplingConfig ).verifyDeferredConstraints( propertyAccessor ),
+        forAll( entry -> ((SpatialKnownIndex) entry).getPopulator( descriptor, samplingConfig ).verifyDeferredConstraints( propertyAccessor ),
                 indexMap.values().toArray() );
     }
 
@@ -114,13 +115,14 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( ( entry ) -> ((KnownSpatialIndex) entry).closePopulator( descriptor, samplingConfig, populationCompletedSuccessfully ), indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).closePopulator( descriptor, samplingConfig, populationCompletedSuccessfully ),
+                indexMap.values().toArray() );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        forAll( ( entry ) -> ((KnownSpatialIndex) entry).getPopulator( descriptor, samplingConfig ).markAsFailed( failure ), indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).getPopulator( descriptor, samplingConfig ).markAsFailed( failure ), indexMap.values().toArray() );
     }
 
     @Override

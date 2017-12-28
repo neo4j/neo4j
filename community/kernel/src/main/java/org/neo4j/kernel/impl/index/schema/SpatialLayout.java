@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.spatial;
+package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
-abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,SpatialSchemaValue>
+public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchemaValue>
 {
     @Override
     public SpatialSchemaKey newKey()
@@ -39,15 +39,15 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,SpatialSche
     {
         into.type = key.type;
         into.rawValueBits = key.rawValueBits;
-        into.entityId = key.entityId;
-        into.entityIdIsSpecialTieBreaker = key.entityIdIsSpecialTieBreaker;
+        into.setEntityId( key.getEntityId() );
+        into.setEntityIdIsSpecialTieBreaker( key.getEntityIdIsSpecialTieBreaker() );
         return into;
     }
 
     @Override
-    public SpatialSchemaValue newValue()
+    public NativeSchemaValue newValue()
     {
-        return SpatialSchemaValue.INSTANCE;
+        return NativeSchemaValue.INSTANCE;
     }
 
     @Override
@@ -59,7 +59,7 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,SpatialSche
     @Override
     public int valueSize()
     {
-        return SpatialSchemaValue.SIZE;
+        return NativeSchemaValue.SIZE;
     }
 
     @Override
@@ -67,11 +67,11 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,SpatialSche
     {
         cursor.putByte( key.type );
         cursor.putLong( key.rawValueBits );
-        cursor.putLong( key.entityId );
+        cursor.putLong( key.getEntityId() );
     }
 
     @Override
-    public void writeValue( PageCursor cursor, SpatialSchemaValue value )
+    public void writeValue( PageCursor cursor, NativeSchemaValue value )
     {
     }
 
@@ -80,11 +80,11 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,SpatialSche
     {
         into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
-        into.entityId = cursor.getLong();
+        into.setEntityId( cursor.getLong() );
     }
 
     @Override
-    public void readValue( PageCursor cursor, SpatialSchemaValue into )
+    public void readValue( PageCursor cursor, NativeSchemaValue into )
     {
     }
 }

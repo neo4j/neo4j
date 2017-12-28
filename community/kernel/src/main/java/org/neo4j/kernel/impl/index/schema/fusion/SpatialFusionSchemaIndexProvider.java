@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.spatial;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,15 +30,18 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
+import org.neo4j.kernel.impl.index.schema.SpatialLayoutNonUnique;
+import org.neo4j.kernel.impl.index.schema.SpatialLayoutUnique;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -47,7 +50,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements KnownSpatialIndex.Factory
+public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implements SpatialKnownIndex.Factory
 {
     public static final String KEY = "spatial";
     public static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -58,9 +61,9 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    private Map<Long,Map<CoordinateReferenceSystem,KnownSpatialIndex>> indexes = new HashMap<>();
+    private Map<Long,Map<CoordinateReferenceSystem,SpatialKnownIndex>> indexes = new HashMap<>();
 
-    public SpatialSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
+    public SpatialFusionSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
@@ -88,7 +91,7 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
         return new SpatialFusionIndexAccessor( indexesFor( indexId ), indexId, descriptor, samplingConfig, this );
     }
 
-    private Map<CoordinateReferenceSystem,KnownSpatialIndex> indexesFor( long indexId )
+    private Map<CoordinateReferenceSystem,SpatialKnownIndex> indexesFor( long indexId )
     {
         return indexes.computeIfAbsent( indexId, k -> new HashMap<>() );
     }
@@ -100,7 +103,7 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
         {
             // This assumes a previous call to getInitialState returned that at least one index was failed
             // We find the first failed index failure message
-            for ( KnownSpatialIndex index : indexesFor( indexId ).values() )
+            for ( SpatialKnownIndex index : indexesFor( indexId ).values() )
             {
                 String indexFailure = index.readPopupationFailure();
                 if ( indexFailure != null )
@@ -126,7 +129,7 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
         {
             return InternalIndexState.ONLINE;
         }
-        for ( KnownSpatialIndex index : indexes.get( indexId ).values() )
+        for ( SpatialKnownIndex index : indexes.get( indexId ).values() )
         {
             if ( index.indexExists() )
             {
@@ -138,6 +141,7 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
                         return InternalIndexState.FAILED;
                     case POPULATING:
                         state = InternalIndexState.POPULATING;
+                    default:
                     }
                 }
                 catch ( IOException e )
@@ -166,19 +170,19 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
     }
 
     @Override
-    public KnownSpatialIndex selectAndCreate( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, Value... values )
+    public SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value... values )
     {
-        assert (values.length == 1);
+        assert values.length == 1;
         PointValue pointValue = (PointValue) values[0];
         CoordinateReferenceSystem crs = pointValue.getCoordinateReferenceSystem();
         return selectAndCreate( indexMap, indexId, crs );
     }
 
     @Override
-    public KnownSpatialIndex selectAndCreate( Map<CoordinateReferenceSystem,KnownSpatialIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
+    public SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
     {
         return indexMap.computeIfAbsent( crs,
-                k -> new KnownSpatialIndex( directoryStructure(), crs, indexId, pageCache, fs, monitor, recoveryCleanupWorkCollector ) );
+                k -> new SpatialKnownIndex( directoryStructure(), crs, indexId, pageCache, fs, monitor, recoveryCleanupWorkCollector ) );
     }
 
     private void findAndCreateKnownSpatialIndexes()
@@ -203,7 +207,7 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
                                 int tableId = Integer.parseInt( m.group( 1 ) );
                                 int code = Integer.parseInt( m.group( 2 ) );
                                 CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-                                KnownSpatialIndex index = selectAndCreate( indexesFor( indexId ), indexId, crs );
+                                SpatialKnownIndex index = selectAndCreate( indexesFor( indexId ), indexId, crs );
                                 if ( index.indexExists() )
                                 {
                                     System.out.println( "Created " + index + " crs: " + crs.getName());
@@ -235,15 +239,15 @@ public class SpatialSchemaIndexProvider extends SchemaIndexProvider implements K
         }
     }
 
-    static class ReadOnlyMetaNumberLayout extends Layout.ReadOnlyMetaLayout
+    public static class ReadOnlyMetaNumberLayout extends Layout.ReadOnlyMetaLayout
     {
         @Override
         public boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion )
         {
-            return (layoutIdentifier == UniqueSpatialLayout.IDENTIFIER && majorVersion == UniqueSpatialLayout.MAJOR_VERSION &&
-                    minorVersion == UniqueSpatialLayout.MINOR_VERSION) ||
-                    (layoutIdentifier == NonUniqueSpatialLayout.IDENTIFIER && majorVersion == NonUniqueSpatialLayout.MAJOR_VERSION &&
-                            minorVersion == NonUniqueSpatialLayout.MINOR_VERSION);
+            return (layoutIdentifier == SpatialLayoutUnique.IDENTIFIER && majorVersion == SpatialLayoutUnique.MAJOR_VERSION &&
+                    minorVersion == SpatialLayoutUnique.MINOR_VERSION) ||
+                    (layoutIdentifier == SpatialLayoutNonUnique.IDENTIFIER && majorVersion == SpatialLayoutNonUnique.MAJOR_VERSION &&
+                            minorVersion == SpatialLayoutNonUnique.MINOR_VERSION);
         }
     }
 }
