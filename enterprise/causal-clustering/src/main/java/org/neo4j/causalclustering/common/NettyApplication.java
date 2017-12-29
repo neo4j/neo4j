@@ -17,45 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.server;
+package org.neo4j.causalclustering.common;
 
-import io.netty.bootstrap.AbstractBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 
-import java.net.BindException;
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
-public abstract class AbstractNettyApplication<T extends AbstractBootstrap> extends LifecycleAdapter
+public class NettyApplication<C extends Channel> extends LifecycleAdapter
 {
     private static final int SHUTDOWN_TIMEOUT = 170;
     private static final int TIMEOUT = 180;
     private static final int QUIET_PERIOD = 2;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-    private final Log log;
-    private final Log userLog;
+    private final ChannelService<?,C> channelService;
+    private final Supplier<EventLoopContext<C>> eventLoopContextSupplier;
     private boolean hasShutDown;
-    private T bootstrap;
-    private Channel channel;
+    private EventLoopGroup eventExecutors;
 
-    public AbstractNettyApplication( LogProvider logProvider, LogProvider userLogProvider )
+    public NettyApplication( ChannelService<?,C> channelService,
+            Supplier<EventLoopContext<C>> eventLoopContextSupplier )
     {
-        this.log = logProvider.getLog( getClass() );
-        this.userLog = userLogProvider.getLog( getClass() );
+        this.channelService = channelService;
+        this.eventLoopContextSupplier = eventLoopContextSupplier;
     }
-
-    protected abstract EventLoopGroup getEventLoopGroup();
-
-    protected abstract T bootstrap();
-
-    protected abstract InetSocketAddress bindAddress();
 
     @Override
     public synchronized void init() throws Throwable
@@ -64,6 +52,13 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
         {
             throw new IllegalStateException( "Cannot initiate application. Already shutdown" );
         }
+        if ( eventExecutors != null )
+        {
+            throw new IllegalStateException( "Cannot initiate application. Already initiated" );
+        }
+        EventLoopContext<C> eventLoopContext = eventLoopContextSupplier.get();
+        this.eventExecutors = eventLoopContext.eventExecutors();
+        channelService.bootstrap( eventLoopContext );
     }
 
     @Override
@@ -73,10 +68,7 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
         {
             throw new IllegalStateException( "Cannot start application. Already shutdown" );
         }
-        if ( bootstrap == null )
-        {
-            throw new IllegalStateException( "Cannot start application. Need to be initialised first" );
-        }
+        channelService.start();
     }
 
     @Override
@@ -86,17 +78,17 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
         {
             return;
         }
+        channelService.closeChannels();
     }
 
     @Override
     public synchronized void shutdown() throws Throwable
     {
         hasShutDown = true;
-        EventLoopGroup eventLoopGroup = getEventLoopGroup();
-        if ( eventLoopGroup == null )
+        if ( eventExecutors == null )
         {
             throw new IllegalArgumentException( "EventLoopGroup cannot be null." );
         }
-        eventLoopGroup.shutdownGracefully( QUIET_PERIOD, SHUTDOWN_TIMEOUT, TIME_UNIT ).get( TIMEOUT, TIME_UNIT );
+        eventExecutors.shutdownGracefully( QUIET_PERIOD, SHUTDOWN_TIMEOUT, TIME_UNIT ).get( TIMEOUT, TIME_UNIT );
     }
 }

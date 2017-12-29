@@ -157,12 +157,14 @@ public class CatchUpClient extends LifecycleAdapter
     public void stop()
     {
         log.info( "CatchUpClient stopping" );
-        pool.close();
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-        eventLoopGroup.shutdownGracefully( 0, 0, MICROSECONDS ).syncUninterruptibly();
+        try
+        {
+            pool.close();
+            eventLoopGroup.shutdownGracefully( 0, 0, MICROSECONDS ).sync();
+        }
+        catch ( InterruptedException e )
+        {
+            log.warn( "Interrupted while stopping catch up client." );
+        }
     }
 }

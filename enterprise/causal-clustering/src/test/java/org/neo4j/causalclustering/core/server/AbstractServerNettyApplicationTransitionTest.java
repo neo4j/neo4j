@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 
 @RunWith( Parameterized.class )
-public class AbstractNettyApplicationTransitionTest
+public class AbstractServerNettyApplicationTransitionTest
 {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
