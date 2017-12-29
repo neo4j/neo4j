@@ -172,7 +172,7 @@ public class CoreServerModule
         // Exposes this so that tests can start/stop the catchup server
         dependencies.satisfyDependency( catchupServer );
 
-        servicesToStopOnStoreCopy.add( catchupServer );
+        platformModule.life.add( servicesToStopOnStoreCopy.add( catchupServer ) );
     }
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )
@@ -202,11 +202,6 @@ public class CoreServerModule
                 dbHealthSupplier, electionTimeout * 4, logProvider );
         long joinCatchupTimeout = config.get( CausalClusteringSettings.join_catch_up_timeout ).toMillis();
         return new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
-    }
-
-    public CatchupServer catchupServer()
-    {
-        return catchupServer;
     }
 
     public CoreLife createCoreLife( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler )
