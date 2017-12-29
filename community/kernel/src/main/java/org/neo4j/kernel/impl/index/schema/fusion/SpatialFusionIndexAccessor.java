@@ -143,7 +143,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
             @Override
             public void close() throws Exception
             {
-                forAll( entries -> ((BoundedIterable) entries).close(), allEntriesReader );
+                forAll( entries -> ((BoundedIterable) entries).close(), allEntriesReader.toArray() );
             }
 
             @Override
