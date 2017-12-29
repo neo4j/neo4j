@@ -24,8 +24,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import java.util.Arrays;
-
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -403,31 +401,7 @@ public abstract class IndexQuery
             {
                 PointValue point = (PointValue) value;
                 //TODO Use Hilbert Space Filling Curves for comparison
-                PointValue lower, upper;
-                if ( from == NO_VALUE && to == NO_VALUE )
-                {
-                    return true;
-                }
-                if ( from != NO_VALUE && to != NO_VALUE )
-                {
-                    lower = from();
-                    upper = to();
-                }
-                else if ( from != NO_VALUE )
-                {
-                    lower = from();
-                    double[] limit = new double[lower.coordinate().length];
-                    Arrays.fill(limit, Double.POSITIVE_INFINITY);
-                    upper = Values.pointValue(lower.getCoordinateReferenceSystem(), limit);
-                }
-                else
-                {
-                    upper = to();
-                    double[] limit = new double[upper.coordinate().length];
-                    Arrays.fill(limit, Double.NEGATIVE_INFINITY);
-                    lower = Values.pointValue(upper.getCoordinateReferenceSystem(), limit);
-                }
-                return point.withinRange( lower, fromInclusive, upper, toInclusive );
+                return point.withinRange( from(), fromInclusive, to(), toInclusive );
             }
             return false;
         }
