@@ -64,7 +64,8 @@ public final class Values
 {
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
-    public static final Value MIN_POINT = Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY );
+    // min point and max point are defined to catch all points by using different crs
+    public static final Value MIN_POINT = Values.pointValue( CoordinateReferenceSystem.WGS84, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY );
     public static final Value MAX_POINT = Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY );
     public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
     public static final Value ZERO_INT = Values.longValue( 0 );
