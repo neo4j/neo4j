@@ -1,12 +1,25 @@
 package org.neo4j.causalclustering.core.server;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.net.BindException;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.util.concurrent.TimeUnit;
+
+import org.neo4j.causalclustering.discovery.ErrorHandler;
+import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -41,8 +54,8 @@ public class AbstractNettyApplicationTest
     public void shouldHandleNullOnShutdown() throws Throwable
     {
         // given
-        StubNettyApplication
-                stubServer = new StubNettyApplication( null );
+        EventLoopGroup eventExecutors = null;
+        StubNettyApplication stubServer = new StubNettyApplication( eventExecutors );
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "EventLoopGroup cannot be null" );
 
@@ -51,25 +64,66 @@ public class AbstractNettyApplicationTest
     }
 
     @Test
-    public void shouldThrowFailedFutureCause() throws Throwable
+    public void shouldThrowFailedFutureCauseWhenShuttingDown() throws Throwable
     {
         // given
         EventLoopGroup eventExecutors = mock( EventLoopGroup.class );
         Future future = mock( Future.class );
-        Exception exception = new RuntimeException( "some exception" );
+        Exception exception = new IllegalArgumentException( "some exception" );
         doThrow( exception ).when( future ).get( anyInt(), any( TimeUnit.class ) );
         when( eventExecutors.shutdownGracefully( anyInt(), anyInt(), any( TimeUnit.class ) ) ).thenReturn( future );
         StubNettyApplication
                 stubServer = new StubNettyApplication( eventExecutors );
-        expectedException.expect( RuntimeException.class );
+        expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "some exception" );
 
         // when
         stubServer.shutdown();
+
     }
 
     @Test
-    public void shouldStopAndStart() throws Throwable
+    public void shouldThrowFailedFutureCauseAsBindException() throws Throwable
+    {
+        // given
+        StubNettyApplication stubServer = new StubNettyApplication( new BindException( "some exception" ) );
+        expectedException.expect( BindException.class );
+        expectedException.expectMessage( "some exception" );
+
+        // when
+        stubServer.init();
+        stubServer.start();
+    }
+
+    @Test
+    public void shouldThrowFailedFutureCauseAsRuntimeException() throws Throwable
+    {
+        // given
+        StubNettyApplication stubServer = new StubNettyApplication( new SocketException( "some exception" ) );
+        expectedException.expect( RuntimeException.class );
+        expectedException.expectMessage( "some exception" );
+
+        // when
+        stubServer.init();
+        stubServer.start();
+    }
+
+    @Test
+    public void shouldThrowIllegalArgumentIfCauseIsNull() throws Throwable
+    {
+        // given
+        SocketException exception = null;
+        StubNettyApplication stubServer = new StubNettyApplication( exception );
+        expectedException.expect( IllegalArgumentException.class );
+        expectedException.expectMessage( "Cause cannot be null" );
+
+        // when
+        stubServer.init();
+        stubServer.start();
+    }
+
+    @Test
+    public void shouldBeAbleToRestart() throws Throwable
     {
         // given
         StubNettyApplication stubServer = StubNettyApplication.mockedEventExecutor();
@@ -98,5 +152,75 @@ public class AbstractNettyApplicationTest
 
         //then
         assertEquals( 1, stubServer.bootstrap().getBindCalls() );
+    }
+
+    @Test
+    public void shouldReleaseChannelWhenStopped() throws Throwable
+    {
+        RealNettyApplication realNettyApplication1 =
+                new RealNettyApplication( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
+        RealNettyApplication realNettyApplication2 =
+                new RealNettyApplication( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
+        try
+        {
+            realNettyApplication1.init();
+            realNettyApplication2.init();
+            realNettyApplication1.start();
+            realNettyApplication1.stop();
+            realNettyApplication2.start();
+            realNettyApplication2.stop();
+            realNettyApplication1.start();
+            realNettyApplication1.stop();
+        }
+        finally
+        {
+            try ( ErrorHandler errorHandler = new ErrorHandler( "closing application" ))
+            {
+                realNettyApplication1.shutdown();
+            }
+            finally
+            {
+                realNettyApplication2.shutdown();
+            }
+        }
+    }
+
+    private class RealNettyApplication extends AbstractNettyApplication<Bootstrap>
+    {
+        private final NioEventLoopGroup eventExecutors;
+
+        public RealNettyApplication( LogProvider logProvider,
+                LogProvider userLogProvider )
+        {
+            super( logProvider, userLogProvider );
+            eventExecutors = new NioEventLoopGroup( 0, new NamedThreadFactory( "test" ) );
+        }
+
+        @Override
+        protected EventLoopGroup getEventLoopGroup()
+        {
+            return eventExecutors;
+        }
+
+        @Override
+        protected Bootstrap bootstrap()
+        {
+            return new Bootstrap()
+                    .group( eventExecutors )
+                    .channel( NioSocketChannel.class ).handler( new ChannelInitializer<SocketChannel>()
+                    {
+                        @Override
+                        protected void initChannel( SocketChannel ch ) throws Exception
+                        {
+
+                        }
+                    } );
+        }
+
+        @Override
+        protected InetSocketAddress bindAddress()
+        {
+            return new InetSocketAddress( 8800 );
+        }
     }
 }

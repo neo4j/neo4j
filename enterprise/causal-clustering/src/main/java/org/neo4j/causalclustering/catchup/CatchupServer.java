@@ -141,7 +141,7 @@ public class CatchupServer extends AbstractNettyApplication<ServerBootstrap>
     {
         if ( !workerGroup.isShutdown() )
         {
-            throw new IllegalStateException( "Current worker group is not shutdown. Cannot bootsrtap server" );
+            throw new IllegalStateException( "Current worker group is not shutdown. Cannot bootstrap server" );
         }
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 

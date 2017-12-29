@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 public class StubNettyApplication extends AbstractNettyApplication<StubNettyApplication.CountingBindRequestBootstrap>
 {
     private final EventLoopGroup eventExecutors;
-    private final CountingBindRequestBootstrap bootstrap = new CountingBindRequestBootstrap();
+    private final CountingBindRequestBootstrap bootstrap;
 
     static StubNettyApplication mockedEventExecutor() throws InterruptedException, ExecutionException, TimeoutException
     {
@@ -42,10 +42,19 @@ public class StubNettyApplication extends AbstractNettyApplication<StubNettyAppl
         this( new NioEventLoopGroup( 0, new NamedThreadFactory( "test" ) ) );
     }
 
+    StubNettyApplication( Exception bindFailure ) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        super( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
+        this.eventExecutors = createMockedEventExecutor();
+        this.bootstrap = new CountingBindRequestBootstrap( bindFailure );
+
+    }
+
     StubNettyApplication( EventLoopGroup eventExecutors )
     {
         super( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
         this.eventExecutors = eventExecutors;
+        this.bootstrap = new CountingBindRequestBootstrap();
 
     }
 
@@ -75,6 +84,20 @@ public class StubNettyApplication extends AbstractNettyApplication<StubNettyAppl
     public class CountingBindRequestBootstrap extends Bootstrap
     {
         private int bindCalls = 0;
+        private final Exception failure;
+        private final boolean failed;
+
+        CountingBindRequestBootstrap()
+        {
+            this.failure = null;
+            this.failed = false;
+        }
+
+        private CountingBindRequestBootstrap( Exception failure )
+        {
+            this.failure = failure;
+            this.failed = true;
+        }
 
         @Override
         public ChannelFuture bind( SocketAddress address )
@@ -84,8 +107,17 @@ public class StubNettyApplication extends AbstractNettyApplication<StubNettyAppl
             ChannelFuture mockedFuture = mock( ChannelFuture.class );
             when( mockedFuture.awaitUninterruptibly() ).thenReturn( mockedFuture );
             when( mockedFuture.channel() ).thenReturn( mockedChannel );
-            when( mockedFuture.isSuccess() ).thenReturn( true );
             when( mockedChannel.close() ).thenReturn( mockedFuture );
+            if ( failed )
+            {
+                when( mockedFuture.isSuccess() ).thenReturn( false );
+                when( mockedFuture.cause() ).thenReturn( failure );
+            }
+            else
+            {
+                when( mockedFuture.isSuccess() ).thenReturn( true );
+            }
+
             return mockedFuture;
         }
 
