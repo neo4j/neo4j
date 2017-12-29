@@ -7,6 +7,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -64,18 +66,25 @@ public class StubNettyApplication extends AbstractNettyApplication<StubNettyAppl
         return bootstrap;
     }
 
+    @Override
+    protected InetSocketAddress bindAddress()
+    {
+        return new InetSocketAddress( 1 );
+    }
+
     public class CountingBindRequestBootstrap extends Bootstrap
     {
         private int bindCalls = 0;
 
         @Override
-        public ChannelFuture bind()
+        public ChannelFuture bind( SocketAddress address )
         {
             bindCalls++;
             Channel mockedChannel = mock( Channel.class );
             ChannelFuture mockedFuture = mock( ChannelFuture.class );
-            when( mockedFuture.syncUninterruptibly() ).thenReturn( mockedFuture );
+            when( mockedFuture.awaitUninterruptibly() ).thenReturn( mockedFuture );
             when( mockedFuture.channel() ).thenReturn( mockedChannel );
+            when( mockedFuture.isSuccess() ).thenReturn( true );
             when( mockedChannel.close() ).thenReturn( mockedFuture );
             return mockedFuture;
         }
