@@ -95,7 +95,7 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
         }
         else
         {
-            handleUnsuccesfulBindCause( channelFuture.cause() );
+            handleUnsuccessfulBindCause( channelFuture.cause() );
         }
     }
 
@@ -129,7 +129,7 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
         eventLoopGroup.shutdownGracefully( QUIET_PERIOD, SHUTDOWN_TIMEOUT, TIME_UNIT ).get( TIMEOUT, TIME_UNIT );
     }
 
-    private void handleUnsuccesfulBindCause( Throwable cause ) throws Exception
+    private void handleUnsuccessfulBindCause( Throwable cause ) throws Exception
     {
         if ( cause == null )
         {
