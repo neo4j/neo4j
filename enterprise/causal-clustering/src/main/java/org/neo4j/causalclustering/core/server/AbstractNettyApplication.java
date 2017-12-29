@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.server;
 
 import io.netty.bootstrap.AbstractBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 
 import java.net.BindException;
@@ -86,25 +87,15 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
             log.info( "Already running" );
             return;
         }
-        try
+
+        ChannelFuture channelFuture = bootstrap.bind( bindAddress() ).awaitUninterruptibly();
+        if ( channelFuture.isSuccess() )
         {
-            channel = bootstrap.bind( bindAddress() ).syncUninterruptibly().channel();
+            channel = channelFuture.channel();
         }
-        catch ( Exception e )
+        else
         {
-            // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
-            // checked exception but it still throws them with some black magic at runtime.
-            //noinspection ConstantConditions
-            if ( e instanceof BindException )
-            {
-                userLog.error(
-                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
-                        " with value: " + bootstrap.config().localAddress() );
-                log.error(
-                        "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
-                        " with value: " + bootstrap.config().localAddress(), e );
-            }
-            throw e;
+            handleUnsuccesfulBindCause( channelFuture.cause() );
         }
     }
 
@@ -136,5 +127,28 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
             throw new IllegalArgumentException( "EventLoopGroup cannot be null." );
         }
         eventLoopGroup.shutdownGracefully( QUIET_PERIOD, SHUTDOWN_TIMEOUT, TIME_UNIT ).get( TIMEOUT, TIME_UNIT );
+    }
+
+    private void handleUnsuccesfulBindCause( Throwable cause ) throws Exception
+    {
+        if ( cause == null )
+        {
+            throw new IllegalArgumentException( "Cause cannot be null" );
+        }
+        if ( cause instanceof BindException )
+        {
+            userLog.error(
+                    "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
+                    " with value: " + bootstrap.config().localAddress() );
+            log.error(
+                    "Address is already bound for setting: " + CausalClusteringSettings.transaction_listen_address +
+                    " with value: " + bootstrap.config().localAddress(), cause );
+            throw (BindException) cause;
+        }
+        else
+        {
+            log.error( "Failed to start application", cause );
+            throw new RuntimeException( cause );
+        }
     }
 }
