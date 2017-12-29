@@ -281,11 +281,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
           //
           // Below we simulate this behaviour:
           //
-          if(Seq(optNumericRange, optStringRange, optGeometricRange).exists({
-            case Some(x:InequalitySeekRange[Number]) => indexSeekByNumericalRange(index, x).isEmpty
-            case Some(x:InequalitySeekRange[String]) => indexSeekByStringRange(index, x).isEmpty
-            case Some(x:InequalitySeekRange[PointValue]) => indexSeekByGeometryRange(index, x).isEmpty
-          })) {
+          if (optNumericRange.exists(indexSeekByNumericalRange(index, _).isEmpty)
+            || optStringRange.exists(indexSeekByStringRange(index, _).isEmpty)
+            || optGeometricRange.exists(indexSeekByGeometryRange(index, _).isEmpty)) {
             Iterator.empty
           } else {
             throw new IllegalArgumentException(
