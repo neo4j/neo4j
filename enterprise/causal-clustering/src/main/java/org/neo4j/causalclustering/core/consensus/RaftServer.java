@@ -19,9 +19,6 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import java.net.BindException;
-import java.util.concurrent.TimeUnit;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -35,8 +32,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import java.time.Clock;
 import java.net.InetSocketAddress;
+import java.time.Clock;
 
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
@@ -78,7 +75,8 @@ public class RaftServer extends AbstractNettyApplication<ServerBootstrap>
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
-    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, PipelineHandlerAppender pipelineAppender, Config config, LogProvider logProvider,
+    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, PipelineHandlerAppender pipelineAppender,
+            Config config, LogProvider logProvider,
             LogProvider userLogProvider, Monitors monitors, Clock clock )
     {
         super( logProvider, userLogProvider );
@@ -95,22 +93,20 @@ public class RaftServer extends AbstractNettyApplication<ServerBootstrap>
     @Override
     protected EventLoopGroup getEventLoopGroup()
     {
+        if ( workerGroup == null )
+        {
+            workerGroup = new NioEventLoopGroup( 0, threadFactory );
+        }
         return workerGroup;
     }
 
     @Override
     protected ServerBootstrap bootstrap()
     {
-        if ( !workerGroup.isShutdown() )
-        {
-            throw new IllegalStateException( "Current worker group is not shutdown. Cannot bootstrap server" );
-        }
-        workerGroup = new NioEventLoopGroup( 0, threadFactory );
-
         log.info( "Starting server at: " + listenAddress );
 
         return new ServerBootstrap()
-                .group( workerGroup )
+                .group( getEventLoopGroup() )
                 .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, true )
                 .childHandler( new ChannelInitializer<SocketChannel>()
@@ -152,7 +148,8 @@ public class RaftServer extends AbstractNettyApplication<ServerBootstrap>
         this.messageHandler = handler;
     }
 
-    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+    private class RaftMessageHandler
+            extends SimpleChannelInboundHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
     {
         @Override
         protected void channelRead0( ChannelHandlerContext channelHandlerContext,

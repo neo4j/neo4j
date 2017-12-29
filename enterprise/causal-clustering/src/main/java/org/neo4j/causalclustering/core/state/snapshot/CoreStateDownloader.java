@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.state.snapshot;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
@@ -148,7 +149,7 @@ public class CoreStateDownloader
             coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
             startStopOnStoreCopy.start();
         }
-        catch ( StoreCopyFailedException e )
+        catch ( StoreCopyFailedException | RejectedExecutionException e )
         {
             throw e;
         }

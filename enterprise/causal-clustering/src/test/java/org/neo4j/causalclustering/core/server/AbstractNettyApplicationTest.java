@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.causalclustering.core.server;
 
 import io.netty.bootstrap.Bootstrap;
@@ -16,16 +35,16 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.causalclustering.discovery.ErrorHandler;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -70,8 +89,8 @@ public class AbstractNettyApplicationTest
         EventLoopGroup eventExecutors = mock( EventLoopGroup.class );
         Future future = mock( Future.class );
         Exception exception = new IllegalArgumentException( "some exception" );
-        doThrow( exception ).when( future ).get( anyInt(), any( TimeUnit.class ) );
-        when( eventExecutors.shutdownGracefully( anyInt(), anyInt(), any( TimeUnit.class ) ) ).thenReturn( future );
+        doThrow( exception ).when( future ).get( anyLong(), any( TimeUnit.class ) );
+        when( eventExecutors.shutdownGracefully( anyLong(), anyLong(), any( TimeUnit.class ) ) ).thenReturn( future );
         StubNettyApplication
                 stubServer = new StubNettyApplication( eventExecutors );
         expectedException.expect( IllegalArgumentException.class );
@@ -174,7 +193,7 @@ public class AbstractNettyApplicationTest
         }
         finally
         {
-            try ( ErrorHandler errorHandler = new ErrorHandler( "closing application" ))
+            try
             {
                 realNettyApplication1.shutdown();
             }
@@ -182,6 +201,7 @@ public class AbstractNettyApplicationTest
             {
                 realNettyApplication2.shutdown();
             }
+
         }
     }
 
@@ -189,7 +209,7 @@ public class AbstractNettyApplicationTest
     {
         private final NioEventLoopGroup eventExecutors;
 
-        public RealNettyApplication( LogProvider logProvider,
+        RealNettyApplication( LogProvider logProvider,
                 LogProvider userLogProvider )
         {
             super( logProvider, userLogProvider );
@@ -220,7 +240,7 @@ public class AbstractNettyApplicationTest
         @Override
         protected InetSocketAddress bindAddress()
         {
-            return new InetSocketAddress( 8800 );
+            return new InetSocketAddress( PortAuthority.allocatePort() );
         }
     }
 }

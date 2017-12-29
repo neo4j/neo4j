@@ -41,7 +41,7 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
     private final Log log;
     private final Log userLog;
-    private boolean hasShutDown = false;
+    private boolean hasShutDown;
     private T bootstrap;
     private Channel channel;
 
@@ -105,6 +105,10 @@ public abstract class AbstractNettyApplication<T extends AbstractBootstrap> exte
         if ( channel == null )
         {
             log.info( "Already stopped" );
+            return;
+        }
+        if ( hasShutDown )
+        {
             return;
         }
         try

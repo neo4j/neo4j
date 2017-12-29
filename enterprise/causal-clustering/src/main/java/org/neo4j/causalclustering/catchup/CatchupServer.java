@@ -133,20 +133,18 @@ public class CatchupServer extends AbstractNettyApplication<ServerBootstrap>
     @Override
     protected EventLoopGroup getEventLoopGroup()
     {
+        if ( workerGroup == null )
+        {
+            workerGroup = new NioEventLoopGroup( 0, threadFactory );
+        }
         return workerGroup;
     }
 
     @Override
     protected ServerBootstrap bootstrap()
     {
-        if ( !workerGroup.isShutdown() )
-        {
-            throw new IllegalStateException( "Current worker group is not shutdown. Cannot bootstrap server" );
-        }
-        workerGroup = new NioEventLoopGroup( 0, threadFactory );
-
         return new ServerBootstrap()
-                .group( workerGroup )
+                .group( getEventLoopGroup() )
                 .channel( NioServerSocketChannel.class )
                 .childHandler( new ChannelInitializer<SocketChannel>()
                 {

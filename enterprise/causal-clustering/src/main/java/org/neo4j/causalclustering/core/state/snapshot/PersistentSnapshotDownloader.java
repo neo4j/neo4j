@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
+import java.util.concurrent.RejectedExecutionException;
+
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
@@ -80,11 +82,16 @@ class PersistentSnapshotDownloader implements Runnable
                 }
                 catch ( StoreCopyFailedException e )
                 {
-                    log.error( format( "Failed to download snapshot. Retrying in %s ms.", timeout.getMillis() ), e );
+                    log.error( format( "Failed to download snapshot. Retrying in %s ms.", timeout.getMillis() ) );
                 }
                 catch ( NoLeaderFoundException e )
                 {
-                    log.warn( "No leader found. Retrying in {} ms.", timeout.getMillis() );
+                    log.warn( "No leader found. Retrying in %s ms.", timeout.getMillis() );
+                }
+                catch ( RejectedExecutionException e )
+                {
+                    log.error( "Illegal state. Cannot continue" );
+                    keepRunning = false;
                 }
                 Thread.sleep( timeout.getMillis() );
                 timeout.increment();
