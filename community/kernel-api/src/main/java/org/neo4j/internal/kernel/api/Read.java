@@ -119,20 +119,24 @@ public interface Read
     void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor );
 
     /**
+     * @param nodeReference
+     *         the owner of the properties.
      * @param reference
      *         a reference from {@link NodeCursor#propertiesReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void nodeProperties( long reference, PropertyCursor cursor );
+    void nodeProperties( long nodeReference, long reference, PropertyCursor cursor );
 
     /**
+     * @param relationshipReference
+     *         the owner of the properties.
      * @param reference
      *         a reference from {@link RelationshipDataAccessor#propertiesReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void relationshipProperties( long reference, PropertyCursor cursor );
+    void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor );
 
     void graphProperties( PropertyCursor cursor );
 

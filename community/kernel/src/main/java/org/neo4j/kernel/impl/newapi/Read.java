@@ -299,24 +299,25 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public final void nodeProperties( long nodeReference, long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( reference, this, ktx );
+        ((PropertyCursor) cursor).init( References.setNodeFlag( nodeReference ), reference, this, ktx );
     }
 
     @Override
-    public final void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public final void relationshipProperties( long relationshipReference, long reference,
+            org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( reference, this, ktx );
+        ((PropertyCursor) cursor).init( References.setRelationshipFlag( relationshipReference ), reference, this, ktx );
     }
 
     @Override
     public final void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( graphPropertiesReference(), this, ktx );
+        ((PropertyCursor) cursor).init( NO_ID, graphPropertiesReference(), this, ktx );
     }
 
     abstract long graphPropertiesReference();
