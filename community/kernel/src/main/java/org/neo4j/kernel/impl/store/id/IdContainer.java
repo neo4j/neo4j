@@ -245,11 +245,6 @@ public class IdContainer
         return freeIdKeeper.getId();
     }
 
-    public long[] getReusableIds( int numberOfIds )
-    {
-        return freeIdKeeper.getIds( numberOfIds );
-    }
-
     public IdRange getReusableIdBatch( int maxSize )
     {
         long[] tmpIdArr = new long[maxSize];
