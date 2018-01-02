@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -37,13 +36,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IDPPlannerName, IndexDescriptor}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.internal.v3_4.expressions.PatternExpression
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}
@@ -59,8 +58,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   final var planner = new QueryPlanner() {
-    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
-      planSingleQuery(query)
+    def internalPlan(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
+      planSingleQuery(query, context)
   }
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
   val realConfig = new RealLogicalPlanningConfiguration
@@ -186,7 +185,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         logicalPlanProducer = logicalPlanProducer,

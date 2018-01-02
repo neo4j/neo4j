@@ -17,9 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.causalclustering.core.consensus;
 
-public interface ConnectionLostHandler
+import java.time.Duration;
+
+public interface RaftMessageProcessingMonitor
 {
-    void handle( Exception e );
+    void setDelay( Duration delay );
+
+    void updateTimer( RaftMessages.Type type, Duration duration );
 }

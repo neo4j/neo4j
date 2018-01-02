@@ -28,8 +28,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.kernel.impl.newapi.References.setFilterFlag;
 
-class RelationshipGroupCursor extends RelationshipGroupRecord
-        implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
+class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
 {
     private Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
@@ -37,7 +36,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     private PageCursor page;
     private PageCursor edgePage;
 
-    RelationshipGroupCursor( )
+    RelationshipGroupCursor()
     {
         super( NO_ID );
     }
@@ -281,7 +280,29 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public boolean isClosed()
     {
-        return page == null;
+        return page == null && bufferedGroup == null;
+    }
+
+    @Override
+    public String toString()
+    {
+        if ( isClosed() )
+        {
+            return "RelationshipGroupCursor[closed state]";
+        }
+        else
+        {
+            String mode = "mode=";
+            if ( isBuffered() )
+            {
+                mode = mode + "group";
+            }
+            else
+            {
+                mode = mode + "direct";
+            }
+            return "RelationshipGroupCursor[id=" + getId() + ", open state with: " + mode + ", underlying record=" + super.toString() + " ]";
+        }
     }
 
     private boolean isBuffered()
@@ -353,6 +374,5 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         {
             return setFilterFlag( firstLoop );
         }
-
     }
 }

@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -58,7 +58,7 @@ object HashJoinSlottedPipeTestHelper extends CypherFunSuite {
     when(p.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]]() {
       override def answer(invocationOnMock: InvocationOnMock): Iterator[ExecutionContext] = {
         rows.toIterator.map { row =>
-          val createdRow = PrimitiveExecutionContext(slots)
+          val createdRow = SlottedExecutionContext(slots)
           row.l.l.zipWithIndex foreach {
             case (v, idx) => createdRow.setLongAt(idx, v)
           }

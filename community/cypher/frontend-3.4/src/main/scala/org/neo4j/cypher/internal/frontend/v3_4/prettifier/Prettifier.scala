@@ -30,6 +30,7 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case m: Match => asString(m)
     case w: With => asString(w)
     case c: Create => asString(c)
+    case _ => clause.asCanonicalStringVal // TODO
   }
 
   private def NL = System.lineSeparator()
@@ -41,7 +42,10 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
 
   def asString(p: PatternPart): String = p match {
     case EveryPath(element) => asString(element)
-    case NamedPatternPart(variable, p) => s"${mkStringOf(variable)} = ${asString(p)}"
+    case NamedPatternPart(variable, patternPart) => s"${mkStringOf(variable)} = ${asString(patternPart)}"
+    case ShortestPaths(pattern, single) =>
+      val name = if(single) "shortestPath" else "shortestPaths"
+      s"$name(${asString(pattern)})"
   }
 
   def asString(m: Match): String = {

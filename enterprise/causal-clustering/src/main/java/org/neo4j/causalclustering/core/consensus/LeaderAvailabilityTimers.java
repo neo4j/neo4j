@@ -26,17 +26,15 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine.Timeouts;
 import org.neo4j.causalclustering.core.consensus.schedule.TimeoutHandler;
 import org.neo4j.causalclustering.core.consensus.schedule.Timer;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
-import org.neo4j.function.ThrowingAction;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.Groups;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.fixedTimeout;
 import static org.neo4j.causalclustering.core.consensus.schedule.TimeoutFactory.uniformRandomTimeout;
 import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.ASYNC;
-import static org.neo4j.causalclustering.core.consensus.schedule.Timer.CancelMode.SYNC_WAIT;
 
 class LeaderAvailabilityTimers
 {
@@ -68,7 +66,7 @@ class LeaderAvailabilityTimers
         }
     }
 
-    synchronized void start( ThrowingAction<Exception> electionAction, ThrowingAction<Exception> heartbeatAction )
+    synchronized void start( ThrowingConsumer<Clock, Exception> electionAction, ThrowingConsumer<Clock, Exception> heartbeatAction )
     {
         this.electionTimer = timerService.create( Timeouts.ELECTION, Groups.raft, renewing( electionAction) );
         this.electionTimer.set( uniformRandomTimeout( electionTimeout, electionTimeout * 2, MILLISECONDS ) );
@@ -111,13 +109,13 @@ class LeaderAvailabilityTimers
         return electionTimeout;
     }
 
-    private TimeoutHandler renewing( ThrowingAction<Exception> action )
+    private TimeoutHandler renewing( ThrowingConsumer<Clock, Exception> action )
     {
         return timeout ->
         {
             try
             {
-                action.apply();
+                action.accept( clock );
             }
             catch ( Exception e )
             {

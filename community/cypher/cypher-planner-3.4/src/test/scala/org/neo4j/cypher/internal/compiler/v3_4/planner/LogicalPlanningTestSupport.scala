@@ -29,22 +29,20 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 import scala.collection.mutable
 
@@ -101,7 +99,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
-    doReturn(plan, Nil: _*).when(strategy).plan(any())(any())
+    doReturn(plan, Nil: _*).when(strategy).plan(any(), any())
     strategy
   }
 
@@ -117,7 +115,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext =
-    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
+    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)

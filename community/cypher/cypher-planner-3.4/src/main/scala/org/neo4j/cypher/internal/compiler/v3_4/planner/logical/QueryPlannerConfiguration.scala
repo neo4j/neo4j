@@ -75,12 +75,12 @@ object QueryPlannerConfiguration {
 case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
                                      applySelections: PlanTransformer[QueryGraph],
                                      optionalSolvers: Seq[OptionalSolver],
-                                     pickBestCandidate: LogicalPlanningFunction0[CandidateSelector],
+                                     pickBestCandidate: LogicalPlanningContext => CandidateSelector,
                                      updateStrategy: UpdateStrategy) {
 
-  def toKit()(implicit context: LogicalPlanningContext): QueryPlannerKit =
+  def toKit(context: LogicalPlanningContext): QueryPlannerKit =
     QueryPlannerKit(
-      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg),
+      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, context),
       pickBest = pickBestCandidate(context)
     )
 
@@ -89,9 +89,7 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
   def withUpdateStrategy(updateStrategy: UpdateStrategy) = copy(updateStrategy = updateStrategy)
 }
 
-case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
-
-                           pickBest: CandidateSelector) {
+case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan, pickBest: CandidateSelector) {
   def select(plans: Iterable[Seq[LogicalPlan]], qg: QueryGraph): Iterable[Seq[LogicalPlan]] =
     plans.map(_.map(plan => select(plan, qg)))
 }

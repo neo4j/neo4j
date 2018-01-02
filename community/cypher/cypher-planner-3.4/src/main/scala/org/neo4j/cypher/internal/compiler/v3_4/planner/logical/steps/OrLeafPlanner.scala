@@ -28,17 +28,17 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Ors}
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
 
-  override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
     qg.selections.flatPredicates.flatMap {
       case orPredicate@Ors(exprs) =>
 
         // This is a Seq of possible solutions per expression
         val plansPerExpression: Seq[Seq[LeafPlansForVariable]] = exprs.toSeq.map {
           (e: Expression) =>
-            val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg))
+            val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, context))
             val qgForExpression = qg.copy(selections = Selections.from(e))
             plansForVariables.map(p =>
-              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression))))
+              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, context))))
         }
 
         val wasUnableToFindPlanForAtLeastOnePredicate = plansPerExpression.exists(_.isEmpty)
@@ -61,11 +61,11 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
                 case (p1, p2) =>
                   predicates ++= coveringPredicates(p1)
                   predicates ++= coveringPredicates(p2)
-                  producer.planUnion(p1, p2)
+                  producer.planUnion(p1, p2, context)
               }
-              val orPlan = context.logicalPlanProducer.planDistinctStar(singlePlan)
+              val orPlan = context.logicalPlanProducer.planDistinctStar(singlePlan, context)
 
-              Some(context.logicalPlanProducer.updateSolvedForOr(orPlan, orPredicate, predicates.toSet))
+              Some(context.logicalPlanProducer.updateSolvedForOr(orPlan, orPredicate, predicates.toSet, context))
           }
         }
 

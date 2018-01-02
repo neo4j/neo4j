@@ -48,6 +48,13 @@ class QueryState(val query: QueryContext,
   def createOrGetInitialContext(factory: ExecutionContextFactory): ExecutionContext =
     initialContext.getOrElse(ExecutionContext.empty)
 
+  def newExecutionContext(factory: ExecutionContextFactory): ExecutionContext = {
+    initialContext match {
+      case Some(init) => factory.copyWith(init)
+      case None => factory.newExecutionContext()
+    }
+  }
+
   def clearPathValueBuilder: PathValueBuilder = {
     if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
@@ -93,6 +100,14 @@ class TimeReader {
 trait ExecutionContextFactory {
   def newExecutionContext(m: mutable.Map[String, AnyValue] = MutableMaps.empty): ExecutionContext
   def newExecutionContext(): ExecutionContext
+  def copyWith(init: ExecutionContext): ExecutionContext
+  def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext
+  def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext
+  def copyWith(row: ExecutionContext, key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
+  def copyWith(row: ExecutionContext,
+               key1: String, value1: AnyValue,
+               key2: String, value2: AnyValue,
+               key3: String, value3: AnyValue): ExecutionContext
 }
 
 case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
@@ -100,4 +115,24 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
     ExecutionContext(m)
 
   override def newExecutionContext(): ExecutionContext = ExecutionContext.empty
+
+  // As community execution ctxs are immutable, we can simply return init here.
+  override def copyWith(init: ExecutionContext): ExecutionContext = init
+
+  override def copyWith(row: ExecutionContext, newEntries: Seq[(String, AnyValue)]): ExecutionContext =
+    row.copyWith(newEntries)
+
+  override def copyWith(row: ExecutionContext, key: String, value: AnyValue): ExecutionContext =
+    row.copyWith(key, value)
+
+  override def copyWith(row: ExecutionContext,
+                        key1: String, value1: AnyValue,
+                        key2: String, value2: AnyValue): ExecutionContext =
+    row.copyWith(key1, value1, key2, value2)
+
+  override def copyWith(row: ExecutionContext,
+                        key1: String, value1: AnyValue,
+                        key2: String, value2: AnyValue,
+                        key3: String, value3: AnyValue): ExecutionContext =
+    row.copyWith(key1, value1, key2, value2, key3, value3)
 }

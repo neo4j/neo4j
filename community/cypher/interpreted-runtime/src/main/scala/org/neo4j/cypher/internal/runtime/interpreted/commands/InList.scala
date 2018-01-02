@@ -52,7 +52,7 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
 
       seqMethod(seq)(item =>
         // Since we can override an existing id here we use a method that guarantees that we do not overwrite an existing variable
-        predicate.isMatch(innerContext.newWith1(id, item), state))
+        predicate.isMatch(innerContext.set(id, item), state))
     }
   }
 

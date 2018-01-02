@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, HasLabels, Variab
 
 object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+  override def producePlanFor(e: Expression, qg: QueryGraph, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     e match {
       case labelPredicate@HasLabels(v@Variable(varName), labels) =>
         val id = IdName(varName)
@@ -35,7 +35,7 @@ object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
           val hint = qg.hints.collectFirst {
             case hint@UsingScanHint(Variable(`varName`), `labelName`) => hint
           }
-          val plan = context.logicalPlanProducer.planNodeByLabelScan(id, labelName, Seq(labelPredicate), hint, qg.argumentIds)
+          val plan = context.logicalPlanProducer.planNodeByLabelScan(id, labelName, Seq(labelPredicate), hint, qg.argumentIds, context)
           Some(LeafPlansForVariable(IdName(varName), Set(plan)))
         } else
           None
@@ -44,6 +44,6 @@ object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     }
   }
 
-  override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) =
-    qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg).toSeq.flatMap(_.plans))
+  override def apply(qg: QueryGraph, context: LogicalPlanningContext) =
+    qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg, context).toSeq.flatMap(_.plans))
 }

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, exceptionHandler, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

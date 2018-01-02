@@ -209,3 +209,22 @@ Feature: UnwindAcceptance
       | [3] |
     And no side effects
 
+  Scenario: Unwind on array property
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:L {array:['a', 'b', 'c']})
+      """
+    When executing query:
+      """
+      MATCH (n:L)
+      UNWIND n.array AS array
+      RETURN array
+      """
+    Then the result should be:
+      | array |
+      | 'a'   |
+      | 'b'   |
+      | 'c'   |
+    And no side effects
+

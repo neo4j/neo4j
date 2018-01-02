@@ -247,25 +247,25 @@ public class AllStoreHolder extends Read implements Token
     @Override
     PageCursor nodePage( long reference )
     {
-        return nodes.openPageCursor( reference );
+        return nodes.openPageCursorForReading( reference );
     }
 
     @Override
     PageCursor relationshipPage( long reference )
     {
-        return relationships.openPageCursor( reference );
+        return relationships.openPageCursorForReading( reference );
     }
 
     @Override
     PageCursor groupPage( long reference )
     {
-        return groups.openPageCursor( reference );
+        return groups.openPageCursorForReading( reference );
     }
 
     @Override
     PageCursor propertyPage( long reference )
     {
-        return properties.openPageCursor( reference );
+        return properties.openPageCursorForReading( reference );
     }
 
     @Override
@@ -289,13 +289,13 @@ public class AllStoreHolder extends Read implements Token
     @Override
     void node( NodeRecord record, long reference, PageCursor pageCursor )
     {
-        nodes.loadRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+        nodes.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
     }
 
     @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
-        relationships.loadRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+        relationships.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
     }
 
     @Override
@@ -303,13 +303,13 @@ public class AllStoreHolder extends Read implements Token
     {
         //We need to load forcefully here since otherwise we can have inconsistent reads
         //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        properties.loadRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
+        properties.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 
     @Override
     void group( RelationshipGroupRecord record, long reference, PageCursor page )
     {
-        groups.loadRecordByCursor( reference, record, RecordLoad.NORMAL, page );
+        groups.getRecordByCursor( reference, record, RecordLoad.NORMAL, page );
     }
 
     @Override

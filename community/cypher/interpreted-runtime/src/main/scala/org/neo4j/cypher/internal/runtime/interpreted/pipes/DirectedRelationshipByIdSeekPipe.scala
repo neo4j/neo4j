@@ -36,11 +36,19 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
   relIdExpr.registerOwningPipe(this)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val ctx = state.createOrGetInitialContext(executionContextFactory)
+    val ctx = state.newExecutionContext(executionContextFactory)
     val relIds = VirtualValues.filter(relIdExpr.expressions(ctx, state), new function.Function[AnyValue, java.lang.Boolean] {
       override def apply(t: AnyValue): lang.Boolean = t != Values.NO_VALUE
     })
-    new DirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator().asScala)
+    new DirectedRelationshipIdSeekIterator(
+      ident,
+      fromNode,
+      toNode,
+      ctx,
+      executionContextFactory,
+      state.query.relationshipOps,
+      relIds.iterator().asScala
+    )
   }
 
  }

@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, Ex
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, NeedsReplan, FineToReuse}
 import org.neo4j.cypher.internal.frontend.v3_4
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
@@ -124,8 +124,13 @@ trait Compatibility {
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper) =
-      CacheCheckResult(inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations)), 0)
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult = {
+      val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+      if (stale)
+        NeedsReplan(0)
+      else
+        FineToReuse
+    }
 
     override val plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
 

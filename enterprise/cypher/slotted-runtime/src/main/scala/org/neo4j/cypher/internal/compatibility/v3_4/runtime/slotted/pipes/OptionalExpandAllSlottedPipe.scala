@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.util.v3_4.InternalException
@@ -72,7 +72,7 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
 
           val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
             relationships.relationshipVisit(relId, relVisitor)
-            val outputRow = PrimitiveExecutionContext(slots)
+            val outputRow = SlottedExecutionContext(slots)
             inputRow.copyTo(outputRow)
             outputRow.setLongAt(relOffset, relId)
             outputRow.setLongAt(toOffset, otherSide)
@@ -88,7 +88,7 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
   }
 
   private def withNulls(inputRow: ExecutionContext) = {
-    val outputRow = PrimitiveExecutionContext(slots)
+    val outputRow = SlottedExecutionContext(slots)
     inputRow.copyTo(outputRow)
     outputRow.setLongAt(relOffset, -1)
     outputRow.setLongAt(toOffset, -1)

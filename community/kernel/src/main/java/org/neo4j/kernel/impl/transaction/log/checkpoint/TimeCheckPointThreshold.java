@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.time.Clock;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class TimeCheckPointThreshold extends AbstractCheckPointThreshold
+class TimeCheckPointThreshold extends AbstractCheckPointThreshold
 {
     private volatile long lastCheckPointedTransactionId;
     private volatile long nextCheckPointTime;
@@ -30,8 +30,9 @@ public class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     private final long timeMillisThreshold;
     private final Clock clock;
 
-    public TimeCheckPointThreshold( long thresholdMillis, Clock clock )
+    TimeCheckPointThreshold( long thresholdMillis, Clock clock )
     {
+        super( "time threshold" );
         this.timeMillisThreshold = thresholdMillis;
         this.clock = clock;
         // The random start offset means database in a cluster will not all check-point at the same time.
@@ -54,15 +55,15 @@ public class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     }
 
     @Override
-    protected String description()
-    {
-        return "time threshold";
-    }
-
-    @Override
     public void checkPointHappened( long transactionId )
     {
         nextCheckPointTime = clock.millis() + timeMillisThreshold;
         lastCheckPointedTransactionId = transactionId;
+    }
+
+    @Override
+    public long checkFrequencyMillis()
+    {
+        return timeMillisThreshold;
     }
 }

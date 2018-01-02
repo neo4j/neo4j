@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, Expand, ExpandAll, LogicalPlanId}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlanId}
+import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
@@ -39,7 +40,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     Locale.setDefault(Locale.US)
   }
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     Locale.setDefault(defaultLocale)
   }
 
@@ -216,8 +217,8 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |""".stripMargin)
   }
 
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-  val argument = Argument()(solved)
+  private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  private val argument = plans.Argument()(solved)
 
   test("single node is represented nicely") {
     val arguments = Seq(

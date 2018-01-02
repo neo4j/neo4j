@@ -22,7 +22,11 @@ package org.neo4j.internal.kernel.api;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import java.io.IOException;
 
@@ -86,13 +90,15 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         schemaRead = tx.schemaRead();
     }
 
+    @Rule
+    public CursorsClosedPostCondition cursorsClosedPostCondition = new CursorsClosedPostCondition( () -> cursors );
+
     @After
     public void closeTransaction() throws Exception
     {
         tx.success();
         tx.close();
         session.close();
-        cursors.assertAllClosedAndReset();
     }
 
     @AfterClass

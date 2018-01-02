@@ -20,12 +20,13 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Collection;
-
+import java.util.Arrays;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+
 import org.neo4j.internal.kernel.api.LabelSet;
 
-class Labels implements LabelSet
+public class Labels implements LabelSet
 {
     /**
      * This really only needs to be {@code int[]}, but the underlying implementation uses {@code long[]} for some
@@ -33,7 +34,7 @@ class Labels implements LabelSet
      */
     private final long[] labels;
 
-    Labels( long[] labels )
+    public Labels( long[] labels )
     {
         this.labels = labels;
     }
@@ -85,5 +86,11 @@ class Labels implements LabelSet
             }
         }
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Labels" + Arrays.toString( labels );
     }
 }

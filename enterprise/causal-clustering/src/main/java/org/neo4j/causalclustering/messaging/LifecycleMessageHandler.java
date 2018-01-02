@@ -17,13 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster;
+package org.neo4j.causalclustering.messaging;
 
-public interface Verifier<STATE>
+import org.neo4j.causalclustering.core.state.CoreLife;
+import org.neo4j.causalclustering.identity.ClusterId;
+
+/**
+ * A {@link Inbound.MessageHandler} that can be started and stopped in {@link CoreLife}.
+ * It is required that if this MessageHandler delegates to another MessageHandler to handle messages
+ * then the delegate will also have lifecycle methods called
+ */
+public interface LifecycleMessageHandler<M extends Message> extends Inbound.MessageHandler<M>
 {
-    /**
-     * Throws an {@link IllegalStateException} if it doesn't verify correctly.
-     * @param state the state to verify.
-     */
-    void verify( STATE state );
+    void start( ClusterId clusterId ) throws Throwable;
+
+    void stop() throws Throwable;
 }

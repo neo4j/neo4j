@@ -41,7 +41,7 @@ public class ManagedTestCursors implements CursorFactory
         {
             if ( !n.isClosed() )
             {
-                fail( "The Cursor " + n.toString() + " was not closed properly" );
+                fail( "The Cursor " + n.toString() + " was not closed properly." );
             }
         }
 

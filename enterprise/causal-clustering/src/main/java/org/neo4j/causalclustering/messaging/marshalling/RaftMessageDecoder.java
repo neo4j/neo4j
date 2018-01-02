@@ -24,6 +24,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.List;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -49,10 +50,12 @@ import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.VOTE_R
 public class RaftMessageDecoder extends ByteToMessageDecoder
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
+    private final Clock clock;
 
-    public RaftMessageDecoder( ChannelMarshal<ReplicatedContent> marshal )
+    public RaftMessageDecoder( ChannelMarshal<ReplicatedContent> marshal, Clock clock )
     {
         this.marshal = marshal;
+        this.clock = clock;
     }
 
     @Override
@@ -162,7 +165,7 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
             throw new IllegalArgumentException( "Unknown message type" );
         }
 
-        list.add( new RaftMessages.ClusterIdAwareMessage( clusterId, result ) );
+        list.add( RaftMessages.ReceivedInstantClusterIdAwareMessage.of( clock.instant(), clusterId, result ) );
     }
 
     private MemberId retrieveMember( ReadableChannel buffer ) throws IOException, EndOfStreamException

@@ -1,2 +1,0 @@
-//Broken because of bug in IR rewriting
-Using a optional match after aggregation and before an aggregation

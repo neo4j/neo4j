@@ -84,4 +84,21 @@ public class InconsistencyReportReaderTest
         assertTrue( inconsistencies.containsPropertyId( propertyId ) );
         assertTrue( inconsistencies.containsSchemaIndexId( indexId ) );
     }
+
+    @Test
+    public void shouldParseRelationshipGroupInconsistencies() throws Exception
+    {
+        // Given
+        ReportInconsistencies inconsistencies = new ReportInconsistencies();
+        String text =
+                "ERROR: The first outgoing relationship is not the first in its chain.\n" +
+                "\tRelationshipGroup[1337,type=1,out=2,in=-1,loop=-1,prev=-1,next=3,used=true,owner=4,secondaryUnitId=-1]";
+
+        // When
+        InconsistencyReportReader reader = new InconsistencyReportReader( inconsistencies );
+        reader.read( new BufferedReader( new StringReader( text ) ) );
+
+        // Then
+        assertTrue( inconsistencies.containsRelationshipGroupId( 1337 ) );
+    }
 }

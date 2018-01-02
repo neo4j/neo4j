@@ -158,10 +158,13 @@ object LogicalPlanConverter {
       before._1 match {
         case plan: LogicalPlanV3_3 =>
           try {
-            rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
+            val plan3_4 = rewritten.asInstanceOf[LogicalPlanV3_4]
+            plan3_4.setIdTo(helpers.as3_4(plan.assignedId))
+            // 3.3 does not know about transaction layers, it plans Eagers instead.
+            plan3_4.readTransactionLayer.value = 0
           } catch {
-            case (e:frontendV3_3.InternalException) =>
-              // ProcedureOrSchema plans have no assigned IDs. That's ok.
+            case (e: frontendV3_3.InternalException) =>
+            // ProcedureOrSchema plans have no assigned IDs. That's ok.
           }
         // Save Mapping from 3.3 expression to 3.4 expression
         case e: ExpressionV3_3 if isImportant(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[ExpressionV3_4]))
@@ -203,6 +206,7 @@ object LogicalPlanConverter {
           s"Failed trying to rewrite $classNameV3_3 - 3.4 class not found ($classNameV3_4)", e)
         case Failure(e: NoSuchElementException) => throw new InternalException(
           s"Failed trying to rewrite $classNameV3_3 - this class does not have a constructor", e)
+        case Failure(e) => throw e
       }
     })
   }

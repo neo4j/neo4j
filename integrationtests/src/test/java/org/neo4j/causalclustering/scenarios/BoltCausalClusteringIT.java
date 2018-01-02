@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -811,7 +812,7 @@ public class BoltCausalClusteringIT
         {
             if ( !coreClusterMember.equals( initialLeader ) )
             {
-                coreClusterMember.raft().triggerElection();
+                coreClusterMember.raft().triggerElection( Clock.systemUTC() );
                 return cluster.awaitLeader();
             }
         }

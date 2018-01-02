@@ -17,11 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers.collection;
 
-import java.util.Iterator;
+package org.neo4j.internal.kernel.api;
 
-public interface ClosableIterator<T> extends Iterator<T>
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
+import java.util.function.Supplier;
+
+public class CursorsClosedPostCondition implements TestRule
 {
-    void close();
+    private Supplier<ManagedTestCursors> cursors;
+
+    CursorsClosedPostCondition( Supplier<ManagedTestCursors> c )
+    {
+        this.cursors = c;
+    }
+
+    public Statement apply( Statement base, Description description )
+    {
+        return new Statement()
+        {
+            @Override
+            public void evaluate() throws Throwable
+            {
+                base.evaluate();
+                cursors.get().assertAllClosedAndReset();  // only done if test succeeds
+            }
+        };
+    }
 }

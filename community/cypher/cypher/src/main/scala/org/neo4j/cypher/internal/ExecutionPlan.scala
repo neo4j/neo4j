@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
+import org.neo4j.cypher.internal.compiler.v3_4.CacheCheckResult
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.PlannerInfo

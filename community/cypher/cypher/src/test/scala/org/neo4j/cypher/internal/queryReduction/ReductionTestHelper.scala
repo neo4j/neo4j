@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 trait TestExhausted {
-  def assertExhausted
+  def assertExhausted(): Unit
 }
 
 trait ReductionTestHelper extends CypherFunSuite {
@@ -41,7 +41,7 @@ trait ReductionTestHelper extends CypherFunSuite {
         res
       }
 
-      def assertExhausted: Unit = {
+      def assertExhausted(): Unit = {
         if (i != expectedInvocationsAndResults.length) {
           fail(s"Oracle not invoked often enough. Next expected call: ${expectedInvocationsAndResults(i)._1.toSeq}")
         }

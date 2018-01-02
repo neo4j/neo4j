@@ -31,46 +31,46 @@ away when going from a string query to a QueryGraph. The remaining WITHs are the
 aggregation and UNWIND.
  */
 case object PlanEventHorizon
-  extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
+  extends ((PlannerQuery, LogicalPlan, LogicalPlanningContext) => LogicalPlan) {
 
-  override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val selectedPlan = context.config.applySelections(plan, query.queryGraph)
+  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    val selectedPlan = context.config.applySelections(plan, query.queryGraph, context)
 
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection)
-        sortSkipAndLimit(aggregationPlan, query)
+        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, context)
+        sortSkipAndLimit(aggregationPlan, query, context)
 
       case queryProjection: RegularQueryProjection =>
-        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
+        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query, context)
         if (queryProjection.projections.isEmpty && query.tail.isEmpty)
-          context.logicalPlanProducer.planEmptyProjection(plan)
+          context.logicalPlanProducer.planEmptyProjection(plan, context)
         else
-          projection(sortedAndLimited, queryProjection.projections)
+          projection(sortedAndLimited, queryProjection.projections, context)
 
       case queryProjection: DistinctQueryProjection =>
         val projections = queryProjection.projections
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, projections)
-        val distinctPlan = context.logicalPlanProducer.planDistinct(inner, projectionsMap, projections)
-        sortSkipAndLimit(distinctPlan, query)
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, projections, context)
+        val distinctPlan = context.logicalPlanProducer.planDistinct(inner, projectionsMap, projections, context)
+        sortSkipAndLimit(distinctPlan, query, context)
 
       case UnwindProjection(variable, expression) =>
-        context.logicalPlanProducer.planUnwind(plan, variable, expression)
+        context.logicalPlanProducer.planUnwind(plan, variable, expression, context)
 
       case ProcedureCallProjection(call) =>
-        context.logicalPlanProducer.planCallProcedure(plan, call)
+        context.logicalPlanProducer.planCallProcedure(plan, call, context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
-        context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator)
+        context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
 
       case PassthroughAllHorizon() =>
-        context.logicalPlanProducer.planPassAll(plan)
+        context.logicalPlanProducer.planPassAll(plan, context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")
     }
 
     // We need to check if reads introduced in the horizon conflicts with future writes
-    Eagerness.horizonReadWriteEagerize(projectedPlan, query)
+    Eagerness.horizonReadWriteEagerize(projectedPlan, query, context)
   }
 }

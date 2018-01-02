@@ -26,11 +26,9 @@ import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 trait QueryGraphSolver {
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan
-  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)
-                           (implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
-  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension)
-                              (implicit context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
+  def plan(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan
+  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression,context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
+  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
 }
 
 trait PatternExpressionSolving {
@@ -39,36 +37,33 @@ trait PatternExpressionSolving {
 
   import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 
-  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)
-                           (implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
+  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression, context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
     val dependencies = expr.dependencies.map(IdName.fromVariable)
     val qgArguments = planArguments intersect dependencies
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
     val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
-    val plan = planQueryGraph(qg, namedMap)
+    val plan = planQueryGraph(qg, namedMap, context)
     (plan, namedExpr)
   }
 
-  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension)
-                              (implicit context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
+  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
     val asQueryGraph = expr.asQueryGraph
     val qgArguments = planArguments intersect asQueryGraph.idsWithoutOptionalMatchesOrUpdates
     val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
-    val plan: LogicalPlan = planQueryGraph(qg, Map.empty)
+    val plan: LogicalPlan = planQueryGraph(qg, Map.empty, context)
     (plan, expr)
   }
 
-  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable])
-                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable], context: LogicalPlanningContext): LogicalPlan = {
     val namedNodes = namedMap.collect { case (_: NodePattern, identifier) => identifier }
     val namedRels = namedMap.collect { case (_: RelationshipChain, identifier) => identifier }
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
-    self.plan(qg)(patternPlanningContext)
+    self.plan(qg, patternPlanningContext)
   }
 }
 
 trait TentativeQueryGraphSolver extends QueryGraphSolver with PatternExpressionSolving {
-  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Option[LogicalPlan]
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan =
-    tryPlan(queryGraph).getOrElse(throw new InternalException("Failed to create a plan for the given QueryGraph " + queryGraph))
+  def tryPlan(queryGraph: QueryGraph, context: LogicalPlanningContext): Option[LogicalPlan]
+  def plan(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan =
+    tryPlan(queryGraph, context).getOrElse(throw new InternalException("Failed to create a plan for the given QueryGraph " + queryGraph))
 }

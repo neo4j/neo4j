@@ -19,45 +19,49 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse, NeedsReplan}
 
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
-  def remove(cache: LFUCache[K, T])(key: K, userKey: String, secondsSinceReplan: Int)
+  def put(cache: LFUCache[K, T])(key: K, value: T, userKey: String, secondsSinceReplan: Int): T
+}
+
+trait PlanProducer[T] {
+  def produceWithExistingTX: T
 }
 
 class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) {
-  def getOrElseUpdate(key: K, userKey: String, isStale: T => CacheCheckResult, produce: => T): (T, Boolean) = {
+  def getOrElseUpdate(key: K, userKey: String, checkPlanStillValid: T => CacheCheckResult, produce: PlanProducer[T]): (T, Boolean) = {
     if (cache.size == 0)
-      (produce, false)
+      (produce.produceWithExistingTX, false)
     else {
       var planned = false
-      Iterator.continually {
-        cacheAccessor.getOrElseUpdate(cache)(key, {
-          planned = true
-          produce
-        })
-      }.flatMap { value =>
-        if (!planned) {
-          val cacheCheck = isStale(value)
-          if (cacheCheck.isStale) {
-            cacheAccessor.remove(cache)(key, userKey, cacheCheck.secondsSinceReplan)
-            None
-          } else {
-            Some((value, planned))
-          }
+      val plan: T = cacheAccessor.getOrElseUpdate(cache)(key, {
+        planned = true
+        produce.produceWithExistingTX
+      })
+
+      if (planned)
+        (plan, true)
+      else {
+        // We found a matching plan in the cache. let's make sure it's OK to use again.
+        checkPlanStillValid(plan) match {
+          case NeedsReplan(secondsSinceReplan) =>
+            val newPlan = produce.produceWithExistingTX
+            cacheAccessor.put(cache)(key, newPlan, userKey, secondsSinceReplan)
+            (newPlan, true)
+          case FineToReuse =>
+            (plan, false)
         }
-        else {
-          Some((value, planned))
-        }
-      }.next()
+
+      }
     }
   }
 }
 
 class MonitoringCacheAccessor[K <: AnyRef, T <: AnyRef](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
 
-  override def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T) = {
+  override def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T = {
     var updated = false
     val value = cache(key, {
       updated = true
@@ -72,8 +76,9 @@ class MonitoringCacheAccessor[K <: AnyRef, T <: AnyRef](monitor: CypherCacheHitM
     value
   }
 
-  def remove(cache: LFUCache[K, T])(key: K, userKey: String, secondsSinceReplan: Int): Unit = {
-    cache.remove(key)
+  override def put(cache: LFUCache[K, T])(key: K, value: T, userKey: String, secondsSinceReplan: Int): T = {
+    cache.put(key, value)
     monitor.cacheDiscard(key, userKey, secondsSinceReplan)
+    value
   }
 }

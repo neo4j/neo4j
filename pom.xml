@@ -246,6 +246,12 @@
                   <ignoreMissingAnnotations>false</ignoreMissingAnnotations>
                 </missing-classes>
                 <filter>
+                  <classes>
+                    <regex>true</regex>
+                    <include>
+                      <item>org\.neo4j\.helpers\.collection\.BoundedIterable</item>
+                    </include>
+                  </classes>
                   <packages>
                     <regex>true</regex>
                     <include>
@@ -254,7 +260,6 @@
                       <item>org\.neo4j\.cypher\.javacompat(\\..+)?</item>
                       <item>org\.neo4j\.graphdb(\\..+)?</item>
                       <item>org\.neo4j\.helpers(\\..+)?</item>
-                      <item>org\.neo4j\.helpers\.collection(\\..+)?</item>
                       <item>org\.neo4j\.index(\\..+)?</item>
                       <item>org\.neo4j\.jmx(\\..+)?</item>
                       <item>org\.neo4j\.management(\\..+)?</item>
@@ -265,8 +270,6 @@
                       <item>org\.neo4j\.unsafe\.batchinsert(\\..+)?</item>
                       <item>org\.neo4j\.logging(\\..+)?</item>
                       <item>org\.neo4j\.procedure(\\..+)?</item>
-                      <item>org\.neo4j\.helpers(\\..+)?</item>
-                      <item>org\.neo4j\.helpers.collection(\\..+)?</item>
                     </include>
                     <exclude>
                       <item>.*\.impl\..*</item>

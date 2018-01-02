@@ -143,8 +143,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
-        procedures.register(
-                new LegacyGetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
+        procedures.register( new LegacyGetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
 
         if ( config.get( CausalClusteringSettings.multi_dc_license ) )
         {
@@ -255,9 +254,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
-        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
-                messageLogger, databaseHealthSupplier, pipelineHandlerAppender );
+        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
+                replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), pipelineHandlerAppender );
+
+        new RaftServerModule( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, pipelineHandlerAppender, monitors,
+                messageLogger );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 

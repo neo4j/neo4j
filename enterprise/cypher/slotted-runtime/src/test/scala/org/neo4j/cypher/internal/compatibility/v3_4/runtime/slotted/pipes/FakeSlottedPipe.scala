@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion.asValue
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -32,7 +32,7 @@ case class FakeSlottedPipe(data: Iterator[Map[String, Any]], slots: SlotConfigur
 
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     data.map { values =>
-      val result = PrimitiveExecutionContext(slots)
+      val result = SlottedExecutionContext(slots)
 
       values foreach {
         case (key, value) =>

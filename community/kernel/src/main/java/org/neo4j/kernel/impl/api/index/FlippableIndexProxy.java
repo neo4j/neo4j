@@ -141,6 +141,20 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
+    @Override
+    public void refresh() throws IOException
+    {
+        lock.readLock();
+        try
+        {
+            delegate.refresh();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
     /**
      * Acquire the {@code ReadLock} in an <i>unfair</i> way, without waiting for queued up writers.
      * <p/>

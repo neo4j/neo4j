@@ -457,7 +457,6 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "ExpansionMode" => plansV3_3.ExpandAll
       case "ShortestPathPattern" => irV3_3.ShortestPathPattern(None, argumentProvider(classOf[irV3_3.PatternRelationship]), single = true)(argumentProvider(classOf[astV3_3.ShortestPaths]))
       case "PatternRelationship" => irV3_3.PatternRelationship(IdNameV3_3("n"), (IdNameV3_3("n"), IdNameV3_3("n")), frontendV3_3.SemanticDirection.OUTGOING, Seq.empty, irV3_3.SimplePatternLength)
-      case "ShortestPaths" => astV3_3.ShortestPaths(argumentProvider(classOf[astV3_3.PatternElement]), single = true)(pos3_3)
       case "PatternLength" => irV3_3.SimplePatternLength
       case "Ties" => plansV3_3.IncludeTies
       case "CSVFormat" => irV3_3.HasHeaders

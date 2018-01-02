@@ -30,4 +30,8 @@ case class Fields(closer: FieldReference,
                   params: FieldReference,
                   closeable: FieldReference,
                   queryContext: FieldReference,
-                  skip: FieldReference)
+                  skip: FieldReference,
+                  cursors: FieldReference,
+                  nodeCursor: FieldReference,
+                  propertyCursor: FieldReference,
+                  dataRead: FieldReference)

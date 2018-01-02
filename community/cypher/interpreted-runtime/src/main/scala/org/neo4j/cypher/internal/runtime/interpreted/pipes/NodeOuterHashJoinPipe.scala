@@ -59,7 +59,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
     rowsWithNullAsJoinKey ++ joinedRows ++ rowsWithoutRhsMatch
   }
 
-  private def addNulls(in: ExecutionContext): ExecutionContext = in.newWith(nullColumns)
+  private def addNulls(in: ExecutionContext): ExecutionContext = in.set(nullColumns)
 
   private def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext]): ProbeTable = {
     val probeTable = new ProbeTable()

@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, PatternExpression,
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+  private val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   private def newIndexHint(): Hint = { UsingIndexHint(varFor("a"), LabelName("User")_, Seq(PropertyKeyName("name")(pos)))_ }
 
@@ -72,12 +72,12 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
         patternNodes = Set(IdName("a"), IdName("b"))
       )
     )
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext)
     val plan = newMockedLogicalPlan("b")
 
     a [InternalException] should be thrownBy {
-      verifyBestPlan(plan, query)
+      verifyBestPlan(plan, query, logicalPlanContext)
     }
   }
 
@@ -89,12 +89,12 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
         patternRelationships = Set(patternRel)
       )
     )
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext= newMockedPlanContext
     )
 
     a [InternalException] should be thrownBy {
-      verifyBestPlan(getSimpleLogicalPlanWithAandB(), query)
+      verifyBestPlan(getSimpleLogicalPlanWithAandB(), query, logicalPlanContext)
     }
   }
 
@@ -104,79 +104,79 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
         patternNodes = Set(IdName("a"), IdName("b"))
       )
     )
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext)
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(), query).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), query, logicalPlanContext).availableSymbols should equal(Set(IdName("a"), IdName("b")))
   }
 
   test("should throw when finding plan that contains unfulfillable index hint") {
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(false), useErrorsOverWarnings = true)
 
     a [IndexHintException] should be thrownBy {
-      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint())
+      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint(), logicalPlanContext)
     }
   }
 
   test("should throw when finding plan that contains unfulfillable join hint") {
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(false), useErrorsOverWarnings = true)
 
     a [JoinHintException] should be thrownBy {
-      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithJoinHint())
+      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithJoinHint(), logicalPlanContext)
     }
   }
 
   test("should issue warning when finding plan that contains unfulfillable index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(false), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint(), logicalPlanContext).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", Seq("name")))
   }
 
   test("should issue warning when finding plan that contains unfulfillable join hint") {
     val notificationLogger = new RecordingNotificationLogger
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(false), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithJoinHint(), logicalPlanContext).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     val result = notificationLogger.notifications
     result should contain(JoinHintUnfulfillableNotification(Array("a")))
   }
 
   test("should succeed when finding plan that contains fulfillable index hint") {
     val notificationLogger = new RecordingNotificationLogger
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(true), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
     val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](newIndexHint()))
 
-    verifyBestPlan(plan, newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(plan, newQueryWithIdxHint(), logicalPlanContext).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     notificationLogger.notifications should be(empty)
   }
 
   test("should succeed when finding plan that contains fulfillable join hint") {
     val notificationLogger = new RecordingNotificationLogger
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(true), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
     val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](newJoinHint()))
 
-    verifyBestPlan(plan, newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(plan, newQueryWithJoinHint(), logicalPlanContext).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     notificationLogger.notifications should be(empty)
   }
 
   test("should throw when finding plan that does not contain a fulfillable index hint") {
-    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+    val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(true), useErrorsOverWarnings = false)
 
     a [HintException] should be thrownBy {
-      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint())
+      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint(), logicalPlanContext)
     }
   }
 }
