@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -39,7 +40,6 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IDPPlannerName, IndexDescriptor}
-import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.PatternExpression
@@ -169,16 +169,17 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       input.copy(maybeLogicalPlan = Some(newPlan))
     }
 
-    def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
+    def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, TransactionLayerAttribute) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
       def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics,
                                          config = cypherCompilerConfig, queryGraphSolver = queryGraphSolver)
 
-      val state = LogicalPlanState(queryString, None, IDPPlannerName)
+      val readTxLayerAttribute = new TransactionLayerAttribute
+      val state = LogicalPlanState(queryString, None, IDPPlannerName, readTxLayerAttribute = readTxLayerAttribute)
       val output = pipeLine.transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].source
-      (output.periodicCommit, logicalPlan, output.semanticTable())
+      (output.periodicCommit, logicalPlan, output.semanticTable(), readTxLayerAttribute)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
@@ -186,7 +187,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, idGen)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new TransactionLayerAttribute, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         logicalPlanProducer = logicalPlanProducer,
@@ -202,7 +203,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(solved)
 
-  def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) =
+  def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, TransactionLayerAttribute) =
     new given().getLogicalPlanFor(queryString)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{CheckForUnresolvedTokens, ResolveTokens}
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
@@ -61,7 +62,7 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
-    val startState = LogicalPlanState(queryText, offset, plannerName)
+    val startState = LogicalPlanState(queryText, offset, plannerName, new TransactionLayerAttribute)
     //TODO: these nulls are a short cut
     val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, debugOptions,
       offset, monitors, metricsFactory, null, config, updateStrategy, clock, logicalPlanIdGen = null, evaluator = null)

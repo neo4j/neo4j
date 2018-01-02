@@ -16,13 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper
 import org.neo4j.cypher.internal.frontend.v3_4.parser.ParserTest
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
-import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast, parser}
+import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, PlanningAttributes, ast, parser}
 import org.parboiled.scala.Rule1
 
 class MultipleGraphClauseSemanticCheckingTest
@@ -1253,6 +1254,8 @@ class MultipleGraphClauseSemanticCheckingTest
     override def withSemanticState(s: SemanticState) = ???
 
     override def withParams(p: Map[String, Any]) = ???
+
+    override def readTxLayerAttribute: PlanningAttributes.TransactionLayerAttribute = new TransactionLayerAttribute
   }
 
   //noinspection TypeAnnotation

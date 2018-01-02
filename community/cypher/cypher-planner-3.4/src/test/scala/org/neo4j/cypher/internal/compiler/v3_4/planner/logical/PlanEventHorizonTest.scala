@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.compiler.v3_4.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
@@ -36,7 +37,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
   implicit val idGen = new SequentialIdGen()
 
   val pos = DummyPosition(1)
-  val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, idGen),
+  val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, new TransactionLayerAttribute, idGen),
     mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   test("should do projection if necessary") {

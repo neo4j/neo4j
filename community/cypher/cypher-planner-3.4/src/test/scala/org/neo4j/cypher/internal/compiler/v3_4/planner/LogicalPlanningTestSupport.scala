@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters.namePatternPredicatePatternElements
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -116,7 +117,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext =
-    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, idGen), metrics, semanticTable,
+    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new TransactionLayerAttribute, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)
@@ -209,7 +210,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
-    val state = LogicalPlanState(query, None, CostBasedPlannerName.default)
+    val state = LogicalPlanState(query, None, CostBasedPlannerName.default, new TransactionLayerAttribute)
 
     val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext)
     val output = pipeLine.transform(state, context)

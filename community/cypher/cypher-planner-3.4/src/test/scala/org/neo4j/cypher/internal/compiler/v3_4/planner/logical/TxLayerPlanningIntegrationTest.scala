@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -27,60 +28,68 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("MATCH and CREATE") {
-    val plan = planFor("MATCH (a) CREATE (b)")._2
+    val tuple = planFor("MATCH (a) CREATE (b)")
+    val plan = tuple._2
+    val readTxLayerAttribute = tuple._4
     inSeqAssert(plan,
-      (classOf[AllNodesScan], _ should readFromLayer(0)),
-      (classOf[CreateNode], _ should writeToLayer(1)),
-      (classOf[EmptyResult], _ should readFromLayer(1))
+      (classOf[AllNodesScan], _ should readFromLayer(readTxLayerAttribute, 0)),
+      (classOf[CreateNode], _ should writeToLayer(readTxLayerAttribute, 1)),
+      (classOf[EmptyResult], _ should readFromLayer(readTxLayerAttribute, 1))
     )
   }
 
   test("MATCH SET RETURN") {
-    val plan = planFor("MATCH (n)-[r]-(m) SET r.val = r.val + 1 RETURN r.val AS rv")._2
+    val tuple = planFor("MATCH (n)-[r]-(m) SET r.val = r.val + 1 RETURN r.val AS rv")
+    val plan = tuple._2
+    val readTxLayerAttribute = tuple._4
     inSeqAssert(plan,
-      (classOf[Expand], _ should readFromLayer(0)),
-      (classOf[SetRelationshipPropery], _ should writeToLayer(1)),
-      (classOf[Projection], _ should readFromLayer(1))
+      (classOf[Expand], _ should readFromLayer(readTxLayerAttribute, 0)),
+      (classOf[SetRelationshipPropery], _ should writeToLayer(readTxLayerAttribute, 1)),
+      (classOf[Projection], _ should readFromLayer(readTxLayerAttribute, 1))
     )
   }
 
   test("MATCH and triple SET") {
-    val plan = planFor("MATCH (a:A),(b:B),(c:C) SET a.prop = b.prop SET b.prop = c.prop SET c.prop = 42")._2
+    val tuple = planFor("MATCH (a:A),(b:B),(c:C) SET a.prop = b.prop SET b.prop = c.prop SET c.prop = 42")
+    val plan = tuple._2
+    val readTxLayerAttribute = tuple._4
     inSeqAssert(plan,
-      (classOf[CartesianProduct], _ should readFromLayer(0)),
-      (classOf[SetNodeProperty], _ should writeToLayer(1)),
-      (classOf[SetNodeProperty], _ should writeToLayer(2)),
-      (classOf[SetNodeProperty], _ should writeToLayer(3)),
-      (classOf[EmptyResult], _ should readFromLayer(3))
+      (classOf[CartesianProduct], _ should readFromLayer(readTxLayerAttribute, 0)),
+      (classOf[SetNodeProperty], _ should writeToLayer(readTxLayerAttribute, 1)),
+      (classOf[SetNodeProperty], _ should writeToLayer(readTxLayerAttribute, 2)),
+      (classOf[SetNodeProperty], _ should writeToLayer(readTxLayerAttribute, 3)),
+      (classOf[EmptyResult], _ should readFromLayer(readTxLayerAttribute, 3))
     )
   }
 
   test("DELETE and MERGE") {
-    val plan = planFor("MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)")._2
+    val tuple = planFor("MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)")
+    val plan = tuple._2
+    val readTxLayerAttribute = tuple._4
     inSeqAssert(plan,
-      (classOf[AllNodesScan], _ should readFromLayer(0)), // First match
-      (classOf[DeleteNode], _ should writeToLayer(1)),
-      (classOf[AllNodesScan], _ should readFromLayer(1)), // MATCH part of merge
-      (classOf[SetNodeProperty], _ should writeToLayer(2)), // Set property for CREATE part of merge
-      (classOf[Aggregation], _ should readFromLayer(2))
+      (classOf[AllNodesScan], _ should readFromLayer(readTxLayerAttribute, 0)), // First match
+      (classOf[DeleteNode], _ should writeToLayer(readTxLayerAttribute, 1)),
+      (classOf[AllNodesScan], _ should readFromLayer(readTxLayerAttribute, 1)), // MATCH part of merge
+      (classOf[SetNodeProperty], _ should writeToLayer(readTxLayerAttribute, 2)), // Set property for CREATE part of merge
+      (classOf[Aggregation], _ should readFromLayer(readTxLayerAttribute, 2))
     )
   }
 
-  def readFromLayer(i: Int): Matcher[LogicalPlan] = new Matcher[LogicalPlan] {
+  def readFromLayer(readTxLayerAttribute: TransactionLayerAttribute, i: Int): Matcher[LogicalPlan] = new Matcher[LogicalPlan] {
     override def apply(plan: LogicalPlan): MatchResult = {
       MatchResult(
-        matches = plan.readTransactionLayer.value == i,
-        rawFailureMessage = s"Plan $plan should read from $i but reads from ${plan.readTransactionLayer.value}",
+        matches = readTxLayerAttribute.get(plan.id) == i,
+        rawFailureMessage = s"Plan $plan should read from $i but reads from ${readTxLayerAttribute.get(plan.id)}",
         rawNegatedFailureMessage = s"Plan $plan should read not from $i"
       )
     }
   }
 
-  def writeToLayer(i: Int): Matcher[LogicalPlan] = new Matcher[LogicalPlan] {
+  def writeToLayer(readTxLayerAttribute: TransactionLayerAttribute, i: Int): Matcher[LogicalPlan] = new Matcher[LogicalPlan] {
     override def apply(plan: LogicalPlan): MatchResult = {
       MatchResult(
-        matches = plan.readTransactionLayer.value + 1 == i,
-        rawFailureMessage = s"Plan $plan should write to $i but writes to ${plan.readTransactionLayer.value + 1}",
+        matches = readTxLayerAttribute.get(plan.id) + 1 == i,
+        rawFailureMessage = s"Plan $plan should write to $i but writes to ${readTxLayerAttribute.get(plan.id) + 1}",
         rawNegatedFailureMessage = s"Plan $plan should read write to $i"
       )
     }

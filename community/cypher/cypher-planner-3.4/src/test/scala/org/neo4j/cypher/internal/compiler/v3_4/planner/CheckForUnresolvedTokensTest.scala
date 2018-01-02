@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
@@ -127,7 +128,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
     val notificationLogger = new RecordingNotificationLogger
-    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
+    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, new TransactionLayerAttribute, maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
     val context = ContextHelper.create(notificationLogger = notificationLogger)
     CheckForUnresolvedTokens.transform(compilationState, context)
     notificationLogger.notifications

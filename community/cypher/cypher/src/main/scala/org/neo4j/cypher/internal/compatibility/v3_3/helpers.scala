@@ -23,6 +23,7 @@ import org.neo4j.cypher.CypherVersion.v3_3
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
 import org.neo4j.cypher.internal.compiler.{v3_4 => compilerV3_4}
@@ -153,13 +154,15 @@ object helpers {
 
     def isImportant(expression: ExpressionV3_3) : Boolean = logicalPlan.maybeSemanticTable.exists(_.seen(expression))
 
-    val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, isImportant)
+    val txLayerAttribute = new TransactionLayerAttribute
+    val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, txLayerAttribute, isImportant)
 
     val statement3_3 = logicalPlan.maybeStatement.get
 
     LogicalPlanState(logicalPlan.queryText,
       startPosition,
       plannerName,
+      txLayerAttribute,
       Some(as3_4(statement3_3)),
       None,
       logicalPlan.maybeExtractedParams,

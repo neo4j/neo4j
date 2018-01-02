@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
@@ -26,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Attribute, IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
@@ -36,7 +37,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int, val idGen : IdGen) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int, readtxLayerAttribute: TransactionLayerAttribute, idGen : IdGen) extends ListSupport {
 
   implicit val implicitIdGen = idGen
 
@@ -660,7 +661,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
 
   def planProduceResult(inner: LogicalPlan, columns: Seq[String]): LogicalPlan = {
     val result = ProduceResult(inner, columns)
-    result.readTransactionLayer.value = readTransactionLayer
+    readtxLayerAttribute.set(result.id, readTransactionLayer)
     result
   }
 
@@ -668,7 +669,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     val solved = CardinalityEstimation.lift(plannerQuery, cardinality)
     val p = plan(solved)
-    p.readTransactionLayer.value = readTransactionLayer
+    readtxLayerAttribute.set(p.id, readTransactionLayer)
     p
   }
 
