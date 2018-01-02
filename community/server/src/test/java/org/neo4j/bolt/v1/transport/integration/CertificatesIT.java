@@ -34,6 +34,7 @@ import java.util.Set;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.ssl.PkiUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -44,6 +45,8 @@ import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.tls_key_f
 
 public class CertificatesIT
 {
+    private static final String SERVER_ADDRESS = "localhost:7878";
+
     private static File keyFile;
     private static File certFile;
     private static PkiUtils certFactory;
@@ -53,6 +56,9 @@ public class CertificatesIT
     {
         settings.put( tls_certificate_file.name(), certFile.getAbsolutePath() );
         settings.put( tls_key_file.name(), keyFile.getAbsolutePath() );
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "bolt" ).listen_address.name(), SERVER_ADDRESS );
     } );
 
     @Test
@@ -60,14 +66,20 @@ public class CertificatesIT
     {
         // GIVEN
         SecureSocketConnection connection = new SecureSocketConnection();
+        try
+        {
+            // WHEN
+            connection.connect( new HostnamePort( SERVER_ADDRESS ) )
+                    .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
 
-        // WHEN
-        connection.connect( new HostnamePort( "localhost:7687" ) )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
-
-        // THEN
-        Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
-        assertThat(certificatesSeen, contains(loadCertificateFromDisk()));
+            // THEN
+            Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
+            assertThat( certificatesSeen, contains( loadCertificateFromDisk() ) );
+        }
+        finally
+        {
+            connection.disconnect();
+        }
     }
 
     private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
