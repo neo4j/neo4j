@@ -43,6 +43,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1300,6 +1301,17 @@ public class PrimitiveLongMapTest
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
+    }
+
+    @Test
+    public void longObjectMapValuesContainsAllValues()
+    {
+        PrimitiveLongObjectMap<String> map = Primitive.longObjectMap();
+        map.put( 1, "a" );
+        map.put( 2, "b" );
+        map.put( 3, "c" );
+
+        assertThat( map.values(), containsInAnyOrder( "a", "b", "c" ) );
     }
 
     @Test

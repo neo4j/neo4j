@@ -33,4 +33,10 @@ public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
      * Visit the entries of this map, until all have been visited or the visitor returns 'true'.
      */
     <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<VALUE, E> visitor ) throws E;
+
+    /**
+     * {@link Iterable} with all map values
+     * @return iterable with all map values
+     */
+    Iterable<VALUE> values();
 }

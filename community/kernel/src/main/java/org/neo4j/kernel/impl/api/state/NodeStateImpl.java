@@ -231,10 +231,10 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             PrimitiveLongCollections.emptyIterator();
     }
 
-    public abstract static class Defaults extends StateDefaults<Long, NodeState, NodeStateImpl>
+    public abstract static class Defaults extends StateDefaults<NodeState, NodeStateImpl>
     {
         @Override
-        final NodeStateImpl createValue( Long id, TxState state )
+        final NodeStateImpl createValue( long id, TxState state )
         {
             return new NodeStateImpl( id, state );
         }

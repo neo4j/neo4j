@@ -36,14 +36,14 @@ public abstract class LabelState
     public static class Mutable extends LabelState
     {
         private DiffSets<Long> nodeDiffSets;
-        private final int labelId;
+        private final long labelId;
 
-        private Mutable( int labelId )
+        private Mutable( long labelId )
         {
             this.labelId = labelId;
         }
 
-        public int getLabelId()
+        public long getLabelId()
         {
             return labelId;
         }
@@ -64,10 +64,10 @@ public abstract class LabelState
         }
     }
 
-    abstract static class Defaults extends StateDefaults<Integer, LabelState, Mutable>
+    abstract static class Defaults extends StateDefaults<LabelState, Mutable>
     {
         @Override
-        Mutable createValue( Integer key, TxState state )
+        Mutable createValue( long key, TxState state )
         {
             return new Mutable( key );
         }
