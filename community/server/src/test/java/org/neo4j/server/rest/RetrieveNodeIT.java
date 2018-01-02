@@ -171,9 +171,12 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
     {
+        //We need to add something to the nodeUri that works also
+        //when the nodeUri points to node with id 0, hence just adding
+        //a bunch of zeros will not always work since
         gen.get()
                 .expectedStatus( 404 )
-                .get( nodeUri + "600000" );
+                .get( nodeUri + "123456" );
     }
 
     private JaxRsResponse retrieveNodeFromService( final String uri )

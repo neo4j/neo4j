@@ -23,6 +23,9 @@ import java.util.NoSuchElementException;
 
 /**
  * Set of label ids.
+ *
+ * Modifications are not reflected in the LabelSet and there is no guaranteed
+ * order.
  */
 public interface LabelSet
 {
@@ -36,6 +39,8 @@ public interface LabelSet
 
     LabelSet NONE = new LabelSet()
     {
+        private final long[] EMPTY = new long[0];
+
         @Override
         public int numberOfLabels()
         {
@@ -57,7 +62,7 @@ public interface LabelSet
         @Override
         public long[] all()
         {
-            return new long[0];
+            return EMPTY;
         }
     };
 }

@@ -178,7 +178,8 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
                 }
             }
         }
-        // not all filters were matched
+        // if not all filters were matched, i.e. accepted < filters.length we reject
+        // otherwise we delegate to target
         return accepted >= filters.length && target.acceptNode( reference, values );
     }
 }

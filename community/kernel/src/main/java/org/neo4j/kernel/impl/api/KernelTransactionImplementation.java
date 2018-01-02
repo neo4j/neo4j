@@ -470,9 +470,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void assertOpen()
     {
-        if ( terminationReason != null )
+        Status reason = this.terminationReason;
+        if ( reason != null )
         {
-            throw new TransactionTerminatedException( terminationReason );
+            throw new TransactionTerminatedException( reason );
         }
     }
 
