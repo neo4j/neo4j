@@ -65,7 +65,7 @@ public class FlippableIndexProxy implements IndexProxy
         this( null );
     }
 
-    public FlippableIndexProxy( IndexProxy originalDelegate )
+    FlippableIndexProxy( IndexProxy originalDelegate )
     {
         this.delegate = originalDelegate;
     }
@@ -321,7 +321,7 @@ public class FlippableIndexProxy implements IndexProxy
             lock.readLock().lock();
             proxy = delegate;
             lock.readLock().unlock();
-        } while ( proxy.awaitStoreScanCompleted() );
+        } while ( !closed && proxy.awaitStoreScanCompleted() );
         return true;
     }
 
