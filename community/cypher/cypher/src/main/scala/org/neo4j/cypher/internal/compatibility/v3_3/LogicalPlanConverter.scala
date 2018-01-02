@@ -52,6 +52,8 @@ object LogicalPlanConverter {
                                     val isImportant: ExpressionV3_3 => Boolean = _ => true)
     extends RewriterWithArgs {
 
+    val procedureOrSchemaIdGen = new SequentialIdGen()
+
     override def apply(v1: (AnyRef, Seq[AnyRef])): AnyRef = rewriter.apply(v1)
 
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
@@ -71,7 +73,7 @@ object LogicalPlanConverter {
             seenId = children(3).asInstanceOf[IdNameV3_4],
             targetId = children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
-          convertVersion("v3_3", "v3_4", plan, children, SameId(Id(plan.assignedId.underlying)), classOf[IdGen])
+          convertVersion("v3_3", "v3_4", plan, children, procedureOrSchemaIdGen, classOf[IdGen])
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery], SameId(Id(plan.assignedId.underlying)), classOf[IdGen])
 
