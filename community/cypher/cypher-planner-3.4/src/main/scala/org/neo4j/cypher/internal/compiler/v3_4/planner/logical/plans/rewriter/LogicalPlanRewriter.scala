@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.util.v3_4.Rewriter
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attributes
 
 /*
  * Rewriters that live here are required to adhere to the contract of
@@ -37,14 +38,14 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(context: CompilerContext) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
+  override def instance(context: CompilerContext, attributes:Attributes) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
     fuseSelections,
     unnestApply,
     cleanUpEager,
     simplifyPredicates,
     unnestOptional,
     predicateRemovalThroughJoins,
-    removeIdenticalPlans(context.logicalPlanIdGen),
+    removeIdenticalPlans(attributes),
     pruningVarExpander,
     useTop,
     simplifySelections
@@ -54,10 +55,11 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 trait LogicalPlanRewriter extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: CompilerContext): Rewriter
+  def instance(context: CompilerContext, attributes:Attributes): Rewriter
 
   override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
-    val rewritten = from.logicalPlan.endoRewrite(instance(context))
+    val attributes = new Attributes(context.logicalPlanIdGen)
+    val rewritten = from.logicalPlan.endoRewrite(instance(context, attributes))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }
 }
