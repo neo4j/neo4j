@@ -178,12 +178,10 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
     private class ValueIterable implements Iterable<VALUE>
     {
         private final PrimitiveLongObjectHashMap<VALUE> map;
-        private final PrimitiveLongIterator iterator;
 
         ValueIterable( PrimitiveLongObjectHashMap<VALUE> map )
         {
             this.map = map;
-            this.iterator = map.iterator();
         }
 
         @Override
@@ -191,6 +189,8 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
         {
             return new Iterator<VALUE>()
             {
+                private final PrimitiveLongIterator iterator = map.iterator();
+
                 @Override
                 public boolean hasNext()
                 {
