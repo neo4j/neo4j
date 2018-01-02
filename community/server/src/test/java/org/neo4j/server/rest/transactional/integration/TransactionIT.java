@@ -31,10 +31,12 @@ import java.io.Reader;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -77,7 +79,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Before
     public void setUp()
     {
-        executors = Executors.newFixedThreadPool( max( 2, Runtime.getRuntime().availableProcessors() ) );
+        executors = Executors.newFixedThreadPool( max( 3, Runtime.getRuntime().availableProcessors() ) );
     }
 
     @After
@@ -577,7 +579,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( execute.status(), equalTo( 404 ) );
     }
 
-    @Test
+    @Test( timeout = 30_000 )
     public void begin__execute__rollback_concurrently() throws Exception
     {
         // begin
@@ -585,10 +587,19 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( begin.status(), equalTo( 201 ) );
         assertHasTxLocation( begin );
 
+        Label sharedLockLabel = Label.label( "sharedLock" );
+        http.POST( "db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n:" + sharedLockLabel + ")' } ] }" ) );
+
+        CountDownLatch nodeLockLatch = new CountDownLatch( 1 );
+        CountDownLatch nodeReleaseLatch = new CountDownLatch( 1 );
+
+        Future<?> lockerFuture = executors.submit( () -> lockNodeWithLabel( sharedLockLabel, nodeLockLatch, nodeReleaseLatch ) );
+        nodeLockLatch.await();
+
         // execute
         final String executeResource = begin.location();
-        final String statement =
-                "WITH range(0, 100000) AS r UNWIND r AS i CREATE (n {number: i}) RETURN count(n)";
+        final String statement = "MATCH (n:" + sharedLockLabel + ") DELETE n RETURN count(n)";
 
         final Future<Response> executeFuture = executors.submit( () ->
         {
@@ -606,10 +617,12 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
             Response response = http.DELETE( begin.location() );
             assertThat( response.status(), equalTo( 200 ) );
+            nodeReleaseLatch.countDown();
             return response;
         } );
 
         interruptFuture.get();
+        lockerFuture.get();
         Response execute = executeFuture.get();
         assertThat( execute, hasErrors( Status.Statement.ExecutionFailed ) );
 
@@ -974,6 +987,22 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     private void assertHasTxLocation( Response begin )
     {
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+    }
+
+    private void lockNodeWithLabel( Label sharedLockLabel, CountDownLatch nodeLockLatch, CountDownLatch nodeReleaseLatch )
+    {
+        GraphDatabaseService db = graphdb();
+        try ( Transaction ignored = db.beginTx() )
+        {
+            Node node = db.findNodes( sharedLockLabel ).next();
+            node.setProperty( "a", "b" );
+            nodeLockLatch.countDown();
+            nodeReleaseLatch.await();
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     private static void waitForStatementExecution( String statement )
