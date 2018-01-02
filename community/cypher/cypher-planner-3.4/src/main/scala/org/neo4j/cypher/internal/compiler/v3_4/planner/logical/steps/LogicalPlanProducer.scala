@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
@@ -36,11 +36,9 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int)(implicit val idGen : IdGen = new SequentialIdGen()) extends ListSupport {
 
-  implicit val idGen = new SequentialIdGen()
-
-  def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1)
+  def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1)(idGen = this.idGen)
 
   def planLock(plan: LogicalPlan, nodesToLock: Set[IdName], context: LogicalPlanningContext): LogicalPlan =
     annotate(LockNodes(plan, nodesToLock), plan.solved, context)
