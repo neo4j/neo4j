@@ -28,7 +28,6 @@ import org.mockito.Mockito;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.MultipleFoundException;
@@ -52,6 +51,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class GraphDatabaseFacadeTest
@@ -136,7 +137,7 @@ public class GraphDatabaseFacadeTest
         Label label = Label.label( "test label" );
         String propertyName = "test property";
         String propertyValue = "testValue";
-        when( readOperations.nodesGetForLabel( 0 ) ).thenReturn( PrimitiveLongCollections.iterator( 1, 2 ) );
+        when( readOperations.nodesGetForLabel( 0 ) ).thenReturn( resourceIterator( iterator( 1, 2 ), null ) );
         when( readOperations.nodeGetProperty( anyLong(), eq( 0 ) ) ).thenReturn( Values.stringValue(propertyValue) );
 
         expectedException.expect( MultipleFoundException.class );
