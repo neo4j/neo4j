@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -121,6 +122,16 @@ public class ShiroAuthTokenTest
                         "parameters", params ) ) );
         testTokenSupportsRealm( token, true, realm );
         testTokenSupportsRealm( token, false, "unknown", "native" );
+    }
+
+    @Test
+    public void shouldHaveStringRepresentationWithNullRealm() throws Exception
+    {
+        ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD, null ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
+
+        String stringRepresentation = token.toString();
+        assertThat( stringRepresentation, containsString( "realm='null'" ) );
     }
 
     private void testTokenSupportsRealm( ShiroAuthToken token, boolean supports, String... realms )
