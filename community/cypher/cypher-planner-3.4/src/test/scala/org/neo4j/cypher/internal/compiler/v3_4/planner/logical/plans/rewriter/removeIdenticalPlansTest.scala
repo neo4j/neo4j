@@ -30,7 +30,7 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), scan, scan)(solved)
 
-    val rewritten = join.endoRewrite(removeIdenticalPlans)
+    val rewritten = join.endoRewrite(removeIdenticalPlans(idGen))
 
     rewritten should equal(join)
     rewritten shouldNot be theSameInstanceAs join
@@ -42,7 +42,7 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
     val scan2 = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
 
-    val rewritten = join.endoRewrite(removeIdenticalPlans)
+    val rewritten = join.endoRewrite(removeIdenticalPlans(idGen))
 
     rewritten should equal(join)
     rewritten.left should be theSameInstanceAs join.left

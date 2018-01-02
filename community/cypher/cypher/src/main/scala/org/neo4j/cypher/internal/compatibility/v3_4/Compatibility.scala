@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
@@ -102,12 +103,13 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         //Context used for db communication during planning
         val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(transactionalContext, notificationLogger))
         //Context used to create logical plans
+        val logicalPlanIdGen = new SequentialIdGen()
         val context = contextCreatorV3_4.create(tracer, notificationLogger, planContext,
                                                         syntacticQuery.queryText, preParsedQuery.debugOptions,
                                                         Some(preParsedQuery.offset), monitors,
                                                         CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolver,
                                                         config, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
-                                                        clock, simpleExpressionEvaluator)
+                                                        clock, logicalPlanIdGen, simpleExpressionEvaluator)
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)

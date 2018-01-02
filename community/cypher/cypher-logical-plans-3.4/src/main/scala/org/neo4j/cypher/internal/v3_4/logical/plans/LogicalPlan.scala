@@ -86,6 +86,18 @@ abstract class LogicalPlan(idGen: IdGen)
     }
   }
 
+  def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
+    try {
+      val arguments = this.children.toList :+ solved :+ idGen
+      val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
+      resultingPlan
+    } catch {
+      case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
+        throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor and the IdGen in yet another", e)
+    }
+  }
+
   lazy val copyConstructor: Method = this.getClass.getMethods.find(_.getName == "copy").get
 
   def updateSolved(f: PlannerQuery with CardinalityEstimation => PlannerQuery with CardinalityEstimation): LogicalPlan =

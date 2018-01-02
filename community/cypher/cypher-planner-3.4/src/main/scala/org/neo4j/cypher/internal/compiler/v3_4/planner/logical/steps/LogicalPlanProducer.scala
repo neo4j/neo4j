@@ -36,9 +36,11 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int)(implicit val idGen : IdGen = new SequentialIdGen()) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int, val idGen : IdGen) extends ListSupport {
 
-  def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1)(idGen = this.idGen)
+  implicit val implicitIdGen = idGen
+
+  def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1, idGen = this.idGen)
 
   def planLock(plan: LogicalPlan, nodesToLock: Set[IdName], context: LogicalPlanningContext): LogicalPlan =
     annotate(LockNodes(plan, nodesToLock), plan.solved, context)

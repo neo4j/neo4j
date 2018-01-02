@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper, ValueConversion}
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.{CompilerEngineDelegator, ExecutionPlan, RewindableExecutionResult}
 import org.neo4j.internal.kernel.api.Transaction
@@ -190,7 +191,8 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
                             planContext: PlanContext,
                             queryGraphSolver: IDPQueryGraphSolver) = {
     // TODO enterpriseContext
+    val logicalPlanIdGen = new SequentialIdGen()
     CommunityRuntimeContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
-      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, evaluator = null)
+      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, logicalPlanIdGen, evaluator = null)
   }
 }
