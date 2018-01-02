@@ -32,7 +32,6 @@ trait Attribute[T] {
         array += new Unchangeable
       array(id.x).value = t
     } else {
-      val prev = array(id.x)
       array(id.x).value = t
     }
   }
