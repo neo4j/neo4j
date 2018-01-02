@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -47,8 +47,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
@@ -128,7 +126,7 @@ public class BackupStoreCopyInteractionStressTesting
         Cluster cluster =
                 new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
                         instanceCoreParams, readReplicaParams, instanceReadReplicaParams, Standard.LATEST_NAME,
-                        IpFamily.IPV4, false, new Monitors() );
+                        IpFamily.IPV4, false );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );

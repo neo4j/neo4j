@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
 
+import org.neo4j.collection.primitive.PrimitiveLongList;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
 import static java.lang.Long.min;
 import static java.util.Arrays.fill;
-
 import static org.neo4j.kernel.api.labelscan.NodeLabelRange.convertState;
 import static org.neo4j.kernel.api.labelscan.NodeLabelRange.readBitmap;
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
@@ -122,7 +122,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 
         // nodeId (relative to lowestRange) --> labelId[]
         @SuppressWarnings( "unchecked" )
-        private final List<Long>[] labelsForEachNode = new List[RANGE_SIZE];
+        private final PrimitiveLongList[] labelsForEachNode = new PrimitiveLongList[RANGE_SIZE];
 
         NodeLabelRangeIterator( long lowestRange )
         {

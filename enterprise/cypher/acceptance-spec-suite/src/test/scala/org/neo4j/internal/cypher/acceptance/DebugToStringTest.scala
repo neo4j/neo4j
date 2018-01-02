@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,9 +20,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.WindowsStringSafe
 
 
 class DebugToStringTest extends ExecutionEngineFunSuite {
+
+  implicit val windowsSafe = WindowsStringSafe
+
   /**
     * This tests an internal feature that is not supported or critical for end users. Still nice to see that it works
     * and what the expected outputs are.

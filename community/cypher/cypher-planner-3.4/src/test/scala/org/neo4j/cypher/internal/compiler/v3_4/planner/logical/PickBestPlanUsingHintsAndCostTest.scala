@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -103,7 +103,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.graphStatistics, GIVEN.expressionEvaluator)
-    val context = LogicalPlanningContext(null, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER), metrics, null, null, notificationLogger = devNullLogger)
+    val context = LogicalPlanningContext(null, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, idGen), metrics, null, null, notificationLogger = devNullLogger)
     pickBestPlanUsingHintsAndCost(context)(candidates) should equal(Some(winner))
     pickBestPlanUsingHintsAndCost(context)(candidates.reverse) should equal(Some(winner))
   }

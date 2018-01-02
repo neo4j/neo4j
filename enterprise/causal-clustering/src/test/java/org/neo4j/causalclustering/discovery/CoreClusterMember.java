@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -65,7 +65,6 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final File raftLogDir;
     private final Map<String,String> config = stringMap();
     private final int serverId;
-    private final Monitors monitors;
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
     protected CoreGraphDatabase database;
@@ -86,11 +85,9 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
                               Map<String, String> extraParams,
                               Map<String, IntFunction<String>> instanceExtraParams,
                               String listenAddress,
-                              String advertisedAddress,
-                              Monitors monitors )
+                              String advertisedAddress )
     {
         this.serverId = serverId;
-        this.monitors = monitors;
 
         this.discoveryPort = discoveryPort;
 
@@ -162,7 +159,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, memberConfig,
-                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
     }
 
     @Override

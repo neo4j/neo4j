@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -89,7 +89,7 @@ public class ServerGroupsIT
         int nServers = 3;
         cluster = new Cluster( testDir.directory( "cluster" ), nServers, nServers,
                 new HazelcastDiscoveryServiceFactory(), emptyMap(), instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         // when
         cluster.start();

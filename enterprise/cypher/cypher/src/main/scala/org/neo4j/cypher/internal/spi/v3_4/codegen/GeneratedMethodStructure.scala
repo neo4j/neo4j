@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,35 +19,34 @@
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
-import java.util.PrimitiveIterator
-import java.util.{ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet, Iterator => JIterator, Map => JMap, Set => JSet}
 import java.util.stream.{DoubleStream, IntStream, LongStream}
+import java.util.{PrimitiveIterator, ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet, Iterator => JIterator, Map => JMap, Set => JSet}
 
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
-import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
-import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Templates._
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
+import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Direction, Node, Relationship}
-import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -117,6 +116,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), nextLong))
 
+  override def nodeFromNodeCursor(targetVar: String, iterVar: String) =
+    generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), method[NodeCursor, Long]("nodeReference")))
+
   override def createRelExtractor(relVar: String) =
     generator.assign(typeRef[RelationshipDataExtractor], relExtractor(relVar), newRelationshipDataExtractor)
 
@@ -152,8 +154,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(typeRef[Long], relVar, invoke(generator.load(extractor), getRelationship))
   }
 
-  override def allNodesScan(iterVar: String) =
-    generator.assign(typeRef[PrimitiveLongIterator], iterVar, invoke(readOperations, nodesGetAll))
+  override def allNodesScan(iterVar: String) = {
+    generator.assign(typeRef[NodeCursor], iterVar, invoke(cursors, method[CursorFactory, NodeCursor]("allocateNodeCursor")))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[NodeCursor, Unit]("close"))))
+    generator.expression(invoke(dataRead, method[Read, Unit]("allNodesScan", typeRef[NodeCursor]), generator.load(iterVar) ))
+  }
 
   override def labelScan(iterVar: String, labelIdVar: String) =
     generator.assign(typeRef[PrimitiveLongIterator], iterVar,
@@ -174,6 +181,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def hasNextNode(iterVar: String) =
     invoke(generator.load(iterVar), hasNextLong)
+
+  override def advanceNodeCursor(iterVar: String) =
+    invoke(generator.load(iterVar), method[NodeCursor, Boolean]("next"))
 
   override def hasNextRelationship(iterVar: String) =
     invoke(generator.load(iterVar), hasMoreRelationship)
@@ -537,8 +547,20 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     invoke(method, lhs, rhs)
 
-  private val getOrLoadReadOperations: MethodReference =
+  private def getOrLoadReadOperations: MethodReference =
     methodReference(generator.owner(), typeRef[ReadOperations], "getOrLoadReadOperations")
+
+  private def dataRead: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[Read], "getOrLoadDataRead"))
+
+  private def cursors: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[CursorFactory], "getOrLoadCursors"))
+
+  private def nodeCursor: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[NodeCursor], "nodeCursor"))
+
+  private def propertyCursor: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[PropertyCursor], "propertyCursor"))
 
   private def readOperations: Expression =
     invoke(generator.self(), getOrLoadReadOperations)
@@ -1325,8 +1347,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(predVar)
 
     handleEntityNotFound(generator, fields, _finalizers) { inner =>
-      val invoke = Expression.invoke(readOperations, nodeHasLabel, inner.load(nodeVar), inner.load(labelVar))
-      inner.assign(local, invoke)
+      val invoked =
+        invoke(
+          methodReference(typeRef[CompiledCursorUtils],
+                          typeRef[Boolean], "nodeHasLabel",
+                          typeRef[Read], typeRef[NodeCursor], typeRef[Long],
+                          typeRef[Int]),
+          dataRead, nodeCursor, inner.load(nodeVar), inner.load(labelVar))
+      inner.assign(local, invoked)
       generator.load(predVar)
     } { fail =>
       fail.assign(local, constant(false))
@@ -1369,7 +1397,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       body.assign(local,
                   invoke(
                     reboxValue,
-                    invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), body.load(propIdVar))
+                    invoke(
+                      methodReference(typeRef[CompiledCursorUtils],
+                                      typeRef[Value], "nodeGetProperty",
+                                      typeRef[Read], typeRef[NodeCursor], typeRef[Long],
+                                      typeRef[PropertyCursor], typeRef[Int]),
+                      dataRead, nodeCursor, forceLong(nodeVar, nodeVarType), propertyCursor, body.load(propIdVar))
                   ))
     } { fail =>
       fail.assign(local, constant(null))
@@ -1382,7 +1415,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       body.assign(local,
                   invoke(
                     reboxValue,
-                    invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), constant(propId))
+                    invoke(
+                      methodReference(typeRef[CompiledCursorUtils],
+                                      typeRef[Value], "nodeGetProperty",
+                                      typeRef[Read], typeRef[NodeCursor], typeRef[Long],
+                                      typeRef[PropertyCursor], typeRef[Int]),
+                      dataRead, nodeCursor, forceLong(nodeVar, nodeVarType),  propertyCursor, constant(propId))
                   ))
     }{ fail =>
       fail.assign(local, constant(null))

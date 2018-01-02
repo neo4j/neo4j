@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.labelscan;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongList;
 
 import static java.lang.Math.toIntExact;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 
 /**
  * Represents a range of nodes and label ids attached to those nodes. All nodes in the range are present in
@@ -130,29 +128,29 @@ public class NodeLabelRange
         return toString( prefix, nodes, labels );
     }
 
-    public static void readBitmap( long bitmap, long labelId, List<Long>[] labelsPerNode )
+    public static void readBitmap( long bitmap, long labelId, PrimitiveLongList[] labelsPerNode )
     {
         while ( bitmap != 0 )
         {
             int relativeNodeId = Long.numberOfTrailingZeros( bitmap );
             if ( labelsPerNode[relativeNodeId] == null )
             {
-                labelsPerNode[relativeNodeId] = new ArrayList<>();
+                labelsPerNode[relativeNodeId] = Primitive.longList();
             }
             labelsPerNode[relativeNodeId].add( labelId );
             bitmap &= bitmap - 1;
         }
     }
 
-    public static long[][] convertState( List<Long>[] state )
+    public static long[][] convertState( PrimitiveLongList[] state )
     {
         long[][] labelIdsByNodeIndex = new long[state.length][];
         for ( int i = 0; i < state.length; i++ )
         {
-            List<Long> labelIdList = state[i];
+            PrimitiveLongList labelIdList = state[i];
             if ( labelIdList != null )
             {
-                labelIdsByNodeIndex[i] = asArray( labelIdList.iterator() );
+                labelIdsByNodeIndex[i] = labelIdList.toArray();
             }
         }
         return labelIdsByNodeIndex;

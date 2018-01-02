@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -49,7 +49,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
 
-  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER),
+  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, idGen),
     mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   test("does not expand based on empty table") {

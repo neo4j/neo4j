@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,7 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 
-class Labels implements LabelSet
+public class Labels implements LabelSet
 {
     /**
      * This really only needs to be {@code int[]}, but the underlying implementation uses {@code long[]} for some
@@ -34,7 +34,7 @@ class Labels implements LabelSet
      */
     private final long[] labels;
 
-    Labels( long[] labels )
+    public Labels( long[] labels )
     {
         this.labels = labels;
     }

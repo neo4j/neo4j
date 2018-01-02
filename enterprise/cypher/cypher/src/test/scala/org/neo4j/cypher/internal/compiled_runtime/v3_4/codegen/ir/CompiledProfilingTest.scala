@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen.ir
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.{AcceptVisitor, ScanAllNodes, WhileLoop}
@@ -41,8 +40,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.internal.kernel.api.Transaction.Type
+import org.neo4j.internal.kernel.api.{CursorFactory, StubNodeCursor, StubRead}
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
-import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -62,25 +61,21 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),
       Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> Id.INVALID_ID))
 
-    val readOps = mock[ReadOperations]
+    val cursors = mock[CursorFactory]
+    val dataRead = new StubRead
+    val nodeCursor = new StubNodeCursor
+    nodeCursor.withNode(1)
+    nodeCursor.withNode(2)
+    when(cursors.allocateNodeCursor()).thenReturn(nodeCursor)
     val entityAccessor = mock[NodeManager]
     val queryContext = mock[QueryContext]
     val transactionalContext = mock[TransactionalContextWrapper]
     when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[QueryTransactionalContext])
     when(transactionalContext.kernelStatisticProvider).thenReturn(new DelegatingKernelStatisticProvider(new DefaultPageCursorTracer))
-    when(transactionalContext.readOperations).thenReturn(readOps)
+    when(transactionalContext.cursors).thenReturn(cursors)
+    when(transactionalContext.dataRead).thenReturn(dataRead)
     when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])
     when(queryContext.entityAccessor).thenReturn(entityAccessor)
-    when(readOps.nodesGetAll()).thenReturn(new PrimitiveLongIterator {
-      private var counter = 0
-
-      override def next(): Long = counter
-
-      override def hasNext: Boolean = {
-        counter += 1
-        counter < 3
-      }
-    })
 
     val provider = new Provider[InternalPlanDescription] {
       override def get(): InternalPlanDescription =

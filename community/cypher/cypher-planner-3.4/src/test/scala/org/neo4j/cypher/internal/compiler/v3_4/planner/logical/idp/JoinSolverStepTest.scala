@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
-  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER),
+  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, idGen),
     mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   val plan1 = mock[LogicalPlan]

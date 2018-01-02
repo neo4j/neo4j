@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -86,7 +86,7 @@ public class ServerPoliciesLoadBalancingIT
     public void defaultBehaviour() throws Exception
     {
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3, new HazelcastDiscoveryServiceFactory(), emptyMap(),
-                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
 
@@ -99,7 +99,7 @@ public class ServerPoliciesLoadBalancingIT
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
                 new HazelcastDiscoveryServiceFactory(),
                 stringMap( CausalClusteringSettings.cluster_allow_reads_on_followers.name(), "true" ),
-                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
 
@@ -123,7 +123,7 @@ public class ServerPoliciesLoadBalancingIT
 
         cluster = new Cluster( testDir.directory( "cluster" ), 5, 5,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
         // should use the first rule: only cores for reading
@@ -176,7 +176,7 @@ public class ServerPoliciesLoadBalancingIT
 
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false, new Monitors() );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
         assertGetServersEventuallyMatchesOnAllCores( new CountsMatcher( 3, 1, 2, 3 ), policyContext( "all" ) );

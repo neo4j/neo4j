@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -100,9 +100,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
   //We cannot assign to value because of periodic commit
-  private def writes() = transactionalContext.kernelTransaction.dataWrite()
-  private def reads() = transactionalContext.kernelTransaction.dataRead()
-  private def cursors = transactionalContext.kernelTransaction.cursors()
+  private def writes() = transactionalContext.dataWrite
+  private def reads() = transactionalContext.dataRead
   private val nodeCursor = allocateAndTraceNodeCursor()
   private val propertyCursor = allocateAndTracePropertyCursor()
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
@@ -932,13 +931,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.schemaWriteOperations()
 
   private def allocateAndTraceNodeCursor() = {
-    val cursor = cursors.allocateNodeCursor()
+    val cursor = transactionalContext.cursors.allocateNodeCursor()
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTracePropertyCursor() = {
-    val cursor = cursors.allocatePropertyCursor()
+    val cursor = transactionalContext.cursors.allocatePropertyCursor()
     resources.trace(cursor)
     cursor
   }

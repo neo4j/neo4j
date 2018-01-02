@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,8 +34,8 @@ case class ScanAllNodes(opName: String) extends LoopDataGenerator {
   override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
                              (implicit context: CodeGenContext) = {
     generator.incrementDbHits()
-    generator.nextNode(nextVar.name, iterVar)
+    generator.nodeFromNodeCursor(nextVar.name, iterVar)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextNode(iterVar)
+  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceNodeCursor(iterVar)
 }

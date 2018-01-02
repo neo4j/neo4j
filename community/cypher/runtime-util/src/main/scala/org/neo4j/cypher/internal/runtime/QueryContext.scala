@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescri
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
+import org.neo4j.internal.kernel.api.{CursorFactory, Read, Write}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -236,6 +237,12 @@ trait Operations[T] {
 }
 
 trait QueryTransactionalContext extends CloseableResource {
+
+  def cursors : CursorFactory
+
+  def dataRead: Read
+
+  def dataWrite: Write
 
   def readOperations: ReadOperations
 
