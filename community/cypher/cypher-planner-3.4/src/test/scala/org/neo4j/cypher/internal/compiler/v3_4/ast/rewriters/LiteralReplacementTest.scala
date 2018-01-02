@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
 
-import org.neo4j.cypher.internal.frontend.v3_4.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
@@ -123,6 +123,14 @@ class LiteralReplacementTest extends CypherFunSuite  {
 
   test("should extract from procedure calls") {
     assertRewrite("CALL foo(12)", "CALL foo({`  AUTOINT0`})", Map("  AUTOINT0" -> 12))
+  }
+
+  test("should extract from UNWIND") {
+    assertRewrite(
+      "UNWIND [1, 2, 3] AS list RETURN list",
+      "UNWIND $`  AUTOLIST0` AS list RETURN list",
+      Map("  AUTOLIST0" -> Vector(1, 2, 3))
+    )
   }
 
   private def assertDoesNotRewrite(query: String): Unit = {

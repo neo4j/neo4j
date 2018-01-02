@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.rewriters
+package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_4.IdentityMap
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
@@ -43,6 +43,7 @@ object literalReplacement {
          _: SetClause |
          _: Return |
          _: With |
+         _: Unwind |
          _: CallClause =>
       acc => (acc, Some(identity))
     case _: Clause |

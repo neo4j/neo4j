@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,10 +23,9 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{ASTRewriter, IfNoParameter}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Monitors, Transformer}
-import org.neo4j.cypher.internal.frontend.v3_4.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
 
 class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
