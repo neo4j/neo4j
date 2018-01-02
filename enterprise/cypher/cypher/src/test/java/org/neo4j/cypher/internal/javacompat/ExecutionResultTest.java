@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.junit.Assert;
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -220,7 +221,7 @@ public class ExecutionResultTest
     public void shouldShowArgumentsExecutionPlan()
     {
         // Given
-        Result result = db.execute( "EXPLAIN CALL db.labels" );
+        Result result = db.execute( "EXPLAIN CALL db.labels()" );
 
         // When
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
@@ -237,7 +238,7 @@ public class ExecutionResultTest
     public void shouldShowArgumentsInProfileExecutionPlan()
     {
         // Given
-        Result result = db.execute( "PROFILE CALL db.labels" );
+        Result result = db.execute( "PROFILE CALL db.labels()" );
 
         // When
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
@@ -254,7 +255,7 @@ public class ExecutionResultTest
     public void shouldShowArgumentsInSchemaExecutionPlan()
     {
         // Given
-        Result result = db.execute( "EXPLAIN CREATE INDEX on :L(prop)" );
+        Result result = db.execute( "EXPLAIN CREATE INDEX ON :L(prop)" );
 
         // When
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
@@ -270,8 +271,20 @@ public class ExecutionResultTest
     @Test
     public void shouldReturnListFromSplit()
     {
-        assertThat(db.execute( "RETURN split('hello, world', ',') AS s" ).next().get("s"),
-                instanceOf(List.class));
+        assertThat( db.execute( "RETURN split('hello, world', ',') AS s" ).next().get( "s" ), instanceOf( List.class ) );
+    }
+
+    @Test
+    public void shouldReturnCorrectArrayType()
+    {
+        // Given
+        db.execute( "CREATE (p:Person {names:['adsf', 'adf' ]})" );
+
+        // When
+        Object result = db.execute( "MATCH (n) RETURN n.names" ).next().get( "n.names" );
+
+        // Then
+        assertThat( result, CoreMatchers.instanceOf( String[].class ) );
     }
 
     private void createNode()
