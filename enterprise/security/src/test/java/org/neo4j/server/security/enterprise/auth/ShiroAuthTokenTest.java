@@ -32,8 +32,8 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class ShiroAuthTokenTest
 {
-    private final String USERNAME = "myuser";
-    private final String PASSWORD = "mypw123";
+    private static final String USERNAME = "myuser";
+    private static final String PASSWORD = "mypw123";
 
     @Test
     public void shouldSupportBasicAuthToken() throws Exception
@@ -43,6 +43,28 @@ public class ShiroAuthTokenTest
         assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
                 equalTo( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
                         AuthToken.BASIC_SCHEME ) ) );
+        testTokenSupportsRealm( token, true, "unknown", "native", "ldap" );
+    }
+
+    @Test
+    public void shouldSupportBasicAuthTokenWithEmptyRealm() throws Exception
+    {
+        ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD, "" ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
+        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
+                equalTo( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
+                        AuthToken.BASIC_SCHEME, AuthToken.REALM_KEY, "" ) ) );
+        testTokenSupportsRealm( token, true, "unknown", "native", "ldap" );
+    }
+
+    @Test
+    public void shouldSupportBasicAuthTokenWithNullRealm() throws Exception
+    {
+        ShiroAuthToken token = new ShiroAuthToken( AuthToken.newBasicAuthToken( USERNAME, PASSWORD, null ) );
+        testBasicAuthToken( token, USERNAME, PASSWORD, AuthToken.BASIC_SCHEME );
+        assertThat( "Token map should have only expected values", token.getAuthTokenMap(),
+                equalTo( map( AuthToken.PRINCIPAL, USERNAME, AuthToken.CREDENTIALS, PASSWORD, AuthToken.SCHEME_KEY,
+                        AuthToken.BASIC_SCHEME, AuthToken.REALM_KEY, null ) ) );
         testTokenSupportsRealm( token, true, "unknown", "native", "ldap" );
     }
 
