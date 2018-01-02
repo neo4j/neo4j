@@ -540,9 +540,8 @@ public class StateHandlingStatementOperations implements
         PrimitiveLongResourceIterator committed = storeLayer.nodesGetForLabel( state.getStoreStatement(), labelId );
         if ( state.hasTxStateWithChanges() )
         {
-            PrimitiveLongIterator wLabelChanges = state.txState().nodesWithLabelChanged( labelId ).augment( committed );
-            return PrimitiveLongCollections
-                    .resourceIterator( state.txState().addedAndRemovedNodes().augmentWithRemovals( wLabelChanges ), committed );
+            PrimitiveLongResourceIterator wLabelChanges = state.txState().nodesWithLabelChanged( labelId ).augment( committed );
+            return state.txState().addedAndRemovedNodes().augmentWithRemovals( wLabelChanges );
         }
 
         return committed;
@@ -846,7 +845,7 @@ public class StateHandlingStatementOperations implements
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
         PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
-        PrimitiveLongIterator exactMatches = reader.hasFullNumberPrecision( query )
+        PrimitiveLongResourceIterator exactMatches = reader.hasFullNumberPrecision( query )
                 ? committed : LookupFilter.exactIndexMatches( this, state, committed, query );
         PrimitiveLongIterator changesFiltered =
                 filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
@@ -860,51 +859,44 @@ public class StateHandlingStatementOperations implements
         StorageStatement storeStatement = state.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
         PrimitiveLongResourceIterator committed = reader.query( predicates );
-        PrimitiveLongIterator exactMatches = reader.hasFullNumberPrecision( predicates )
+        PrimitiveLongResourceIterator exactMatches = reader.hasFullNumberPrecision( predicates )
                 ? committed : LookupFilter.exactIndexMatches( this, state, committed, predicates );
 
-        PrimitiveLongIterator result;
         IndexQuery firstPredicate = predicates[0];
         switch ( firstPredicate.type() )
         {
         case exact:
             IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( predicates );
-            result = filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( exactPreds ) );
-            break;
+            return filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( exactPreds ) );
 
         case stringSuffix:
         case stringContains:
         case exists:
-            result = filterIndexStateChangesForScan( state, exactMatches, index );
-            break;
+            return filterIndexStateChangesForScan( state, exactMatches, index );
 
         case rangeNumeric:
             assertSinglePredicate( predicates );
             IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) firstPredicate;
-            result = filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
+            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
                     numPred.fromInclusive(), numPred.to(), numPred.toInclusive(), exactMatches );
-            break;
 
         case rangeString:
         {
             assertSinglePredicate( predicates );
             IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) firstPredicate;
-            result = filterIndexStateChangesForRangeSeekByString(
+            return filterIndexStateChangesForRangeSeekByString(
                     state, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
                     strPred.toInclusive(), committed );
-            break;
         }
         case stringPrefix:
         {
             assertSinglePredicate( predicates );
             IndexQuery.StringPrefixPredicate strPred = (IndexQuery.StringPrefixPredicate) firstPredicate;
-            result = filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
-            break;
+            return filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
         }
         default:
             throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
         }
-        return PrimitiveLongCollections.resourceIterator( result, committed );
     }
 
     public static IndexQuery.ExactPredicate[] assertOnlyExactPredicates( IndexQuery[] predicates )
@@ -950,8 +942,8 @@ public class StateHandlingStatementOperations implements
         return reader.countIndexedNodes( nodeId, value );
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForScan(
-            KernelStatement state, PrimitiveLongIterator nodeIds, IndexDescriptor index )
+    private PrimitiveLongResourceIterator filterIndexStateChangesForScan(
+            KernelStatement state, PrimitiveLongResourceIterator nodeIds, IndexDescriptor index )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -965,8 +957,8 @@ public class StateHandlingStatementOperations implements
         return nodeIds;
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForSeek(
-            KernelStatement state, PrimitiveLongIterator nodeIds, IndexDescriptor index,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForSeek(
+            KernelStatement state, PrimitiveLongResourceIterator nodeIds, IndexDescriptor index,
             ValueTuple propertyValues )
     {
         if ( state.hasTxStateWithChanges() )
@@ -981,11 +973,11 @@ public class StateHandlingStatementOperations implements
         return nodeIds;
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByNumber( KernelStatement state,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByNumber( KernelStatement state,
             IndexDescriptor index,
             Number lower, boolean includeLower,
             Number upper, boolean includeUpper,
-            PrimitiveLongIterator nodeIds )
+            PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -1001,11 +993,11 @@ public class StateHandlingStatementOperations implements
 
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
             IndexDescriptor index,
             String lower, boolean includeLower,
             String upper, boolean includeUpper,
-            PrimitiveLongIterator nodeIds )
+            PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -1021,10 +1013,10 @@ public class StateHandlingStatementOperations implements
 
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByPrefix( KernelStatement state,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByPrefix( KernelStatement state,
             IndexDescriptor index,
             String prefix,
-            PrimitiveLongIterator nodeIds )
+            PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {

@@ -23,6 +23,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -43,6 +44,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.ResourceUtils;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -724,8 +726,45 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )
     {
-        return ResourceClosingIterator
-                .newResourceIterator( map( id -> new NodeProxy( nodeActions, id ), input ), resources );
+       return new ResourceIterator<Node>()
+       {
+           private boolean closed;
+
+           @Override
+           public void close()
+           {
+               if ( !closed && resources != null )
+               {
+                   ResourceUtils.closeAll( resources );
+                   closed = true;
+               }
+           }
+
+           @Override
+           public boolean hasNext()
+           {
+               boolean hasNext = input.hasNext();
+               if ( !hasNext )
+               {
+                   close();
+               }
+               return hasNext;
+           }
+
+           @Override
+           public Node next()
+           {
+               try
+               {
+                   return new NodeProxy( nodeActions, input.next() );
+               }
+               catch ( NoSuchElementException e )
+               {
+                   close();
+                   throw e;
+               }
+           }
+       };
     }
 
     @Override
