@@ -370,6 +370,10 @@ public abstract class CompiledConversionUtils
                 System.arraycopy( anyValue, 0, copy, 0, length );
                 return copy;
             }
+            else if ( anyValue instanceof String[] )
+            {
+                return anyValue;
+            }
             else
             {
                 Object[] copy = new Object[length];
