@@ -22,15 +22,17 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attributes
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, NodeHashJoin}
 
 class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSupport {
+  val noAttributes = new Attributes(idGen)
 
   test("should not contain copies") {
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), scan, scan)(solved)
 
-    val rewritten = join.endoRewrite(removeIdenticalPlans(idGen))
+    val rewritten = join.endoRewrite(removeIdenticalPlans(noAttributes))
 
     rewritten should equal(join)
     rewritten shouldNot be theSameInstanceAs join
@@ -42,7 +44,7 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
     val scan2 = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
 
-    val rewritten = join.endoRewrite(removeIdenticalPlans(idGen))
+    val rewritten = join.endoRewrite(removeIdenticalPlans(noAttributes))
 
     rewritten should equal(join)
     rewritten.left should be theSameInstanceAs join.left

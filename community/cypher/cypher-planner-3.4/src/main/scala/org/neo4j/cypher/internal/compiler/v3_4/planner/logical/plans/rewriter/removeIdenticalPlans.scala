@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attributes
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
@@ -29,13 +29,13 @@ import scala.collection.mutable
  * Runs through LogicalPlan and copies duplicate plans to make sure the
  * plan doesn't contain elements that are ID identical.
  */
-case class removeIdenticalPlans(logicalPlanIdGen: IdGen) extends Rewriter {
+case class removeIdenticalPlans(attributes:Attributes) extends Rewriter {
 
   override def apply(input: AnyRef) = {
     val seenIDs = mutable.Set.empty[Int]
 
     val rewriter: Rewriter = bottomUp(Rewriter.lift {
-      case plan: LogicalPlan if seenIDs(plan.id.x) => plan.copyPlanWithIdGen(logicalPlanIdGen)
+      case plan: LogicalPlan if seenIDs(plan.id.x) => plan.copyPlanWithIdGen(attributes.copy(plan.id))
       case plan: LogicalPlan => seenIDs += plan.id.x ; plan
     })
 
