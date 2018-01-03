@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
@@ -1482,7 +1481,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def indexSeek(iterVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
-    val predicate = generator.declare(typeRef[IndexQuery], s"${iterVar}Query")
     val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
     val boxedValue =
       if (codeGenType.isPrimitive) Expression.box(value)
@@ -1491,9 +1489,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val descriptor = body.load(descriptorVar)
       val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
       val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))
-      body.assign(predicate, invoke(indexQueryExact, propertyKeyId, boxedValue))
-      body.assign(local, invoke(readOperations, indexQuery, descriptor,
-        newArray(typeRef[IndexQuery], predicate)))
+      body.assign(local,
+                  invoke(
+                    methodReference(typeRef[CompiledIndexUtils], typeRef[PrimitiveLongIterator], "indexSeek",
+                                    typeRef[ReadOperations], typeRef[IndexDescriptor], typeRef[Int], typeRef[AnyRef]),
+                    readOperations, descriptor, propertyKeyId, boxedValue)
+      )
     }
   }
 
