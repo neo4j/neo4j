@@ -157,6 +157,11 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         for ( int i = 0; i < blocks; i++ )
         {
             long block = cursor.getLong();
+            // Since there's no inUse byte we have to check the special case of first block == 0, which will mean that it's deleted
+            if ( i == 0 && block == 0 )
+            {
+                return false;
+            }
             if ( PropertyType.getPropertyTypeOrNull( block ) != null )
             {
                 return true;

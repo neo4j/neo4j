@@ -100,6 +100,26 @@ public class DataImporter
             this.properties.add( properties );
         }
 
+        public void propertiesRemoved( long properties )
+        {
+            this.properties.add( -properties );
+        }
+
+        public long nodesImported()
+        {
+            return this.nodes.sum();
+        }
+
+        public long propertiesImported()
+        {
+            return this.properties.sum();
+        }
+
+        public long relationshipsImported()
+        {
+            return this.relationships.sum();
+        }
+
         @Override
         public String toString()
         {

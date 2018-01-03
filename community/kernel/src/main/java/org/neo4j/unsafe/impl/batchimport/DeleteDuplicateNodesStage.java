@@ -39,6 +39,7 @@ public class DeleteDuplicateNodesStage extends Stage
             BatchingNeoStores neoStore, DataImporter.Monitor storeMonitor )
     {
         super( "DEDUP", null, config, 0 );
-        add( new DeleteDuplicateNodesStep( control(), config, duplicateNodeIds, neoStore.getNodeStore(), storeMonitor ) );
+        add( new DeleteDuplicateNodesStep( control(), config, duplicateNodeIds, neoStore.getNodeStore(), neoStore.getPropertyStore(),
+                storeMonitor ) );
     }
 }
