@@ -35,7 +35,6 @@ case class Expand(source: LogicalPlan,
                   to: IdName,
                   relName: IdName,
                   mode: ExpansionMode = ExpandAll)
-                 (val solved: PlannerQuery with CardinalityEstimation)
                  (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
@@ -57,7 +56,6 @@ case class OptionalExpand(source: LogicalPlan,
                           relName: IdName,
                           mode: ExpansionMode = ExpandAll,
                           predicates: Seq[Expression] = Seq.empty)
-                         (val solved: PlannerQuery with CardinalityEstimation)
                          (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
@@ -88,7 +86,6 @@ case class VarExpand(source: LogicalPlan,
                      nodePredicate: Expression,
                      edgePredicate: Expression,
                      legacyPredicates: Seq[(LogicalVariable, Expression)])
-                    (val solved: PlannerQuery with CardinalityEstimation)
                     (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   override val lhs = Some(source)
@@ -113,7 +110,6 @@ case class PruningVarExpand(source: LogicalPlan,
                             minLength: Int,
                             maxLength: Int,
                             predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
-                           (val solved: PlannerQuery with CardinalityEstimation)
                            (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
@@ -138,7 +134,6 @@ case class FullPruningVarExpand(source: LogicalPlan,
                                 minLength: Int,
                                 maxLength: Int,
                                 predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
-                               (val solved: PlannerQuery with CardinalityEstimation)
                                (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 

@@ -32,7 +32,7 @@ case class UndirectedRelationshipByIdSeek(idName: IdName,
                                           relIds: SeekableArgs,
                                           leftNode: IdName,
                                           rightNode: IdName,
-                                          argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                          argumentIds: Set[IdName])(implicit idGen: IdGen)
   extends LogicalLeafPlan(idGen) {
 
   def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, leftNode, rightNode)

@@ -34,39 +34,39 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
   private val argId = IdName("arg")
 
   test("should plan simple expand") {
-    val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set.empty)(solved)
-    val expand = Expand(nodeByLabelScan, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
+    val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set.empty)
+    val expand = Expand(nodeByLabelScan, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)
 
-    val optional = Optional(expand)(solved)
-    val argument = Argument()(solved)
-    val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), None)(solved)
-    val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)(solved)
+    val optional = Optional(expand)
+    val argument = Argument()
+    val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), None)
+    val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)
 
-    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)(solved)
+    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)
 
-    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
-    val emptyResult = EmptyResult(mergeNode)(solved)
+    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))
+    val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a:A)-[r:R]->(b)")._2 should equal(emptyResult)
   }
 
   test("should plan simple expand with argument dependency") {
-    val leaf = Argument()(solved)
-    val projection = Projection(leaf, Map("arg" -> SignedDecimalIntegerLiteral("42")(pos)))(solved)
-    val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set(argId))(solved)
-    val selection = Selection(Seq(In(Property(Variable("a")(pos), PropertyKeyName("p")(pos))(pos), ListLiteral(Seq(Variable("arg")(pos)))(pos))(pos)), nodeByLabelScan)(solved)
-    val expand = Expand(selection, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
+    val leaf = Argument()
+    val projection = Projection(leaf, Map("arg" -> SignedDecimalIntegerLiteral("42")(pos)))
+    val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set(argId))
+    val selection = Selection(Seq(In(Property(Variable("a")(pos), PropertyKeyName("p")(pos))(pos), ListLiteral(Seq(Variable("arg")(pos)))(pos))(pos)), nodeByLabelScan)
+    val expand = Expand(selection, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)
 
-    val optional = Optional(expand, Set(argId))(solved)
-    val argument = Argument(Set(argId))(solved)
-    val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), Some(MapExpression(Seq((PropertyKeyName("p")(pos), Variable("arg")(pos))))(pos)))(solved)
-    val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)(solved)
+    val optional = Optional(expand, Set(argId))
+    val argument = Argument(Set(argId))
+    val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), Some(MapExpression(Seq((PropertyKeyName("p")(pos), Variable("arg")(pos))))(pos)))
+    val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)
 
-    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)(solved)
+    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)
 
-    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
-    val apply = Apply(projection, mergeNode)(solved)
-    val emptyResult = EmptyResult(apply)(solved)
+    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))
+    val apply = Apply(projection, mergeNode)
+    val emptyResult = EmptyResult(apply)
 
     planFor("WITH 42 AS arg MERGE (a:A {p: arg})-[r:R]->(b)")._2 should equal(emptyResult)
   }
@@ -94,28 +94,28 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     planFor("MATCH (n) MERGE (n)-[r:T]->(b)")._2 should equal(
       EmptyResult(
         Apply(
-          AllNodesScan(IdName("n"), Set())(solved),
+          AllNodesScan(IdName("n"), Set()),
           AntiConditionalApply(
             AntiConditionalApply(
               Optional(
                 Expand(
-                  Argument(Set(IdName("n")))(solved),
-                  IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved),
-                Set(IdName("n")))(solved),
+                  Argument(Set(IdName("n"))),
+                  IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll),
+                Set(IdName("n"))),
               Optional(
                 Expand(
-                  LockNodes(Argument(Set(IdName("n")))(solved), Set(IdName("n")))(solved),
-                  IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved),
-                Set(IdName("n")))(solved),
-              Seq(IdName("b"), IdName("r")))(solved),
+                  LockNodes(Argument(Set(IdName("n"))), Set(IdName("n"))),
+                  IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll),
+                Set(IdName("n"))),
+              Seq(IdName("b"), IdName("r"))),
             MergeCreateRelationship(
               MergeCreateNode(
-                Argument(Set(IdName("n")))(solved),
-                IdName("b"), Seq.empty, None)(solved),
-              IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("b"), None)(solved),
-            Seq(IdName("b"), IdName("r")))(solved)
-        )(solved)
-      )(solved)
+                Argument(Set(IdName("n"))),
+                IdName("b"), Seq.empty, None),
+              IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("b"), None),
+            Seq(IdName("b"), IdName("r")))
+        )
+      )
     )
   }
 
@@ -124,30 +124,30 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     plan should equal(EmptyResult(
       Apply(
         CartesianProduct(
-          AllNodesScan(IdName("n"), Set())(solved),
-          AllNodesScan(IdName("m"), Set())(solved)
-        )(solved),
+          AllNodesScan(IdName("n"), Set()),
+          AllNodesScan(IdName("m"), Set())
+        ),
         AntiConditionalApply(
           AntiConditionalApply(
             Optional(
               Expand(
-                Argument(Set(IdName("n"), IdName("m")))(solved),
-                IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("m"), IdName("r"), ExpandInto)(solved),
-              Set(IdName("n"), IdName("m")))(solved),
+                Argument(Set(IdName("n"), IdName("m"))),
+                IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("m"), IdName("r"), ExpandInto),
+              Set(IdName("n"), IdName("m"))),
             Optional(
               Expand(
                 LockNodes(
-                  Argument(Set(IdName("n"), IdName("m")))(solved),
-                  Set(IdName("n"), IdName("m")))(solved),
-                IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("m"), IdName("r"), ExpandInto)(solved),
-              Set(IdName("n"), IdName("m")))(solved),
-            Vector(IdName("r")))(solved),
+                  Argument(Set(IdName("n"), IdName("m"))),
+                  Set(IdName("n"), IdName("m"))),
+                IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("m"), IdName("r"), ExpandInto),
+              Set(IdName("n"), IdName("m"))),
+            Vector(IdName("r"))),
           MergeCreateRelationship(
-            Argument(Set(IdName("n"), IdName("m")))(solved),
-            IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("m"), None)(solved),
-          Vector(IdName("r")))(solved)
-      )(solved)
-    )(solved)
+            Argument(Set(IdName("n"), IdName("m"))),
+            IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("m"), None),
+          Vector(IdName("r")))
+      )
+    )
     )
   }
 
@@ -157,33 +157,33 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
         Apply(
           Projection(
             CartesianProduct(
-              AllNodesScan(IdName("n"), Set())(solved),
-              AllNodesScan(IdName("m"), Set())(solved)
-            )(solved),
+              AllNodesScan(IdName("n"), Set()),
+              AllNodesScan(IdName("m"), Set())
+            ),
             Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos))
-          )(solved),
+          ),
           AntiConditionalApply(
             AntiConditionalApply(
               Optional(
                 Expand(
-                  Argument(Set(IdName("a"), IdName("b")))(solved),
-                  IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandInto)(solved),
+                  Argument(Set(IdName("a"), IdName("b"))),
+                  IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandInto),
                 Set(IdName("a"), IdName("b"))
-              )(solved),
+              ),
               Optional(
                 Expand(
                   LockNodes(
-                    Argument(Set(IdName("a"), IdName("b")))(solved), Set(IdName("a"), IdName("b")))(solved),
-                  IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandInto)(solved),
+                    Argument(Set(IdName("a"), IdName("b"))), Set(IdName("a"), IdName("b"))),
+                  IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandInto),
                 Set(IdName("a"), IdName("b"))
-              )(solved),
-              Vector(IdName("r")))(solved),
+              ),
+              Vector(IdName("r"))),
             MergeCreateRelationship(
-              Argument(Set(IdName("a"), IdName("b")))(solved),
-              IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved),
-            Seq(IdName("r")))(solved)
-        )(solved)
-      )(solved)
+              Argument(Set(IdName("a"), IdName("b"))),
+              IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None),
+            Seq(IdName("r")))
+        )
+      )
     )
   }
 
@@ -192,32 +192,32 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       EmptyResult(
         Apply(
           Projection(
-            AllNodesScan(IdName("n"), Set())(solved),
+            AllNodesScan(IdName("n"), Set()),
             Map("a" -> Variable("n")(pos))
-          )(solved),
+          ),
           AntiConditionalApply(
             AntiConditionalApply(
               Optional(
                 Expand(
-                  Argument(Set(IdName("a")))(solved),
-                  IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved),
+                  Argument(Set(IdName("a"))),
+                  IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll),
                 Set(IdName("a"))
-              )(solved),
+              ),
               Optional(
                 Expand(
-                  LockNodes(Argument(Set(IdName("a")))(solved), Set(IdName("a")))(solved),
-                  IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved),
+                  LockNodes(Argument(Set(IdName("a"))), Set(IdName("a"))),
+                  IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll),
                 Set(IdName("a"))
-              )(solved),
-              Seq(IdName("b"), IdName("r")))(solved),
+              ),
+              Seq(IdName("b"), IdName("r"))),
             MergeCreateRelationship(
               MergeCreateNode(
-                Argument(Set(IdName("a")))(solved),
-                IdName("b"), Seq.empty, None)(solved),
-              IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved),
-            Seq(IdName("b"), IdName("r")))(solved)
-        )(solved)
-      )(solved)
+                Argument(Set(IdName("a"))),
+                IdName("b"), Seq.empty, None),
+              IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None),
+            Seq(IdName("b"), IdName("r")))
+        )
+      )
     )
   }
 }

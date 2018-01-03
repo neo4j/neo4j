@@ -30,7 +30,7 @@ case class NodeIndexScan(idName: IdName,
                          label: LabelToken,
                          propertyKey: PropertyKeyToken,
                          argumentIds: Set[IdName])
-                        (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                        (implicit idGen: IdGen)
   extends NodeLogicalLeafPlan(idGen) {
 
   def availableSymbols: Set[IdName] = argumentIds + idName

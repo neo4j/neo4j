@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName}
   */
 case class CreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: RelTypeName, endNode: IdName,
                               properties: Option[Expression])
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                           (implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)

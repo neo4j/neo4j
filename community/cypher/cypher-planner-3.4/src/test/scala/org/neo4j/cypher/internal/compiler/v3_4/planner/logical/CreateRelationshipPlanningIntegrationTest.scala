@@ -32,10 +32,10 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CreateNode(
-            CreateNode(Argument()(solved), IdName("a"), Seq.empty, None)(solved),
-            IdName("b"), Seq.empty, None)(solved),
-          IdName("r"), IdName("a"), relType("R"), IdName("b"), None)(solved)
-      )(solved)
+            CreateNode(Argument(), IdName("a"), Seq.empty, None),
+            IdName("b"), Seq.empty, None),
+          IdName("r"), IdName("a"), relType("R"), IdName("b"), None)
+      )
     )
   }
 
@@ -48,14 +48,14 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
               CreateNode(
                 CreateNode(
                   CreateNode(
-                    CreateNode(Argument()(solved),IdName("a"),Seq.empty,None)(solved),
-                    IdName("b"),Seq.empty,None)(solved),
-                  IdName("c"),Seq.empty,None)(solved),
-                IdName("d"),Seq.empty,None)(solved),
-              IdName("r1"),IdName("a"),relType("R1"),IdName("b"),None)(solved),
-            IdName("r2"),IdName("c"),relType("R2"),IdName("b"),None)(solved),
-          IdName("r3"),IdName("c"),relType("R3"),IdName("d"),None)(solved)
-      )(solved)
+                    CreateNode(Argument(),IdName("a"),Seq.empty,None),
+                    IdName("b"),Seq.empty,None),
+                  IdName("c"),Seq.empty,None),
+                IdName("d"),Seq.empty,None),
+              IdName("r1"),IdName("a"),relType("R1"),IdName("b"),None),
+            IdName("r2"),IdName("c"),relType("R2"),IdName("b"),None),
+          IdName("r3"),IdName("c"),relType("R3"),IdName("d"),None)
+      )
     )
   }
 
@@ -66,12 +66,12 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
           CreateRelationship(
             CreateNode(
               CreateNode(
-                CreateNode(Argument()(solved),IdName("a"),Seq.empty,None)(solved),
-                IdName("b"),Seq.empty,None)(solved),
-              IdName("c"),Seq.empty,None)(solved),
-            IdName("r1"),IdName("b"),relType("R1"),IdName("a"),None)(solved),
-          IdName("r2"),IdName("c"),relType("R2"),IdName("b"),None)(solved)
-      )(solved)
+                CreateNode(Argument(),IdName("a"),Seq.empty,None),
+                IdName("b"),Seq.empty,None),
+              IdName("c"),Seq.empty,None),
+            IdName("r1"),IdName("b"),relType("R1"),IdName("a"),None),
+          IdName("r2"),IdName("c"),relType("R2"),IdName("b"),None)
+      )
     )
   }
 
@@ -80,10 +80,10 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CreateNode(
-            AllNodesScan(IdName("n"), Set())(solved),
-            IdName("b"), Seq.empty, None)(solved),
-          IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("b"), None)(solved)
-      )(solved)
+            AllNodesScan(IdName("n"), Set()),
+            IdName("b"), Seq.empty, None),
+          IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("b"), None)
+      )
     )
   }
 
@@ -92,11 +92,11 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CartesianProduct(
-            AllNodesScan(IdName("n"), Set())(solved),
-            AllNodesScan(IdName("m"), Set())(solved)
-          )(solved),
-          IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("m"), None)(solved)
-      )(solved)
+            AllNodesScan(IdName("n"), Set()),
+            AllNodesScan(IdName("m"), Set())
+          ),
+          IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("m"), None)
+      )
     )
   }
 
@@ -106,11 +106,11 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
         CreateRelationship(
           Projection(
             CartesianProduct(
-              AllNodesScan(IdName("n"), Set())(solved),
-              AllNodesScan(IdName("m"), Set())(solved)
-            )(solved), Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos)))(solved),
-          IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved)
-      )(solved)
+              AllNodesScan(IdName("n"), Set()),
+              AllNodesScan(IdName("m"), Set())
+            ), Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos))),
+          IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)
+      )
     )
   }
 
@@ -120,11 +120,11 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
         CreateRelationship(
           CreateNode(
             Projection(
-              AllNodesScan(IdName("n"), Set())(solved),
-              Map("a" -> Variable("n")(pos)))(solved),
-            IdName("b"), Seq.empty, None)(solved),
-          IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved)
-      )(solved)
+              AllNodesScan(IdName("n"), Set()),
+              Map("a" -> Variable("n")(pos))),
+            IdName("b"), Seq.empty, None),
+          IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)
+      )
     )
   }
 

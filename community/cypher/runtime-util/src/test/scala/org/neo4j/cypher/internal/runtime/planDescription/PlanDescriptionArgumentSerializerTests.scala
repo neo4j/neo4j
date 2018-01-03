@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NestedPlanExpr
 import org.neo4j.cypher.internal.v3_4.logical.plans
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   private val pos = DummyPosition(0)
   implicit val idGen = new SequentialIdGen()
 
@@ -55,7 +54,7 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("serialize nested plan expression") {
-    val argument: LogicalPlan = plans.Argument(Set.empty)(solved)
+    val argument: LogicalPlan = plans.Argument(Set.empty)
     val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
 
     val nested = NestedPlanExpression(argument, expression)(pos)

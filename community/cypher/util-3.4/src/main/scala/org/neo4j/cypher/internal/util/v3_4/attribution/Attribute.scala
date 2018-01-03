@@ -32,12 +32,17 @@ trait Attribute[T] {
     array(id.x).value = t
   }
 
+  def isDefinedAt(id: Id): Boolean = {
+    array.size > id.x && array(id.x).hasValue
+  }
+
   def get(id:Id): T = {
     array(id.x).value
   }
 
   def copy(from:Id, to:Id): Unit = {
-    set(to, get(from))
+    if(isDefinedAt(from))
+      set(to, get(from))
   }
 
   override def toString(): String = {
@@ -54,7 +59,14 @@ trait Attribute[T] {
   }
 }
 
-class Attributes(idGen: IdGen, private val attributes: Attribute[_]*) {
+/**
+  * This class encapsulates attributes and allows to copy them from one ID to another without having explicit
+  * read or write access. This allows rewriters to set some attributes manually on a new ID, but copying
+  * others over from an old id.
+  * @param idGen the IdGen used to provide new IDs
+  * @param attributes the attributes encapsulated
+  */
+case class Attributes(idGen: IdGen, private val attributes: Attribute[_]*) {
   def copy(from: Id): IdGen = new IdGen {
     override def id(): Id = {
       val to = idGen.id()
@@ -63,5 +75,9 @@ class Attributes(idGen: IdGen, private val attributes: Attribute[_]*) {
       }
       to
     }
+  }
+
+  def withAlso(attributes: Attribute[_]*) : Attributes = {
+    Attributes(this.idGen, this.attributes ++ attributes: _*)
   }
 }

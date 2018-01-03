@@ -39,8 +39,8 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * }
   */
 case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
-                               (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)(idGen)
+                               (implicit idGen: IdGen)
+  extends AbstractLetSelectOrSemiApply(left, right, idName, expr)(idGen)
 
 /**
   * Like LetAntiSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will to set to true without
@@ -58,11 +58,11 @@ case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: I
   * }
   */
 case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
-                                   (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)(idGen)
+                                   (implicit idGen: IdGen)
+  extends AbstractLetSelectOrSemiApply(left, right, idName, expr)(idGen)
 
-abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression,
-                                            solved: PlannerQuery with CardinalityEstimation)(idGen: IdGen)
+abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
+                                           (idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)

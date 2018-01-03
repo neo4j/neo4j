@@ -34,7 +34,7 @@ case class NodeIndexEndsWithScan(idName: IdName,
                                  propertyKey: PropertyKeyToken,
                                  valueExpr: Expression,
                                  argumentIds: Set[IdName])
-                                (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                (implicit idGen: IdGen)
   extends NodeLogicalLeafPlan(idGen) {
 
   def availableSymbols: Set[IdName] = argumentIds + idName

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *   If the procedure returns void, produce the source row
   */
 case class ProcedureCall(source: LogicalPlan, call: ResolvedCall)
-                        (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                        (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)

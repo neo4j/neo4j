@@ -37,7 +37,7 @@ case class RelationshipCountFromCountStore(idName: IdName,
                                            typeNames: Seq[RelTypeName],
                                            endLabel: Option[LabelName],
                                            argumentIds: Set[IdName]
-                                          )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                          )(implicit idGen: IdGen)
   extends LogicalLeafPlan(idGen) {
 
   def availableSymbols = Set(idName)

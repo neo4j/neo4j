@@ -33,9 +33,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   test("Should build plans containing expand for single relationship pattern") {
     planFor("MATCH (a)-[r]->(b) RETURN r")._2 should equal(
         Expand(
-          AllNodesScan("b", Set.empty)(solved),
+          AllNodesScan("b", Set.empty),
           "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
-        )(solved)
+        )
     )
   }
 
@@ -67,8 +67,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
     result should equal(
       Expand(
-        AllNodesScan("a", Set.empty)(solved),
-        "a", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandInto)(solved)
+        AllNodesScan("a", Set.empty),
+        "a", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandInto)
     )
   }
 
@@ -84,10 +84,10 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Selection(Seq(Not(Equals(Variable("r1")_,Variable("r2")_)_)_),
         Expand(
           Expand(
-            AllNodesScan(IdName("b"),Set.empty)(solved),
-            IdName("b"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r2"),ExpandAll)(solved),
-          IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandInto)(solved)
-        )(solved)
+            AllNodesScan(IdName("b"),Set.empty),
+            IdName("b"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r2"),ExpandAll),
+          IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandInto)
+        )
     )
   }
 
@@ -104,10 +104,10 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         Expand(
           Selection(
             Seq(In(Property(Variable("a")_, PropertyKeyName("name")_)_, ListLiteral(Seq(StringLiteral("Andres")_))_)_),
-            AllNodesScan("a", Set.empty)(solved)
-          )(solved),
+            AllNodesScan("a", Set.empty)
+          ),
           "a", SemanticDirection.BOTH, Seq(RelTypeName("x")_), "start", "rel"
-      )(solved)
+      )
     )
   }
 
@@ -121,9 +121,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Person", "name")
     } getLogicalPlanFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r")._2 should equal(
         Expand(
-          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), Seq(PropertyKeyToken("name", PropertyKeyId(0))), SingleQueryExpression(StringLiteral("Andres")_), Set.empty)(solved),
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), Seq(PropertyKeyToken("name", PropertyKeyId(0))), SingleQueryExpression(StringLiteral("Andres")_), Set.empty),
           "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
-        )(solved)
+        )
     )
   }
 }

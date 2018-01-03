@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelName}
   * labels and properties exist.
   */
 case class MergeCreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LabelName], properties: Option[Expression])
-                          (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                          (implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)

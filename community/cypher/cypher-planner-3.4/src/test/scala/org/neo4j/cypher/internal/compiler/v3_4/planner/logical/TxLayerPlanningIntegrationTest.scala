@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_4.PlanningAttributes.TransactionLayers
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -28,7 +28,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("MATCH and CREATE") {
-    val (_, plan, _, txLayers) = planFor("MATCH (a) CREATE (b)")
+    val (_, plan, _, txLayers, _, _) = planFor("MATCH (a) CREATE (b)")
     inSeqAssert(plan,
       (classOf[AllNodesScan], _ should readFromLayer(txLayers, 0)),
       (classOf[CreateNode], _ should writeToLayer(txLayers, 1)),
@@ -37,7 +37,7 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("MATCH SET RETURN") {
-    val (_, plan, _, txLayers) = planFor("MATCH (n)-[r]-(m) SET r.val = r.val + 1 RETURN r.val AS rv")
+    val (_, plan, _, txLayers, _, _) = planFor("MATCH (n)-[r]-(m) SET r.val = r.val + 1 RETURN r.val AS rv")
     inSeqAssert(plan,
       (classOf[Expand], _ should readFromLayer(txLayers, 0)),
       (classOf[SetRelationshipPropery], _ should writeToLayer(txLayers, 1)),
@@ -46,7 +46,7 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("MATCH and triple SET") {
-    val (_, plan, _, txLayers) = planFor("MATCH (a:A),(b:B),(c:C) SET a.prop = b.prop SET b.prop = c.prop SET c.prop = 42")
+    val (_, plan, _, txLayers, _, _) = planFor("MATCH (a:A),(b:B),(c:C) SET a.prop = b.prop SET b.prop = c.prop SET c.prop = 42")
     inSeqAssert(plan,
       (classOf[CartesianProduct], _ should readFromLayer(txLayers, 0)),
       (classOf[SetNodeProperty], _ should writeToLayer(txLayers, 1)),
@@ -57,7 +57,7 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("DELETE and MERGE") {
-    val (_, plan, _, txLayers) = planFor("MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)")
+    val (_, plan, _, txLayers, _, _) = planFor("MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)")
     inSeqAssert(plan,
       (classOf[AllNodesScan], _ should readFromLayer(txLayers, 0)), // First match
       (classOf[DeleteNode], _ should writeToLayer(txLayers, 1)),

@@ -56,10 +56,9 @@ object DebugPrinter extends Phase[CompilerContext, LogicalPlanState, LogicalPlan
   private def stringToLogicalPlan(string: String): (LogicalPlan, Statement) = {
     implicit val idGen = new SequentialIdGen()
     val pos = InputPosition(0, 0, 0)
-    val solved = CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty), 0.0)
     val stringValues = string.split("\n").map(s => StringLiteral(s)(pos))
     val expression = ListLiteral(stringValues.toSeq)(pos)
-    val unwind = UnwindCollection(Argument(Set.empty)(solved), IdName("col"), expression)(solved)
+    val unwind = UnwindCollection(Argument(Set.empty), IdName("col"), expression)
     val logicalPlan = ProduceResult(unwind, Seq("col"))
 
     val variable = Variable("col")(pos)

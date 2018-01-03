@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *   }
   * }
   */
-case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[IdName])(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[IdName])(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(left)

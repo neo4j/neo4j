@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *   }
   * }
   */
-case class Apply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+case class Apply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(left)

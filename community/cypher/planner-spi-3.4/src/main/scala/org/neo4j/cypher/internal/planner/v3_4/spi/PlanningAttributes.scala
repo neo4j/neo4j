@@ -17,10 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_4
+package org.neo4j.cypher.internal.planner.v3_4.spi
 
+import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
+import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.util.v3_4.attribution.Attribute
 
 object PlanningAttributes {
   class TransactionLayers extends Attribute[Int]
+  class Solveds extends Attribute[PlannerQuery]
+  class Cardinalities extends Attribute[Cardinality]
 }

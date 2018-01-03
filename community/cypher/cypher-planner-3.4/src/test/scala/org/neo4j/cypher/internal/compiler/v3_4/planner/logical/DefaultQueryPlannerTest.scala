@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify, when}
-import org.neo4j.cypher.internal.compiler.v3_4.PlanningAttributes.TransactionLayers
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds, TransactionLayers}
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -58,11 +59,18 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     result.columns should equal(Seq("x"))
   }
 
-  private def createProduceResultOperator(columns: Seq[String], semanticTable: SemanticTable): ProduceResult = {
-    val planningContext = mockLogicalPlanningContext(semanticTable)
+  private def createProduceResultOperator(columns: Seq[String],
+                                          semanticTable: SemanticTable): ProduceResult = {
+    val solveds: Solveds = new Solveds
+    val cardinalities: Cardinalities = new Cardinalities
+    val transactionLayers: TransactionLayers = new TransactionLayers
+    val planningContext = mockLogicalPlanningContext(semanticTable, solveds, cardinalities, transactionLayers)
 
-    val inputPlan = mock[LogicalPlan]
-    when(inputPlan.availableSymbols).thenReturn(columns.map(IdName.apply).toSet)
+    val inputPlan = FakePlan(columns.map(IdName.apply).toSet)
+    solveds.set(inputPlan.id, PlannerQuery.empty)
+    cardinalities.set(inputPlan.id, 0.0)
+    transactionLayers.set(inputPlan.id, 0)
+
 
     val queryPlanner = QueryPlanner(planSingleQuery = new FakePlanner(inputPlan))
 
@@ -70,7 +78,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val union = UnionQuery(Seq(pq), distinct = false, columns.map(IdName.apply), periodicCommit = None)
 
-    val (_, result) = queryPlanner.plan(union, planningContext)
+    val (_, result) = queryPlanner.plan(union, planningContext, solveds, cardinalities, transactionLayers, idGen)
 
     result shouldBe a [ProduceResult]
 
@@ -89,15 +97,19 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(plannerQuery.allHints).thenReturn(Set[Hint]())
 
     val lp = {
-      val plan = Argument()(plannerQuery)
-      Projection(plan, Map.empty)(plannerQuery)
+      val plan = Argument()
+      Projection(plan, Map.empty)
     }
 
     val context = mock[LogicalPlanningContext]
     when(context.config).thenReturn(QueryPlannerConfiguration.default)
     when(context.input).thenReturn(QueryGraphSolverInput.empty)
     when(context.strategy).thenReturn(new QueryGraphSolver with PatternExpressionSolving {
-      override def plan(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = lp
+      override def plan(queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+        solveds.set(lp.id, plannerQuery)
+        cardinalities.set(lp.id, 0.0)
+        lp
+      }
     })
     when(context.withStrictness(any())).thenReturn(context)
     val producer = mock[LogicalPlanProducer]
@@ -108,19 +120,19 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // when
     val query = UnionQuery(Seq(plannerQuery), distinct = false, Seq.empty, None)
-    queryPlanner.plan(query, context)
+    queryPlanner.plan(query, context, new Solveds, new Cardinalities, new TransactionLayers, idGen)
 
     // then
     verify(context, times(1)).withStrictness(LazyMode)
   }
 
-  class FakePlanner(result: LogicalPlan) extends ((PlannerQuery, LogicalPlanningContext) => LogicalPlan) {
-    def apply(input: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = result
+  class FakePlanner(result: LogicalPlan) extends ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, TransactionLayers, IdGen) => LogicalPlan) {
+    def apply(input: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, transactionLayers: TransactionLayers, idGen: IdGen): LogicalPlan = result
   }
 
-  private def mockLogicalPlanningContext(semanticTable: SemanticTable) = LogicalPlanningContext(
+  private def mockLogicalPlanningContext(semanticTable: SemanticTable, solveds: Solveds, cardinalities: Cardinalities, transactionLayers: TransactionLayers) = LogicalPlanningContext(
     planContext = mock[PlanContext],
-    logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, new TransactionLayers, idGen),
+    logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, transactionLayers, solveds, cardinalities, idGen),
     metrics = mock[Metrics],
     semanticTable = semanticTable,
     strategy = mock[QueryGraphSolver],

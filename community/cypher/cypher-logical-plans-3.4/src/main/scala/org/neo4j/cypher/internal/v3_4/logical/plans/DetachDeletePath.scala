@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * relationships are deleted.
   */
 case class DetachDeletePath(source: LogicalPlan, expression: Expression)
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                           (implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)

@@ -35,7 +35,7 @@ case class SetRelationshipPropery(
                                    idName: IdName,
                                    propertyKey: PropertyKeyName,
                                    expression: Expression
-                                 )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                 )(implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)

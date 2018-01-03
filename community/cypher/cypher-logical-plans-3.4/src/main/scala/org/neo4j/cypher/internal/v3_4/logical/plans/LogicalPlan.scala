@@ -51,7 +51,6 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
-  def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
 
   val id = idGen.id()
@@ -61,40 +60,27 @@ abstract class LogicalPlan(idGen: IdGen)
       if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => (acc :+ plan, Some(identity))
   }
 
-  def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): LogicalPlan = {
-    val arguments = this.children.toList :+ newSolved :+ SameId(this.id)
-    try {
-      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
-    } catch {
-      case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
-        throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor")
-    }
-  }
-
   def copyPlan(): LogicalPlan = {
     try {
-      val arguments = this.children.toList :+ solved :+ SameId(this.id)
+      val arguments = this.children.toList:+ SameId(this.id)
       copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
-        throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor and the IdGen in yet another", e)
+        throw new InternalException("Logical plans need to be case classes, and have the IdGen in a separate constructor", e)
     }
   }
 
   def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
     try {
-      val arguments = this.children.toList :+ solved :+ idGen
+      val arguments = this.children.toList :+ idGen
       copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
-        throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor and the IdGen in yet another", e)
+        throw new InternalException("Logical plans need to be case classes, and have the IdGen in a separate constructor", e)
     }
   }
 
   lazy val copyConstructor: Method = this.getClass.getMethods.find(_.getName == "copy").get
-
-  def updateSolved(f: PlannerQuery with CardinalityEstimation => PlannerQuery with CardinalityEstimation): LogicalPlan =
-    updateSolved(f(solved))
 
   def dup(children: Seq[AnyRef]): this.type =
     if (children.iterator eqElements this.children)
@@ -110,7 +96,7 @@ abstract class LogicalPlan(idGen: IdGen)
         else if ((params.length == args.length + 2)
           && params(params.length - 2).isAssignableFrom(classOf[PlannerQuery])
           && params(params.length - 1).isAssignableFrom(classOf[IdGen]))
-          constructor.invoke(this, args :+ this.solved :+ SameId(this.id): _*).asInstanceOf[this.type]
+          constructor.invoke(this, args :+ SameId(this.id): _*).asInstanceOf[this.type]
         else
           constructor.invoke(this, args: _*).asInstanceOf[this.type]
       resultingPlan

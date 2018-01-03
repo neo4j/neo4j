@@ -34,6 +34,6 @@ case class NodeUniqueIndexSeek(idName: IdName,
                                propertyKeys: Seq[PropertyKeyToken],
                                valueExpr: QueryExpression[Expression],
                                argumentIds: Set[IdName])
-                              (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends IndexLeafPlan(idGen) {
+                              (implicit idGen: IdGen) extends IndexLeafPlan(idGen) {
   def availableSymbols: Set[IdName] = argumentIds + idName
 }

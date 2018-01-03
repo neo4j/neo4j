@@ -189,6 +189,7 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
   override def dependencies: Set[IdName] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 }
 
+// TODO remove
 trait CardinalityEstimation {
   self: PlannerQuery =>
 

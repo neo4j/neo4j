@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *
   *   produce leftRow
   */
-case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(left)

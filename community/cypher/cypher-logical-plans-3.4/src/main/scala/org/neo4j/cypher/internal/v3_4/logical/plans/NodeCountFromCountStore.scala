@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.LabelName
   * result is assigned to 'idName'
   */
 case class NodeCountFromCountStore(idName: IdName, labelNames: List[Option[LabelName]], argumentIds: Set[IdName])
-                                    (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                    (implicit idGen: IdGen)
   extends LogicalLeafPlan(idGen) {
 
   def availableSymbols = Set(idName)

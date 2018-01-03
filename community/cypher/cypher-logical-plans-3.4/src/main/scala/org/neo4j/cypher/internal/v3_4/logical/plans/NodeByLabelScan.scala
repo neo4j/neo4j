@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.LabelName
   * and the contents of argument.
   */
 case class NodeByLabelScan(idName: IdName, label: LabelName, argumentIds: Set[IdName])
-                          (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                          (implicit idGen: IdGen)
   extends NodeLogicalLeafPlan(idGen) {
 
   def availableSymbols: Set[IdName] = argumentIds + idName

@@ -35,7 +35,7 @@ case class SetProperty(
                         entity: Expression,
                         propertyKey: PropertyKeyName,
                         value: Expression
-                      )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+                      )(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs = Some(source)
 

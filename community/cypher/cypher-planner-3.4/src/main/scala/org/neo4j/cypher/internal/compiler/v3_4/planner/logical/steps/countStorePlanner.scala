@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.functions
@@ -28,14 +29,14 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 case object countStorePlanner {
 
-  def apply(query: PlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] = {
+  def apply(query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Option[LogicalPlan] = {
     implicit val semanticTable = context.semanticTable
     query.horizon match {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _)
         if groupingKeys.isEmpty && aggregatingExpressions.size == 1 =>
         val (columnName, exp) = aggregatingExpressions.head
         val countStorePlan = checkForValidQueryGraph(query, columnName, exp, context)
-        countStorePlan.map(p => projection(p, groupingKeys, context))
+        countStorePlan.map(p => projection(p, groupingKeys, context, solveds, cardinalities))
 
       case _ => None
     }

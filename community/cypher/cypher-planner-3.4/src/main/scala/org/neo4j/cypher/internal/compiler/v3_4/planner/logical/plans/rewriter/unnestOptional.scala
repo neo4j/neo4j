@@ -47,15 +47,15 @@ case object unnestOptional extends Rewriter {
     case apply@Apply(lhs,
       Optional(
       e@Expand(_: Argument, _, _, _, _, _, _), _)) =>
-        optionalExpand(e.selfThis, lhs)(Seq.empty)(apply.solved)(SameId(apply.id))
+        optionalExpand(e.selfThis, lhs)(Seq.empty)(SameId(apply.id))
 
     case apply@Apply(lhs,
       Optional(
       Selection(predicates,
       e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
-        optionalExpand(e.selfThis, lhs)(predicates)(apply.solved)(SameId(apply.id))
+        optionalExpand(e.selfThis, lhs)(predicates)(SameId(apply.id))
   })
 
-  private def optionalExpand(e: Expand, lhs: LogicalPlan): Seq[Expression] => PlannerQuery with CardinalityEstimation => IdGen => OptionalExpand =
-    predicates => solved => idGen => OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.mode, predicates)(solved)(idGen)
+  private def optionalExpand(e: Expand, lhs: LogicalPlan): Seq[Expression] => IdGen => OptionalExpand =
+    predicates => idGen => OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.mode, predicates)(idGen)
 }

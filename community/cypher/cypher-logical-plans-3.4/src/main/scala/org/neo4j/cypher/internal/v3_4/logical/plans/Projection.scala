@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * the expression.
   */
 case class Projection(source: LogicalPlan, expressions: Map[String, Expression])
-                     (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+                     (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(source)
   val rhs = None
 

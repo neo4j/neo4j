@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
  * produced once source if fully consumed.
  */
 case class Top(source: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression)
-              (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+              (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(source)
 
   override def rhs: Option[LogicalPlan] = None

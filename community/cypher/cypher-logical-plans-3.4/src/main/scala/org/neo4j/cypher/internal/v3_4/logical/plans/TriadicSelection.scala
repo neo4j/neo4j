@@ -63,7 +63,7 @@ case class TriadicSelection(
                              right: LogicalPlan,
                              positivePredicate: Boolean,
                              sourceId: IdName, seenId: IdName, targetId: IdName
-                           )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                           )(implicit idGen: IdGen)
 extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(left)

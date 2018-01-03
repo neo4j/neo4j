@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * }
   */
 case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
-                       (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends AbstractLetSemiApply(left, right, idName, solved)(idGen)
+                       (implicit idGen: IdGen)
+  extends AbstractLetSemiApply(left, right, idName)(idGen)
 
 /**
   * For every row in left, set that row as the argument, and apply to right. Produce left row, and set 'idName' =
@@ -47,11 +47,11 @@ case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
   * }
   */
 case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends AbstractLetSemiApply(left, right, idName, solved)(idGen)
+                           (implicit idGen: IdGen)
+  extends AbstractLetSemiApply(left, right, idName)(idGen)
 
-abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan,
-                                    idName: IdName, solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
+                                   (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)

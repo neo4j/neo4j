@@ -38,7 +38,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
 
   test("zero size argument for single all nodes scan") {
     // given
-    val plan = AllNodesScan(x, Set.empty)(solved)
+    val plan = AllNodesScan(x, Set.empty)
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
@@ -50,8 +50,8 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
 
   test("zero size argument for only leaf operator") {
     // given
-    val leaf = AllNodesScan(x, Set.empty)(solved)
-    val expand = Expand(leaf, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
+    val leaf = AllNodesScan(x, Set.empty)
+    val expand = Expand(leaf, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)
 
     // when
     val arguments = SlotAllocation.allocateSlots(expand, semanticTable).argumentSizes
@@ -62,7 +62,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("zero size argument for argument operator") {
-    val argument = Argument(Set.empty)(solved)
+    val argument = Argument(Set.empty)
 
     // when
     val arguments = SlotAllocation.allocateSlots(argument, semanticTable).argumentSizes
@@ -223,7 +223,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
 
     val leaf1 = leaf()
     val leaf2 = leaf()
-    val optional = Optional(leaf2, Set.empty)(solved)
+    val optional = Optional(leaf2, Set.empty)
     val plan = applyRight(pipe(leaf1, 1, 0), optional)
 
     // when
@@ -236,17 +236,17 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     arguments(optional.id) should equal(Size(1, 0))
   }
 
-  private def leaf() = Argument(Set.empty)(solved)
-  private def applyRight(lhs:LogicalPlan, rhs:LogicalPlan) = Apply(lhs, rhs)(solved)
-  private def applyLeft(lhs:LogicalPlan, rhs:LogicalPlan) = SemiApply(lhs, rhs)(solved)
-  private def break(source:LogicalPlan) = Eager(source)(solved)
+  private def leaf() = Argument(Set.empty)
+  private def applyRight(lhs:LogicalPlan, rhs:LogicalPlan) = Apply(lhs, rhs)
+  private def applyLeft(lhs:LogicalPlan, rhs:LogicalPlan) = SemiApply(lhs, rhs)
+  private def break(source:LogicalPlan) = Eager(source)
   private def pipe(source:LogicalPlan, nLongs:Int, nRefs:Int) = {
     var curr = source
     for ( i <- 0 until nLongs ) {
-      curr = CreateNode(curr, IdName("long"+i), Nil, None)(solved)
+      curr = CreateNode(curr, IdName("long"+i), Nil, None)
     }
     for ( i <- 0 until nRefs ) {
-      curr = UnwindCollection(curr, IdName("ref"+i), listOf(literalInt(1)))(solved)
+      curr = UnwindCollection(curr, IdName("ref"+i), listOf(literalInt(1)))
     }
     curr
   }

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.BuildCompiledExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_4.NotImplementedPlanContext
-import org.neo4j.cypher.internal.compiler.v3_4.PlanningAttributes.TransactionLayers
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds, TransactionLayers}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{CantCompileQueryException, HardcodedGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
@@ -48,7 +48,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
     monitors.addMonitorListener(monitor)
 
     // When
-    process(monitors, ProduceResult(Argument()(solved), Seq.empty))
+    process(monitors, ProduceResult(Argument(), Seq.empty))
 
     // Then
     monitor.successfullyPlanned should equal(true)
@@ -60,7 +60,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
     val monitor = new SpyingMonitor
     monitors.addMonitorListener(monitor)
 
-    process(monitors, Argument()(solved))
+    process(monitors, Argument())
 
     // Then
     monitor.failedToPlan should equal(true)
@@ -73,7 +73,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
         override def statistics: GraphStatistics = HardcodedGraphStatistics
       }, codeStructure = GeneratedQueryStructure)
 
-    val state = LogicalPlanState("apa", None, CostBasedPlannerName.default, new TransactionLayers,
+    val state = LogicalPlanState("apa", None, CostBasedPlannerName.default, new TransactionLayers, new Solveds, new Cardinalities,
                                  maybeLogicalPlan = Some(plan), maybeSemanticTable = Some(new SemanticTable()))
 
     // When

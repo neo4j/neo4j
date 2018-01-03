@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * list, produce nothing.
   */
 case class UnwindCollection(source: LogicalPlan, variable: IdName, expression: Expression)
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                           (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(source)
   def rhs = None

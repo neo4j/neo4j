@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 /**
   * Throws exception if evaluated.
   */
-case class ErrorPlan(source: LogicalPlan, exception: Exception)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+case class ErrorPlan(source: LogicalPlan, exception: Exception)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 
   override val lhs: Option[LogicalPlan] = Some(source)

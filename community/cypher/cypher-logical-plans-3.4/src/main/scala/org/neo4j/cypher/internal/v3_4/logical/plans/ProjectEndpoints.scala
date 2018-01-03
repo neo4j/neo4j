@@ -40,7 +40,7 @@ case class ProjectEndpoints(source: LogicalPlan,
                             endInScope: Boolean,
                             types: Option[Seq[RelTypeName]],
                             directed: Boolean,
-                            length: PatternLength)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                            length: PatternLength)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(source)
