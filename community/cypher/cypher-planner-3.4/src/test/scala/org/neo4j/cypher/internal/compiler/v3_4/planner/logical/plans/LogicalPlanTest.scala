@@ -19,23 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v3_4.planner.{FakePlan, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
-import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SameId}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Apply, Argument, LogicalPlan}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Apply, Argument}
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
-  // TODO Why are we not using FakePlan?
-  case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan(SameId(Id.INVALID_ID)) {
-    def lhs: Option[LogicalPlan] = ???
-    def availableSymbols: Set[IdName] = ???
-    def rhs: Option[LogicalPlan] = ???
-    def strictness = ???
-  }
 
-  test("updating the planner query works well, thank you very much") {
-    val initialPlan = TestPlan()(solved)
+  test("updating the planner query works well") {
+    val initialPlan = FakePlan()(solved)
 
     val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
 

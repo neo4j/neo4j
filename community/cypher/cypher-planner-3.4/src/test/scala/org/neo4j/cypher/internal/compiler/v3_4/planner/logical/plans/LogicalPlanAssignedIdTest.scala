@@ -20,23 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{CypherException, Rewriter, topDown}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{NestedPlanExpression, _}
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  test("id survives rewriting") {
-    val sr1 = Argument()(solved)
-    val pr = Projection(sr1, Map.empty)(solved)
-
-    val prPrim = pr.endoRewrite(topDown(Rewriter.lift {
-      case sr: Argument => Argument()(solved)
-    }))
-
-    pr.id should equal(prPrim.id)
-    pr.lhs.get.id should equal(prPrim.lhs.get.id)
-  }
 
   test("ids are different between plans") {
     val sr1 = Argument()(solved)
@@ -46,26 +33,4 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
     sr1.id shouldNot equal(sr2.id)
   }
 
-  test("tree structure is assigned ids in a predictable way") {
-    /*
-                ApplyAll(6)
-        ApplyA(5)         ApplyB(2)
-    SR1A(4)  SR2A(3)   SR1B(1) SR2B(0)
-     */
-    val sr1A = Argument()(solved)
-    val sr2A = Argument()(solved)
-    val applyA = Apply(sr1A, sr2A)(solved)
-    val sr1B = Argument()(solved)
-    val sr2B = Argument()(solved)
-    val applyB = Apply(sr1B, sr2B)(solved)
-    val applyAll = Apply(applyA, applyB)(solved) // I heard you guys like Apply, so we applied an Apply in your Apply
-
-    applyAll.id.x should equal(0)
-    applyA.id.x should equal(1)
-    sr1A.id.x should equal(2)
-    sr2A.id.x should equal(3)
-    applyB.id.x should equal(4)
-    sr1B.id.x should equal(5)
-    sr2B.id.x should equal(6)
-  }
 }
