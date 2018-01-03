@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.{ArgumentSizes, SlotConfigurations}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.frontend.v3_4.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, IdName, NoHeaders, ShortestPathPattern}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -50,8 +50,8 @@ object SlotAllocation {
 
   case class SlotsAndArgument(slotConfiguration: SlotConfiguration, argumentSize: Size)
 
-  case class PhysicalPlan(slotConfigurations: Map[Id, SlotConfiguration],
-                          argumentSizes: Map[Id, Size])
+  case class PhysicalPlan(slotConfigurations: SlotConfigurations,
+                          argumentSizes: ArgumentSizes)
 
   /**
     * Allocate slot for every operator in the logical plan tree {@code lp}.
@@ -61,10 +61,9 @@ object SlotAllocation {
     */
   def allocateSlots(lp: LogicalPlan,
                     semanticTable: SemanticTable,
-                    initialSlotsAndArgument: Option[SlotsAndArgument] = None): PhysicalPlan = {
-
-    val allocations = new mutable.OpenHashMap[Id, SlotConfiguration]()
-    val arguments = new mutable.OpenHashMap[Id, Size]()
+                    initialSlotsAndArgument: Option[SlotsAndArgument] = None,
+                   allocations: SlotConfigurations = new SlotConfigurations,
+                   arguments: ArgumentSizes = new ArgumentSizes): PhysicalPlan = {
 
     val planStack = new mutable.Stack[(Boolean, LogicalPlan)]()
     val resultStack = new mutable.Stack[SlotConfiguration]()
@@ -73,7 +72,7 @@ object SlotAllocation {
     var comingFrom = lp
 
     def recordArgument(plan: LogicalPlan, argument: SlotsAndArgument) = {
-      arguments += plan.id -> argument.argumentSize
+      arguments.set(plan.id, argument.argumentSize)
     }
 
     /**
@@ -106,7 +105,7 @@ object SlotAllocation {
           recordArgument(current, argument)
           val slotsIncludingExpressions = allocateExpressions(current, nullable, argument.slotConfiguration.copy(), allocations, arguments)(semanticTable)
           val result = allocate(current, nullable, slotsIncludingExpressions)
-          allocations += (current.id -> result)
+          allocations.set(current.id, result)
           resultStack.push(result)
 
         case (Some(_), None) =>
@@ -115,7 +114,7 @@ object SlotAllocation {
                          else argumentStack.top
           val slotsIncludingExpressions = allocateExpressions(current, nullable, sourceSlots, allocations, arguments)(semanticTable)
           val result = allocate(current, nullable, slotsIncludingExpressions, recordArgument(_, argument))
-          allocations += (current.id -> result)
+          allocations.set(current.id, result)
           resultStack.push(result)
 
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
@@ -139,7 +138,7 @@ object SlotAllocation {
           val lhsSlotsIncludingExpressions = allocateExpressions(current, nullable, lhsSlots, allocations, arguments, shouldAllocateLhs = true)(semanticTable)
           val rhsSlotsIncludingExpressions = allocateExpressions(current, nullable, rhsSlots, allocations, arguments, shouldAllocateLhs = false)(semanticTable)
           val result = allocate(current, nullable, lhsSlotsIncludingExpressions, rhsSlotsIncludingExpressions, recordArgument(_, argument))
-          allocations += (current.id -> result)
+          allocations.set(current.id, result)
           if (isAnApplyPlan(current))
             argumentStack.pop()
           resultStack.push(result)
@@ -148,13 +147,13 @@ object SlotAllocation {
       comingFrom = current
     }
 
-    PhysicalPlan(allocations.toMap, arguments.toMap)
+    PhysicalPlan(allocations, arguments)
   }
 
   // NOTE: If we find a NestedPlanExpression within the given LogicalPlan, the slotConfigurations and argumentSizes maps will be updated
   private def allocateExpressions(lp: LogicalPlan, nullable: Boolean, slots: SlotConfiguration,
-                                  slotConfigurations: mutable.Map[Id, SlotConfiguration],
-                                  argumentSizes: mutable.Map[Id, Size],
+                                  slotConfigurations: SlotConfigurations,
+                                  argumentSizes: ArgumentSizes,
                                   shouldAllocateLhs: Boolean = true)
                                  (semanticTable: SemanticTable): SlotConfiguration = {
     case class Accumulator(slots: SlotConfiguration, doNotTraverseExpression: Option[Expression])
@@ -207,11 +206,8 @@ object SlotAllocation {
             val slotsAndArgument = SlotsAndArgument(argumentSlotConfiguration, Size(slots.numberOfLongs, slots.numberOfReferences))
 
             // Allocate slots for nested plan
-            val nestedPhysicalPlan = allocateSlots(e.plan, semanticTable, initialSlotsAndArgument = Some(slotsAndArgument))
-
-            // Update the physical plan
-            slotConfigurations ++= nestedPhysicalPlan.slotConfigurations
-            argumentSizes ++= nestedPhysicalPlan.argumentSizes
+            // Pass in mutable attributes to be modified by recursive call
+            val nestedPhysicalPlan = allocateSlots(e.plan, semanticTable, initialSlotsAndArgument = Some(slotsAndArgument), slotConfigurations, argumentSizes)
 
             (acc, DO_NOT_TRAVERSE_INTO_CHILDREN) // We already recursively allocated the nested plan, so do not traverse into its children
           }

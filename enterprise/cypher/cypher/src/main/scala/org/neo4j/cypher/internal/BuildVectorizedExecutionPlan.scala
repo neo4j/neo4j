@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
@@ -95,7 +96,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
   case class VectorizedExecutionPlan(plannerUsed: PlannerName,
                                      operators: Pipeline,
-                                     slots: Map[Id, SlotConfiguration],
+                                     slots: SlotConfigurations,
                                      physicalPlan: LogicalPlan,
                                      fieldNames: Array[String],
                                      dispatcher: Dispatcher,

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.RefSlot
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.IdName
@@ -28,11 +29,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-class PipelineBuilder(slotConfigurations: Map[Id, SlotConfiguration], converters: ExpressionConverters)
+class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: ExpressionConverters)
   extends TreeBuilder[Pipeline] {
 
   override def create(plan: LogicalPlan): Pipeline = {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
@@ -48,7 +49,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
     case _ => false
   }
 
-  def apply(in: LogicalPlan, slotConfigurations: Map[Id, SlotConfiguration]): LogicalPlan = {
+  def apply(in: LogicalPlan, slotConfigurations: SlotConfigurations): LogicalPlan = {
     val newSlotConfigurations = mutable.HashMap[LogicalPlan, SlotConfiguration]()
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*
@@ -135,7 +136,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
     resultPlan
   }
 
-  private def rewriteCreator(slotConfiguration: SlotConfiguration, thisPlan: LogicalPlan, slotConfigurations: Map[Id, SlotConfiguration]): Rewriter = {
+  private def rewriteCreator(slotConfiguration: SlotConfiguration, thisPlan: LogicalPlan, slotConfigurations: SlotConfigurations): Rewriter = {
     val innerRewriter = Rewriter.lift {
       case e: NestedPlanExpression =>
         // Rewrite expressions within the nested plan

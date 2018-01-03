@@ -36,6 +36,54 @@ trait Attribute[T] {
     array(id.x).value
   }
 
+  def isDefinedAt(id: Id): Boolean = {
+    array.size > id.x && array(id.x).hasValue
+  }
+
+  def getOrElse(id: Id, other: T): T = {
+    if(isDefinedAt(id)) get(id) else other
+  }
+
+  def iterator: Iterator[(Id, T)] = new Iterator[(Id, T)]() {
+    private var currentId = 0
+    private var nextTup: (Id, T) = _
+
+    private def fetchNext(): Unit = {
+      nextTup = null
+      while (nextTup == null && currentId < array.size) {
+        val c = array(currentId)
+        if(c.hasValue) {
+          nextTup = (Id(currentId), c.value)
+        }
+        currentId = currentId + 1
+      }
+    }
+
+    override def hasNext = {
+      if(currentId >= array.size)
+        false
+      else  {
+        if(nextTup == null) {
+          fetchNext()
+        }
+        nextTup != null
+      }
+    }
+
+    override def next() = {
+      if(nextTup == null) {
+        fetchNext()
+      }
+      val res = nextTup
+      nextTup = null
+      res
+    }
+  }
+
+  def size = iterator.size
+
+  def apply(id:Id): T = get(id)
+
   def copy(from:Id, to:Id): Unit = {
     set(to, get(from))
   }
