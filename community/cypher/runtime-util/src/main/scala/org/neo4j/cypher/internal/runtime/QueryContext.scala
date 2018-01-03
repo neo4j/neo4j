@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescri
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api.{CursorFactory, Read, Write}
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -96,20 +96,22 @@ trait QueryContext extends TokenContext {
 
   def dropIndexRule(descriptor: IndexDescriptor)
 
+  def indexReference(label: Int, properties: Int*): IndexReference
+
   //TODO this should be `Seq[AnyValue]`
-  def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[NodeValue]
+  def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue]
 
-  def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[NodeValue]
+  def indexSeekByRange(index: IndexReference, value: Any): Iterator[NodeValue]
 
-  def indexScanByContains(index: IndexDescriptor, value: String): Iterator[NodeValue]
+  def indexScanByContains(index: IndexReference, value: String): Iterator[NodeValue]
 
-  def indexScanByEndsWith(index: IndexDescriptor, value: String): Iterator[NodeValue]
+  def indexScanByEndsWith(index: IndexReference, value: String): Iterator[NodeValue]
 
-  def indexScan(index: IndexDescriptor): Iterator[NodeValue]
+  def indexScan(index: IndexReference): Iterator[NodeValue]
 
-  def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator
+  def indexScanPrimitive(index: IndexReference): PrimitiveLongIterator
 
-  def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[NodeValue]
+  def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Option[NodeValue]
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 

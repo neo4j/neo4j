@@ -20,9 +20,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.kernel.api.IndexReference
 
 class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   val expectPlansToFail = Configs.AllRulePlanners
@@ -146,9 +146,9 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     lockingIndexSearchCalled = false
 
     val assertReadOnlyMonitorListener = new IndexSearchMonitor {
-      override def indexSeek(index: IndexDescriptor, value: Seq[Any]): Unit = {}
+      override def indexSeek(index: IndexReference, value: Seq[Any]): Unit = {}
 
-      override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit = {
+      override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Unit = {
         lockingIndexSearchCalled = true
       }
     }

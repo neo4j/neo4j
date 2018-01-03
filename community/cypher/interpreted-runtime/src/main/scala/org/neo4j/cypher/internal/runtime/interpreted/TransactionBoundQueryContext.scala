@@ -23,7 +23,6 @@ import java.net.URL
 import java.util.function.Predicate
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.collection.primitive.{PrimitiveLongIterator, PrimitiveLongResourceIterator}
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.javacompat.{GraphDatabaseCypherService, ValueToObjectSerializer}
@@ -41,7 +40,7 @@ import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
-import org.neo4j.internal.kernel.api.{IndexQuery, InternalIndexState, NodeCursor}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -49,6 +48,7 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
@@ -103,6 +103,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   private def reads() = transactionalContext.dataRead
   private val nodeCursor = allocateAndTraceNodeCursor()
   private val propertyCursor = allocateAndTracePropertyCursor()
+  private lazy val nodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
 
@@ -194,14 +195,17 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
   }
 
-  override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[NodeValue] = {
+  override def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue] = {
     indexSearchMonitor.indexSeek(index, values)
     val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
-    val indexResult = transactionalContext.statement.readOperations().indexQuery(cypherToKernel(index), predicates: _*)
-    JavaConversionSupport.mapToScalaENFXSafe(indexResult)(nodeOps.getById)
+    seek(index, predicates:_*)
   }
 
-  override def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[NodeValue] = value match {
+  override def indexReference(label: Int,
+                              properties: Int*): IndexReference =
+    transactionalContext.kernelTransaction.schemaRead().index(label, properties:_*)
+
+  override def indexSeekByRange(index: IndexReference, value: Any): Iterator[NodeValue] = value match {
 
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
@@ -212,7 +216,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       throw new InternalException(s"Unsupported index seek by range: $range")
   }
 
-  private def indexSeekByPrefixRange(index: IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[NodeValue] = {
+  private def indexSeekByPrefixRange(index: IndexReference, range: InequalitySeekRange[Any]): scala.Iterator[NodeValue] = {
     val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
       bound.endPoint match {
         case n: Number => classOf[Number]
@@ -262,95 +266,115 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[NodeValue] = {
-    val indexedNodes = transactionalContext.statement.readOperations()
-      .indexQuery(cypherToKernel(index), IndexQuery.stringPrefix(index.property, prefix))
-    JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
+  private def indexSeekByPrefixRange(index: IndexReference, prefix: String): scala.Iterator[NodeValue] =
+    seek(index, IndexQuery.stringPrefix(index.properties()(0), prefix))
+
+  private def seek(index: IndexReference, query: IndexQuery*) = {
+    val nodeCursor = allocateAndTraceNodeValueIndexCursor()
+    reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, query:_*)
+    nodeValueIndexCursorToIterator(nodeCursor)
   }
 
-  private def indexSeekByNumericalRange(index: IndexDescriptor,
-                                        range: InequalitySeekRange[Number]): scala.Iterator[NodeValue] = {
-    val readOps = transactionalContext.statement.readOperations()
-    val matchingNodes: PrimitiveLongIterator = (range match {
+  private def scan(index: IndexReference) = {
+    val nodeCursor = allocateAndTraceNodeValueIndexCursor()
+    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
+    new PrimitiveLongResourceIterator {
+      private var _next: Long = fetchNext()
 
-      case rangeLessThan: RangeLessThan[Number] =>
-        rangeLessThan.limit(BY_NUMBER).map { limit =>
-          val rangePredicate = IndexQuery.range(index.property, null, false, limit.endPoint, limit.isInclusive)
-          readOps.indexQuery(cypherToKernel(index), rangePredicate)
+      private def fetchNext() =
+        if (nodeCursor.next()) nodeCursor.nodeReference()
+        else -1L
+
+      override def hasNext: Boolean = _next >= 0
+
+      override def next(): Long = {
+        if (!hasNext) {
+          nodeCursor.close()
+          Iterator.empty.next()
         }
 
-      case rangeGreaterThan: RangeGreaterThan[Number] =>
-        rangeGreaterThan.limit(BY_NUMBER).map { limit =>
-          val rangePredicate = IndexQuery.range(index.property, limit.endPoint, limit.isInclusive, null, false)
-          readOps.indexQuery(cypherToKernel(index), rangePredicate)
-        }
+        val current = _next
+        _next = fetchNext()
+        if (!hasNext) nodeCursor.close()
 
-      case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-        rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
-          rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
-            val rangePredicate = IndexQuery
-              .range(index.property, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint,
-                     lessThanLimit.isInclusive)
-            readOps.indexQuery(cypherToKernel(index), rangePredicate)
-          }
-        }
-    }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
-    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
-  }
+        current
+      }
 
-  private def indexSeekByStringRange(index: IndexDescriptor,
-                                     range: InequalitySeekRange[String]): scala.Iterator[NodeValue] = {
-    val readOps = transactionalContext.statement.readOperations()
-    val matchingNodes: PrimitiveLongIterator = range match {
-
-      case rangeLessThan: RangeLessThan[String] =>
-        rangeLessThan.limit(BY_STRING).map { limit =>
-          val rangePredicate = IndexQuery
-            .range(index.property, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive)
-          readOps.indexQuery(cypherToKernel(index), rangePredicate)
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
-
-      case rangeGreaterThan: RangeGreaterThan[String] =>
-        rangeGreaterThan.limit(BY_STRING).map { limit =>
-          val rangePredicate = IndexQuery
-            .range(index.property, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false);
-          readOps.indexQuery(cypherToKernel(index), rangePredicate)
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
-
-      case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-        rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
-          rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
-            val rangePredicate = IndexQuery
-              .range(index.property, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive,
-                     lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
-            readOps.indexQuery(cypherToKernel(index), rangePredicate)
-          }
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+      override def close(): Unit = nodeCursor.close()
     }
-
-    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  override def indexScan(index: IndexDescriptor): Iterator[NodeValue] =
+  private def indexSeekByNumericalRange(index: IndexReference,
+                                        range: InequalitySeekRange[Number]): scala.Iterator[NodeValue] = (range match {
+
+    case rangeLessThan: RangeLessThan[Number] =>
+      rangeLessThan.limit(BY_NUMBER).map { limit =>
+        val rangePredicate = IndexQuery.range(index.properties()(0), null, false, limit.endPoint, limit.isInclusive)
+        seek(index, rangePredicate)
+      }
+
+    case rangeGreaterThan: RangeGreaterThan[Number] =>
+      rangeGreaterThan.limit(BY_NUMBER).map { limit =>
+        val rangePredicate = IndexQuery.range(index.properties()(0), limit.endPoint, limit.isInclusive, null, false)
+        seek(index, rangePredicate)
+      }
+
+    case RangeBetween(rangeGreaterThan, rangeLessThan) =>
+      rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
+        rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
+          val rangePredicate = IndexQuery
+            .range(index.properties()(0), greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
+                   lessThanLimit.endPoint,
+                   lessThanLimit.isInclusive)
+          seek(index, rangePredicate)
+        }
+      }
+  }).getOrElse(Iterator.empty)
+
+  private def indexSeekByStringRange(index: IndexReference,
+                                     range: InequalitySeekRange[String]): scala.Iterator[NodeValue] = range match {
+
+    case rangeLessThan: RangeLessThan[String] =>
+      rangeLessThan.limit(BY_STRING).map { limit =>
+        val rangePredicate = IndexQuery
+          .range(index.properties()(0), null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive)
+        seek(index, rangePredicate)
+      }.getOrElse(Iterator.empty)
+
+    case rangeGreaterThan: RangeGreaterThan[String] =>
+      rangeGreaterThan.limit(BY_STRING).map { limit =>
+        val rangePredicate = IndexQuery
+          .range(index.properties()(0), limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false)
+        seek(index, rangePredicate)
+      }.getOrElse(Iterator.empty)
+
+    case RangeBetween(rangeGreaterThan, rangeLessThan) =>
+      rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
+        rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
+          val rangePredicate = IndexQuery
+            .range(index.properties()(0), greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive,
+                   lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
+          seek(index, rangePredicate)
+        }
+      }.getOrElse(Iterator.empty)
+  }
+
+  override def indexScan(index: IndexReference): Iterator[NodeValue] =
     JavaConversionSupport.mapToScalaENFXSafe(indexScanPrimitive(index))(nodeOps.getById)
 
-  override def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongResourceIterator =
-    transactionalContext.statement.readOperations().indexQuery(cypherToKernel(index), IndexQuery.exists(index.property))
+  override def indexScanPrimitive(index: IndexReference): PrimitiveLongResourceIterator = scan(index)
 
-  override def indexScanByContains(index: IndexDescriptor, value: String): Iterator[NodeValue] =
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations()
-                                               .indexQuery(cypherToKernel(index), IndexQuery.stringContains(index.property, value)))(
-      nodeOps.getById)
+  override def indexScanByContains(index: IndexReference, value: String): Iterator[NodeValue] =
+    seek(index, IndexQuery.stringContains(index.properties()(0), value))
 
-  override def indexScanByEndsWith(index: IndexDescriptor, value: String): Iterator[NodeValue] =
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations()
-                                               .indexQuery(cypherToKernel(index), IndexQuery.stringSuffix(index.property, value)))(
-      nodeOps.getById)
+  override def indexScanByEndsWith(index: IndexReference, value: String): Iterator[NodeValue] =
+    seek(index, IndexQuery.stringSuffix(index.properties()(0), value))
 
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[NodeValue] = {
-    indexSearchMonitor.lockingUniqueIndexSeek(index, values)
-    val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
-    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(cypherToKernel(index), predicates: _*)
+  override def lockingUniqueIndexSeek(indexReference: IndexReference, values: Seq[Any]): Option[NodeValue] = {
+    indexSearchMonitor.lockingUniqueIndexSeek(indexReference, values)
+    val index = IndexDescriptorFactory.uniqueForLabel(indexReference.label, indexReference.properties:_*)
+    val predicates = indexReference.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
+    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, predicates:_*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -937,6 +961,12 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     cursor
   }
 
+  private def allocateAndTraceNodeValueIndexCursor() = {
+    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor()
+    resources.trace(cursor)
+    cursor
+  }
+
   private def allocateAndTracePropertyCursor() = {
     val cursor = transactionalContext.cursors.allocatePropertyCursor()
     resources.trace(cursor)
@@ -967,15 +997,40 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       current
     }
   }
+
+  private def nodeValueIndexCursorToIterator(nodeCursor: NodeValueIndexCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
+    private var _next: NodeValue = fetchNext()
+
+    private def fetchNext() = {
+      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxyById(nodeCursor.nodeReference()))
+      else null
+    }
+
+    override def hasNext: Boolean = _next != null
+
+    override def next(): NodeValue = {
+      if (!hasNext) {
+        nodeCursor.close()
+        Iterator.empty.next()
+      }
+
+      val current = _next
+      _next = fetchNext()
+      if (!hasNext) {
+        nodeCursor.close()
+      }
+      current
+    }
+  }
 }
 
 object TransactionBoundQueryContext {
 
   trait IndexSearchMonitor {
 
-    def indexSeek(index: IndexDescriptor, values: Seq[Any]): Unit
+    def indexSeek(index: IndexReference, values: Seq[Any]): Unit
 
-    def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit
+    def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Unit
   }
 
 }

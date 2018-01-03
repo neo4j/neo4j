@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, Dele
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
+import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.AnyValue
@@ -99,7 +100,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropIndexRule(descriptor: IndexDescriptor) =
     translateException(inner.dropIndexRule(descriptor))
 
-  override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[NodeValue] =
+  override def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue] =
     translateException(inner.indexSeek(index, values))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] =
@@ -179,7 +180,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelTypeName(id: Int) =
     translateException(inner.getRelTypeName(id))
 
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]) =
+  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]) =
     translateException(inner.lockingUniqueIndexSeek(index, values))
 
   override def getImportURL(url: URL) =
@@ -206,19 +207,19 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): EdgeValue =
     translateException(inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId))
 
-  override def indexSeekByRange(index: IndexDescriptor, value: Any) =
+  override def indexSeekByRange(index: IndexReference, value: Any) =
     translateException(inner.indexSeekByRange(index, value))
 
-  override def indexScanByContains(index: IndexDescriptor, value: String) =
+  override def indexScanByContains(index: IndexReference, value: String) =
     translateException(inner.indexScanByContains(index, value))
 
-  override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
+  override def indexScanByEndsWith(index: IndexReference, value: String) =
     translateException(inner.indexScanByEndsWith(index, value))
 
-  override def indexScan(index: IndexDescriptor) =
+  override def indexScan(index: IndexReference) =
     translateException(inner.indexScan(index))
 
-  override def indexScanPrimitive(index: IndexDescriptor) =
+  override def indexScanPrimitive(index: IndexReference) =
     translateException(inner.indexScanPrimitive(index))
 
   override def nodeIsDense(node: Long) =
@@ -303,5 +304,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   }
 
   override def createNewQueryContext() = new ExceptionTranslatingQueryContext(inner.createNewQueryContext())
+
+  override def indexReference(label: Int, properties: Int*): IndexReference =
+    translateException(inner.indexReference(label, properties:_*))
 }
 
