@@ -30,11 +30,11 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{IdempotentResult, Operations, QualifiedName, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2._
+import org.neo4j.cypher.internal.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -146,6 +146,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
+    case PrefixRange(null) => Iterator.empty
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
     case range: InequalitySeekRange[Any] =>

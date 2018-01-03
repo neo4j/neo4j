@@ -146,6 +146,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
+    case PrefixRange(null) => Iterator.empty
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
     case range: InequalitySeekRange[Any] =>
