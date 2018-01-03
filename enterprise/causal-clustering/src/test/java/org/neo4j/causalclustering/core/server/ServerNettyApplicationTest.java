@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.core.server;
 
-import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.Future;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,6 +35,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.NioEventLoopContextSupplier;
+import org.neo4j.causalclustering.common.ServerBindToChannel;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -49,7 +52,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AbstractServerNettyApplicationTest
+public class ServerNettyApplicationTest
 {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -61,9 +64,10 @@ public class AbstractServerNettyApplicationTest
         StubNettyApplication
                 stubServer = StubNettyApplication.realEventExecutor();
         assertFalse( stubServer.getEventExecutors().isTerminated() );
+        stubServer.getNettyApplication().init();
 
         // when
-        stubServer.shutdown();
+        stubServer.getNettyApplication().shutdown();
 
         // then
         assertTrue( stubServer.getEventExecutors().isTerminated() );
@@ -79,7 +83,7 @@ public class AbstractServerNettyApplicationTest
         expectedException.expectMessage( "EventLoopGroup cannot be null" );
 
         // then
-        stubServer.shutdown();
+        stubServer.getNettyApplication().shutdown();
     }
 
     @Test
@@ -95,9 +99,10 @@ public class AbstractServerNettyApplicationTest
                 stubServer = new StubNettyApplication( eventExecutors );
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "some exception" );
+        stubServer.getNettyApplication().init();
 
         // when
-        stubServer.shutdown();
+        stubServer.getNettyApplication().shutdown();
 
     }
 
@@ -110,8 +115,9 @@ public class AbstractServerNettyApplicationTest
         expectedException.expectMessage( "some exception" );
 
         // when
-        stubServer.init();
-        stubServer.start();
+        NettyApplication<ServerChannel> nettyApplication = stubServer.getNettyApplication();
+        nettyApplication.init();
+        nettyApplication.start();
     }
 
     @Test
@@ -123,8 +129,9 @@ public class AbstractServerNettyApplicationTest
         expectedException.expectMessage( "some exception" );
 
         // when
-        stubServer.init();
-        stubServer.start();
+        NettyApplication<ServerChannel> nettyApplication = stubServer.getNettyApplication();
+        nettyApplication.init();
+        nettyApplication.start();
     }
 
     @Test
@@ -137,8 +144,9 @@ public class AbstractServerNettyApplicationTest
         expectedException.expectMessage( "Cause cannot be null" );
 
         // when
-        stubServer.init();
-        stubServer.start();
+        NettyApplication<ServerChannel> nettyApplication = stubServer.getNettyApplication();
+        nettyApplication.init();
+        nettyApplication.start();
     }
 
     @Test
@@ -146,13 +154,14 @@ public class AbstractServerNettyApplicationTest
     {
         // given
         StubNettyApplication stubServer = StubNettyApplication.mockedEventExecutor();
-        stubServer.init();
+        NettyApplication<ServerChannel> nettyApplication = stubServer.getNettyApplication();
+        nettyApplication.init();
 
         // when
-        stubServer.start();
-        stubServer.stop();
-        stubServer.stop();
-        stubServer.start();
+        nettyApplication.start();
+        nettyApplication.stop();
+        nettyApplication.stop();
+        nettyApplication.start();
 
         //then
         assertEquals( 2, stubServer.bootstrap().getBindCalls() );
@@ -163,11 +172,13 @@ public class AbstractServerNettyApplicationTest
     {
         // given
         StubNettyApplication stubServer = StubNettyApplication.mockedEventExecutor();
-        stubServer.init();
+        NettyApplication<ServerChannel> nettyApplication = stubServer.getNettyApplication();
+
+        nettyApplication.init();
 
         // when
-        stubServer.start();
-        stubServer.start();
+        nettyApplication.start();
+        nettyApplication.start();
 
         //then
         assertEquals( 1, stubServer.bootstrap().getBindCalls() );
@@ -176,10 +187,10 @@ public class AbstractServerNettyApplicationTest
     @Test
     public void shouldReleaseChannelWhenStopped() throws Throwable
     {
-        RealNettyApplication realNettyApplication1 =
-                new RealNettyApplication( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        RealNettyApplication realNettyApplication2 =
-                new RealNettyApplication( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
+        RealNettyApplicationFactory factory = new RealNettyApplicationFactory( NullLogProvider
+                .getInstance(), NullLogProvider.getInstance() );
+        NettyApplication realNettyApplication1 = factory.create();
+        NettyApplication realNettyApplication2 = factory.create();
         try
         {
             realNettyApplication1.init();
@@ -205,42 +216,39 @@ public class AbstractServerNettyApplicationTest
         }
     }
 
-    private class RealNettyApplication extends AbstractNettyApplication<Bootstrap>
+    private class RealNettyApplicationFactory
     {
-        private final NioEventLoopGroup eventExecutors;
+        private final LogProvider logProvider;
+        private final LogProvider userLogProvider;
 
-        RealNettyApplication( LogProvider logProvider,
+        RealNettyApplicationFactory( LogProvider logProvider,
                 LogProvider userLogProvider )
         {
-            super( logProvider, userLogProvider );
-            eventExecutors = new NioEventLoopGroup( 0, new NamedThreadFactory( "test" ) );
+
+            this.logProvider = logProvider;
+            this.userLogProvider = userLogProvider;
         }
 
-        @Override
-        protected EventLoopGroup getEventLoopGroup()
+        public NettyApplication<NioServerSocketChannel> create()
         {
-            return eventExecutors;
-        }
+            NettyApplication<NioServerSocketChannel> application;
+            NioEventLoopContextSupplier
+                    test = new NioEventLoopContextSupplier( new NamedThreadFactory( "test", 1 ) );
+            application = new NettyApplication<>( new ServerBindToChannel<>(
+                    () -> new InetSocketAddress( PortAuthority.allocatePort() ),
+                    logProvider, userLogProvider,
+                    eventLoopContext -> new ServerBootstrap()
+                            .group( eventLoopContext.eventExecutors() )
+                            .channel( eventLoopContext.channelClass() )
+                            .childHandler( new ChannelInitializer<SocketChannel>()
+                            {
+                                @Override
+                                protected void initChannel( SocketChannel ch ) throws Exception
+                                {
 
-        @Override
-        protected Bootstrap bootstrap()
-        {
-            return new Bootstrap()
-                    .group( eventExecutors )
-                    .channel( NioSocketChannel.class ).handler( new ChannelInitializer<SocketChannel>()
-                    {
-                        @Override
-                        protected void initChannel( SocketChannel ch ) throws Exception
-                        {
-
-                        }
-                    } );
-        }
-
-        @Override
-        protected InetSocketAddress bindAddress()
-        {
-            return new InetSocketAddress( PortAuthority.allocatePort() );
+                                }
+                            } ) ), test );
+            return application;
         }
     }
 }

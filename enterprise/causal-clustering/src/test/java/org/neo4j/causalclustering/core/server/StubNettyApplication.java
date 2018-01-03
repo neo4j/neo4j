@@ -19,10 +19,11 @@
  */
 package org.neo4j.causalclustering.core.server;
 
-import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 
@@ -31,7 +32,11 @@ import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.common.EventLoopContext;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.ServerBindToChannel;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.logging.NullLogProvider;
 
@@ -41,10 +46,11 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class StubNettyApplication extends AbstractNettyApplication<StubNettyApplication.CountingBindRequestBootstrap>
+public class StubNettyApplication
 {
     private final EventLoopGroup eventExecutors;
     private final CountingBindRequestBootstrap bootstrap;
+    private final NettyApplication<ServerChannel> nettyApplication;
 
     static StubNettyApplication mockedEventExecutor() throws InterruptedException, ExecutionException, TimeoutException
     {
@@ -63,18 +69,28 @@ public class StubNettyApplication extends AbstractNettyApplication<StubNettyAppl
 
     StubNettyApplication( Exception bindFailure ) throws InterruptedException, ExecutionException, TimeoutException
     {
-        super( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        this.eventExecutors = createMockedEventExecutor();
-        this.bootstrap = new CountingBindRequestBootstrap( bindFailure );
-
+        this( createMockedEventExecutor(), new CountingBindRequestBootstrap( bindFailure ) );
     }
 
     StubNettyApplication( EventLoopGroup eventExecutors )
     {
-        super( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        this.eventExecutors = eventExecutors;
-        this.bootstrap = new CountingBindRequestBootstrap();
+        this( eventExecutors, new CountingBindRequestBootstrap() );
+    }
 
+    private StubNettyApplication( EventLoopGroup eventExecutors, CountingBindRequestBootstrap serverBootstrap )
+    {
+        ServerBindToChannel<ServerChannel> serverChannelServerBindToChannel =
+                new ServerBindToChannel<>( () -> new InetSocketAddress( 1 ),
+                        NullLogProvider.getInstance(), NullLogProvider.getInstance(),
+                        eventLoopContext -> serverBootstrap );
+        EventLoopContext<ServerChannel> context =
+                new EventLoopContext<>( eventExecutors, ServerChannel.class );
+        Supplier<EventLoopContext<ServerChannel>> supplier = () -> context;
+        nettyApplication = new NettyApplication<>(
+                serverChannelServerBindToChannel,
+                supplier );
+        this.eventExecutors = eventExecutors;
+        this.bootstrap = serverBootstrap;
     }
 
     public EventLoopGroup getEventExecutors()
@@ -82,25 +98,17 @@ public class StubNettyApplication extends AbstractNettyApplication<StubNettyAppl
         return eventExecutors;
     }
 
-    @Override
-    protected EventLoopGroup getEventLoopGroup()
+    public NettyApplication<ServerChannel> getNettyApplication()
     {
-        return eventExecutors;
+        return nettyApplication;
     }
 
-    @Override
-    protected CountingBindRequestBootstrap bootstrap()
+    public CountingBindRequestBootstrap bootstrap()
     {
         return bootstrap;
     }
 
-    @Override
-    protected InetSocketAddress bindAddress()
-    {
-        return new InetSocketAddress( 1 );
-    }
-
-    public class CountingBindRequestBootstrap extends Bootstrap
+    public static class CountingBindRequestBootstrap extends ServerBootstrap
     {
         private int bindCalls;
         private final Exception failure;
@@ -146,13 +154,20 @@ public class StubNettyApplication extends AbstractNettyApplication<StubNettyAppl
         }
     }
 
-    private static EventLoopGroup createMockedEventExecutor()
-            throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
+    static EventLoopGroup createMockedEventExecutor()
     {
-        EventLoopGroup eventExecutors = mock( EventLoopGroup.class );
-        Future future = mock( Future.class );
-        doReturn( null ).when( future ).get( anyLong(), any( TimeUnit.class ) );
-        when( eventExecutors.shutdownGracefully( anyLong(), anyLong(), any( TimeUnit.class ) ) ).thenReturn( future );
-        return eventExecutors;
+        try
+        {
+            EventLoopGroup eventExecutors = mock( EventLoopGroup.class );
+            Future future = mock( Future.class );
+            doReturn( null ).when( future ).get( anyLong(), any( TimeUnit.class ) );
+            when( eventExecutors.shutdownGracefully( anyLong(), anyLong(), any( TimeUnit.class ) ) )
+                    .thenReturn( future );
+            return eventExecutors;
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

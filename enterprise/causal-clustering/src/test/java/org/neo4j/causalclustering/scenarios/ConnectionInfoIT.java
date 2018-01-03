@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
+import io.netty.channel.ServerChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +32,12 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServer;
+import org.neo4j.causalclustering.catchup.CatchupServerBootstrapper;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.NioEventLoopContextSupplier;
+import org.neo4j.causalclustering.common.ServerBindToChannel;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;

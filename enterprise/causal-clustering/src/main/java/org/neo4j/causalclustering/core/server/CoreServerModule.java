@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.core.server;
 
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +29,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupServer;
+import org.neo4j.causalclustering.catchup.CatchupServerBootstrapper;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
@@ -35,6 +38,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
+import org.neo4j.causalclustering.common.NioEventLoopContextSupplier;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.IdentityModule;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
@@ -57,6 +61,7 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -96,8 +101,10 @@ public class CoreServerModule
     private final PlatformModule platformModule;
     private final PipelineHandlerAppender pipelineAppender;
 
-    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
-            CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule, ReplicationModule replicationModule,
+    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule,
+            ConsensusModule consensusModule,
+            CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule,
+            ReplicationModule replicationModule,
             LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier,
             File clusterStateDirectory, PipelineHandlerAppender pipelineAppender )
     {
@@ -152,27 +159,51 @@ public class CoreServerModule
 
         CoreStateDownloader downloader = createCoreStateDownloader( servicesToStopOnStoreCopy );
 
-        this.downloadService = new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess, logProvider,
-                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() );
+        this.downloadService =
+                new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess,
+                        logProvider,
+                        new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() );
 
         this.membershipWaiterLifecycle = createMembershipWaiterLifecycle();
 
-        catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
-                snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                platformModule.storeCopyCheckPointMutex, pipelineAppender );
 
-        RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
+        this.catchupServer = createCatchupServer( platformModule, localDatabase, pipelineAppender, fileSystem,
+                userLogProvider );
+
+        RaftLogPruner raftLogPruner =
+                new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
         dependencies.satisfyDependency( raftLogPruner );
 
         life.add( new PruningScheduler( raftLogPruner, jobScheduler,
                 config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(), logProvider ) );
 
         // Exposes this so that tests can start/stop the catchup server
-        dependencies.satisfyDependency( catchupServer );
+        dependencies.satisfyDependency( this.catchupServer );
 
-        platformModule.life.add( servicesToStopOnStoreCopy.add( catchupServer ) );
+        platformModule.life.add( servicesToStopOnStoreCopy.add( this.catchupServer ) );
+    }
+
+    private CatchupServer<NioServerSocketChannel> createCatchupServer( PlatformModule platformModule,
+            LocalDatabase localDatabase,
+            PipelineHandlerAppender pipelineAppender, FileSystemAbstraction fileSystem, LogProvider userLogProvider )
+    {
+        NioEventLoopContextSupplier catchupServerExecutor =
+                new NioEventLoopContextSupplier( new NamedThreadFactory( "catchupServer", 0 ) );
+        CatchupServerBootstrapper<NioServerSocketChannel> catchupServerBootstrapper = new CatchupServerBootstrapper<>(
+                localDatabase::storeId,
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ),
+                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
+                localDatabase::dataSource, localDatabase::isAvailable,
+                snapshotService, platformModule.monitors,
+                new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
+                platformModule.storeCopyCheckPointMutex, pipelineAppender, logProvider );
+
+        return new CatchupServer<>(
+                config,
+                logProvider,
+                userLogProvider,
+                catchupServerBootstrapper,
+                catchupServerExecutor );
     }
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )

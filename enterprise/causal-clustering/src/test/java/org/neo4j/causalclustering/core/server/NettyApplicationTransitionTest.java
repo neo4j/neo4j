@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.server;
 
+import io.netty.channel.ServerChannel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,8 +28,10 @@ import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 
+import org.neo4j.causalclustering.common.NettyApplication;
+
 @RunWith( Parameterized.class )
-public class AbstractServerNettyApplicationTransitionTest
+public class NettyApplicationTransitionTest
 {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -64,8 +67,9 @@ public class AbstractServerNettyApplicationTransitionTest
             expectedException.expect( IllegalStateException.class );
         }
         StubNettyApplication stubNettyApplication = StubNettyApplication.mockedEventExecutor();
-        from.gentlyTransitionToMyState( stubNettyApplication );
-        to.setMyState( stubNettyApplication );
+        NettyApplication<ServerChannel> nettyApplication = stubNettyApplication.getNettyApplication();
+        from.gentlyTransitionToMyState( nettyApplication );
+        to.setMyState( nettyApplication );
     }
 
     private enum LifeCycleState
@@ -79,13 +83,13 @@ public class AbstractServerNettyApplicationTransitionTest
                     }
 
                     @Override
-                    void gentlyTransitionToMyState( AbstractNettyApplication nettyApplication ) throws Throwable
+                    void gentlyTransitionToMyState( NettyApplication nettyApplication ) throws Throwable
                     {
                         nettyApplication.init();
                     }
 
                     @Override
-                    void setMyState( AbstractNettyApplication nettyApplication ) throws Throwable
+                    void setMyState( NettyApplication nettyApplication ) throws Throwable
                     {
                         nettyApplication.init();
                     }
@@ -99,14 +103,14 @@ public class AbstractServerNettyApplicationTransitionTest
                     }
 
                     @Override
-                    void gentlyTransitionToMyState( AbstractNettyApplication nettyApplication ) throws Throwable
+                    void gentlyTransitionToMyState( NettyApplication nettyApplication ) throws Throwable
                     {
                         nettyApplication.init();
                         nettyApplication.start();
                     }
 
                     @Override
-                    void setMyState( AbstractNettyApplication nettyApplication ) throws Throwable
+                    void setMyState( NettyApplication nettyApplication ) throws Throwable
                     {
                         nettyApplication.start();
                     }
@@ -120,7 +124,7 @@ public class AbstractServerNettyApplicationTransitionTest
                     }
 
                     @Override
-                    void gentlyTransitionToMyState( AbstractNettyApplication nettyApplication ) throws Throwable
+                    void gentlyTransitionToMyState( NettyApplication nettyApplication ) throws Throwable
                     {
                         nettyApplication.init();
                         nettyApplication.start();
@@ -128,7 +132,7 @@ public class AbstractServerNettyApplicationTransitionTest
                     }
 
                     @Override
-                    void setMyState( AbstractNettyApplication nettyApplication ) throws Throwable
+                    void setMyState( NettyApplication nettyApplication ) throws Throwable
                     {
                         nettyApplication.stop();
                     }
@@ -142,7 +146,7 @@ public class AbstractServerNettyApplicationTransitionTest
                     }
 
                     @Override
-                    void gentlyTransitionToMyState( AbstractNettyApplication nettyApplication ) throws Throwable
+                    void gentlyTransitionToMyState( NettyApplication nettyApplication ) throws Throwable
                     {
                         nettyApplication.init();
                         nettyApplication.start();
@@ -151,7 +155,7 @@ public class AbstractServerNettyApplicationTransitionTest
                     }
 
                     @Override
-                    void setMyState( AbstractNettyApplication nettyApplication ) throws Throwable
+                    void setMyState( NettyApplication nettyApplication ) throws Throwable
                     {
                         nettyApplication.shutdown();
                     }
@@ -159,9 +163,9 @@ public class AbstractServerNettyApplicationTransitionTest
 
         abstract boolean isAllowedTransition( LifeCycleState toState );
 
-        abstract void gentlyTransitionToMyState( AbstractNettyApplication nettyApplication ) throws Throwable;
+        abstract void gentlyTransitionToMyState( NettyApplication nettyApplication ) throws Throwable;
 
-        abstract void setMyState( AbstractNettyApplication nettyApplication ) throws Throwable;
+        abstract void setMyState( NettyApplication nettyApplication ) throws Throwable;
     }
 
     private static boolean isAllowedTransition( LifeCycleState from, LifeCycleState to )
