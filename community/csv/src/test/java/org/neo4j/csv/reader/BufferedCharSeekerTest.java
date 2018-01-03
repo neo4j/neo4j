@@ -643,6 +643,26 @@ public class BufferedCharSeekerTest
                 "Quux" ) );
     }
 
+    @Test
+    public void shouldTrimWhitespace() throws Exception
+    {
+        // given
+        String data = lines( "\n",
+                "Foo, Bar,  Twobar , \"Baz\" , \" Quux \",\"Wiii \" , Waaaa  " );
+
+        // when
+        seeker = seeker( data, withTrimStrings( config(), true ) );
+
+        // then
+        assertNextValue( seeker, mark, COMMA, "Foo" );
+        assertNextValue( seeker, mark, COMMA, "Bar" );
+        assertNextValue( seeker, mark, COMMA, "Twobar" );
+        assertNextValue( seeker, mark, COMMA, "Baz" );
+        assertNextValue( seeker, mark, COMMA, " Quux " );
+        assertNextValue( seeker, mark, COMMA, "Wiii " );
+        assertNextValue( seeker, mark, COMMA, "Waaaa" );
+    }
+
     private String lines( String newline, String... lines )
     {
         StringBuilder builder = new StringBuilder();
@@ -828,6 +848,18 @@ public class BufferedCharSeekerTest
             public char quotationCharacter()
             {
                 return quoteCharacter;
+            }
+        };
+    }
+
+    private static Configuration withTrimStrings( Configuration config, boolean trimStrings )
+    {
+        return new Configuration.Overridden( config )
+        {
+            @Override
+            public boolean trimStrings()
+            {
+                return trimStrings;
             }
         };
     }
