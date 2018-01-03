@@ -156,5 +156,14 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"), params = "nam" -> "Neo")
   }
 
+  test("explain with missing parameter should NOT return error for empty db") {
+    val config = Configs.All
+    executeWith(config, "EXPLAIN MATCH (n:Person {name:{name}}) RETURN n")
+  }
+
+  test("explain with missing parameter should NOT return error for non-empty db") {
+    val config = Configs.Interpreted - Configs.Cost2_3
+    executeWith(config, "EXPLAIN CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n")
+  }
 
 }

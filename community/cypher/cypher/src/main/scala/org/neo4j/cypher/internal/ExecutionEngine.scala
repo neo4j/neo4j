@@ -114,7 +114,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def execute(query: String, mapParams: MapValue, context: TransactionalContext): Result = {
     val (preparedPlanExecution, wrappedContext, queryParamNames) = planQuery(context)
-    checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
+    if (preparedPlanExecution.executionMode.name != "explain") {
+      checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
+    }
     preparedPlanExecution.execute(wrappedContext, mapParams)
   }
 
