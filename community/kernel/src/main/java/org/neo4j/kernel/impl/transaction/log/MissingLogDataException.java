@@ -30,13 +30,13 @@ import java.io.IOException;
  */
 public class MissingLogDataException extends IOException
 {
-    public MissingLogDataException()
-    {
-        super();
-    }
-
     public MissingLogDataException( String message )
     {
         super( message );
+    }
+
+    public MissingLogDataException( String message, Throwable cause )
+    {
+        super( message, cause );
     }
 }

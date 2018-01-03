@@ -22,6 +22,8 @@ package org.neo4j.backup;
 import java.net.URI;
 import java.util.function.Supplier;
 
+import org.neo4j.backup.impl.BackupImpl;
+import org.neo4j.backup.impl.BackupServer;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;

@@ -69,6 +69,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final int discoveryPort;
     protected CoreGraphDatabase database;
     private final Config memberConfig;
+    private final ThreadGroup threadGroup;
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -138,6 +139,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 
         //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
+        threadGroup = new ThreadGroup( toString() );
     }
 
     public String boltAdvertisedAddress()
@@ -238,6 +240,12 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     public String settingValue( String settingName )
     {
         return config.get(settingName);
+    }
+
+    @Override
+    public ThreadGroup threadGroup()
+    {
+        return threadGroup;
     }
 
     public File clusterStateDirectory()

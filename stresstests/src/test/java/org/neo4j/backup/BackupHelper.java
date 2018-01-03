@@ -20,11 +20,15 @@
 package org.neo4j.backup;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.function.Predicate;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupOutcome;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.function.Predicates;
 import org.neo4j.helper.IsChannelClosedException;
 import org.neo4j.helper.IsConnectionException;
@@ -46,7 +50,7 @@ public class BackupHelper
     {
     }
 
-    public static BackupResult backup( String host, int port, File targetDirectory )
+    public static BackupResult backup( String host, int port, Path targetDirectory )
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         boolean consistent = true;
