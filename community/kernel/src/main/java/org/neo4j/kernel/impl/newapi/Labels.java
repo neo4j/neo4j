@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Collection;
 import java.util.Arrays;
+import java.util.Collection;
+
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-
 import org.neo4j.internal.kernel.api.LabelSet;
 
 public class Labels implements LabelSet
@@ -83,6 +83,9 @@ public class Labels implements LabelSet
     @Override
     public boolean contains( int labelToken )
     {
+        //It may look tempting to use binary search
+        //however doing a linear search is actually faster for reasonable
+        //label sizes (≤100 labels)
         for ( long label : labels )
         {
             if ( label == labelToken )

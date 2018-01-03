@@ -39,7 +39,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -55,7 +54,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -455,11 +453,10 @@ public class NodeProxy implements Node
         while ( propertiesToFind > 0 && propertyCursor.next() )
         {
             //Do a linear check if this is a property we are interested in.
+            int currentKey = propertyCursor.propertyKey();
             for ( int i = 0; i < itemsToReturn; i++ )
             {
-                int propertyId = propertyIds[i];
-                int currentKey = propertyCursor.propertyKey();
-                if ( propertyId == currentKey )
+                if ( propertyIds[i] == currentKey )
                 {
                     properties.put( keys[i],
                             propertyCursor.propertyValue().asObjectCopy() );
