@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
+import org.neo4j.cypher.internal.compiler.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters.namePatternPredicatePatternElements
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -194,7 +194,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   private def rewriteStuff(input: BaseState, context: CompilerContext): BaseState = {
     val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)
-    LogicalPlanState(input).copy(maybeStatement = Some(newStatement))
+    input.withStatement(newStatement)
   }
 
   def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,

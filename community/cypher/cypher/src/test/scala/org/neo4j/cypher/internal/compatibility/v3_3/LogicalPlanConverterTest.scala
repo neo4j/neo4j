@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.lang.reflect.Modifier
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
+import org.neo4j.cypher.internal.compiler.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
