@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -392,7 +393,7 @@ public class RelationshipChangesForNode
     {
         if ( outgoing == null )
         {
-            outgoing = new VersionedHashMap<>();
+            outgoing = new HashMap<>();
         }
         return outgoing;
     }
@@ -401,7 +402,7 @@ public class RelationshipChangesForNode
     {
         if ( incoming == null )
         {
-            incoming = new VersionedHashMap<>();
+            incoming = new HashMap<>();
         }
         return incoming;
     }
@@ -410,7 +411,7 @@ public class RelationshipChangesForNode
     {
         if ( loops == null )
         {
-            loops = new VersionedHashMap<>();
+            loops = new HashMap<>();
         }
         return loops;
     }
