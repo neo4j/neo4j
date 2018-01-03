@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,6 +70,7 @@ public class DiagnosticsReportCommandTest
     private Path homeDir;
     private Path configDir;
     private Path configFile;
+    private String originalUserDir;
 
     public static class MyDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider
     {
@@ -101,7 +103,14 @@ public class DiagnosticsReportCommandTest
         Files.createFile( configFile );
 
         // To make sure files are resolved from the working directory
-        System.setProperty( "user.dir", testDirectory.absolutePath().getAbsolutePath() );
+        originalUserDir = System.setProperty( "user.dir", testDirectory.absolutePath().getAbsolutePath() );
+    }
+
+    @After
+    public void tearDown()
+    {
+        // Restore directory
+        System.setProperty( "user.dir", originalUserDir );
     }
 
     @Test

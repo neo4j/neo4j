@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.report.jmx;
+package org.neo4j.dbms.diagnostics.jmx;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
 
@@ -193,8 +193,10 @@ public class JmxDump
                 monitor.info( "archiving..." );
                 long size = Files.size( tempFile );
                 InputStream in = Files.newInputStream( tempFile );
-                ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, monitor::percentChanged );
-                Files.copy( inStream, archiveDestination );
+                try ( ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, monitor::percentChanged ) )
+                {
+                    Files.copy( inStream, archiveDestination );
+                }
 
                 Files.delete( tempFile );
             }

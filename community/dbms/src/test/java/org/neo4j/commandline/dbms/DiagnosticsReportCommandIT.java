@@ -20,7 +20,6 @@
 package org.neo4j.commandline.dbms;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +44,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -74,7 +74,7 @@ public class DiagnosticsReportCommandIT
     public void shouldBeAbleToAttachToPidAndRunThreadDump() throws IOException, CommandFailed, IncorrectUsage
     {
         long pid = getPID();
-        Assume.assumeTrue( pid != 0 );
+        assertThat( pid, is( not( 0 ) ) );
 
         // Write config file
         Files.createFile( testDirectory.file( "neo4j.conf" ).toPath() );

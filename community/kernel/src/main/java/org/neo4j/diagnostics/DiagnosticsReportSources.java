@@ -22,7 +22,7 @@ package org.neo4j.diagnostics;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -126,8 +126,10 @@ public class DiagnosticsReportSources
             InputStream in = fs.openAsInputStream( source );
 
             // Track progress of the file reading, source might be a very large file
-            ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, monitor::percentChanged );
-            Files.copy( inStream, archiveDestination );
+            try ( ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, monitor::percentChanged ) )
+            {
+                Files.copy( inStream, archiveDestination );
+            }
         }
     }
 
@@ -153,7 +155,7 @@ public class DiagnosticsReportSources
                 throws IOException
         {
             String message = messageSupplier.get();
-            Files.write( archiveDestination, message.getBytes( Charset.forName( "UTF8" ) ), StandardOpenOption.CREATE,
+            Files.write( archiveDestination, message.getBytes( StandardCharsets.UTF_8 ), StandardOpenOption.CREATE,
                     StandardOpenOption.APPEND );
         }
     }

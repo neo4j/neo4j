@@ -19,6 +19,9 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.jutils.jprocesses.JProcesses;
+import org.jutils.jprocesses.model.ProcessInfo;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +33,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,9 +47,10 @@ import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.PositionalArgument;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
-import org.neo4j.dbms.report.jmx.JmxDump;
-import org.neo4j.dbms.report.jmx.LocalVirtualMachine;
+import org.neo4j.dbms.diagnostics.jmx.JmxDump;
+import org.neo4j.dbms.diagnostics.jmx.LocalVirtualMachine;
 import org.neo4j.diagnostics.DiagnosticsOfflineReportProvider;
+import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.diagnostics.DiagnosticsReportSources;
 import org.neo4j.diagnostics.DiagnosticsReporter;
 import org.neo4j.helpers.Args;
@@ -57,7 +62,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
 public class DiagnosticsReportCommand implements AdminCommand
 {
-    private static OptionalNamedArg destinationArgument =
+    private static final OptionalNamedArg destinationArgument =
             new OptionalCanonicalPath( "to", "/tmp/", "reports/", "Destination directory for reports" );
     private static final Arguments arguments = new Arguments()
             .withArgument( new OptionalListArgument() )
@@ -67,18 +72,16 @@ public class DiagnosticsReportCommand implements AdminCommand
 
     private final Path homeDir;
     private final Path configDir;
-    private final OutsideWorld outsideWorld;
     static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config"};
     private boolean verbose;
-    private PrintStream err;
-    private PrintStream out;
-    private FileSystemAbstraction fs;
+    private final PrintStream err;
+    private final PrintStream out;
+    private final FileSystemAbstraction fs;
 
     DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
-        this.outsideWorld = outsideWorld;
         this.fs = outsideWorld.fileSystem();
         this.out = outsideWorld.outStream();
         this.err = outsideWorld.errorStream();
@@ -103,31 +106,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
         Config config = Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
 
-        File storeDirectory = config.get( database_path );
-
-        DiagnosticsReporter reporter = new DiagnosticsReporter( out );
-
-        // Find all offline providers and register them
-        for ( DiagnosticsOfflineReportProvider provider : Service.load( DiagnosticsOfflineReportProvider.class ) )
-        {
-            provider.init( fs, config, storeDirectory );
-            reporter.registerOfflineProvider( provider );
-        }
-
-        // Register sources provided by this tool
-        reporter.registerSource( "config",
-                DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", fs, configFile ) );
-
-        // Online connection
-        JmxDump jmxDump = connectToNeo4jInstance();
-        if ( jmxDump != null )
-        {
-            reporter.registerSource( "threads", jmxDump.threadDump() );
-            reporter.registerSource( "heap", jmxDump.heapDump() );
-            reporter.registerSource( "sysprop", jmxDump.systemProperties() );
-            //reporter.registerSource( "env", null );
-        }
-
+        DiagnosticsReporter reporter = createAndRegisterSources( config, configFile );
         Set<String> availableClassifiers = reporter.getAvailableClassifiers();
 
         // Passing '--list' should print list and end execution
@@ -188,9 +167,73 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
     }
 
-    private JmxDump connectToNeo4jInstance()
+    private DiagnosticsReporter createAndRegisterSources( Config config, File configFile )
+    {
+        DiagnosticsReporter reporter = new DiagnosticsReporter( out );
+        File storeDirectory = config.get( database_path );
+
+        // Find all offline providers and register them
+        for ( DiagnosticsOfflineReportProvider provider : Service.load( DiagnosticsOfflineReportProvider.class ) )
+        {
+            provider.init( fs, config, storeDirectory );
+            reporter.registerOfflineProvider( provider );
+        }
+
+        // Register sources provided by this tool
+        reporter.registerSource( "config", DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", fs, configFile ) );
+        reporter.registerSource( "ps", runningProcesses() );
+
+        // Online connection
+        Optional<JmxDump> jmxDump = connectToNeo4jInstance();
+        if ( jmxDump.isPresent() )
+        {
+            JmxDump jmx = jmxDump.get();
+            reporter.registerSource( "threads", jmx.threadDump() );
+            reporter.registerSource( "heap", jmx.heapDump() );
+            reporter.registerSource( "sysprop", jmx.systemProperties() );
+            //reporter.registerSource( "env", null ); // TODO:
+        }
+        return reporter;
+    }
+
+    private Optional<JmxDump> connectToNeo4jInstance()
     {
         out.println( "Trying to find running instance of neo4j" );
+
+        Optional<Long> pid = getPid();
+        if ( pid.isPresent() )
+        {
+            try
+            {
+                LocalVirtualMachine vm = LocalVirtualMachine.from( pid.get() );
+                out.println( "Attached to running process with process id " + pid );
+                try
+                {
+                    JmxDump jmxDump = JmxDump.connectTo( vm.getJmxAddress() );
+                    jmxDump.attachSystemProperties( vm.getSystemProperties() );
+                    out.println( "Connected to JMX endpoint" );
+                    return Optional.of( jmxDump );
+                }
+                catch ( IOException e )
+                {
+                    printError( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage(), e );
+                }
+            }
+            catch ( IOException e )
+            {
+                printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
+            }
+        }
+        else
+        {
+            out.println( "No running instance of neo4j was found. Online reports will be omitted." );
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<Long> getPid()
+    {
         Path pidFile = homeDir.resolve( "run/neo4j.pid" );
         if ( fs.fileExists( pidFile.toFile() ) )
         {
@@ -199,29 +242,9 @@ public class DiagnosticsReportCommand implements AdminCommand
                 String pidFileContent = reader.readLine();
                 try
                 {
-                    long pid = Long.parseLong( pidFileContent );
-
-                    try
-                    {
-                        LocalVirtualMachine vm = LocalVirtualMachine.from( pid );
-                        out.println( "Attached to running process with process id " + pid );
-                        try
-                        {
-                            JmxDump jmxDump = JmxDump.connectTo( vm.getJmxAddress() );
-                            jmxDump.attachSystemProperties( vm.getSystemProperties() );
-                            out.println( "Connected to JMX endpoint" );
-                            return jmxDump;
-                        }
-                        catch ( IOException e )
-                        {
-                            printError( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage(), e );
-                        }
-                    }
-                    catch ( IOException e )
-                    {
-                        printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
-                    }
+                    return Optional.of( Long.parseLong( pidFileContent ) );
                 }
+
                 catch ( NumberFormatException e )
                 {
                     printError( pidFile.toString() + " does not contain a valid id. Found: " + pidFileContent );
@@ -232,12 +255,7 @@ public class DiagnosticsReportCommand implements AdminCommand
                 printError( "Error reading the .pid file. Reason: " + e.getMessage(), e );
             }
         }
-        else
-        {
-            out.println( "No running instance of neo4j was found. Online reports will be omitted." );
-        }
-
-        return null;
+        return Optional.empty();
     }
 
     private void printError( String message )
@@ -282,9 +300,35 @@ public class DiagnosticsReportCommand implements AdminCommand
             return "include the raft log";
         case "queries":
             return "include the output of dbms.listQueries()";
+        case "ps":
+            return "include a list of running processes";
         default:
         }
         throw new IllegalArgumentException( "Unknown classifier: " + classifier );
+    }
+
+    private static DiagnosticsReportSource runningProcesses()
+    {
+        return DiagnosticsReportSources.newDiagnosticsString( "ps.txt", () ->
+        {
+            List<ProcessInfo> processesList = JProcesses.getProcessList();
+
+            StringBuilder sb = new StringBuilder();
+            for (final ProcessInfo processInfo : processesList) {
+                sb.append( "Process PID: " ).append( processInfo.getPid() ).append( '\n' )
+                        .append( "Process Name: " ).append( processInfo.getName() ).append( '\n' )
+                        .append( "Process Time: " ).append( processInfo.getTime() ).append( '\n' )
+                        .append( "User: " ).append( processInfo.getUser() ).append( '\n' )
+                        .append( "Virtual Memory: " ).append( processInfo.getVirtualMemory() ).append( '\n' )
+                        .append( "Physical Memory: " ).append( processInfo.getPhysicalMemory() ).append( '\n' )
+                        .append( "CPU usage: " ).append( processInfo.getCpuUsage() ).append( '\n' )
+                        .append( "Start Time: " ).append( processInfo.getStartTime() ).append( '\n' )
+                        .append( "Priority: " ).append( processInfo.getPriority() ).append( '\n' )
+                        .append( "Full command: " ).append( processInfo.getCommand() ).append( '\n' )
+                        .append("------------------").append( '\n' );
+            }
+            return sb.toString();
+        });
     }
 
     /**
