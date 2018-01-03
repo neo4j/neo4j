@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
@@ -114,6 +115,7 @@ public class ConstraintIndexCreator
         try
         {
             long indexId = schemaOps.indexGetCommittedId( state, index );
+            IndexProxy proxy = indexingService.getIndexProxy( indexId );
 
             // Release the LABEL WRITE lock during index population.
             // At this point the integrity of the constraint to be created was checked
@@ -121,7 +123,7 @@ public class ConstraintIndexCreator
             // has been created. Now it's just the population left, which can take a long time
             releaseLabelLock( locks, descriptor.getLabelId() );
 
-            awaitConstrainIndexPopulation( constraint, indexId );
+            awaitConstrainIndexPopulation( constraint, proxy );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
@@ -200,17 +202,12 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstrainIndexPopulation( UniquenessConstraintDescriptor constraint, long indexId )
+    private void awaitConstrainIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy )
             throws InterruptedException, UniquePropertyValueValidationException
     {
         try
         {
-            indexingService.getIndexProxy( indexId ).awaitStoreScanCompleted();
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new IllegalStateException(
-                    String.format( "Index (indexId=%d) that we just created does not exist.", indexId ) );
+            proxy.awaitStoreScanCompleted();
         }
         catch ( IndexPopulationFailedKernelException e )
         {
