@@ -24,10 +24,11 @@ import org.apache.shiro.authc.AuthenticationToken;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+
+import static java.util.stream.Collectors.joining;
 
 public class ShiroAuthToken implements AuthenticationToken
 {
@@ -73,10 +74,12 @@ public class ShiroAuthToken implements AuthenticationToken
     /** returns true if token map does not specify a realm, or if it specifies the requested realm */
     public boolean supportsRealm( String realm )
     {
-        return !authToken.containsKey( AuthToken.REALM_KEY ) ||
-               authToken.get( AuthToken.REALM_KEY ).toString().length() == 0 ||
-               authToken.get( AuthToken.REALM_KEY ).equals( "*" ) ||
-               authToken.get( AuthToken.REALM_KEY ).equals( realm );
+        Object providedRealm = authToken.get( AuthToken.REALM_KEY );
+
+        return providedRealm == null ||
+               providedRealm.equals( "*" ) ||
+               providedRealm.equals( realm ) ||
+               providedRealm.toString().isEmpty();
     }
 
     @Override
@@ -95,17 +98,14 @@ public class ShiroAuthToken implements AuthenticationToken
             keys.set( 0, AuthToken.SCHEME_KEY );
         }
 
-        Iterable<String> keyValuePairs =
-                keys.stream()
-                    .map( this::keyValueString )
-                    .collect( Collectors.toList() );
-
-        return "{ " + String.join( PAIR_DELIMITER, keyValuePairs ) + " }";
+        return keys.stream()
+                .map( this::keyValueString )
+                .collect( joining( PAIR_DELIMITER, "{ ", " }" ) );
     }
 
     private String keyValueString( String key )
     {
-        String valueString = key.equals( AuthToken.CREDENTIALS ) ? "******" : authToken.get( key ).toString();
+        String valueString = key.equals( AuthToken.CREDENTIALS ) ? "******" : String.valueOf( authToken.get( key ) );
         return key + KEY_VALUE_DELIMITER + VALUE_DELIMITER + valueString + VALUE_DELIMITER;
     }
 }
