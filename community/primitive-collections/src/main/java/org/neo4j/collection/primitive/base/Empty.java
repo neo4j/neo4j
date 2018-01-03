@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.collection.primitive.base;
+
+import java.util.Collections;
 
 import org.neo4j.collection.primitive.PrimitiveCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
@@ -196,6 +198,12 @@ public class Empty
         @Override
         public <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<T,E> visitor ) throws E
         {   // No entries to visit
+        }
+
+        @Override
+        public Iterable<T> values()
+        {
+            return Collections.emptyList();
         }
 
         @Override

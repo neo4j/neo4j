@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -608,7 +608,15 @@ public class StateHandlingStatementOperations implements
                     }
                 }
                 long indexId = constraintIndexCreator.createUniquenessConstraintIndex( state, this, descriptor );
-                state.txState().constraintDoAdd( constraint, indexId );
+                if ( !constraintExists( state, constraint ) )
+                {
+                    // This looks weird, but since we release the label lock while awaiting population of the index
+                    // backing this constraint there can be someone else getting ahead of us, creating this exact constraint
+                    // before we do, so now getting out here under the lock we must check again and if it exists
+                    // we must at this point consider this an idempotent operation because we verified earlier
+                    // that it didn't exist and went on to create it.
+                    state.txState().constraintDoAdd( constraint, indexId );
+                }
             }
             return;
         }

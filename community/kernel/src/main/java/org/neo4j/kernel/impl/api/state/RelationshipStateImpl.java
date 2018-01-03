@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -57,10 +57,10 @@ public class RelationshipStateImpl extends PropertyContainerStateImpl implements
         return false;
     }
 
-    public abstract static class Defaults extends StateDefaults<Long, RelationshipState, RelationshipStateImpl>
+    public abstract static class Defaults extends StateDefaults<RelationshipState, RelationshipStateImpl>
     {
         @Override
-        RelationshipStateImpl createValue( Long id, TxState state )
+        RelationshipStateImpl createValue( long id, TxState state )
         {
             return new RelationshipStateImpl( id );
         }

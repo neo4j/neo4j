@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
- * Utility for {@linkplain #get(TxState, Object) retrieving} and
- * {@linkplain #getOrCreate(TxState, Object) initializing} lazy state held in maps in {@link TxState}.
+ * Utility for {@linkplain #get(TxState, long) retrieving} and
+ * {@linkplain #getOrCreate(TxState, long) initializing} lazy state held in maps in {@link TxState}.
  * <p>
- * {@linkplain #get(TxState, Object) Retrieving} state only guarantees that a readable object is returned, it does not
+ * {@linkplain #get(TxState, long) Retrieving} state only guarantees that a readable object is returned, it does not
  * guarantee a writable version. This allows us to return a read-only default value if the state has not been
- * initialized. Only when invoking {@link #getOrCreate(TxState, Object)} do we need to return a writable version, and
+ * initialized. Only when invoking {@link #getOrCreate(TxState, long)} do we need to return a writable version, and
  * at this point the state is initialized, if it has not been before, by creating a new instance and putting it in the
  * map.
  * <p>
@@ -65,15 +63,14 @@ import org.neo4j.helpers.collection.Iterables;
  * }
  * </pre></code>
  *
- * @param <KEY> The type of the key in the map for the state accessed by an instance of this class
  * @param <RO>  The read-only version of the value type stored in the state
  * @param <RW>  The read/write version of the value type stored in the state
  */
-abstract class StateDefaults<KEY, RO, RW extends RO>
+abstract class StateDefaults<RO, RW extends RO>
 {
-    final RO get( TxState state, KEY key )
+    final RO get( TxState state, long key )
     {
-        Map<KEY, RW> map = getMap( state );
+        PrimitiveLongObjectMap<RW> map = getMap( state );
         if ( map == null )
         {
             return defaultValue();
@@ -82,42 +79,44 @@ abstract class StateDefaults<KEY, RO, RW extends RO>
         return value == null ? defaultValue() : value;
     }
 
-    final RW getOrCreate( TxState state, KEY key )
+    final RW getOrCreate( TxState state, long key )
     {
-        Map<KEY, RW> map = getMap( state );
+        PrimitiveLongObjectMap<RW> map = getMap( state );
         if ( map == null )
         {
-            setMap( state, map = new HashMap<>() );
+            map = Primitive.longObjectMap();
+            setMap( state, map );
         }
         RW value = map.get( key );
         if ( value == null )
         {
-            map.put( key, value = createValue( key, state ) );
+            value = createValue( key, state );
+            map.put( key, value );
         }
         return value;
     }
 
     final Iterable<RO> values( TxState state )
     {
-        Map map = getMap( state );
+        PrimitiveLongObjectMap<RW> map = getMap( state );
         if ( map == null )
         {
             return Iterables.empty();
         }
         @SuppressWarnings( "unchecked" )
-        Collection<RO> values = map.values();
+        Iterable<RO> values = (Iterable<RO>) map.values();
         return values;
     }
 
     /** Implemented for the value holder - get the map from the state field. */
-    abstract Map<KEY, RW> getMap( TxState state );
+    abstract PrimitiveLongObjectMap<RW> getMap( TxState state );
 
     /** Implemented for the value holder - set the map to the state field. */
-    abstract void setMap( TxState state, Map<KEY, RW> map );
+    abstract void setMap( TxState state, PrimitiveLongObjectMap<RW> map );
 
     /** Implemented for the value type - initializes state by creating a new instance.
      * @param state */
-    abstract RW createValue( KEY key, TxState state );
+    abstract RW createValue( long key, TxState state );
 
     /** Implemented for the value type - returns a default read-only version of the value type. */
     abstract RO defaultValue();

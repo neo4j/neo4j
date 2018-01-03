@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -42,6 +42,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -122,7 +124,8 @@ public class IndexStatisticsTest
         createSomePersons();
 
         // when
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        IndexDescriptor index = createIndex( "Person", "name" );
+        awaitIndexesOnline();
 
         // then
         assertEquals( 0.75d, indexSelectivity( index ), DOUBLE_ERROR_TOLERANCE );
@@ -134,7 +137,8 @@ public class IndexStatisticsTest
     public void shouldNotSeeDataCreatedAfterPopulation() throws KernelException
     {
         // given
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        IndexDescriptor index = createIndex( "Person", "name" );
+        awaitIndexesOnline();
 
         // when
         createSomePersons();
@@ -151,7 +155,8 @@ public class IndexStatisticsTest
     {
         // given
         createSomePersons();
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        IndexDescriptor index = createIndex( "Person", "name" );
+        awaitIndexesOnline();
 
         // when
         createSomePersons();
@@ -167,7 +172,9 @@ public class IndexStatisticsTest
     {
         // given
         createSomePersons();
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        IndexDescriptor index = createIndex( "Person", "name" );
+        awaitIndexesOnline();
+
         SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
         long indexId = storage.indexGetForSchema( index ).getId();
 
@@ -198,7 +205,8 @@ public class IndexStatisticsTest
         int created = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER ).length;
 
         // when
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        IndexDescriptor index = createIndex( "Person", "name" );
+        awaitIndexesOnline();
 
         // then
         double expectedSelectivity = UNIQUE_NAMES / created;
@@ -216,7 +224,7 @@ public class IndexStatisticsTest
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
         final UpdatesTracker updatesTracker = executeCreations( index, CREATION_MULTIPLIER );
-        awaitOnline( index );
+        awaitIndexesOnline();
 
         // then
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
@@ -236,7 +244,7 @@ public class IndexStatisticsTest
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
         UpdatesTracker updatesTracker = executeCreationsAndDeletions( nodes, index, CREATION_MULTIPLIER );
-        awaitOnline( index );
+        awaitIndexesOnline();
 
         // then
         int seenWhilePopulating =
@@ -258,7 +266,7 @@ public class IndexStatisticsTest
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
         UpdatesTracker updatesTracker = executeCreationsAndUpdates( nodes, index, CREATION_MULTIPLIER );
-        awaitOnline( index );
+        awaitIndexesOnline();
 
         // then
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
@@ -294,7 +302,7 @@ public class IndexStatisticsTest
         {
             result.add( future.get() );
         }
-        awaitOnline( index );
+        awaitIndexesOnline();
 
         executorService.awaitTermination( 1, TimeUnit.SECONDS );
         executorService.shutdown();
@@ -306,7 +314,7 @@ public class IndexStatisticsTest
         double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ), doubleTolerance );
         assertCorrectIndexSize( "Tracker had " + result, seenWhilePopulating, indexSize( index ), tolerance );
-        int expectedIndexUpdates = result.deletedAfterPopulation() + result.createdAfterPopulation();
+        int expectedIndexUpdates = result.deletedAfterPopulation() + result.createdAfterPopulation() + result.updatedAfterPopulation();
         assertCorrectIndexUpdates( "Tracker had " + result, expectedIndexUpdates, indexUpdates( index ), tolerance );
     }
 
@@ -322,17 +330,20 @@ public class IndexStatisticsTest
         }
     }
 
-    private void changeName( long nodeId, String propertyKeyName, Object newValue ) throws KernelException
+    private boolean changeName( long nodeId, String propertyKeyName, Object newValue ) throws KernelException
     {
+        boolean changeIndexedNode = false;
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = bridge.get() )
+            Node node = db.getNodeById( nodeId );
+            if ( node.hasProperty( propertyKeyName ) )
             {
-                int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
-                statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( newValue ) );
+                changeIndexedNode = true;
             }
+            node.setProperty( propertyKeyName, newValue );
             tx.success();
         }
+        return changeIndexedNode;
     }
 
     private int createNamedPeople( long[] nodes, int offset ) throws KernelException
@@ -507,41 +518,12 @@ public class IndexStatisticsTest
                 .testAccessNeoStores();
     }
 
-    private IndexDescriptor awaitOnline( IndexDescriptor index ) throws KernelException
+    private void awaitIndexesOnline()
     {
-        long start = System.currentTimeMillis();
-        long end = start + TimeUnit.MINUTES.toMillis( 3 );
-        while ( System.currentTimeMillis() < end )
+        try ( Transaction transaction = db.beginTx() )
         {
-            try ( Transaction tx = db.beginTx() )
-            {
-                try ( Statement statement = bridge.get() )
-                {
-                    switch ( statement.readOperations().indexGetState( index ) )
-                    {
-                    case ONLINE:
-                        return index;
-
-                    case FAILED:
-                        throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
-
-                    default:
-                        break;
-                    }
-                }
-                tx.success();
-
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException e )
-                {
-                    // ignored
-                }
-            }
+            db.schema().awaitIndexesOnline(3, TimeUnit.MINUTES );
         }
-        throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
     }
 
     private UpdatesTracker executeCreations( IndexDescriptor index, int numberOfCreations ) throws KernelException
@@ -584,13 +566,7 @@ public class IndexStatisticsTest
             int created = createNamedPeople( nodes, offset );
             offset += created;
             updatesTracker.increaseCreated( created );
-
-            // check index online
-            if ( !updatesTracker.isPopulationCompleted() &&
-                    indexOnlineMonitor.isIndexOnline( index ) )
-            {
-                updatesTracker.notifyPopulationCompleted();
-            }
+            notifyIfPopulationCompleted( index, updatesTracker );
 
             // delete if allowed
             if ( allowDeletions && updatesTracker.created() % 5 == 0 )
@@ -605,13 +581,7 @@ public class IndexStatisticsTest
                 {
                     // ignore
                 }
-
-                // check again index online
-                if ( !updatesTracker.isPopulationCompleted() &&
-                        indexOnlineMonitor.isIndexOnline( index ) )
-                {
-                    updatesTracker.notifyPopulationCompleted();
-                }
+                notifyIfPopulationCompleted( index, updatesTracker );
             }
 
             // update if allowed
@@ -620,23 +590,35 @@ public class IndexStatisticsTest
                 int randomIndex = random.nextInt( nodes.length );
                 try
                 {
-                    changeName( nodes[randomIndex], "name", NAMES[randomIndex % NAMES.length] );
+                    if ( changeName( nodes[randomIndex], "name", NAMES[randomIndex % NAMES.length] ) )
+                    {
+                        updatesTracker.increaseUpdated( 1 );
+                    }
                 }
-                catch ( EntityNotFoundException ex )
+                catch ( EntityNotFoundException | NotFoundException ex )
                 {
                     // ignore
                 }
-
-                // check again index online
-                if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( index ) )
-                {
-                    updatesTracker.notifyPopulationCompleted();
-                }
+                notifyIfPopulationCompleted( index, updatesTracker );
             }
         }
         // make sure population complete has been notified
         updatesTracker.notifyPopulationCompleted();
         return updatesTracker;
+    }
+
+    private void notifyIfPopulationCompleted( IndexDescriptor index, UpdatesTracker updatesTracker )
+    {
+        if ( isCompletedPopulation( index, updatesTracker ) )
+        {
+            updatesTracker.notifyPopulationCompleted();
+        }
+    }
+
+    private boolean isCompletedPopulation( IndexDescriptor index, UpdatesTracker updatesTracker )
+    {
+        return !updatesTracker.isPopulationCompleted() &&
+                indexOnlineMonitor.isIndexOnline( index );
     }
 
     private void assertDoubleLongEquals( long expectedUniqueValue, long expectedSampledSize,

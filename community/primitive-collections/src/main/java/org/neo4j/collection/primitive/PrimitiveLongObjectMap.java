@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,4 +33,10 @@ public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
      * Visit the entries of this map, until all have been visited or the visitor returns 'true'.
      */
     <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<VALUE, E> visitor ) throws E;
+
+    /**
+     * {@link Iterable} with all map values
+     * @return iterable with all map values
+     */
+    Iterable<VALUE> values();
 }

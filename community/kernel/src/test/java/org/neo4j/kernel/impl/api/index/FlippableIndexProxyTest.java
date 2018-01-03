@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,28 +23,27 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.CleanupRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 public class FlippableIndexProxyTest
 {
-
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
     @Rule
@@ -149,6 +148,28 @@ public class FlippableIndexProxyTest
         verify( contextAfterFlip ).drop();
     }
 
+    @Test
+    public void shouldAbortStoreScanWaitOnDrop() throws Exception
+    {
+        // given the proxy structure
+        FakePopulatingIndexProxy delegate = new FakePopulatingIndexProxy();
+        FlippableIndexProxy flipper = new FlippableIndexProxy( delegate );
+        OtherThreadExecutor<Void> waiter = cleanup.add( new OtherThreadExecutor<Void>( "Waiter", null ) );
+
+        // and a thread stuck in the awaitStoreScanCompletion loop
+        Future<Object> waiting = waiter.executeDontWait( state -> flipper.awaitStoreScanCompleted() );
+        while ( !delegate.awaitCalled )
+        {
+            Thread.sleep( 10 );
+        }
+
+        // when
+        flipper.drop().get();
+
+        // then the waiting should quickly be over
+        waiting.get( 10, SECONDS );
+    }
+
     private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
     {
         return state ->
@@ -187,5 +208,17 @@ public class FlippableIndexProxyTest
     private FailedIndexProxyFactory singleFailedDelegate( final IndexProxy failed )
     {
         return failure -> failed;
+    }
+
+    private static class FakePopulatingIndexProxy extends IndexProxyAdapter
+    {
+        private volatile boolean awaitCalled;
+
+        @Override
+        public boolean awaitStoreScanCompleted()
+        {
+            awaitCalled = true;
+            return true;
+        }
     }
 }

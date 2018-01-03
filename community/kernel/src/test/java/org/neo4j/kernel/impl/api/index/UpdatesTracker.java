@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.api.index;
 public class UpdatesTracker
 {
     private int created;
+    private int updated;
     private int deleted;
     private int createdDuringPopulation;
+    private int updatedDuringPopulation;
     private int deletedDuringPopulation;
     private boolean populationCompleted;
 
@@ -37,6 +39,11 @@ public class UpdatesTracker
         deleted += num;
     }
 
+    public void increaseUpdated( int num )
+    {
+        updated += num;
+    }
+
     void notifyPopulationCompleted()
     {
         if ( populationCompleted )
@@ -46,6 +53,7 @@ public class UpdatesTracker
 
         populationCompleted = true;
         createdDuringPopulation = created;
+        updatedDuringPopulation = updated;
         deletedDuringPopulation = deleted;
     }
 
@@ -64,6 +72,11 @@ public class UpdatesTracker
         return deleted;
     }
 
+    public int getUpdated()
+    {
+        return updated;
+    }
+
     public int createdDuringPopulation()
     {
         return createdDuringPopulation;
@@ -72,6 +85,11 @@ public class UpdatesTracker
     public int deletedDuringPopulation()
     {
         return deletedDuringPopulation;
+    }
+
+    public int getUpdatedDuringPopulation()
+    {
+        return updatedDuringPopulation;
     }
 
     public int createdAfterPopulation()
@@ -84,13 +102,20 @@ public class UpdatesTracker
         return deleted - deletedDuringPopulation;
     }
 
+    public int updatedAfterPopulation()
+    {
+        return updated - updatedDuringPopulation;
+    }
+
     public void add( UpdatesTracker updatesTracker )
     {
         assert isPopulationCompleted();
         assert updatesTracker.isPopulationCompleted();
         this.created += updatesTracker.created;
         this.deleted += updatesTracker.deleted;
+        this.updated += updatesTracker.updated;
         this.createdDuringPopulation += updatesTracker.createdDuringPopulation;
+        this.updatedDuringPopulation += updatesTracker.updatedDuringPopulation;
         this.deletedDuringPopulation += updatesTracker.deletedDuringPopulation;
     }
 
@@ -101,6 +126,7 @@ public class UpdatesTracker
                "created=" + created +
                ", deleted=" + deleted +
                ", createdDuringPopulation=" + createdDuringPopulation +
+               ", updatedDuringPopulation=" + updatedDuringPopulation +
                ", deletedDuringPopulation=" + deletedDuringPopulation +
                ", populationCompleted=" + populationCompleted +
                '}';

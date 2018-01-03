@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -129,14 +129,19 @@ public class ConstraintIndexCreator
             // created and activated.
             acquireLabelLock( state, locks, descriptor.getLabelId() );
             reacquiredLabelLock = true;
+
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
             success = true;
             return indexId;
         }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
+        catch ( SchemaRuleNotFoundException e )
         {
             throw new IllegalStateException(
-                    String.format( "Index (%s) that we just created does not exist.", descriptor ) );
+                    String.format( "Index (%s) that we just created does not exist.", descriptor ), e );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new TransactionFailureException( String.format( "Index (%s) that we just created does not exist.", descriptor ), e );
         }
         catch ( IndexEntryConflictException e )
         {
@@ -154,9 +159,20 @@ public class ConstraintIndexCreator
                 {
                     acquireLabelLock( state, locks, descriptor.getLabelId() );
                 }
-                dropUniquenessConstraintIndex( index );
+
+                if ( indexStillExists( schemaOps, state, descriptor, index ) )
+                {
+                    dropUniquenessConstraintIndex( index );
+                }
             }
         }
+    }
+
+    private boolean indexStillExists( SchemaReadOperations schemaOps, KernelStatement state, LabelSchemaDescriptor descriptor,
+            IndexDescriptor index )
+    {
+        IndexDescriptor existingIndex = schemaOps.indexGetForSchema( state, descriptor );
+        return existingIndex != null && existingIndex.equals( index );
     }
 
     private void acquireLabelLock( KernelStatement state, Client locks, int labelId )

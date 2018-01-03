@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,9 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import java.util.Iterator;
+
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
@@ -85,6 +88,12 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
                 return;
             }
         }
+    }
+
+    @Override
+    public Iterable<VALUE> values()
+    {
+        return new ValueIterable( this );
     }
 
     @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" ) // yes it does
@@ -163,6 +172,37 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
             }
             HashCodeComputer<?> that = (HashCodeComputer<?>) o;
             return hash == that.hash;
+        }
+    }
+
+    private class ValueIterable implements Iterable<VALUE>
+    {
+        private final PrimitiveLongObjectHashMap<VALUE> map;
+
+        ValueIterable( PrimitiveLongObjectHashMap<VALUE> map )
+        {
+            this.map = map;
+        }
+
+        @Override
+        public Iterator<VALUE> iterator()
+        {
+            return new Iterator<VALUE>()
+            {
+                private final PrimitiveLongIterator iterator = map.iterator();
+
+                @Override
+                public boolean hasNext()
+                {
+                    return iterator.hasNext();
+                }
+
+                @Override
+                public VALUE next()
+                {
+                    return map.get( iterator.next() );
+                }
+            };
         }
     }
 }

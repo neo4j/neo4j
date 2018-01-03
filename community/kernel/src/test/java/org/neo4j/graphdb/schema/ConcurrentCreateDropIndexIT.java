@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,15 +28,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.Iterables.singleOrNull;
 
 public class ConcurrentCreateDropIndexIT
 {
@@ -156,6 +164,78 @@ public class ConcurrentCreateDropIndexIT
             {
                 assertTrue( expectedIndexedLabels.remove( index.getLabel().name() ) );
             }
+        }
+    }
+
+    @Test
+    public void concurrentCreatingUniquenessConstraint() throws Throwable
+    {
+        // given
+        Race race = new Race().withMaxDuration( 10, SECONDS );
+        Label label = label( 0 );
+        race.addContestants( 10, () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().constraintFor( label ).assertPropertyIsUnique( KEY ).create();
+                tx.success();
+            }
+            catch ( TransientFailureException | ConstraintViolationException e )
+            {   // It's OK
+            }
+        }, 300 );
+
+        // when
+        race.go();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // then
+            ConstraintDefinition constraint = single( db.schema().getConstraints( label ) );
+            assertNotNull( constraint );
+            IndexDefinition index = single( db.schema().getIndexes( label ) );
+            assertNotNull( index );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void concurrentCreatingUniquenessConstraintOnNonUniqueData() throws Throwable
+    {
+        // given
+        Label label = label( 0 );
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 2; i++ )
+            {
+                db.createNode( label ).setProperty( KEY, "A" );
+            }
+            tx.success();
+        }
+        Race race = new Race().withMaxDuration( 10, SECONDS );
+        race.addContestants( 3, () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().constraintFor( label ).assertPropertyIsUnique( KEY ).create();
+                tx.success();
+            }
+            catch ( TransientFailureException | ConstraintViolationException e )
+            {   // It's OK
+            }
+        }, 100 );
+
+        // when
+        race.go();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // then
+            ConstraintDefinition constraint = singleOrNull( db.schema().getConstraints( label ) );
+            assertNull( constraint );
+            IndexDefinition index = singleOrNull( db.schema().getIndexes( label ) );
+            assertNull( index );
+            tx.success();
         }
     }
 

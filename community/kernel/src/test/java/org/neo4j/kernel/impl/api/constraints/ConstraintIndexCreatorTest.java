@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -63,20 +63,24 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
@@ -133,22 +137,23 @@ public class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index ) )
-                .thenReturn( 2468L );
+        SchemaReadOperations schemaOps = constraintCreationContext.schemaReadOperations();
+        when( schemaOps.indexGetCommittedId( state, index ) ).thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause ) )
                 .when( indexProxy ).awaitStoreScanCompleted();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        when( constraintCreationContext.schemaReadOperations().indexGetForSchema( state, descriptor ) )
-                .thenReturn( null );
+        when( schemaOps.indexGetForSchema( any( KernelStatement.class ), any( LabelSchemaDescriptor.class ) ) )
+                .thenReturn( null )   // first claim it doesn't exist, because it doesn't... so that it gets created
+                .thenReturn( index ); // then after it failed claim it does exist
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         try
         {
-            creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), descriptor );
+            creator.createUniquenessConstraintIndex( state, schemaOps, descriptor );
 
             fail( "expected exception" );
         }
@@ -163,9 +168,9 @@ public class ConstraintIndexCreatorTest
         IndexDescriptor newIndex = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
         verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetForSchema( state, descriptor );
-        verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
+        verify( schemaOps ).indexGetCommittedId( state, index );
+        verify( schemaOps, times( 2 ) ).indexGetForSchema( state, descriptor );
+        verifyNoMoreInteractions( schemaOps );
         TransactionState tx2 = kernel.statements.get( 1 ).txState();
         verify( tx2 ).indexDoDrop( newIndex );
         verifyNoMoreInteractions( tx2 );

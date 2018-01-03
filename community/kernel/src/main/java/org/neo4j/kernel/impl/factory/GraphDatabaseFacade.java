@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -618,7 +618,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             Node node = iterator.next();
             if ( iterator.hasNext() )
             {
-                throw new MultipleFoundException();
+                throw new MultipleFoundException(
+                        format( "Found multiple nodes with label: '%s', property name: '%s' and property " +
+                                "value: '%s' while only one was expected.", myLabel, key, value ) );
             }
             return node;
         }
