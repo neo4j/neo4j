@@ -1,4 +1,4 @@
-Copyright © 2011-2012 Neo Technology
+Copyright © 2011-2018 Neo Technology
 
 License: Creative Commons 3.0
 

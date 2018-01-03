@@ -10,7 +10,7 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 ### END INIT INFO
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2018 "Neo Technology,"
 
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #

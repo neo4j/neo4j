@@ -1,5 +1,5 @@
 Neo4j
-Copyright © 2002-2015 Network Engine for Objects in Lund AB (referred to
+Copyright © 2002-2018 Network Engine for Objects in Lund AB (referred to
 in this notice as "Neo Technology")
    [http://neotechnology.com]
 
