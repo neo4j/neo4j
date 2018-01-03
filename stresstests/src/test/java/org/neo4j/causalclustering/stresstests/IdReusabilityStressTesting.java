@@ -48,6 +48,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.helper.RepeatUntilCallable;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
@@ -56,6 +57,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdContainer;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -210,13 +212,9 @@ public class IdReusabilityStressTesting
             return false;
         }
 
-        if ( e instanceof  TimeoutException || e instanceof DatabaseShutdownException ||
-                e instanceof TransactionFailureException )
-        {
-            return true;
-        }
-
-        return isInterrupted( e.getCause() );
+        return e instanceof TimeoutException || e instanceof DatabaseShutdownException ||
+                e instanceof TransactionFailureException || e instanceof AcquireLockTimeoutException ||
+                e instanceof TransientTransactionFailureException || isInterrupted( e.getCause() );
     }
 
     private static boolean isInterrupted( Throwable e )
