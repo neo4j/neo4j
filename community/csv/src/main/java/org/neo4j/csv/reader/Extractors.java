@@ -118,7 +118,7 @@ public class Extractors
                 }
             }
 
-            add( string = new StringExtractor( emptyStringsAsNull, trimStrings ) );
+            add( string = new StringExtractor( emptyStringsAsNull ) );
             add( long_ = new LongExtractor() );
             add( int_ = new IntExtractor() );
             add( char_ = new CharExtractor() );
@@ -280,9 +280,9 @@ public class Extractors
         }
 
         @Override
-        public final boolean extract( char[] data, int offset, int length, boolean skippedChars )
+        public final boolean extract( char[] data, int offset, int length, boolean hadQuotes )
         {
-            if ( nullValue( length, skippedChars ) )
+            if ( nullValue( length, hadQuotes ) )
             {
                 clear();
                 return false;
@@ -290,7 +290,7 @@ public class Extractors
             return extract0( data, offset, length );
         }
 
-        protected boolean nullValue( int length, boolean skippedChars )
+        protected boolean nullValue( int length, boolean hadQuotes )
         {
             return length == 0;
         }
@@ -304,13 +304,11 @@ public class Extractors
     {
         private String value;
         private final boolean emptyStringsAsNull;
-        private final boolean trimStrings;
 
-        public StringExtractor( boolean emptyStringsAsNull, boolean trimStrings )
+        public StringExtractor( boolean emptyStringsAsNull )
         {
             super( String.class.getSimpleName() );
             this.emptyStringsAsNull = emptyStringsAsNull;
-            this.trimStrings = trimStrings;
         }
 
         @Override
@@ -320,19 +318,15 @@ public class Extractors
         }
 
         @Override
-        protected boolean nullValue( int length, boolean skippedChars )
+        protected boolean nullValue( int length, boolean hadQuotes )
         {
-            return length == 0 && (!skippedChars || emptyStringsAsNull);
+            return length == 0 && (!hadQuotes || emptyStringsAsNull);
         }
 
         @Override
         protected boolean extract0( char[] data, int offset, int length )
         {
             value = new String( data, offset, length );
-            if ( trimStrings )
-            {
-                value = value.trim();
-            }
             return true;
         }
 
@@ -678,7 +672,7 @@ public class Extractors
         }
 
         @Override
-        public boolean extract( char[] data, int offset, int length, boolean skippedChars )
+        public boolean extract( char[] data, int offset, int length, boolean hadQuotes )
         {
             extract0( data, offset, length );
             return true;
