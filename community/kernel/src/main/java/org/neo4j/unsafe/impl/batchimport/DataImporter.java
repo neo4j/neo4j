@@ -85,6 +85,11 @@ public class DataImporter
             this.nodes.add( nodes );
         }
 
+        public void nodesRemoved( long nodes )
+        {
+            this.nodes.add( -nodes );
+        }
+
         public void relationshipsImported( long relationships )
         {
             this.relationships.add( relationships );

@@ -236,7 +236,7 @@ public class ImportLogic implements Closeable
             PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
             if ( duplicateNodeIds.hasNext() )
             {
-                executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore ) );
+                executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore, storeUpdateMonitor ) );
             }
             updatePeakMemoryUsage();
         }
@@ -472,9 +472,8 @@ public class ImportLogic implements Closeable
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;
-        DataStatistics stats = getState( DataStatistics.class );
-        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", stats, bytes( peakMemoryUsage ) ) );
-        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + stats );
+        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", storeUpdateMonitor, bytes( peakMemoryUsage ) ) );
+        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
 
         if ( nodeRelationshipCache != null )
         {

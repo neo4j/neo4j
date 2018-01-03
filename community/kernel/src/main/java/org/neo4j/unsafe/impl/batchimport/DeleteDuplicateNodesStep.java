@@ -33,12 +33,17 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {
     private final NodeStore nodeStore;
     private final PrimitiveLongIterator nodeIds;
+    private final DataImporter.Monitor storeMonitor;
 
-    public DeleteDuplicateNodesStep( StageControl control, Configuration config, PrimitiveLongIterator nodeIds, NodeStore nodeStore )
+    private int nodesRemoved;
+
+    public DeleteDuplicateNodesStep( StageControl control, Configuration config, PrimitiveLongIterator nodeIds, NodeStore nodeStore,
+            DataImporter.Monitor storeMonitor )
     {
         super( control, "DEDUP", config );
         this.nodeStore = nodeStore;
         this.nodeIds = nodeIds;
+        this.storeMonitor = storeMonitor;
     }
 
     @Override
@@ -52,6 +57,14 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
             cursor.next( duplicateNodeId );
             record.setInUse( false );
             nodeStore.updateRecord( record );
+            nodesRemoved++;
         }
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        super.close();
+        storeMonitor.nodesRemoved( nodesRemoved );
     }
 }

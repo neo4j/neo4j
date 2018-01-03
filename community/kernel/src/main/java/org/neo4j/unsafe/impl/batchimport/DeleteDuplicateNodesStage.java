@@ -36,9 +36,9 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 public class DeleteDuplicateNodesStage extends Stage
 {
     public DeleteDuplicateNodesStage( Configuration config, PrimitiveLongIterator duplicateNodeIds,
-            BatchingNeoStores neoStore )
+            BatchingNeoStores neoStore, DataImporter.Monitor storeMonitor )
     {
         super( "DEDUP", null, config, 0 );
-        add( new DeleteDuplicateNodesStep( control(), config, duplicateNodeIds, neoStore.getNodeStore() ) );
+        add( new DeleteDuplicateNodesStep( control(), config, duplicateNodeIds, neoStore.getNodeStore(), storeMonitor ) );
     }
 }
