@@ -158,7 +158,7 @@ public class RecordFormatsMigrationIT
         try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemRule.get(), config ) )
         {
             RecordFormats actual = RecordFormatSelector.selectForStoreOrConfig( config, testDirectory.graphDbDir(),
-                    fileSystemRule.get(), pageCache, NullLogProvider.getInstance() );
+                    pageCache, NullLogProvider.getInstance() );
             assertNotNull( actual );
             assertEquals( expected.storeVersion(), actual.storeVersion() );
         }

@@ -51,6 +51,7 @@ import org.neo4j.values.storable.Values;
 public class PropertyCursor extends PropertyRecord implements org.neo4j.internal.kernel.api.PropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
+    public static final int INITIAL_POSITION = -1;
     private Read read;
     private long next;
     private int block;
@@ -76,6 +77,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         }
 
         this.assertOpen = assertOpen;
+        //Set to high value to force a read
         this.block = Integer.MAX_VALUE;
         this.read = read;
         if ( reference == NO_ID )
@@ -132,32 +134,49 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
             }
         }
 
-        while ( block < getNumberOfBlocks() )
+        while ( true )
         {
-            if ( block == -1 )
+            //Figure out number of blocks of record
+            int numberOfBlocks = getNumberOfBlocks();
+            while ( block < numberOfBlocks )
             {
-                block = 0;
-            }
-            else
-            {
-                block += type().calculateNumberOfBlocksUsed( currentBlock() );
-            }
-            if ( block < getNumberOfBlocks() && type() != null &&
-                 !isPropertyChangedOrRemoved() )
-            {
-                return true;
-            }
-        }
+                //We have just read a record, so we are at the beginning
+                if ( block == INITIAL_POSITION )
+                {
+                    block = 0;
+                }
+                else
+                {
+                    //Figure out the type and how many blocks that are used
+                    long current = currentBlock();
+                    PropertyType type = PropertyType.getPropertyTypeOrNull( current );
+                    if ( type == null )
+                    {
+                        break;
+                    }
+                    block += type.calculateNumberOfBlocksUsed( current );
+                }
+                //nothing left, need to read a new record
+                if ( block >= numberOfBlocks || type() == null )
+                {
+                    break;
+                }
 
-        if ( next == NO_ID )
-        {
-            return false;
-        }
+                if ( !isPropertyChangedOrRemoved() )
+                {
+                    return true;
+                }
+            }
 
-        read.property( this, next, page );
-        next = getNextProp();
-        block = -1;
-        return next();
+            if ( next == NO_ID )
+            {
+                return false;
+            }
+
+            read.property( this, next, page );
+            next = getNextProp();
+            block = INITIAL_POSITION;
+        }
     }
 
     private boolean isPropertyChangedOrRemoved()
@@ -505,7 +524,8 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         }
         else
         {
-            return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next + ", underlying record=" + super.toString() + " ]";
+            return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next +
+                   ", underlying record=" + super.toString() + " ]";
         }
     }
 }

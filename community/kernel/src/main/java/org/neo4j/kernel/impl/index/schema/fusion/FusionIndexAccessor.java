@@ -109,8 +109,7 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public IndexReader newReader()
     {
-        return new FusionIndexReader( nativeAccessor.newReader(), luceneAccessor.newReader(), selector,
-                descriptor.schema().getPropertyIds() );
+        return new FusionIndexReader( nativeAccessor.newReader(), luceneAccessor.newReader(), selector, descriptor );
     }
 
     @Override

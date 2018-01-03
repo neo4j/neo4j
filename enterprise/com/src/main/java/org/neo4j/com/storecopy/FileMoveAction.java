@@ -39,12 +39,12 @@ public interface FileMoveAction
     {
         return new FileMoveAction()
         {
-
             @Override
             public void move( File toDir, CopyOption... copyOptions ) throws IOException
             {
                 Optional<FileHandle> handle = pageCache.getCachedFileSystem().streamFilesRecursive( file ).findAny();
-                if ( handle.isPresent() )
+                boolean directoryExistsInCachedSystem = handle.isPresent();
+                if ( directoryExistsInCachedSystem )
                 {
                     handle.get().rename( new File( toDir, file.getName() ), copyOptions );
                 }
@@ -60,12 +60,12 @@ public interface FileMoveAction
 
     static FileMoveAction copyViaFileSystem( File file, File basePath )
     {
+        Path base = basePath.toPath();
         return new FileMoveAction()
         {
             @Override
             public void move( File toDir, CopyOption... copyOptions ) throws IOException
             {
-                Path base = basePath.toPath();
                 Path originalPath = file.toPath();
                 Path relativePath = base.relativize( originalPath );
                 Path resolvedPath = toDir.toPath().resolve( relativePath );
@@ -80,5 +80,4 @@ public interface FileMoveAction
             }
         };
     }
-
 }

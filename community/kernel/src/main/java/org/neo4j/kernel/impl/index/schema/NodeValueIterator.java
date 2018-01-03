@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
@@ -48,7 +51,7 @@ public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBas
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, int[] keys )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
     {
         this.progressor = progressor;
     }

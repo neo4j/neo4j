@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TestName;
 
 import java.io.File;
@@ -47,12 +48,11 @@ import static org.junit.Assert.assertEquals;
 
 public class IncrementalBackupIT
 {
-    @Rule
     public TestName testName = new TestName();
-    @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( testName ).around( testDirectory ).around( suppressOutput );
 
     private File serverPath;
     private File backupPath;
@@ -62,9 +62,11 @@ public class IncrementalBackupIT
     @Before
     public void before() throws Exception
     {
-        File base = testDirectory.directory( testName.getMethodName() );
+        File base = testDirectory.cleanDirectory( testName.getMethodName() );
         serverPath = new File( base, "server" );
         backupPath = new File( base, "backup" );
+        serverPath.mkdirs();
+        backupPath.mkdirs();
     }
 
     @After
@@ -136,7 +138,7 @@ public class IncrementalBackupIT
         assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
-        DbRepresentation furtherRepresentation = createTransactiongWithWeirdRelationshipGroupRecord( serverPath );
+        DbRepresentation furtherRepresentation = createTransactionWithWeirdRelationshipGroupRecord( serverPath );
         server = startServer( serverPath, "127.0.0.1:" + port );
         backup.incremental( backupPath.getPath() );
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
@@ -181,7 +183,7 @@ public class IncrementalBackupIT
         return result;
     }
 
-    private DbRepresentation createTransactiongWithWeirdRelationshipGroupRecord( File path )
+    private DbRepresentation createTransactionWithWeirdRelationshipGroupRecord( File path )
     {
         db = startGraphDatabase( path );
         int i = 0;

@@ -20,19 +20,26 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -41,9 +48,10 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -56,10 +64,13 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
+
+import static java.lang.String.format;
 
 public class AllStoreHolder extends Read implements Token
 {
@@ -74,15 +85,14 @@ public class AllStoreHolder extends Read implements Token
 
     public AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
-            TxStateHolder txStateHolder,
+            KernelTransactionImplementation ktx,
             Cursors cursors,
-            ExplicitIndexStore explicitIndexStore,
-            AssertOpen assertOpen )
+            ExplicitIndexStore explicitIndexStore )
     {
-        super( cursors, txStateHolder, assertOpen );
+        super( cursors, ktx );
         this.storeReadLayer = engine.storeReadLayer();
         this.statement = statement; // use provided statement, to assert no leakage
-        this.explicitIndexes = Suppliers.lazySingleton( txStateHolder::explicitIndexTxState );
+        this.explicitIndexes = Suppliers.lazySingleton( ktx::explicitIndexTxState );
 
         this.nodes = statement.nodes();
         this.relationships = statement.relationships();
@@ -94,7 +104,7 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public boolean nodeExists( long id )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
 
         if ( hasTxStateWithChanges() )
         {
@@ -154,22 +164,119 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public CapableIndexReference index( int label, int... properties )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
         IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
         if ( indexDescriptor == null )
         {
             return CapableIndexReference.NO_INDEX;
         }
+
+        return indexGetCapability( indexDescriptor);
+    }
+
+    CapableIndexReference indexGetCapability( IndexDescriptor indexDescriptor )
+    {
         boolean unique = indexDescriptor.type() == IndexDescriptor.Type.UNIQUE;
         try
         {
             IndexCapability indexCapability = storeReadLayer.indexGetCapability( indexDescriptor );
-            return new DefaultCapableIndexReference( unique, indexCapability, label, properties );
+            return new DefaultCapableIndexReference( unique, indexCapability, indexDescriptor.schema().getLabelId(),
+                    indexDescriptor.schema().getPropertyIds() );
         }
         catch ( IndexNotFoundKernelException e )
         {
             throw new IllegalStateException( "Could not find capability for index " + indexDescriptor, e );
         }
+    }
+
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        // If index is in our state, then return populating
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            if ( checkIndexState( descriptor,
+                    ktx.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
+            {
+                return InternalIndexState.POPULATING;
+            }
+        }
+
+        return storeReadLayer.indexGetState( descriptor );
+    }
+
+    private boolean checkIndexState( IndexDescriptor index, ReadableDiffSets<IndexDescriptor> diffSet )
+            throws IndexNotFoundKernelException
+    {
+        if ( diffSet.isAdded( index ) )
+        {
+            return true;
+        }
+        if ( diffSet.isRemoved( index ) )
+        {
+            throw new IndexNotFoundKernelException( format( "Index on %s has been dropped in this transaction.",
+                    index.userDescription( SchemaUtil.idTokenNameLookup ) ) );
+        }
+        return false;
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
+    {
+        sharedOptimisticLock( descriptor.keyType(), descriptor.keyId() );
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetForSchema( descriptor );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            return ktx.txState().constraintsChangesForSchema( descriptor ).apply( constraints );
+        }
+        return constraints;
+    }
+
+    @Override
+    public boolean constraintExists( ConstraintDescriptor descriptor )
+    {
+        SchemaDescriptor schema = descriptor.schema();
+        sharedOptimisticLock( schema.keyType(), schema.keyId() );
+        ktx.assertOpen();
+        boolean inStore = storeReadLayer.constraintExists( descriptor );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<ConstraintDescriptor> diffSet =
+                    ktx.txState().constraintsChangesForSchema( descriptor.schema() );
+            return diffSet.isAdded( descriptor ) || (inStore && !diffSet.isRemoved( descriptor ));
+        }
+
+        return inStore;
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
+    {
+        sharedOptimisticLock( ResourceTypes.LABEL, labelId );
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetForLabel( labelId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            return ktx.txState().constraintsChangesForLabel( labelId ).apply( constraints );
+        }
+        return constraints;
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetAll()
+    {
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetAll();
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            constraints = ktx.txState().constraintsChanges().apply( constraints );
+        }
+        return Iterators.map( constraintDescriptor ->
+        {
+            SchemaDescriptor schema = constraintDescriptor.schema();
+            ktx.locks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.keyId() );
+            return constraintDescriptor;
+        }, constraints );
     }
 
     @Override
@@ -181,7 +288,7 @@ public class AllStoreHolder extends Read implements Token
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
-        return storeReadLayer.propertyKeyGetOrCreateForName( propertyKeyName );
+        return storeReadLayer.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKeyName ) );
     }
 
     @Override
@@ -362,5 +469,10 @@ public class AllStoreHolder extends Read implements Token
             throw new IllegalTokenNameException( name );
         }
         return name;
+    }
+
+    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return storeReadLayer.indexGetFailure( descriptor.schema() );
     }
 }

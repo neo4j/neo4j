@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.schema.constaints;
 
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema.SchemaComputer;
-import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaComputer;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
 

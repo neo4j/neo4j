@@ -23,13 +23,13 @@ import java.util.Iterator;
 import java.util.function.BiPredicate;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -39,7 +39,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.kernel.impl.enterprise.PropertyExistenceEnforcer.getOrCreatePropertyExistenceEnforcerFrom;
 
 public class EnterpriseConstraintSemantics extends StandardConstraintSemantics

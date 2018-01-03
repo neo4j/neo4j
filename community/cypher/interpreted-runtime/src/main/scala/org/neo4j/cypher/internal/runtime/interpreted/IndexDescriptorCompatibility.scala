@@ -20,23 +20,24 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
-import org.neo4j.kernel.api.schema.{LabelSchemaDescriptor, SchemaDescriptorFactory}
 
 trait IndexDescriptorCompatibility {
-  implicit def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
+  def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
     IndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
 
-  implicit def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
+  def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
     CypherIndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds)
 
-  implicit def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
+  def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
     SchemaDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
 
-  implicit def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
+  def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
       SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds.toArray:_*)
 
-  implicit def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
+  def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
     val labelId: Int = tc.getLabelId(labelName)
     val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
     toLabelSchemaDescriptor(labelId, propertyKeyIds)

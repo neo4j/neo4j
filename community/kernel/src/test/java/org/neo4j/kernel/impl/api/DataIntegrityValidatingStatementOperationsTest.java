@@ -27,6 +27,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;

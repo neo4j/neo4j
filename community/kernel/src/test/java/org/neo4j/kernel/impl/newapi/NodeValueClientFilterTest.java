@@ -28,6 +28,8 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -50,7 +52,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     {
         // given
         store.node( 17, NO_ID, false, NO_ID, 0 );
-        NodeValueClientFilter filter = initializeFilter( null );
+        NodeValueClientFilter filter = initializeFilter();
 
         // when
         filter.next();
@@ -65,7 +67,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     public void shouldRejectNodeNotInUse() throws Exception
     {
         // given
-        NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
+        NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
 
         // when
         filter.next();
@@ -81,7 +83,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     {
         // given
         store.node( 17, NO_ID, false, NO_ID, 0 );
-        NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
+        NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
 
         // when
         filter.next();
@@ -98,7 +100,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
         // given
         store.node( 17, 1, false, NO_ID, 0 );
         store.property( 1, NO_ID, NO_ID, block( 12, stringValue( "hello" ) ) );
-        NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
+        NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
 
         // when
         filter.next();
@@ -115,7 +117,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
         // given
         store.node( 17, 1, false, NO_ID, 0 );
         store.property( 1, NO_ID, NO_ID, block( 7, stringValue( "wrong" ) ) );
-        NodeValueClientFilter filter = initializeFilter( null, IndexQuery.exists( 12 ) );
+        NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
 
         // when
         filter.next();
@@ -126,11 +128,11 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
         assertEvents( initialize(), Event.NEXT, Event.CLOSE );
     }
 
-    private NodeValueClientFilter initializeFilter( int[] keys, IndexQuery... filters )
+    private NodeValueClientFilter initializeFilter( IndexQuery... filters )
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
                 this, new NodeCursor(), new PropertyCursor(), store, filters );
-        filter.initialize( this, keys );
+        filter.initialize( IndexDescriptorFactory.forLabel( 11), this, null );
         return filter;
     }
 
@@ -141,13 +143,13 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
 
     private Event.Initialize initialize( int... keys )
     {
-        return new Event.Initialize( this, keys == null || keys.length == 0 ? null : keys );
+        return new Event.Initialize( this, keys );
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, int[] propertyIds )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
     {
-        events.add( new Event.Initialize( progressor, propertyIds ) );
+        events.add( new Event.Initialize( progressor, descriptor.schema().getPropertyIds() ) );
     }
 
     @Override
@@ -222,7 +224,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
             @Override
             public String toString()
             {
-                return "Node(" + reference + "," + values + ")";
+                return "Node(" + reference + "," + Arrays.toString( values ) + ")";
             }
         }
 

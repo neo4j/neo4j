@@ -38,12 +38,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
 {
     private static long strOne, strTwo1, strTwo2, strThree1, strThree2, strThree3;
     private static long boolTrue, num5, num6, num12a, num12b;
+    private static long strOneNoLabel;
+    private static long joeDalton, williamDalton, jackDalton, averellDalton;
 
     @Override
     void createTestGraph( GraphDatabaseService graphDb )
@@ -53,6 +56,15 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             index = graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
             tx.success();
+        }
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            createCompositeIndex( graphDb, "Person", "firstname", "surname" );
+            tx.success();
+        }
+        catch ( Exception e )
+        {
+            throw new AssertionError( e );
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -85,10 +97,16 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             nodeWithProp( graphDb, 30 );
             nodeWithProp( graphDb, 36 );
             nodeWithProp( graphDb, 42 );
-
+            strOneNoLabel = nodeWithNoLabel( graphDb, "one" );
+            joeDalton = person( graphDb, "Joe", "Dalton" );
+            williamDalton = person( graphDb, "William", "Dalton" );
+            jackDalton = person( graphDb, "Jack", "Dalton" );
+            averellDalton = person( graphDb, "Averell", "Dalton" );
             tx.success();
         }
     }
+
+    protected abstract void createCompositeIndex( GraphDatabaseService graphDb, String label, String... properties ) throws Exception;
 
     @Test
     public void shouldPerformExactLookup() throws Exception
@@ -166,6 +184,27 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
+    public void shouldPerformExactLookupInCompositeIndex() throws Exception
+    {
+        // given
+        int label = token.nodeLabel( "Person" );
+        int firstName = token.propertyKey( "firstname" );
+        int surname = token.propertyKey( "surname" );
+        CapableIndexReference index = schemaRead.index( label, firstName, surname );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
+              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        {
+            // when
+            IndexValueCapability valueCapability = index.valueCapability( ValueGroup.TEXT );
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( firstName, "Joe" ),
+                    IndexQuery.exact( surname, "Dalton" ) );
+
+            // then
+            assertFoundNodesAndValue( node, uniqueIds, valueCapability, joeDalton );
+        }
+    }
+
+    @Test
     public void shouldPerformStringPrefixSearch() throws Exception
     {
         // given
@@ -180,7 +219,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringPrefix( prop, "t" ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, stringCapability, strTwo1, strTwo2, strThree1, strThree2, strThree3 );
+            assertFoundNodesAndValue( node, uniqueIds, stringCapability, strTwo1, strTwo2, strThree1, strThree2,
+                    strThree3 );
         }
     }
 
@@ -262,7 +302,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, "one", true, "two", true ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, stringCapability, strOne, strThree1, strThree2, strThree3, strTwo1, strTwo2 );
+            assertFoundNodesAndValue( node, uniqueIds, stringCapability, strOne, strThree1, strThree2, strThree3,
+                    strTwo1, strTwo2 );
         }
     }
 
@@ -443,7 +484,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         assertFalse( "no more than " + nodes + " nodes", node.next() );
     }
 
-    private void assertFoundNodesAndValue( NodeValueIndexCursor node, PrimitiveLongSet uniqueIds, IndexValueCapability expectValue,
+    private void assertFoundNodesAndValue( NodeValueIndexCursor node, PrimitiveLongSet uniqueIds,
+            IndexValueCapability expectValue,
             long... expected )
     {
         assertFoundNodesAndValue( node, expected.length, uniqueIds, expectValue );
@@ -480,10 +522,468 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         assertEquals( "just bad", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
     }
 
+    @Test
+    public void shouldNotFindDeletedNodeInIndexScan() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        IndexValueCapability wildcardCapability = index.valueCapability( ValueGroup.UNKNOWN );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
+              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        {
+            // when
+            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
+            assertFoundNodesAndValue( node, 24, uniqueIds, wildcardCapability );
+
+            // then
+            tx.dataWrite().nodeDelete( strOne );
+            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
+            assertFoundNodesAndValue( node, 23, uniqueIds, wildcardCapability );
+        }
+    }
+
+    @Test
+    public void shouldNotFindDeletedNodeInIndexSeek() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeDelete( strOne );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "one" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindDNodeWithRemovedLabelInIndexSeek() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( strOne, label );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "one" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindUpdatedNodeInIndexSeek() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "one" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldFindUpdatedNodeInIndexSeek() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "ett" ) );
+
+            // then
+            assertTrue( node.next() );
+            assertEquals( strOne, node.nodeReference() );
+        }
+    }
+
+    @Test
+    public void shouldFindSwappedNodeInIndexSeek() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( strOne, label );
+            tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "one" ) );
+
+            // then
+            assertTrue( node.next() );
+            assertEquals( strOneNoLabel, node.nodeReference() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindDeletedNodeInRangeSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeDelete( strOne );
+            tx.dataWrite().nodeDelete( strThree1 );
+            tx.dataWrite().nodeDelete( strThree2 );
+            tx.dataWrite().nodeDelete( strThree3 );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, "one", true, "three", true ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindNodeWithRemovedLabelInRangeSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( strOne, label );
+            tx.dataWrite().nodeRemoveLabel( strThree1, label );
+            tx.dataWrite().nodeRemoveLabel( strThree2, label );
+            tx.dataWrite().nodeRemoveLabel( strThree3, label );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, "one", true, "three", true ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindUpdatedNodeInRangeSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
+            tx.dataWrite().nodeSetProperty( strThree1, prop, stringValue( "tre" ) );
+            tx.dataWrite().nodeSetProperty( strThree2, prop, stringValue( "tre" ) );
+            tx.dataWrite().nodeSetProperty( strThree3, prop, stringValue( "tre" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, "one", true, "three", true ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldFindUpdatedNodeInRangeSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, "ett", true, "tre", true ) );
+
+            // then
+            assertTrue( node.next() );
+            assertEquals( strOne, node.nodeReference() );
+        }
+    }
+
+    @Test
+    public void shouldFindSwappedNodeInRangeSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( strOne, label );
+            tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, "one", true, "ones", true ) );
+
+            // then
+            assertTrue( node.next() );
+            assertEquals( strOneNoLabel, node.nodeReference() );
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindDeletedNodeInPrefixSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeDelete( strOne );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringPrefix( prop, "on" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindNodeWithRemovedLabelInPrefixSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( strOne, label );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringPrefix( prop, "on" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindUpdatedNodeInPrefixSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringPrefix( prop, "on" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldFindUpdatedNodeInPrefixSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringPrefix( prop, "et" ) );
+
+            // then
+            assertTrue( node.next() );
+            assertEquals( strOne, node.nodeReference() );
+        }
+    }
+
+    @Test
+    public void shouldFindSwappedNodeInPrefixSearch() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( strOne, label );
+            tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringPrefix( prop, "on" ) );
+
+            // then
+            assertTrue( node.next() );
+            assertEquals( strOneNoLabel, node.nodeReference() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindDeletedNodeInCompositeIndex() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Person" );
+        int firstName = token.propertyKey( "firstname" );
+        int surname = token.propertyKey( "surname" );
+        CapableIndexReference index = schemaRead.index( label, firstName, surname );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeDelete( jackDalton );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( firstName, "Jack" ),
+                    IndexQuery.exact( surname, "Dalton" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindNodeWithRemovedLabelInCompositeIndex() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Person" );
+        int firstName = token.propertyKey( "firstname" );
+        int surname = token.propertyKey( "surname" );
+        CapableIndexReference index = schemaRead.index( label, firstName, surname );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( joeDalton, label );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( firstName, "Joe" ),
+                    IndexQuery.exact( surname, "Dalton" ) );
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindUpdatedNodeInCompositeIndex() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Person" );
+        int firstName = token.propertyKey( "firstname" );
+        int surname = token.propertyKey( "surname" );
+        CapableIndexReference index = schemaRead.index( label, firstName, surname );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( jackDalton, firstName, stringValue( "Jesse" ) );
+            tx.dataWrite().nodeSetProperty( jackDalton, surname, stringValue( "James" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( firstName, "Jack" ),
+                    IndexQuery.exact( surname, "Dalton" ) );
+
+            // then
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    public void shouldFindUpdatedNodeInCompositeIndex() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Person" );
+        int firstName = token.propertyKey( "firstname" );
+        int surname = token.propertyKey( "surname" );
+        CapableIndexReference index = schemaRead.index( label, firstName, surname );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeSetProperty( jackDalton, firstName, stringValue( "Jesse" ) );
+            tx.dataWrite().nodeSetProperty( jackDalton, surname, stringValue( "James" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( firstName, "Jesse" ),
+                    IndexQuery.exact( surname, "James" ) );
+
+            // then
+            assertTrue( node.next() );
+            assertEquals( jackDalton, node.nodeReference() );
+        }
+    }
+
+    @Test
+    public void shouldFindSwappedNodeInCompositeIndex() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Person" );
+        int firstName = token.propertyKey( "firstname" );
+        int surname = token.propertyKey( "surname" );
+        CapableIndexReference index = schemaRead.index( label, firstName, surname );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( joeDalton, label );
+            tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
+            tx.dataWrite().nodeSetProperty( strOneNoLabel, firstName, stringValue( "Jesse" ) );
+            tx.dataWrite().nodeSetProperty( strOneNoLabel, surname, stringValue( "James" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( firstName, "Jesse" ),
+                    IndexQuery.exact( surname, "James" ) );
+
+            // then
+            assertTrue( node.next() );
+            assertEquals( strOneNoLabel, node.nodeReference() );
+        }
+    }
+
     private long nodeWithProp( GraphDatabaseService graphDb, Object value )
     {
         Node node = graphDb.createNode( label( "Node" ) );
         node.setProperty( "prop", value );
+        return node.getId();
+    }
+
+    private long nodeWithNoLabel( GraphDatabaseService graphDb, Object value )
+    {
+        Node node = graphDb.createNode();
+        node.setProperty( "prop", value );
+        return node.getId();
+    }
+
+    private long person( GraphDatabaseService graphDb, String firstName, String surname )
+    {
+        Node node = graphDb.createNode( label( "Person" ) );
+        node.setProperty( "firstname", firstName );
+        node.setProperty( "surname", surname );
         return node.getId();
     }
 }

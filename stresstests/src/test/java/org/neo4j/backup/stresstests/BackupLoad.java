@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup.stresstests;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
@@ -33,9 +33,9 @@ class BackupLoad extends RepeatUntilCallable
 
     private final String backupHostname;
     private final int backupPort;
-    private final File backupDir;
+    private final Path backupDir;
 
-    BackupLoad( BooleanSupplier keepGoing, Runnable onFailure, String backupHostname, int backupPort, File backupDir )
+    BackupLoad( BooleanSupplier keepGoing, Runnable onFailure, String backupHostname, int backupPort, Path backupDir )
     {
         super( keepGoing, onFailure );
         this.backupHostname = backupHostname;

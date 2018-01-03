@@ -73,7 +73,7 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
     // Given
     val nodeCursor = mock[NodeCursor]
     when(nodeCursor.next()).thenReturn(true)
-    when(nodeCursor.labels()).thenReturn(new Labels(Array(1337L, 42L, 13L)))
+    when(nodeCursor.labels()).thenReturn(Labels.from(Array(1337L, 42L, 13L)))
 
     // Then
     nodeHasLabel(mock[Read], nodeCursor, 1L, 1337) shouldBe true

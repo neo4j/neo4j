@@ -23,6 +23,9 @@ import java.util.NoSuchElementException;
 
 /**
  * Set of label ids.
+ *
+ * Modifications are not reflected in the LabelSet and there is no guaranteed
+ * order.
  */
 public interface LabelSet
 {
@@ -32,8 +35,12 @@ public interface LabelSet
 
     boolean contains( int labelToken );
 
+    long[] all();
+
     LabelSet NONE = new LabelSet()
     {
+        private final long[] EMPTY = new long[0];
+
         @Override
         public int numberOfLabels()
         {
@@ -50,6 +57,12 @@ public interface LabelSet
         public boolean contains( int labelToken )
         {
             return false;
+        }
+
+        @Override
+        public long[] all()
+        {
+            return EMPTY;
         }
     };
 }

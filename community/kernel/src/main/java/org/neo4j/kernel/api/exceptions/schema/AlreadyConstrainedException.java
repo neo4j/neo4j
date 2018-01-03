@@ -20,9 +20,9 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 
 import static java.lang.String.format;
 

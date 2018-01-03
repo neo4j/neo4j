@@ -31,6 +31,11 @@ public class NoSuchTransactionException extends MissingLogDataException
         super( combinedMessage( missingTxId, additionalInformation ) );
     }
 
+    public NoSuchTransactionException( long missingTxId, String additionalInformation, Throwable cause )
+    {
+        super( combinedMessage( missingTxId, additionalInformation ), cause );
+    }
+
     private static String combinedMessage( long missingTxId, String additionalInformation )
     {
         String result = "Unable to find transaction " + missingTxId + " in any of my logical logs";

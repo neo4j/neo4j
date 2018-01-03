@@ -129,7 +129,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         else
         {
             //Nothing in tx state, just read the data.
-            return new Labels( NodeLabelsField.get( this, labelCursor()) );
+            return Labels.from( NodeLabelsField.get( this, labelCursor()) );
         }
     }
 

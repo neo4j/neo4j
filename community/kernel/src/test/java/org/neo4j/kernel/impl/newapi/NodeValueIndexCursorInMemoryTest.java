@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
-
-public class NodeValueIndexCursorInMemoryTest extends NodeValueIndexCursorTestBase<ReadTestSupport>
+public class NodeValueIndexCursorInMemoryTest extends AbstractNodeValueIndexCursorTest
 {
     @Override
     public ReadTestSupport newTestSupport()

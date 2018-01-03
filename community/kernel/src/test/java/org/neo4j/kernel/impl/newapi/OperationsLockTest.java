@@ -23,17 +23,24 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -52,11 +59,17 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
+import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
 
 public class OperationsLockTest
 {
@@ -68,6 +81,8 @@ public class OperationsLockTest
     private PropertyCursor propertyCursor;
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
+    private StoreReadLayer storeReadLayer;
 
     @Before
     public void setUp() throws InvalidTransactionTypeKernelException
@@ -88,13 +103,15 @@ public class OperationsLockTest
         when( autoindexing.nodes() ).thenReturn( mock( AutoIndexOperations.class ) );
         StorageStatement storageStatement = mock( StorageStatement.class );
         StorageEngine engine = mock( StorageEngine.class );
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
+        when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
-                ExplicitIndexStore.class ), AssertOpen.ALWAYS_OPEN );
+                ExplicitIndexStore.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                storageStatement, transaction, cursors, autoindexing );
+                storageStatement, transaction, cursors, autoindexing,
+                mock( NodeSchemaMatcher.class ) );
         operations.initialize();
     }
 
@@ -147,7 +164,7 @@ public class OperationsLockTest
         operations.nodeAddLabel( 123, labelId );
 
         // then
-        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
+        verify( locks, atLeastOnce() ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
         assertThat( txState.getNodeState( 123L ).labelDiffSets().getAdded(), contains( 456 ) );
     }
 
@@ -224,5 +241,56 @@ public class OperationsLockTest
         //THEN
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
         assertThat( txState.nodeIsDeletedInThisTx( 123 ), equalTo( true ) );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
+    {
+        // WHEN
+        allStoreHolder.constraintsGetForSchema( descriptor );
+
+        // THEN
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
+    {
+        // WHEN
+        allStoreHolder.constraintsGetForLabel( 42 );
+
+        // THEN
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 42 );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints() throws Exception
+    {
+        // WHEN
+        allStoreHolder.constraintExists( ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
+
+        // THEN
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 123 );
+    }
+
+    @Test
+    public void shouldAcquireSchemaReadLockBeforeGettingAllConstraints() throws Exception
+    {
+        // given
+        int labelId = 1;
+        int relTypeId = 2;
+        UniquenessConstraintDescriptor uniquenessConstraint = uniqueForLabel( labelId, 2, 3, 3 );
+        RelExistenceConstraintDescriptor existenceConstraint = existsForRelType( relTypeId, 3, 4, 5 );
+        when( storeReadLayer.constraintsGetAll() )
+                .thenReturn( Iterators.iterator( uniquenessConstraint, existenceConstraint ) );
+
+        // when
+        Iterator<ConstraintDescriptor> result = allStoreHolder.constraintsGetAll( );
+        Iterators.count( result );
+
+        // then
+        assertThat( asList( result ), empty() );
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
     }
 }

@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
@@ -57,7 +58,7 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
  *
  * @see PartitionedIndexReader
  */
-public class SimpleIndexReader implements IndexReader
+public class SimpleIndexReader extends AbstractIndexReader
 {
     private final PartitionSearcher partitionSearcher;
     private final IndexDescriptor descriptor;
@@ -69,6 +70,7 @@ public class SimpleIndexReader implements IndexReader
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator )
     {
+        super( descriptor );
         this.partitionSearcher = partitionSearcher;
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;

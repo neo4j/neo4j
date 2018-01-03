@@ -29,6 +29,8 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -94,7 +96,7 @@ public class BackupToolIT
             expected.expectMessage( "Failed to perform backup because existing backup is from a different version." );
 
             // Perform backup
-            backupTool.executeBackup( new HostnamePort( "localhost", backupPort ), backupDir.toFile(),
+            backupTool.executeBackup( new HostnamePort( "localhost", backupPort ), backupDir,
                     ConsistencyCheck.NONE, Config.defaults( GraphDatabaseSettings.record_format, StandardV3_4.NAME ),
                     20L * 60L * 1000L, false );
         }

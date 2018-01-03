@@ -113,9 +113,11 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         }
         catch ( FileNotFoundException e )
         {
-            throw new NoSuchTransactionException( transactionIdToStartFrom,
-                    "Log position acquired, but couldn't find the log file itself. " +
-                            "Perhaps it just recently was deleted? [" + e.getMessage() + "]" );
+            throw new NoSuchTransactionException(
+                    transactionIdToStartFrom,
+                    "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was " +
+                    "deleted? [" + e.getMessage() + "]",
+                    e );
         }
     }
 
