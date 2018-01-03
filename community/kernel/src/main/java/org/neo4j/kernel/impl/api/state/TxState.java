@@ -114,7 +114,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     // Tracks added and removed relationships, not modified relationships
     private RelationshipDiffSets<Long> relationships;
 
-    private PrimitiveLongObjectMap<PropertyContainerState> propertiesMap = Primitive.longObjectMap();
+    private PrimitiveLongObjectMap<PropertyContainerState> propertiesMap;
 
     /**
      * These two sets are needed because create-delete in same transaction is a no-op in {@link DiffSets}
@@ -128,11 +128,11 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private Map<LabelSchemaDescriptor, Map<ValueTuple, DiffSets<Long>>> indexUpdates;
 
-    private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
-    private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
-    private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
-    private InstanceCache<TxAllPropertyCursor> propertyCursor;
-    private InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
+    private final InstanceCache<TxSingleNodeCursor> singleNodeCursor;
+    private final InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
+    private final InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
+    private final InstanceCache<TxAllPropertyCursor> propertyCursor;
+    private final InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
 
     private boolean hasChanges;
     private boolean hasDataChanges;
@@ -606,6 +606,10 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void registerProperties( long ref, PropertyContainerState state )
     {
+        if ( propertiesMap == null )
+        {
+            propertiesMap = Primitive.longObjectMap();
+        }
         propertiesMap.put( ref, state );
     }
 
@@ -657,7 +661,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public PropertyContainerState getPropertiesState( long reference )
     {
-        return propertiesMap.get( reference );
+        return propertiesMap == null ? null : propertiesMap.get( reference );
     }
 
     @Override
