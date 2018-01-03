@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 import java.util.function.LongFunction;
 
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
@@ -31,6 +30,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Radix;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringEncoder;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.TrackerFactories.dynamic;
@@ -105,21 +105,23 @@ public class IdMappers
      * An {@link IdMapper} capable of mapping {@link String strings} to long ids.
      *
      * @param cacheFactory {@link NumberArrayFactory} for allocating memory for the cache used by this index.
+     * @param groups {@link Groups} containing all id groups.
      * @return {@link IdMapper} for when input ids are strings.
      */
-    public static IdMapper strings( NumberArrayFactory cacheFactory )
+    public static IdMapper strings( NumberArrayFactory cacheFactory, Groups groups )
     {
-        return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic() );
+        return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic(), groups );
     }
 
     /**
      * An {@link IdMapper} capable of mapping {@link Long arbitrary longs} to long ids.
      *
      * @param cacheFactory {@link NumberArrayFactory} for allocating memory for the cache used by this index.
+     * @param groups {@link Groups} containing all id groups.
      * @return {@link IdMapper} for when input ids are numbers.
      */
-    public static IdMapper longs( NumberArrayFactory cacheFactory )
+    public static IdMapper longs( NumberArrayFactory cacheFactory, Groups groups )
     {
-        return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic() );
+        return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic(), groups );
     }
 }

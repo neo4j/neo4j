@@ -86,6 +86,7 @@ public class EncodingIdMapperTest
     }
 
     private final int processors;
+    private final Groups groups = new Groups();
 
     public EncodingIdMapperTest( int processors )
     {
@@ -257,10 +258,10 @@ public class EncodingIdMapperTest
         when( encoder.encode( a2 ) ).thenReturn( 1L );
         when( encoder.encode( e ) ).thenReturn( 2L );
         when( encoder.encode( f ) ).thenReturn( 1L );
+        Group groupA = groups.getOrCreate( "A" );
+        Group groupB = groups.getOrCreate( "B" );
         IdMapper mapper = mapper( encoder, Radix.STRING, monitor );
         LongFunction<Object> ids = values( "a", "b", "c", "a", "e", "f" );
-        Group.Adapter groupA = new Group.Adapter( 1, "A" );
-        Group.Adapter groupB = new Group.Adapter( 2, "B" );
         Group[] groups = new Group[] {groupA, groupA, groupA, groupB, groupB, groupB};
 
         // a/A --> 1
@@ -293,11 +294,10 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
-        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, monitor );
-        LongFunction<Object> ids = values( "10", "9", "10" );
-        Groups groups = new Groups();
         Group firstGroup = groups.getOrCreate( "first" );
         Group secondGroup = groups.getOrCreate( "second" );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, monitor );
+        LongFunction<Object> ids = values( "10", "9", "10" );
         int id = 0;
         // group 0
         mapper.put( ids.apply( id ), id++, firstGroup );
@@ -319,16 +319,15 @@ public class EncodingIdMapperTest
     public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
     {
         // GIVEN
+        Group firstGroup = groups.getOrCreate( "first" );
+        Group secondGroup = groups.getOrCreate( "second" );
+        Group thirdGroup = groups.getOrCreate( "third" );
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         LongFunction<Object> ids = values( "8", "9", "10" );
-        Groups groups = new Groups();
-        Group firstGroup;
-        Group secondGroup;
-        Group thirdGroup;
         int id = 0;
-        mapper.put( ids.apply( id ), id++, firstGroup = groups.getOrCreate( "first" ) );
-        mapper.put( ids.apply( id ), id++, secondGroup = groups.getOrCreate( "second" ) );
-        mapper.put( ids.apply( id ), id++, thirdGroup = groups.getOrCreate( "third" ) );
+        mapper.put( ids.apply( id ), id++, firstGroup );
+        mapper.put( ids.apply( id ), id++, secondGroup );
+        mapper.put( ids.apply( id ), id++, thirdGroup );
         mapper.prepare( ids, mock( Collector.class ), NONE );
 
         // WHEN/THEN
@@ -349,13 +348,17 @@ public class EncodingIdMapperTest
     public void shouldHandleManyGroups() throws Exception
     {
         // GIVEN
+        int size = 256; // which results in GLOBAL (0) + 1-256 = 257 groups, i.e. requiring two bytes
+        for ( int i = 0; i < size; i++ )
+        {
+            groups.getOrCreate( "" + i );
+        }
         IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
-        int size = 100;
 
         // WHEN
         for ( int i = 0; i < size; i++ )
         {
-            mapper.put( i, i, new Group.Adapter( i, "" + i ) );
+            mapper.put( i, i, groups.get( "" + i ) );
         }
         // null since this test should have been set up to not run into collisions
         mapper.prepare( null, mock( Collector.class ), NONE );
@@ -363,7 +366,7 @@ public class EncodingIdMapperTest
         // THEN
         for ( int i = 0; i < size; i++ )
         {
-            assertEquals( i, mapper.get( i, new Group.Adapter( i, "" + i ) ) );
+            assertEquals( i, mapper.get( i, groups.get( "" + i ) ) );
         }
     }
 
@@ -372,18 +375,22 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
-        IdMapper mapper = mapper( encoder, Radix.LONG, NO_MONITOR );
         final int idsPerGroup = 20;
-        int groups = 5;
+        int groupCount = 5;
+        for ( int i = 0; i < groupCount; i++ )
+        {
+            groups.getOrCreate( "Group " + i );
+        }
+        IdMapper mapper = mapper( encoder, Radix.LONG, NO_MONITOR );
         final AtomicReference<Group> group = new AtomicReference<>();
         LongFunction<Object> ids = nodeId ->
         {
             int groupId = toIntExact( nodeId / idsPerGroup );
-            if ( groupId == groups )
+            if ( groupId == groupCount )
             {
                 return null;
             }
-            group.set( new Group.Adapter( groupId, "Group " + groupId ) );
+            group.set( groups.get( groupId ) );
 
             // Let the first 10% in each group be accidental collisions with each other
             // i.e. all first 10% in each group collides with all other first 10% in each group
@@ -400,7 +407,7 @@ public class EncodingIdMapperTest
         };
 
         // WHEN
-        int count = idsPerGroup * groups;
+        int count = idsPerGroup * groupCount;
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
             mapper.put( ids.apply( nodeId ), nodeId, group.get() );
@@ -572,7 +579,7 @@ public class EncodingIdMapperTest
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor, Comparator comparator )
     {
-        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY,
+        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
                 1_000, processors, comparator );
     }
 

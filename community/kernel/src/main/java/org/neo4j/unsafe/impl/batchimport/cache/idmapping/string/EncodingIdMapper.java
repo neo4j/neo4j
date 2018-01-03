@@ -30,7 +30,6 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.HighestId;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
-import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -48,7 +47,6 @@ import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
-import static org.neo4j.helpers.Numbers.safeCastLongToShort;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
@@ -113,7 +111,6 @@ public class EncodingIdMapper implements IdMapper
     // because the current set of Encoder implementations will always set some amount of bits higher up in
     // the long value representing the length of the id.
     private static final long GAP_VALUE = 0;
-    private static final byte[] GROUP_CACHE_DEFAULT_VALUE = new byte[] {(byte) GAP_VALUE, (byte) GAP_VALUE};
 
     private final Factory<Radix> radixFactory;
     private final NumberArrayFactory cacheFactory;
@@ -121,7 +118,7 @@ public class EncodingIdMapper implements IdMapper
     // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
     // values are the encoded versions of the input ids.
     private final LongArray dataCache;
-    private final ByteArray groupCache;
+    private final GroupCache groupCache;
     private final HighestId candidateHighestSetIndex = new HighestId( -1 );
     private long highestSetIndex;
 
@@ -147,19 +144,19 @@ public class EncodingIdMapper implements IdMapper
     private long[][] sortBuckets;
 
     private final Monitor monitor;
+    private final Groups groups;
 
     private int numberOfCollisions;
-    private final Group[] groups = new Group[Groups.MAX_NUMBER_OF_GROUPS];
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
-            Monitor monitor, TrackerFactory trackerFactory )
+            Monitor monitor, TrackerFactory trackerFactory, Groups groups )
     {
-        this( cacheFactory, encoder, radixFactory, monitor, trackerFactory, DEFAULT_CACHE_CHUNK_SIZE,
+        this( cacheFactory, encoder, radixFactory, monitor, trackerFactory, groups, DEFAULT_CACHE_CHUNK_SIZE,
                 Runtime.getRuntime().availableProcessors() - 1, DEFAULT );
     }
 
     EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
-            Monitor monitor, TrackerFactory trackerFactory, int chunkSize, int processorsForParallelWork,
+            Monitor monitor, TrackerFactory trackerFactory, Groups groups, int chunkSize, int processorsForParallelWork,
             Comparator comparator )
     {
         this.radixFactory = radixFactory;
@@ -169,7 +166,8 @@ public class EncodingIdMapper implements IdMapper
         this.comparator = comparator;
         this.processorsForParallelWork = max( processorsForParallelWork, 1 );
         this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE );
-        this.groupCache = cacheFactory.newDynamicByteArray( chunkSize, GROUP_CACHE_DEFAULT_VALUE );
+        this.groupCache = GroupCache.select( cacheFactory, chunkSize, groups.size() );
+        this.groups = groups;
         this.encoder = encoder;
         this.radix = radixFactory.newInstance();
         this.collisionNodeIdCache = cacheFactory.newDynamicLongArray( chunkSize, ID_NOT_FOUND );
@@ -191,11 +189,8 @@ public class EncodingIdMapper implements IdMapper
         // Encode and add the input id
         long eId = encode( inputId );
         dataCache.set( nodeId, eId );
-        groupCache.setShort( nodeId, 0, safeCastLongToShort( group.id() ) );
+        groupCache.set( nodeId, group.id() );
         candidateHighestSetIndex.offer( nodeId );
-
-        // Store the group for later name lookup
-        groups[group.id()] = group;
     }
 
     private long encode( Object inputId )
@@ -593,7 +588,7 @@ public class EncodingIdMapper implements IdMapper
             int detectorIndex = detector.add( inputId );
             if ( detectorIndex != -1 )
             {   // Duplicate
-                collector.collectDuplicateNode( inputId, nodeId, groups[groupId].name() );
+                collector.collectDuplicateNode( inputId, nodeId, groups.get( groupId ).name() );
             }
 
             previousEid = eid;
@@ -635,7 +630,7 @@ public class EncodingIdMapper implements IdMapper
 
     private int groupOf( long dataIndex )
     {
-        return groupCache.getShort( dataIndex, 0 );
+        return groupCache.get( dataIndex );
     }
 
     private long binarySearch( long x, Object inputId, long low, long high, int groupId )

@@ -24,6 +24,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
 /**
  * Defines different types that input ids can come in. Enum names in here are user facing.
@@ -44,9 +45,9 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups )
         {
-            return IdMappers.strings( numberArrayFactory );
+            return IdMappers.strings( numberArrayFactory, groups );
         }
     },
 
@@ -63,9 +64,9 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups )
         {
-            return IdMappers.longs( numberArrayFactory );
+            return IdMappers.longs( numberArrayFactory, groups );
         }
     },
 
@@ -82,7 +83,7 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups )
         {
             return IdMappers.actual();
         }
@@ -95,7 +96,7 @@ public enum IdType
         this.idsAreExternal = idsAreExternal;
     }
 
-    public abstract IdMapper idMapper( NumberArrayFactory numberArrayFactory );
+    public abstract IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups );
 
     public boolean idsAreExternal()
     {

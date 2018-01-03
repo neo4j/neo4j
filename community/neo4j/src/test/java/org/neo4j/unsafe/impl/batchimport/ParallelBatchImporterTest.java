@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-
+import java.util.function.Function;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -65,6 +65,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
@@ -93,6 +94,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrat
 @RunWith( Parameterized.class )
 public class ParallelBatchImporterTest
 {
+    private static final int NUMBER_OF_ID_GROUPS = 5;
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final RandomRule random = new RandomRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -140,20 +142,20 @@ public class ParallelBatchImporterTest
         }
     };
     private final InputIdGenerator inputIdGenerator;
-    private final IdMapper idMapper;
+    private final Function<Groups,IdMapper> idMapper;
 
     @Parameterized.Parameters( name = "{0},{1},{3}" )
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
                 // Long input ids, actual node id input
-                new Object[]{new LongInputIdGenerator(), longs( AUTO_WITHOUT_PAGECACHE )},
+                new Object[]{new LongInputIdGenerator(), (Function<Groups,IdMapper>) groups -> longs( AUTO_WITHOUT_PAGECACHE, groups )},
                 // String input ids, generate ids from stores
-                new Object[]{new StringInputIdGenerator(), strings( AUTO_WITHOUT_PAGECACHE )}
+                new Object[]{new StringInputIdGenerator(), (Function<Groups,IdMapper>) groups -> strings( AUTO_WITHOUT_PAGECACHE, groups )}
         );
     }
 
-    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdMapper idMapper )
+    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, Function<Groups,IdMapper> idMapper )
     {
         this.inputIdGenerator = inputIdGenerator;
         this.idMapper = idMapper;
@@ -171,16 +173,17 @@ public class ParallelBatchImporterTest
                 processorAssigner, EMPTY, Config.defaults(), getFormat() );
 
         boolean successful = false;
-        IdGroupDistribution groups = new IdGroupDistribution( NODE_COUNT, 5, random.random() );
+        Groups groups = new Groups();
+        IdGroupDistribution groupDistribution = new IdGroupDistribution( NODE_COUNT, NUMBER_OF_ID_GROUPS, random.random(), groups );
         long nodeRandomSeed = random.nextLong();
         long relationshipRandomSeed = random.nextLong();
         try
         {
             // WHEN
             inserter.doImport( Inputs.input(
-                    nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groups ),
+                    nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groupDistribution ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, config.batchSize(),
-                            inputIdGenerator, groups ), idMapper,
+                            inputIdGenerator, groupDistribution ), idMapper.apply( groups ),
                     /*insanely high bad tolerance, but it will actually never be that many*/
                     silentBadCollector( RELATIONSHIP_COUNT ),
                     knownEstimates(
@@ -199,7 +202,7 @@ public class ParallelBatchImporterTest
             try ( Transaction tx = db.beginTx() )
             {
                 inputIdGenerator.reset();
-                verifyData( NODE_COUNT, RELATIONSHIP_COUNT, db, groups, nodeRandomSeed, relationshipRandomSeed );
+                verifyData( NODE_COUNT, RELATIONSHIP_COUNT, db, groupDistribution, nodeRandomSeed, relationshipRandomSeed );
                 tx.success();
             }
             finally

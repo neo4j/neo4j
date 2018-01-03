@@ -81,6 +81,7 @@ public class DataGeneratorInput implements Input
     private final float factorBadNodeData;
     private final float factorBadRelationshipData;
     private final long startId;
+    private final Groups groups = new Groups();
 
     public DataGeneratorInput( long nodes, long relationships, IdType idType, Collector badCollector, long seed, long startId,
             Header nodeHeader, Header relationshipHeader, int labelCount, int relationshipTypeCount,
@@ -117,7 +118,7 @@ public class DataGeneratorInput implements Input
     @Override
     public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
     {
-        return idType.idMapper( numberArrayFactory );
+        return idType.idMapper( numberArrayFactory, groups );
     }
 
     @Override

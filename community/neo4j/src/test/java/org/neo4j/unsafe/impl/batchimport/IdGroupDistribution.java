@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Random;
 
 import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
 /**
  * A little utility for randomizing dividing up nodes into {@link Group id spaces}.
@@ -31,12 +32,12 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
 public class IdGroupDistribution
 {
     private final long[] groupCounts;
-    private final Group[] groups;
+    private final Groups groups;
 
-    public IdGroupDistribution( long nodeCount, int numberOfGroups, Random random )
+    public IdGroupDistribution( long nodeCount, int numberOfGroups, Random random, Groups groups )
     {
+        this.groups = groups;
         groupCounts = new long[numberOfGroups];
-        groups = new Group[numberOfGroups];
 
         // Assign all except the last one
         long total = 0;
@@ -57,7 +58,7 @@ public class IdGroupDistribution
     private void assignGroup( int i, long count )
     {
         groupCounts[i] = count;
-        groups[i] = new Group.Adapter( i, "Group" + i );
+        groups.getOrCreate( "Group" + i );
     }
 
     public Group groupOf( long nodeInOrder )
@@ -68,7 +69,7 @@ public class IdGroupDistribution
             at += groupCounts[i];
             if ( nodeInOrder < at )
             {
-                return groups[i];
+                return groups.get( 1 + i );
             }
         }
         throw new IllegalArgumentException( "Strange, couldn't find group for node (import order) " + nodeInOrder +

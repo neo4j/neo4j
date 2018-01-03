@@ -19,9 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import static java.util.Arrays.asList;
 
 /**
  * Mapping from name to {@link Group}. Assigns proper {@link Group#id() ids} to created groups.
@@ -32,6 +36,7 @@ public class Groups
     static final int LOWEST_NONGLOBAL_ID = 1;
 
     private final Map<String,Group> byName = new HashMap<>();
+    private final List<Group> byId = new ArrayList<>( asList( Group.GLOBAL ) );
     private int nextId = LOWEST_NONGLOBAL_ID;
 
     /**
@@ -52,6 +57,7 @@ public class Groups
         if ( group == null )
         {
             byName.put( name, group = new Group.Adapter( nextId++, name ) );
+            byId.add( group );
         }
         return group;
     }
@@ -76,8 +82,22 @@ public class Groups
         return group;
     }
 
+    public Group get( int id )
+    {
+        if ( id < 0 || id >= byId.size() )
+        {
+            throw new HeaderException( "Group with id " + id + " not found" );
+        }
+        return byId.get( id );
+    }
+
     private String groupNames()
     {
         return Arrays.toString( byName.keySet().toArray( new String[byName.keySet().size()] ) );
+    }
+
+    public int size()
+    {
+        return nextId;
     }
 }
