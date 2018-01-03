@@ -47,7 +47,7 @@
     <scala.binary.version>2.11</scala.binary.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <doclint-groups>none</doclint-groups>
-    <jetty.version>9.2.4.v20141103</jetty.version>
+    <jetty.version>9.2.22.v20170606</jetty.version>
   </properties>
 
   <build>
