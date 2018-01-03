@@ -25,9 +25,9 @@ import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema.SchemaUtil;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;

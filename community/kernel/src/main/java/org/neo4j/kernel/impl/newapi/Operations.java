@@ -19,26 +19,53 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.CastingIterator;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
+import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -56,13 +83,14 @@ public class Operations implements Write, ExplicitIndexWrite
     private final IndexTxStateUpdater updater;
     private PropertyCursor propertyCursor;
     private final Cursors cursors;
+    private final NodeSchemaMatcher schemaMatcher;
 
     public Operations(
             AllStoreHolder allStoreHolder,
             IndexTxStateUpdater updater,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors, AutoIndexing autoIndexing  )
+            Cursors cursors, AutoIndexing autoIndexing, NodeSchemaMatcher schemaMatcher )
     {
         this.autoIndexing = autoIndexing;
         this.allStoreHolder = allStoreHolder;
@@ -70,6 +98,7 @@ public class Operations implements Write, ExplicitIndexWrite
         this.statement = statement;
         this.updater = updater;
         this.cursors = cursors;
+        this.schemaMatcher = schemaMatcher;
     }
 
     public void initialize()
@@ -134,7 +163,7 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public boolean nodeAddLabel( long node, int nodeLabel ) throws EntityNotFoundException
+    public boolean nodeAddLabel( long node, int nodeLabel ) throws EntityNotFoundException, ConstraintValidationException
     {
         acquireSharedLabelLock( nodeLabel );
         acquireExclusiveNodeLock( node );
@@ -152,10 +181,117 @@ public class Operations implements Write, ExplicitIndexWrite
             return false;
         }
 
+        //Check so that we are not breaking uniqueness constraints
+        //We do this by checking if there is an existing node in the index that
+        //with the same label and property combination.
+        Iterator<ConstraintDescriptor> constraints = allStoreHolder.constraintsGetForLabel( nodeLabel );
+        while ( constraints.hasNext() )
+        {
+            ConstraintDescriptor constraint = constraints.next();
+            if ( constraint.enforcesUniqueness() )
+            {
+                IndexBackedConstraintDescriptor uniqueConstraint = (IndexBackedConstraintDescriptor) constraint;
+                IndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( uniqueConstraint.schema(),
+                        StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
+                if ( propertyValues != null )
+                {
+                    validateNoExistingNodeWithExactValues( uniqueConstraint, propertyValues, node );
+                }
+            }
+        }
+
         //node is there and doesn't already have the label, let's add
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
         updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
         return true;
+    }
+
+    /**
+     * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
+     * array.
+     */
+    private IndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema, int changedPropertyKeyId,
+            Value changedValue )
+    {
+        int[] schemaPropertyIds = schema.getPropertyIds();
+        IndexQuery.ExactPredicate[] values = new IndexQuery.ExactPredicate[schemaPropertyIds.length];
+
+        int nMatched = 0;
+        nodeCursor.properties( propertyCursor );
+        while ( propertyCursor.next() )
+        {
+            int nodePropertyId = propertyCursor.propertyKey();
+            int k = ArrayUtils.indexOf( schemaPropertyIds, nodePropertyId );
+            if ( k >= 0 )
+            {
+                if ( nodePropertyId != StatementConstants.NO_SUCH_PROPERTY_KEY )
+                {
+                    values[k] = IndexQuery.exact( nodePropertyId, propertyCursor.propertyValue() );
+                }
+                nMatched++;
+            }
+        }
+
+        //This is true if we are adding a property
+        if ( changedPropertyKeyId != NO_SUCH_PROPERTY_KEY )
+        {
+            int k = ArrayUtils.indexOf( schemaPropertyIds, changedPropertyKeyId );
+            if ( k >= 0 )
+            {
+                values[k] = IndexQuery.exact( changedPropertyKeyId, changedValue );
+                nMatched++;
+            }
+        }
+
+        if ( nMatched < values.length )
+        {
+            return null;
+        }
+        return values;
+    }
+
+    /**
+     * Check so that there is not an existing node with the exact match of label and property
+     */
+    private void validateNoExistingNodeWithExactValues( IndexBackedConstraintDescriptor constraint,
+            IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
+    ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
+    {
+        try ( NodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
+        {
+            IndexDescriptor indexDescriptor = constraint.ownedIndexDescriptor();
+            assertIndexOnline( indexDescriptor );
+            int labelId = indexDescriptor.schema().getLabelId();
+
+            //Take a big fat lock, and check for existing node in index
+            ktx.locks().optimistic().acquireExclusive(
+                    ktx.lockTracer(), INDEX_ENTRY,
+                    indexEntryResourceId( labelId, propertyValues )
+            );
+
+            allStoreHolder.nodeIndexSeek( allStoreHolder.indexGetCapability( indexDescriptor ), valueCursor,
+                    IndexOrder.NONE, propertyValues );
+            if ( valueCursor.next() && valueCursor.nodeReference() != modifiedNode )
+            {
+                throw new UniquePropertyValueValidationException( constraint, VALIDATION,
+                        new IndexEntryConflictException( valueCursor.nodeReference(), NO_SUCH_NODE, IndexQuery.asValueTuple( propertyValues ) ) );
+            }
+        }
+        catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
+        {
+            throw new UnableToValidateConstraintException( constraint, e );
+        }
+    }
+
+    private void assertIndexOnline(  IndexDescriptor descriptor ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        switch ( allStoreHolder.indexGetState( descriptor ) )
+        {
+        case ONLINE:
+            return;
+        default:
+            throw new IndexBrokenKernelException( allStoreHolder.indexGetFailure( descriptor ) );
+        }
     }
 
     @Override
@@ -183,10 +319,38 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public Value nodeSetProperty( long node, int propertyKey, Value value )
-            throws EntityNotFoundException, AutoIndexingKernelException
+            throws KernelException
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
+
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, node );
+        }
+        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL,
+                nodeCursor.labels().all() );
+        Iterator<ConstraintDescriptor> constraints = Iterators.filter( hasProperty( propertyKey ),
+                allStoreHolder.constraintsGetAll() );
+        Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
+                new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
+
+        schemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, propertyKey,
+                ( constraint, propertyIds ) ->
+                {
+                    if ( propertyIds.contains( propertyKey ) )
+                    {
+                        Value previousValue = readNodeProperty( node, propertyKey );
+                        if ( value.equals( previousValue ) )
+                        {
+                            // since we are changing to the same value, there is no need to check
+                            return;
+                        }
+                    }
+                    validateNoExistingNodeWithExactValues( constraint,
+                            getAllPropertyValues( constraint.schema(), propertyKey, value ), node );
+                } );
 
         Value existingValue = readNodeProperty( node, propertyKey );
 

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
-import org.neo4j.kernel.api.index.InternalIndexState;
 
 class LuceneFulltext extends AbstractLuceneIndex
 {

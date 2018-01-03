@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import java.io.IOException;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationCon
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -50,9 +50,9 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
-import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
-import static org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 
 public class ConstraintIndexCreator

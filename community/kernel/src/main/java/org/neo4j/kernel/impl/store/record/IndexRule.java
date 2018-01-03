@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.api.schema.SchemaUtil.idTokenNameLookup;
+import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.

@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -55,15 +56,16 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     private final Layout<KEY,VALUE> layout;
     private final IndexSamplingConfig samplingConfig;
     private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
-    private final int[] propertyKeys;
+    private final IndexDescriptor descriptor;
 
-    NativeSchemaNumberIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig,
-            int[] propertyKeys )
+    NativeSchemaNumberIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout,
+            IndexSamplingConfig samplingConfig,
+            IndexDescriptor descriptor )
     {
         this.tree = tree;
         this.layout = layout;
         this.samplingConfig = samplingConfig;
-        this.propertyKeys = propertyKeys;
+        this.descriptor = descriptor;
         this.openSeekers = new HashSet<>();
     }
 
@@ -135,19 +137,19 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         case exists:
             treeKeyFrom.initAsLowest();
             treeKeyTo.initAsHighest();
-            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo );
+            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates );
             break;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo );
+            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates );
             break;
         case rangeNumeric:
             NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
-            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo );
+            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates );
             break;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
@@ -209,11 +211,12 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         return true;
     }
 
-    private void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo )
+    private void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo,
+            IndexQuery[] query )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
-            client.initialize( IndexProgressor.EMPTY, propertyKeys );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query );
             return;
         }
         try
@@ -221,7 +224,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
             openSeekers.add( seeker );
             IndexProgressor hitProgressor = new NumberHitIndexProgressor<>( seeker, client, openSeekers );
-            client.initialize( hitProgressor, propertyKeys );
+            client.initialize( descriptor, hitProgressor, query );
         }
         catch ( IOException e )
         {

@@ -34,7 +34,7 @@ abstract class IndexCursor
         this.progressor = progressor;
     }
 
-    public final boolean next()
+    public boolean next()
     {
         return progressor != null && progressor.next();
     }

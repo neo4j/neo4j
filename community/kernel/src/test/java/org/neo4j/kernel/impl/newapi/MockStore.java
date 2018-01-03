@@ -23,13 +23,16 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.util.Iterator;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -68,7 +71,7 @@ public class MockStore extends Read implements TestRule
 
     MockStore( Cursors cursors )
     {
-        super( cursors, mock( TxStateHolder.class ), AssertOpen.ALWAYS_OPEN );
+        super( cursors, mock( KernelTransactionImplementation.class ) );
     }
 
     @Override
@@ -358,6 +361,30 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public CapableIndexReference index( int label, int... properties )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public boolean constraintExists( ConstraintDescriptor descriptor )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetAll()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

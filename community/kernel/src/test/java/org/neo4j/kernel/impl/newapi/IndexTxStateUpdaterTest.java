@@ -28,8 +28,8 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.StubNodeCursor;
 import org.neo4j.internal.kernel.api.StubPropertyCursor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -49,8 +49,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.filter;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorPredicates.hasLabel;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasLabel;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
@@ -111,7 +111,7 @@ public class IndexTxStateUpdaterTest
         Read readOps = mock( Read.class );
         when( readOps.txState() ).thenReturn( txState );
 
-        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps );
+        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, new NodeSchemaMatcher( readOps ) );
 
     }
 

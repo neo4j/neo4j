@@ -45,9 +45,11 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -56,7 +58,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -278,12 +279,13 @@ public class NodeProxy implements Node
     @Override
     public void setProperty( String key, Object value )
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = actions.kernelTransaction();
+        try ( Statement statement = transaction.acquireStatement() )
         {
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
             try
             {
-                statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( value, false ) );
+                transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.of( value, false ) );
             }
             catch ( ConstraintValidationException e )
             {
@@ -314,15 +316,20 @@ public class NodeProxy implements Node
             throw new IllegalStateException( "Auto indexing encountered a failure while setting property: "
                                              + e.getMessage(), e );
         }
+        catch ( KernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = actions.kernelTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).asObjectCopy();
+            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
+            return transaction.dataWrite().nodeRemoveProperty( nodeId, propertyKeyId ).asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -340,6 +347,10 @@ public class NodeProxy implements Node
         {
             throw new IllegalStateException( "Auto indexing encountered a failure while removing property: "
                                              + e.getMessage(), e );
+        }
+        catch ( KernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
@@ -646,12 +657,13 @@ public class NodeProxy implements Node
     @Override
     public void addLabel( Label label )
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = actions.kernelTransaction();
+        try ( Statement statement = transaction.acquireStatement() )
         {
             try
             {
-                statement.dataWriteOperations().nodeAddLabel( getId(),
-                        statement.tokenWriteOperations().labelGetOrCreateForName( label.name() ) );
+                transaction.dataWrite().nodeAddLabel( getId(),
+                        transaction.tokenWrite().labelGetOrCreateForName( label.name() ) );
             }
             catch ( ConstraintValidationException e )
             {
@@ -671,7 +683,7 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( "No node with id " + getId() + " found.", e );
         }
-        catch ( InvalidTransactionTypeKernelException e )
+        catch ( KernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
@@ -680,19 +692,24 @@ public class NodeProxy implements Node
     @Override
     public void removeLabel( Label label )
     {
-        try ( Statement statement = actions.statement() )
+        KernelTransaction transaction = actions.kernelTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            int labelId = statement.readOperations().labelGetForName( label.name() );
+            int labelId = transaction.tokenRead().labelGetForName( label.name() );
             if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
             {
-                statement.dataWriteOperations().nodeRemoveLabel( getId(), labelId );
+                transaction.dataWrite().nodeRemoveLabel( getId(), labelId );
             }
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            //just ignore
         }
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( "No node with id " + getId() + " found.", e );
         }
-        catch ( InvalidTransactionTypeKernelException e )
+        catch ( KernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }

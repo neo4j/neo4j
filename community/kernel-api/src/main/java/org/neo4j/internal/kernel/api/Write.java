@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -61,6 +62,7 @@ public interface Write
      * @param node the internal node id
      * @param nodeLabel the internal id of the label to add
      * @return <tt>true</tt> if a label was added otherwise <tt>false</tt>
+     * @throws ConstraintValidationException if adding the label to node breaks a constraint
      */
     boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException;
 

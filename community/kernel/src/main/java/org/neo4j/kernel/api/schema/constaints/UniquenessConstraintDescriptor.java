@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.api.schema.constaints;
 
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 
 public class UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor
 {

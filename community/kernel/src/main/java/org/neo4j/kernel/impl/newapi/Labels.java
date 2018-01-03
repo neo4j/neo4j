@@ -34,9 +34,14 @@ public class Labels implements LabelSet
      */
     private final long[] labels;
 
-    public Labels( long[] labels )
+    private Labels( long[] labels )
     {
         this.labels = labels;
+    }
+
+    public static Labels from( long[] labels )
+    {
+        return new Labels( labels );
     }
 
     static Labels from( Collection<Integer> integers )
@@ -92,5 +97,10 @@ public class Labels implements LabelSet
     public String toString()
     {
         return "Labels" + Arrays.toString( labels );
+    }
+
+    public long[] all()
+    {
+        return labels;
     }
 }

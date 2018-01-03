@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;

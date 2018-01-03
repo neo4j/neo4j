@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema;
+package org.neo4j.internal.kernel.api.schema;
 
 import java.util.function.Predicate;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
@@ -76,8 +75,6 @@ public interface SchemaDescriptor
     /**
      * Id of underlying schema descriptor key.
      * Key is part of schema unit that determines which resources with specified properties are applicable.
-     * So far {@link ResourceTypes#LABEL label} and {@link ResourceTypes#RELATIONSHIP_TYPE relationship type}
-     * are supported as keys types.
      * @return id of underlying key
      */
     int keyId();
@@ -85,8 +82,6 @@ public interface SchemaDescriptor
     /**
      * Type of underlying schema descriptor key.
      * Key is part of schema unit that determines which resources with specified properties are applicable.
-     * So far {@link ResourceTypes#LABEL label} and {@link ResourceTypes#RELATIONSHIP_TYPE relationship type}
-     * are supported as keys types.
      * @return type of underlying key
      */
     ResourceType keyType();

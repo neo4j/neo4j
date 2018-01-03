@@ -28,9 +28,9 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;

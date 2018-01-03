@@ -184,7 +184,7 @@ public class PartitionedIndexReaderTest
 
     private PartitionedIndexReader createPartitionedReaderFromReaders()
     {
-        return new PartitionedIndexReader( getPartitionReaders() );
+        return new PartitionedIndexReader( indexDescriptor, getPartitionReaders() );
     }
 
     private List<SimpleIndexReader> getPartitionReaders()

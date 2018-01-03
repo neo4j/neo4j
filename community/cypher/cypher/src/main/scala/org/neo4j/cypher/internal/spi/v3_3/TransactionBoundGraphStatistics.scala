@@ -38,7 +38,7 @@ object TransactionBoundGraphStatistics {
         val labeledNodes = operations.countsForNodeWithoutTxState( index.label ).toDouble
 
         // Probability of any node with the given label, to have a property with a given value
-        val indexEntrySelectivity = operations.indexUniqueValuesSelectivity(index)
+        val indexEntrySelectivity = operations.indexUniqueValuesSelectivity(cypherToKernel(index))
         val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
         val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
 
@@ -53,7 +53,7 @@ object TransactionBoundGraphStatistics {
         val labeledNodes = operations.countsForNodeWithoutTxState( index.label ).toDouble
 
         // Probability of any node with the given label, to have a given property
-        val indexSize = operations.indexSize(index)
+        val indexSize = operations.indexSize(cypherToKernel(index))
         val indexSelectivity = indexSize / labeledNodes
 
         Selectivity.of(indexSelectivity)

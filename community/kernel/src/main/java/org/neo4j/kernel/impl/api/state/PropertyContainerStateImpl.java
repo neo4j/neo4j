@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;

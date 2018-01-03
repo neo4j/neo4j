@@ -25,10 +25,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 import org.neo4j.values.storable.Value;

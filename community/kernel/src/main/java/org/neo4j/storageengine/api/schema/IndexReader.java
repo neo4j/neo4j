@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -56,24 +57,10 @@ public interface IndexReader extends Resource
      * @param client the client which will control the progression though query results.
      * @param query the query so serve.
      */
-    default void query(
+    void query(
             IndexProgressor.NodeValueClient client,
             IndexOrder indexOrder,
-            IndexQuery... query ) throws IndexNotApplicableKernelException
-    {
-        if ( indexOrder != IndexOrder.NONE )
-        {
-            throw new UnsupportedOperationException(
-                    String.format( "This reader only have support for index order %s. Provided index order was %s.",
-                            IndexOrder.NONE, indexOrder ) );
-        }
-        int[] keys = new int[query.length];
-        for ( int i = 0; i < query.length; i++ )
-        {
-            keys[i] = query[i].propertyKeyId();
-        }
-        client.initialize( new NodeValueIndexProgressor( query( query ), client ), keys );
-    }
+            IndexQuery... query ) throws IndexNotApplicableKernelException;
 
     /**
      * @param predicates query to determine whether or not index has full number precision for.
@@ -104,6 +91,13 @@ public interface IndexReader extends Resource
         public PrimitiveLongResourceIterator query( IndexQuery[] predicates )
         {
             return PrimitiveLongResourceCollections.emptyIterator();
+        }
+
+        @Override
+        public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, IndexQuery... query )
+                throws IndexNotApplicableKernelException
+        {
+            //do nothing
         }
 
         @Override

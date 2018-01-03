@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.values.storable.Values;
@@ -31,8 +31,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 import static org.neo4j.internal.kernel.api.IndexQuery.exists;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
