@@ -28,17 +28,19 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QuerySta
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{PlanDescriptionImpl, _}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.storable.Values.NO_VALUE
 
 class ProfilerTest extends CypherFunSuite {
 
+  val idGen = new SequentialIdGen
+
   test("should report simplest case") {
     //GIVEN
-    val start = ArgumentPipe()()
-    val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20)
+    val start = ArgumentPipe()(idGen.id())
+    val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext()
     val profiler = new Profiler(DatabaseInfo.ENTERPRISE)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
@@ -54,9 +56,9 @@ class ProfilerTest extends CypherFunSuite {
 
   test("report page cache statistics for simplest case") {
     //GIVEN
-    val start = ArgumentPipe()()
+    val start = ArgumentPipe()(idGen.id())
     val statisticProvider = new ConfiguredKernelStatisticProvider()
-    val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20, statisticProvider, hits = 2, misses = 7)
+    val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20, statisticProvider, hits = 2, misses = 7)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profiler = new Profiler(DatabaseInfo.ENTERPRISE)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
@@ -80,10 +82,10 @@ class ProfilerTest extends CypherFunSuite {
 
   test("should report multiple pipes case") {
     //GIVEN
-    val start = ArgumentPipe()()
-    val pipe1 = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 25)
-    val pipe2 = ProfilerTestPipe(pipe1, "bar", rows = 20, dbAccess = 40)
-    val pipe3 = ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2)
+    val start = ArgumentPipe()(idGen.id())
+    val pipe1 = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 25)(idGen.id())
+    val pipe2 = ProfilerTestPipe(pipe1, "bar", rows = 20, dbAccess = 40)(idGen.id())
+    val pipe3 = ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext()
     val profiler = new Profiler
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
@@ -101,11 +103,11 @@ class ProfilerTest extends CypherFunSuite {
 
   test("report page cache statistic for multiple pipes case") {
     //GIVEN
-    val start = ArgumentPipe()()
+    val start = ArgumentPipe()(idGen.id())
     val statisticProvider = new ConfiguredKernelStatisticProvider
-    val pipe1 = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 25, statisticProvider, 2, 7)
-    val pipe2 = ProfilerTestPipe(pipe1, "bar", rows = 20, dbAccess = 40, statisticProvider, 12, 35)
-    val pipe3 = ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2, statisticProvider, 37, 68)
+    val pipe1 = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 25, statisticProvider, 2, 7)(idGen.id())
+    val pipe2 = ProfilerTestPipe(pipe1, "bar", rows = 20, dbAccess = 40, statisticProvider, 12, 35)(idGen.id())
+    val pipe3 = ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2, statisticProvider, 37, 68)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profiler = new Profiler(DatabaseInfo.ENTERPRISE)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
@@ -122,12 +124,12 @@ class ProfilerTest extends CypherFunSuite {
   }
 
   test("should count stuff going through Apply multiple times") {
-    val s1 = ArgumentPipe()()
+    val s1 = ArgumentPipe()(idGen.id())
     // GIVEN
-    val lhs = ProfilerTestPipe(s1, "lhs", rows = 10, dbAccess = 10)
-    val s2 = ArgumentPipe()()
-    val rhs = ProfilerTestPipe(s2, "rhs", rows = 20, dbAccess = 30)
-    val apply = ApplyPipe(lhs, rhs)()
+    val lhs = ProfilerTestPipe(s1, "lhs", rows = 10, dbAccess = 10)(idGen.id())
+    val s2 = ArgumentPipe()(idGen.id())
+    val rhs = ProfilerTestPipe(s2, "rhs", rows = 20, dbAccess = 30)(idGen.id())
+    val apply = ApplyPipe(lhs, rhs)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext()
     val profiler = new Profiler
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
@@ -151,11 +153,11 @@ class ProfilerTest extends CypherFunSuite {
     val projectedPath = mock[ProjectedPath]
     when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
     val DB_HITS = 100
-    val start1 = ArgumentPipe()()
-    val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = DB_HITS)
+    val start1 = ArgumentPipe()(idGen.id())
+    val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = DB_HITS)(idGen.id())
     val innerPipe = NestedPipeExpression(testPipe, projectedPath)
-    val start2 = ArgumentPipe()()
-    val pipeUnderInspection = ProjectionPipe(start2, Map("x" -> innerPipe))()
+    val start2 = ArgumentPipe()(idGen.id())
+    val pipeUnderInspection = ProjectionPipe(start2, Map("x" -> innerPipe))(idGen.id())
 
     val queryContext: QueryContext = prepareQueryContext()
     val profiler = new Profiler
@@ -178,12 +180,12 @@ class ProfilerTest extends CypherFunSuite {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
     when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
-    val start1 = ArgumentPipe()()
+    val start1 = ArgumentPipe()(idGen.id())
     val statisticProvider = new ConfiguredKernelStatisticProvider()
-    val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = 2, statisticProvider, hits = 3, misses = 4 )
+    val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = 2, statisticProvider, hits = 3, misses = 4 )(idGen.id())
     val innerPipe = NestedPipeExpression(testPipe, projectedPath)
-    val start2 = ArgumentPipe()()
-    val pipeUnderInspection = ProjectionPipe(start2, Map("x" -> innerPipe))()
+    val start2 = ArgumentPipe()(idGen.id())
+    val pipeUnderInspection = ProjectionPipe(start2, Map("x" -> innerPipe))(idGen.id())
 
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profiler = new Profiler(DatabaseInfo.HA)
@@ -207,15 +209,15 @@ class ProfilerTest extends CypherFunSuite {
     val projectedPath = mock[ProjectedPath]
     when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
     val DB_HITS = 100
-    val start1 = ArgumentPipe()()
-    val start2 = ArgumentPipe()()
-    val start3 = ArgumentPipe()()
-    val profiler1 = ProfilerTestPipe(start1, "nested pipe1", rows = 10, dbAccess = DB_HITS)
+    val start1 = ArgumentPipe()(idGen.id())
+    val start2 = ArgumentPipe()(idGen.id())
+    val start3 = ArgumentPipe()(idGen.id())
+    val profiler1 = ProfilerTestPipe(start1, "nested pipe1", rows = 10, dbAccess = DB_HITS)(idGen.id())
     val nestedExpression = NestedPipeExpression(profiler1, projectedPath)
-    val innerInnerPipe = ProjectionPipe(start2, Map("y" -> nestedExpression))()
-    val profiler2 = ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS)
+    val innerInnerPipe = ProjectionPipe(start2, Map("y" -> nestedExpression))(idGen.id())
+    val profiler2 = ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS)(idGen.id())
     val pipeExpression = NestedPipeExpression(profiler2, projectedPath)
-    val pipeUnderInspection = ProjectionPipe(start3, Map("x" -> pipeExpression))()
+    val pipeUnderInspection = ProjectionPipe(start3, Map("x" -> pipeExpression))(idGen.id())
 
     val queryContext: QueryContext = prepareQueryContext()
     val profiler = new Profiler
@@ -241,7 +243,7 @@ class ProfilerTest extends CypherFunSuite {
   test("should not count rows multiple times when the same pipe is used multiple times") {
       val profiler = new Profiler
 
-      val pipe1 = ArgumentPipe()()
+      val pipe1 = ArgumentPipe()(idGen.id())
       val ctx1: QueryContext = prepareQueryContext()
       val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
@@ -252,7 +254,7 @@ class ProfilerTest extends CypherFunSuite {
       profiled1.toList // consume it
       profiled1.asInstanceOf[ProfilingIterator].count should equal(3)
 
-      val pipe2 = ArgumentPipe()()
+      val pipe2 = ArgumentPipe()(idGen.id())
       val ctx2: QueryContext = prepareQueryContext()
       val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
       val iter2 = Iterator(ExecutionContext.empty, ExecutionContext.empty)
@@ -266,7 +268,7 @@ class ProfilerTest extends CypherFunSuite {
   test("should not count dbhits multiple times when the same pipe is used multiple times") {
       val profiler = new Profiler
 
-      val pipe1 = ArgumentPipe()()
+      val pipe1 = ArgumentPipe()(idGen.id())
       val ctx1: QueryContext = prepareQueryContext()
       val state1 = QueryStateHelper.emptyWith(query = ctx1, resources = mock[ExternalCSVResource])
 
@@ -274,7 +276,7 @@ class ProfilerTest extends CypherFunSuite {
       profiled1.query.createNode()
       profiled1.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
 
-      val pipe2 = ArgumentPipe()()
+      val pipe2 = ArgumentPipe()(idGen.id())
       val ctx2: QueryContext = prepareQueryContext()
       val state2 = QueryStateHelper.emptyWith(query = ctx2, resources = mock[ExternalCSVResource])
 
@@ -318,9 +320,8 @@ class ProfilerTest extends CypherFunSuite {
 case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int,
                             statisticProvider: ConfiguredKernelStatisticProvider = null,
                             hits: Long = 0,
-                            misses: Long = 0)
+                            misses: Long = 0)(val id: Id)
     extends PipeWithSource(source) {
-  var id: Id = Id.INVALID_ID
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.size
