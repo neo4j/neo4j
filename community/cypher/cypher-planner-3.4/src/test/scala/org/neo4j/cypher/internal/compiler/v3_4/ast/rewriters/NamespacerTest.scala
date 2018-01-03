@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
@@ -175,7 +175,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def assertRewritten(from: String, to: String, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
     val fromAst = parseAndRewrite(from, features: _*)
-    val fromState = LogicalPlanState(from, None, IDPPlannerName, new TransactionLayerAttribute, Some(fromAst), Some(fromAst.semanticState(features: _*)))
+    val fromState = LogicalPlanState(from, None, IDPPlannerName, new TransactionLayers, Some(fromAst), Some(fromAst.semanticState(features: _*)))
     val toState = Namespacer.transform(fromState, ContextHelper.create())
 
     val expectedAst = parseAndRewrite(to, features: _*)

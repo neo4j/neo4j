@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.util.v3_4.inSequence
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
@@ -49,7 +49,7 @@ trait QueryGraphProducer extends MockitoSugar {
     onError(errors)
 
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
-    val state = LogicalPlanState(query, None, IDPPlannerName, new TransactionLayerAttribute, Some(firstRewriteStep), Some(semanticState))
+    val state = LogicalPlanState(query, None, IDPPlannerName, new TransactionLayers, Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create()
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 

@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper
@@ -1255,7 +1255,7 @@ class MultipleGraphClauseSemanticCheckingTest
 
     override def withParams(p: Map[String, Any]) = ???
 
-    override def readTxLayerAttribute: PlanningAttributes.TransactionLayerAttribute = new TransactionLayerAttribute
+    override def readTxLayerAttribute: PlanningAttributes.TransactionLayers = new TransactionLayers
   }
 
   //noinspection TypeAnnotation

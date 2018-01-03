@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.phases
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
@@ -38,7 +38,7 @@ the pipe line
 case class LogicalPlanState(queryText: String,
                             startPosition: Option[InputPosition],
                             plannerName: PlannerName,
-                            readTxLayerAttribute: TransactionLayerAttribute,
+                            readTxLayerAttribute: TransactionLayers,
                             maybeStatement: Option[Statement] = None,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,

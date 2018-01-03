@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import java.lang.reflect.Constructor
 
 import org.neo4j.cypher.internal.compatibility.v3_3.SemanticTableConverter.ExpressionMapping3To4
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
@@ -49,7 +49,7 @@ object LogicalPlanConverter {
 
   type MutableExpressionMapping3To4 = mutable.Map[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4]
 
-  private class LogicalPlanRewriter(readTxLayerAttribute: TransactionLayerAttribute,
+  private class LogicalPlanRewriter(readTxLayerAttribute: TransactionLayers,
                                     val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4],
                                     val isImportant: ExpressionV3_3 => Boolean = _ => true)
     extends RewriterWithArgs {
@@ -181,20 +181,20 @@ object LogicalPlanConverter {
   }
 
   def convertLogicalPlan[T <: LogicalPlanV3_4](logicalPlan: LogicalPlanV3_3,
-                                               readTxLayerAttribute: TransactionLayerAttribute,
+                                               readTxLayerAttribute: TransactionLayers,
                                                isImportant: ExpressionV3_3 => Boolean = _ => true): (LogicalPlanV3_4, ExpressionMapping3To4) = {
     val rewriter = new LogicalPlanRewriter(readTxLayerAttribute, isImportant = isImportant)
     val planV3_4 = new RewritableAny[LogicalPlanV3_3](logicalPlan).rewrite(rewriter, Seq.empty).asInstanceOf[T]
     (planV3_4, rewriter.expressionMap.toMap)
   }
 
-  private[v3_3] def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3, readTxLayerAttribute: TransactionLayerAttribute): T = {
+  private[v3_3] def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3, readTxLayerAttribute: TransactionLayers): T = {
     new RewritableAny[ExpressionV3_3](expression).rewrite(new LogicalPlanRewriter(readTxLayerAttribute), Seq.empty).asInstanceOf[T]
   }
 
   private def convertASTNode[T <: utilV3_4.ASTNode](ast: astV3_3.ASTNode,
                                                     expressionMap: MutableExpressionMapping3To4,
-                                                    readTxLayerAttribute: TransactionLayerAttribute,
+                                                    readTxLayerAttribute: TransactionLayers,
                                                     isImportant: ExpressionV3_3 => Boolean): T = {
     new RewritableAny[astV3_3.ASTNode](ast).rewrite(new LogicalPlanRewriter(readTxLayerAttribute, expressionMap, isImportant), Seq.empty).asInstanceOf[T]
   }

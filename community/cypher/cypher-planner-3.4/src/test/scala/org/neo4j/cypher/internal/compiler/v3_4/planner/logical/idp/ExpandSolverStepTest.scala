@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.CardinalityModel
@@ -50,7 +50,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
 
-  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, new TransactionLayerAttribute, idGen),
+  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, new TransactionLayers, idGen),
     mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   test("does not expand based on empty table") {

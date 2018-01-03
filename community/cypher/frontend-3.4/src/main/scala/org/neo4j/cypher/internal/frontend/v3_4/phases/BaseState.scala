@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.phases
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4._
@@ -26,7 +26,7 @@ trait BaseState {
   def queryText: String
   def startPosition: Option[InputPosition]
   def plannerName: PlannerName
-  def readTxLayerAttribute: TransactionLayerAttribute
+  def readTxLayerAttribute: TransactionLayers
   def maybeStatement: Option[Statement]
   def maybeSemantics: Option[SemanticState]
   def maybeExtractedParams: Option[Map[String, Any]]

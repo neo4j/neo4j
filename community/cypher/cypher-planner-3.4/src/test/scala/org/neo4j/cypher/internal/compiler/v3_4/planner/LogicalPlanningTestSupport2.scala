@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -169,13 +169,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       input.copy(maybeLogicalPlan = Some(newPlan))
     }
 
-    def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, TransactionLayerAttribute) = {
+    def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, TransactionLayers) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
       def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics,
                                          config = cypherCompilerConfig, queryGraphSolver = queryGraphSolver)
 
-      val readTxLayerAttribute = new TransactionLayerAttribute
+      val readTxLayerAttribute = new TransactionLayers
       val state = LogicalPlanState(queryString, None, IDPPlannerName, readTxLayerAttribute = readTxLayerAttribute)
       val output = pipeLine.transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].source
@@ -187,7 +187,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new TransactionLayerAttribute, idGen)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new TransactionLayers, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         logicalPlanProducer = logicalPlanProducer,
@@ -203,7 +203,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(solved)
 
-  def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, TransactionLayerAttribute) =
+  def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, TransactionLayers) =
     new given().getLogicalPlanFor(queryString)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)

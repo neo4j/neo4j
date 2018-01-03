@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayerAttribute
+import org.neo4j.cypher.internal.frontend.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
@@ -37,11 +37,11 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int, readtxLayerAttribute: TransactionLayerAttribute, idGen : IdGen) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTxLayer: Int, txLayers: TransactionLayers, idGen : IdGen) extends ListSupport {
 
   implicit val implicitIdGen = idGen
 
-  def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1, idGen = this.idGen)
+  def withNextTxLayer: LogicalPlanProducer = copy(readTxLayer = this.readTxLayer + 1, idGen = this.idGen)
 
   def planLock(plan: LogicalPlan, nodesToLock: Set[IdName], context: LogicalPlanningContext): LogicalPlan =
     annotate(LockNodes(plan, nodesToLock), plan.solved, context)
@@ -661,7 +661,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
 
   def planProduceResult(inner: LogicalPlan, columns: Seq[String]): LogicalPlan = {
     val result = ProduceResult(inner, columns)
-    readtxLayerAttribute.set(result.id, readTransactionLayer)
+    txLayers.set(result.id, readTxLayer)
     result
   }
 
@@ -669,7 +669,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     val solved = CardinalityEstimation.lift(plannerQuery, cardinality)
     val p = plan(solved)
-    readtxLayerAttribute.set(p.id, readTransactionLayer)
+    txLayers.set(p.id, readTxLayer)
     p
   }
 

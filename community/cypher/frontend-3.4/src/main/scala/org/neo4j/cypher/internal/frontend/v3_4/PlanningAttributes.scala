@@ -19,5 +19,5 @@ package org.neo4j.cypher.internal.frontend.v3_4
 import org.neo4j.cypher.internal.util.v3_4.attribution.Attribute
 
 object PlanningAttributes {
-  class TransactionLayerAttribute extends Attribute[Int]
+  class TransactionLayers extends Attribute[Int]
 }
