@@ -570,7 +570,6 @@ public class EncodingIdMapper implements IdMapper
         // We want to detect duplicate input ids within it
         long previousEid = 0;
         int previousGroupId = -1;
-        SourceInformation source = new SourceInformation();
         SameInputIdDetector detector = new SameInputIdDetector();
         progress.started( "DEDUPLICATE" );
         for ( int i = 0; i < numberOfCollisions; i++ )
@@ -608,7 +607,6 @@ public class EncodingIdMapper implements IdMapper
     {
         private Object[] inputIdArray = new Object[10]; // grows on demand
         private int cursor;
-        private final SourceInformation source = new SourceInformation();
 
         int add( Object inputId )
         {
