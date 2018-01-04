@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
@@ -115,7 +116,7 @@ public class RemoteStoreTest
                 null,
                 storeCopyClient, txPullClient, factory( writer ), Config.defaults(), new Monitors() );
 
-        doThrow( StoreCopyFailedException.class ).when( txPullClient )
+        doThrow( CatchUpClientException.class ).when( txPullClient )
                 .pullTransactions( isNull(), eq( storeId ), anyLong(), any() );
 
         // when
