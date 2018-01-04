@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Before;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
@@ -147,12 +148,10 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
-        return new KernelTransactionImplementation( statementOperations, schemaWriteGuard,
-                hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor,
-                explicitIndexStateSupplier, txPool, clock, CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE,
-                TransactionTracer.NULL, LockTracer.NONE,
-                PageCursorTracerSupplier.NULL, storageEngine, new CanWrite(), new Cursors(), AutoIndexing.UNSUPPORTED, mock(
-                ExplicitIndexStore.class) );
+        return new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory, commitProcess,
+                transactionMonitor, explicitIndexStateSupplier, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
+                new CanWrite(), new Cursors(), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

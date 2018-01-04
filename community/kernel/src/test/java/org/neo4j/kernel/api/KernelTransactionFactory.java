@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
@@ -96,7 +97,7 @@ public class KernelTransactionFactory
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( Supplier.class ),
                 mock( Pool.class ),
-                Clocks.systemClock(), CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE, NULL,
+                Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
                 storageEngine, new CanWrite(), new Cursors(), AutoIndexing.UNSUPPORTED, mock(

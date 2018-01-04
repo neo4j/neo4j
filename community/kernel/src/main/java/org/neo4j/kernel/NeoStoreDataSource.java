@@ -25,7 +25,9 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -33,6 +35,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Reference;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -643,16 +646,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
             AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor ) throws KernelException, IOException
     {
-        CpuClock cpuClock = CpuClock.NOT_AVAILABLE;
-        if ( config.get( GraphDatabaseSettings.track_query_cpu_time ) )
-        {
-            cpuClock = CpuClock.CPU_CLOCK;
-        }
-        HeapAllocation heapAllocation = HeapAllocation.NOT_AVAILABLE;
-        if ( config.get( GraphDatabaseSettings.track_query_allocation ) )
-        {
-            heapAllocation = HeapAllocation.HEAP_ALLOCATION;
-        }
+        AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
+        AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
 
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
                 config );
@@ -671,14 +666,14 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClock, heapAllocation ) );
+                        constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
-                cpuClock, heapAllocation, accessCapability, new Cursors(), autoIndexing, explicitIndexStore ) );
+                cpuClockRef, heapAllocationRef, accessCapability, new Cursors(), autoIndexing, explicitIndexStore ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
@@ -692,6 +687,50 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 indexingService, explicitIndexProviderLookup, storageEngine );
 
         return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
+    }
+
+    private AtomicReference<CpuClock> setupCpuClockAtomicReference()
+    {
+        AtomicReference<CpuClock> cpuClock = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
+        if ( config.get( GraphDatabaseSettings.track_query_cpu_time ) )
+        {
+            cpuClock.set( CpuClock.CPU_CLOCK );
+        }
+        BiConsumer<Boolean,Boolean> cpuClockUpdater = ( before, after ) ->
+        {
+            if ( after )
+            {
+                cpuClock.set( CpuClock.CPU_CLOCK );
+            }
+            else
+            {
+                cpuClock.set( CpuClock.NOT_AVAILABLE );
+            }
+        };
+        config.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
+        return cpuClock;
+    }
+
+    private AtomicReference<HeapAllocation> setupHeapAllocationAtomicReference()
+    {
+        AtomicReference<HeapAllocation> heapAllocation = new AtomicReference<>( HeapAllocation.NOT_AVAILABLE );
+        if ( config.get( GraphDatabaseSettings.track_query_allocation ) )
+        {
+            heapAllocation.set( HeapAllocation.HEAP_ALLOCATION );
+        }
+        BiConsumer<Boolean,Boolean> heapAllocationUpdater = ( before, after ) ->
+        {
+            if ( after )
+            {
+                heapAllocation.set( HeapAllocation.HEAP_ALLOCATION );
+            }
+            else
+            {
+                heapAllocation.set( HeapAllocation.NOT_AVAILABLE );
+            }
+        };
+        config.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_allocation, heapAllocationUpdater );
+        return heapAllocation;
     }
 
     private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
@@ -801,7 +840,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private StatementOperationParts buildStatementOperations( StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
-            ExplicitIndexStore explicitIndexStore, CpuClock cpuClock, HeapAllocation heapAllocation )
+            ExplicitIndexStore explicitIndexStore, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
         // To it we add:
@@ -810,7 +849,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 autoIndexing, constraintIndexCreator, explicitIndexStore );
 
         QueryRegistrationOperations queryRegistrationOperations =
-                new StackingQueryRegistrationOperations( clock, cpuClock, heapAllocation );
+                new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef );
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,

@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -584,13 +585,10 @@ public class KernelTransactionsTest
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
             SystemNanoClock clock, AvailabilityGuard availabilityGuard )
     {
-        return new KernelTransactions( statementLocksFactory,
-                null, statementOperations, null, DEFAULT,
-                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
-                availabilityGuard,
-                tracers, storageEngine, new Procedures(), transactionIdStore, clock, CpuClock.NOT_AVAILABLE,
-                HeapAllocation.NOT_AVAILABLE, new CanWrite(), new Cursors(), AutoIndexing.UNSUPPORTED, mock(
-                ExplicitIndexStore.class) );
+        return new KernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
+                mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
+                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), new CanWrite(), new Cursors(),
+                AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -653,11 +651,10 @@ public class KernelTransactionsTest
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing )
         {
-            super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard,
-                    txHeaderFactory, transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks,
-                    transactionMonitor, availabilityGuard, tracers, storageEngine, procedures, transactionIdStore,
-                    clock, CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE, accessCapability, cursors,
-                    autoIndexing, mock( ExplicitIndexStore.class) );
+            super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
+                    indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
+                    transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
+                    accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ) );
         }
 
         @Override
