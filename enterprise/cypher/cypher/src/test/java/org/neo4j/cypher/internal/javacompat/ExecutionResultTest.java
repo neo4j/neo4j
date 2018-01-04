@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
@@ -279,6 +280,25 @@ public class ExecutionResultTest
         // Then
         assertThat( result, CoreMatchers.instanceOf( String[].class ) );
     }
+
+    @Test
+    public void shouldContainCompletePlanFromFromLegacyVersions()
+    {
+        for ( String version : new String[]{"2.3", "3.1", "3.2", "3.3"})
+        {
+
+            // Given
+            Result result = db.execute( String.format( "EXPLAIN CYPHER %s MATCH (n) RETURN n", version ) );
+
+            // When
+            ExecutionPlanDescription description = result.getExecutionPlanDescription();
+
+            // Then
+            assertThat( description.getName(), equalTo( "ProduceResults" ) );
+            assertThat( description.getChildren().get( 0 ).getName(), equalTo( "AllNodesScan" ) );
+        }
+    }
+
 
     private void createNode()
     {

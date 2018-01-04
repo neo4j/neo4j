@@ -67,7 +67,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def totalDbHits: Option[Long] = {
     val allMaybeDbHits: Seq[Option[Long]] = flatten.map {
-      case plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
+      plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
     }
 
     allMaybeDbHits.reduce[Option[Long]] {
@@ -377,21 +377,4 @@ final case class SingleRowPlanDescription(id: LogicalPlanId,
   def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = f(this)
 
   def toIndexedSeq: Seq[InternalPlanDescription] = Seq(this)
-}
-
-final case class LegacyPlanDescription(name: String,
-                                       arguments: Seq[Argument],
-                                       variables: Set[String],
-                                       stringRep: String
-                                      ) extends InternalPlanDescription {
-
-  override def id: LogicalPlanId = LogicalPlanId.DEFAULT
-
-  override def children: Children = NoChildren
-
-  override def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = this
-
-  override def find(searchedName: String): Seq[InternalPlanDescription] = if (searchedName == name) Seq(this) else Seq.empty
-
-  override def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
 }

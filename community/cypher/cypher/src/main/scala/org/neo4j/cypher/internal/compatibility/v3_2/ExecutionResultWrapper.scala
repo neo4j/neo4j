@@ -26,18 +26,20 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{ PlanDescriptionImpl, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Argument, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_2.{RuntimeName, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_3
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Children => Children3_3, NoChildren => NoChildren3_3, SingleChild => SingleChild3_3, TwoChildren => TwoChildren3_3}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb
@@ -163,7 +165,13 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     )
 
   private def convert(i: InternalPlanDescription): InternalPlanDescription3_3 = exceptionHandler.runSafely {
-    LegacyPlanDescription(i.name, convert(i.arguments), Set.empty, i.toString)
+    PlanDescriptionImpl(LogicalPlanId.DEFAULT, i.name, convert(i.children), convert(i.arguments), i.variables)
+  }
+
+  private def convert(c: Children): Children3_3 =  c match {
+    case NoChildren => NoChildren3_3
+    case SingleChild(child) => SingleChild3_3(convert(child))
+    case TwoChildren(l, r) => TwoChildren3_3(convert(l), convert(r))
   }
 
   private def convert(args: Seq[Argument]): Seq[Argument3_3] = args.collect {
