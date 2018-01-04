@@ -207,8 +207,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         PipelineHandlerAppender handlerAppender = appenderFactory.create( config, dependencies, logProvider );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient =
-                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, handlerAppender ) );
+        CatchUpClient catchUpClient = new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, handlerAppender );
+        life.add( catchUpClient.getLifecycle() );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 

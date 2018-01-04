@@ -54,9 +54,9 @@ public class ServerBindToChannel<C extends ServerChannel> implements ChannelServ
     }
 
     @Override
-    public ServerBootstrap bootstrap( EventLoopContext<C> eventLoopContext )
+    public void bootstrap( EventLoopContext<C> eventLoopContext )
     {
-        return serverBootstrap = bootstrapper.apply( eventLoopContext );
+        serverBootstrap = bootstrapper.apply( eventLoopContext );
     }
 
     @Override

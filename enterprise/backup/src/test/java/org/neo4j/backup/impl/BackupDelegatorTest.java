@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedExcepti
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -43,8 +44,8 @@ import static org.mockito.Mockito.when;
 public class BackupDelegatorTest
 {
     private RemoteStore remoteStore;
-    private CatchUpClient catchUpClient;
     private StoreCopyClient storeCopyClient;
+    private Lifecycle catchUpClientLifeCycle;
 
     BackupDelegator subject;
 
@@ -54,7 +55,9 @@ public class BackupDelegatorTest
     public void setup()
     {
         remoteStore = mock( RemoteStore.class );
-        catchUpClient = mock( CatchUpClient.class );
+        catchUpClientLifeCycle= mock( Lifecycle.class );
+        CatchUpClient catchUpClient = mock( CatchUpClient.class );
+        when( catchUpClient.getLifecycle() ).thenReturn( catchUpClientLifeCycle );
         storeCopyClient = mock( StoreCopyClient.class );
         subject = new BackupDelegator( remoteStore, catchUpClient, storeCopyClient );
     }
@@ -75,23 +78,23 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void startDelegatesToCatchUpClient()
+    public void startDelegatesToCatchUpClient() throws Throwable
     {
         // when
         subject.start();
 
         // then
-        verify( catchUpClient ).start();
+        verify( catchUpClientLifeCycle ).start();
     }
 
     @Test
-    public void stopDelegatesToCatchUpClient()
+    public void stopDelegatesToCatchUpClient() throws Throwable
     {
         // when
         subject.stop();
 
         // then
-        verify( catchUpClient ).stop();
+        verify( catchUpClientLifeCycle ).stop();
     }
 
     @Test
