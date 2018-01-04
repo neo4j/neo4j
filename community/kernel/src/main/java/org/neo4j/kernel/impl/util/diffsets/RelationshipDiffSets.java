@@ -28,8 +28,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.DiffApplyingRelationshipIterator;
 import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 
 /**
@@ -66,7 +64,7 @@ public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterato
     @Override
     public PrimitiveIntIterator augment( final PrimitiveIntIterator source )
     {
-        return new DiffApplyingPrimitiveIntIterator( source, added( false ), removed( false ) );
+        return new DiffApplyingIntIterator( source, added( false ), removed( false ) );
     }
 
     @Override

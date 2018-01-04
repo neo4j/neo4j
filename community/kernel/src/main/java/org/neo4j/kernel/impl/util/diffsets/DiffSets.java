@@ -27,8 +27,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveLongIterator;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 /**
@@ -54,19 +52,19 @@ public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongResourceIterator, 
     @Override
     public PrimitiveLongResourceIterator augment( final PrimitiveLongIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, added( false ), removed( false ) );
+        return new DiffApplyingLongIterator( source, added( false ), removed( false ) );
     }
 
     @Override
     public PrimitiveIntIterator augment( final PrimitiveIntIterator source )
     {
-        return new DiffApplyingPrimitiveIntIterator( source, added( false ), removed( false ) );
+        return new DiffApplyingIntIterator( source, added( false ), removed( false ) );
     }
 
     @Override
     public PrimitiveLongResourceIterator augmentWithRemovals( final PrimitiveLongIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, Collections.emptySet(), removed( false ) );
+        return new DiffApplyingLongIterator( source, Collections.emptySet(), removed( false ) );
     }
 
     @Override
