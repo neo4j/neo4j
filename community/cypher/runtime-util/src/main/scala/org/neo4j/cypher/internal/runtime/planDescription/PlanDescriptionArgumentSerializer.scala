@@ -49,7 +49,7 @@ object PlanDescriptionArgumentSerializer {
       case ExplicitIndex(index) => index
       case Index(label, properties) => s":$label(${properties.mkString(",")})"
       case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${asPrettyString(p)})"
-      case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
+      case InequalityIndex(label, property, bounds) => bounds.map(bound => s":$label($property) $bound").mkString(" AND ")
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
