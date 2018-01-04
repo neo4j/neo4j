@@ -141,9 +141,9 @@ class SlottedRewriter(tokenContext: TokenContext) {
       case e: NestedPlanExpression =>
         // Rewrite expressions within the nested plan
         val rewrittenPlan = this.apply(e.plan, slotConfigurations)
-        val slotConfiguration = slotConfigurations.getOrElse(e.plan.id,
+        val innerSlotConf = slotConfigurations.getOrElse(e.plan.id,
           throw new InternalException(s"Missing slot configuration for plan with ${e.plan.id}"))
-        val rewriter = rewriteCreator(slotConfiguration, thisPlan, slotConfigurations)
+        val rewriter = rewriteCreator(innerSlotConf, thisPlan, slotConfigurations)
         val rewrittenProjection = e.projection.endoRewrite(rewriter)
         e.copy(plan = rewrittenPlan, projection = rewrittenProjection)(e.position)
 

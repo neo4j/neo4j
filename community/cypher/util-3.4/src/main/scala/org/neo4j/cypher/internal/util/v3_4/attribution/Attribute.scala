@@ -23,7 +23,7 @@ import scala.collection.mutable.ArrayBuffer
 trait Attribute[T] {
 
   // TODO crappy perf?
-  val array:ArrayBuffer[Unchangeable[T]] = new ArrayBuffer[Unchangeable[T]]()
+  private val array:ArrayBuffer[Unchangeable[T]] = new ArrayBuffer[Unchangeable[T]]()
 
   def set(id:Id, t:T): Unit = {
     val requiredSize = id.x + 1
@@ -40,7 +40,7 @@ trait Attribute[T] {
     array.size > id.x && array(id.x).hasValue
   }
 
-  def getOrElse(id: Id, other: T): T = {
+  def getOrElse(id: Id, other: => T): T = {
     if(isDefinedAt(id)) get(id) else other
   }
 
