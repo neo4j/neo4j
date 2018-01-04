@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -1047,14 +1048,23 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor descriptor,
-                                                                    PointValue lower, boolean includeLower,
-                                                                    PointValue upper, boolean includeUpper )
+            IndexQuery.GeometryRangePredicate geometryRangePredicate )
     {
         TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
             return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
         }
+
+        if ( geometryRangePredicate.from() == null && geometryRangePredicate.to() == null )
+        {
+            throw new IllegalArgumentException( "Cannot access TxState with invalid GeometryRangePredicate" );
+        }
+
+        PointValue lower = geometryRangePredicate.from();
+        PointValue upper = geometryRangePredicate.to();
+        boolean includeLower = geometryRangePredicate.fromInclusive();
+        boolean includeUpper = geometryRangePredicate.toInclusive();
 
         ValueTuple selectedLower;
         boolean selectedIncludeLower;
@@ -1064,8 +1074,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( lower == null )
         {
-            //TODO define min and max with correct CRS from lower or upper
-            selectedLower = ValueTuple.of( Values.MIN_POINT );
+            selectedLower = ValueTuple.of( Values.minPointValue( upper ) );
             selectedIncludeLower = true;
         }
         else
@@ -1076,7 +1085,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( upper == null )
         {
-            selectedUpper = ValueTuple.of( Values.MAX_POINT );
+            selectedUpper = ValueTuple.of( Values.maxPointValue( lower ) );
             selectedIncludeUpper = true;
         }
         else
