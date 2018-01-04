@@ -19,33 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
-
-public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
+public class GBPTreeRecoveryDynamicSizeIT extends GBPTreeRecoveryITBase<RawBytes,RawBytes>
 {
-    private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
-
     @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout()
+    protected TestLayout<RawBytes,RawBytes> getLayout( RandomRule random )
     {
-        return layout;
-    }
-
-    @Override
-    protected TreeNode<RawBytes,RawBytes> getNode( int pageSize, Layout<RawBytes,RawBytes> layout )
-    {
-        return new TreeNodeDynamicSize<>( pageSize, layout );
-    }
-
-    @Override
-    void assertAdditionalHeader( PageCursor cursor, TreeNode<RawBytes,RawBytes> node, int pageSize )
-    {
-        // When
-        int currentAllocSpace = ((TreeNodeDynamicSize) node).getAllocOffset( cursor );
-
-        // Then
-        assertEquals("allocSpace point to end of page", pageSize, currentAllocSpace );
+        return new SimpleByteArrayLayout();
     }
 }

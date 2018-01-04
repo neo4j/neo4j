@@ -43,7 +43,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
@@ -53,9 +52,6 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 {
-    private static final int PAGE_SIZE = 256;
-    private final Action CHECKPOINT = new CheckpointAction();
-
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule(
@@ -64,6 +60,16 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
+
+    // Test config
+    private int loadCountTransactions;
+    private int minInsertCountPerBatch;
+    private int maxInsertCountPerBatch;
+    private int minRemoveCountPerBatch;
+    private int maxRemoveCountPerBatch;
+
+    private static final int PAGE_SIZE = 256;
+    private final Action CHECKPOINT = new CheckpointAction();
 
     private TestLayout<KEY,VALUE> layout;
 
@@ -75,6 +81,11 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
     public void setUp()
     {
         this.layout = getLayout( random );
+        loadCountTransactions = random.intBetween( 300, 1_000 );
+        minInsertCountPerBatch = 30;
+        maxInsertCountPerBatch = 200;
+        minRemoveCountPerBatch = 5;
+        maxRemoveCountPerBatch = 20;
     }
 
     protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
@@ -240,8 +251,8 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
                 {
                     assertTrue( cursor.next() );
                     Hit<KEY,VALUE> hit = cursor.get();
-                    assertEquals( aggregate[i++], keySeed( hit.key() ) );
-                    assertEquals( aggregate[i++], valueSeed( hit.value() ) );
+                    assertEqualsKey( key( aggregate[i++] ), hit.key() );
+                    assertEqualsValue( value( aggregate[i++] ), hit.value() );
                 }
                 assertFalse( cursor.next() );
             }
@@ -370,9 +381,8 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
     private List<Action> generateLoad()
     {
         List<Action> actions = new LinkedList<>();
-        int count = random.intBetween( 300, 1_000 );
         boolean hasCheckPoint = false;
-        for ( int i = 0; i < count; i++ )
+        for ( int i = 0; i < loadCountTransactions; i++ )
         {
             Action action = randomAction( true );
             actions.add( action );
@@ -406,13 +416,13 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         if ( randomized <= 0.7 )
         {
             // put
-            long[] data = modificationData( 30, 200 );
+            long[] data = modificationData( minInsertCountPerBatch, maxInsertCountPerBatch );
             return new InsertAction( data );
         }
         else if ( randomized <= 0.95 || !allowCheckPoint )
         {
             // remove
-            long[] data = modificationData( 5, 20 );
+            long[] data = modificationData( minRemoveCountPerBatch, maxRemoveCountPerBatch );
             return new RemoveAction( data );
         }
         else

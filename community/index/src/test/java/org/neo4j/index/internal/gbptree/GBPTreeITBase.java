@@ -179,7 +179,6 @@ public abstract class GBPTreeITBase<KEY,VALUE>
                     removed.set( candidate );
 
                     writer.remove( key( candidate ) );
-
                 }
             }
 

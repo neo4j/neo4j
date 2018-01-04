@@ -1162,9 +1162,7 @@ class InternalTreeLogic<KEY,VALUE>
     private void merge( PageCursor leftSiblingCursor, int leftSiblingKeyCount, PageCursor rightSiblingCursor,
             int rightSiblingKeyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        bTreeNode.moveKeyValuesFromLeftToRight( leftSiblingCursor, leftSiblingKeyCount, rightSiblingCursor, rightSiblingKeyCount, 0 );
-
-        TreeNode.setKeyCount( rightSiblingCursor, rightSiblingKeyCount + leftSiblingKeyCount );
+        bTreeNode.copyKeyValuesFromLeftToRight( leftSiblingCursor, leftSiblingKeyCount, rightSiblingCursor, rightSiblingKeyCount );
 
         // Update successor of left sibling to be right sibling
         TreeNode.setSuccessor( leftSiblingCursor, rightSiblingCursor.getCurrentPageId(),
@@ -1179,9 +1177,6 @@ class InternalTreeLogic<KEY,VALUE>
             int numberOfKeysToMove, StructurePropagation<KEY> structurePropagation )
     {
         bTreeNode.moveKeyValuesFromLeftToRight( leftCursor, leftKeyCount, rightCursor, rightKeyCount, leftKeyCount - numberOfKeysToMove );
-
-        TreeNode.setKeyCount( leftCursor, leftKeyCount - numberOfKeysToMove );
-        TreeNode.setKeyCount( rightCursor, rightKeyCount + numberOfKeysToMove );
 
         // Propagate change
         structurePropagation.hasLeftKeyReplace = true;

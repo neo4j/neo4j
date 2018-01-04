@@ -344,14 +344,23 @@ abstract class TreeNode<KEY,VALUE>
             long newRightChild, long stableGeneration, long unstableGeneration, StructurePropagation<KEY> structurePropagation );
 
     /**
-     * Move all rightmost keys and values in left leaf from given position to right node.
+     * Move all rightmost keys and values in left leaf from given position to right leaf.
      *
      * Right leaf will be defragmented.
      *
-     * Key count is NOT updated.
+     * Update keyCount in left and right.
      */
     abstract void moveKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
             int fromPosInLeftNode );
+
+    /**
+     * Copy all keys and values in left leaf and insert to the left in right leaf.
+     *
+     * Right leaf will be defragmented.
+     *
+     * Update keyCount in right
+     */
+    abstract void copyKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount );
 
     // Useful for debugging
     @SuppressWarnings( "unused" )

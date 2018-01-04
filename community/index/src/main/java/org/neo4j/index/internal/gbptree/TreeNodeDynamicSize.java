@@ -332,7 +332,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean reasonableChildCount( int childCount )
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        return reasonableKeyCount( childCount );
     }
 
     @Override
@@ -717,8 +717,104 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Push keys and values in right sibling to the right
         insertSlotsAt( rightCursor, 0, numberOfKeysToMove, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeySize() );
 
-        // Move
+        // Move (also updates keyCount of left)
         moveKeysAndValues( leftCursor, fromPosInLeftNode, rightCursor, 0, numberOfKeysToMove );
+
+        // Right keyCount
+        setKeyCount( rightCursor, rightKeyCount + numberOfKeysToMove );
+    }
+
+    // NOTE: Does update keyCount
+    private void moveKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
+    {
+        int firstAllocOffset = getAllocOffset( toCursor );
+        int toAllocOffset = firstAllocOffset;
+        for ( int i = 0; i < count; i++, toPos++ )
+        {
+            toAllocOffset = moveRawKeyValue( fromCursor, fromPos + i, toCursor, toAllocOffset );
+            toCursor.setOffset( keyPosOffsetLeaf( toPos ) );
+            putKeyOffset( toCursor, toAllocOffset );
+        }
+        setAllocOffset( toCursor, toAllocOffset );
+
+        // Update deadspace
+        int deadSpace = getDeadSpace( fromCursor );
+        int totalMovedBytes = firstAllocOffset - toAllocOffset;
+        setDeadSpace( fromCursor, deadSpace + totalMovedBytes );
+
+        // Key count
+        setKeyCount( fromCursor, fromPos );
+    }
+
+    /**
+     * Transfer key and value from logical position in 'from' to physical position next to current alloc offset in 'to'.
+     * Mark transferred key as dead.
+     * @return new alloc offset in 'to'
+     */
+    private int moveRawKeyValue( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toAllocOffset )
+    {
+        // What to copy?
+        placeCursorAtActualKey( fromCursor, fromPos, LEAF );
+        int fromKeyOffset = fromCursor.getOffset();
+        int keySize = readKeySize( fromCursor );
+        int valueSize = readValueSize( fromCursor );
+
+        // Copy
+        int toCopy = bytesKeySize() + bytesValueSize() + keySize + valueSize;
+        int newRightAllocSpace = toAllocOffset - toCopy;
+        fromCursor.copyTo( fromKeyOffset, toCursor, newRightAllocSpace, toCopy );
+
+        // Put tombstone
+        fromCursor.setOffset( fromKeyOffset );
+        putTombstone( fromCursor );
+        return newRightAllocSpace;
+    }
+
+    @Override
+    void copyKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
+    {
+        defragmentLeaf( rightCursor );
+
+        // Push keys and values in right sibling to the right
+        insertSlotsAt( rightCursor, 0, leftKeyCount, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeySize() );
+
+        // Copy
+        copyKeysAndValues( leftCursor, 0, rightCursor, 0, leftKeyCount );
+
+        // KeyCount
+        setKeyCount( rightCursor, rightKeyCount + leftKeyCount );
+    }
+
+    private void copyKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
+    {
+        int toAllocOffset = getAllocOffset( toCursor );
+        for ( int i = 0; i < count; i++, toPos++ )
+        {
+            toAllocOffset = copyRawKeyValue( fromCursor, fromPos + i, toCursor, toAllocOffset );
+            toCursor.setOffset( keyPosOffsetLeaf( toPos ) );
+            putKeyOffset( toCursor, toAllocOffset );
+        }
+        setAllocOffset( toCursor, toAllocOffset );
+    }
+
+    /**
+     * Copy key and value from logical position in 'from' tp physical position next to current alloc offset in 'to'.
+     * Does NOT mark transferred key as dead.
+     * @return new alloc offset in 'to'
+     */
+    private int copyRawKeyValue( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toAllocOffset )
+    {
+        // What to copy?
+        placeCursorAtActualKey( fromCursor, fromPos, LEAF );
+        int fromKeyOffset = fromCursor.getOffset();
+        int keySize = readKeySize( fromCursor );
+        int valueSize = readValueSize( fromCursor );
+
+        // Copy
+        int toCopy = bytesKeySize() + bytesValueSize() + keySize + valueSize;
+        int newRightAllocSpace = toAllocOffset - toCopy;
+        fromCursor.copyTo( fromKeyOffset, toCursor, newRightAllocSpace, toCopy );
+        return newRightAllocSpace;
     }
 
     private int getAllocSpace( PageCursor cursor, int keyCount, Type type )
@@ -771,28 +867,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             }
             currentOffset += keySize + bytesKeySize();
         }
-    }
-
-    // NOTE: Does update keyCount
-    private void moveKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
-    {
-        int toAllocOffset = getAllocOffset( toCursor );
-        int firstAllocOffset = toAllocOffset;
-        for ( int i = 0; i < count; i++, toPos++ )
-        {
-            toAllocOffset = transferRawKeyValue( fromCursor, fromPos + i, toCursor, toAllocOffset );
-            toCursor.setOffset( keyPosOffsetLeaf( toPos ) );
-            putKeyOffset( toCursor, toAllocOffset );
-        }
-        setAllocOffset( toCursor, toAllocOffset );
-
-        // Update deadspace
-        int deadSpace = getDeadSpace( fromCursor );
-        int totalMovedBytes = firstAllocOffset - toAllocOffset;
-        setDeadSpace( fromCursor, deadSpace + totalMovedBytes );
-
-        // Key count
-        setKeyCount( fromCursor, fromPos );
     }
 
     // NOTE: Does NOT update keyCount
@@ -850,30 +924,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         fromCursor.setOffset( fromKeyOffset );
         putTombstone( fromCursor );
         return toAllocOffset;
-    }
-
-    /**
-     * Transfer key and value from logical position in 'from' to physical position next to current alloc offset in 'to'.
-     * Mark transferred key as dead.
-     * @return new alloc offset in 'to'
-     */
-    private int transferRawKeyValue( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toAllocOffset )
-    {
-        // What to copy?
-        placeCursorAtActualKey( fromCursor, fromPos, LEAF );
-        int fromKeyOffset = fromCursor.getOffset();
-        int keySize = readKeySize( fromCursor );
-        int valueSize = readValueSize( fromCursor );
-
-        // Copy
-        int toCopy = bytesKeySize() + bytesValueSize() + keySize + valueSize;
-        int newRightAllocSpace = toAllocOffset - toCopy;
-        fromCursor.copyTo( fromKeyOffset, toCursor, newRightAllocSpace, toCopy );
-
-        // Put tombstone
-        fromCursor.setOffset( fromKeyOffset );
-        putTombstone( fromCursor );
-        return newRightAllocSpace;
     }
 
     private int middleInternal( PageCursor cursor, int insertPos, KEY newKey )

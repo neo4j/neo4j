@@ -502,6 +502,22 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
         // Move keys and values from left sibling to right sibling
         copyKeysAndValues( leftCursor, fromPosInLeftNode, rightCursor, 0, numberOfKeysToMove );
+
+        setKeyCount( leftCursor, leftKeyCount - numberOfKeysToMove );
+        setKeyCount( rightCursor, rightKeyCount + numberOfKeysToMove );
+    }
+
+    @Override
+    void copyKeyValuesFromLeftToRight( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
+    {
+        // Push keys and values in right sibling to the right
+        insertKeyValueSlots( rightCursor, leftKeyCount, rightKeyCount );
+
+        // Move keys and values from left sibling to right sibling
+        copyKeysAndValues( leftCursor, 0, rightCursor, 0, leftKeyCount );
+
+        // KeyCount
+        setKeyCount( rightCursor, rightKeyCount + leftKeyCount );
     }
 
     private void copyKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )

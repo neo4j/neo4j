@@ -214,7 +214,7 @@ class CrashGenerationCleaner
         if ( TreeNode.isInternal( cursor ) )
         {
             int keyCount = TreeNode.keyCount( cursor );
-            for ( int i = 0; i <= keyCount; i++ )
+            for ( int i = 0; i <= keyCount && treeNode.reasonableChildCount( i ); i++ )
             {
                 cleanCrashedGSPP( cursor, treeNode.childOffset( i ), cleanedPointers );
             }
