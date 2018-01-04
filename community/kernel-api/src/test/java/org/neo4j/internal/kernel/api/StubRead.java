@@ -128,13 +128,13 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeProperties( long reference, PropertyCursor cursor )
+    public void nodeProperties( long nodeReference, long reference, PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relationshipProperties( long reference, PropertyCursor cursor )
+    public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
     {
         throw new UnsupportedOperationException();
     }

@@ -33,8 +33,6 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.txstate.NodeState;
-
 import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
 import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 
@@ -136,7 +134,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public boolean hasProperties()
     {
-        return nextProp != (long) NO_ID;
+        return nextProp != NO_ID;
     }
 
     @Override
@@ -154,7 +152,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public void properties( PropertyCursor cursor )
     {
-        read.nodeProperties( propertiesReference(), cursor );
+        read.nodeProperties( nodeReference(), propertiesReference(), cursor );
     }
 
     @Override
@@ -172,45 +170,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public long propertiesReference()
     {
-        //In the case where there hasn't been any changes in the transaction state this method simply returns the
-        // property reference.
-        //
-        //However if there has been changes we can have two cases:
-        //
-        //   i: The node had no prior properties, in this case we simply encode the node id in the reference
-        //      which allows the property cursor to probe tx state for properties.
-        //   ii: The node has properties, in this case we mark the actual property reference as having tx state
-        //
-        //in both cases we need to store a mapping from the computed reference to the state in the transaction state
-        //so we can retrieve it later in the property cursor.
-        long propertiesReference = getNextProp();
-
-        if ( hasChanges() )
-        {
-            TransactionState txState = read.txState();
-            NodeState nodeState = txState.getNodeState( nodeReference() );
-            if ( nodeState.hasPropertyChanges() )
-            {
-                long ref;
-                if ( propertiesReference == NO_ID )
-                {
-                    //Current node has no properties before the start of this transaction,
-                    //store the node id in the reference.
-                    ref = References.setNodeFlag( nodeReference() );
-                }
-                else
-                {
-                    //Mark the reference so that property cursor checks both
-                    //tx state as well as disk.
-                    ref = References.setTxStateFlag( propertiesReference );
-                    //stores the node state mapped to the current property
-                    //reference so that property cursor is able to retrieve the state later.
-                    txState.registerProperties( ref, nodeState );
-                }
-                return ref;
-            }
-        }
-        return propertiesReference;
+        return getNextProp();
     }
 
     @Override

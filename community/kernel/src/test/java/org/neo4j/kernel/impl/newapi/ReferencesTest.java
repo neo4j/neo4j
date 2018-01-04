@@ -33,13 +33,11 @@ import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
 import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
 import static org.neo4j.kernel.impl.newapi.References.hasNodeFlag;
 import static org.neo4j.kernel.impl.newapi.References.hasRelationshipFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasTxStateFlag;
 import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
 import static org.neo4j.kernel.impl.newapi.References.setFilterFlag;
 import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 import static org.neo4j.kernel.impl.newapi.References.setNodeFlag;
 import static org.neo4j.kernel.impl.newapi.References.setRelationshipFlag;
-import static org.neo4j.kernel.impl.newapi.References.setTxStateFlag;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 public class ReferencesTest
@@ -101,18 +99,6 @@ public class ReferencesTest
             long reference = random.nextLong( MAX_ID_LIMIT );
             assertFalse( hasGroupFlag( reference ) );
             assertTrue( hasGroupFlag( setGroupFlag( reference ) ) );
-        }
-    }
-
-    @Test
-    public void shouldSetTxStateFlag()
-    {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1000; i++ )
-        {
-            long reference = random.nextLong( MAX_ID_LIMIT );
-            assertFalse( hasTxStateFlag( reference ) );
-            assertTrue( hasTxStateFlag( setTxStateFlag( reference ) ) );
         }
     }
 
