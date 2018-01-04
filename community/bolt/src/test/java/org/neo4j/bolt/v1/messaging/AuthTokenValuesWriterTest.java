@@ -109,4 +109,20 @@ public class AuthTokenValuesWriterTest
 
         assertEquals( 42L, writer.valueAsObject( value ) );
     }
+
+    @Test
+    public void shouldConvertMultipleValues()
+    {
+        AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
+
+        TextValue value1 = stringValue( "Hello" );
+        TextValue value2 = stringValue( " " );
+        TextValue value3 = stringValue( "World!" );
+        LongValue value4 = longValue( 42 );
+
+        assertEquals( "Hello", writer.valueAsObject( value1 ) );
+        assertEquals( " ", writer.valueAsObject( value2 ) );
+        assertEquals( "World!", writer.valueAsObject( value3 ) );
+        assertEquals( 42L, writer.valueAsObject( value4 ) );
+    }
 }
