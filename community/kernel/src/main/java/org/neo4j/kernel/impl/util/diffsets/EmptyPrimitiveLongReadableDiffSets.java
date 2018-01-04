@@ -23,6 +23,11 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
+/**
+ * Empty implementation of {@link PrimitiveLongDiffSets}.
+ *
+ * Use {@link #INSTANCE} to reference static singleton.
+ */
 public class EmptyPrimitiveLongReadableDiffSets extends PrimitiveLongDiffSets
 {
     public static final PrimitiveLongDiffSets INSTANCE = new EmptyPrimitiveLongReadableDiffSets();

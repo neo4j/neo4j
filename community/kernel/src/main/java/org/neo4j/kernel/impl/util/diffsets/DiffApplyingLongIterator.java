@@ -72,8 +72,7 @@ public class DiffApplyingLongIterator extends PrimitiveLongBaseIterator implemen
     private final Set<?> removedElements;
     protected Phase phase;
 
-    public DiffApplyingLongIterator( PrimitiveLongIterator source,
-                                              Set<?> addedElements, Set<?> removedElements )
+    DiffApplyingLongIterator( PrimitiveLongIterator source, Set<?> addedElements, Set<?> removedElements )
     {
         this.source = source;
         this.addedElements = addedElements;

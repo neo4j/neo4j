@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util.diffsets;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -28,6 +27,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
 /**
@@ -66,24 +66,37 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
         return removedElements.contains( element );
     }
 
+    public void removeAll( PrimitiveLongIterator elementsToRemove )
+    {
+        checkRemovedElements();
+        while ( elementsToRemove.hasNext() )
+        {
+            removeElement( elementsToRemove.next() );
+        }
+    }
+
+    public void addAll( PrimitiveLongIterator elementsToAdd )
+    {
+        checkAddedElements();
+        while ( elementsToAdd.hasNext() )
+        {
+            addElement( elementsToAdd.next() );
+        }
+    }
+
     public void add( long element )
     {
         checkAddedElements();
-        boolean removed = removedElements.remove( element );
-        if ( !removed )
-        {
-            addedElements.add( element );
-        }
+        addElement( element );
     }
 
     public boolean remove( long element )
     {
         checkRemovedElements();
-        boolean removed = addedElements.remove( element );
-        return removed || removedElements.add( element );
+        return removeElement( element );
     }
 
-    public void accept( PrimitiveLongDiffSetsVisitor visitor )
+    public void visit( PrimitiveLongDiffSetsVisitor visitor )
             throws ConstraintValidationException, CreateConstraintFailureException
     {
         PrimitiveLongIterator addedItems = addedElements.iterator();
@@ -98,14 +111,10 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
         }
     }
 
-    public T augment( T source )
+    @Override
+    public PrimitiveLongIterator augment( PrimitiveLongIterator source )
     {
         return (T) new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
-    }
-
-    public PrimitiveLongIterator augmentWithRemovals( PrimitiveLongIterator source )
-    {
-        return new DiffApplyingPrimitiveLongIterator( source, PrimitiveLongCollections.emptySet(), removedElements );
     }
 
     @Override
@@ -129,13 +138,28 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
     @Override
     public PrimitiveLongSet getAddedSnapshot()
     {
-        return PrimitiveLongCollections.asSet( addedElements );
+        return asSet( addedElements );
     }
 
     @Override
     public boolean isEmpty()
     {
         return addedElements.isEmpty() && removedElements.isEmpty();
+    }
+
+    private void addElement( long element )
+    {
+        boolean removed = removedElements.remove( element );
+        if ( !removed )
+        {
+            addedElements.add( element );
+        }
+    }
+
+    private boolean removeElement( long element )
+    {
+        boolean removed = addedElements.remove( element );
+        return removed || removedElements.add( element );
     }
 
     private void checkAddedElements()

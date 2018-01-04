@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 
 /**
@@ -72,4 +73,12 @@ public interface PrimitiveLongReadableDiffSets
      * @return difference between number of added and removed elements
      */
     int delta();
+
+    /**
+     * Augment current diff sets with elements. Provided element will be augmented if diffset
+     * does not remove and add that specific element.
+     * @param elements elements to augment with
+     * @return iterator that will iterate over augmented elements as well as over diff set
+     */
+    PrimitiveLongIterator augment( PrimitiveLongIterator elements );
 }

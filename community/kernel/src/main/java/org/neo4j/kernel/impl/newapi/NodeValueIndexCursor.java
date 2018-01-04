@@ -20,23 +20,21 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.IntFunction;
-import java.util.stream.Stream;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.register.Register;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.stream;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertOnlyExactPredicates;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
@@ -48,7 +46,7 @@ class NodeValueIndexCursor extends IndexCursor
     private IndexQuery[] query;
     private Value[] values;
     private PrimitiveLongIterator added;
-    private Set<Long> removed;
+    private PrimitiveLongSet removed;
 
     NodeValueIndexCursor()
     {
@@ -208,13 +206,11 @@ class NodeValueIndexCursor extends IndexCursor
     {
         if ( read.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> changes =
-                    read.txState().indexUpdatesForRangeSeekByPrefix( descriptor, predicate.prefix() );
-            added =
-                    changes
-                            .augment( PrimitiveLongCollections.emptyIterator() );
-            removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
-            removed.addAll( changes.getRemoved() );
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes =
+                    txState.indexUpdatesForRangeSeekByPrefix( descriptor, predicate.prefix() );
+            added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
         }
     }
 
@@ -222,13 +218,12 @@ class NodeValueIndexCursor extends IndexCursor
     {
         if ( read.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> changes = read.txState().indexUpdatesForRangeSeekByString(
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByString(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
-            added =
-                    changes.augment( PrimitiveLongCollections.emptyIterator() );
-            removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
-            removed.addAll( changes.getRemoved() );
+            added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
         }
     }
 
@@ -236,13 +231,12 @@ class NodeValueIndexCursor extends IndexCursor
     {
         if ( read.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> changes = read.txState().indexUpdatesForRangeSeekByNumber(
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByNumber(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
-            added =
-                    changes.augment( PrimitiveLongCollections.emptyIterator() );
-            removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
-            removed.addAll( changes.getRemoved() );
+            added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
         }
     }
 
@@ -250,11 +244,10 @@ class NodeValueIndexCursor extends IndexCursor
     {
         if ( read.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> changes = read.txState().indexUpdatesForScan( descriptor );
-            added = changes
-                    .augment( PrimitiveLongCollections.emptyIterator() );
-            removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
-            removed.addAll( changes.getRemoved() );
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForScan( descriptor );
+            added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
         }
     }
 
@@ -263,12 +256,18 @@ class NodeValueIndexCursor extends IndexCursor
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );
         if ( read.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> changes = read.txState()
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes = txState
                     .indexUpdatesForSeek( descriptor, IndexQuery.asValueTuple( exactPreds ) );
-            added = changes
-                    .augment( PrimitiveLongCollections.emptyIterator() );
-            removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
-            removed.addAll( changes.getRemoved() );
+            added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
         }
+    }
+
+    private PrimitiveLongSet removed( TransactionState txState, PrimitiveLongReadableDiffSets changes )
+    {
+        PrimitiveLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
+        longSet.addAll( changes.getRemoved().iterator() );
+        return longSet;
     }
 }

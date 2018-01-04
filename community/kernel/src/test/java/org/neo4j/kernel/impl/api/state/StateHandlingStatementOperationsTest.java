@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -74,6 +75,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.Iterators.asIterable;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -221,9 +223,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScan( index ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
-        );
+        when( txState.indexUpdatesForScan( index ) ).thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
@@ -252,9 +252,8 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForSeek( index, ValueTuple.of( "value" ) ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
-        );
+        when( txState.indexUpdatesForSeek( index, ValueTuple.of( "value" ) ) )
+                .thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
@@ -275,36 +274,6 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexRangeSeekByPrefix() throws Exception
-    {
-        // Given
-        TransactionState txState = mock( TransactionState.class );
-        KernelStatement statement = mock( KernelStatement.class );
-        when( statement.hasTxStateWithChanges() ).thenReturn( true );
-        when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
-        );
-        when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
-        );
-
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        IndexReader indexReader = addMockedIndexReader( statement );
-        IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( index.schema().getPropertyId(), "prefix" );
-        when( indexReader.query( query ) )
-                .thenReturn( PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
-
-        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
-
-        // When
-        PrimitiveLongIterator results = context.indexQuery( statement, index, query );
-
-        // Then
-        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
-    }
-
-    @Test
     public void shouldConsiderTransactionStateDuringIndexRangeSeekByPrefixWithIndexQuery() throws Exception
     {
         // Given
@@ -313,7 +282,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+                new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
@@ -343,7 +312,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForScan( index ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+                new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
@@ -373,7 +342,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForScan( index ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+                new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
@@ -411,7 +380,7 @@ public class StateHandlingStatementOperationsTest
         StorageStatement storageStatement = mock( StorageStatement.class );
         when( statement.getStoreStatement() ).thenReturn( storageStatement );
         when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+                new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
@@ -458,9 +427,8 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
-        );
+        when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) )
+                .thenReturn( new PrimitiveLongDiffSets( setOf( 42L ), setOf( 44L ) ) );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );

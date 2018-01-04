@@ -102,6 +102,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -947,7 +948,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChanges =
+            PrimitiveLongReadableDiffSets labelPropertyChanges =
                     state.txState().indexUpdatesForScan( index );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
@@ -963,7 +964,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChanges =
+            PrimitiveLongReadableDiffSets labelPropertyChanges =
                     state.txState().indexUpdatesForSeek( index, propertyValues );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
@@ -981,10 +982,10 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForNumber =
-                    state.txState().indexUpdatesForRangeSeekByNumber(
-                            index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            TransactionState txState = state.txState();
+            PrimitiveLongReadableDiffSets labelPropertyChangesForNumber =
+                    txState.indexUpdatesForRangeSeekByNumber( index, lower, includeLower, upper, includeUpper );
+            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForNumber.augment( nodeIds ) );
@@ -1001,10 +1002,10 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForString =
-                    state.txState().indexUpdatesForRangeSeekByString(
+            TransactionState txState = state.txState();
+            PrimitiveLongReadableDiffSets labelPropertyChangesForString = txState.indexUpdatesForRangeSeekByString(
                             index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForString.augment( nodeIds ) );
@@ -1020,9 +1021,10 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForPrefix =
-                    state.txState().indexUpdatesForRangeSeekByPrefix( index, prefix );
-            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            TransactionState txState = state.txState();
+            PrimitiveLongReadableDiffSets labelPropertyChangesForPrefix =
+                    txState.indexUpdatesForRangeSeekByPrefix( index, prefix );
+            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForPrefix.augment( nodeIds ) );
