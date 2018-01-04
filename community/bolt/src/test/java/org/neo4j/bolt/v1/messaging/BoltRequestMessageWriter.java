@@ -56,7 +56,7 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     @Override
     public void onInit( String clientName, Map<String,Object> credentials ) throws IOException
     {
-        packer.packStructHeader( 1, INIT.signature() );
+        packer.packStructHeader( 2, INIT.signature() );
         packer.pack( clientName );
         packer.pack( ValueUtils.asMapValue( credentials ) );
         onMessageComplete.onMessageComplete();
