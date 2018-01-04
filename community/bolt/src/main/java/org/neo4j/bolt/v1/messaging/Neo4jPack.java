@@ -20,8 +20,6 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
@@ -29,46 +27,44 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
+/**
+ * Represents a single Bolt message format by exposing a {@link Packer packer} and {@link Unpacker unpacker}
+ * for primitives of this format.
+ */
 public interface Neo4jPack
 {
     interface Packer
     {
-        void packStructHeader( int size, byte signature ) throws IOException;
+        void pack( String value ) throws IOException;
 
         void pack( AnyValue value ) throws IOException;
 
-        void packRawMap( MapValue map ) throws IOException;
+        void packStructHeader( int size, byte signature ) throws IOException;
 
         void packMapHeader( int size ) throws IOException;
 
-        void flush() throws IOException;
-
-        void pack( String value ) throws IOException;
-
         void packListHeader( int size ) throws IOException;
 
-        void consumeError() throws BoltIOException;
+        IOException consumeError();
+
+        void flush() throws IOException;
     }
 
     interface Unpacker
     {
-        boolean hasNext() throws IOException;
+        AnyValue unpack() throws IOException;
+
+        String unpackString() throws IOException;
+
+        MapValue unpackMap() throws IOException;
 
         long unpackStructHeader() throws IOException;
 
         char unpackStructSignature() throws IOException;
 
-        String unpackString() throws IOException;
-
-        Map<String,Object> unpackToRawMap() throws IOException;
-
-        MapValue unpackMap() throws IOException;
-
         long unpackListHeader() throws IOException;
 
-        AnyValue unpack() throws IOException;
-
-        Optional<Neo4jError> consumeError();
+        Neo4jError consumeError();
     }
 
     Packer newPacker( PackOutput output );

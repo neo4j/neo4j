@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
@@ -32,17 +31,13 @@ import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.collection.primitive.PrimitiveLongIntKeyValueArray;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -97,25 +92,15 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void packRawMap( MapValue map ) throws IOException
-        {
-            packMapHeader( map.size() );
-            for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
-            {
-                pack( entry.getKey() );
-                pack( entry.getValue() );
-            }
-        }
-
-        @Override
-        public void consumeError() throws BoltIOException
+        public IOException consumeError()
         {
             if ( error != null )
             {
-                BoltIOException exception = new BoltIOException( error.status(), error.msg() );
+                IOException exception = new BoltIOException( error.status(), error.msg() );
                 error = null;
-                throw exception;
+                return exception;
             }
+            return null;
         }
 
         @Override
@@ -592,32 +577,11 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public Map<String,Object> unpackToRawMap() throws IOException
+        public Neo4jError consumeError()
         {
-            MapValue mapValue = unpackMap();
-            HashMap<String,Object> map = new HashMap<>( mapValue.size() );
-            for ( Map.Entry<String,AnyValue> entry : mapValue.entrySet() )
-            {
-                UnpackerWriter unpackerWriter = new UnpackerWriter();
-                entry.getValue().writeTo( unpackerWriter );
-                map.put( entry.getKey(), unpackerWriter.value() );
-            }
-            return map;
-        }
-
-        @Override
-        public Optional<Neo4jError> consumeError()
-        {
-            if ( errors.isEmpty() )
-            {
-                return Optional.empty();
-            }
-            else
-            {
-                Neo4jError combined = Neo4jError.combine( errors );
-                errors.clear();
-                return Optional.of( combined );
-            }
+            Neo4jError error = Neo4jError.combine( errors );
+            errors.clear();
+            return error;
         }
     }
 
@@ -640,28 +604,6 @@ public class Neo4jPackV1 implements Neo4jPack
         String msg()
         {
             return msg;
-        }
-    }
-
-    private static class UnpackerWriter extends BaseToObjectValueWriter<RuntimeException>
-    {
-
-        @Override
-        protected Node newNodeProxyById( long id )
-        {
-            throw new UnsupportedOperationException( "Cannot unpack nodes" );
-        }
-
-        @Override
-        protected Relationship newRelationshipProxyById( long id )
-        {
-            throw new UnsupportedOperationException( "Cannot unpack relationships" );
-        }
-
-        @Override
-        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
-        {
-            throw new UnsupportedOperationException( "Cannot unpack points" );
         }
     }
 }

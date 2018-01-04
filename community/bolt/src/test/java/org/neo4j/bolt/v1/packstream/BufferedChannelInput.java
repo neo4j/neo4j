@@ -45,12 +45,6 @@ public class BufferedChannelInput implements PackInput
         return this;
     }
 
-    @Override
-    public boolean hasMoreData() throws IOException
-    {
-        return attempt( 1 );
-    }
-
     private boolean attempt( int numBytes ) throws IOException
     {
         if ( buffer.remaining() >= numBytes )

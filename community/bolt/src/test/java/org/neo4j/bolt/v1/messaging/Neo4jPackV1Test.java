@@ -154,7 +154,7 @@ public class Neo4jPackV1Test
         unpacker.unpack();
 
         // Then
-        assertThat( unpacker.consumeError().get(), equalTo(
+        assertThat( unpacker.consumeError(), equalTo(
                 Neo4jError.from( Status.Request.Invalid,
                         "Value `null` is not supported as key in maps, must be a non-nullable string." ) ) );
     }
@@ -177,7 +177,7 @@ public class Neo4jPackV1Test
         unpacker.unpack();
 
         // Then
-        assertThat( unpacker.consumeError().get(),
+        assertThat( unpacker.consumeError(),
                 equalTo( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ) ) );
     }
 

@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageRecorder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageReader;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageRecorder;
@@ -327,29 +325,6 @@ public class MessageMatchers
         return rawData.getBytes();
     }
 
-    public static List<RequestMessage> messages( byte[] bytes ) throws IOException
-    {
-        BoltRequestMessageReader unpacker = requestReader( bytes );
-        BoltRequestMessageRecorder consumer = new BoltRequestMessageRecorder();
-
-        try
-        {
-            while ( unpacker.hasNext() )
-            {
-                unpacker.read( consumer );
-            }
-
-            return consumer.asList();
-        }
-        catch ( Throwable e )
-        {
-            throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'. Messages read so " +
-                                   "far: \n" + consumer.asList() + "\n" +
-                                   "Raw data: \n" +
-                                   HexPrinter.hex( bytes ) );
-        }
-    }
-
     public static ResponseMessage responseMessage( byte[] bytes ) throws IOException
     {
         BoltResponseMessageReader unpacker = responseReader( bytes );
@@ -357,27 +332,14 @@ public class MessageMatchers
 
         try
         {
-            if ( unpacker.hasNext() )
-            {
-                unpacker.read( consumer );
-                return consumer.asList().get( 0 );
-            }
-
-            throw new IllegalArgumentException( "Expected a message in `" + HexPrinter.hex( bytes ) + "`" );
+            unpacker.read( consumer );
+            return consumer.asList().get( 0 );
         }
         catch ( Throwable e )
         {
             throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'.\n" +
                                    "Raw data: \n" + HexPrinter.hex( bytes ), e );
         }
-    }
-
-    private static BoltRequestMessageReader requestReader( byte[] bytes )
-    {
-        BufferedChannelInput input = new BufferedChannelInput( 128 );
-        input.reset( new ArrayByteChannel( bytes ) );
-        Neo4jPack neo4jPack = new Neo4jPackV1();
-        return new BoltRequestMessageReader( neo4jPack.newUnpacker( input ) );
     }
 
     private static BoltResponseMessageReader responseReader( byte[] bytes )

@@ -58,7 +58,7 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     {
         packer.packStructHeader( 1, INIT.signature() );
         packer.pack( clientName );
-        packer.packRawMap( ValueUtils.asMapValue( credentials ) );
+        packer.pack( ValueUtils.asMapValue( credentials ) );
         onMessageComplete.onMessageComplete();
     }
 
@@ -82,7 +82,7 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     {
         packer.packStructHeader( 2, RUN.signature() );
         packer.pack( statement );
-        packer.packRawMap(  params );
+        packer.pack( params );
         onMessageComplete.onMessageComplete();
     }
 

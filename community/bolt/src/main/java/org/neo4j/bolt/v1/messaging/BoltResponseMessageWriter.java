@@ -73,7 +73,11 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
         //The record might contain unpackable values,
         //hence we must consume any errors that might
         //have occurred.
-        packer.consumeError();  // TODO: find a better way
+        IOException error = packer.consumeError();
+        if ( error != null )
+        {
+            throw error;
+        }
     }
 
     @Override
@@ -81,7 +85,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     {
         messageLogger.logSuccess( () -> metadata );
         packer.packStructHeader( 1, SUCCESS.signature() );
-        packer.packRawMap( metadata );
+        packer.pack( metadata );
         onMessageComplete.onMessageComplete();
     }
 

@@ -27,9 +27,6 @@ import java.io.IOException;
  */
 public interface PackInput
 {
-    /** True if there is at least one more consumable byte */
-    boolean hasMoreData() throws IOException;
-
     /** Consume one byte */
     byte readByte() throws IOException;
 
