@@ -93,42 +93,7 @@
     </profile>
   </profiles>
 
-  <!--<build>-->
-    <!--<plugins>-->
-      <!--<plugin>-->
-        <!--<groupId>org.apache.maven.plugins</groupId>-->
-        <!--<artifactId>maven-shade-plugin</artifactId>-->
-        <!--<executions>-->
-          <!--<execution>-->
-            <!--<phase>package</phase>-->
-            <!--<goals><goal>shade</goal></goals>-->
-            <!--<configuration>-->
-              <!--<artifactSet>-->
-                <!--<includes>-->
-                  <!--<include>org.neo4j.driver:*</include>-->
-                <!--</includes>-->
-              <!--</artifactSet>-->
-              <!--<relocations>-->
-                <!--<relocation>-->
-                  <!--<pattern>org.neo4j.driver</pattern>-->
-                  <!--<shadedPattern>org.neo4j.not.driver</shadedPattern>-->
-                <!--</relocation>-->
-              <!--</relocations>-->
-              <!--<createDependencyReducedPom>false</createDependencyReducedPom>-->
-            <!--</configuration>-->
-          <!--</execution>-->
-        <!--</executions>-->
-      <!--</plugin>-->
-    <!--</plugins>-->
-  <!--</build>-->
-
   <dependencies>
-    <!--<dependency>-->
-      <!--<groupId>org.neo4j.driver</groupId>-->
-      <!--<artifactId>neo4j-java-driver</artifactId>-->
-      <!--<scope>provided</scope> &lt;!&ndash; shaded inside the jar file &ndash;&gt;-->
-    <!--</dependency>-->
-
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -161,6 +126,11 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-import-tool</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-jmx</artifactId>
       <version>${project.version}</version>
     </dependency>
 

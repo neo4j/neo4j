@@ -101,7 +101,7 @@ public class DiagnosticsReporterTest
         reporter.dump( Collections.singleton( "logs" ), destination );
 
         // Verify content
-        URI uri = URI.create("jar:file:" + destination.toAbsolutePath());
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );
 
         try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
         {

@@ -84,10 +84,12 @@ public class DiagnosticsReporter
         Map<String,String> env = new HashMap<>();
         env.put( "create", "true" );
 
-        URI uri = URI.create("jar:file:" + destination.toAbsolutePath());
+        // NOTE: we need the toUri() in order to handle windows file paths
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );
 
         try ( FileSystem fs = FileSystems.newFileSystem( uri, env ) )
         {
+            DiagnosticsReporterProgressCallback progress = new InteractiveProgress( sources.size(), out );
             for ( int i = 0; i < sources.size(); i++ )
             {
                 DiagnosticsReportSource source = sources.get( i );
@@ -97,10 +99,9 @@ public class DiagnosticsReporter
                     Files.createDirectories( path.getParent() );
                 }
 
-                Mon monitor = new Mon( (i + 1) + "/" + sources.size(), "  " + path, out );
-                monitor.started();
-                source.addToArchive( path, monitor );
-                monitor.finished();
+                progress.started( i + 1, path.toString() );
+                source.addToArchive( path, progress );
+                progress.finished();
             }
         }
     }
@@ -111,18 +112,18 @@ public class DiagnosticsReporter
     }
 
     // TODO:
-    private static class Mon implements DiagnosticsReporterProgressCallback
+    private static class InteractiveProgress implements DiagnosticsReporterProgressCallback
     {
-        private final String prefix;
-        private final String suffix;
+        private String prefix;
+        private String suffix;
+        private final int numberOfFiles;
         private final PrintStream out;
         private String info = "";
         private int longestInfo;
 
-        private Mon( String prefix, String suffix, PrintStream out )
+        private InteractiveProgress( int numberOfFiles, PrintStream out )
         {
-            this.prefix = prefix;
-            this.suffix = suffix;
+            this.numberOfFiles = numberOfFiles;
             this.out = out;
         }
 
@@ -144,12 +145,14 @@ public class DiagnosticsReporter
                     out.print( ' ' );
                 }
             }
-            out.print( String.format( "] %3s%% %s %s", percent, suffix, info ) );
+            out.print( String.format( "] %3s%%   %s %s", percent, suffix, info ) );
         }
 
         @Override
-        public void started()
+        public void started( long currentFileIndex, String target )
         {
+            this.prefix = currentFileIndex + "/" + numberOfFiles;
+            this.suffix = target;
             percentChanged( 0 );
         }
 

@@ -43,7 +43,7 @@ public interface DiagnosticsReporterProgressCallback
     /**
      * @apiNote Called by dispatching class. Should not be called from diagnostics sources.
      */
-    void started();
+    void started( long currentFileIndex, String target );
 
     /**
      * @apiNote Called by dispatching class. Should not be called from diagnostics sources.

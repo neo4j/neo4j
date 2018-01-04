@@ -191,7 +191,8 @@ public class DiagnosticsReportCommand implements AdminCommand
             reporter.registerSource( "threads", jmx.threadDump() );
             reporter.registerSource( "heap", jmx.heapDump() );
             reporter.registerSource( "sysprop", jmx.systemProperties() );
-            //reporter.registerSource( "env", null ); // TODO:
+            reporter.registerSource( "env", jmx.environmentVariables() );
+            reporter.registerSource( "activetxs", jmx.listTransactions() );
         }
         return reporter;
     }
@@ -206,7 +207,7 @@ public class DiagnosticsReportCommand implements AdminCommand
             try
             {
                 LocalVirtualMachine vm = LocalVirtualMachine.from( pid.get() );
-                out.println( "Attached to running process with process id " + pid );
+                out.println( "Attached to running process with process id " + pid.get() );
                 try
                 {
                     JmxDump jmxDump = JmxDump.connectTo( vm.getJmxAddress() );
@@ -298,8 +299,8 @@ public class DiagnosticsReportCommand implements AdminCommand
             return "include a list of java system properties";
         case "raft":
             return "include the raft log";
-        case "queries":
-            return "include the output of dbms.listQueries()";
+        case "activetxs":
+            return "include the output of dbms.listTransactions()";
         case "ps":
             return "include a list of running processes";
         default:
@@ -309,26 +310,46 @@ public class DiagnosticsReportCommand implements AdminCommand
 
     private static DiagnosticsReportSource runningProcesses()
     {
-        return DiagnosticsReportSources.newDiagnosticsString( "ps.txt", () ->
+        return DiagnosticsReportSources.newDiagnosticsString( "ps.csv", () ->
         {
             List<ProcessInfo> processesList = JProcesses.getProcessList();
 
             StringBuilder sb = new StringBuilder();
-            for (final ProcessInfo processInfo : processesList) {
-                sb.append( "Process PID: " ).append( processInfo.getPid() ).append( '\n' )
-                        .append( "Process Name: " ).append( processInfo.getName() ).append( '\n' )
-                        .append( "Process Time: " ).append( processInfo.getTime() ).append( '\n' )
-                        .append( "User: " ).append( processInfo.getUser() ).append( '\n' )
-                        .append( "Virtual Memory: " ).append( processInfo.getVirtualMemory() ).append( '\n' )
-                        .append( "Physical Memory: " ).append( processInfo.getPhysicalMemory() ).append( '\n' )
-                        .append( "CPU usage: " ).append( processInfo.getCpuUsage() ).append( '\n' )
-                        .append( "Start Time: " ).append( processInfo.getStartTime() ).append( '\n' )
-                        .append( "Priority: " ).append( processInfo.getPriority() ).append( '\n' )
-                        .append( "Full command: " ).append( processInfo.getCommand() ).append( '\n' )
-                        .append("------------------").append( '\n' );
+            sb.append( csvEscapeString( "Process PID" ) ).append( ',' )
+                    .append( csvEscapeString( "Process Name" ) ).append( ',' )
+                    .append( csvEscapeString( "Process Time" ) ).append( ',' )
+                    .append( csvEscapeString( "User" ) ).append( ',' )
+                    .append( csvEscapeString( "Virtual Memory" ) ).append( ',' )
+                    .append( csvEscapeString( "Physical Memory" ) ).append( ',' )
+                    .append( csvEscapeString( "CPU usage" ) ).append( ',' )
+                    .append( csvEscapeString( "Start Time" ) ).append( ',' )
+                    .append( csvEscapeString( "Priority" ) ).append( ',' )
+                    .append( csvEscapeString( "Full command" ) ).append( '\n' );
+
+            for ( final ProcessInfo processInfo : processesList )
+            {
+                sb.append( processInfo.getPid() ).append( ',' )
+                        .append( csvEscapeString( processInfo.getName() ) ).append( ',' )
+                        .append( processInfo.getTime() ).append( ',' )
+                        .append( csvEscapeString( processInfo.getUser() ) ).append( ',' )
+                        .append( processInfo.getVirtualMemory() ).append( ',' )
+                        .append( processInfo.getPhysicalMemory() ).append( ',' )
+                        .append( processInfo.getCpuUsage() ).append( ',' )
+                        .append( processInfo.getStartTime() ).append( ',' )
+                        .append( processInfo.getStartTime() ).append( ',' )
+                        .append( csvEscapeString( processInfo.getCommand() ) ).append( '\n' );
             }
             return sb.toString();
-        });
+        } );
+    }
+
+    private static String csvEscapeString( String s )
+    {
+        if ( s == null )
+        {
+            return "";
+        }
+        return "\"" + s.replace( "\"", "\"\"" ) + "\"";
     }
 
     /**
