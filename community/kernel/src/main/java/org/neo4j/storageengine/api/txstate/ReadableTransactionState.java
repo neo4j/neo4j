@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -37,7 +38,6 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.ValueTuple;
 
 /**
@@ -145,8 +145,7 @@ public interface ReadableTransactionState
                                                              Number upper, boolean includeUpper );
 
     PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor index,
-                                                            PointValue lower, boolean includeLower,
-                                                            PointValue upper, boolean includeUpper );
+            IndexQuery.GeometryRangePredicate geometryRangePredicate );
 
     PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor index,
                                                              String lower, boolean includeLower,

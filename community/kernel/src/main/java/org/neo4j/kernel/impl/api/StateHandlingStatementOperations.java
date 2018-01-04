@@ -877,8 +877,7 @@ public class StateHandlingStatementOperations implements
         case rangeGeometric:
             assertSinglePredicate( predicates );
             IndexQuery.GeometryRangePredicate geomPred = (IndexQuery.GeometryRangePredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByGeometry( state, index, geomPred.from(),
-                    geomPred.fromInclusive(), geomPred.to(), geomPred.toInclusive(), exactMatches );
+            return filterIndexStateChangesForRangeSeekByGeometry( state, index, geomPred, exactMatches );
 
         case rangeString:
         {
@@ -995,15 +994,14 @@ public class StateHandlingStatementOperations implements
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByGeometry( KernelStatement state,
             IndexDescriptor index,
-            PointValue lower, boolean includeLower,
-            PointValue upper, boolean includeUpper,
+            IndexQuery.GeometryRangePredicate geometryRangePredicate,
             PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
             TransactionState txState = state.txState();
             PrimitiveLongReadableDiffSets labelPropertyChangesForGeometry =
-                    txState.indexUpdatesForRangeSeekByGeometry( index, lower, includeLower, upper, includeUpper );
+                    txState.indexUpdatesForRangeSeekByGeometry( index, geometryRangePredicate );
             ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup

@@ -64,9 +64,6 @@ public final class Values
 {
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
-    // min point and max point are defined to catch all points by using different crs
-    public static final Value MIN_POINT = Values.pointValue( CoordinateReferenceSystem.WGS84, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY );
-    public static final Value MAX_POINT = Values.pointValue( CoordinateReferenceSystem.Cartesian, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY );
     public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
     public static final Value ZERO_INT = Values.longValue( 0 );
     public static final Value MIN_STRING = StringValue.EMTPY;
@@ -315,6 +312,20 @@ public final class Values
             coords[i] = coordinate.get( i );
         }
         return new PointValue( crs( point.getCRS() ), coords );
+    }
+
+    public static PointValue minPointValue( PointValue reference )
+    {
+        double[] coordinates = new double[reference.coordinate().length];
+        Arrays.fill( coordinates, Double.NEGATIVE_INFINITY );
+        return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
+    }
+
+    public static PointValue maxPointValue( PointValue reference )
+    {
+        double[] coordinates = new double[reference.coordinate().length];
+        Arrays.fill( coordinates, Double.POSITIVE_INFINITY);
+        return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
     }
 
     public static PointArray pointArray( Point[] points )
