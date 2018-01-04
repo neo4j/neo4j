@@ -19,37 +19,15 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import java.util.Iterator;
-import java.util.Set;
-import java.util.function.Predicate;
-
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
 /**
- * Super class of diff sets where use of {@link PrimitiveLongIterator} can be parameterized
- * to a specific subclass instead.
+ * Visits added and removed elements of a {@link PrimitiveLongReadableDiffSets}.
  */
-public interface SuperReadableDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
+public interface PrimitiveLongDiffSetsVisitor
 {
-    boolean isAdded( T elem );
+    void visitAdded( long element ) throws ConstraintValidationException, CreateConstraintFailureException;
 
-    boolean isRemoved( T elem );
-
-    Set<T> getAdded();
-
-    Set<T> getRemoved();
-
-    boolean isEmpty();
-
-    Iterator<T> apply( Iterator<T> source );
-
-    int delta();
-
-    LONGITERATOR augment( LONGITERATOR source );
-
-    SuperReadableDiffSets<T,LONGITERATOR> filterAdded( Predicate<T> addedFilter );
-
-    void accept( DiffSetsVisitor<T> visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
+    void visitRemoved( long element ) throws ConstraintValidationException;
 }

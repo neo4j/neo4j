@@ -17,28 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.util.diffsets;
 
-import java.util.Iterator;
-import java.util.Set;
-
-import org.neo4j.collection.primitive.PrimitiveIntCollections.PrimitiveIntBaseIterator;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 
 /**
- * Please dedup with {@link DiffApplyingPrimitiveLongIterator}
- * Applies a diffset to the given source PrimitiveIntIterator.
- * If the given source is a Resource, then so is this DiffApplyingPrimitiveIntIterator.
+ * Applies a diffset to the provided {@link PrimitiveLongIterator}.
+ * If the given source is a {@link Resource}, it will be closed on {@link #close()}.
  */
-public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIterator implements Resource
+public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implements Resource
 {
-    private enum Phase
+    protected enum Phase
     {
         FILTERED_SOURCE
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
             {
                 return self.computeNextFromSourceAndFilter();
             }
@@ -47,7 +44,7 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
         ADDED_ELEMENTS
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
             {
                 return self.computeNextFromAddedElements();
             }
@@ -56,23 +53,23 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
         NO_ADDED_ELEMENTS
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
             {
                 return false;
             }
         };
 
-        abstract boolean fetchNext( DiffApplyingPrimitiveIntIterator self );
+        abstract boolean fetchNext( DiffApplyingPrimitiveLongIterator self );
     }
 
-    private final PrimitiveIntIterator source;
-    private final Iterator<?> addedElementsIterator;
-    private final Set<?> addedElements;
-    private final Set<?> removedElements;
-    private Phase phase;
+    private final PrimitiveLongIterator source;
+    private final PrimitiveLongIterator addedElementsIterator;
+    private final PrimitiveLongSet addedElements;
+    private final PrimitiveLongSet removedElements;
+    protected Phase phase;
 
-    public DiffApplyingPrimitiveIntIterator( PrimitiveIntIterator source,
-                                              Set<?> addedElements, Set<?> removedElements )
+    DiffApplyingPrimitiveLongIterator( PrimitiveLongIterator source, PrimitiveLongSet addedElements,
+            PrimitiveLongSet removedElements )
     {
         this.source = source;
         this.addedElements = addedElements;
@@ -91,7 +88,7 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
     {
         while ( source.hasNext() )
         {
-            int value = source.next();
+            long value = source.next();
             if ( !removedElements.contains( value ) && !addedElements.contains( value ) )
             {
                 return next( value );
@@ -108,7 +105,7 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
 
     private boolean computeNextFromAddedElements()
     {
-        return addedElementsIterator.hasNext() && next( (Integer) addedElementsIterator.next() );
+        return addedElementsIterator.hasNext() && next( addedElementsIterator.next() );
     }
 
     @Override

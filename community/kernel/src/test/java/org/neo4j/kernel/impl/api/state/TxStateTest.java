@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
@@ -921,7 +922,7 @@ public class TxStateTest
         state.nodeDoDelete( nodeId );
 
         // Then
-        assertThat( Iterables.asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
+        assertThat( state.addedAndRemovedNodes().getRemoved(), equalTo( PrimitiveLongCollections.setOf( nodeId ) ) );
     }
 
     @Test
