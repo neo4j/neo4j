@@ -110,7 +110,3 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
   }
 
 }
-
-
-
-

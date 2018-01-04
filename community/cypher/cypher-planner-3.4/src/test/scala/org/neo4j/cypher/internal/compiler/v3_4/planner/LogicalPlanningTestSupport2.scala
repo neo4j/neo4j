@@ -175,11 +175,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics,
                                          config = cypherCompilerConfig, queryGraphSolver = queryGraphSolver)
 
-      val readTxLayerAttribute = new TransactionLayers
-      val state = LogicalPlanState(queryString, None, IDPPlannerName, readTxLayerAttribute = readTxLayerAttribute)
+      val state = InitialState(queryString, None, IDPPlannerName)
       val output = pipeLine.transform(state, context)
+      val readTxLayers = output.transactionLayers
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].source
-      (output.periodicCommit, logicalPlan, output.semanticTable(), readTxLayerAttribute)
+      (output.periodicCommit, logicalPlan, output.semanticTable(), readTxLayers)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =

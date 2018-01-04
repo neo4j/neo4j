@@ -58,7 +58,7 @@ trait LogicalPlanRewriter extends Phase[CompilerContext, LogicalPlanState, Logic
   def instance(context: CompilerContext, attributes:Attributes): Rewriter
 
   override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
-    val attributes = new Attributes(context.logicalPlanIdGen, from.readTxLayerAttribute)
+    val attributes = new Attributes(context.logicalPlanIdGen, from.transactionLayers)
     val rewritten = from.logicalPlan.endoRewrite(instance(context, attributes))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }
