@@ -124,6 +124,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     case Arguments.KeyNames(keys) => InternalPlanDescription3_3.Arguments.KeyNames(keys)
     case Arguments.MergePattern(start) => InternalPlanDescription3_3.Arguments.MergePattern(start)
     case Arguments.Version(value) => InternalPlanDescription3_3.Arguments.Version(value)
+    case Arguments.Rows(rows) =>  InternalPlanDescription3_3.Arguments.Rows(rows)
   }
 
   override def hasNext: Boolean = inner.hasNext

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
@@ -134,12 +135,9 @@ public class ExecutionResultTest
         // Given
         createNode();
 
-        // When
-        try ( Result ignore = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
-        {
-            // Then
-            // just close result without consuming it
-        }
+        // Then
+        // just close result without consuming it
+        db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ).close();
     }
 
     @Test
@@ -284,9 +282,8 @@ public class ExecutionResultTest
     @Test
     public void shouldContainCompletePlanFromFromLegacyVersions()
     {
-        for ( String version : new String[]{"2.3", "3.1", "3.2", "3.3"})
+        for ( String version : new String[]{"2.3", "3.1", "3.2", "3.3"} )
         {
-
             // Given
             Result result = db.execute( String.format( "EXPLAIN CYPHER %s MATCH (n) RETURN n", version ) );
 
@@ -296,6 +293,38 @@ public class ExecutionResultTest
             // Then
             assertThat( description.getName(), equalTo( "ProduceResults" ) );
             assertThat( description.getChildren().get( 0 ).getName(), equalTo( "AllNodesScan" ) );
+        }
+    }
+
+    @Test
+    public void shouldContainCompleteProfileFromFromLegacyVersions()
+    {
+        // Given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+
+            tx.success();
+        }
+
+        for ( String version : new String[]{"2.3", "3.1", "3.2"} )
+        {
+            // When
+            Result result = db.execute( String.format( "PROFILE CYPHER %s MATCH (n) RETURN n", version ) );
+            result.resultAsString();
+            ExecutionPlanDescription.ProfilerStatistics stats =
+                    result.getExecutionPlanDescription()//ProduceResult
+                            .getChildren().get( 0 ) //AllNodesScan
+                            .getProfilerStatistics();
+
+            // Then
+            assertThat( stats.getDbHits(), equalTo( 2L ) );
+            assertThat( stats.getRows(), equalTo( 1L ) );
+
+            //These stats are not available in older versions
+            assertThat( stats.getPageCacheHits(), equalTo( 0L ) );
+            assertThat( stats.getPageCacheMisses(), equalTo( 0L ) );
+            assertThat( stats.getPageCacheHitRatio(), equalTo( 0.0 ) );
         }
     }
 
