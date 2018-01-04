@@ -45,12 +45,13 @@ public class BoltV1Dechunker
     private State state = State.AWAITING_CHUNK;
     private int chunkSize;
 
-    public BoltV1Dechunker( BoltRequestMessageHandler<RuntimeException> messageHandler, Runnable onMessageStarted )
+    public BoltV1Dechunker( Neo4jPack neo4jPack, BoltRequestMessageHandler<RuntimeException> messageHandler,
+            Runnable onMessageStarted )
     {
         this.onMessage = messageHandler;
         this.onMessageStarted = onMessageStarted;
         this.input = new ChunkedInput();
-        this.unpacker = new BoltRequestMessageReader( new Neo4jPack.Unpacker( input ) );
+        this.unpacker = new BoltRequestMessageReader( neo4jPack.newUnpacker( input ) );
     }
 
     /** Check if we are currently "in the middle of" a message, eg. we've gotten parts of it, but are waiting for more. */

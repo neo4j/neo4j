@@ -20,6 +20,7 @@
 package org.neo4j.bolt.transport;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
@@ -45,7 +46,7 @@ public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFac
         if ( protocolVersion == BoltMessagingProtocolV1Handler.VERSION )
         {
             BoltWorker worker = workerFactory.newWorker( channel );
-            return new BoltMessagingProtocolV1Handler( channel, worker, throttleGroup, logService );
+            return new BoltMessagingProtocolV1Handler( channel, new Neo4jPackV1(), worker, throttleGroup, logService );
         }
         else
         {

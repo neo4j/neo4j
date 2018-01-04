@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageRecorder;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 
@@ -56,7 +57,7 @@ public class BoltV1DechunkerTest
             System.arraycopy( message, 0, chunk2, 1, message.length );
 
             BoltRequestMessageRecorder messages = new BoltRequestMessageRecorder();
-            BoltV1Dechunker dechunker = new BoltV1Dechunker( messages, () ->
+            BoltV1Dechunker dechunker = new BoltV1Dechunker( new Neo4jPackV1(), messages, () ->
             {
             } );
 
