@@ -45,4 +45,10 @@ public class BigIdTracker extends AbstractTracker<ByteArray>
     {
         array.set6ByteLong( index, 0, value );
     }
+
+    @Override
+    public Tracker duplicate()
+    {
+        return new BigIdTracker( array.duplicate() );
+    }
 }

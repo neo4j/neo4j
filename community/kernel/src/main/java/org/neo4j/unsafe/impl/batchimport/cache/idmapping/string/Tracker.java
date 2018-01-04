@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -65,4 +66,9 @@ public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable
 
     @Override
     void close();
+
+    /**
+     * @see ByteArray#duplicate()
+     */
+    Tracker duplicate();
 }

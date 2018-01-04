@@ -46,4 +46,13 @@ abstract class HeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray
     {
         return safeCastLongToInt( rebase( index ) );
     }
+
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public N duplicate()
+    {
+        // We can return this since close() doesn't close anything. If that changes then please do what off-heap variants do,
+        // namely override close method as a no-op
+        return (N) this;
+    }
 }

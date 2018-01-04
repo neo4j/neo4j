@@ -341,6 +341,7 @@ public class EncodingIdMapper implements IdMapper
         private final long toExclusive;
         private final boolean last;
         private final ProgressListener progress;
+        private final Tracker tracker;
 
         private int numberOfCollisions;
         private int localProgress;
@@ -351,33 +352,39 @@ public class EncodingIdMapper implements IdMapper
             this.toExclusive = toExclusive;
             this.last = last;
             this.progress = progress;
+            this.tracker = trackerCache.duplicate();
         }
 
         @Override
         public void run()
         {
-            SameGroupDetector sameGroupDetector = new SameGroupDetector();
-
-            // In all chunks except the last this chunk also takes care of the detection in the seam,
-            // but for the last one there's no seam at the end.
-            long end = last ? toExclusive - 1 : toExclusive;
-
-            for ( long i = fromInclusive; i < end; i++ )
+            try
             {
-                detect( sameGroupDetector, i );
-                if ( ++localProgress == 1000 )
+                SameGroupDetector sameGroupDetector = new SameGroupDetector();
+                // In all chunks except the last this chunk also takes care of the detection in the seam,
+                // but for the last one there's no seam at the end.
+                long end = last ? toExclusive - 1 : toExclusive;
+                for ( long i = fromInclusive; i < end; i++ )
                 {
-                    progress.add( localProgress );
-                    localProgress = 0;
+                    detect( sameGroupDetector, i );
+                    if ( ++localProgress == 1000 )
+                    {
+                        progress.add( localProgress );
+                        localProgress = 0;
+                    }
                 }
+                progress.add( localProgress );
             }
-            progress.add( localProgress );
+            finally
+            {
+                tracker.close();
+            }
         }
 
         private void detect( SameGroupDetector sameGroupDetector, long i )
         {
-            long dataIndexA = trackerCache.get( i );
-            long dataIndexB = trackerCache.get( i + 1 );
+            long dataIndexA = tracker.get( i );
+            long dataIndexB = tracker.get( i + 1 );
             if ( dataIndexA == ID_NOT_FOUND || dataIndexB == ID_NOT_FOUND )
             {
                 sameGroupDetector.reset();
@@ -406,7 +413,7 @@ public class EncodingIdMapper implements IdMapper
                 if ( dataIndexA > dataIndexB )
                 {
                     // Swap so that lower tracker index means lower data index. TODO Why do we do this?
-                    trackerCache.swap( i, i + 1 );
+                    tracker.swap( i, i + 1 );
                 }
 
                 if ( collision != ID_NOT_FOUND )

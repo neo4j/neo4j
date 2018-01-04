@@ -23,10 +23,18 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray<N>
 {
-    private final long allocatedAddress;
+    protected final long allocatedAddress;
     protected final long address;
     protected final long length;
     private boolean closed;
+
+    protected OffHeapNumberArray( OffHeapNumberArray<N> copySource )
+    {
+        super( copySource.itemSize, copySource.base );
+        this.allocatedAddress = copySource.allocatedAddress;
+        this.address = copySource.address;
+        this.length = copySource.length;
+    }
 
     protected OffHeapNumberArray( long length, int itemSize, long base )
     {

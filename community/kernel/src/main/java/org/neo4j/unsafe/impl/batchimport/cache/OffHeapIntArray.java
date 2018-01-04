@@ -29,6 +29,12 @@ public class OffHeapIntArray extends OffHeapRegularNumberArray<IntArray> impleme
 {
     private final int defaultValue;
 
+    private OffHeapIntArray( OffHeapIntArray copySource )
+    {
+        super( copySource );
+        this.defaultValue = copySource.defaultValue;
+    }
+
     public OffHeapIntArray( long length, int defaultValue, long base )
     {
         super( length, 2, base );
@@ -62,5 +68,17 @@ public class OffHeapIntArray extends OffHeapRegularNumberArray<IntArray> impleme
                 UnsafeUtil.putInt( adr, defaultValue );
             }
         }
+    }
+
+    @Override
+    public IntArray duplicate()
+    {
+        return new OffHeapIntArray( this )
+        {
+            @Override
+            public void close()
+            {   // Explicitly don't close the underlying data structures
+            }
+        };
     }
 }

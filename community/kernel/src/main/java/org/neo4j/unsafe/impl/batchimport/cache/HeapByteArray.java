@@ -32,6 +32,16 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     private final byte[] defaultValue;
     private final boolean defaultValueIsUniform;
 
+    private HeapByteArray( HeapByteArray copySource )
+    {
+        super( copySource.itemSize, copySource.base );
+        this.length = copySource.length;
+        this.array = copySource.array;
+        this.buffer = copySource.buffer;
+        this.defaultValue = copySource.defaultValue;
+        this.defaultValueIsUniform = copySource.defaultValueIsUniform;
+    }
+
     public HeapByteArray( int length, byte[] defaultValue, long base )
     {
         super( defaultValue.length, base );
@@ -54,6 +64,11 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     {
         byte[] a = defaultValue.clone();
         byte[] b = defaultValue.clone();
+        internalSwap( fromIndex, toIndex, a, b );
+    }
+
+    private void internalSwap( long fromIndex, long toIndex, byte[] a, byte[] b )
+    {
         get( fromIndex, a );
         get( toIndex, b );
         set( fromIndex, b );
@@ -195,5 +210,26 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     private int index( long index, int offset )
     {
         return toIntExact( (rebase( index ) * itemSize) + offset );
+    }
+
+    @Override
+    public ByteArray duplicate()
+    {
+        return new HeapByteArray( this )
+        {
+            private final byte[] a = new byte[defaultValue.length];
+            private final byte[] b = new byte[defaultValue.length];
+
+            @Override
+            public void swap( long fromIndex, long toIndex )
+            {
+                internalSwap( fromIndex, toIndex, a, b );
+            }
+
+            @Override
+            public void close()
+            {   // Explicitly don't close the underlying data structures
+            }
+        };
     }
 }

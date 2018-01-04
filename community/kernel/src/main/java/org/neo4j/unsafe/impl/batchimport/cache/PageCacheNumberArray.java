@@ -32,6 +32,11 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 /**
  * Abstraction over page cache backed number arrays.
  *
+ * A general note to future readers of this class and w/ regards to {@link #duplicate()}:
+ * There's an opportunity to improve this implementation too (just like {@link OffHeapByteArray} and the likes)
+ * by keeping a thread-local {@link PageCursor} instead of opening one for every call, but to even use this implementation
+ * is quite rare and, at the time of writing this, no measurements have been done to point to a problem with the current implementation.
+ *
  * @see PageCachedNumberArrayFactory
  */
 public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements NumberArray<N>
@@ -43,6 +48,16 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
     private final long defaultValue;
     private final long base;
     private boolean closed;
+
+    PageCacheNumberArray( PageCacheNumberArray<N> copySource )
+    {
+        this.pagedFile = copySource.pagedFile;
+        this.entriesPerPage = copySource.entriesPerPage;
+        this.entrySize = copySource.entrySize;
+        this.length = copySource.length;
+        this.defaultValue = copySource.defaultValue;
+        this.base = copySource.base;
+    }
 
     PageCacheNumberArray( PagedFile pagedFile, int entrySize, long length, long base ) throws IOException
     {
@@ -165,6 +180,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     public N at( long index )
     {

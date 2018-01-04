@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import java.nio.ByteBuffer;
+
 /**
  * Abstraction over primitive arrays.
  *
@@ -64,4 +66,14 @@ public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisito
      * @return array sure to hold the given index.
      */
     N at( long index );
+
+    /**
+     * @return an equivalence of {@link ByteBuffer#duplicate()} where the duplicate can take advantage of being used
+     * only from the thread making the duplicate, e.g. some operations like {@link #swap(long, long)} could use
+     * intermediary memory allocated once instead of for every call. The returned instance should also be {@link #close() closed}
+     * when not used anymore.
+     *
+     * NOTE this is unsupported for dynamic arrays.
+     */
+    N duplicate();
 }
