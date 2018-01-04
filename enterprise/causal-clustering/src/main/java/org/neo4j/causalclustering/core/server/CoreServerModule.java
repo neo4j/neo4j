@@ -166,7 +166,6 @@ public class CoreServerModule
 
         this.membershipWaiterLifecycle = createMembershipWaiterLifecycle();
 
-
         this.catchupServer = createCatchupServer( platformModule, localDatabase, pipelineAppender, fileSystem,
                 userLogProvider );
 
@@ -208,9 +207,12 @@ public class CoreServerModule
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )
     {
-        long inactivityTimeoutMillis = platformModule.config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient = new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors, pipelineAppender );
-        platformModule.life.add(catchUpClient.getLifecycle() );
+        long inactivityTimeoutMillis =
+                platformModule.config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
+        CatchUpClient catchUpClient =
+                new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors,
+                        pipelineAppender );
+        platformModule.life.add( catchUpClient.getLifecycle() );
 
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, platformModule.fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),

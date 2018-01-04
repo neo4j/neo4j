@@ -120,7 +120,7 @@ public class RaftServer<C extends ServerChannel>
         private final Monitors monitors;
         private final Clock clock;
 
-        public RaftServerBootstrapper( ChannelMarshal<ReplicatedContent> marshal,
+        RaftServerBootstrapper( ChannelMarshal<ReplicatedContent> marshal,
                 PipelineHandlerAppender pipelineAppender, LogProvider logProvider, Log log, Monitors monitors,
                 Clock clock )
         {

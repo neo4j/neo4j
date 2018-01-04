@@ -55,7 +55,7 @@ public class BackupDelegatorTest
     public void setup()
     {
         remoteStore = mock( RemoteStore.class );
-        catchUpClientLifeCycle= mock( Lifecycle.class );
+        catchUpClientLifeCycle = mock( Lifecycle.class );
         CatchUpClient catchUpClient = mock( CatchUpClient.class );
         when( catchUpClient.getLifecycle() ).thenReturn( catchUpClientLifeCycle );
         storeCopyClient = mock( StoreCopyClient.class );

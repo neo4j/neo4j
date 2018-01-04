@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.causalclustering.common.client;
 
 import io.netty.bootstrap.Bootstrap;
@@ -34,15 +53,16 @@ public class ClientConnector<C extends Channel> implements ChannelService<Bootst
 
     public synchronized Channel connect( InetSocketAddress socketAddress )
     {
-        return connect(bootstrap, socketAddress);
+        return connect( bootstrap, socketAddress );
     }
 
-    public synchronized Channel connect( InetSocketAddress socketAddress, Function<Bootstrap,Bootstrap> additionalConfig )
+    public synchronized Channel connect( InetSocketAddress socketAddress,
+            Function<Bootstrap,Bootstrap> additionalConfig )
     {
         return connect( additionalConfig.apply( bootstrap.clone() ), socketAddress );
     }
 
-    private Channel connect( Bootstrap bootstrap, InetSocketAddress socketAddress)
+    private Channel connect( Bootstrap bootstrap, InetSocketAddress socketAddress )
     {
         Channel channel = bootstrap.connect( socketAddress ).awaitUninterruptibly().channel();
         connect.add( channel );
