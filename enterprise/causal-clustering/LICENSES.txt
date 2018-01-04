@@ -18,6 +18,8 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   Caffeine cache
   hazelcast-all
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -25,6 +27,7 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   Netty
   Netty/All-in-One
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License

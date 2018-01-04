@@ -27,6 +27,8 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -37,6 +39,7 @@ Apache Software License, Version 2.0
   parboiled-core
   parboiled-scala
   rxjs.js
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License

@@ -33,6 +33,8 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   Jackson
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -42,6 +44,7 @@ Apache Software License, Version 2.0
   opencsv
   parboiled-core
   parboiled-scala
+  WMI4Java
 
 BSD - Scala License
   Scala Library
