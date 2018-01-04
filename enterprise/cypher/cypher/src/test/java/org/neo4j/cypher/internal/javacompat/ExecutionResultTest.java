@@ -299,7 +299,6 @@ public class ExecutionResultTest
         }
     }
 
-
     private void createNode()
     {
         try ( Transaction tx = db.beginTx() )
