@@ -299,6 +299,8 @@ public class DiagnosticsReportCommand implements AdminCommand
             return "include a list of java system properties";
         case "raft":
             return "include the raft log";
+        case "ccstate":
+            return "include the current cluster state";
         case "activetxs":
             return "include the output of dbms.listTransactions()";
         case "ps":
