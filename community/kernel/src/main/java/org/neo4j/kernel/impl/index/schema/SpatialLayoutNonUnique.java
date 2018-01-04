@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -29,9 +30,9 @@ public class SpatialLayoutNonUnique extends SpatialLayout
     public static final int MINOR_VERSION = 1;
     public static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
-    public SpatialLayoutNonUnique( CoordinateReferenceSystem crs )
+    public SpatialLayoutNonUnique( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
-        super(crs);
+        super( crs, curve );
     }
 
     @Override
