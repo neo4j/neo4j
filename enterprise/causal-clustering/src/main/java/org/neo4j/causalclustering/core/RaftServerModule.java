@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.core;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.common.NioEventLoopContextSupplier;
+import org.neo4j.causalclustering.common.server.NioEventLoopContextSupplier;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;

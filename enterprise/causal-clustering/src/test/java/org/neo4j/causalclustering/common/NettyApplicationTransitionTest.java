@@ -17,8 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.server;
+package org.neo4j.causalclustering.common;
 
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,13 +30,16 @@ import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 
-import org.neo4j.causalclustering.common.NettyApplication;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @RunWith( Parameterized.class )
 public class NettyApplicationTransitionTest
 {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public final NettyApplicationHelper nettyApplicationHelper = new NettyApplicationHelper();
 
     @Parameterized.Parameters( name = "from {0} to {1} is allowed? {2}" )
     public static Iterable<Object[]> transitions()
@@ -66,8 +71,10 @@ public class NettyApplicationTransitionTest
         {
             expectedException.expect( IllegalStateException.class );
         }
-        StubNettyApplication stubNettyApplication = StubNettyApplication.mockedEventExecutor();
-        NettyApplication<ServerChannel> nettyApplication = stubNettyApplication.getNettyApplication();
+        EventLoopGroup executor = nettyApplicationHelper.createMockedEventExecutor( doReturn( null ) );
+        EventLoopContext<ServerChannel> context = new EventLoopContext<>( executor, ServerChannel.class );
+        ChannelService<ServerBootstrap,ServerChannel> channelService = mock( ChannelService.class );
+        NettyApplication<ServerChannel> nettyApplication = new NettyApplication<>( channelService, () -> context );
         from.gentlyTransitionToMyState( nettyApplication );
         to.setMyState( nettyApplication );
     }

@@ -1,4 +1,4 @@
-package org.neo4j.causalclustering.common;
+package org.neo4j.causalclustering.common.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -10,6 +10,8 @@ import java.net.InetSocketAddress;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.common.ChannelService;
+import org.neo4j.causalclustering.common.EventLoopContext;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -34,11 +36,6 @@ public class ServerBindToChannel<C extends ServerChannel> implements ChannelServ
 
     private void bind() throws Throwable
     {
-        if ( channel != null )
-        {
-            log.info( "Already running" );
-            return;
-        }
         if ( serverBootstrap == null )
         {
             throw new IllegalStateException( "The Channel Manager has not been bootstrapped." );
@@ -63,13 +60,17 @@ public class ServerBindToChannel<C extends ServerChannel> implements ChannelServ
     }
 
     @Override
-    public void start() throws Throwable
+    public synchronized void start() throws Throwable
     {
+        if ( channel != null )
+        {
+            throw new IllegalStateException( "Already running" );
+        }
         bind();
     }
 
     @Override
-    public void closeChannels() throws Throwable
+    public synchronized void closeChannels() throws Throwable
     {
         if ( channel == null )
         {

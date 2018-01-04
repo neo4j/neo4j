@@ -1,10 +1,12 @@
-package org.neo4j.causalclustering.common;
+package org.neo4j.causalclustering.common.server;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
+
+import org.neo4j.causalclustering.common.EventLoopContext;
 
 public class NioEventLoopContextSupplier implements Supplier<EventLoopContext<NioServerSocketChannel>>
 {

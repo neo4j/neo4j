@@ -44,7 +44,7 @@ import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.common.NioEventLoopContextSupplier;
+import org.neo4j.causalclustering.common.server.NioEventLoopContextSupplier;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
@@ -277,7 +277,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 platformModule.logging.getUserLogProvider(), storeCopyProcess, topologyService ) );
 
         NioEventLoopContextSupplier catchupServerExecutor =
-                new NioEventLoopContextSupplier( new NamedThreadFactory( "catchupServer", 0 ) );
+                new NioEventLoopContextSupplier( new NamedThreadFactory( "catchupServer" ) );
         CatchupServerBootstrapper<NioServerSocketChannel> catchupServerBootstrapper = new CatchupServerBootstrapper<>(
                 localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),

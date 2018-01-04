@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.common.EventLoopContext;
 import org.neo4j.causalclustering.common.NettyApplication;
-import org.neo4j.causalclustering.common.ServerBindToChannel;
+import org.neo4j.causalclustering.common.server.ServerBindToChannel;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
