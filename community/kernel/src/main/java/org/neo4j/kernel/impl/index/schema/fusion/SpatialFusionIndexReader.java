@@ -108,7 +108,7 @@ class SpatialFusionIndexReader implements IndexReader
         }
         else if ( predicates[0] instanceof GeometryRangePredicate )
         {
-            return readerMap.get( ((GeometryRangePredicate) predicates[0]).from().getCoordinateReferenceSystem() );
+            return readerMap.get( ((GeometryRangePredicate) predicates[0]).crs() );
         }
         return null;
     }

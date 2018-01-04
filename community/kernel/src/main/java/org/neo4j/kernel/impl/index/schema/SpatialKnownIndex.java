@@ -125,10 +125,10 @@ public class SpatialKnownIndex
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutNonUnique(), samplingConfig, monitor, descriptor,
+            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutNonUnique(crs), samplingConfig, monitor, descriptor,
                     indexId );
         case UNIQUE:
-            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutUnique(), monitor, descriptor, indexId );
+            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutUnique(crs), monitor, descriptor, indexId );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
         }
@@ -165,10 +165,10 @@ public class SpatialKnownIndex
         switch ( descriptor.type() )
         {
         case GENERAL:
-            layout = new SpatialLayoutNonUnique();
+            layout = new SpatialLayoutNonUnique(crs);
             break;
         case UNIQUE:
-            layout = new SpatialLayoutUnique();
+            layout = new SpatialLayoutUnique(crs);
             break;
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );

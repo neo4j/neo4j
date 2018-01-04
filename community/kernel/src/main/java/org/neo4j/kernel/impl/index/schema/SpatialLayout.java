@@ -21,16 +21,24 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
 public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchemaValue>
 {
+    private CoordinateReferenceSystem crs;
+
+    public SpatialLayout( CoordinateReferenceSystem crs )
+    {
+        this.crs = crs;
+    }
+
     @Override
     public SpatialSchemaKey newKey()
     {
-        return new SpatialSchemaKey();
+        return new SpatialSchemaKey(crs);
     }
 
     @Override
@@ -41,6 +49,7 @@ public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,Nati
         into.rawValueBits = key.rawValueBits;
         into.setEntityId( key.getEntityId() );
         into.setEntityIdIsSpecialTieBreaker( key.getEntityIdIsSpecialTieBreaker() );
+        into.crs = key.crs;
         return into;
     }
 
