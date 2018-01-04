@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -29,16 +30,18 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchemaValue>
 {
     private CoordinateReferenceSystem crs;
+    private SpaceFillingCurve curve;
 
-    public SpatialLayout( CoordinateReferenceSystem crs )
+    public SpatialLayout( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
         this.crs = crs;
+        this.curve = curve;
     }
 
     @Override
     public SpatialSchemaKey newKey()
     {
-        return new SpatialSchemaKey(crs);
+        return new SpatialSchemaKey( crs, curve );
     }
 
     @Override
@@ -49,6 +52,7 @@ public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,Nati
         into.setEntityId( key.getEntityId() );
         into.setEntityIdIsSpecialTieBreaker( key.getEntityIdIsSpecialTieBreaker() );
         into.crs = key.crs;
+        into.curve = key.curve;
         return into;
     }
 

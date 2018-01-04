@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.gis.spatial.index.Envelope;
+import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -41,6 +44,7 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 /**
  * An instance of this class represents a dynamically created sub-index specific to a particular coordinate reference system.
@@ -65,6 +69,7 @@ public class SpatialKnownIndex
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private SpatialSchemaIndexAccessor indexAccessor;
     private NativeSchemaIndexPopulator indexPopulator;
+    private SpaceFillingCurve curve;
 
     /**
      * Create a representation of a spatial index for a specific coordinate reference system. This constructure should be used for first time creation.
@@ -84,6 +89,19 @@ public class SpatialKnownIndex
                 new SchemaIndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
         IndexDirectoryStructure indexDir = IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
         indexFile = new File( indexDir.directoryForIndex( indexId ), indexFileName( indexId ) );
+        Envelope curveEnvelope;
+        //TODO: Support more CRS
+        if ( crs.equals( WGS84 ) )
+        {
+            curveEnvelope = new Envelope( -180, 180, -90, 90 );
+        }
+        else
+        {
+            // TODO: support user configurable default envelope ranges (neo4j.conf or other)
+            curveEnvelope = new Envelope( -1000000, 1000000, -1000000, 1000000 );
+        }
+        //TODO: support 3D
+        curve = new HilbertSpaceFillingCurve2D( curveEnvelope );
     }
 
     private static String indexFileName( long indexId )
@@ -125,10 +143,10 @@ public class SpatialKnownIndex
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutNonUnique(crs), samplingConfig, monitor, descriptor,
-                    indexId );
+            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutNonUnique( crs, curve ), samplingConfig, monitor,
+                    descriptor, indexId );
         case UNIQUE:
-            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutUnique(crs), monitor, descriptor, indexId );
+            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutUnique( crs, curve ), monitor, descriptor, indexId );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
         }
@@ -165,10 +183,10 @@ public class SpatialKnownIndex
         switch ( descriptor.type() )
         {
         case GENERAL:
-            layout = new SpatialLayoutNonUnique(crs);
+            layout = new SpatialLayoutNonUnique( crs, curve );
             break;
         case UNIQUE:
-            layout = new SpatialLayoutUnique(crs);
+            layout = new SpatialLayoutUnique( crs, curve );
             break;
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );

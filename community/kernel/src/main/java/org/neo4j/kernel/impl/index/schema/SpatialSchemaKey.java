@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -47,10 +48,12 @@ class SpatialSchemaKey implements NativeSchemaKey
 
     long rawValueBits;
     CoordinateReferenceSystem crs;
+    SpaceFillingCurve curve;
 
-    public SpatialSchemaKey( CoordinateReferenceSystem crs )
+    SpatialSchemaKey( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
         this.crs = crs;
+        this.curve = curve;
     }
 
     @Override
@@ -123,12 +126,10 @@ class SpatialSchemaKey implements NativeSchemaKey
         entityIdIsSpecialTieBreaker = true;
     }
 
-    // TODO this is incorrect! only adding to handle rebase
     int compareValueTo( SpatialSchemaKey other )
     {
-        double lhsDouble = Double.longBitsToDouble( rawValueBits );
-        double rhsDouble = Double.longBitsToDouble( other.rawValueBits );
-        return Double.compare( lhsDouble, rhsDouble );
+        // TODO this is incorrect!
+        return Long.compare( rawValueBits, other.rawValueBits );
     }
 
     private PointValue assertValidValue( Value... values )
@@ -161,7 +162,7 @@ class SpatialSchemaKey implements NativeSchemaKey
      */
     private void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
-        rawValueBits = Double.doubleToRawLongBits( coordinate[0] + coordinate[1] );
+        rawValueBits = curve.derivedValueFor( coordinate );
     }
 
     @Override
