@@ -403,7 +403,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // Then
     val plan = result.executionPlanDescription()
     plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) > point")
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
@@ -421,7 +421,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // Then
     val plan = result.executionPlanDescription()
     plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) >= point")
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
@@ -439,7 +439,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // Then
     val plan = result.executionPlanDescription()
     plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) > point")
     assert(result.isEmpty)
   }
 
@@ -458,7 +458,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // Then
     val plan = result.executionPlanDescription()
     plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) >= point")
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
@@ -477,7 +477,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // Then
     val plan = result.executionPlanDescription()
     plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) >= point", ":Place(location) < point")
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 11.78, 55.7))))
   }
 
