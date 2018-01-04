@@ -31,12 +31,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.PointValue;
 
 import static java.lang.String.format;
 
-public class SpatialSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY, VALUE>
+public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY, VALUE>
 {
     SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
@@ -76,6 +75,11 @@ public class SpatialSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extends
             break;
         case rangeGeometric:
             GeometryRangePredicate rangePredicate = (GeometryRangePredicate) predicate;
+            if ( !rangePredicate.crs().equals( treeKeyTo.crs ) )
+            {
+                throw new IllegalArgumentException(
+                        "IndexQuery on spatial index with mismatching CoordinateReferenceSystem: " + rangePredicate.crs() + " != " + treeKeyTo.crs );
+            }
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             break;
@@ -86,8 +90,8 @@ public class SpatialSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extends
 
     private void initToForRange( GeometryRangePredicate rangePredicate, KEY treeKeyTo )
     {
-        Value toValue = rangePredicate.toAsValue();
-        if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
+        PointValue toValue = rangePredicate.to();
+        if ( toValue == null )
         {
             treeKeyTo.initAsHighest();
         }
@@ -100,8 +104,8 @@ public class SpatialSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extends
 
     private void initFromForRange( GeometryRangePredicate rangePredicate, KEY treeKeyFrom )
     {
-        Value fromValue = rangePredicate.fromAsValue();
-        if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
+        PointValue fromValue = rangePredicate.from();
+        if ( fromValue == null )
         {
             treeKeyFrom.initAsLowest();
         }

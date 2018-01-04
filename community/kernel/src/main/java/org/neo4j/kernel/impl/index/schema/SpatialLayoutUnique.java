@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
  * {@link Layout} for numbers where numbers need to be unique.
@@ -30,6 +31,11 @@ public class SpatialLayoutUnique extends SpatialLayout
     public static final int MAJOR_VERSION = 0;
     public static final int MINOR_VERSION = 1;
     public static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
+
+    public SpatialLayoutUnique( CoordinateReferenceSystem crs )
+    {
+        super(crs);
+    }
 
     @Override
     public long identifier()

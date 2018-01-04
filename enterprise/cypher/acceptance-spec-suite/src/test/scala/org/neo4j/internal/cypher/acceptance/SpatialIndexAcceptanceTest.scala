@@ -85,7 +85,7 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
   }
 
-  test("should handle multiple different types of points and also survive restart") {
+  test("indexScan should handle multiple different types of points and also survive restart") {
     graph.createIndex("Place", "location")
 
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
@@ -97,6 +97,24 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
     restartGraphDatabase()
 
     testPointScan(query, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7), Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
+  }
+
+  test("indexSeek should handle multiple different types of points and also survive restart") {
+    graph.createIndex("Place", "location")
+
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'})")
+
+    val query1 = "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location AS point"
+    val query2 = "MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'}) RETURN p.location AS point"
+
+    testPointRead(query1, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    testPointRead(query2, Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
+
+    restartGraphDatabase()
+
+    testPointRead(query1, Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    testPointRead(query2, Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
   }
 
   test("overwriting indexed property should work") {
@@ -129,18 +147,17 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
   }
 
-  private def testPointRead(query: String, expected: PointValue): Unit = {
+  private def testPointRead(query: String, expected: PointValue*): Unit = {
 
     val result = graph.execute(query)
 
     val plan = result.getExecutionPlanDescription.toString
     plan should include ("NodeIndexSeek")
     plan should include (":Place(location)")
-    // Then
-    val point = result.columnAs("point").next().asInstanceOf[Point]
-    point should equal(expected)
-    // And CRS names should equal
-    point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
+
+    val points = result.columnAs("point").stream().collect(Collectors.toSet)
+    expected.foreach(p => assert(points.contains(p)))
+    points.size() should be(expected.size)
   }
 
   private def testPointScan(query: String, expected: PointValue*): Unit = {

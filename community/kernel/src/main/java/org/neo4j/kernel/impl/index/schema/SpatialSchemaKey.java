@@ -48,6 +48,12 @@ class SpatialSchemaKey implements NativeSchemaKey
 
     byte type;
     long rawValueBits;
+    CoordinateReferenceSystem crs;
+
+    public SpatialSchemaKey( CoordinateReferenceSystem crs )
+    {
+        this.crs = crs;
+    }
 
     @Override
     public void setEntityIdIsSpecialTieBreaker( boolean entityIdIsSpecialTieBreaker )
@@ -97,9 +103,10 @@ class SpatialSchemaKey implements NativeSchemaKey
     @Override
     public void initAsLowest()
     {
+        //TODO: Get dimension
         double[] limit = new double[2];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
-        writePoint( CoordinateReferenceSystem.WGS84, limit );
+        writePoint( crs, limit );
         entityId = Long.MIN_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
@@ -107,9 +114,10 @@ class SpatialSchemaKey implements NativeSchemaKey
     @Override
     public void initAsHighest()
     {
+        //TODO: Get dimension
         double[] limit = new double[2];
         Arrays.fill(limit, Double.POSITIVE_INFINITY);
-        writePoint( CoordinateReferenceSystem.WGS84, limit );
+        writePoint( crs, limit );
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }

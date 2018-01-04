@@ -24,14 +24,13 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
-
-import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class IndexQuery
 {
@@ -228,7 +227,7 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            return value != null && value != NO_VALUE;
+            return value != null && value != Values.NO_VALUE;
         }
 
         @Override
@@ -309,7 +308,7 @@ public abstract class IndexQuery
             }
             if ( Values.isNumberValue( value ) )
             {
-                if ( from != NO_VALUE )
+                if ( from != Values.NO_VALUE )
                 {
                     int compare = Values.COMPARATOR.compare( value, from );
                     if ( compare < 0 || !fromInclusive && compare == 0 )
@@ -317,7 +316,7 @@ public abstract class IndexQuery
                         return false;
                     }
                 }
-                if ( to != NO_VALUE )
+                if ( to != Values.NO_VALUE )
                 {
                     int compare = Values.COMPARATOR.compare( value, to );
                     if ( compare > 0 || !toInclusive && compare == 0 )
@@ -369,18 +368,24 @@ public abstract class IndexQuery
 
     public static final class GeometryRangePredicate extends IndexQuery
     {
-        private final Value from;
+        private final PointValue from;
         private final boolean fromInclusive;
-        private final Value to;
+        private final PointValue to;
         private final boolean toInclusive;
+        private final CoordinateReferenceSystem crs;
 
         GeometryRangePredicate( int propertyKeyId, PointValue from, boolean fromInclusive, PointValue to, boolean toInclusive )
         {
             super( propertyKeyId );
-            this.from = from != null ? from : NO_VALUE;
+            if ( from == null && to == null )
+            {
+                throw new IllegalArgumentException( "Cannot create GeometryRangePredicate without at least one bound" );
+            }
+            this.from = from;
             this.fromInclusive = fromInclusive;
-            this.to = to != null ? to : NO_VALUE;
+            this.to = to;
             this.toInclusive = toInclusive;
+            this.crs = from != null ? from.getCoordinateReferenceSystem() : to.getCoordinateReferenceSystem();
         }
 
         @Override
@@ -400,8 +405,7 @@ public abstract class IndexQuery
             if ( value instanceof PointValue )
             {
                 PointValue point = (PointValue) value;
-                //TODO Use Hilbert Space Filling Curves for comparison
-                return point.withinRange( from(), fromInclusive, to(), toInclusive );
+                return point.withinRange( from, fromInclusive, to, toInclusive );
             }
             return false;
         }
@@ -414,22 +418,17 @@ public abstract class IndexQuery
 
         public PointValue from()
         {
-            return (PointValue) from.asObject();
+            return from;
         }
 
         public PointValue to()
         {
-            return (PointValue) to.asObject();
-        }
-
-        public Value fromAsValue()
-        {
-            return from;
-        }
-
-        public Value toAsValue()
-        {
             return to;
+        }
+
+        public CoordinateReferenceSystem crs()
+        {
+            return crs;
         }
 
         public boolean fromInclusive()
@@ -490,7 +489,7 @@ public abstract class IndexQuery
             {
                 return false;
             }
-            if ( from != NO_VALUE )
+            if ( from != Values.NO_VALUE )
             {
                 int compare = Values.COMPARATOR.compare( value, from );
                 if ( compare < 0 || !fromInclusive && compare == 0 )
@@ -498,7 +497,7 @@ public abstract class IndexQuery
                     return false;
                 }
             }
-            if ( to != NO_VALUE )
+            if ( to != Values.NO_VALUE )
             {
                 int compare = Values.COMPARATOR.compare( value, to );
                 if ( compare > 0 || !toInclusive && compare == 0 )
