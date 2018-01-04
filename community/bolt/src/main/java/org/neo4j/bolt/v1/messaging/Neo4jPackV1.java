@@ -469,10 +469,9 @@ public class Neo4jPackV1 implements Neo4jPack
             {
                 return VirtualValues.EMPTY_LIST;
             }
-            ArrayList<AnyValue> list;
-            if ( size == UNKNOWN_SIZE )
+            else if ( size == UNKNOWN_SIZE )
             {
-                list = new ArrayList<>();
+                List<AnyValue> list = new ArrayList<>();
                 boolean more = true;
                 while ( more )
                 {
@@ -487,16 +486,17 @@ public class Neo4jPackV1 implements Neo4jPack
                         list.add( unpack() );
                     }
                 }
+                return VirtualValues.list( list.toArray( new AnyValue[list.size()] ) );
             }
             else
             {
-                list = new ArrayList<>( size );
+                AnyValue[] values = new AnyValue[size];
                 for ( int i = 0; i < size; i++ )
                 {
-                    list.add( unpack() );
+                    values[i] = unpack();
                 }
+                return VirtualValues.list( values );
             }
-            return VirtualValues.list( list.toArray( new AnyValue[list.size()] ) );
         }
 
         @Override
