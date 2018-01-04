@@ -286,7 +286,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
     @SuppressWarnings( "unused" )
     private void printTree() throws IOException
     {
-        index.printTree( false, false, false );
+        index.printTree( false, false, false, false );
     }
 
     @SuppressWarnings( "unused" )

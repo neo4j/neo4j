@@ -120,10 +120,11 @@ public class TreePrinter<KEY, VALUE>
      * @param out target to print tree at.
      * @param printPosition whether or not to include positional (slot number) information.
      * @param printState whether or not to also print state pages
+     * @param printHeader whether or not to also print header (type, generation, keyCount) of every node
      * @throws IOException on page cache access error.
      */
     void printTree( PageCursor cursor, PageCursor writeCursor, PrintStream out, boolean printValues, boolean printPosition,
-            boolean printState ) throws IOException
+            boolean printState, boolean printHeader ) throws IOException
     {
         if ( printState )
         {
@@ -142,7 +143,7 @@ public class TreePrinter<KEY, VALUE>
             long leftmostSibling = cursor.getCurrentPageId();
 
             // Go right through all siblings
-            printLevel( cursor, writeCursor, out, printValues, printPosition );
+            printLevel( cursor, writeCursor, out, printValues, printPosition, printHeader );
 
             // Then go back to the left-most node on this level
             TreeNode.goTo( cursor, "back", leftmostSibling );
@@ -263,14 +264,14 @@ public class TreePrinter<KEY, VALUE>
         return isInternal;
     }
 
-    private void printLevel( PageCursor readCursor, PageCursor writeCursor, PrintStream out, boolean printValues, boolean printPosition )
-            throws IOException
+    private void printLevel( PageCursor readCursor, PageCursor writeCursor, PrintStream out, boolean printValues, boolean printPosition,
+            boolean printHeader ) throws IOException
     {
         long rightSibling = -1;
         do
         {
             PageCursor cursor = select( readCursor, writeCursor );
-            printTreeNode( cursor, out, printValues, printPosition, false );
+            printTreeNode( cursor, out, printValues, printPosition, printHeader );
 
             do
             {

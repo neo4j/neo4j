@@ -1034,7 +1034,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     void printTree() throws IOException
     {
-        printTree( true, true, true );
+        printTree( false, false, false, false );
     }
 
     // Utility method
@@ -1044,14 +1044,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param printValues whether or not to print values in the leaf nodes.
      * @param printPosition whether or not to print position for each key.
      * @param printState whether or not to print the tree state.
+     * @param printHeader
      * @throws IOException on I/O error.
      */
-    void printTree( boolean printValues, boolean printPosition, boolean printState ) throws IOException
+    void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
             new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
-                .printTree( cursor, cursor, System.out, printValues, printPosition, printState );
+                .printTree( cursor, cursor, System.out, printValues, printPosition, printState, printHeader );
         }
     }
     // Utility method

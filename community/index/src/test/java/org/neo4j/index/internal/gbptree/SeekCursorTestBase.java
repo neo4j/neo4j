@@ -2348,7 +2348,8 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );
-        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration ).printTree( cursor, cursor, System.out, false, false, false );
+        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration )
+                .printTree( cursor, cursor, System.out, false, false, false, false );
         cursor.next( currentPageId );
     }
 }
