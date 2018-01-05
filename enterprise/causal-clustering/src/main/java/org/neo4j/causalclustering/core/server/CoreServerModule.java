@@ -178,8 +178,6 @@ public class CoreServerModule
 
         // Exposes this so that tests can start/stop the catchup server
         dependencies.satisfyDependency( this.catchupServer );
-
-        platformModule.life.add( servicesToStopOnStoreCopy.add( this.catchupServer ) );
     }
 
     private CatchupServer<NioServerSocketChannel> createCatchupServer( PlatformModule platformModule,
@@ -259,5 +257,10 @@ public class CoreServerModule
         Map<String,String> overrideBackupSettings = new HashMap<>(  );
         overrideBackupSettings.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         return overrideBackupSettings;
+    }
+
+    public CatchupServer getCatchupServer()
+    {
+        return catchupServer;
     }
 }
