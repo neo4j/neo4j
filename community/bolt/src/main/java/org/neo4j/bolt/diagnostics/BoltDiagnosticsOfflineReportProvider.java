@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nonnull;
 
 import org.neo4j.diagnostics.DiagnosticsOfflineReportProvider;
 import org.neo4j.diagnostics.DiagnosticsReportSource;
@@ -50,7 +49,7 @@ public class BoltDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRepo
         this.config = config;
     }
 
-    @Nonnull
+    @Override
     protected List<DiagnosticsReportSource> provideSources( Set<String> classifiers )
     {
         if ( classifiers.contains( "logs" ) )

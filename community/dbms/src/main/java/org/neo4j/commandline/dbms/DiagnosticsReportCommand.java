@@ -29,7 +29,6 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -72,7 +71,7 @@ public class DiagnosticsReportCommand implements AdminCommand
 
     private final Path homeDir;
     private final Path configDir;
-    static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config"};
+    static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config", "plugins", "tree", "metrics", "threads", "env", "sysprop", "ps"};
     private boolean verbose;
     private final PrintStream err;
     private final PrintStream out;
@@ -133,10 +132,16 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
         else
         {
-            // Add default classifiers
+            // Add default classifiers that are available
             if ( orphans.size() == 0 )
             {
-                orphans.addAll( Arrays.asList( DEFAULT_CLASSIFIERS ) );
+                for ( String classifier : DEFAULT_CLASSIFIERS )
+                {
+                    if ( availableClassifiers.contains( classifier ) )
+                    {
+                        orphans.add( classifier );
+                    }
+                }
             }
 
             // Validate classifiers
