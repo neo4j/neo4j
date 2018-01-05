@@ -77,7 +77,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
+            tags = { "~@ignore" },
             strict = true
     )
     public static class Default extends Base
@@ -94,7 +94,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
+            tags = { "~@ignore" },
             strict = true
     )
     public static class Cost extends Base
@@ -111,7 +111,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
+            tags = { "~@ignore" },
             strict = true
     )
     public static class CostCompiled extends Base
@@ -129,7 +129,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
+            tags = { "~@ignore" },
             strict = true
     )
     public static class CostCompiledSourceCode extends Base
@@ -146,7 +146,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
+            tags = { "~@ignore" },
             strict = true
     )
     public static class CostSlotted extends Base
@@ -163,7 +163,7 @@ public class AcceptanceSpecSuiteTest
 //            },
 //            glue = { GLUE_PATH },
 //            features = { FEATURE_PATH + FEATURE_TO_RUN },
-//            tags = { "~@pending" },
+//            tags = { "~@ignore" },
 //            strict = true
 //    )
 //    public static class CostMorsel extends Base
@@ -180,7 +180,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
+            tags = { "~@ignore" },
             strict = true
     )
     public static class Compatibility23 extends Base
@@ -197,7 +197,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
-            tags = { "~@pending" },
+            tags = { "~@ignore" },
             strict = true
     )
     public static class Compatibility31 extends Base

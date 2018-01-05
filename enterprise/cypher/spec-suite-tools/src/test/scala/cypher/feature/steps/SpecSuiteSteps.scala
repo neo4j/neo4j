@@ -268,8 +268,8 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 object DbBuilder {
   def initEmpty(config: Map[String, String]): GraphDatabaseAPI = {
       val builder = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-      builder.setConfig(config.asJava)
-      builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    builder.setConfig(config.asJava)
+    builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
 
   /**

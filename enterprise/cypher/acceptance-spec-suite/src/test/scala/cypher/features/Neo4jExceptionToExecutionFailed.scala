@@ -35,7 +35,6 @@ object Neo4jExceptionToExecutionFailed {
   val unsupportedPhase = "unsupportedPhase"
 
   def convert(neo4jException: Throwable): ExecutionFailed = {
-    //(errorType: String, phase: String, detail: String)
     val msg = neo4jException.getMessage.toLowerCase
     val errorType = if (msg.contains("type")) {
       typeError
@@ -86,9 +85,7 @@ object Neo4jExceptionToExecutionFailed {
         "unsupportedDetail"
     }
     println(neo4jException.getMessage)
-    println(neo4jException.getClass)
     ExecutionFailed(errorType, phase, detail)
-
   }
 
   /*
@@ -198,10 +195,7 @@ object Neo4jExceptionToExecutionFailed {
       else if (msg.matches("There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
         detail should equal("ProcedureNotFound")
       else r = false
-
       r
     }
-
-
     */
 }

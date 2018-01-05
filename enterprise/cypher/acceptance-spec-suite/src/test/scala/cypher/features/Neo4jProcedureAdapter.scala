@@ -59,7 +59,6 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
           convertedValue
         }.toArray
     }
-    //val (tableColumns: Seq[String], tableValues: Seq[Array[AnyRef]]) = parseValueTable(values)
     if (tableColumns != signatureFields)
       throw new scala.IllegalArgumentException(
         s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: $tableColumns Expected: $signatureFields)"
