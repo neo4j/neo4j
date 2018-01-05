@@ -148,11 +148,13 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
             {
                 if ( direction )
                 {
-                    newNpoints[i] = BinaryCoordinateRotationUtils3D.xXOR( BinaryCoordinateRotationUtils3D.rotateNPointLeft( BinaryCoordinateRotationUtils3D.xXOR( npointValues[i] ) ) );
+                    newNpoints[i] = BinaryCoordinateRotationUtils3D.xXOR(
+                            BinaryCoordinateRotationUtils3D.rotateNPointLeft( BinaryCoordinateRotationUtils3D.xXOR( npointValues[i] ) ) );
                 }
                 else
                 {
-                    newNpoints[i] = BinaryCoordinateRotationUtils3D.xXOR( BinaryCoordinateRotationUtils3D.rotateNPointRight( BinaryCoordinateRotationUtils3D.xXOR( npointValues[i] ) ) );
+                    newNpoints[i] = BinaryCoordinateRotationUtils3D.xXOR(
+                            BinaryCoordinateRotationUtils3D.rotateNPointRight( BinaryCoordinateRotationUtils3D.xXOR( npointValues[i] ) ) );
                 }
             }
             return new HilbertCurve3D( newNpoints );
