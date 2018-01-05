@@ -22,8 +22,10 @@ package org.neo4j.diagnostics;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -31,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -39,7 +42,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
 
@@ -74,12 +79,33 @@ public class DiagnosticsReporterTest
         @Override
         public List<DiagnosticsReportSource> provideSources( Set<String> classifiers )
         {
+            List<DiagnosticsReportSource> sources = new ArrayList<>();
+            if ( classifiers.contains( "fail" ) )
+            {
+                sources.add( new FailingSource() );
+            }
             if ( classifiers.contains( "logs" ) )
             {
-                return logFiles;
+                sources.addAll( logFiles );
             }
 
-            return Collections.emptyList();
+            return sources;
+        }
+    }
+
+    private static class FailingSource implements DiagnosticsReportSource
+    {
+        @Override
+        public String destinationPath()
+        {
+            return "fail.txt";
+        }
+
+        @Override
+        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor )
+        {
+            monitor.percentChanged( 30 );
+            throw new RuntimeException( "You had it coming..." );
         }
     }
 
@@ -109,6 +135,50 @@ public class DiagnosticsReporterTest
             List<String> fileB = Files.readAllLines( fs.getPath( "logs/b.txt" ) );
             assertEquals( 1, fileB.size() );
             assertEquals( "file b", fileB.get( 0 ) );
+        }
+    }
+
+    @Test
+    public void shouldContinueAfterError() throws Exception
+    {
+        DiagnosticsReporter reporter = new DiagnosticsReporter(  );
+        MyProvider myProvider = new MyProvider( fileSystemRule.get() );
+        reporter.registerOfflineProvider( myProvider );
+
+        myProvider.addFile( "logs/a.txt", createNewFileWithContent( "a.txt", "file a") );
+
+        Path destination = testDirectory.file( "logs.zip" ).toPath();
+        Set<String> classifiers = new HashSet<>();
+        classifiers.add( "logs" );
+        classifiers.add( "fail" );
+        try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
+        {
+            PrintStream out = new PrintStream( baos );
+            NonInteractiveProgress progress = new NonInteractiveProgress( out, false );
+
+            reporter.dump( classifiers, destination, progress );
+
+            assertThat( baos.toString(), is(String.format(
+                    "1/2 fail.txt%n" +
+                    "....................  20%%%n" +
+                    "..........%n" +
+                    "Error: Step failed%n" +
+                    "2/2 logs/a.txt%n" +
+                    "....................  20%%%n" +
+                    "....................  40%%%n" +
+                    "....................  60%%%n" +
+                    "....................  80%%%n" +
+                    ".................... 100%%%n%n" ) ) );
+        }
+
+        // Verify content
+        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );
+
+        try ( FileSystem fs = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
+        {
+            List<String> fileA = Files.readAllLines( fs.getPath( "logs/a.txt" ) );
+            assertEquals( 1, fileA.size() );
+            assertEquals( "file a", fileA.get( 0 ) );
         }
     }
 

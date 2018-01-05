@@ -99,6 +99,7 @@ public class DiagnosticsReporter
                 catch ( Throwable e )
                 {
                     progress.error( "Step failed", e );
+                    continue;
                 }
                 progress.finished();
             }
