@@ -41,7 +41,7 @@ public class ParallelSort
     private final RadixCalculator radixCalculator;
     private final LongArray dataCache;
     private final long highestSetIndex;
-    private final Tracker tracker;
+    private final Tracker globalTracker;
     private final int threads;
     private long[][] sortBuckets;
     private final ProgressListener progress;
@@ -56,7 +56,7 @@ public class ParallelSort
         this.radixCalculator = radix.calculator();
         this.dataCache = dataCache;
         this.highestSetIndex = highestSetIndex;
-        this.tracker = tracker;
+        this.globalTracker = tracker;
         this.threads = threads;
     }
 
@@ -242,6 +242,7 @@ public class ParallelSort
         private int threadLocalProgress;
         private final long[] pivotChoice = new long[10];
         private final ThreadLocalRandom random = ThreadLocalRandom.current();
+        private final Tracker tracker = globalTracker.duplicate();
 
         SortWorker( long startRange, long size )
         {
@@ -267,8 +268,15 @@ public class ParallelSort
         @Override
         public void run()
         {
-            qsort( start, start + size );
-            reportProgress();
+            try
+            {
+                qsort( start, start + size );
+                reportProgress();
+            }
+            finally
+            {
+                tracker.close();
+            }
         }
 
         private long partition( long leftIndex, long rightIndex, long pivotIndex )
@@ -408,9 +416,9 @@ public class ParallelSort
                 if ( rIndex > lowRadixRange && rIndex <= highRadixRange )
                 {
                     long trackerIndex = rangeParams[0] + bucketIndex++;
-                    assert tracker.get( trackerIndex ) == -1 :
+                    assert globalTracker.get( trackerIndex ) == -1 :
                             "Overlapping buckets i:" + i + ", k:" + threadIndex + ", index:" + trackerIndex;
-                    tracker.set( trackerIndex, i );
+                    globalTracker.set( trackerIndex, i );
                     if ( bucketIndex == rangeParams[1] )
                     {
                         result[0] = highRadixRange;

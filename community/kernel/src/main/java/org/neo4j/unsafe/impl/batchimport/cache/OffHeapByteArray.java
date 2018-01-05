@@ -25,6 +25,12 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
 {
     private final byte[] defaultValue;
 
+    private OffHeapByteArray( OffHeapByteArray copySource )
+    {
+        super( copySource );
+        this.defaultValue = copySource.defaultValue;
+    }
+
     protected OffHeapByteArray( long length, byte[] defaultValue, long base )
     {
         super( length, defaultValue.length, base );
@@ -36,10 +42,15 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     public void swap( long fromIndex, long toIndex )
     {
         long intermediary = UnsafeUtil.allocateMemory( itemSize );
+        internalSwap( fromIndex, toIndex, intermediary );
+        UnsafeUtil.free( intermediary );
+    }
+
+    private void internalSwap( long fromIndex, long toIndex, long intermediary )
+    {
         UnsafeUtil.copyMemory( address( fromIndex, 0 ), intermediary, itemSize );
         UnsafeUtil.copyMemory( address( toIndex, 0 ), address( fromIndex, 0 ), itemSize );
         UnsafeUtil.copyMemory( intermediary, address( toIndex, 0 ), itemSize );
-        UnsafeUtil.free( intermediary );
     }
 
     @Override
@@ -241,5 +252,26 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     private long address( long index, int offset )
     {
         return address + (rebase( index ) * itemSize) + offset;
+    }
+
+    @Override
+    public ByteArray duplicate()
+    {
+        return new OffHeapByteArray( this )
+        {
+            private final long intermediary = UnsafeUtil.allocateMemory( itemSize );
+
+            @Override
+            public void swap( long fromIndex, long toIndex )
+            {
+                internalSwap( fromIndex, toIndex, intermediary );
+            }
+
+            @Override
+            public void close()
+            {   // Explicitly don't close the underlying data structures
+                UnsafeUtil.free( intermediary );
+            }
+        };
     }
 }

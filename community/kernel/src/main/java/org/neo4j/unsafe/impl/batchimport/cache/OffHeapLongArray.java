@@ -29,6 +29,12 @@ public class OffHeapLongArray extends OffHeapRegularNumberArray<LongArray> imple
 {
     private final long defaultValue;
 
+    private OffHeapLongArray( OffHeapLongArray copySource )
+    {
+        super( copySource );
+        this.defaultValue = copySource.defaultValue;
+    }
+
     public OffHeapLongArray( long length, long defaultValue, long base )
     {
         super( length, 3, base );
@@ -62,5 +68,17 @@ public class OffHeapLongArray extends OffHeapRegularNumberArray<LongArray> imple
                 UnsafeUtil.putLong( adr, defaultValue );
             }
         }
+    }
+
+    @Override
+    public LongArray duplicate()
+    {
+        return new OffHeapLongArray( this )
+        {
+            @Override
+            public void close()
+            {   // Explicitly don't close the underlying data structures
+            }
+        };
     }
 }

@@ -111,4 +111,10 @@ abstract class DynamicNumberArray<N extends NumberArray<N>> implements NumberArr
             chunk.close();
         }
     }
+
+    @Override
+    public N duplicate()
+    {
+        throw new UnsupportedOperationException( "Not supported for dynamic arrays" );
+    }
 }

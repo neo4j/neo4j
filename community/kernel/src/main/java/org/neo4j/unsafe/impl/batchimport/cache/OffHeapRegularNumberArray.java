@@ -26,6 +26,12 @@ abstract class OffHeapRegularNumberArray<N extends NumberArray<N>> extends OffHe
 {
     protected final int shift;
 
+    protected OffHeapRegularNumberArray( OffHeapRegularNumberArray<N> copySource )
+    {
+        super( copySource );
+        this.shift = copySource.shift;
+    }
+
     protected OffHeapRegularNumberArray( long length, int shift, long base )
     {
         super( length, 1 << shift, base );

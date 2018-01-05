@@ -51,4 +51,10 @@ public class IntTracker extends AbstractTracker<IntArray>
     {
         array.set( index, safeCastLongToInt( value ) );
     }
+
+    @Override
+    public Tracker duplicate()
+    {
+        return new IntTracker( array.duplicate() );
+    }
 }

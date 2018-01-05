@@ -33,11 +33,17 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
 {
     private final byte[] defaultValue;
 
+    private PageCacheByteArray( PageCacheByteArray copySource )
+    {
+        super( copySource );
+        this.defaultValue = copySource.defaultValue;
+    }
+
     PageCacheByteArray( PagedFile pagedFile, long length, byte[] defaultValue, long base ) throws IOException
     {
         // Default value is handled locally in this class, in contrast to its siblings, which lets the superclass
         // handle it.
-        super( pagedFile, defaultValue.length, length, base );
+        super( pagedFile, defaultValue.length, length, 0, base );
         this.defaultValue = defaultValue;
         setDefaultValue( -1 );
     }
@@ -56,6 +62,11 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         byte[] a = defaultValue.clone();
         byte[] b = defaultValue.clone();
+        internalSwap( fromIndex, toIndex, a, b );
+    }
+
+    private void internalSwap( long fromIndex, long toIndex, byte[] a, byte[] b )
+    {
         get( fromIndex, a );
         get( toIndex, b );
         set( fromIndex, b );
@@ -352,5 +363,17 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    @Override
+    public ByteArray duplicate()
+    {
+        return new PageCacheByteArray( this )
+        {
+            @Override
+            public void close()
+            {   // Explicitly don't close the underlying data structures
+            }
+        };
     }
 }
