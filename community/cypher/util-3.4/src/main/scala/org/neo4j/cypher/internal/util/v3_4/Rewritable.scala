@@ -52,24 +52,25 @@ object Rewritable {
 
     def dup(children: Seq[AnyRef]): AnyRef =
       try {
-        that match {
-          case a: Rewritable =>
-            a.dup(children)
-          case p: Product =>
-            if (children.iterator eqElements p.children)
-              p
-            else
-              p.copyConstructor.invoke(p, children: _*)
-          case _: IndexedSeq[_] =>
-            children.toIndexedSeq
-          case _: Seq[_] =>
-            children
-          case _: Set[_] =>
-            children.toSet
-          case _: Map[_, _] =>
-            children.map(value => value.asInstanceOf[(String, AnyRef)]).toMap
-          case t =>
-            t
+        if (children.iterator eqElements that.children) {
+          that
+        } else {
+          that match {
+            case a: Rewritable =>
+              a.dup(children)
+            case p: Product =>
+                p.copyConstructor.invoke(p, children: _*)
+            case _: IndexedSeq[_] =>
+              children.toIndexedSeq
+            case _: Seq[_] =>
+              children
+            case _: Set[_] =>
+              children.toSet
+            case _: Map[_, _] =>
+              children.map(value => value.asInstanceOf[(String, AnyRef)]).toMap
+            case t =>
+              t
+          }
         }
       } catch {
         case e: IllegalArgumentException =>
