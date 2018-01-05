@@ -190,11 +190,8 @@ public class RelationshipImporter extends EntityImporter
                             relationshipDataString() + " is missing " + Type.TYPE + " field" );
                 }
             }
-            else
-            {
-                badCollector.collectBadRelationship( startId, group( startIdGroup ).name(), type, endId, group( endIdGroup ).name(),
-                        relationshipRecord.getFirstNode() == ID_NOT_FOUND ? startId : endId );
-            }
+            badCollector.collectBadRelationship( startId, group( startIdGroup ).name(), type, endId, group( endIdGroup ).name(),
+                    relationshipRecord.getFirstNode() == ID_NOT_FOUND ? startId : endId );
         }
 
         relationshipRecord.clear();
