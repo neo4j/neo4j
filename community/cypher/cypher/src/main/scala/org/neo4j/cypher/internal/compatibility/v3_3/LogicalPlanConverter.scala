@@ -152,13 +152,6 @@ object LogicalPlanConverter {
           convertVersion("frontend.v3_3", "v3_4.logical.plans", item, children)
         case (item: compilerV3_3.SeekRange[_], children: Seq[AnyRef]) =>
           convertVersion("compiler.v3_3", "v3_4.logical.plans", item, children)
-
-        case (_: List[_], children: Seq[AnyRef]) => children.toList
-        case (_: Seq[_], children: Seq[AnyRef]) => children.toIndexedSeq
-        case (_: Set[_], children: Seq[AnyRef]) => children.toSet
-        case (_: Map[_, _], children: Seq[AnyRef]) => Map(children.map(_.asInstanceOf[(_, _)]): _*)
-        case (None, _) => None
-        case (p: Product, children: Seq[AnyRef]) => new DuplicatableProduct(p).copyConstructor.invoke(p, children: _*)
       }.apply(before)
       before._1 match {
         case plan: LogicalPlanV3_3 =>

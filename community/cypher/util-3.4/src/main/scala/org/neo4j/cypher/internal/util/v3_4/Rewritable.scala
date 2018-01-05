@@ -34,7 +34,11 @@ object Rewriter {
 
 object RewriterWithArgs {
   def lift(f: PartialFunction[(AnyRef, Seq[AnyRef]), AnyRef]): RewriterWithArgs =
-    f.orElse(PartialFunction({ case (a: AnyRef, _) => a }))
+    f.orElse(PartialFunction({
+      // We need to dup anything not matched by f given the children
+      case (p: Product, children) => new DuplicatableProduct(p).dup(children).asInstanceOf[AnyRef]
+      case (a: AnyRef, children) => new DuplicatableAny(a).dup(children)
+    }))
 }
 
 object Rewritable {
@@ -269,7 +273,7 @@ object bottomUpWithArgs {
           val (job :: jobs, doneJobs) = stack.pop()
           stack.push((jobs, doneJobs += job))
         } else {
-          stack.push((next.childrenWithListsAsSeq.toList, new mutable.MutableList()))
+          stack.push((next.children.toList, new mutable.MutableList()))
         }
         rec(stack)
       }
