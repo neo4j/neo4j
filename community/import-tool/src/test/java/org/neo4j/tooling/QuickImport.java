@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
@@ -160,7 +161,7 @@ public class QuickImport
             }
             else
             {
-                consumer = new ParallelBatchImporter( dir, fileSystem, null, importConfig,
+                consumer = BatchImporterFactory.withHighestPriority().instantiate( dir, fileSystem, null, importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR );
                 ImportTool.printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
