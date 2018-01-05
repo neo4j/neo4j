@@ -254,7 +254,7 @@ public class JmxDump
         {
             try
             {
-                ObjectName name = new ObjectName( "org.neo4j:instance=kernel#0,name=Reports" ); // TODO: instance #0 ??
+                ObjectName name = new ObjectName( "org.neo4j:instance=kernel#0,name=Reports" );
                 Reports reportsBean = JMX.newMBeanProxy( mBeanServer, name, Reports.class );
                 return reportsInvoker.invoke( reportsBean );
             }

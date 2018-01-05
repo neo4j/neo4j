@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -87,7 +86,7 @@ public class DiagnosticsReporterTest
     @Test
     public void dumpFiles() throws Exception
     {
-        DiagnosticsReporter reporter = new DiagnosticsReporter( mock( PrintStream.class ) );
+        DiagnosticsReporter reporter = new DiagnosticsReporter(  );
         MyProvider myProvider = new MyProvider( fileSystemRule.get() );
         reporter.registerOfflineProvider( myProvider );
 
@@ -96,7 +95,7 @@ public class DiagnosticsReporterTest
 
         Path destination = testDirectory.file( "logs.zip" ).toPath();
 
-        reporter.dump( Collections.singleton( "logs" ), destination );
+        reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgressCallback.class ) );
 
         // Verify content
         URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );

@@ -20,14 +20,12 @@
 package org.neo4j.diagnostics;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,12 +38,6 @@ public class DiagnosticsReporter
     private final List<DiagnosticsOfflineReportProvider> providers = new ArrayList<>();
     private final Set<String> availableClassifiers = new TreeSet<>();
     private final Map<String,List<DiagnosticsReportSource>> additionalSources = new HashMap<>();
-    private final PrintStream out;
-
-    public DiagnosticsReporter( PrintStream out )
-    {
-        this.out = out;
-    }
 
     public void registerOfflineProvider( DiagnosticsOfflineReportProvider provider )
     {
@@ -59,7 +51,7 @@ public class DiagnosticsReporter
         additionalSources.computeIfAbsent( classifier, c -> new ArrayList<>() ).add( source );
     }
 
-    public void dump( Set<String> classifiers, Path destination ) throws IOException
+    public void dump( Set<String> classifiers, Path destination, DiagnosticsReporterProgressCallback progress ) throws IOException
     {
         // Collect sources
         List<DiagnosticsReportSource> sources = new ArrayList<>();
@@ -89,7 +81,7 @@ public class DiagnosticsReporter
 
         try ( FileSystem fs = FileSystems.newFileSystem( uri, env ) )
         {
-            DiagnosticsReporterProgressCallback progress = new InteractiveProgress( sources.size(), out );
+            progress.setTotalSteps( sources.size() );
             for ( int i = 0; i < sources.size(); i++ )
             {
                 DiagnosticsReportSource source = sources.get( i );
@@ -100,7 +92,14 @@ public class DiagnosticsReporter
                 }
 
                 progress.started( i + 1, path.toString() );
-                source.addToArchive( path, progress );
+                try
+                {
+                    source.addToArchive( path, progress );
+                }
+                catch ( Throwable e )
+                {
+                    progress.error( "Step failed", e );
+                }
                 progress.finished();
             }
         }
@@ -109,71 +108,5 @@ public class DiagnosticsReporter
     public Set<String> getAvailableClassifiers()
     {
         return availableClassifiers;
-    }
-
-    // TODO:
-    private static class InteractiveProgress implements DiagnosticsReporterProgressCallback
-    {
-        private String prefix;
-        private String suffix;
-        private final int numberOfFiles;
-        private final PrintStream out;
-        private String info = "";
-        private int longestInfo;
-
-        private InteractiveProgress( int numberOfFiles, PrintStream out )
-        {
-            this.numberOfFiles = numberOfFiles;
-            this.out = out;
-        }
-
-        @Override
-        public void percentChanged( int percent )
-        {
-            out.print( String.format( "\r%8s [", prefix ) );
-            int totalWidth = 20;
-
-            int numBars = totalWidth * percent / 100;
-            for ( int i = 0; i < totalWidth; i++ )
-            {
-                if ( i < numBars )
-                {
-                    out.print( '#' );
-                }
-                else
-                {
-                    out.print( ' ' );
-                }
-            }
-            out.print( String.format( "] %3s%%   %s %s", percent, suffix, info ) );
-        }
-
-        @Override
-        public void started( long currentFileIndex, String target )
-        {
-            this.prefix = currentFileIndex + "/" + numberOfFiles;
-            this.suffix = target;
-            percentChanged( 0 );
-        }
-
-        @Override
-        public void finished()
-        {
-            // Pad string to erase info string
-            info = String.join( "", Collections.nCopies( longestInfo, " " ) );
-
-            percentChanged( 100 );
-            out.println();
-        }
-
-        @Override
-        public void info( String info )
-        {
-            this.info = info;
-            if ( info.length() > longestInfo )
-            {
-                longestInfo = info.length();
-            }
-        }
     }
 }

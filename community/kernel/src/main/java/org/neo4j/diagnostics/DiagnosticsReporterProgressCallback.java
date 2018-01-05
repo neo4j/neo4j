@@ -41,9 +41,22 @@ public interface DiagnosticsReporterProgressCallback
     void info( String info );
 
     /**
+     * Called if an internal error occurs with an optional exception.
+     *
+     * @param msg message to display to the user.
+     * @param throwable optional exception, used to include a stacktrace if applicable.
+     */
+    void error( String msg, Throwable throwable );
+
+    /**
      * @apiNote Called by dispatching class. Should not be called from diagnostics sources.
      */
-    void started( long currentFileIndex, String target );
+    void setTotalSteps( long steps );
+
+    /**
+     * @apiNote Called by dispatching class. Should not be called from diagnostics sources.
+     */
+    void started( long currentStepIndex, String target );
 
     /**
      * @apiNote Called by dispatching class. Should not be called from diagnostics sources.

@@ -52,17 +52,22 @@ import org.neo4j.diagnostics.DiagnosticsOfflineReportProvider;
 import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.diagnostics.DiagnosticsReportSources;
 import org.neo4j.diagnostics.DiagnosticsReporter;
+import org.neo4j.diagnostics.DiagnosticsReporterProgressCallback;
+import org.neo4j.diagnostics.InteractiveProgress;
+import org.neo4j.diagnostics.NonInteractiveProgress;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
+import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
 public class DiagnosticsReportCommand implements AdminCommand
 {
     private static final OptionalNamedArg destinationArgument =
-            new OptionalCanonicalPath( "to", "/tmp/", "reports/", "Destination directory for reports" );
+            new OptionalCanonicalPath( "to", System.getProperty( "java.io.tmpdir" ), "reports" + File.separator,
+                    "Destination directory for reports" );
     private static final Arguments arguments = new Arguments()
             .withArgument( new OptionalListArgument() )
             .withArgument( destinationArgument )
@@ -120,7 +125,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
 
         // Make sure 'all' is the only classifier if specified
-        List<String> orphans = args.orphans();
+        Set<String> orphans = new HashSet<>( args.orphans() );
         if ( orphans.contains( "all" ) )
         {
             if ( orphans.size() != 1 )
@@ -133,7 +138,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         else
         {
             // Add default classifiers that are available
-            if ( orphans.size() == 0 )
+            if ( orphans.isEmpty() )
             {
                 for ( String classifier : DEFAULT_CLASSIFIERS )
                 {
@@ -154,8 +159,15 @@ public class DiagnosticsReportCommand implements AdminCommand
             }
         }
 
-        // TODO: we should really guesstimate the size of the dump, in part not to fill up the disk and die in the
-        // TODO: middle, and part warn the user if it's larger than a given threshold
+        DiagnosticsReporterProgressCallback progress;
+        if ( System.console() != null )
+        {
+            progress = new InteractiveProgress( out, verbose );
+        }
+        else
+        {
+            progress = new NonInteractiveProgress( out, verbose );
+        }
 
         // Start dumping
         Path destinationDir = new File( destinationArgument.parse( args ) ).toPath();
@@ -164,7 +176,7 @@ public class DiagnosticsReportCommand implements AdminCommand
             SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
             Path reportFile = destinationDir.resolve( dumpFormat.format( new Date() ) + ".zip" );
             out.println( "Writing report to " + reportFile.toAbsolutePath().toString() );
-            reporter.dump( new HashSet<>( orphans ), reportFile );
+            reporter.dump( orphans, reportFile, progress );
         }
         catch ( IOException e )
         {
@@ -174,7 +186,7 @@ public class DiagnosticsReportCommand implements AdminCommand
 
     private DiagnosticsReporter createAndRegisterSources( Config config, File configFile )
     {
-        DiagnosticsReporter reporter = new DiagnosticsReporter( out );
+        DiagnosticsReporter reporter = new DiagnosticsReporter();
         File storeDirectory = config.get( database_path );
 
         // Find all offline providers and register them
@@ -322,41 +334,32 @@ public class DiagnosticsReportCommand implements AdminCommand
             List<ProcessInfo> processesList = JProcesses.getProcessList();
 
             StringBuilder sb = new StringBuilder();
-            sb.append( csvEscapeString( "Process PID" ) ).append( ',' )
-                    .append( csvEscapeString( "Process Name" ) ).append( ',' )
-                    .append( csvEscapeString( "Process Time" ) ).append( ',' )
-                    .append( csvEscapeString( "User" ) ).append( ',' )
-                    .append( csvEscapeString( "Virtual Memory" ) ).append( ',' )
-                    .append( csvEscapeString( "Physical Memory" ) ).append( ',' )
-                    .append( csvEscapeString( "CPU usage" ) ).append( ',' )
-                    .append( csvEscapeString( "Start Time" ) ).append( ',' )
-                    .append( csvEscapeString( "Priority" ) ).append( ',' )
-                    .append( csvEscapeString( "Full command" ) ).append( '\n' );
+            sb.append( escapeCsv( "Process PID" ) ).append( ',' )
+                    .append( escapeCsv( "Process Name" ) ).append( ',' )
+                    .append( escapeCsv( "Process Time" ) ).append( ',' )
+                    .append( escapeCsv( "User" ) ).append( ',' )
+                    .append( escapeCsv( "Virtual Memory" ) ).append( ',' )
+                    .append( escapeCsv( "Physical Memory" ) ).append( ',' )
+                    .append( escapeCsv( "CPU usage" ) ).append( ',' )
+                    .append( escapeCsv( "Start Time" ) ).append( ',' )
+                    .append( escapeCsv( "Priority" ) ).append( ',' )
+                    .append( escapeCsv( "Full command" ) ).append( '\n' );
 
             for ( final ProcessInfo processInfo : processesList )
             {
                 sb.append( processInfo.getPid() ).append( ',' )
-                        .append( csvEscapeString( processInfo.getName() ) ).append( ',' )
+                        .append( escapeCsv( processInfo.getName() ) ).append( ',' )
                         .append( processInfo.getTime() ).append( ',' )
-                        .append( csvEscapeString( processInfo.getUser() ) ).append( ',' )
+                        .append( escapeCsv( processInfo.getUser() ) ).append( ',' )
                         .append( processInfo.getVirtualMemory() ).append( ',' )
                         .append( processInfo.getPhysicalMemory() ).append( ',' )
                         .append( processInfo.getCpuUsage() ).append( ',' )
                         .append( processInfo.getStartTime() ).append( ',' )
                         .append( processInfo.getStartTime() ).append( ',' )
-                        .append( csvEscapeString( processInfo.getCommand() ) ).append( '\n' );
+                        .append( escapeCsv( processInfo.getCommand() ) ).append( '\n' );
             }
             return sb.toString();
         } );
-    }
-
-    private static String csvEscapeString( String s )
-    {
-        if ( s == null )
-        {
-            return "";
-        }
-        return "\"" + s.replace( "\"", "\"\"" ) + "\"";
     }
 
     /**

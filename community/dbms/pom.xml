@@ -50,14 +50,6 @@
   <!-- com.sun.tools is special prior to java 9... -->
   <profiles>
     <profile>
-      <id>jigsaw</id>
-      <activation>
-        <jdk>[1.9,)</jdk>
-      </activation>
-      <!-- No dependencies needed by Jigsaw -->
-      <dependencies />
-    </profile>
-    <profile>
       <id>default-jdk</id>
       <activation>
         <file>
