@@ -102,7 +102,7 @@ public class LogFilesBuilder
     }
 
     /**
-     * Build log files that will be able to perform only operations on a lgo files directly.
+     * Build log files that will be able to perform only operations on a log files directly.
      * Any operation that will require access to a store or other parts of runtime will fail.
      * Should be mainly used only for testing purposes or when only file based operations will be performed
      * @param logsDirectory log files directory
