@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 
@@ -276,6 +275,7 @@ public class PrimitiveLongCollectionsTest
         try
         {
             PrimitiveLongCollections.single( PrimitiveLongCollections.emptyIterator() );
+            fail();
         }
         catch ( NoSuchElementException e )
         {

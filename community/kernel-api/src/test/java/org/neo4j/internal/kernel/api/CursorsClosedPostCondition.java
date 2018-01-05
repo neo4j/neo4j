@@ -34,6 +34,7 @@ public class CursorsClosedPostCondition implements TestRule
         this.cursors = c;
     }
 
+    @Override
     public Statement apply( Statement base, Description description )
     {
         return new Statement()

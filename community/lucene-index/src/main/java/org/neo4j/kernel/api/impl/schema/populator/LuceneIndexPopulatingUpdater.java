@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
@@ -67,7 +68,7 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
             writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
             break;
         default:
-            throw new IllegalStateException( "Unknown update mode " + update.values() );
+            throw new IllegalStateException( "Unknown update mode " + Arrays.toString( update.values() ) );
         }
     }
 

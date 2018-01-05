@@ -50,6 +50,7 @@ public interface ConstraintDescriptor extends SchemaDescriptor.Supplier
         }
     }
 
+    @Override
     SchemaDescriptor schema();
 
     Type type();

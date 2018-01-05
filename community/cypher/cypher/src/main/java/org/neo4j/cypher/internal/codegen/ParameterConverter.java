@@ -232,11 +232,13 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
                     Iterator<? extends PropertyContainer> current = nodes().iterator();
                     Iterator<? extends PropertyContainer> next = relationships().iterator();
 
+                    @Override
                     public boolean hasNext()
                     {
                         return current.hasNext();
                     }
 
+                    @Override
                     public PropertyContainer next()
                     {
                         try
@@ -251,6 +253,7 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
                         }
                     }
 
+                    @Override
                     public void remove()
                     {
                         next.remove();

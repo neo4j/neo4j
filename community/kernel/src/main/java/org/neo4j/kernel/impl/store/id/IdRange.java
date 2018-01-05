@@ -87,7 +87,7 @@ public class IdRange
     @Override
     public int hashCode()
     {
-        return Objects.hash( defragIds, rangeStart, rangeLength );
+        return Objects.hash( Arrays.hashCode( defragIds ), rangeStart, rangeLength );
     }
 
     public long getHighId()

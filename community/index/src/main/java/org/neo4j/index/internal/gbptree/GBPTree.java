@@ -1072,7 +1072,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
             boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.iterator() );
 
-            return check & checkSpace;
+            return check && checkSpace;
         }
     }
 

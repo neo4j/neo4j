@@ -303,7 +303,7 @@ public class SubGraphExporter
         }
         if ( value instanceof Float || value instanceof Double )
         {
-            return String.format( Locale.ENGLISH, "%f", value );
+            return String.format( Locale.ROOT, "%f", ((Number) value).doubleValue() );
         }
         if ( value instanceof Iterator )
         {

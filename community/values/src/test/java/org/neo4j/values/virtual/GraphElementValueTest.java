@@ -85,18 +85,10 @@ public class GraphElementValueTest
                 path( node( 1L ), edge( 2L, 1L, 3L ), node( 3L ) ) );
     }
 
-    @Test
+    @Test( expected = AssertionError.class )
     public void pathShouldNotOnlyContainRelationship()
     {
-        try
-        {
-            VirtualValues.path( nodes(), edges( 1L ) );
-            fail();
-        }
-        catch ( AssertionError e )
-        {
-            // ignore
-        }
+        VirtualValues.path( nodes(), edges( 1L ) );
     }
 
     @Test
@@ -113,37 +105,21 @@ public class GraphElementValueTest
         }
     }
 
-    @Test
-    public void pathShouldHandleNull()
+    @Test( expected = AssertionError.class )
+    public void pathShouldHandleNulls()
     {
-        try
-        {
-            VirtualValues.path( null, null );
-            fail();
-        }
-        catch ( AssertionError e )
-        {
-            // ignore
-        }
+        VirtualValues.path( null, null );
+    }
 
-        try
-        {
-            VirtualValues.path( nodes( 1L ), null );
-            fail();
-        }
-        catch ( AssertionError e )
-        {
-            // ignore
-        }
+    @Test( expected = AssertionError.class )
+    public void pathShouldHandleNullEdge()
+    {
+        VirtualValues.path( nodes( 1L ), null );
+    }
 
-        try
-        {
-            VirtualValues.path( null, edges( 1L ) );
-            fail();
-        }
-        catch ( AssertionError e )
-        {
-            // ignore
-        }
+    @Test( expected = AssertionError.class )
+    public void pathShouldHandleNullNodes()
+    {
+        VirtualValues.path( null, edges( 1L ) );
     }
 }

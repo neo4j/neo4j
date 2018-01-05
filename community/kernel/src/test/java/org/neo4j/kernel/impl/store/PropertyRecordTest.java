@@ -149,14 +149,16 @@ public class PropertyRecordTest
         addBlock( record, 5, 6 );
         addBlock( record, 7, 8 );
 
+        boolean validationErrorDetected = false;
         try
         {
             addBlock( record, 9, 10 );
-            fail( "Exception expected " );
         }
-        catch ( Throwable ignored )
+        catch ( AssertionError ignored )
         {
+            validationErrorDetected = true;
         }
+        assertTrue( "Assertion failure expected", validationErrorDetected );
     }
 
     private void assertIteratorRemoveThrowsIllegalState( Iterator<PropertyBlock> iterator )

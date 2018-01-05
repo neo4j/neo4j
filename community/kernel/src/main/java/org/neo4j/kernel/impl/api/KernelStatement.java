@@ -376,7 +376,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
             return out.toString();
         }
 
-        private class StatementTraceException extends RuntimeException
+        private static class StatementTraceException extends RuntimeException
         {
             StatementTraceException( String message )
             {

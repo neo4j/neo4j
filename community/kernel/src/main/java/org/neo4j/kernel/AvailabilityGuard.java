@@ -44,7 +44,7 @@ public class AvailabilityGuard
     public static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database available: ";
     public static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database unavailable: ";
 
-    public class UnavailableException extends Exception implements Status.HasStatus
+    public static class UnavailableException extends Exception implements Status.HasStatus
     {
         public UnavailableException( String message )
         {

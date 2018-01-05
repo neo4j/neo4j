@@ -30,6 +30,7 @@ public enum BranchOrderingPolicies implements BranchOrderingPolicy
 {
     PREORDER_DEPTH_FIRST
     {
+        @Override
         public BranchSelector create( TraversalBranch startSource, PathExpander expander )
         {
             return new PreorderDepthFirstSelector( startSource, expander );
@@ -37,6 +38,7 @@ public enum BranchOrderingPolicies implements BranchOrderingPolicy
     },
     POSTORDER_DEPTH_FIRST
     {
+        @Override
         public BranchSelector create( TraversalBranch startSource, PathExpander expander )
         {
             return new PostorderDepthFirstSelector( startSource, expander );
@@ -44,6 +46,7 @@ public enum BranchOrderingPolicies implements BranchOrderingPolicy
     },
     PREORDER_BREADTH_FIRST
     {
+        @Override
         public BranchSelector create( TraversalBranch startSource, PathExpander expander )
         {
             return new PreorderBreadthFirstSelector( startSource, expander );
@@ -51,6 +54,7 @@ public enum BranchOrderingPolicies implements BranchOrderingPolicy
     },
     POSTORDER_BREADTH_FIRST
     {
+        @Override
         public BranchSelector create( TraversalBranch startSource, PathExpander expander )
         {
             return new PostorderBreadthFirstSelector( startSource, expander );

@@ -70,7 +70,7 @@ public class DelegateFileSystemAbstractionTest
         verify( fileSystem ).newWatchService();
     }
 
-    private class TrackableFileSystem extends FileSystem
+    private static class TrackableFileSystem extends FileSystem
     {
 
         private boolean closed;

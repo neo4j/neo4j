@@ -634,7 +634,7 @@ public class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private class PositiveLogFilesBasedLogVersionRepository implements LogVersionRepository
+    private static class PositiveLogFilesBasedLogVersionRepository implements LogVersionRepository
     {
 
         private long version;

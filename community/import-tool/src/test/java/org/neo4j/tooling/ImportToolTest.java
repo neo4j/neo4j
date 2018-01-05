@@ -969,6 +969,7 @@ public class ImportToolTest
                     "--bad-tolerance", "1",
                     "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                        relationshipData2.getAbsolutePath() );
+            fail();
         }
         catch ( Exception e )
         {
@@ -1005,6 +1006,7 @@ public class ImportToolTest
                     "--skip-bad-relationships", "false",
                     "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                        relationshipData2.getAbsolutePath() );
+            fail();
         }
         catch ( Exception e )
         {
@@ -1129,6 +1131,7 @@ public class ImportToolTest
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", data.getAbsolutePath() );
+            fail();
         }
         catch ( Exception e )
         {

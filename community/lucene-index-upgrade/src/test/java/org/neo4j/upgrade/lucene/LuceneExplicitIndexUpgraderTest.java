@@ -92,7 +92,8 @@ public class LuceneExplicitIndexUpgraderTest
         return Paths.get( getClass().getClassLoader().getResource( resourceName ).toURI() );
     }
 
-    private class ExplicitIndexMigrationExceptionBaseMatcher extends TypeSafeDiagnosingMatcher<ExplicitIndexMigrationException>
+    private static class ExplicitIndexMigrationExceptionBaseMatcher extends
+            TypeSafeDiagnosingMatcher<ExplicitIndexMigrationException>
     {
 
         private final String[] failedIndexNames;
@@ -122,7 +123,7 @@ public class LuceneExplicitIndexUpgraderTest
         }
     }
 
-    private class TrackingLuceneExplicitIndexUpgrader extends LuceneExplicitIndexUpgrader
+    private static class TrackingLuceneExplicitIndexUpgrader extends LuceneExplicitIndexUpgrader
     {
         private final Set<String> migratedIndexes = new HashSet<>( );
         private final boolean failIndexUpgrade;
@@ -150,7 +151,7 @@ public class LuceneExplicitIndexUpgraderTest
         }
     }
 
-    private class IndexUpgraderWrapperStub extends IndexUpgraderWrapper
+    private static class IndexUpgraderWrapperStub extends IndexUpgraderWrapper
     {
 
         private final Set<String> migratedIndexes;

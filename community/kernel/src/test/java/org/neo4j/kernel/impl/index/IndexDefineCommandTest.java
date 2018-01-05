@@ -31,7 +31,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.CommandReader;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -99,19 +101,26 @@ public class IndexDefineCommandTest
         InMemoryClosableChannel channel =  new InMemoryClosableChannel( 1000 );
         IndexDefineCommand command = mock( IndexDefineCommand.class );
         Map<String,Integer> largeMap = initMap( 0xFFFF + 1 );
+
+        doCallRealMethod().when( command ).serialize( channel );
         when( command.getIndexNameIdRange() ).thenReturn( largeMap );
         when( command.getKeyIdRange() ).thenReturn( largeMap );
 
         // WHEN
+        assertTrue( serialize( channel, command ) );
+    }
+
+    private boolean serialize( InMemoryClosableChannel channel, IndexDefineCommand command ) throws IOException
+    {
         try
         {
             command.serialize( channel );
-            fail( "Expected an AssertionError" );
         }
         catch ( AssertionError e )
         {
-            // THEN Fine
+            return true;
         }
+        return false;
     }
 
     private IndexDefineCommand initIndexDefineCommand( int nbrOfEntries )

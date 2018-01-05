@@ -19,12 +19,12 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.Assume;
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import org.junit.Assume;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -516,7 +516,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         assertEquals( 3, values[2].intValue() );
     }
 
-    private class Sizes
+    private static class Sizes
     {
         int incoming, outgoing, loop;
     }

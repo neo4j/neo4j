@@ -136,7 +136,7 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
         }
     }
 
-    private class MergeTask implements Runnable
+    private static class MergeTask implements Runnable
     {
         private final MergeThread mergeThread;
         private final LongAdder taskCounter;

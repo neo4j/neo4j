@@ -82,8 +82,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     {
         // We don't have to assert max processors here since importer will not count every processor
         // equally. A step being very idle (due to being very very fast) counts as almost nothing.
-        this.numberOfProcessors = numberOfProcessors;
-        processors( numberOfProcessors - numberOfProcessors );
+        processors( numberOfProcessors );
         return this;
     }
 
