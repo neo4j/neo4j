@@ -120,6 +120,14 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     @Override
     public int compare( RawBytes o1, RawBytes o2 )
     {
+        if ( o1.bytes == null )
+        {
+            return -1;
+        }
+        if ( o2.bytes == null )
+        {
+            return 1;
+        }
         int compare = Long.compare( keySeed( o1 ), keySeed( o2 ) );
         return compare != 0 ? compare : byteArrayCompare( o1.bytes, o2.bytes, Long.BYTES );
     }

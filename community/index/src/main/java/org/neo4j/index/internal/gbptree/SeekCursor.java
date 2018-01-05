@@ -426,7 +426,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     continue;
                 }
 
-                // todo It is not safe to act on this read of isInternal!
                 searchResult = searchKey( fromInclusive, isInternal ? INTERNAL : LEAF );
                 if ( !KeySearch.isSuccess( searchResult ) )
                 {
