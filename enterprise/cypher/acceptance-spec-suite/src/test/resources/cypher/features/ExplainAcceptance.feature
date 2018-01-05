@@ -33,7 +33,8 @@ Feature: ExplainAcceptance
     """
     EXPLAIN CALL test.labels()
     """
-    Then the result should be empty
+    Then the result should be:
+      | label |
     And no side effects
 
   Scenario: Explanation of in-query procedure call
@@ -48,5 +49,6 @@ Feature: ExplainAcceptance
     CALL test.labels() YIELD label
     RETURN *
     """
-    Then the result should be empty
+    Then the result should be:
+      | label |
     And no side effects

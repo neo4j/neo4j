@@ -19,7 +19,6 @@
  */
 package cypher.features
 
-import java.io.File
 import java.util
 
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
@@ -29,7 +28,7 @@ import scala.collection.JavaConverters._
 
 class TCKTest {
 
-  val semanticFailures = Set("Multiple unwinds after each other", "Return all variables",
+  val tckSemanticFailures = Set("Multiple unwinds after each other", "Return all variables",
     "Copying properties from node with ON CREATE", "Copying properties from node with ON MATCH",
     "Using `keys()` on a parameter map", "Create a pattern with multiple hops in the reverse direction",
     "Create a pattern with multiple hops in varying directions",
@@ -42,24 +41,9 @@ class TCKTest {
     "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT")
 
   @TestFactory
-  def testCustomFeature(): util.Collection[DynamicTest] = {
-    val featuresURI = getClass.getResource("/cypher/features").toURI
-    val scenarios = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
-
-    def createTestGraph(): Graph = Neo4jAdapter()
-
-    val dynamicTests = scenarios.map { scenario =>
-      val name = scenario.toString()
-      val executable = scenario(createTestGraph())
-      DynamicTest.dynamicTest(name, executable)
-    }
-    dynamicTests.asJavaCollection
-  }
-
-  @TestFactory
   def testFullTCK(): util.Collection[DynamicTest] = {
-    val scenarios = CypherTCK.allTckScenarios.filterNot(_.steps.exists(_.isInstanceOf[ExpectError]) )
-      .filterNot(scenario => semanticFailures.contains(scenario.name))
+    val scenarios = CypherTCK.allTckScenarios.filterNot(_.steps.exists(_.isInstanceOf[ExpectError]))
+      .filterNot(scenario => tckSemanticFailures.contains(scenario.name))
 
     def createTestGraph: Graph = {
       Neo4jAdapter()
