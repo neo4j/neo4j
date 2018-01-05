@@ -1052,7 +1052,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
             new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
-                .printTree( cursor, cursor, System.out, printValues, printPosition, printState, printHeader );
+                .printTree( cursor, writer.cursor, System.out, printValues, printPosition, printState, printHeader );
         }
     }
     // Utility method

@@ -289,6 +289,7 @@ public class TreePrinter<KEY, VALUE>
 
     private static PageCursor select( PageCursor readCursor, PageCursor writeCursor )
     {
-        return readCursor.getCurrentPageId() == writeCursor.getCurrentPageId() ? writeCursor : readCursor;
+        return writeCursor == null ? readCursor :
+               readCursor.getCurrentPageId() == writeCursor.getCurrentPageId() ? writeCursor : readCursor;
     }
 }
