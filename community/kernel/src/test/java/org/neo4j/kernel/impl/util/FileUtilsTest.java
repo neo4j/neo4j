@@ -281,6 +281,18 @@ public class FileUtilsTest
         assertThat( size( fs, dir ), is( 3L ) );
     }
 
+    @Test
+    public void mustCountDirectoryContents() throws Exception
+    {
+        File dir = directory( "dir" );
+        File file = new File( dir, "file" );
+        File subdir = new File( dir, "subdir" );
+        file.createNewFile();
+        subdir.mkdirs();
+
+        assertThat( FileUtils.countFilesInDirectoryPath( dir.toPath() ), is( 2L ) );
+    }
+
     private File directory( String name )
     {
         File dir = new File( path, name );

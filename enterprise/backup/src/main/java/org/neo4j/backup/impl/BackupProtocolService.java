@@ -335,7 +335,7 @@ public class BackupProtocolService
 
     private boolean directoryIsEmpty( Path dir ) throws IOException
     {
-        return Files.notExists( dir ) || Files.isDirectory( dir ) && Files.list( dir ).count() == 0;
+        return Files.notExists( dir ) || Files.isDirectory( dir ) && FileUtils.countFilesInDirectoryPath( dir ) == 0;
     }
 
     static GraphDatabaseAPI startTemporaryDb(
