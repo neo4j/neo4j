@@ -23,7 +23,7 @@ import cypher.features.Neo4jExceptionToExecutionFailed._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.{Result => Neo4jResult}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.values.CypherValue
 
@@ -32,7 +32,7 @@ import scala.util.{Failure, Success, Try}
 
 object Neo4jAdapter {
   def apply(): Neo4jAdapter = {
-    val service: GraphDatabaseCypherService = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    val service = new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase())
     new Neo4jAdapter(service)
   }
 }
