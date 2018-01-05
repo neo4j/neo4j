@@ -235,7 +235,7 @@ public class LuceneDocumentStructure
             return getClass().getSimpleName() + ", term:" + term + ", field:" + field;
         }
 
-        private class PrefixTermsEnum extends FilteredTermsEnum
+        private static class PrefixTermsEnum extends FilteredTermsEnum
         {
             private BytesRef prefix;
 

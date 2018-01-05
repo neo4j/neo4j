@@ -39,6 +39,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     private static List<Long> NODE_IDS;
     private static long foo, bar, baz, barbaz, bare, gone;
 
+    @Override
     void createTestGraph( GraphDatabaseService graphDb )
     {
         Node deleted;

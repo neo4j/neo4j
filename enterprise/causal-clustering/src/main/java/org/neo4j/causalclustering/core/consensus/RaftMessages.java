@@ -501,7 +501,7 @@ public interface RaftMessages
             @Override
             public int hashCode()
             {
-                return Objects.hash( leaderTerm, prevLogIndex, prevLogTerm, entries, leaderCommit );
+                return Objects.hash( leaderTerm, prevLogIndex, prevLogTerm, Arrays.hashCode( entries ), leaderCommit );
             }
 
             @Override

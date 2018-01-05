@@ -46,7 +46,7 @@ public class HopScotchHashingAlgorithmTest
         PrimitiveLongSet set = new PrimitiveLongHashSet(
                 new LongKeyTable<>( DEFAULT_H, VALUE_MARKER ), VALUE_MARKER, monitor );
         Set<Long> added = new HashSet<>();
-        for ( int i = 0; i < threshold - 1; i++ )
+        for ( long i = 0; i < threshold - 1; i++ )
         {
             long value = i * 3;
             set.add( value );

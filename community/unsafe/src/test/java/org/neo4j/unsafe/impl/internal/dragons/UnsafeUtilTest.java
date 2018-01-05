@@ -88,7 +88,7 @@ import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.setMemory;
 
 public class UnsafeUtilTest
 {
-    class Obj
+    static class Obj
     {
         boolean aBoolean;
         byte aByte;

@@ -434,7 +434,7 @@ public class GBPTreeRecoveryIT
         return pageCacheRule.getPageCache( fs.get() );
     }
 
-    abstract class Action
+    abstract static class Action
     {
         long[] data;
         Set<Long> allKeys;

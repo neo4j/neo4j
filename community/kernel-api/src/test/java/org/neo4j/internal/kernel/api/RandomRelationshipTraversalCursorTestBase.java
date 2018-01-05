@@ -112,8 +112,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
         }
         catch ( Throwable t )
         {
-            System.err.println( "\nFailed with random seed " + seed );
-            throw t;
+            throw new RuntimeException( "Failed with random seed " + seed, t );
         }
     }
 }

@@ -82,6 +82,7 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
         return ResourceTypes.RELATIONSHIP_TYPE;
     }
 
+    @Override
     public int getPropertyId()
     {
         if ( propertyIds.length != 1 )

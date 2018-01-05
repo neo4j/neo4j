@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -473,6 +473,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.start();
+            fail();
         }
         catch ( Exception e )
         {
@@ -498,6 +499,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.init();
+            fail();
         }
         catch ( Exception e )
         {
@@ -511,7 +513,7 @@ public class LifeSupportTest
         verify( component ).shutdown();
     }
 
-    public class LifecycleMock implements Lifecycle
+    public static class LifecycleMock implements Lifecycle
     {
 
         Throwable initThrowable;
@@ -529,7 +531,7 @@ public class LifeSupportTest
             this.stopThrowable = stopThrowable;
             this.shutdownThrowable = shutdownThrowable;
 
-            transitions = new LinkedList<>();
+            transitions = new ArrayList<>();
             transitions.add( LifecycleStatus.NONE );
         }
 

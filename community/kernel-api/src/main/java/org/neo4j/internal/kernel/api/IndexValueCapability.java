@@ -31,7 +31,7 @@ public enum IndexValueCapability
     /**
      * Higher order indicate a higher capability.
      */
-    private int order;
+    private final int order;
 
     IndexValueCapability( int order )
     {

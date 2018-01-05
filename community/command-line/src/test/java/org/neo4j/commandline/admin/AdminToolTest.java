@@ -327,6 +327,7 @@ public class AdminToolTest
                 return "";
             }
 
+            @Override
             @Nonnull
             public AdminCommandSection commandSection()
             {
@@ -357,7 +358,7 @@ public class AdminToolTest
         }
     }
 
-    private class NullCommandProvider extends AdminCommand.Provider
+    private static class NullCommandProvider extends AdminCommand.Provider
     {
         protected NullCommandProvider()
         {

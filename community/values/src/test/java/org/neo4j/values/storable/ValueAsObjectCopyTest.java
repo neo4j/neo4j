@@ -202,7 +202,7 @@ public class ValueAsObjectCopyTest
         return new AsObjectCopyTest( value, asObject );
     }
 
-    private class AsObjectCopyTest
+    private static class AsObjectCopyTest
     {
         private final Value value;
         private final Object expected;

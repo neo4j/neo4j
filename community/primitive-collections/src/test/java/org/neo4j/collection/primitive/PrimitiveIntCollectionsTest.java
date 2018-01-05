@@ -283,6 +283,7 @@ public class PrimitiveIntCollectionsTest
         try
         {
             PrimitiveIntCollections.single( PrimitiveIntCollections.emptyIterator() );
+            fail();
         }
         catch ( NoSuchElementException e )
         {

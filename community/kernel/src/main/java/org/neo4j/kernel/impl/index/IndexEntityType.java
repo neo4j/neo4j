@@ -42,7 +42,7 @@ public enum IndexEntityType
         }
     };
 
-    private byte id;
+    private final byte id;
 
     IndexEntityType( byte id )
     {

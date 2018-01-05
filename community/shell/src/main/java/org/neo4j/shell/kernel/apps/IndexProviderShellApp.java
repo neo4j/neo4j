@@ -256,7 +256,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         Class<? extends PropertyContainer> entityType = getEntityType( parser );
         if ( getIndex( indexName, entityType, null ) != null )
         {
-            out.println( entityType.getClass().getSimpleName() + " index '" + indexName + "' already exists" );
+            out.println( entityType.getSimpleName() + " index '" + indexName + "' already exists" );
             return;
         }
 

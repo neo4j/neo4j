@@ -49,8 +49,8 @@ public enum Record
     public static final byte HAS_SECONDARY_UNIT = 8;
     public static final byte USES_FIXED_REFERENCE_FORMAT = 16;
 
-    private byte byteValue;
-    private int intValue;
+    private final byte byteValue;
+    private final int intValue;
 
     Record( Record from )
     {

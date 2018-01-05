@@ -29,6 +29,7 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -76,12 +77,13 @@ public class PageCacheFlusherTest
             throw failure;
         } ).when( pageCache ).flushAndForce();
         PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
-        flusher.start();
+        flusher.run();
 
         // WHEN
         try
         {
             flusher.halt();
+            fail();
         }
         catch ( RuntimeException e )
         {

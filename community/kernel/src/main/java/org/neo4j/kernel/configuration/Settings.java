@@ -1108,16 +1108,19 @@ public class Settings
                 return newSetting.name();
             }
 
+            @Override
             public String getDefaultValue()
             {
                 return newSetting.getDefaultValue();
             }
 
+            @Override
             public T from( Configuration config )
             {
                 return newSetting.from( config );
             }
 
+            @Override
             public T apply( Function<String, String> config )
             {
                 String newValue = config.apply( newSetting.name() );

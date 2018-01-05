@@ -105,18 +105,23 @@ public interface DataWriteOperations extends ExplicitIndexWrite
     String relationshipExplicitIndexRemoveConfiguration( String indexName, String key )
             throws ExplicitIndexNotFoundKernelException;
 
+    @Override
     void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
             throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
+    @Override
     void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
             throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
+    @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
+    @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
+    @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 

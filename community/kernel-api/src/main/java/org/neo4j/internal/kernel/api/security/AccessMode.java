@@ -61,11 +61,11 @@ public interface AccessMode
         /** Allows all operations. */
         FULL( true, true, true, true, true );
 
-        private boolean read;
-        private boolean write;
-        private boolean token;
-        private boolean schema;
-        private boolean procedure;
+        private final boolean read;
+        private final boolean write;
+        private final boolean token;
+        private final boolean schema;
+        private final boolean procedure;
 
         Static( boolean read, boolean write, boolean token, boolean schema, boolean procedure )
         {

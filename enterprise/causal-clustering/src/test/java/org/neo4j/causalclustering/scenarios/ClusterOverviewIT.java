@@ -380,7 +380,7 @@ public class ClusterOverviewIT
         @Override
         public int hashCode()
         {
-            return Objects.hash( addresses, role );
+            return Objects.hash( Arrays.hashCode( addresses ), role );
         }
 
         @Override

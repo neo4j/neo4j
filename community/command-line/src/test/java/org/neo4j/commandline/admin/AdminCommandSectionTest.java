@@ -94,7 +94,7 @@ public class AdminCommandSectionTest
         assertEquals( "General-AnotherTest", map.get( testAnotherGeneralSection ) );
     }
 
-    private class TestGeneralSection extends AdminCommandSection
+    private static class TestGeneralSection extends AdminCommandSection
     {
 
         @Override
@@ -105,7 +105,7 @@ public class AdminCommandSectionTest
         }
     }
 
-    private class TestAnotherGeneralSection extends AdminCommandSection
+    private static class TestAnotherGeneralSection extends AdminCommandSection
     {
 
         @Override

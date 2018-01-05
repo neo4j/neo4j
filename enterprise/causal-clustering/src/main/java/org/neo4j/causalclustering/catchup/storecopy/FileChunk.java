@@ -84,7 +84,7 @@ public class FileChunk
     @Override
     public int hashCode()
     {
-        return Objects.hash( encodedLength, bytes );
+        return Objects.hash( encodedLength, Arrays.hashCode( bytes ) );
     }
 
     @Override
