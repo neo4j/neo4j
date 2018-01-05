@@ -367,7 +367,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         }
     }
 
-    private abstract static class UpdateOperation
+    private abstract class UpdateOperation
     {
         final long key;
 
@@ -383,7 +383,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         abstract boolean isInsert();
     }
 
-    private static class PutOperation extends UpdateOperation
+    private class PutOperation extends UpdateOperation
     {
         PutOperation( long key )
         {
@@ -409,7 +409,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         }
     }
 
-    private static class RemoveOperation extends UpdateOperation
+    private class RemoveOperation extends UpdateOperation
     {
         RemoveOperation( long key )
         {
