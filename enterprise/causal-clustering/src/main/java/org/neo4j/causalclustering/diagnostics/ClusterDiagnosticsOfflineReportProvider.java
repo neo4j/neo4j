@@ -108,13 +108,8 @@ public class ClusterDiagnosticsOfflineReportProvider extends DiagnosticsOfflineR
             return;
         }
 
-        for ( File file : fs.listFiles( clusterStateDirectory ) )
+        for ( File file : fs.listFiles( clusterStateDirectory, ( dir, name ) -> !name.equals( RAFT_LOG_DIRECTORY_NAME ) ) )
         {
-            if ( file.getName().equals( RAFT_LOG_DIRECTORY_NAME ) )
-            {
-                continue; // include everything except raft log
-            }
-
             addDirectory( "ccstate", file, sources );
         }
     }
@@ -128,7 +123,7 @@ public class ClusterDiagnosticsOfflineReportProvider extends DiagnosticsOfflineR
      */
     private void addDirectory( String path, File dir, List<DiagnosticsReportSource> sources )
     {
-        String currentLevel = path + "/" + dir.getName();
+        String currentLevel = path + File.separator + dir.getName();
         if ( fs.isDirectory( dir ) )
         {
             File[] files = fs.listFiles( dir );
