@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
@@ -44,7 +45,7 @@ import org.neo4j.values.storable.Value;
  *
  * @see SimpleIndexReader
  */
-public class PartitionedIndexReader implements IndexReader
+public class PartitionedIndexReader extends AbstractIndexReader
 {
 
     private final List<SimpleIndexReader> indexReaders;
@@ -54,14 +55,15 @@ public class PartitionedIndexReader implements IndexReader
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator )
     {
-        this( partitionSearchers.stream()
+        this( descriptor, partitionSearchers.stream()
                 .map( partitionSearcher -> new SimpleIndexReader( partitionSearcher, descriptor,
                         samplingConfig, taskCoordinator ) )
                 .collect( Collectors.toList() ) );
     }
 
-    PartitionedIndexReader( List<SimpleIndexReader> readers )
+    PartitionedIndexReader( IndexDescriptor descriptor, List<SimpleIndexReader> readers )
     {
+        super( descriptor );
         this.indexReaders = readers;
     }
 

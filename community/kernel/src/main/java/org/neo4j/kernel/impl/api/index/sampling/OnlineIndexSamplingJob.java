@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 
 class OnlineIndexSamplingJob implements IndexSamplingJob
 {

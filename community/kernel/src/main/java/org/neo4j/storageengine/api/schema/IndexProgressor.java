@@ -19,7 +19,9 @@
  */
 package org.neo4j.storageengine.api.schema;
 
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -69,10 +71,12 @@ public interface IndexProgressor extends AutoCloseable
         /**
          * Setup the client for progressing using the supplied progressor. The values feed in accept map to the
          * propertyIds provided here. Called by index implementation.
+         * @param descriptor The descriptor
          * @param progressor The progressor
-         * @param propertyIds The property ids of this progression
+         * @param query The query of this progression
          */
-        void initialize( IndexProgressor progressor, int[] propertyIds );
+        void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
+                IndexQuery[] query );
 
         /**
          * Accept the node id and values of a candidate index entry. Return true if the entry is

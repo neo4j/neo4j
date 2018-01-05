@@ -51,6 +51,7 @@ import org.neo4j.values.storable.Values;
 public class PropertyCursor extends PropertyRecord implements org.neo4j.internal.kernel.api.PropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
+    public static final int INITIAL_POSITION = -1;
     private Read read;
     private long next;
     private int block;
@@ -68,7 +69,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         super( NO_ID );
     }
 
-    void init( long reference, Read read, AssertOpen assertOpen )
+    void init( long entityReference, long reference, Read read, AssertOpen assertOpen )
     {
         if ( getId() != NO_ID )
         {
@@ -76,43 +77,38 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         }
 
         this.assertOpen = assertOpen;
+        //Set to high value to force a read
         this.block = Integer.MAX_VALUE;
         this.read = read;
-        if ( reference == NO_ID )
+        if ( reference != NO_ID )
         {
-            this.next = reference;
-            return;
-        }
-        if ( page == null )
-        {
-            page = read.propertyPage( reference );
+            if ( page == null )
+            {
+                page = read.propertyPage( reference );
+            }
         }
 
-        if ( References.hasTxStateFlag( reference ) ) // both in tx-state and store
+        // Transaction state
+        if ( read.hasTxStateWithChanges() )
         {
-            this.propertiesState = read.txState().getPropertiesState( reference );
+            if ( entityReference == NO_ID )
+            {
+                throw new UnsupportedOperationException(
+                        "Tx state has no method for accessing graph property state, please add when needed" );
+            }
+            else if ( References.hasNodeFlag( entityReference ) )
+            {
+                this.propertiesState = read.txState().getNodeState( References.clearFlags( entityReference ) );
+            }
+            else if ( References.hasRelationshipFlag( entityReference ) )
+            {
+                this.propertiesState = read.txState().getRelationshipState( References.clearFlags( entityReference ) );
+            }
             this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
-            this.next = References.clearFlags( reference );
         }
-        else if ( References.hasNodeFlag( reference ) ) // only in tx-state
-        {
-            this.propertiesState = read.txState().getNodeState( References.clearFlags( reference ) );
-            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
-            this.next = NO_ID;
-        }
-        else if ( References.hasRelationshipFlag( reference ) ) // only in tx-state
-        {
-            this.propertiesState = read.txState().getRelationshipState( References.clearFlags( reference ) );
-            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
-            this.next = NO_ID;
-        }
-        else
-        {
-            this.propertiesState = null;
-            this.txStateChangedProperties = null;
-            this.txStateValue = null;
-            this.next = reference;
-        }
+
+        // Store state
+        this.next = reference;
     }
 
     @Override
@@ -132,32 +128,49 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
             }
         }
 
-        while ( block < getNumberOfBlocks() )
+        while ( true )
         {
-            if ( block == -1 )
+            //Figure out number of blocks of record
+            int numberOfBlocks = getNumberOfBlocks();
+            while ( block < numberOfBlocks )
             {
-                block = 0;
-            }
-            else
-            {
-                block += type().calculateNumberOfBlocksUsed( currentBlock() );
-            }
-            if ( block < getNumberOfBlocks() && type() != null &&
-                 !isPropertyChangedOrRemoved() )
-            {
-                return true;
-            }
-        }
+                //We have just read a record, so we are at the beginning
+                if ( block == INITIAL_POSITION )
+                {
+                    block = 0;
+                }
+                else
+                {
+                    //Figure out the type and how many blocks that are used
+                    long current = currentBlock();
+                    PropertyType type = PropertyType.getPropertyTypeOrNull( current );
+                    if ( type == null )
+                    {
+                        break;
+                    }
+                    block += type.calculateNumberOfBlocksUsed( current );
+                }
+                //nothing left, need to read a new record
+                if ( block >= numberOfBlocks || type() == null )
+                {
+                    break;
+                }
 
-        if ( next == NO_ID )
-        {
-            return false;
-        }
+                if ( !isPropertyChangedOrRemoved() )
+                {
+                    return true;
+                }
+            }
 
-        read.property( this, next, page );
-        next = getNextProp();
-        block = -1;
-        return next();
+            if ( next == NO_ID )
+            {
+                return false;
+            }
+
+            read.property( this, next, page );
+            next = getNextProp();
+            block = INITIAL_POSITION;
+        }
     }
 
     private boolean isPropertyChangedOrRemoved()
@@ -491,6 +504,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         throw new UnsupportedOperationException( "not implemented" );
     }
 
+    @Override
     public boolean isClosed()
     {
         return page == null;
@@ -505,7 +519,8 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         }
         else
         {
-            return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next + ", underlying record=" + super.toString() + " ]";
+            return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next +
+                   ", underlying record=" + super.toString() + " ]";
         }
     }
 }

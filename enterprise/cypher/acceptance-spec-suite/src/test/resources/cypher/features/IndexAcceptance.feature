@@ -298,3 +298,46 @@ Feature: IndexAcceptance
       | (:User {prop: '1_val'})   |
       | (:User {prop: '11_val'})  |
     And no side effects
+
+  Scenario: STARTS WITH should handle null prefix
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :Person(name)
+      """
+    And having executed:
+      """
+      CREATE (:Person {name: 'Jack'})
+      CREATE (:Person {name: 'Jill'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      WHERE p.name STARTS WITH null
+      RETURN p
+      """
+    Then the result should be:
+      | p                             |
+    And no side effects
+
+  Scenario: Index seek should handle null value
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :Person(name)
+      """
+    And having executed:
+      """
+      CREATE (:Person {name: 'Jack'})
+      CREATE (:Person {name: 'Jill'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      WHERE p.name = null
+      RETURN p
+      """
+    Then the result should be:
+      | p                             |
+    And no side effects
+

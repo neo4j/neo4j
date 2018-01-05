@@ -56,9 +56,11 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -67,11 +69,9 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
@@ -382,9 +382,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public boolean isAvailable( long timeout )
+    public boolean isAvailable( long timeoutMillis )
     {
-        return spi.databaseIsAvailable( timeout );
+        return spi.databaseIsAvailable( timeoutMillis );
     }
 
     @Override
@@ -618,7 +618,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             Node node = iterator.next();
             if ( iterator.hasNext() )
             {
-                throw new MultipleFoundException();
+                throw new MultipleFoundException(
+                        format( "Found multiple nodes with label: '%s', property name: '%s' and property " +
+                                "value: '%s' while only one was expected.", myLabel, key, value ) );
             }
             return node;
         }

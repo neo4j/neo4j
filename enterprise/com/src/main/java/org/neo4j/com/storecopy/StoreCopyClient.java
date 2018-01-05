@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -151,10 +150,17 @@ public class StoreCopyClient
     private final PageCache pageCache;
     private final Monitor monitor;
     private final boolean forensics;
+    private final FileMoveProvider fileMoveProvider;
 
-    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-            LogProvider logProvider, FileSystemAbstraction fs,
-            PageCache pageCache, Monitor monitor, boolean forensics )
+    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
+            FileSystemAbstraction fs, PageCache pageCache, Monitor monitor, boolean forensics )
+    {
+        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( pageCache,
+                fs ) );
+    }
+
+    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
+            FileSystemAbstraction fs, PageCache pageCache, Monitor monitor, boolean forensics, FileMoveProvider fileMoveProvider )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -164,26 +170,26 @@ public class StoreCopyClient
         this.pageCache = pageCache;
         this.monitor = monitor;
         this.forensics = forensics;
+        this.fileMoveProvider = fileMoveProvider;
     }
 
-    public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest,
-                           MoveAfterCopy moveAfterCopy ) throws Exception
+    public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest, MoveAfterCopy moveAfterCopy ) throws Exception
     {
         // Create a temp directory (or clean if present)
         File tempStore = new File( storeDir, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
         try
         {
             // The ToFileStoreWriter will add FileMoveActions for *RecordStores* that have to be
-            // *moves via the PageCache*!
+            // *moved via the PageCache*!
             // We have to move these files via the page cache, because that is the *only way* that we can communicate
             // with any block storage that might have been configured for this instance.
-            List<FileMoveAction> storeFileMoveActions = new ArrayList<>();
+            List<FileMoveAction> moveActions = new ArrayList<>();
             cleanDirectory( tempStore );
 
             // Request store files and transactions that will need recovery
             monitor.startReceivingStoreFiles();
-            try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
-                    new ToFileStoreWriter( tempStore, fs, monitor, pageCache, storeFileMoveActions ) ) ) )
+            ToFileStoreWriter storeWriter = new ToFileStoreWriter( tempStore, fs, monitor, pageCache, moveActions );
+            try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator( storeWriter ) ) )
             {
                 monitor.finishReceivingStoreFiles();
                 // Update highest archived log id
@@ -199,23 +205,13 @@ public class StoreCopyClient
             checkCancellation( cancellationRequest, tempStore );
 
             // Run recovery, so that the transactions we just wrote into the active log will be applied.
-            monitor.startRecoveringStore();
-            GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
-            graphDatabaseService.shutdown();
-            monitor.finishRecoveringStore();
+            recoverDatabase( tempStore );
 
-            LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
-                    .withConfig( config )
-                    .build();
             // All is well, move the streamed files to the real store directory.
             // Start with the files written through the page cache. Should only be record store files.
             // Note that the stream is lazy, so the file system traversal won't happen until *after* the store files
             // have been moved. Thus we ensure that we only attempt to move them once.
-            Stream<FileMoveAction> moveActionStream = Stream.concat(
-                    storeFileMoveActions.stream(), traverseGenerateMoveActions( tempStore, tempStore ) );
-            Function<File,File> destinationMapper =
-                    file  -> logFiles.isLogFile( file ) ? logFiles.logFilesDirectory() : storeDir;
-            moveAfterCopy.move( moveActionStream, tempStore, destinationMapper );
+            moveFromTemporaryLocationToCorrect( moveActions, tempStore, moveAfterCopy );
         }
         finally
         {
@@ -224,28 +220,24 @@ public class StoreCopyClient
         }
     }
 
-    private static Stream<FileMoveAction> traverseGenerateMoveActions( File dir, File basePath )
+    private void moveFromTemporaryLocationToCorrect(
+            List<FileMoveAction> storeFileMoveActions, File tempStore, MoveAfterCopy moveAfterCopy ) throws Exception
     {
-        // Note that flatMap is an *intermediate operation* and therefor always lazy.
-        // It is very important that the stream we return only *lazily* calls out to expandTraverseFiles!
-        return Stream.of( dir ).flatMap( d -> expandTraverseFiles( d, basePath ) );
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withConfig( config ).build();
+
+        Stream<FileMoveAction> moveActionStream =
+                Stream.concat( storeFileMoveActions.stream(), fileMoveProvider.traverseForMoving( tempStore ) );
+        Function<File,File> destinationMapper =
+                file -> logFiles.isLogFile( file ) ? logFiles.logFilesDirectory() : storeDir;
+        moveAfterCopy.move( moveActionStream, tempStore, destinationMapper );
     }
 
-    private static Stream<FileMoveAction> expandTraverseFiles( File dir, File basePath )
+    private void recoverDatabase( File tempStore )
     {
-        File[] listing = dir.listFiles();
-        if ( listing == null )
-        {
-            // Weird, we somehow listed files for something that is no longer a directory. It's either a file,
-            // or doesn't exists. If the pathname no longer exists, then we are safe to return null here,
-            // because the flatMap in traverseGenerateMoveActions will just ignore it.
-            return dir.isFile() ? Stream.of( FileMoveAction.copyViaFileSystem( dir, basePath ) ) : null;
-        }
-        Stream<File> files = Arrays.stream( listing ).filter( File::isFile );
-        Stream<File> dirs = Arrays.stream( listing ).filter( File::isDirectory );
-        Stream<FileMoveAction> moveFiles = files.map( f -> FileMoveAction.copyViaFileSystem( f, basePath ) );
-        Stream<FileMoveAction> traverseDirectories = dirs.flatMap( d -> traverseGenerateMoveActions( d, basePath ) );
-        return Stream.concat( moveFiles, traverseDirectories );
+        monitor.startRecoveringStore();
+        GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
+        graphDatabaseService.shutdown();
+        monitor.finishRecoveringStore();
     }
 
     private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws Exception
@@ -263,8 +255,7 @@ public class StoreCopyClient
             // transactions that goes some time back, before the last committed transaction id. So we cannot
             // use a TransactionAppender, since it has checks for which transactions one can append.
             FlushableChannel channel = logFiles.getLogFile().getWriter();
-            final TransactionLogWriter writer = new TransactionLogWriter(
-                    new LogEntryWriter( channel ) );
+            final TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
             final AtomicLong firstTxId = new AtomicLong( BASE_TX_ID );
 
             response.accept( new Response.Handler()
@@ -315,11 +306,7 @@ public class StoreCopyClient
                 // last closed transaction offset will not overcome old one. Till that happens it will be
                 // impossible for recovery process to restore the store
                 File neoStore = new File( tempStoreDir, MetaDataStore.DEFAULT_NAME );
-                MetaDataStore.setRecord(
-                        pageCache,
-                        neoStore,
-                        MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
-                        LOG_HEADER_SIZE );
+                MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, LOG_HEADER_SIZE );
             }
         }
         finally
@@ -340,8 +327,7 @@ public class StoreCopyClient
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logical_logs_location, tempStore.getAbsolutePath() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade,
-                        config.get( GraphDatabaseSettings.allow_upgrade ).toString() )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, config.get( GraphDatabaseSettings.allow_upgrade ).toString() )
                 .newGraphDatabase();
     }
 

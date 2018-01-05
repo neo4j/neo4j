@@ -19,6 +19,11 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Iterator;
+
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+
 /**
  * Surface for getting schema information, such as fetching specific indexes or constraints.
  */
@@ -32,4 +37,31 @@ public interface SchemaRead
      * @return the IndexReference, or {@link CapableIndexReference#NO_INDEX} if such an index does not exist.
      */
     CapableIndexReference index( int label, int... properties );
+
+    /**
+     * Finds all constraints for the given schema
+     * @param descriptor The descriptor of the schema
+     * @return All constraints for the given schema
+     */
+    Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
+
+    /**
+     * Checks if a constraint exists
+     * @param descriptor The descriptor of the constraint to check.
+     * @return <tt>true</tt> if the constraint exists, otherwise <tt>false</tt>
+     */
+    boolean constraintExists( ConstraintDescriptor descriptor );
+
+    /**
+     * Finds all constraints for the given label
+     * @param labelId The id of the label
+     * @return All constraints for the given label
+     */
+    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
+
+    /**
+     * Find all constraints in the database
+     * @return An iterator of all the constraints in the database.
+     */
+    Iterator<ConstraintDescriptor> constraintsGetAll( );
 }

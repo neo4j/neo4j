@@ -45,11 +45,11 @@ public class IndexTxStateUpdater
 
     // We can use the StoreReadLayer directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read )
+    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read, NodeSchemaMatcher nodeIndexMatcher )
     {
         this.storeReadLayer = storeReadLayer;
         this.read = read;
-        this.nodeIndexMatcher = new NodeSchemaMatcher( read );
+        this.nodeIndexMatcher = nodeIndexMatcher;
     }
 
     // LABEL CHANGES

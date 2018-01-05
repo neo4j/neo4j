@@ -50,7 +50,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
 {
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIReadTestSupport testSupport;
-    private Session session;
+    protected Session session;
     private Transaction tx;
     protected Read read;
     protected ExplicitIndexRead indexRead;

@@ -36,10 +36,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;

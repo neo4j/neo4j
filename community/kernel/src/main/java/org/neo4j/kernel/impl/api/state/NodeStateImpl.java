@@ -28,7 +28,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.Direction;
@@ -231,10 +231,10 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             PrimitiveLongCollections.emptyIterator();
     }
 
-    public abstract static class Defaults extends StateDefaults<Long, NodeState, NodeStateImpl>
+    public abstract static class Defaults extends StateDefaults<NodeState, NodeStateImpl>
     {
         @Override
-        final NodeStateImpl createValue( Long id, TxState state )
+        final NodeStateImpl createValue( long id, TxState state )
         {
             return new NodeStateImpl( id, state );
         }

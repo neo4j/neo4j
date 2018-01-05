@@ -48,6 +48,7 @@ Works with indexed and unindexed property
 Works with two indexed properties
 Should be able to merge using property from match with index
 Merge with an index must properly handle multiple labels
+STARTS WITH should handle null prefix
 Filter on path nodes
 Using a single bound node
 Using a longer pattern

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
@@ -57,10 +57,10 @@ public class RelationshipStateImpl extends PropertyContainerStateImpl implements
         return false;
     }
 
-    public abstract static class Defaults extends StateDefaults<Long, RelationshipState, RelationshipStateImpl>
+    public abstract static class Defaults extends StateDefaults<RelationshipState, RelationshipStateImpl>
     {
         @Override
-        RelationshipStateImpl createValue( Long id, TxState state )
+        RelationshipStateImpl createValue( long id, TxState state )
         {
             return new RelationshipStateImpl( id );
         }

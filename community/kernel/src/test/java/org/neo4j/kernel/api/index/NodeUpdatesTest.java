@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyLoader;

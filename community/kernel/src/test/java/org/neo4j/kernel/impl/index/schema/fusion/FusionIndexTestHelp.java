@@ -25,8 +25,8 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;

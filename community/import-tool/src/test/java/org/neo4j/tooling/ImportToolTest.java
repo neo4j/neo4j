@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -1167,7 +1168,10 @@ public class ImportToolTest
     {
         // GIVEN
         String name = "  This is a line with leading and trailing whitespaces   ";
-        File data = data( ":ID,name", "1,\"" + name + "\"");
+        File data = data(
+                ":ID,name",
+                "1,\"" + name + "\"",
+                "2," + name );
 
         // WHEN
         importTool(
@@ -1177,13 +1181,18 @@ public class ImportToolTest
 
         // THEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterator<Node> allNodes = db.getAllNodes().iterator() )
         {
-            ResourceIterator<Node> allNodes = db.getAllNodes().iterator();
-            Node node = Iterators.single( allNodes );
-            allNodes.close();
+            Set<String> names = new HashSet<>();
+            while ( allNodes.hasNext() )
+            {
+                names.add( allNodes.next().getProperty( "name" ).toString() );
+            }
 
-            assertEquals( name.trim(), node.getProperty( "name" ) );
+            assertTrue( names.remove( name ) );
+            assertTrue( names.remove( name.trim() ) );
+            assertTrue( names.isEmpty() );
 
             tx.success();
         }

@@ -46,7 +46,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     @Override
     public boolean hasProperties()
     {
-        return nextProp != (long) PropertyCursor.NO_ID;
+        return nextProp != PropertyCursor.NO_ID;
     }
 
     @Override
@@ -64,7 +64,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     @Override
     public void properties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
-        read.nodeProperties( propertiesReference(), cursor );
+        read.relationshipProperties( relationshipReference(), propertiesReference(), cursor );
     }
 
     @Override

@@ -58,7 +58,6 @@ class References
     private static final long DIRECT_FLAG = 0x2000_0000_0000_0000L;
 
     // Use node reference as property reference
-    private static final long STATE_MARKER = 0x1000_0000_0000_0000L;
     private static final long NODE_MARKER = 0x2000_0000_0000_0000L;
     private static final long RELATIONSHIP_MARKER = 0x4000_0000_0000_0000L;
 
@@ -189,30 +188,5 @@ class References
     {
         assert reference != NO_ID;
         return (reference & RELATIONSHIP_MARKER) != 0L;
-    }
-
-    /**
-     * Marks the property reference as having changes in the transaction state.
-     * <p>
-     * Setting this flag tells us that the value on disk is not the only source of truth, the transaction state must
-     * also be checked.
-     *
-     * @param reference The reference to set as having tx state
-     * @return The encoded reference.
-     */
-    static long setTxStateFlag( long reference )
-    {
-        return reference | STATE_MARKER | FLAG_MARKER;
-    }
-
-    /**
-     * Checks if the property reference has been marked as having changes in the transaction state.
-     * @param reference The reference to check
-     * @return <tt>true</tt>if the reference has been marked as having changes otherwise <tt>false</tt>
-     */
-    static boolean hasTxStateFlag( long reference )
-    {
-        assert reference != NO_ID;
-        return (reference & STATE_MARKER) != 0L;
     }
 }

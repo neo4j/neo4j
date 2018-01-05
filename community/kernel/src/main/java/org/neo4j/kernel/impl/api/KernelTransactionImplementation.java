@@ -46,16 +46,17 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
@@ -98,7 +99,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, AssertOpen
 {
     /*
      * IMPORTANT:
@@ -201,13 +202,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statistics = new Statistics( this, cpuClock, heapAllocation );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
-                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore,
-                        this::assertOpen );
+                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
+        org.neo4j.kernel.impl.newapi.NodeSchemaMatcher matcher =
+                new org.neo4j.kernel.impl.newapi.NodeSchemaMatcher( allStoreHolder );
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
-                        storageStatement, this, cursors, autoIndexing );
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
+                        storageStatement,
+                        this, cursors, autoIndexing, matcher );
     }
 
     /**
@@ -467,10 +470,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void assertOpen()
     {
-        Optional<Status> terminationReason = getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        Status reason = this.terminationReason;
+        if ( reason != null )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            throw new TransactionTerminatedException( reason );
         }
     }
 

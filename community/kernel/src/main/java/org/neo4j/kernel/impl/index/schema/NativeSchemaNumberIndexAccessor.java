@@ -111,7 +111,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     public IndexReader newReader()
     {
         assertOpen();
-        return new NativeSchemaNumberIndexReader<>( tree, layout, samplingConfig, descriptor.schema().getPropertyIds() );
+        return new NativeSchemaNumberIndexReader<>( tree, layout, samplingConfig, descriptor );
     }
 
     @Override

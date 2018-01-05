@@ -22,10 +22,13 @@ package org.neo4j.kernel.api.schema;
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.schema.SchemaComputer;
+import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-public class RelationTypeSchemaDescriptor implements SchemaDescriptor
+public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor
 {
     private final int relTypeId;
     private final int[] propertyIds;
@@ -55,6 +58,7 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
                 SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
     }
 
+    @Override
     public int getRelTypeId()
     {
         return relTypeId;
