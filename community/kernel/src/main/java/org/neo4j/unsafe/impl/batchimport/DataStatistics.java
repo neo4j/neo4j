@@ -177,7 +177,7 @@ public class DataStatistics implements Iterable<DataStatistics.RelationshipTypeC
 
         private void addTo( long[] counts )
         {
-            for ( int i = 0; i < highestTypeId; i++ )
+            for ( int i = 0; i <= highestTypeId; i++ )
             {
                 counts[i] += this.counts[i];
             }

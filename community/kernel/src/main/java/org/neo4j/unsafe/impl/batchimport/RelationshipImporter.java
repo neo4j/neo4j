@@ -81,7 +81,7 @@ public class RelationshipImporter extends EntityImporter
         this.relationshipRecord = relationshipStore.newRecord();
         this.relationshipIds = new BatchingIdGetter( relationshipStore );
         this.typeCounts = typeDistribution.newClient();
-        this.prepareIdSequence = PrepareIdSequence.<RelationshipRecord>of( doubleRecordUnits ).apply( stores.getRelationshipStore() );
+        this.prepareIdSequence = PrepareIdSequence.of( doubleRecordUnits ).apply( stores.getRelationshipStore() );
         relationshipRecord.setInUse( true );
     }
 
@@ -143,7 +143,6 @@ public class RelationshipImporter extends EntityImporter
     public boolean type( int typeId )
     {
         relationshipRecord.setType( typeId );
-        typeCounts.increment( typeId );
         return true;
     }
 
@@ -177,6 +176,7 @@ public class RelationshipImporter extends EntityImporter
             relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ) );
             relationshipStore.updateRecord( relationshipRecord );
             relationshipCount++;
+            typeCounts.increment( relationshipRecord.getType() );
         }
         else
         {
