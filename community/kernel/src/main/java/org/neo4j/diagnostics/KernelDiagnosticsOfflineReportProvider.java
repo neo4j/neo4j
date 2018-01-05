@@ -20,14 +20,16 @@
 package org.neo4j.diagnostics;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.logging.BufferingLog;
@@ -44,7 +46,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
 
     public KernelDiagnosticsOfflineReportProvider()
     {
-        super( "kernel", "logs", "plugins", "tree" );
+        super( "kernel", "logs", "plugins", "tree", "tx" );
     }
 
     @Override
@@ -55,7 +57,6 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         this.storeDirectory = storeDirectory;
     }
 
-    @Nonnull
     @Override
     protected List<DiagnosticsReportSource> provideSources( Set<String> classifiers )
     {
@@ -71,6 +72,10 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         if ( classifiers.contains( "tree" ) )
         {
             listDataDirectory( sources );
+        }
+        if ( classifiers.contains( "tx" ) )
+        {
+            getTransactionLogFiles( sources );
         }
 
         return sources;
@@ -172,4 +177,27 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         }
         // there are other rotation schemas but nothing we can predict...
     }
+
+    /**
+     * Add all available log files as sources.
+     *
+     * @param sources destination of the sources.
+     */
+    private void getTransactionLogFiles( List<DiagnosticsReportSource> sources )
+    {
+        try
+        {
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDirectory, fs ).build();
+            for ( File file : logFiles.logFiles() )
+            {
+                sources.add( DiagnosticsReportSources.newDiagnosticsFile( "tx/" + file.getName(), fs, file ) );
+            }
+        }
+        catch ( IOException e )
+        {
+            sources.add( DiagnosticsReportSources
+                    .newDiagnosticsString( "tx.txt", () -> "Error getting tx logs: " + e.getMessage() ) );
+        }
+    }
+
 }
