@@ -22,6 +22,10 @@ package cypher.features
 import java.util
 
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings._
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.opencypher.tools.tck.api.{CypherTCK, ExpectError, Graph}
 
 import scala.collection.JavaConverters._
@@ -40,13 +44,35 @@ class TCKTest {
     "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT",
     "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT")
 
+  val scenarios = CypherTCK.allTckScenarios.filterNot(_.steps.exists(_.isInstanceOf[ExpectError]))
+    .filterNot(scenario => tckSemanticFailures.contains(scenario.name))
+
   @TestFactory
-  def runTCKTests(): util.Collection[DynamicTest] = {
-    val scenarios = CypherTCK.allTckScenarios.filterNot(_.steps.exists(_.isInstanceOf[ExpectError]))
-      .filterNot(scenario => tckSemanticFailures.contains(scenario.name))
+  def runTCKTestsDefault(): util.Collection[DynamicTest] = {
 
     def createTestGraph: Graph = {
       Neo4jAdapter()
+    }
+
+    val dynamicTests = scenarios.map { scenario =>
+      val name = scenario.toString()
+      val executable = scenario(createTestGraph)
+      DynamicTest.dynamicTest(name, executable)
+    }
+    dynamicTests.asJavaCollection
+  }
+
+  @TestFactory
+  def runTCKTestsCost(): util.Collection[DynamicTest] = {
+    val config = new util.HashMap[Setting[_], String]()
+    config.put(cypher_planner, "COST")
+    config.put(cypher_runtime, "COMPILED")
+
+    def createTestGraph: Graph = {
+      val db = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config)
+      //TODO: DB seems to receive and accept the config, but not actually use it.
+      val service = new GraphDatabaseCypherService(db)
+      new Neo4jAdapter(service)
     }
 
     val dynamicTests = scenarios.map { scenario =>
