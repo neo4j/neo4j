@@ -32,7 +32,7 @@ class AcceptanceTest {
   val acceptanceSemanticFailures = Set("Calling the same procedure twice using the same outputs in each call")
 
   @TestFactory
-  def testCustomFeature(): util.Collection[DynamicTest] = {
+  def runAcceptanceTests(): util.Collection[DynamicTest] = {
     val featuresURI = getClass.getResource("/cypher/features").toURI
     val scenarios = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios).
     filterNot(scenario => acceptanceSemanticFailures.contains(scenario.name)).

@@ -41,7 +41,7 @@ class TCKTest {
     "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT")
 
   @TestFactory
-  def testFullTCK(): util.Collection[DynamicTest] = {
+  def runTCKTests(): util.Collection[DynamicTest] = {
     val scenarios = CypherTCK.allTckScenarios.filterNot(_.steps.exists(_.isInstanceOf[ExpectError]))
       .filterNot(scenario => tckSemanticFailures.contains(scenario.name))
 

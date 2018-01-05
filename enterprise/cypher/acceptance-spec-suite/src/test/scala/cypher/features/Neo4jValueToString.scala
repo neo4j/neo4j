@@ -76,6 +76,10 @@ object Neo4jValueToString extends (Any => String) {
 
       case l: Long => l.toString
 
+      case d: Double => d.toString
+
+      case b: Boolean => b.toString
+
       case other =>
         println(s"could not convert $other of type ${other.getClass}")
         other.toString
