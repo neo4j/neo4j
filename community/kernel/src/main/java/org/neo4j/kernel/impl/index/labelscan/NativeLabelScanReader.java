@@ -32,6 +32,8 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.kernel.impl.index.schema.NumberHitIndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
@@ -106,6 +108,23 @@ class NativeLabelScanReader implements LabelScanReader
     {
         List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( labelIds );
         return new CompositeLabelScanValueIterator( iterators, true );
+    }
+
+    public LabelScanValueIndexProgressor nodesWithLabelIndex( IndexProgressor.NodeLabelClient client,
+            int labelId )
+    {
+        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+        try
+        {
+            cursor = seekerForLabel( labelId );
+            openCursors.add( cursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+
+        return new LabelScanValueIndexProgressor( cursor, openCursors, client );
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( int[] labelIds )
