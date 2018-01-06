@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api.{CursorFactory, Read, Write}
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -107,20 +107,23 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def dropIndexRule(descriptor: IndexDescriptor) = singleDbHit(inner.dropIndexRule(descriptor))
 
-  override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[NodeValue] =
+
+  override def indexReference(label: Int, properties: Int*): IndexReference = singleDbHit(inner.indexReference(label, properties:_*))
+
+  override def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue] =
     manyDbHits(inner.indexSeek(index, values))
 
-  override def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[NodeValue] =
+  override def indexSeekByRange(index: IndexReference, value: Any): Iterator[NodeValue] =
     manyDbHits(inner.indexSeekByRange(index, value))
 
-  override def indexScan(index: IndexDescriptor): Iterator[NodeValue] = manyDbHits(inner.indexScan(index))
+  override def indexScan(index: IndexReference): Iterator[NodeValue] = manyDbHits(inner.indexScan(index))
 
-  override def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator = manyDbHits(inner.indexScanPrimitive(index))
+  override def indexScanPrimitive(index: IndexReference): PrimitiveLongIterator = manyDbHits(inner.indexScanPrimitive(index))
 
-  override def indexScanByContains(index: IndexDescriptor, value: String): scala.Iterator[NodeValue] =
+  override def indexScanByContains(index: IndexReference, value: String): scala.Iterator[NodeValue] =
     manyDbHits(inner.indexScanByContains(index, value))
 
-  override def indexScanByEndsWith(index: IndexDescriptor, value: String): scala.Iterator[NodeValue] =
+  override def indexScanByEndsWith(index: IndexReference, value: String): scala.Iterator[NodeValue] =
     manyDbHits(inner.indexScanByEndsWith(index, value))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = manyDbHits(inner.getNodesByLabel(id))
@@ -156,7 +159,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[NodeValue] =
+  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Option[NodeValue] =
     singleDbHit(inner.lockingUniqueIndexSeek(index, values))
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
