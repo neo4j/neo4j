@@ -994,8 +994,7 @@ public class ImportToolTest
                 relationship( "b", "c", "KNOWS" ), //         line 1 of file2
                 relationship( "c", "a", "KNOWS" ), //         line 2 of file2
                 relationship( "missing", "a", "KNOWS" ) ); // line 3 of file2
-        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
-        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+        File relationshipData = relationshipData( true, config, relationships.iterator(), TRUE, true );
         File bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
@@ -1006,14 +1005,13 @@ public class ImportToolTest
                     "--nodes", nodeData.getAbsolutePath(),
                     "--bad", bad.getAbsolutePath(),
                     "--bad-tolerance", "1",
-                    "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
-                                       relationshipData2.getAbsolutePath() );
+                    "--relationships", relationshipData.getAbsolutePath() );
             fail();
         }
         catch ( Exception e )
         {
             // THEN
-            assertExceptionContains( e, relationshipData2.getAbsolutePath(), InputException.class );
+            assertExceptionContains( e, relationshipData.getAbsolutePath(), InputException.class );
         }
     }
 
