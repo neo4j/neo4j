@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.index.schema.TemporalSchemaIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionSchemaIndexProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -58,6 +59,8 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         PageCache pageCache();
 
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector();
+
+        LogService logService();
     }
 
     public NativeLuceneFusionSchemaIndexProviderFactory()
@@ -78,12 +81,13 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
-        return newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        return newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector,
+                dependencies.logService().getInternalLog( FusionSchemaIndexProvider.class ) );
     }
 
     public static FusionSchemaIndexProvider newInstance( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
             SchemaIndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Log log )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = isReadOnly( config, operationalMode );
@@ -94,7 +98,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         TemporalSchemaIndexProvider temporalProvider =
                 new TemporalSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
-                operationalMode );
+                operationalMode, pageCache, log );
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;
         return new FusionSchemaIndexProvider( nativeProvider,

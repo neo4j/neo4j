@@ -21,6 +21,7 @@ package org.neo4j.index.lucene;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +31,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -48,10 +53,15 @@ public class ConstraintIndexFailureIT
 {
     private static final String INJECTED_FAILURE = "Injected failure";
 
-    @Rule
     public final TestDirectory storeDir = TestDirectory.testDirectory();
-    @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public final RuleChain rules = RuleChain
+            .outerRule( storeDir )
+            .around( fileSystemRule )
+            .around( pageCacheRule );
 
     @Test
     public void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception
@@ -112,7 +122,10 @@ public class ConstraintIndexFailureIT
     {
         File luceneIndexDirectory = subProviderDirectoryStructure( storeDir.directory() )
                 .forProvider( PROVIDER_DESCRIPTOR ).directoryForIndex( 1 );
-        PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
+        DirectoryFactory dirFactory =
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), Config.defaults(),
+                        NullLog.getInstance() );
+        PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create( dirFactory )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexFolder( luceneIndexDirectory )
                 .build();

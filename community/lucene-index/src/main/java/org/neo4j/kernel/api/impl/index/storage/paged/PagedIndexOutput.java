@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.storage.paged;
 
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.OutputStreamIndexOutput;
 
 import java.io.FilterOutputStream;
@@ -27,27 +28,28 @@ import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-// This should be replaced by writes through the page cache once the page
-// cache has the feature set needed for this. Mainly this is around the
-// block device integration missing a few small features.
+/**
+ * This is based on {@link FSDirectory.FSIndexOutput}, only change is that it works via {@link FileSystemAbstraction}.
+ */
 class PagedIndexOutput extends OutputStreamIndexOutput
 {
     /**
      * The maximum chunk size is 8192 bytes, because file channel mallocs
      * a native buffer outside of stack if the write buffer size is larger.
+     *
+     * See http://hg.openjdk.java.net/jdk8u/jdk8u/jdk/file/b1fec09a9588/src/share/native/java/io/io_util.c and
+     * https://issues.apache.org/jira/browse/LUCENE-5164
      */
     private static final int CHUNK_SIZE = 8192;
 
     PagedIndexOutput( Path path, FileSystemAbstraction fs ) throws IOException
     {
         super( "PagedIndexOutput(path=\"" + path + "\")",
-                new FilterOutputStream(
-                        fs.openAsOutputStream( path.toFile(), false ) )
+                new FilterOutputStream( fs.openAsOutputStream( path.toFile(), false ) )
                 {
                     // Ensure never write more than CHUNK_SIZE bytes:
                     @Override
-                    public void write( byte[] b, int offset, int length )
-                            throws IOException
+                    public void write( byte[] b, int offset, int length ) throws IOException
                     {
                         while ( length > 0 )
                         {

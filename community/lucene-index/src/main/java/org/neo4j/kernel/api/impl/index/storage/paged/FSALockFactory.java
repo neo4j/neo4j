@@ -58,8 +58,7 @@ public class FSALockFactory extends LockFactory
     // of Lucene to use a single global Directory instance, we could get a
     // performance boost by removing the need for file-system locks for Lucene.
 
-    private static final Set<String> LOCKS_HELD =
-            Collections.synchronizedSet( new HashSet<String>() );
+    private static final Set<String> LOCKS_HELD = Collections.synchronizedSet( new HashSet<String>() );
 
     private final FileSystemAbstraction fs;
 
@@ -73,8 +72,7 @@ public class FSALockFactory extends LockFactory
     {
         if ( !(dir instanceof PagedDirectory) )
         {
-            throw new IOException( "FSALockFactory can only be used in " +
-                    "combination with PagedDirectory." );
+            throw new IOException( "FSALockFactory can only be used in " + "combination with PagedDirectory." );
         }
         Path lockDir = ((PagedDirectory) dir).getPath();
 
@@ -113,8 +111,7 @@ public class FSALockFactory extends LockFactory
                 }
                 else
                 {
-                    throw new LockObtainFailedException(
-                            "Lock held by another program: " + absPath );
+                    throw new LockObtainFailedException( "Lock held by another program: " + absPath );
                 }
             }
             finally
@@ -129,18 +126,16 @@ public class FSALockFactory extends LockFactory
         }
         else
         {
-            throw new LockObtainFailedException(
-                    "Lock held by this virtual machine: " + absPath );
+            throw new LockObtainFailedException( "Lock held by this virtual machine: " + absPath );
         }
     }
 
-    private static void clearLockHeld( Path path ) throws IOException
+    private static void clearLockHeld( Path path )
     {
         boolean remove = LOCKS_HELD.remove( path.toString() );
         if ( !remove )
         {
-            throw new AlreadyClosedException(
-                    "Lock path was cleared but never marked as held: " + path );
+            throw new AlreadyClosedException( "Lock path was cleared but never marked as held: " + path );
         }
     }
 
@@ -152,8 +147,7 @@ public class FSALockFactory extends LockFactory
         final long creationTime;
         volatile boolean closed;
 
-        FSALock( FileSystemAbstraction fs, FileLock lock, Path path,
-                long creationTime )
+        FSALock( FileSystemAbstraction fs, FileLock lock, Path path, long creationTime )
         {
             this.fs = fs;
             this.lock = lock;
@@ -166,30 +160,25 @@ public class FSALockFactory extends LockFactory
         {
             if ( closed )
             {
-                throw new AlreadyClosedException(
-                        "Lock instance already released: " + this );
+                throw new AlreadyClosedException( "Lock instance already released: " + this );
             }
             // check we are still in the locks map
             // (some debugger or something crazy didn't remove us)
             if ( !LOCKS_HELD.contains( path.toString() ) )
             {
-                throw new AlreadyClosedException(
-                        "Lock path unexpectedly cleared from map: " + this );
+                throw new AlreadyClosedException( "Lock path unexpectedly cleared from map: " + this );
             }
             // check our lock wasn't invalidated.
             if ( !lock.isValid() )
             {
-                throw new AlreadyClosedException(
-                        "FileLock invalidated by an external force: " + this );
+                throw new AlreadyClosedException( "FileLock invalidated by an external force: " + this );
             }
             // try to validate the underlying file descriptor.
             // this will throw IOException if something is wrong.
             long size = lock.channel().size();
             if ( size != 0 )
             {
-                throw new AlreadyClosedException(
-                        "Unexpected lock file size: " + size + ", (lock=" +
-                                this + ")" );
+                throw new AlreadyClosedException( "Unexpected lock file size: " + size + ", (lock=" + this + ")" );
             }
             // try to validate the backing file name, that it still exists,
             // and has the same creation time as when we obtained the lock.
@@ -198,8 +187,7 @@ public class FSALockFactory extends LockFactory
             if ( creationTime != ctime )
             {
                 throw new AlreadyClosedException(
-                        "Underlying file changed by an external force at " +
-                                creationTime + ", (lock=" + this + ")" );
+                        "Underlying file changed by an external force at " + creationTime + ", (lock=" + this + ")" );
             }
         }
 
@@ -210,8 +198,7 @@ public class FSALockFactory extends LockFactory
             {
                 return;
             }
-            try ( FileChannel channel = lock.channel();
-                    FileLock ignored = this.lock )
+            try ( FileChannel channel = lock.channel(); FileLock ignored = this.lock )
             {
                 assert channel != null;
             }
@@ -225,8 +212,7 @@ public class FSALockFactory extends LockFactory
         @Override
         public String toString()
         {
-            return "FSALock(path=" + path + ",impl=" + lock + ",ctime=" +
-                    creationTime + ")";
+            return "FSALock(path=" + path + ",impl=" + lock + ",ctime=" + creationTime + ")";
         }
     }
 }

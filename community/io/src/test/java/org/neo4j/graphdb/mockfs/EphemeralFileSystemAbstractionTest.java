@@ -236,9 +236,6 @@ public class EphemeralFileSystemAbstractionTest
     {
         try ( EphemeralFileSystemAbstraction fileSystemAbstraction = new EphemeralFileSystemAbstraction() )
         {
-            CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
-            fileSystemAbstraction.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
-                    closeTrackingFileSystemClass -> closeTrackingFileSystem );
             File testDir = new File( "testDir" );
             File testFile = new File( "testFile" );
             fileSystemAbstraction.mkdir( testDir );
@@ -246,11 +243,9 @@ public class EphemeralFileSystemAbstractionTest
 
             assertTrue( fileSystemAbstraction.fileExists( testFile ) );
             assertTrue( fileSystemAbstraction.fileExists( testFile ) );
-            assertFalse( closeTrackingFileSystem.isClosed() );
 
             fileSystemAbstraction.close();
 
-            assertTrue( closeTrackingFileSystem.isClosed() );
             assertTrue( fileSystemAbstraction.isClosed() );
             assertFalse( fileSystemAbstraction.fileExists( testFile ) );
             assertFalse( fileSystemAbstraction.fileExists( testFile ) );

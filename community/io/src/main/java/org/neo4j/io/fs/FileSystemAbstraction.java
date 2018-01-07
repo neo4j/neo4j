@@ -30,15 +30,12 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
-import java.util.function.Function;
 import java.util.stream.Stream;
-import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 public interface FileSystemAbstraction extends Closeable
 {
-
     /**
      * Create file watcher that provides possibilities to monitor directories on underlying file system
      * abstraction
@@ -88,21 +85,11 @@ public interface FileSystemAbstraction extends Closeable
 
     void copyRecursively( File fromDirectory, File toDirectory ) throws IOException;
 
-    <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>,K> creator );
-
     void truncate( File path, long size ) throws IOException;
 
     long lastModifiedTime( File file ) throws IOException;
 
     void deleteFileOrThrow( File file ) throws IOException;
-
-    interface ThirdPartyFileSystem extends Closeable
-    {
-        @Override
-        void close();
-
-        void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException;
-    }
 
     /**
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
@@ -126,4 +113,12 @@ public interface FileSystemAbstraction extends Closeable
      */
     Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
 
+    /**
+     * If argument is a file, ensure changes made to the given file are flushed to the underlying storage medium.
+     *
+     * If argument is a directory, ensure changes made to the given folder are flushed to the underlying storage
+     * medium; best-effort and implementation-specific, please see the implementation of your FileSystemAbstraction
+     * for guarantees.
+     */
+    void force( File path ) throws IOException;
 }

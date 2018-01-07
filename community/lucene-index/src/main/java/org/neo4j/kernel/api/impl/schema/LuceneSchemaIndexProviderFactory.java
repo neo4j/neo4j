@@ -23,30 +23,27 @@ import java.io.File;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class LuceneSchemaIndexProviderFactory extends
-        KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
+public class LuceneSchemaIndexProviderFactory extends KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
 {
     public static final String KEY = "lucene";
 
-    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
-            new SchemaIndexProvider.Descriptor( KEY, "1.0" );
+    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "1.0" );
 
     public interface Dependencies
     {
@@ -57,6 +54,8 @@ public class LuceneSchemaIndexProviderFactory extends
         LogService getLogService();
 
         FileSystemAbstraction fileSystem();
+
+        PageCache pageCache();
     }
 
     public LuceneSchemaIndexProviderFactory()
@@ -75,22 +74,24 @@ public class LuceneSchemaIndexProviderFactory extends
         monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
         SchemaIndexProvider.Monitor monitor = monitors.newMonitor( SchemaIndexProvider.Monitor.class, KEY );
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
-        return create( fileSystemAbstraction, storeDir, monitor, config, operationalMode );
+        PageCache pageCache = dependencies.pageCache();
+        return create( fileSystemAbstraction, storeDir, monitor, config, operationalMode, pageCache, log );
     }
 
     public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction, File storeDir,
-            SchemaIndexProvider.Monitor monitor, Config config, OperationalMode operationalMode )
+            SchemaIndexProvider.Monitor monitor, Config config, OperationalMode operationalMode, PageCache pageCache,
+            Log log )
     {
-        return create( fileSystemAbstraction, directoriesByProviderKey( storeDir ), monitor, config, operationalMode );
+        return create( fileSystemAbstraction, directoriesByProviderKey( storeDir ), monitor, config, operationalMode,
+                pageCache, log );
     }
 
     public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction,
             IndexDirectoryStructure.Factory directoryStructure, SchemaIndexProvider.Monitor monitor, Config config,
-            OperationalMode operationalMode )
+            OperationalMode operationalMode, PageCache pageCache, Log log )
     {
-        boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
-        return new LuceneSchemaIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure, monitor, config,
-                operationalMode );
+        DirectoryFactory directoryFactory = DirectoryFactory.newDirectoryFactory( pageCache, config, log );
+        return new LuceneSchemaIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure, monitor,
+                config, operationalMode );
     }
 }

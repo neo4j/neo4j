@@ -24,43 +24,43 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 
 import java.io.IOException;
-import java.util.LinkedList;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 /**
- * Lucene extensively uses {@link IndexInput#clone()} and
- * {@link IndexInput#slice(String, long, long)},
- * creating clone inputs. Those clones originate from some root input, the
- * input that came from {@link Directory#openInput(String, IOContext)}.
+ * Lucene extensively uses {@link IndexInput#clone()} and {@link IndexInput#slice(String, long, long)},
+ * creating clone inputs. Those clones originate from some root input, the input that came from
+ * {@link Directory#openInput(String, IOContext)}.
  * <p>
- * It apparently only closes the root inputs, so they become responsible for
- * closing resources associated with the clones. This resource tracking is
- * off-loaded here.
+ * It apparently only closes the root inputs, so they become responsible for closing resources associated with the
+ * clones. This resource tracking is off-loaded here.
  * <p>
- * The root input has an instance of {@link RootInputResources}, and the clones
- * all share an instance of {@link CloneInputResources}.
+ * The root input has an instance of {@link RootInputResources}, and the clones all share an instance of
+ * {@link CloneInputResources}.
  * <p>
- * Each input has it's own {@link PageCursor}, which needs closing, and all
- * inputs from the same root
- * share a {@link PagedFile}. Cursors are closed if/when the input associated
- * with the cursor is closed,
- * and everything still open is closed when the root input is closed.
- * <p>
+ * Each input has it's own {@link PageCursor}, which needs closing, and all inputs from the same root share a
+ * {@link PagedFile}. Cursors are closed if/when the input associated with the cursor is closed, and everything
+ * still open is closed when the root input is closed.
  * <p>
  *
  * @see "ByteBufferIndexInput#close()"
  */
 public interface InputResources
 {
-
+    /**
+     * Resource tracking used by Root Inputs - inputs created by {@link Directory#openInput(String, IOContext)}.
+     */
     class RootInputResources implements InputResources
     {
         private final PagedFile pagedFile;
-        private final CloneInputResources cloneResources =
-                new CloneInputResources( this );
-        private LinkedList<PagedIndexInput> clones = new LinkedList<>();
+        private final CloneInputResources cloneResources = new CloneInputResources( this );
+
+        /** Linked list of clones */
+        private PagedIndexInput cloneListHead;
+
+        private volatile boolean closed;
 
         RootInputResources( PagedFile pagedFile )
         {
@@ -68,87 +68,56 @@ public interface InputResources
         }
 
         @Override
-        public synchronized PageCursor openCursor( long pageId,
-                PagedIndexInput owner ) throws IOException
+        public synchronized PageCursor openCursor( long pageId, PagedIndexInput owner ) throws IOException
         {
             // Called concurrently with #close(..)
-            assert owner.cursor == null : String.format(
-                    "Multiple cursors opened for the same input: %s", owner );
+            assert owner.cursor == null : String.format( "Multiple cursors opened for the same input: %s", owner );
 
-            if ( clones == null )
+            if ( closed )
             {
-                throw new IOException(
-                        "This index has been closed, cannot open more inputs" );
+                throw new IOException( "This index has been closed, cannot open more inputs" );
             }
 
-            PageCursor cursor =
-                    pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK );
+            PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK );
 
             // If this is a clone, track it
             if ( owner.resources != this )
             {
-                clones.add( owner );
+                owner.next = cloneListHead;
+                cloneListHead = owner;
             }
             return cursor;
         }
 
         @Override
-        public synchronized void close( PagedIndexInput input )
-                throws IOException
+        public synchronized void close( PagedIndexInput input ) throws IOException
         {
-            // Note that this gets called concurrently with `openCursor`
-            // if the index is closed while under load!
-            assert input.resources == this : String.format(
-                    "Closing input with unrelated resource tracker: " +
-                            "%s closed by %s", input, this );
+            // Note that this gets called concurrently with `openCursor` if the index is closed while under load!
+            assert input.resources == this :
+                    String.format( "Closing input with unrelated resource tracker: " + "%s closed by %s", input, this );
 
-            if ( clones == null )
+            if ( closed )
             {
                 // Already closed
                 return;
             }
 
-            LinkedList<PagedIndexInput> localClones = this.clones;
-            this.clones = null;
+            closed = true;
+            Throwable error = null;
 
-            // Close all clones
-            IOException errorOnClose = null;
-            for ( PagedIndexInput clone : localClones )
-            {
-                try
-                {
-                    clone.close();
-                }
-                catch ( IOException e )
-                {
-                    // Don't stop closing others because of an error
-                    if ( errorOnClose == null )
-                    {
-                        errorOnClose = e;
-                    }
-                    else
-                    {
-                        errorOnClose.addSuppressed( e );
-                    }
-                }
-            }
-
-            // Close our own cursor
             try
             {
-                input.cursor.close();
+                for ( PagedIndexInput clone = cloneListHead; clone != null; clone = clone.next )
+                {
+                    error = IOUtils.chainedClose( error, clone );
+                }
+                error = IOUtils.chainedClose( error, input.cursor );
+                error = IOUtils.chainedClose( error, pagedFile );
+                IOUtils.chainedCloseFinish( IOException.class, error );
             }
             finally
             {
                 input.cursor = null;
-            }
-
-            // And finally close the paged file
-            pagedFile.close();
-
-            if ( errorOnClose != null )
-            {
-                throw errorOnClose;
             }
         }
 
@@ -159,6 +128,9 @@ public interface InputResources
         }
     }
 
+    /**
+     * Resource tracking for clones and slices.
+     */
     class CloneInputResources implements InputResources
     {
         private final RootInputResources root;
@@ -169,8 +141,7 @@ public interface InputResources
         }
 
         @Override
-        public PageCursor openCursor( long pageId, PagedIndexInput owner )
-                throws IOException
+        public PageCursor openCursor( long pageId, PagedIndexInput owner ) throws IOException
         {
             return root.openCursor( pageId, owner );
         }
@@ -178,16 +149,15 @@ public interface InputResources
         @Override
         public void close( PagedIndexInput input )
         {
-            assert input.resources == this : String.format(
-                    "Closing input with unrelated resource tracker: " +
-                            "%s closed by %s", input, this );
+            assert input.resources == this :
+                    String.format( "Closing input with unrelated resource tracker: " + "%s closed by %s", input, this );
             if ( input.cursor == null )
             {
                 // Already closed
                 return;
             }
 
-            // Close our cursor
+            // Close the cursor
             try
             {
                 input.cursor.close();
@@ -205,13 +175,9 @@ public interface InputResources
         }
     }
 
-    PageCursor openCursor( long pageId, PagedIndexInput owner )
-            throws IOException;
+    PageCursor openCursor( long pageId, PagedIndexInput owner ) throws IOException;
 
-    /**
-     * Close the input. `input.resources == this` must be true. noop if already
-     * closed.
-     */
+    /** Close the input. `input.resources == this` must be true. noop if already closed. */
     void close( PagedIndexInput input ) throws IOException;
 
     /** Resource tracking for a clone input */

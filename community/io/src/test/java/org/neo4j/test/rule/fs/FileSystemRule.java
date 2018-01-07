@@ -31,7 +31,6 @@ import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -204,13 +203,6 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz,
-            Function<Class<K>,K> creator )
-    {
-        return fs.getOrCreateThirdPartyFileSystem( clazz, creator );
-    }
-
-    @Override
     public void truncate( File path, long size ) throws IOException
     {
         fs.truncate( path, size );
@@ -232,6 +224,12 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
         return fs.streamFilesRecursive( directory );
+    }
+
+    @Override
+    public void force( File path ) throws IOException
+    {
+        fs.force( path );
     }
 
     @Override

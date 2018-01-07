@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -37,13 +36,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
@@ -56,7 +50,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 public class DelegateFileSystemAbstraction implements FileSystemAbstraction
 {
     private final FileSystem fs;
-    private final Map<Class<?>, ThirdPartyFileSystem> thirdPartyFs = new HashMap<>();
 
     public DelegateFileSystemAbstraction( FileSystem fs )
     {
@@ -206,8 +199,7 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
         {
             return listing
                     .filter( entry -> filter.accept( entry.getParent().toFile(), entry.getFileName().toString() ) )
-                    .map( Path::toFile )
-                    .toArray( File[]::new );
+                    .map( Path::toFile ).toArray( File[]::new );
         }
         catch ( IOException e )
         {
@@ -261,25 +253,10 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
                 }
                 else
                 {
-                    Files.copy( sourcePath, targetPath,
-                            REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
+                    Files.copy( sourcePath, targetPath, REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
                 }
             }
         }
-    }
-
-    @Override
-    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
-            Class<K> clazz, Function<Class<K>,K> creator )
-    {
-        // what in the ever-loving mother of the lake is this!?
-        K otherFs = (K) thirdPartyFs.get( clazz );
-        if ( otherFs == null )
-        {
-            otherFs = creator.apply( clazz );
-            thirdPartyFs.put( clazz, otherFs );
-        }
-        return otherFs;
     }
 
     @Override
@@ -312,9 +289,16 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void close() throws IOException
     {
-        ArrayList<Closeable> fsToClose = new ArrayList<>( thirdPartyFs.size() + 1 );
-        fsToClose.add( fs );
-        fsToClose.addAll( thirdPartyFs.values() );
-        IOUtils.closeAll( fsToClose );
+        fs.close();
+    }
+
+    @Override
+    public void force( File path ) throws IOException
+    {
+        OpenMode openMode = path.isDirectory() ? OpenMode.READ : OpenMode.READ_WRITE;
+        try ( StoreChannel ch = this.open( path, openMode ) )
+        {
+            ch.force( true );
+        }
     }
 }

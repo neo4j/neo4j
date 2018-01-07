@@ -21,13 +21,17 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.logging.NullLog;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -36,17 +40,26 @@ import static org.junit.Assert.assertTrue;
 
 public class LuceneSchemaIndexBuilderTest
 {
-    @Rule
+
     public final TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public final RuleChain rules = RuleChain
+            .outerRule( testDir )
+            .around( fileSystemRule )
+            .around( pageCacheRule );
 
     private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 0 );
 
     @Test
     public void readOnlyIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getReadOnlyConfig() )
+        Config config = getReadOnlyConfig();
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, config,
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), config,
+                        NullLog.getInstance() ))
                 .withFileSystem( fileSystemRule.get() )
                 .withOperationalMode( OperationalMode.single )
                 .withIndexRootFolder( testDir.directory( "a" ) )
@@ -59,7 +72,10 @@ public class LuceneSchemaIndexBuilderTest
     @Test
     public void writableIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getDefaultConfig() )
+        Config config = getDefaultConfig();
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, config,
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), config,
+                        NullLog.getInstance() ))
                 .withFileSystem( fileSystemRule.get() )
                 .withOperationalMode( OperationalMode.single )
                 .withIndexRootFolder( testDir.directory( "b" ) )

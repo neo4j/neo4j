@@ -42,8 +42,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing.MultiResource;
@@ -82,16 +84,18 @@ public class FulltextProviderImpl implements FulltextProvider
      * @param fileSystem The filesystem to use.
      * @param storeDir Store directory of the database.
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
+     * @param config
      */
     public FulltextProviderImpl( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard, JobScheduler scheduler,
-            TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName )
+            TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+            String analyzerClassName, Config config )
     {
         this.db = db;
         this.log = log;
         this.transactionIdStore = transactionIdStore;
         applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
-        factory = new FulltextFactory( fileSystem, storeDir, analyzerClassName );
+        factory = new FulltextFactory( fileSystem, pageCache, storeDir, analyzerClassName, config, log );
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, applier );
         nodeProperties = ConcurrentHashMap.newKeySet();
         relationshipProperties = ConcurrentHashMap.newKeySet();

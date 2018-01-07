@@ -32,6 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.values.storable.Value;
+import org.neo4j.logging.PrintStreamLog;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -44,7 +45,7 @@ public class FusionSchemaIndexProviderCompatibilitySuiteTest extends IndexProvid
         Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
         return NativeLuceneFusionSchemaIndexProviderFactory
                 .newInstance( pageCache, graphDbDir, fs, monitor, config, OperationalMode.single,
-                        RecoveryCleanupWorkCollector.IMMEDIATE );
+                        RecoveryCleanupWorkCollector.IMMEDIATE, PrintStreamLog.newStdErrLog() );
     }
 
     @Override

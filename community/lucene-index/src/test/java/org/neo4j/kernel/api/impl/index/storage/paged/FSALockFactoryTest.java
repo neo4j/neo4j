@@ -24,6 +24,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
@@ -41,7 +42,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -56,12 +56,12 @@ public class FSALockFactoryTest
     private static final int N_THREADS = 7;
     private static final int SECONDS_TO_RUN = 5;
 
-    @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
     public TemporaryFolder tmpFolder = new TemporaryFolder();
+
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( fs ).around( pageCacheRule ).around( tmpFolder );
 
     private static int seed = new Random().nextInt();
     private static Random randomSeeds = new Random( seed );
@@ -90,10 +90,8 @@ public class FSALockFactoryTest
 
     /**
      * A little worker that acquires a random lock, notes that it thinks it
-     * holds it and asserts
-     * nobody else thinks the same. If the assertion fails, it returns a string
-     * description of the
-     * error.
+     * holds it and asserts nobody else thinks the same. If the assertion
+     * fails, it returns a string description of the error.
      *
      * @param timeout run until this unix timestamp
      * @param pageCache
@@ -162,7 +160,7 @@ public class FSALockFactoryTest
             }
             catch ( InterruptedException | ExecutionException | TimeoutException e )
             {
-                throw Exceptions.launderedException( e );
+                throw new RuntimeException( e );
             }
         };
     }

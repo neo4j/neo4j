@@ -22,11 +22,8 @@ package org.neo4j.kernel.api.impl.index.storage;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,11 +35,21 @@ import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.util.FeatureToggles;
+import java.nio.file.Files;
 
-import static java.lang.Math.min;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.impl.index.storage.paged.PagedDirectory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
+import org.neo4j.logging.Log;
 
-public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSystem
+public interface DirectoryFactory extends AutoCloseable
 {
+    int MAX_MERGE_SIZE_MB = FeatureToggles.getInteger( DirectoryFactory.class, "max_merge_size_mb", 5 );
+    int MAX_CACHED_MB = FeatureToggles.getInteger( DirectoryFactory.class, "max_cached_mb", 50 );
+    String DEFAULT_FACTORY = FeatureToggles.getString( DirectoryFactory.class, "factory", "paged" );
+
     Directory open( File dir ) throws IOException;
 
     /**
@@ -52,22 +59,52 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
     @Override
     void close();
 
-    DirectoryFactory PERSISTENT = new DirectoryFactory()
+    static DirectoryFactory newDirectoryFactory( PageCache pageCache, Config config, Log log )
     {
-        private final int MAX_MERGE_SIZE_MB =
-                FeatureToggles.getInteger( DirectoryFactory.class, "max_merge_size_mb", 5 );
-        private final int MAX_CACHED_MB =
-                FeatureToggles.getInteger( DirectoryFactory.class, "max_cached_mb", 50 );
-        private final boolean USE_DEFAULT_DIRECTORY_FACTORY =
-                FeatureToggles.flag( DirectoryFactory.class, "default_directory_factory", true );
+        boolean isEphemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
+        boolean isUsingCustomIOConfig = CustomIOConfigValidator.customIOConfigUsed( config );
 
+        if ( isEphemeral )
+        {
+            return new PagedDirectoryFactory( pageCache );
+        }
+
+        DirectoryFactory factory;
+        switch ( DEFAULT_FACTORY )
+        {
+        case "heap":
+            factory = new HeapDirectoryFactory();
+            break;
+        case "paged":
+            if ( !isUsingCustomIOConfig )
+            {
+                factory = new PagedDirectoryFactory( pageCache );
+                break;
+            }
+            log.warn( "Paged indexes are not available when custom IO is in use. Most likely this is because you're " +
+                    "running on special hardware. Falling back to memory-mapped indexes." );
+        case "mmap":
+            factory = new MemoryMappedDirectoryFactory();
+            break;
+        default:
+            log.warn( "Unknown index IO implementation '%s', using default.\n", DEFAULT_FACTORY );
+            factory = new MemoryMappedDirectoryFactory();
+        }
+        return new NRTCachingDirectoryFactory( factory );
+    }
+
+    /**
+     * The default - reads are served via OS memory mapping of Lucenes immutable index segment files,
+     * writes via FileChannel.
+     */
+    final class MemoryMappedDirectoryFactory implements DirectoryFactory
+    {
         @SuppressWarnings( "ResultOfMethodCallIgnored" )
         @Override
         public Directory open( File dir ) throws IOException
         {
-            dir.mkdirs();
-            FSDirectory directory = USE_DEFAULT_DIRECTORY_FACTORY ? FSDirectory.open( dir.toPath() ) : new NIOFSDirectory( dir.toPath() );
-            return new NRTCachingDirectory( directory, MAX_MERGE_SIZE_MB, MAX_CACHED_MB );
+            Files.createDirectories( dir.toPath() );
+            return FSDirectory.open( dir.toPath() );
         }
 
         @Override
@@ -75,61 +112,80 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         {
             // No resources to release. This method only exists as a hook for test implementations.
         }
+    }
 
-        @Override
-        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad )
-        {
-            // do nothing
-        }
-    };
-
-    final class InMemoryDirectoryFactory implements DirectoryFactory
+    /**
+     * Serves reads directly from file system, via heap buffers.
+     */
+    final class HeapDirectoryFactory implements DirectoryFactory
     {
-        private final Map<File, RAMDirectory> directories = new HashMap<>();
-
+        @SuppressWarnings( "ResultOfMethodCallIgnored" )
         @Override
-        public synchronized Directory open( File dir )
+        public Directory open( File dir ) throws IOException
         {
-            if ( !directories.containsKey( dir ) )
-            {
-                directories.put( dir, new RAMDirectory() );
-            }
-            return new UncloseableDirectory( directories.get( dir ) );
+            Files.createDirectories( dir.toPath() );
+            return new NIOFSDirectory( dir.toPath() );
         }
 
         @Override
-        public synchronized void close()
+        public void close()
         {
-            for ( RAMDirectory ramDirectory : directories.values() )
-            {
-                ramDirectory.close();
-            }
-            directories.clear();
+            // No resources to release. This method only exists as a hook for test implementations.
+        }
+    }
+
+    /**
+     * Produces directories that read via the provided page cache, meaning, for the read path, this
+     * has good performance and fixed memory use. The write path could still use some optimization.
+     */
+    final class PagedDirectoryFactory implements DirectoryFactory
+    {
+        private final PageCache pageCache;
+
+        public PagedDirectoryFactory( PageCache pageCache )
+        {
+            this.pageCache = pageCache;
         }
 
         @Override
-        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
+        public Directory open( File dir )
         {
-            for ( Map.Entry<File, RAMDirectory> entry : directories.entrySet() )
-            {
-                RAMDirectory ramDir = entry.getValue();
-                for ( String fileName : ramDir.listAll() )
-                {
-                    zip.putNextEntry( new ZipEntry( new File( entry.getKey(), fileName ).getAbsolutePath() ) );
-                    copy( ramDir.openInput( fileName, IOContext.DEFAULT ), zip, scratchPad );
-                    zip.closeEntry();
-                }
-            }
+            return new PagedDirectory( dir.toPath(), pageCache );
         }
 
-        private static void copy( IndexInput source, OutputStream target, byte[] buffer ) throws IOException
+        @Override
+        public void close()
         {
-            for ( long remaining = source.length(), read; remaining > 0; remaining -= read )
-            {
-                read = min( remaining, buffer.length );
-                source.readBytes( buffer, 0, (int) read );
-                target.write( buffer, 0, (int) read );
-            }
+
+        }
+    }
+
+    /**
+     * Lucene creates one immutable file for every commit - lots of tiny files. Over time, it merges these files into
+     * larger ones, but the point remains that lots of tiny files are part of the basic operation of the index.
+     * <p>
+     * This class limits the actual physical file creation by caching the tiny files in heap buffers, attempting
+     * to merge them together into larger files, that in turn actually get written to disk.
+     */
+    final class NRTCachingDirectoryFactory implements DirectoryFactory
+    {
+        private final DirectoryFactory delegate;
+
+        public NRTCachingDirectoryFactory( DirectoryFactory delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Directory open( File dir ) throws IOException
+        {
+            return new NRTCachingDirectory( delegate.open( dir ), MAX_MERGE_SIZE_MB, MAX_CACHED_MB );
+        }
+
+        @Override
+        public void close()
+        {
+
         }
     }
 
@@ -151,12 +207,6 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         @Override
         public void close()
         {
-        }
-
-        @Override
-        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad )
-        {
-            throw new UnsupportedOperationException();
         }
     }
 

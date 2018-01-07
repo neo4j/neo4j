@@ -35,7 +35,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -65,6 +67,7 @@ public class LuceneFulltextTestSupport
     protected JobScheduler scheduler;
     protected FileSystemAbstraction fs;
     protected File storeDir;
+    protected PageCache pageCache;
     private TransactionIdStore transactionIdStore;
 
     @Before
@@ -73,6 +76,7 @@ public class LuceneFulltextTestSupport
         db = dbRule.getGraphDatabaseAPI();
         scheduler = dbRule.resolveDependency( JobScheduler.class );
         fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        pageCache = dbRule.resolveDependency( PageCache.class );
         storeDir = dbRule.getStoreDir();
         transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
     }
@@ -80,7 +84,7 @@ public class LuceneFulltextTestSupport
     protected FulltextProviderImpl createProvider()
     {
         return new FulltextProviderImpl( db, LOG, availabilityGuard, scheduler, transactionIdStore,
-                fs, storeDir, analyzer );
+                fs, pageCache, storeDir, analyzer, db.getDependencyResolver().resolveDependency( Config.class ) );
     }
 
     protected long createNodeIndexableByPropertyValue( Object propertyValue )

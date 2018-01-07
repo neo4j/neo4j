@@ -25,13 +25,13 @@ import org.apache.lucene.document.StringField;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.index.PagedDirectoryRule;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -42,19 +42,20 @@ import static org.junit.Assert.assertTrue;
 
 public class LuceneSchemaIndexTest
 {
-    @Rule
+    public final TestDirectory testDir = TestDirectory.testDirectory();
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public final PagedDirectoryRule dirFactory = new PagedDirectoryRule( fs );
 
-    private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( testDir ).around( fs ).around( dirFactory );
+
     private SchemaIndex index;
     private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 3, 5 );
 
     @After
     public void closeIndex() throws Exception
     {
-        IOUtils.closeAll( index, dirFactory );
+        index.close();
     }
 
     @Test
@@ -138,10 +139,9 @@ public class LuceneSchemaIndexTest
 
     private SchemaIndex newSchemaIndex()
     {
-        LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() );
+        LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults(), dirFactory );
         return builder
                 .withIndexRootFolder( new File( testDir.directory( "index" ), "testIndex" ) )
-                .withDirectoryFactory( dirFactory )
                 .withFileSystem( fs.get() )
                 .build();
     }
