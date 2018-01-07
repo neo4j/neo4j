@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index.storage.paged;
 
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
 
@@ -39,6 +38,9 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
     /** Star of the show */
     PageCursor cursor;
+
+    /** Clones make up a linked list via this field, to allow cleaning them back up when done. */
+    PagedIndexInput next;
 
     /**
      * The logical size of this input. Same as file size if this is a root
@@ -70,16 +72,14 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     private long currentPageId;
     private int currentPageOffset;
 
-    PagedIndexInput( String resourceDescription, PagedFile pagedFile,
-            long startPosition, long size ) throws IOException
+    PagedIndexInput( String resourceDescription, PagedFile pagedFile, long startPosition, long size ) throws IOException
     {
-        this( new InputResources.RootInputResources( pagedFile ),
-                resourceDescription, startPosition, pagedFile.pageSize(),
-                size );
+        this( new InputResources.RootInputResources( pagedFile ), resourceDescription, startPosition,
+                pagedFile.pageSize(), size );
     }
 
-    PagedIndexInput( InputResources resources, String resourceDescription,
-            long startPosition, int pageSize, long size ) throws IOException
+    PagedIndexInput( InputResources resources, String resourceDescription, long startPosition, int pageSize, long size )
+            throws IOException
     {
         super( resourceDescription );
 
@@ -295,8 +295,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     }
 
     @Override
-    public final void readBytes( byte[] b, int offset, int len )
-            throws IOException
+    public final void readBytes( byte[] b, int offset, int len ) throws IOException
     {
         int bytesRead = 0;
 
@@ -304,8 +303,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         {
             moveCursor( currentPageId, currentPageOffset );
 
-            int toRead =
-                    Math.min( len - bytesRead, pageSize - currentPageOffset );
+            int toRead = Math.min( len - bytesRead, pageSize - currentPageOffset );
             do
             {
                 cursor.setOffset( currentPageOffset );
@@ -327,7 +325,8 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
         if ( isEOF( newPageId, newOffset ) )
         {
-            throw new EOFException( "seek past EOF: " + this );
+            throw newEOFException( String.format( "seek EOF check failed for { pageId: %d, offsetInPage: %d }",
+                    newPageId, newOffset ) );
         }
 
         currentPageId = newPageId;
@@ -343,7 +342,8 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
         if ( isEOF( newPageId, newOffset ) )
         {
-            throw new EOFException( "seek past EOF: " + this );
+            throw newEOFException( String.format( "skipBytes EOF check failed for { pageId: %d, offsetInPage: %d }",
+                    newPageId, newOffset ) );
         }
 
         currentPageId = newPageId;
@@ -356,14 +356,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     @Override
     public long getFilePointer()
     {
-        try
-        {
-            return currentPageId * pageSize + currentPageOffset - startPosition;
-        }
-        catch ( NullPointerException npe )
-        {
-            throw new AlreadyClosedException( "Already closed: " + this );
-        }
+        return currentPageId * pageSize + currentPageOffset - startPosition;
     }
 
     @Override
@@ -395,15 +388,13 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         if ( offset < 0 || length < 0 || offset + length > this.length )
         {
             throw new IllegalArgumentException(
-                    "slice() " + desc + " out of bounds: offset=" + offset +
-                            ",length=" + length + ",fileLength=" + this.length +
-                            ": " + this );
+                    "slice() " + desc + " out of bounds: offset=" + offset + ",length=" + length + ",fileLength=" +
+                            this.length + ": " + this );
         }
 
         try
         {
-            return new PagedIndexInput( resources.cloneResources(), desc,
-                    startPosition + offset, pageSize, length );
+            return new PagedIndexInput( resources.cloneResources(), desc, startPosition + offset, pageSize, length );
         }
         catch ( IOException e )
         {
@@ -413,7 +404,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     }
 
     @Override
-    public final void close() throws IOException
+    public void close() throws IOException
     {
         resources.close( this );
     }
@@ -422,7 +413,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     {
         if ( cursor.checkAndClearBoundsFlag() )
         {
-            throw new EOFException( "read past EOF: " + this );
+            throw newEOFException( "Cursor bounds check failed" );
         }
     }
 
@@ -433,16 +424,23 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         {
             currentPageId += 1;
             currentPageOffset -= pageSize;
-            assert currentPageOffset <= pageSize :
-                    "Should never read past two page boundaries";
+            assert currentPageOffset <= pageSize : "Should never read past two page boundaries";
         }
     }
 
     private void moveCursor( long pageId, int offsetInPage ) throws IOException
     {
-        if ( !cursor.next( pageId ) || isEOF( pageId, offsetInPage ) )
+        if ( !cursor.next( pageId ) )
         {
-            throw new EOFException( "read past EOF: " + this );
+            throw newEOFException(
+                    String.format( "Page cache EOF for { pageId: %d, offsetInPage: %d }", pageId, offsetInPage ) );
+        }
+
+        if ( isEOF( pageId, offsetInPage ) )
+        {
+            throw newEOFException(
+                    String.format( "moveCursor EOF check failed for { pageId: %d, offsetInPage: %d }", pageId,
+                            offsetInPage ) );
         }
     }
 
@@ -452,5 +450,14 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         boolean isLastPage = pageId == endPageId;
         boolean offsetOutsidePage = offsetInPage >= endPageOffset;
         return isBeforeLastPage || (isLastPage && offsetOutsidePage);
+    }
+
+    private EOFException newEOFException( String message )
+    {
+        return new EOFException( String.format("Input [%s] read past EOF. Please ensure you are using the latest " +
+                "version of Neo4j and if you are, file a bug report including this message. Details: %s " +
+                "{ startPosition: %d, currentPageId: %d,  currentPageOffset: %d, endPageId: %d, endPageOffset: %d, " +
+                "length: %d, pageSize: %d }", this, message, startPosition, currentPageId, currentPageOffset, endPageId,
+                endPageOffset, length, pageSize ) );
     }
 }

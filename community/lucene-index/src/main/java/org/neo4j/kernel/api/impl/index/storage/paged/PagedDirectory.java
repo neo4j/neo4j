@@ -43,7 +43,7 @@ public class PagedDirectory extends BaseDirectory
 
     private final Path path; // The underlying filesystem path
 
-    public PagedDirectory( Path path, PageCache pageCache ) throws IOException
+    public PagedDirectory( Path path, PageCache pageCache )
     {
         // TODO: We can probably use SingleInstanceLockFactory here
         super( new FSALockFactory( pageCache.getCachedFileSystem() ) );
@@ -53,29 +53,25 @@ public class PagedDirectory extends BaseDirectory
     }
 
     @Override
-    public IndexInput openInput( String name, IOContext context )
-            throws IOException
+    public IndexInput openInput( String name, IOContext context ) throws IOException
     {
         ensureOpen();
         File file = path.resolve( name ).toFile();
         PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), READ );
         long size = fs.getFileSize( file );
-        return new PagedIndexInput(
-                "PagedIndexInput(\"" + path.resolve( name ).toString() + "\")",
-                pagedFile, 0, size );
+        return new PagedIndexInput( "PagedIndexInput(\"" + path.resolve( name ).toString() + "\")", pagedFile, 0,
+                size );
     }
 
     @Override
     public String[] listAll() throws IOException
     {
         ensureOpen();
-        return fs.streamFilesRecursive( path.toFile() )
-                .map(f -> f.getFile().getName())
-                .toArray(String[]::new);
+        return fs.streamFilesRecursive( path.toFile() ).map( f -> f.getFile().getName() ).toArray( String[]::new );
     }
 
     @Override
-    public long fileLength( String name ) throws IOException
+    public long fileLength( String name )
     {
         ensureOpen();
         return fs.getFileSize( path.resolve( name ).toFile() );
@@ -85,12 +81,15 @@ public class PagedDirectory extends BaseDirectory
     public void deleteFile( String name ) throws IOException
     {
         ensureOpen();
-        fs.deleteFile( path.resolve( name ).toFile() );
+        Path filePath = path.resolve( name );
+        if ( !fs.deleteFile( filePath.toFile() ) )
+        {
+            throw new IOException( "Unable to delete " + filePath );
+        }
     }
 
     @Override
-    public IndexOutput createOutput( String name, IOContext context )
-            throws IOException
+    public IndexOutput createOutput( String name, IOContext context ) throws IOException
     {
         ensureOpen();
         return new PagedIndexOutput( path.resolve( name ), fs );
@@ -100,10 +99,9 @@ public class PagedDirectory extends BaseDirectory
     public void sync( Collection<String> names ) throws IOException
     {
         ensureOpen();
-
         for ( String name : names )
         {
-            fs.force( path.resolve( name ));
+            fs.force( path.resolve( name ).toFile() );
         }
     }
 
@@ -111,15 +109,12 @@ public class PagedDirectory extends BaseDirectory
     public void renameFile( String source, String dest ) throws IOException
     {
         ensureOpen();
-        fs.renameFile(
-                path.resolve( source ).toFile(),
-                path.resolve( dest ).toFile(),
-                ATOMIC_MOVE );
-        fs.forceDirectory( path );
+        fs.renameFile( path.resolve( source ).toFile(), path.resolve( dest ).toFile(), ATOMIC_MOVE );
+        fs.force( path.toFile() );
     }
 
     @Override
-    public synchronized void close()
+    public void close()
     {
         isOpen = false;
     }
@@ -127,8 +122,7 @@ public class PagedDirectory extends BaseDirectory
     @Override
     public String toString()
     {
-        return this.getClass().getSimpleName() + "@" + path +
-                " lockFactory=" + lockFactory;
+        return this.getClass().getSimpleName() + "@" + path + " lockFactory=" + lockFactory;
     }
 
     public Path getPath()

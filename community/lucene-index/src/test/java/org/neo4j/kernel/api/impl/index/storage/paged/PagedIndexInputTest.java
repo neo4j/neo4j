@@ -28,7 +28,7 @@ import org.apache.lucene.store.RandomAccessInput;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.rules.RuleChain;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -41,19 +41,22 @@ import org.neo4j.function.ThrowingBiFunction;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
 public class PagedIndexInputTest
 {
-    @Rule
-    public TemporaryFolder tmpDir = new TemporaryFolder();
-
-    @Rule
+    public TestDirectory tmpDir = TestDirectory.testDirectory( getClass() );
     public FileSystemRule fs = new EphemeralFileSystemRule();
+    public PageCacheRule pageCache = new PageCacheRule();
 
     @Rule
-    public PageCacheRule pageCache = new PageCacheRule();
+    public RuleChain rules = RuleChain
+            .outerRule( tmpDir )
+            .around( fs )
+            .around( pageCache );
+
     private PageCache pc;
     private Directory dir;
 
@@ -229,7 +232,7 @@ public class PagedIndexInputTest
                                     currentPosition, actual );
                     assert currentPosition <= fileLen : String.format(
                             "Expected position to be less than file length of " +
-                            "%d, got %d", fileLen, currentPosition );
+                                    "%d, got %d", fileLen, currentPosition );
                     in.readByte();
                     currentPosition++;
                 }
@@ -313,7 +316,7 @@ public class PagedIndexInputTest
     {
         pc = this.pageCache.getPageCache( fs );
         // Just in case someone wants standard file system, use actual tmp dir
-        Path workDir = tmpDir.newFolder().toPath();
+        Path workDir = tmpDir.directory().toPath();
         fs.mkdirs( workDir.toFile() );
         dir = new PagedDirectory( workDir, pc );
     }

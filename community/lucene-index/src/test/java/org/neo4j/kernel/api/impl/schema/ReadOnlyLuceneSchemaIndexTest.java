@@ -34,6 +34,8 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.logging.NullLog;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -44,19 +46,24 @@ public class ReadOnlyLuceneSchemaIndexTest
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final ExpectedException expectedException = ExpectedException.none();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
-            .around( expectedException ).around( fileSystemRule );
+            .around( expectedException ).around( fileSystemRule ).around( pageCacheRule );
 
     private ReadOnlyDatabaseSchemaIndex luceneSchemaIndex;
 
     @Before
     public void setUp()
     {
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT,
-                fileSystemRule.get(), testDirectory.directory(), false );
         Config config = Config.defaults();
+        DirectoryFactory dirFactory =
+                DirectoryFactory.newDirectoryFactory( pageCacheRule.getPageCache( fileSystemRule ), config,
+                        NullLog.getInstance() );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage(
+                dirFactory,
+                fileSystemRule.get(), testDirectory.directory(), false );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, IndexDescriptorFactory.forLabel( 0, 0 ),
                 samplingConfig, new ReadOnlyIndexPartitionFactory() );

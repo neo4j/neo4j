@@ -20,9 +20,9 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -34,8 +34,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.index.PagedDirectoryRule;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -56,19 +56,15 @@ import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.default
 
 public class LuceneIndexRecoveryIT
 {
-    @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public PagedDirectoryRule directoryFactory = new PagedDirectoryRule( fs );
+
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( fs ).around( directoryFactory );
 
     private final String NUM_BANANAS_KEY = "number_of_bananas_owned";
     private static final Label myLabel = label( "MyLabel" );
     private GraphDatabaseAPI db;
-    private DirectoryFactory directoryFactory;
-
-    @Before
-    public void before()
-    {
-        directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    }
 
     @After
     public void after()
@@ -77,7 +73,6 @@ public class LuceneIndexRecoveryIT
         {
             db.shutdown();
         }
-        directoryFactory.close();
     }
 
     @Test

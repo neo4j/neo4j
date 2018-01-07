@@ -31,17 +31,18 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.index.PagedDirectoryRule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.TestPropertyAccessor;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
@@ -66,17 +67,18 @@ public class SimpleUniquenessVerifierTest
 {
     private static final int[] PROPERTY_KEY_IDS = new int[]{42};
 
-    @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
+    public PagedDirectoryRule dirFactory = new PagedDirectoryRule();
 
-    private DirectoryFactory dirFactory;
+    @Rule
+    public final RuleChain rules = RuleChain.outerRule( testDir ).around( dirFactory );
+
     private IndexWriter writer;
     private SearcherManager searcherManager;
 
     @Before
     public void initLuceneResources() throws Exception
     {
-        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         Directory dir = dirFactory.open( testDir.directory( "test" ) );
         writer = new IndexWriter( dir, IndexWriterConfigs.standard() );
         searcherManager = new SearcherManager( writer, true, new SearcherFactory() );

@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -38,6 +39,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.index.PagedDirectoryRule;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -70,10 +72,15 @@ public class DatabaseCompositeIndexAccessorTest
     private static final int PROP_ID2 = 2;
     private static final IndexDescriptor DESCRIPTOR = IndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
     private static final Config config = Config.defaults();
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
+
     @ClassRule
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
+    public final ThreadingRule threading = new ThreadingRule();
+    public final PagedDirectoryRule dirFactory = new PagedDirectoryRule( fileSystemRule );
+
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( threading ).around( dirFactory );
 
     @Parameterized.Parameter
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
@@ -83,7 +90,6 @@ public class DatabaseCompositeIndexAccessorTest
     private final long nodeId2 = 2;
     private final Object[] values = {"value1", "values2"};
     private final Object[] values2 = {40, 42};
-    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory
             .forLabel( 0, PROP_ID1, PROP_ID2 );
     private static final IndexDescriptor uniqueIndexDescriptor = IndexDescriptorFactory
@@ -96,9 +102,8 @@ public class DatabaseCompositeIndexAccessorTest
         return Arrays.asList(
                 arg( dirFactory1 ->
                 {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( indexDescriptor, config )
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( indexDescriptor, config, dirFactory1 )
                             .withFileSystem( fileSystemRule.get() )
-                            .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( new File( dir, "1" ) )
                             .build();
 
@@ -108,9 +113,8 @@ public class DatabaseCompositeIndexAccessorTest
                 } ),
                 arg( dirFactory1 ->
                 {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor, config )
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor, config, dirFactory1 )
                             .withFileSystem( fileSystemRule.get() )
-                            .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( new File( dir, "testIndex" ) )
                             .build();
 
@@ -131,7 +135,6 @@ public class DatabaseCompositeIndexAccessorTest
     @Before
     public void before() throws IOException
     {
-        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         accessor = accessorFactory.apply( dirFactory );
     }
 
@@ -139,7 +142,6 @@ public class DatabaseCompositeIndexAccessorTest
     public void after() throws IOException
     {
         accessor.close();
-        dirFactory.close();
     }
 
     @Test

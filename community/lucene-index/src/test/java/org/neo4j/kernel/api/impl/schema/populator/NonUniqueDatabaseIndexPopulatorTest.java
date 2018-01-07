@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,14 +32,13 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.index.PagedDirectoryRule;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -55,12 +55,12 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 public class NonUniqueDatabaseIndexPopulatorTest
 {
-    @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public final PagedDirectoryRule dirFactory = new PagedDirectoryRule( fileSystemRule );
 
-    private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( testDir ).around( fileSystemRule ).around( dirFactory );
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
@@ -73,9 +73,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder, false );
 
         IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( labelSchemaDescriptor );
-        index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
-                                        .withIndexStorage( indexStorage )
-                                        .build();
+        index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults(), dirFactory ).withIndexStorage( indexStorage ).build();
     }
 
     @After
@@ -85,7 +83,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
         {
             populator.close( false );
         }
-        IOUtils.closeAll( index, dirFactory );
+        index.close();
     }
 
     @Test
@@ -103,10 +101,8 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<IndexEntryUpdate<?>> updates = Arrays.asList(
-                add( 1, labelSchemaDescriptor, "aaa" ),
-                add( 2, labelSchemaDescriptor, "bbb" ),
-                add( 3, labelSchemaDescriptor, "ccc" ) );
+        List<IndexEntryUpdate<?>> updates =
+                Arrays.asList( add( 1, labelSchemaDescriptor, "aaa" ), add( 2, labelSchemaDescriptor, "bbb" ), add( 3, labelSchemaDescriptor, "ccc" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -120,10 +116,8 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<IndexEntryUpdate<?>> updates = Arrays.asList(
-                add( 1, labelSchemaDescriptor, "foo" ),
-                add( 2, labelSchemaDescriptor, "bar" ),
-                add( 3, labelSchemaDescriptor, "foo" ) );
+        List<IndexEntryUpdate<?>> updates =
+                Arrays.asList( add( 1, labelSchemaDescriptor, "foo" ), add( 2, labelSchemaDescriptor, "bar" ), add( 3, labelSchemaDescriptor, "foo" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -137,10 +131,8 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<IndexEntryUpdate<?>> updates = Arrays.asList(
-                add( 1, labelSchemaDescriptor, "foo" ),
-                add( 2, labelSchemaDescriptor, "bar" ),
-                add( 42, labelSchemaDescriptor, "bar" ) );
+        List<IndexEntryUpdate<?>> updates =
+                Arrays.asList( add( 1, labelSchemaDescriptor, "foo" ), add( 2, labelSchemaDescriptor, "bar" ), add( 42, labelSchemaDescriptor, "bar" ) );
 
         populator.add( updates );
 

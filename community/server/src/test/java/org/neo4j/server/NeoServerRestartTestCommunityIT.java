@@ -19,19 +19,26 @@
  */
 package org.neo4j.server;
 
+import org.junit.Rule;
+
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.test.rule.TestDirectory;
 
 public class NeoServerRestartTestCommunityIT extends NeoServerRestartTestIT
 {
+    @Rule
+    public TestDirectory tmpFolder = TestDirectory.testDirectory( getClass() );
+
     @Override
     protected NeoServer getNeoServer( String customPageSwapperName ) throws IOException
     {
         CommunityServerBuilder builder = CommunityServerBuilder.serverOnRandomPorts()
-                .withProperty( GraphDatabaseSettings
-                .pagecache_swapper.name(), customPageSwapperName );
+                .withProperty( GraphDatabaseSettings.pagecache_swapper.name(), customPageSwapperName )
+                // Because ephemeral mode does not work with custom page swappers
+                .persistent().usingDataDir( tmpFolder.directory().getAbsolutePath() );
         return builder.build();
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.fs;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,13 +38,10 @@ import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.WatchService;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
@@ -196,17 +195,6 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         FileUtils.copyRecursively( fromDirectory, toDirectory );
     }
 
-    private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
-            new HashMap<>();
-
-    @Override
-    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
-            Class<K> clazz, Function<Class<K>, K> creator )
-    {
-        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.computeIfAbsent( clazz, k -> creator.apply( clazz ) );
-        return clazz.cast( fileSystem );
-    }
-
     @Override
     public void truncate( File path, long size ) throws IOException
     {
@@ -231,6 +219,30 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         return StreamFilesRecursive.streamFilesRecursive( directory, this );
     }
 
+    @Override
+    public void force( File path ) throws IOException
+    {
+        // If we are asked to flush a directory, rely on fsync-on-directory behavior from
+        // https://bugs.openjdk.java.net/browse/JDK-8080235 ; this is non-standard and fragile,
+        // hence the javadoc on FileSystemAbstraction#force saying this is best-effort.
+        StandardOpenOption mode = path.isDirectory() ? StandardOpenOption.READ : StandardOpenOption.WRITE;
+        try ( FileChannel file = FileChannel.open( path.toPath(), mode ) )
+        {
+            file.force( true );
+        }
+        catch ( IOException ioe )
+        {
+            if ( path.isDirectory() )
+            {
+                assert !(SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) :
+                        "On Linux and MacOSX fsyncing a directory should not throw IOException. Got: " + ioe;
+                return;
+            }
+
+            throw ioe;
+        }
+    }
+
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )
     {
         return new StoreFileChannel( channel );
@@ -239,6 +251,5 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void close() throws IOException
     {
-        IOUtils.closeAll( thirdPartyFileSystems.values() );
     }
 }

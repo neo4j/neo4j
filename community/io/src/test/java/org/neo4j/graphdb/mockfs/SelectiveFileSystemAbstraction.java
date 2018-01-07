@@ -28,7 +28,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
@@ -186,13 +185,6 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>, K>
-            creator )
-    {
-        return defaultFileSystem.getOrCreateThirdPartyFileSystem( clazz, creator );
-    }
-
-    @Override
     public void truncate( File path, long size ) throws IOException
     {
         chooseFileSystem( path ).truncate( path, size );
@@ -208,6 +200,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     public void deleteFileOrThrow( File file ) throws IOException
     {
         chooseFileSystem( file ).deleteFileOrThrow( file );
+    }
+
+    @Override
+    public void force( File path ) throws IOException
+    {
+        chooseFileSystem( path ).force( path );
     }
 
     @Override

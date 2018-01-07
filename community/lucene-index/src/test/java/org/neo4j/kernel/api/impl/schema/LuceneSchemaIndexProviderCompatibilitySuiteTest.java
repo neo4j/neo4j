@@ -24,12 +24,12 @@ import java.io.File;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.logging.PrintStreamLog;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -38,10 +38,10 @@ public class LuceneSchemaIndexProviderCompatibilitySuiteTest extends IndexProvid
     @Override
     protected LuceneSchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
-        DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
         Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.FALSE ) );
         OperationalMode mode = OperationalMode.single;
-        return LuceneSchemaIndexProviderFactory.create( fs, graphDbDir, monitor, config, mode );
+        return LuceneSchemaIndexProviderFactory.create( fs, graphDbDir, monitor, config, mode, pageCache,
+                PrintStreamLog.newStdErrLog() );
     }
 }

@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -38,13 +39,14 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.index.PagedDirectoryRule;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -70,10 +72,14 @@ public class DatabaseIndexAccessorTest
 {
     public static final int PROP_ID = 1;
 
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
     @ClassRule
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
+    public final ThreadingRule threading = new ThreadingRule();
+    public final PagedDirectoryRule dirFactory = new PagedDirectoryRule( fileSystemRule );
+
+    @Rule
+    public RuleChain rules = RuleChain.outerRule( threading ).around( dirFactory );
 
     @Parameterized.Parameter( 0 )
     public IndexDescriptor index;
@@ -85,7 +91,6 @@ public class DatabaseIndexAccessorTest
     private final long nodeId2 = 2;
     private final Object value = "value";
     private final Object value2 = 40;
-    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     private static final IndexDescriptor GENERAL_INDEX = IndexDescriptorFactory.forLabel( 0, PROP_ID );
     private static final IndexDescriptor UNIQUE_INDEX = IndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
     private static final Config CONFIG = Config.defaults();
@@ -94,37 +99,30 @@ public class DatabaseIndexAccessorTest
     public static Collection<Object[]> implementations()
     {
         final File dir = new File( "dir" );
-        return Arrays.asList(
-                arg( GENERAL_INDEX, dirFactory1 ->
-                {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( GENERAL_INDEX, CONFIG )
+        return Arrays.asList( arg( GENERAL_INDEX, dirFactory1 ->
+        {
+            SchemaIndex index =
+                    LuceneSchemaIndexBuilder.create( GENERAL_INDEX, CONFIG, dirFactory1 )
                             .withFileSystem( fileSystemRule.get() )
-                            .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( new File( dir, "1" ) )
-                            .build();
+                            .withIndexRootFolder( new File( dir, "1" ) ).build();
 
-                    index.create();
-                    index.open();
-                    return new LuceneIndexAccessor( index, GENERAL_INDEX );
-                } ),
-                arg( UNIQUE_INDEX, dirFactory1 ->
-                {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_INDEX, CONFIG )
+            index.create();
+            index.open();
+            return new LuceneIndexAccessor( index, GENERAL_INDEX );
+        } ), arg( UNIQUE_INDEX, dirFactory1 ->
+        {
+            SchemaIndex index =
+                    LuceneSchemaIndexBuilder.create( UNIQUE_INDEX, CONFIG, dirFactory1 )
                             .withFileSystem( fileSystemRule.get() )
-                            .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( new File( dir, "testIndex" ) )
-                            .build();
+                            .withIndexRootFolder( new File( dir, "testIndex" ) ).build();
 
-                    index.create();
-                    index.open();
-                    return new LuceneIndexAccessor( index, UNIQUE_INDEX );
-                } )
-        );
+            index.create();
+            index.open();
+            return new LuceneIndexAccessor( index, UNIQUE_INDEX );
+        } ) );
     }
 
-    private static Object[] arg(
-            IndexDescriptor index,
-            IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
+    private static Object[] arg( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
         return new Object[]{index, foo};
     }
@@ -132,7 +130,6 @@ public class DatabaseIndexAccessorTest
     @Before
     public void before() throws IOException
     {
-        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         accessor = accessorFactory.apply( dirFactory );
     }
 
@@ -140,7 +137,6 @@ public class DatabaseIndexAccessorTest
     public void after() throws IOException
     {
         accessor.close();
-        dirFactory.close();
     }
 
     @Test
@@ -155,8 +151,7 @@ public class DatabaseIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
-        assertEquals( asSet( nodeId ),
-                PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
         reader.close();
     }
 
@@ -245,10 +240,8 @@ public class DatabaseIndexAccessorTest
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( firstReader.query( exact( PROP_ID, value ) ) ) );
         assertEquals( asSet(), PrimitiveLongCollections.toSet( firstReader.query( exact( PROP_ID, value2 ) ) ) );
-        assertEquals( asSet( nodeId ),
-                PrimitiveLongCollections.toSet( secondReader.query( exact( PROP_ID, value ) ) ) );
-        assertEquals( asSet( nodeId2 ),
-                PrimitiveLongCollections.toSet( secondReader.query( exact( PROP_ID, value2 ) ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( secondReader.query( exact( PROP_ID, value ) ) ) );
+        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( secondReader.query( exact( PROP_ID, value2 ) ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -277,8 +270,7 @@ public class DatabaseIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value2 ) ) ) );
-        assertEquals( emptySet(),
-                PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
+        assertEquals( emptySet(), PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
         reader.close();
     }
 
@@ -344,8 +336,7 @@ public class DatabaseIndexAccessorTest
         return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
     }
 
-    private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates )
-            throws IOException, IndexEntryConflictException
+    private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

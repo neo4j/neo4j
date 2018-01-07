@@ -28,10 +28,14 @@ import java.util.List;
 
 import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
 
 /**
  * Used for creating {@link LuceneFulltext} and registering those to a {@link FulltextProvider}.
@@ -40,7 +44,10 @@ class FulltextFactory
 {
     public static final String INDEX_DIR = "bloom_fts";
     private final FileSystemAbstraction fileSystem;
+    private final Config config;
+    private final Log log;
     private final WritableIndexPartitionFactory partitionFactory;
+    private final PageCache pageCache;
     private final File indexDir;
     private final Analyzer analyzer;
 
@@ -48,14 +55,19 @@ class FulltextFactory
      * Creates a factory for the specified location and analyzer.
      *
      * @param fileSystem The filesystem to use.
+     * @param pageCache
      * @param storeDir Store directory of the database.
-     * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
-     * @throws IOException
+     * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.   @throws IOException
+     * @param config
      */
-    FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName )
+    FulltextFactory( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+            String analyzerClassName, Config config, Log log )
     {
+        this.pageCache = pageCache;
         this.analyzer = getAnalyzer( analyzerClassName );
         this.fileSystem = fileSystem;
+        this.config = config;
+        this.log = log;
         Factory<IndexWriterConfig> indexWriterConfigFactory = () -> IndexWriterConfigs.standard( analyzer );
         partitionFactory = new WritableIndexPartitionFactory( indexWriterConfigFactory );
         indexDir = new File( storeDir, INDEX_DIR );
@@ -79,7 +91,8 @@ class FulltextFactory
     LuceneFulltext createFulltextIndex( String identifier, FulltextIndexType type, List<String> properties )
     {
         File indexRootFolder = new File( indexDir, identifier );
-        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
+        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create(
+                DirectoryFactory.newDirectoryFactory( pageCache, config, log ) );
         storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
         PartitionedIndexStorage storage = storageBuilder.build();
         return new LuceneFulltext( storage, partitionFactory, properties, analyzer, identifier, type );
@@ -88,7 +101,8 @@ class FulltextFactory
     LuceneFulltext openFulltextIndex( String identifier, FulltextIndexType type ) throws IOException
     {
         File indexRootFolder = new File( indexDir, identifier );
-        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
+        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create(
+                DirectoryFactory.newDirectoryFactory( pageCache, config, log ) );
         storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
         PartitionedIndexStorage storage = storageBuilder.build();
         return new LuceneFulltext( storage, partitionFactory, analyzer, identifier, type );

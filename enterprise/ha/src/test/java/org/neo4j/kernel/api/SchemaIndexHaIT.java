@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.PrintStreamLog;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
@@ -573,7 +574,8 @@ public class SchemaIndexHaIT
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = deps.recoveryCleanupWorkCollector();
 
             FusionSchemaIndexProvider fusionSchemaIndexProvider = NativeLuceneFusionSchemaIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode,
+                            recoveryCleanupWorkCollector, PrintStreamLog.newStdErrLog() );
 
             if ( injectLatchPredicate.test( deps.db() ) )
             {
