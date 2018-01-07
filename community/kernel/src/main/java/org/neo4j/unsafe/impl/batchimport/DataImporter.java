@@ -55,12 +55,11 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.unsafe.impl.batchimport.stats.Stats.longStat;
 
 /**
- * Imports data from {@link Input} into a store. Unlinked entity data and property data is imported here.
- * Linking records, except properties, with each other is not done in here.
+ * Imports data from {@link Input} into a store. Only linkage between property records is done, not between nodes/relationships
+ * or any other types of records.
  *
- * Main design goal here is low garbage generation and having as much as possible able to withstand multiple
- * threads passing through. So each import consists of instantiating an input source reader, optimal number
- * of threads and letting each thread:
+ * Main design goal here is low garbage and letting multiple threads import with as little as possible shared between threads.
+ * So importing consists of instantiating an input source reader, optimal number of threads and letting each thread:
  * <ol>
  * <li>Get {@link InputChunk chunk} of data and for every entity in it:</li>
  * <li>Parse its data, filling current record with data using {@link InputEntityVisitor} callback from parsing</li>
