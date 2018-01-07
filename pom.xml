@@ -88,6 +88,7 @@
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <asm.version>6.0</asm.version>
+    <metrics.version>4.0.2</metrics.version>
     <scala.java9.arg/>
   </properties>
 
@@ -1167,12 +1168,18 @@
       <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
-        <version>3.1.2</version>
+        <version>${metrics.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-graphite</artifactId>
-        <version>3.1.2</version>
+        <version>${metrics.version}</version>
+        <exclusions>
+          <exclusion>
+              <groupId>com.rabbitmq</groupId>
+              <artifactId>amqp-client</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
