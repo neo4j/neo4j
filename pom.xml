@@ -66,7 +66,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <lucene.version>5.5.0</lucene.version>
-    <bouncycastle.version>1.53</bouncycastle.version>
+    <bouncycastle.version>1.59</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
