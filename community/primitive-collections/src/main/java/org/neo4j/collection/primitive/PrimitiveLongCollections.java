@@ -278,6 +278,18 @@ public class PrimitiveLongCollections
         };
     }
 
+    public static PrimitiveLongResourceIterator filter( PrimitiveLongResourceIterator source, final LongPredicate filter )
+    {
+        return new PrimitiveLongResourceFilteringIterator( source )
+        {
+            @Override
+            public boolean test( long item )
+            {
+                return filter.test( item );
+            }
+        };
+    }
+
     public static PrimitiveLongIterator deduplicate( PrimitiveLongIterator source )
     {
         return new PrimitiveLongFilteringIterator( source )
@@ -326,7 +338,7 @@ public class PrimitiveLongCollections
     public abstract static class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
             implements LongPredicate
     {
-        private final PrimitiveLongIterator source;
+        protected final PrimitiveLongIterator source;
 
         public PrimitiveLongFilteringIterator( PrimitiveLongIterator source )
         {
@@ -349,6 +361,24 @@ public class PrimitiveLongCollections
 
         @Override
         public abstract boolean test( long testItem );
+    }
+
+    public abstract static class PrimitiveLongResourceFilteringIterator extends PrimitiveLongFilteringIterator
+            implements PrimitiveLongResourceIterator
+    {
+        public PrimitiveLongResourceFilteringIterator( PrimitiveLongIterator source )
+        {
+            super( source );
+        }
+
+        @Override
+        public void close()
+        {
+            if ( source instanceof Resource )
+            {
+                ((Resource) source).close();
+            }
+        }
     }
 
     // Limitinglic

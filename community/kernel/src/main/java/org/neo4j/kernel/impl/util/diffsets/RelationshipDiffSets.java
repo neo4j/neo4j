@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
  *
  * @param <T> type of elements
  */
-public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterator>
+public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterator, RelationshipIterator>
         implements ReadableRelationshipDiffSets<T>
 {
     private Home txStateRelationshipHome;
