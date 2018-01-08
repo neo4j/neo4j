@@ -35,9 +35,10 @@ import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.util.v3_4.TaskCloser
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.internal.kernel.api.Transaction.Type
@@ -97,7 +98,7 @@ trait CodeGenSugar extends MockitoSugar {
                qtx: QueryContext = mockQueryContext(),
                columns: Seq[String] = Seq.empty,
                params: MapValue = EMPTY_MAP,
-               operatorIds: Map[String, LogicalPlanId] = Map.empty): List[Map[String, Object]] = {
+               operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
     val clazz = compile(instructions, columns, operatorIds)
     val result = newInstance(clazz, queryContext = qtx, params = params)
     evaluate(result)
@@ -118,7 +119,7 @@ trait CodeGenSugar extends MockitoSugar {
   def codeGenConfiguration = CodeGenConfiguration(mode = ByteCodeMode)
 
   def compile(instructions: Seq[Instruction], columns: Seq[String],
-              operatorIds: Map[String, LogicalPlanId] = Map.empty): GeneratedQuery = {
+              operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
     //In reality the same namer should be used for construction Instruction as in generating code
     //these tests separate the concerns so we give this namer non-standard prefixes
     CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds, columns, codeGenConfiguration)(
@@ -139,7 +140,7 @@ trait CodeGenSugar extends MockitoSugar {
     new CompiledExecutionResult(taskCloser, queryContext, generated, provider)
   }
 
-  def insertStatic(clazz: Class[GeneratedQueryExecution], mappings: (String, LogicalPlanId)*) = mappings.foreach {
+  def insertStatic(clazz: Class[GeneratedQueryExecution], mappings: (String, Id)*) = mappings.foreach {
     case (name, id) => setStaticField(clazz, name, id.asInstanceOf[AnyRef])
   }
 

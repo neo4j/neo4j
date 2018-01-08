@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.runtime.{ProfileMode, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
@@ -47,16 +48,18 @@ import org.neo4j.test.TestGraphDatabaseFactory
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
+  implicit val idGen = new SequentialIdGen()
+
   test("should count db hits and rows") {
     // given
-    val id1 = new LogicalPlanId(0)
-    val id2 = new LogicalPlanId(1)
+    val id1 = new Id(0)
+    val id2 = new Id(1)
 
     val variable = Variable("name", CodeGenType.primitiveNode)
     val projectNode = NodeProjection(variable)
     val compiled = compile(Seq(WhileLoop(variable,
       ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),
-      Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> LogicalPlanId.DEFAULT))
+      Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> Id.INVALID_ID))
 
     val cursors = mock[CursorFactory]
     val dataRead = new StubRead
@@ -110,7 +113,6 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
       val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
       val plan = plans.ProduceResult(projection, List("foo"))
-      plan.assignIds()
 
       // when
       val result = compileAndExecute(plan, graphDb, mode = ProfileMode)

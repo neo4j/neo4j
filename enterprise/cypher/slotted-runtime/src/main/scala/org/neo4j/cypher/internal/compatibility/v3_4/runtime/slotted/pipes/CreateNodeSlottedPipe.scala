@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemantic
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyLabel, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap, makeValueNeoSafe}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -90,7 +90,7 @@ case class CreateNodeSlottedPipe(source: Pipe,
                                  slots: SlotConfiguration,
                                  labels: Seq[LazyLabel],
                                  properties: Option[Expression])
-                                (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                (val id: Id = Id.INVALID_ID)
   extends BaseCreateNodeSlottedPipe(source, ident, slots, labels, properties) {
 
   override protected def handleNull(key: String) {
@@ -103,7 +103,7 @@ case class MergeCreateNodeSlottedPipe(source: Pipe,
                                       slots: SlotConfiguration,
                                       labels: Seq[LazyLabel],
                                       properties: Option[Expression])
-                                     (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                     (val id: Id = Id.INVALID_ID)
   extends BaseCreateNodeSlottedPipe(source, ident, slots, labels, properties) {
 
   override protected def handleNull(key: String) {

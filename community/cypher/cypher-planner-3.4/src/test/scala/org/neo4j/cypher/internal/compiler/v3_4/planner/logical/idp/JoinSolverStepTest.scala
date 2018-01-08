@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
-  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER),
+  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, idGen),
     mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   val plan1 = mock[LogicalPlan]

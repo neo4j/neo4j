@@ -58,9 +58,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   override def build(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
-    val id = plan.assignedId
-    val slots = physicalPlan.slotConfigurations(plan.assignedId)
-    val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+    val id = plan.id
+    val slots = physicalPlan.slotConfigurations(plan.id)
+    val argumentSize = physicalPlan.argumentSizes(plan.id)
 
     val pipe = plan match {
       case AllNodesScan(IdName(column), _) =>
@@ -95,8 +95,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
-    val id = plan.assignedId
-    val slots = physicalPlan.slotConfigurations(plan.assignedId)
+    val id = plan.id
+    val slots = physicalPlan.slotConfigurations(plan.id)
 
     val pipe = plan match {
       case ProduceResult(_, columns) =>
@@ -143,7 +143,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val toSlot = slots(toName)
 
         // The node/edge predicates are evaluated on the source pipeline, not the produced one
-        val sourceSlots = physicalPlan.slotConfigurations(sourcePlan.assignedId)
+        val sourceSlots = physicalPlan.slotConfigurations(sourcePlan.id)
         val tempNodeOffset = sourceSlots.getLongOffsetFor(tempNode)
         val tempEdgeOffset = sourceSlots.getLongOffsetFor(tempEdge)
         val argumentSize = SlotConfiguration.Size(sourceSlots.numberOfLongs - 2, sourceSlots.numberOfReferences)
@@ -158,7 +158,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
         val nullableSlots: Array[Slot] = nullableKeys.map(k => slots.get(k.name).get).toArray
-        val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+        val argumentSize = physicalPlan.argumentSizes(plan.id)
         OptionalSlottedPipe(source, nullableSlots, slots, argumentSize)(id)
 
       case Projection(_, expressions) =>
@@ -326,8 +326,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val slotConfigs = physicalPlan.slotConfigurations
-    val id = plan.assignedId
-    val slots = slotConfigs(plan.assignedId)
+    val id = plan.id
+    val slots = slotConfigs(plan.id)
 
     val pipe = plan match {
       case Apply(_, _) =>
@@ -338,16 +338,16 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         fallback.build(plan, lhs, rhs)
 
       case RollUpApply(_, rhsPlan, collectionName, identifierToCollect, nullables) =>
-        val rhsSlots = slotConfigs(rhsPlan.assignedId)
+        val rhsSlots = slotConfigs(rhsPlan.id)
         val identifierToCollectExpression = createProjectionForIdentifier(rhsSlots)(identifierToCollect.name)
         val collectionRefSlotOffset = slots.getReferenceOffsetFor(collectionName.name)
         RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset, identifierToCollectExpression,
           nullables.map(_.name), slots)(id = id)
 
       case _: CartesianProduct =>
-        val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+        val argumentSize = physicalPlan.argumentSizes(plan.id)
         val lhsPlan = plan.lhs.get
-        val lhsSlots = slotConfigs(lhsPlan.assignedId)
+        val lhsSlots = slotConfigs(lhsPlan.id)
 
         // Verify the assumption that the only shared slots we have are arguments which are identical on both lhs and rhs.
         // This assumption enables us to use array copy within CartesianProductSlottedPipe.
@@ -356,9 +356,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         CartesianProductSlottedPipe(lhs, rhs, lhsSlots.numberOfLongs, lhsSlots.numberOfReferences, slots, argumentSize)(id)
 
       case joinPlan: NodeHashJoin =>
-        val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+        val argumentSize = physicalPlan.argumentSizes(plan.id)
         val leftNodes: Array[Int] = joinPlan.nodes.map(k => slots.getLongOffsetFor(k.name)).toArray
-        val rhsSlots = slotConfigs(joinPlan.right.assignedId)
+        val rhsSlots = slotConfigs(joinPlan.right.id)
         val rightNodes: Array[Int] = joinPlan.nodes.map(k => rhsSlots.getLongOffsetFor(k.name)).toArray
         val copyLongsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
         val copyRefsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
@@ -378,10 +378,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         NodeHashJoinSlottedPipe(leftNodes, rightNodes, lhs, rhs, slots, copyLongsFromRHS.result().toArray, copyRefsFromRHS.result().toArray)(id)
 
       case ValueHashJoin(lhsPlan, _, Equals(lhsAstExp, rhsAstExp)) =>
-        val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+        val argumentSize = physicalPlan.argumentSizes(plan.id)
         val lhsCmdExp = convertExpressions(lhsAstExp)
         val rhsCmdExp = convertExpressions(rhsAstExp)
-        val lhsSlots = slotConfigs(lhsPlan.assignedId)
+        val lhsSlots = slotConfigs(lhsPlan.id)
         val longOffset = lhsSlots.numberOfLongs
         val refOffset = lhsSlots.numberOfReferences
 
@@ -436,11 +436,11 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   // Verifies the assumption that all shared slots are arguments with slot offsets within the first argument size number of slots
   // and the number of shared slots are identical to the argument size.
   private def verifyOnlyArgumentsAreSharedSlots(plan: LogicalPlan, physicalPlan: PhysicalPlan) = {
-    val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+    val argumentSize = physicalPlan.argumentSizes(plan.id)
     val lhsPlan = plan.lhs.get
     val rhsPlan = plan.rhs.get
-    val lhsSlots = physicalPlan.slotConfigurations(lhsPlan.assignedId)
-    val rhsSlots = physicalPlan.slotConfigurations(rhsPlan.assignedId)
+    val lhsSlots = physicalPlan.slotConfigurations(lhsPlan.id)
+    val rhsSlots = physicalPlan.slotConfigurations(rhsPlan.id)
     val (sharedSlots, rhsUniqueSlots) = rhsSlots.partitionSlots {
       case (k, slot) =>
         lhsSlots.get(k).isDefined
@@ -463,11 +463,11 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   }
 
   private def verifyArgumentsAreTheSameOnBothSides(plan: LogicalPlan, physicalPlan: PhysicalPlan) = {
-    val argumentSize = physicalPlan.argumentSizes(plan.assignedId)
+    val argumentSize = physicalPlan.argumentSizes(plan.id)
     val lhsPlan = plan.lhs.get
     val rhsPlan = plan.rhs.get
-    val lhsSlots = physicalPlan.slotConfigurations(lhsPlan.assignedId)
-    val rhsSlots = physicalPlan.slotConfigurations(rhsPlan.assignedId)
+    val lhsSlots = physicalPlan.slotConfigurations(lhsPlan.id)
+    val rhsSlots = physicalPlan.slotConfigurations(rhsPlan.id)
     val (lhsLongSlots, lhsRefSlots) = lhsSlots.partitionSlots((_, slot) => slot.isLongSlot)
     val (rhsLongSlots, rhsRefSlots) = rhsSlots.partitionSlots((_, slot) => slot.isLongSlot)
 

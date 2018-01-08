@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Buffer all source rows and sort them according to 'sortItems'. Produce the rows in sorted order.
   */
 case class Sort(source: LogicalPlan, sortItems: Seq[ColumnOrder])
-               (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with EagerLogicalPlan  {
+               (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with EagerLogicalPlan  {
 
   val lhs = Some(source)
   val rhs = None

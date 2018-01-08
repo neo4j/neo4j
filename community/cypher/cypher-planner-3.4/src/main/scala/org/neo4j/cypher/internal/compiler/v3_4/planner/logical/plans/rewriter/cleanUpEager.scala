@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Eager, Limit, LoadCSV, UnwindCollection}
 
@@ -28,19 +29,19 @@ case object cleanUpEager extends Rewriter {
 
     // E E L => E L
     case eager@Eager(Eager(source)) =>
-      eager.copy(source = source)(eager.solved)
+      eager.copy(source = source)(eager.solved)(SameId(eager.id))
 
     // E U => U E
     case eager@Eager(unwind@UnwindCollection(source, _, _)) =>
-      unwind.copy(source = eager.copy(source = source)(eager.solved))(eager.solved)
+      unwind.copy(source = eager.copy(source = source)(eager.solved)(SameId(eager.id)))(eager.solved)(SameId(unwind.id))
 
     // E LCSV => LCSV E
     case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _)) =>
-      loadCSV.copy(source = eager.copy(source = source)(eager.solved))(eager.solved)
+      loadCSV.copy(source = eager.copy(source = source)(eager.solved)(SameId(eager.id)))(eager.solved)(SameId(loadCSV.id))
 
     // LIMIT E => E LIMIT
     case limit@Limit(eager@Eager(source), _, _8) =>
-      eager.copy(source = limit.copy(source = source)(limit.solved))(limit.solved)
+      eager.copy(source = limit.copy(source = source)(limit.solved)(SameId(limit.id)))(limit.solved)(SameId(eager.id))
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

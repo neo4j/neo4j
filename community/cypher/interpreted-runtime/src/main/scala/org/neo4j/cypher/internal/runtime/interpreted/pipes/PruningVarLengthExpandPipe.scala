@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeReference, NodeValue}
 
@@ -35,7 +35,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                                       min: Int,
                                       max: Int,
                                       filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
-                                     (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with Pipe {
+                                     (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
   assert(min <= max)

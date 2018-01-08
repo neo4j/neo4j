@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
 
@@ -57,10 +58,10 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
   private def findMatchingOuterExpand(positivePredicate: Boolean, triadicPredicate: Expression,
                                               patternExpression: PatternExpression, incomingPredicates: Seq[Expression], expand: Expand, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = expand match {
     case exp2@Expand(exp1: Expand, _, _, _, _, _, ExpandAll) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2, qg, context)
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, Seq.empty, exp1, exp2.selfThis, qg, context)
 
     case exp2@Expand(Selection(innerPredicates, exp1: Expand), _, _, _, _, _, ExpandAll) =>
-      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates, exp1, exp2, qg, context)
+      findMatchingInnerExpand(positivePredicate, triadicPredicate, patternExpression, incomingPredicates, innerPredicates, exp1, exp2.selfThis, qg, context)
 
     case _ => Seq.empty
   }
@@ -79,7 +80,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
         exp1
 
       val argument = context.logicalPlanProducer.planArgumentFrom(left, context)
-      val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(exp2.solved)
+      val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(exp2.solved)(SameId(exp2.id))
       val right = if (incomingPredicates.nonEmpty)
         context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, incomingPredicates, context)
       else

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName}
 
 /**
@@ -28,8 +29,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName}
   */
 case class CreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: RelTypeName, endNode: IdName,
                               properties: Option[Expression])
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

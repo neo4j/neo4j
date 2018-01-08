@@ -24,9 +24,10 @@ import java.util
 import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName, SeekableArgs}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{QualifiedName, SeekableArgs}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
@@ -39,7 +40,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def arguments: Seq[Argument]
 
-  def id: LogicalPlanId
+  def id: Id
 
   def name: String
 
@@ -264,7 +265,7 @@ final case class TwoChildren(lhs: InternalPlanDescription, rhs: InternalPlanDesc
   def map(f: InternalPlanDescription => InternalPlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
 }
 
-final case class PlanDescriptionImpl(id: LogicalPlanId,
+final case class PlanDescriptionImpl(id: Id,
                                      name: String,
                                      children: Children,
                                      arguments: Seq[Argument],
@@ -357,7 +358,7 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
   override def find(name: String): Seq[InternalPlanDescription] = similar.last.find(name)
 
-  override def id: LogicalPlanId = similar.last.id
+  override def id: Id = similar.last.id
 
   override def addArgument(argument: Argument): InternalPlanDescription = ???
 
@@ -367,7 +368,7 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
 }
 
-final case class ArgumentPlanDescription(id: LogicalPlanId,
+final case class ArgumentPlanDescription(id: Id,
                                          arguments: Seq[Argument] = Seq.empty,
                                          variables: Set[String])
   extends InternalPlanDescription {

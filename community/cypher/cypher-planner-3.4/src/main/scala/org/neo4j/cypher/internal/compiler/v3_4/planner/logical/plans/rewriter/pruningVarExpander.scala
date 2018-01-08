@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, FunctionInvocation}
 
 import scala.collection.mutable
@@ -98,14 +99,14 @@ case object pruningVarExpander extends Rewriter {
         val distinctSet = findDistinctSet(plan)
 
         val innerRewriter = topDown(Rewriter.lift {
-          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, ExpandAll, _, _, _, _, predicates) if distinctSet(expand) =>
+          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, ExpandAll, _, _, _, _, predicates) if distinctSet(expand.selfThis) =>
             if (length.min >= 4 && length.max.get >= 5)
               // These constants were selected by benchmarking on randomized graphs, with different
               // degrees of interconnection.
-              FullPruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
+              FullPruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)(SameId(expand.id))
             else if (length.max.get > 1)
-              PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
-            else expand
+              PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)(SameId(expand.id))
+            else expand.selfThis
         })
         plan.endoRewrite(innerRewriter)
 

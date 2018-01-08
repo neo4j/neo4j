@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
 /**
@@ -27,8 +28,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.LabelName
   * The source row is produced.
   */
 case class RemoveLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[LabelName])
-                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+                       (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

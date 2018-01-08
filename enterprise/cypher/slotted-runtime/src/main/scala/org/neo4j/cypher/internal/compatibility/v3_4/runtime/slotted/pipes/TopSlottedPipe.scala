@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.DefaultCompa
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters._
@@ -43,7 +43,7 @@ abstract class TopSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder])
 }
 
 case class TopNSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], countExpression: Expression)
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends TopSlottedPipe(source, orderBy) {
+                           (val id: Id = Id.INVALID_ID) extends TopSlottedPipe(source, orderBy) {
 
   countExpression.registerOwningPipe(this)
 
@@ -75,7 +75,7 @@ case class TopNSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], countExpress
  * an array, instead just store a single value.
  */
 case class Top1SlottedPipe(source: Pipe, orderBy: List[ColumnOrder])
-                          (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                          (val id: Id = Id.INVALID_ID)
   extends TopSlottedPipe(source, orderBy) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
@@ -104,7 +104,7 @@ case class Top1SlottedPipe(source: Pipe, orderBy: List[ColumnOrder])
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
 case class Top1WithTiesSlottedPipe(source: Pipe, orderBy: List[ColumnOrder])
-                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                  (val id: Id = Id.INVALID_ID)
   extends TopSlottedPipe(source, orderBy) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],

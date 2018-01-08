@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName => IdNameV3_4}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, NonEmptyList, symbols => symbolsV3_4}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
@@ -42,6 +43,8 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 class LogicalPlanConverterTest extends FunSuite with Matchers {
+
+  implicit val idGen = new SequentialIdGen()
 
   val pos3_3 = InputPositionV3_3(0,0,0)
   val pos3_4 = InputPosition(0,0,0)
@@ -251,7 +254,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.AllNodesScan](a3_3)._1
     rewrittenPlan should be(a3_4)
-    rewrittenPlan.assignedId should be(helpers.as3_4(id3_3))
+    rewrittenPlan.id should be(helpers.as3_4(id3_3))
   }
 
   test("should convert Aggregation and keep ids") {
@@ -270,8 +273,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.Aggregation](ag3_3)._1
     rewrittenPlan should be(ag3_4)
-    rewrittenPlan.assignedId should be(helpers.as3_4(ag_id))
-    rewrittenPlan.lhs.get.assignedId should be(helpers.as3_4(ans_id))
+    rewrittenPlan.id should be(helpers.as3_4(ag_id))
+    rewrittenPlan.lhs.get.id should be(helpers.as3_4(ans_id))
   }
 
   test("should convert ProduceResult and keep ids") {
@@ -287,8 +290,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.ProduceResult](p3_3)._1
     rewrittenPlan should be(p3_4)
-    rewrittenPlan.assignedId should be(helpers.as3_4(p3_3_id))
-    rewrittenPlan.lhs.get.assignedId should be(helpers.as3_4(s3_3_id))
+    rewrittenPlan.id should be(helpers.as3_4(p3_3_id))
+    rewrittenPlan.lhs.get.id should be(helpers.as3_4(s3_3_id))
   }
 
   test("should convert ErrorPlan") {

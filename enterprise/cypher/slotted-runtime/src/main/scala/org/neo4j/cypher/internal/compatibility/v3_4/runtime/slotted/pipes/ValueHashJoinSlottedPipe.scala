@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecu
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 
@@ -36,7 +36,7 @@ case class ValueHashJoinSlottedPipe(leftSide: Expression,
                                     longOffset: Int,
                                     refsOffset: Int,
                                     argumentSize: SlotConfiguration.Size)
-                                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                   (val id: Id = Id.INVALID_ID)
   extends AbstractHashJoinPipe[AnyValue, Expression](left, right, slots) {
 
   override def computeKey(context: ExecutionContext, keyColumns: Expression, queryState: QueryState): Option[AnyValue] = {

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 /**
@@ -27,15 +28,8 @@ import org.neo4j.cypher.internal.v3_4.expressions._
   * provided constraints. Produce one row per traversed relationships, and add the
   * relationship and end node as values on the produced rows.
   */
-case class Expand(source: LogicalPlan,
-                  from: IdName,
-                  dir: SemanticDirection,
-                  types: Seq[RelTypeName],
-                  to: IdName,
-                  relName: IdName,
-                  mode: ExpansionMode = ExpandAll
-                 )(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class Expand(source: LogicalPlan, from: IdName, dir: SemanticDirection, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None
@@ -47,16 +41,8 @@ case class Expand(source: LogicalPlan,
   * row is produced instead populated by the argument, and the 'relName' and 'to' variables
   * are set to NO_VALUE.
   */
-case class OptionalExpand(source: LogicalPlan,
-                          from: IdName,
-                          dir: SemanticDirection,
-                          types: Seq[RelTypeName],
-                          to: IdName,
-                          relName: IdName,
-                          mode: ExpansionMode = ExpandAll,
-                          predicates: Seq[Expression] = Seq.empty
-                         )(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class OptionalExpand(source: LogicalPlan, from: IdName, dir: SemanticDirection, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None
@@ -71,21 +57,7 @@ case class OptionalExpand(source: LogicalPlan,
   *
   * The relationships and end node of the corresponding path are added to the produced row.
   */
-case class VarExpand(source: LogicalPlan,
-                     from: IdName,
-                     dir: SemanticDirection,
-                     projectedDir: SemanticDirection,
-                     types: Seq[RelTypeName],
-                     to: IdName,
-                     relName: IdName,
-                     length: VarPatternLength,
-                     mode: ExpansionMode = ExpandAll,
-                     tempNode: IdName,
-                     tempEdge: IdName,
-                     nodePredicate: Expression,
-                     edgePredicate: Expression,
-                     legacyPredicates: Seq[(LogicalVariable, Expression)])
-                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+case class VarExpand(source: LogicalPlan, from: IdName, dir: SemanticDirection, projectedDir: SemanticDirection, types: Seq[RelTypeName], to: IdName, relName: IdName, length: VarPatternLength, mode: ExpansionMode = ExpandAll, tempNode: IdName, tempEdge: IdName, nodePredicate: Expression, edgePredicate: Expression, legacyPredicates: Seq[(LogicalVariable, Expression)])(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   override val lhs = Some(source)
   override def rhs = None
 
@@ -108,7 +80,7 @@ case class PruningVarExpand(source: LogicalPlan,
                             minLength: Int,
                             maxLength: Int,
                             predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
-                           (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None
@@ -131,7 +103,7 @@ case class FullPruningVarExpand(source: LogicalPlan,
                                 minLength: Int,
                                 maxLength: Int,
                                 predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
-                               (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+                               (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None

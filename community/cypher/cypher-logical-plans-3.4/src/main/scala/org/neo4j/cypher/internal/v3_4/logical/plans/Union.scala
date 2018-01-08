@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Produce first the 'left' rows, and then the 'right' rows. This operator does not guarantee row uniqueness.
   */
-case class Union(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class Union(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.Unchangeable
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 /**
   * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -48,7 +48,7 @@ trait Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
 
   // Used by profiling to identify where to report dbhits and rows
-  def id: LogicalPlanId
+  def id(): Id
 
   // TODO: Alternatively we could pass the logicalPlanId when we create contexts, and in the SlottedQueryState use the
   // SlotConfigurations map to get the slot configuration needed for the context creation,
@@ -60,7 +60,7 @@ trait Pipe {
   }
 }
 
-case class ArgumentPipe()(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
     Iterator(state.createOrGetInitialContext(executionContextFactory))

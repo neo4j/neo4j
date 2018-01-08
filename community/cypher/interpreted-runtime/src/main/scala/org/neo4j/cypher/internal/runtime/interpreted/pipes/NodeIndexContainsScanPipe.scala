@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.NodeValue
@@ -70,7 +70,7 @@ case class NodeIndexContainsScanPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
                                      valueExpr: Expression)
-                                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                    (val id: Id = Id.INVALID_ID)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
   override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String) =
@@ -81,7 +81,7 @@ case class NodeIndexEndsWithScanPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
                                      valueExpr: Expression)
-                                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                    (val id: Id = Id.INVALID_ID)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
   override protected def queryContextCall(state: QueryState, indexReference: IndexReference, value: String) =

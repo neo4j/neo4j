@@ -44,7 +44,8 @@ import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, Sing
 import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, _}
 import org.neo4j.cypher.internal.util.v3_4.TaskCloser
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.virtual.MapValue
@@ -94,7 +95,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
   case class VectorizedExecutionPlan(plannerUsed: PlannerName,
                                      operators: Pipeline,
-                                     slots: Map[LogicalPlanId, SlotConfiguration],
+                                     slots: Map[Id, SlotConfiguration],
                                      physicalPlan: LogicalPlan,
                                      fieldNames: Array[String],
                                      dispatcher: Dispatcher,

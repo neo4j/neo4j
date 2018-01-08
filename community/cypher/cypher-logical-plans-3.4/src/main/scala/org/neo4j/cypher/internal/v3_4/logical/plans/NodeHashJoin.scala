@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Join two result streams using a hash table. 'Left' is completely consumed and buffered in a hash table, using a
@@ -37,8 +38,8 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *     produce (leftRow merge rightRow)
   */
 case class NodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
-                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with EagerLogicalPlan {
+                       (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

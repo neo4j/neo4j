@@ -56,7 +56,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
 
   def build(plan: LogicalPlan): Pipe = {
-    val id = plan.assignedId
+    val id = plan.id
     plan match {
       case Argument(_) =>
         ArgumentPipe()(id)
@@ -103,7 +103,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   }
 
   def build(plan: LogicalPlan, source: Pipe): Pipe = {
-    val id = plan.assignedId
+    val id = plan.id
     plan match {
       case Projection(_, expressions) =>
         ProjectionPipe(source, Eagerly.immutableMapValues(expressions, buildExpression))(id = id)
@@ -343,7 +343,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   }
 
   def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
-    val id = plan.assignedId
+    val id = plan.id
     plan match {
       case CartesianProduct(_, _) =>
         CartesianProductPipe(lhs, rhs)(id = id)

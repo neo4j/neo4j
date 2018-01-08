@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 case class OptionalExpandIntoSlottedPipe(source: Pipe,
@@ -39,7 +39,7 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
                                          lazyTypes: LazyTypes,
                                          predicate: Predicate,
                                          slots: SlotConfiguration)
-                                        (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                        (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with PrimitiveCachingExpandInto {
   self =>
 

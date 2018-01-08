@@ -38,9 +38,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.{phases => phasesV3_4}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, PlannerNameWithVersion, ProcedurePlannerName}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, InputPosition}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId => LogicalPlanIdV3_3}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId => LogicalPlanIdV3_4}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
 object helpers {
@@ -97,7 +97,7 @@ object helpers {
 
   def as3_4(pos: InputPositionV3_3): InputPosition = if(pos == null) null else InputPosition(pos.offset, pos.line, pos.column)
 
-  def as3_4(planId: LogicalPlanIdV3_3) : LogicalPlanIdV3_4 = new LogicalPlanIdV3_4(planId.underlying)
+  def as3_4(planId: LogicalPlanIdV3_3) : Id = Id(planId.underlying)
 
   def as3_4(plannerName: PlannerNameV3_3) : PlannerName = plannerName match {
     case IDPPlannerNameV3_3 => IDPPlannerName

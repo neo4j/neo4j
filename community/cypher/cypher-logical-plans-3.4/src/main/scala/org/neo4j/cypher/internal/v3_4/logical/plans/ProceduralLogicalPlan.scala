@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions._
 
-abstract class ProceduralLogicalPlan extends LogicalPlan {
+abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = None
 
   override def rhs: Option[LogicalPlan] = None
@@ -39,19 +40,19 @@ abstract class ProceduralLogicalPlan extends LogicalPlan {
 case class StandAloneProcedureCall(signature: ProcedureSignature,
                                    args: Seq[Expression],
                                    types: Seq[(String, CypherType)],
-                                   callResultIndices: Seq[(Int, String)]) extends ProceduralLogicalPlan
+                                   callResultIndices: Seq[(Int, String)])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateNodeKeyConstraint(node: IdName, label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
-case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
+case class CreateNodeKeyConstraint(node: IdName, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateUniquePropertyConstraint(node: IdName, label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
-case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
+case class CreateUniquePropertyConstraint(node: IdName, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property) extends ProceduralLogicalPlan
-case class DropNodePropertyExistenceConstraint(label: LabelName, prop: Property) extends ProceduralLogicalPlan
+case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class DropNodePropertyExistenceConstraint(label: LabelName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property) extends ProceduralLogicalPlan
-case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property) extends ProceduralLogicalPlan
+case class CreateRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName]) extends ProceduralLogicalPlan
-case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName]) extends ProceduralLogicalPlan
+case class CreateIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)

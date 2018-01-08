@@ -39,40 +39,37 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
   test("zero size argument for single all nodes scan") {
     // given
     val plan = AllNodesScan(x, Set.empty)(solved)
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 1
-    arguments(plan.assignedId) should equal(Size(0, 0))
+    arguments(plan.id) should equal(Size(0, 0))
   }
 
   test("zero size argument for only leaf operator") {
     // given
     val leaf = AllNodesScan(x, Set.empty)(solved)
     val expand = Expand(leaf, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
-    expand.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(expand, semanticTable).argumentSizes
 
     // then
     arguments should have size 1
-    arguments(leaf.assignedId) should equal(Size(0, 0))
+    arguments(leaf.id) should equal(Size(0, 0))
   }
 
   test("zero size argument for argument operator") {
     val argument = Argument(Set.empty)(solved)
-    argument.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(argument, semanticTable).argumentSizes
 
     // then
     arguments should have size 1
-    arguments(argument.assignedId) should equal(Size(0, 0))
+    arguments(argument.id) should equal(Size(0, 0))
   }
 
   test("correct long size argument for rhs leaf") {
@@ -80,15 +77,14 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val lhs = leaf()
     val rhs = leaf()
     val plan = applyRight(pipe(lhs, 1, 0), rhs)
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 2
-    arguments(lhs.assignedId) should equal(Size(0, 0))
-    arguments(rhs.assignedId) should equal(Size(1, 0))
+    arguments(lhs.id) should equal(Size(0, 0))
+    arguments(rhs.id) should equal(Size(1, 0))
   }
 
   test("correct ref size argument for rhs leaf") {
@@ -96,15 +92,14 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val lhs = leaf()
     val rhs = leaf()
     val plan = applyRight(pipe(lhs, 0, 1), rhs)
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 2
-    arguments(lhs.assignedId) should equal(Size(0, 0))
-    arguments(rhs.assignedId) should equal(Size(0, 1))
+    arguments(lhs.id) should equal(Size(0, 0))
+    arguments(rhs.id) should equal(Size(0, 1))
   }
 
   test("correct size argument for more slots") {
@@ -112,15 +107,14 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val lhs = leaf()
     val rhs = leaf()
     val plan = applyRight(pipe(lhs, 17, 11), rhs)
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 2
-    arguments(lhs.assignedId) should equal(Size(0, 0))
-    arguments(rhs.assignedId) should equal(Size(17, 11))
+    arguments(lhs.id) should equal(Size(0, 0))
+    arguments(rhs.id) should equal(Size(17, 11))
   }
 
   test("apply right keeps rhs slots") {
@@ -137,16 +131,15 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val leaf2 = leaf()
     val leaf3 = leaf()
     val plan = applyRight(applyRight(pipe(leaf1, 1, 0), pipe(leaf2, 0, 1)), leaf3)
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 3
-    arguments(leaf1.assignedId) should equal(Size(0, 0))
-    arguments(leaf2.assignedId) should equal(Size(1, 0))
-    arguments(leaf3.assignedId) should equal(Size(1, 1))
+    arguments(leaf1.id) should equal(Size(0, 0))
+    arguments(leaf2.id) should equal(Size(1, 0))
+    arguments(leaf3.id) should equal(Size(1, 1))
   }
 
   test("apply left ignores rhs slots") {
@@ -163,16 +156,15 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val leaf2 = leaf()
     val leaf3 = leaf()
     val plan = applyRight(applyLeft(pipe(leaf1, 1, 0), pipe(leaf2, 0, 1)), leaf3)
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 3
-    arguments(leaf1.assignedId) should equal(Size(0, 0))
-    arguments(leaf2.assignedId) should equal(Size(1, 0))
-    arguments(leaf3.assignedId) should equal(Size(1, 0))
+    arguments(leaf1.id) should equal(Size(0, 0))
+    arguments(leaf2.id) should equal(Size(1, 0))
+    arguments(leaf3.id) should equal(Size(1, 0))
   }
 
   test("apply left argument does not leak downstream slots") {
@@ -188,15 +180,14 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val leaf1 = leaf()
     val leaf2 = leaf()
     val plan = pipe(applyLeft(pipe(leaf1, 1, 0), leaf2), 0, 1)
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 2
-    arguments(leaf1.assignedId) should equal(Size(0, 0))
-    arguments(leaf2.assignedId) should equal(Size(1, 0))
+    arguments(leaf1.id) should equal(Size(0, 0))
+    arguments(leaf2.id) should equal(Size(1, 0))
   }
 
   test("argument is passed over pipeline break") {
@@ -212,15 +203,14 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val leaf1 = leaf()
     val leaf2 = leaf()
     val plan = applyRight(pipe(leaf1, 1, 0), pipe(break(leaf2), 0, 1))
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 2
-    arguments(leaf1.assignedId) should equal(Size(0, 0))
-    arguments(leaf2.assignedId) should equal(Size(1, 0))
+    arguments(leaf1.id) should equal(Size(0, 0))
+    arguments(leaf2.id) should equal(Size(1, 0))
   }
 
   test("Optional should record argument size") {
@@ -235,16 +225,15 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val leaf2 = leaf()
     val optional = Optional(leaf2, Set.empty)(solved)
     val plan = applyRight(pipe(leaf1, 1, 0), optional)
-    plan.assignIds()
 
     // when
     val arguments = SlotAllocation.allocateSlots(plan, semanticTable).argumentSizes
 
     // then
     arguments should have size 3
-    arguments(leaf1.assignedId) should equal(Size(0, 0))
-    arguments(leaf2.assignedId) should equal(Size(1, 0))
-    arguments(optional.assignedId) should equal(Size(1, 0))
+    arguments(leaf1.id) should equal(Size(0, 0))
+    arguments(leaf2.id) should equal(Size(1, 0))
+    arguments(optional.id) should equal(Size(1, 0))
   }
 
   private def leaf() = Argument(Set.empty)(solved)

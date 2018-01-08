@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * ForeachApply is a side-effect type apply, which operates on a list value. Each left row is used to compute a
@@ -35,8 +36,8 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *
   *   produce leftRow
   */
-case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

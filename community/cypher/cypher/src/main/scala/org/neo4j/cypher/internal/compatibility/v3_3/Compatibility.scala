@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, T
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, InstrumentedGraphStatistics => InstrumentedGraphStatisticsV3_4, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotV3_4}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -146,12 +147,13 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
           logicalV3_3.CachedMetricsFactory(logicalV3_3.SimpleMetricsFactory), queryGraphSolverV3_3,
           configV3_3, maybeUpdateStrategy.getOrElse(v3_3.defaultUpdateStrategy),
           clock, simpleExpressionEvaluatorV3_3)
+        val logicalPlanIdGen = new SequentialIdGen()
         val contextV3_4: CONTEXT3_4 = contextCreatorV3_4.create(tracerV3_4, notificationLoggerV3_4, planContextV3_4,
           syntacticQuery.queryText, preParsedQuery.debugOptions,
           Some(inputPositionV3_4), monitorsV3_4,
           CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolverV3_4,
           configV3_4, maybeUpdateStrategy.map(helpers.as3_4).getOrElse(defaultUpdateStrategy),
-          clock, simpleExpressionEvaluator)
+          clock, logicalPlanIdGen, simpleExpressionEvaluator)
 
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_3)

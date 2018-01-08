@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 case class CartesianProductSlottedPipe(lhs: Pipe, rhs: Pipe,
                                        lhsLongCount: Int, lhsRefCount: Int,
                                        slots: SlotConfiguration,
                                        argumentSize: SlotConfiguration.Size)
-                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+                                      (val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     lhs.createResults(state) flatMap {
