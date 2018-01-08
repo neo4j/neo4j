@@ -260,7 +260,7 @@ public class RelationshipGroupRecordCheck implements
             @Override
             protected boolean isFirstInChain( RelationshipRecord relationship )
             {
-                return relationship.isFirstInSecondChain() && relationship.isFirstInSecondChain();
+                return relationship.isFirstInFirstChain() && relationship.isFirstInSecondChain();
             }
 
             @Override

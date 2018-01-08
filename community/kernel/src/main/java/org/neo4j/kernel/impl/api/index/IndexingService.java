@@ -760,7 +760,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    private final class IndexLogRecord
+    private static final class IndexLogRecord
     {
         private final long indexId;
         private final IndexDescriptor descriptor;

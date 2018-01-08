@@ -60,7 +60,7 @@ public class NumbersTest
         expectedException.expect( ArithmeticException.class );
         expectedException.expectMessage( "Value 131068 is too big to be represented as unsigned short" );
 
-        safeCastIntToUnsignedShort( Short.MAX_VALUE << 1 + 1 );
+        safeCastIntToUnsignedShort( Short.MAX_VALUE << 2 );
     }
 
     @Test

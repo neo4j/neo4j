@@ -42,7 +42,7 @@ public class TestLongerShortString
         assertEquals( 0, 2 & LongerShortString.invertedBitMask( LongerShortString.DATE ) );
         assertEquals( LongerShortString.NUMERICAL.bitMask(),
                 3 & LongerShortString.invertedBitMask( LongerShortString.DATE ) );
-        assertEquals( 0, (LongerShortString.NUMERICAL.bitMask() | LongerShortString.NUMERICAL.bitMask()) &
+        assertEquals( 0, LongerShortString.NUMERICAL.bitMask() &
                          LongerShortString.invertedBitMask( LongerShortString.NUMERICAL, LongerShortString.DATE ) );
     }
 

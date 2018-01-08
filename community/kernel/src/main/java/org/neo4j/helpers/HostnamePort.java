@@ -241,6 +241,6 @@ public class HostnamePort
     @Override
     public int hashCode()
     {
-        return Objects.hash( host, ports );
+        return Objects.hash( host, Arrays.hashCode( ports ) );
     }
 }

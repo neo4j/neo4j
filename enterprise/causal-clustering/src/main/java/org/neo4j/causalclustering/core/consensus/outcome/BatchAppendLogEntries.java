@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -88,7 +88,7 @@ public class BatchAppendLogEntries implements RaftLogCommand
     @Override
     public int hashCode()
     {
-        return Objects.hash( baseIndex, offset, entries );
+        return Objects.hash( baseIndex, offset, Arrays.hashCode( entries ) );
     }
 
     @Override

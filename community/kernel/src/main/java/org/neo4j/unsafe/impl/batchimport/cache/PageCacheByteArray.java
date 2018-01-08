@@ -54,12 +54,26 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     @Override
     public void swap( long fromIndex, long toIndex )
     {
-        byte[] a = defaultValue.clone();
-        byte[] b = defaultValue.clone();
-        get( fromIndex, a );
-        get( toIndex, b );
-        set( fromIndex, b );
-        set( toIndex, a );
+        long fromPageId = pageId( fromIndex );
+        int fromOffset = offset( fromIndex );
+        long toPageId = pageId( toIndex );
+        int toOffset = offset( toIndex );
+        try ( PageCursor fromCursor = pagedFile.io( fromPageId, PF_SHARED_WRITE_LOCK );
+              PageCursor toCursor = pagedFile.io( toPageId, PF_SHARED_WRITE_LOCK ) )
+        {
+            fromCursor.next();
+            toCursor.next();
+            for ( int i = 0; i < entrySize; i++, fromOffset++, toOffset++ )
+            {
+                byte intermediary = fromCursor.getByte( fromOffset );
+                fromCursor.putByte( fromOffset, toCursor.getByte( toOffset ) );
+                toCursor.putByte( toOffset, intermediary );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override

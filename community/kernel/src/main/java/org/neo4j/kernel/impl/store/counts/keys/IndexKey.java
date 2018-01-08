@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
-
 abstract class IndexKey implements CountsKey
 {
     private final long indexId;
@@ -74,7 +72,7 @@ abstract class IndexKey implements CountsKey
     {
         if ( other instanceof IndexKey )
         {
-            return (int) (indexId - ((IndexKey) other).indexId());
+            return Long.compare( indexId, ((IndexKey) other).indexId() );
         }
         return recordType().ordinal() - other.recordType().ordinal();
     }

@@ -75,6 +75,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         fixture.backgroundFlushLatch = new CountDownLatch( 1 );
         return new DelegatingPageCacheTracer( delegate )
         {
+            @Override
             public MajorFlushEvent beginCacheFlush()
             {
                 try
