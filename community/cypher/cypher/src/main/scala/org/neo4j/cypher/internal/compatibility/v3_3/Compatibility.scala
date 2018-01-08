@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerFactory, DPPlanner
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Statement => StatementV3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter, Statement => StatementV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
@@ -113,7 +113,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         Some(helpers.as3_3(preParsedQuery.offset)), tracerV3_3))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapper, tracerV3_4: CompilationPhaseTracer):
-      (ExecutionPlan, Map[String, Any]) = runSafely {
+      (ExecutionPlan, Map[String, Any], Seq[String]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_3.get
 
         //Context used for db communication during planning
@@ -157,6 +157,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
 
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_3)
+        val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContextV3_3, planCacheFactory)
         val isStale = (plan: ExecutionPlan_v3_4) => plan.checkPlanResusability(planContextV3_4.txIdProvider, planContextV3_4.statistics)
 
@@ -182,7 +183,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         // Log notifications/warnings from planning
         notificationLoggerV3_3.notifications.map(helpers.as3_4).foreach(notificationLoggerV3_4.log)
 
-        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
+        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams(), queryParamNames)
       }
 
       override protected val trier: Try[phases.BaseState] = preparedSyntacticQueryForV_3_3

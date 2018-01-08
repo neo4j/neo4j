@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v3_4.expressions.Parameter
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
@@ -97,7 +98,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                               Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
-        (ExecutionPlan, Map[String, Any]) = runSafely {
+        (ExecutionPlan, Map[String, Any], Seq[String]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_4.get
 
         //Context used for db communication during planning
@@ -112,6 +113,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                         clock, logicalPlanIdGen, simpleExpressionEvaluator)
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
+        val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
         val isStale = (plan: ExecutionPlan_v3_4) => plan.checkPlanResusability(planContext.txIdProvider, planContext.statistics)
 
@@ -132,7 +134,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         else
           createPlan.produceWithExistingTX
 
-        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
+        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams(), queryParamNames)
       }
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_4

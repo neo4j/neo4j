@@ -84,7 +84,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |MATCH (rfq:Study_Dataset:RFQ) WHERE (rfq IN datasets)
         |OPTIONAL MATCH (wasi:Study_Dataset:WASI) WHERE (wasi IN datasets)
         |OPTIONAL MATCH (ypq:Study_Dataset:YPQ) WHERE (ypq IN datasets)
-        |RETURN DISTINCT derivedData AS DerivedData, subject , stai, pswq, pss, njre_q_r, iu, gad_7, fmps, bdi, wdq, treasurehunt, scid_v2, ybocs, bis, sdq, ehi, oci_r, pi_wsur, rfq, wasi, ypq""".stripMargin, Map.empty)
+        |RETURN DISTINCT derivedData AS DerivedData, subject , stai, pswq, pss, njre_q_r, iu, gad_7, fmps, bdi, wdq, treasurehunt, scid_v2, ybocs, bis, sdq, ehi, oci_r, pi_wsur, rfq, wasi, ypq""".stripMargin, Map("studyUUID" -> 1))
   }
 
   test("Should not use both pruning var expand and projections that need path info") {

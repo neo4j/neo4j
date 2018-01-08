@@ -405,7 +405,7 @@ public class BoltCausalClusteringIT
                 try
                 {
                     switchLeader( leader );
-                    session.run( "CREATE (p:Person {name: {name} })" ).consume();
+                    session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Mark" ) ).consume();
                     fail( "Should have thrown an exception as the leader went away mid session" );
                 }
                 catch ( SessionExpiredException sep )

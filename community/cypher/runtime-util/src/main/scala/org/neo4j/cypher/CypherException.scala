@@ -48,6 +48,7 @@ class CypherTypeException(message: String, cause: Throwable = null) extends Cyph
 }
 
 class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  def this(message: String) = this(message, null)
   val status = Status.Statement.ParameterMissing
 }
 

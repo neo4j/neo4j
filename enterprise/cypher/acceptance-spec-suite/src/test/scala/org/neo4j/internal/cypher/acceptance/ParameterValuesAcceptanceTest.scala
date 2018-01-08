@@ -119,4 +119,51 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
       r.hasProperty("name") should equal(false)
     }
   }
+
+  test("match with missing parameter should return error for empty db") {
+    // all versions of 3.3 and 3.4
+    val config = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+    failWithError(config, "MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"))
+  }
+
+  test("match with missing parameter should return error for non-empty db") {
+    // all versions of 3.3 and 3.4
+    val config = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
+    failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"))
+  }
+
+  test("match with multiple missing parameters should return error for empty db") {
+    // all versions of 3.3 and 3.4
+    val config = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+    failWithError(config, "MATCH (n:Person {name:{name}, age:{age}}) RETURN n", Seq("Expected parameter(s): name, age"))
+  }
+
+  test("match with multiple missing parameters should return error for non-empty db") {
+    // all versions of 3.3 and 3.4
+    val config = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
+    failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}, age:{age}}) RETURN n", Seq("Expected parameter(s): name, age"))
+  }
+
+  test("match with misspelled parameter should return error for empty db") {
+    // all versions of 3.3 and 3.4
+    val config = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+    failWithError(config, "MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"), params = "nam" -> "Neo")
+  }
+
+  test("match with misspelled parameter should return error for non-empty db") {
+    // all versions of 3.3 and 3.4
+    val config = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners - Configs.Compiled
+    failWithError(config, "CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n", Seq("Expected parameter(s): name"), params = "nam" -> "Neo")
+  }
+
+  test("explain with missing parameter should NOT return error for empty db") {
+    val config = Configs.All
+    executeWith(config, "EXPLAIN MATCH (n:Person {name:{name}}) RETURN n")
+  }
+
+  test("explain with missing parameter should NOT return error for non-empty db") {
+    val config = Configs.Interpreted - Configs.Cost2_3
+    executeWith(config, "EXPLAIN CREATE (n:Person) WITH n MATCH (n:Person {name:{name}}) RETURN n")
+  }
+
 }

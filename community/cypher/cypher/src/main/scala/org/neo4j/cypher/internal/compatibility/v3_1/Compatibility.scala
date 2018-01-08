@@ -76,7 +76,7 @@ trait Compatibility {
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapperV3_4,
                         tracer: frontend.v3_4.phases.CompilationPhaseTracer):
-      (ExecutionPlan, Map[String, Any]) =
+      (ExecutionPlan, Map[String, Any], Seq[String]) =
         exceptionHandler.runSafely {
           val tc = TransactionalContextWrapperV3_1(transactionalContext.tc)
           val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
@@ -88,7 +88,7 @@ trait Compatibility {
           // Log notifications/warnings from planning
           planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as3_1(preParsedQuery.offset)), extractedParameters)
+          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as3_1(preParsedQuery.offset)), extractedParameters, Seq.empty[String])
         }
 
       override protected val trier: Try[PreparedQuerySyntax] = preparedSyntacticQueryForV_3_1
