@@ -118,7 +118,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue() );
+        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue(), 0.001 );
     }
 
     @Test
