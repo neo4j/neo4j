@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.logging.Log;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -51,6 +53,26 @@ public class BoltChannelAutoReadLimiterTest
     {
         this.channel = new EmbeddedChannel();
         this.log = mock( Log.class );
+    }
+
+    @Test
+    public void shouldUseWatermarksFromSystemProperties()
+    {
+        FeatureToggles.set( BoltChannelAutoReadLimiter.class, BoltChannelAutoReadLimiter.LOW_WATERMARK_NAME, 5 );
+        FeatureToggles.set( BoltChannelAutoReadLimiter.class, BoltChannelAutoReadLimiter.HIGH_WATERMARK_NAME, 10 );
+
+        try
+        {
+           BoltChannelAutoReadLimiter limiter = newLimiterWithDefaults();
+
+           assertThat( limiter.getLowWatermark(), is( 5 ) );
+           assertThat( limiter.getHighWatermark(), is( 10 ) );
+        }
+        finally
+        {
+            FeatureToggles.clear( BoltChannelAutoReadLimiter.class, BoltChannelAutoReadLimiter.LOW_WATERMARK_NAME );
+            FeatureToggles.clear( BoltChannelAutoReadLimiter.class, BoltChannelAutoReadLimiter.HIGH_WATERMARK_NAME );
+        }
     }
 
     @Test
@@ -208,6 +230,11 @@ public class BoltChannelAutoReadLimiterTest
     private BoltChannelAutoReadLimiter newLimiter( int low, int high )
     {
         return new BoltChannelAutoReadLimiter( channel, log, low, high );
+    }
+
+    private BoltChannelAutoReadLimiter newLimiterWithDefaults()
+    {
+        return new BoltChannelAutoReadLimiter( channel, log );
     }
 
 }

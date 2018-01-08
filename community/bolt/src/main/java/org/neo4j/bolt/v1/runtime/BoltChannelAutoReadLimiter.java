@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,13 +25,17 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.logging.Log;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.Objects.requireNonNull;
 
 public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
 {
-    private static final int defaultLowWatermark = Integer.getInteger( "org.neo4j.bolt.autoread.loWatermark", 100 );
-    private static final int defaultHighWatermark = Integer.getInteger( "org.neo4j.bolt.autoread.hiWatermark", 300 );
+    protected static final String LOW_WATERMARK_NAME = "low_watermark";
+    protected static final String HIGH_WATERMARK_NAME = "high_watermark";
+
+    private static final int defaultLowWatermark = FeatureToggles.getInteger( BoltChannelAutoReadLimiter.class, LOW_WATERMARK_NAME, 100 );
+    private static final int defaultHighWatermark = FeatureToggles.getInteger( BoltChannelAutoReadLimiter.class, HIGH_WATERMARK_NAME, 300 );
 
     private final AtomicInteger queueSize = new AtomicInteger( 0 );
     private final Channel channel;
@@ -60,6 +64,16 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
         this.log = log;
         this.lowWatermark = lowWatermark;
         this.highWatermark = highWatermark;
+    }
+
+    protected int getLowWatermark()
+    {
+        return lowWatermark;
+    }
+
+    protected int getHighWatermark()
+    {
+        return highWatermark;
     }
 
     @Override

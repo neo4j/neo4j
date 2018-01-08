@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -52,7 +52,6 @@ import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -71,23 +70,20 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 @RunWith( Parameterized.class )
 public class BoltChannelAutoReadLimiterIT
 {
-    protected EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    protected Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
+    private AssertableLogProvider logProvider;
+    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
             fsRule::get, getSettingsFunction() );
+    private TransportConnection client;
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
-
-    public AssertableLogProvider logProvider;
 
     @Parameterized.Parameter( 0 )
     public Factory<TransportConnection> cf;
 
     @Parameterized.Parameter( 1 )
     public HostnamePort address;
-
-    protected TransportConnection client;
-    private final String version = "Neo4j/" + Version.getNeo4jVersion();
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
