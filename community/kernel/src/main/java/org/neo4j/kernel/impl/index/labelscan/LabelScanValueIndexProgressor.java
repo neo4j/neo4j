@@ -47,16 +47,18 @@ class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor implemen
     }
 
     /**
-     * @return next node id in the current {@link LabelScanValue} or, if current value exhausted,
-     * goes to next {@link LabelScanValue} from {@link RawCursor}. Returns {@code true} if next node id
-     * was found, otherwise {@code false}.
+     *  Progress through the index until the next accepted entry.
+     *
+     *  Progress the cursor to the current {@link LabelScanValue}, if this is not accepted by the client or if current
+     *  value is exhausted it continues to the next {@link LabelScanValue}  from {@link RawCursor}.
+     * @return <code>true</code> if an accepted entry was found, <code>false</code> otherwise
      */
     @Override
     public boolean next()
     {
-        while ( true )
+        for ( ; ; )
         {
-            if ( bits != 0 )
+            while ( bits != 0 )
             {
                 int delta = Long.numberOfTrailingZeros( bits );
                 bits &= bits - 1;

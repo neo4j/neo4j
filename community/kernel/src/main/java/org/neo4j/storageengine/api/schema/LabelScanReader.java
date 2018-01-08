@@ -40,7 +40,7 @@ public interface LabelScanReader extends Resource
      * @param labelId label token id
      * @return index progressor with the given {@code labelId}
      */
-    IndexProgressor nodesWithLabelIndex( IndexProgressor.NodeLabelClient client, int labelId );
+    IndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId );
 
     /**
      * @param labelIds label token ids.
