@@ -28,6 +28,7 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 public class RelationshipProxyWrappingValue extends RelationshipValue
@@ -108,7 +109,7 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     }
 
     @Override
-    public NodeValue otherNode( NodeValue node )
+    public NodeValue otherNode( VirtualNodeValue node )
     {
         if ( node instanceof NodeProxyWrappingNodeValue )
         {

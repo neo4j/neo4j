@@ -390,13 +390,6 @@ object SlotAllocation {
         result.newLong(to, nullable, CTNode)
         result
 
-      case FullPruningVarExpand(_, from, _, _, to, _, _, _) =>
-        // A new pipeline is not strictly needed here unless we have batching/vectorization
-        val result = source.copy()
-        result.newLong(from, nullable, CTNode)
-        result.newLong(to, nullable, CTNode)
-        result
-
       case CreateNode(_, name, _, _) =>
         source.newLong(name, nullable = false, CTNode)
         source
