@@ -82,10 +82,10 @@ Feature: ProcedureCallAcceptance
     RETURN *
     """
     Then the result should be, in order:
-      | label | c |
-      | 'A'   | 3 |
-      | 'B'   | 3 |
-      | 'C'   | 3 |
+      | c | label |
+      | 3 | 'A'   |
+      | 3 | 'B'   |
+      | 3 | 'C'   |
     And no side effects
 
   Scenario: Standalone call to VOID procedure that takes no arguments

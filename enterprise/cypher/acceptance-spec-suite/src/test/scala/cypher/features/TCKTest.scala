@@ -33,6 +33,16 @@ import scala.collection.JavaConverters._
 class TCKTest {
 
   val tckSemanticFailures = Set(
+    // Different error type in Neo4j
+    "Deleting connected nodes",
+    "Standalone call to unknown procedure should fail",
+    "In-query call to unknown procedure should fail",
+
+    // Neo4j fails at runtime, should fail at compile time
+    "Failing on merging relationship with null property",
+    "Failing on merging node with null property",
+    "Failing when setting a list of maps as a property",
+
     // To blacklist
     "In-query call to procedure that takes no arguments and yields no results",
     "In-query call to procedure with explicit arguments that drops all result fields",
@@ -42,7 +52,6 @@ class TCKTest {
 
   val scenarios = CypherTCK.allTckScenarios
 //    .filter(s => tckSemanticFailures.contains(s.name))
-      .filterNot(_.steps.exists(_.isInstanceOf[ExpectError]))
       .filterNot(scenario => tckSemanticFailures.contains(scenario.name))
 
   @TestFactory

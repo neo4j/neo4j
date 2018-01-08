@@ -21,7 +21,7 @@ package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.graphdb.{Result => Neo4jResult}
+import org.neo4j.graphdb.{ConstraintViolationException, QueryExecutionException, Result => Neo4jResult}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.opencypher.tools.tck.api._
@@ -40,37 +40,43 @@ object Neo4jAdapter {
 class Neo4jAdapter(service: GraphDatabaseCypherService) extends Graph with Neo4jProcedureAdapter {
   protected val instance: GraphDatabaseFacade = service.getGraphDatabaseService
 
+  private val explainPrefix = "EXPLAIN\n"
+
   override def cypher(query: String, params: Map[String, CypherValue], meta: QueryType): Result = {
     val neo4jParams = params.mapValues(v => TCKValueToNeo4jValue(v)).asJava
 
-    val tx = instance.beginTx()
-    val result = {
-      val neo4jResult = Try(instance.execute(query, neo4jParams)) match {
-        case Success(r) => r
-        case Failure(exception) =>
-          tx.failure()
-          tx.close() // TODO: better solution?
-          return convert(exception)
-      }
-      val convertedResult: Result = Try(convertResult(neo4jResult)) match {
-        case Success(r) =>
-          tx.success()
-          r
-        case Failure(exception) =>
-          tx.failure()
-          tx.close() // TODO: better solution?
-          return convert(exception)
-      }
-      tx.close()
-      convertedResult
+    val tx = instance.beginTx
+    val result: Result = Try(instance.execute(query, neo4jParams)) match {
+      case Success(r) =>
+        Try(convertResult(r)) match {
+          case Failure(exception) => convert(Phase.runtime, exception)
+          case Success(converted) =>
+            tx.success
+            converted
+        }
+      case Failure(exception) =>
+        val explainedResult = Try(instance.execute(explainPrefix + query))
+        val phase = explainedResult match {
+          case Failure(_) => Phase.compile
+          case Success(_) => Phase.runtime
+        }
+        tx.failure
+        convert(phase, exception)
     }
-    result
+    Try(tx.close) match {
+      case Failure(exception) =>
+        convert(Phase.runtime, exception)
+      case Success(_) => result
+    }
   }
 
   def convertResult(result: Neo4jResult): Result = {
     val header = result.columns().asScala.toList
-    val rows: List[Map[String, String]] = result.asScala.map { row =>
-      row.asScala.map { case (k, v) => (k, Neo4jValueToString(v)) }.toMap
+    val rows: List[Map[String, String]] = result.asScala.map {
+      row =>
+        row.asScala.map {
+          case (k, v) => (k, Neo4jValueToString(v))
+        }.toMap
     }.toList
     StringRecords(header, rows)
   }

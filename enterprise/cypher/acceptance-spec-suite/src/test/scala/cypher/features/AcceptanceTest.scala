@@ -29,14 +29,17 @@ import scala.collection.JavaConverters._
 
 class AcceptanceTest {
 
-  val acceptanceSemanticFailures = Set("Calling the same procedure twice using the same outputs in each call")
+  val acceptanceSemanticFailures = Set[String](
+    // Different error type in Neo4j
+    "Standalone call to unknown procedure should fail",
+    "In-query call to unknown procedure should fail"
+  )
 
   @TestFactory
   def runAcceptanceTests(): util.Collection[DynamicTest] = {
     val featuresURI = getClass.getResource("/cypher/features").toURI
     val scenarios = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios).
-    filterNot(scenario => acceptanceSemanticFailures.contains(scenario.name)).
-    filterNot(_.steps.exists(_.isInstanceOf[ExpectError]))
+    filterNot(scenario => acceptanceSemanticFailures.contains(scenario.name))
 
     def createTestGraph(): Graph = Neo4jAdapter()
 

@@ -19,38 +19,35 @@
  */
 package cypher.features
 
+import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.kernel.api.exceptions.Status
 import org.opencypher.tools.tck.api.ExecutionFailed
-import org.opencypher.tools.tck.constants.TCKErrorDetails._
+
+object Phase {
+  val runtime = "runtime"
+  val compile = "compile time"
+}
 
 object Neo4jExceptionToExecutionFailed {
 
-  // Error types
-  val typeError = "TypeError"
-  val syntaxError = "SyntaxError"
-  val unsupportedError = "UnsupportedError"
-
-  // Phases
-  val runtime = "runtime"
-  val compile = "compile time"
-  val unsupportedPhase = "unsupportedPhase"
-
-  def convert(neo4jException: Throwable): ExecutionFailed = {
-    val msg = neo4jException.getMessage.toLowerCase
-    val errorType = if (msg.contains("type")) {
-      typeError
-    } else if (msg.contains("invalid")) {
-      syntaxError
-    } else {
-      unsupportedError
+  def convert(phase: String, t: Throwable): ExecutionFailed = {
+    val neo4jException = t match {
+      case re: RuntimeException => re
+      case _ => throw t
     }
-    val exceptionName = neo4jException.getClass.getSimpleName
-    val phase = if (exceptionName.contains("Execution")) {
-      runtime
-    } else {
-      compile
+    val errorType = Status.statusCodeOf(neo4jException)
+    val msg = neo4jException.getMessage
+    val detail = phase match {
+      case Phase.compile => compileTimeDetail(msg)
+      case Phase.runtime => runtimeDetail(msg)
     }
+    val ef = ExecutionFailed(errorType.toString, phase, detail)
+    println(ef)
+    ef
+  }
 
-    val detail = {
+  private def runtimeDetail(msg: String): String = {
+    import TCKErrorDetails._
       if (msg.matches("Type mismatch: expected a map but was .+"))
         PROPERTY_ACCESS_ON_NON_MAP
       else if (msg.matches("Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
@@ -84,118 +81,204 @@ object Neo4jExceptionToExecutionFailed {
       else
         "unsupportedDetail"
     }
-    println(neo4jException.getMessage)
-    ExecutionFailed(errorType, phase, detail)
-  }
 
-  /*
-    private def compileTimeError(msg: String, typ: String, phase: String, detail: String): Boolean = {
-      var r = true
-
+    private def compileTimeDetail(msg: String): String = {
+      import TCKErrorDetails._
       if (msg.matches("Invalid input '-(\\d)+' is not a valid value, must be a positive integer[\\s.\\S]+"))
-        detail should equal(NEGATIVE_INTEGER_ARGUMENT)
+        NEGATIVE_INTEGER_ARGUMENT
       else if (msg.matches("Invalid input '.+' is not a valid value, must be a positive integer[\\s.\\S]+"))
-        detail should equal(INVALID_ARGUMENT_TYPE)
+        INVALID_ARGUMENT_TYPE
       else if (msg.matches("Can't use aggregate functions inside of aggregate functions\\."))
-        detail should equal(NESTED_AGGREGATION)
+        NESTED_AGGREGATION
       else if (msg.matches("Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))
-        detail should equal(VARIABLE_ALREADY_BOUND)
+        VARIABLE_ALREADY_BOUND
       else if (msg.matches("Can't create node `(\\w+)` with labels or properties here. It already exists in this context"))
-        detail should equal(VARIABLE_ALREADY_BOUND)
+        VARIABLE_ALREADY_BOUND
       else if (msg.matches("Can't create `\\w+` with properties or labels here. The variable is already declared in this context"))
-        detail should equal(VARIABLE_ALREADY_BOUND)
+        VARIABLE_ALREADY_BOUND
       else if (msg.matches("Can't create `\\w+` with properties or labels here. It already exists in this context"))
-        detail should equal(VARIABLE_ALREADY_BOUND)
+        VARIABLE_ALREADY_BOUND
       else if (msg.matches("Can't create `(\\w+)` with labels or properties here. It already exists in this context"))
-        detail should equal(VARIABLE_ALREADY_BOUND)
+        VARIABLE_ALREADY_BOUND
       else if (msg.matches(semanticError("\\w+ already declared")))
-        detail should equal(VARIABLE_ALREADY_BOUND)
+        VARIABLE_ALREADY_BOUND
       else if (msg.matches(semanticError("Only directed relationships are supported in ((CREATE)|(MERGE))")))
-        detail should equal(REQUIRES_DIRECTED_RELATIONSHIP)
+        REQUIRES_DIRECTED_RELATIONSHIP
       else if (msg.matches(s"${DOTALL}Type mismatch: expected .+ but was .+"))
-        detail should equal(INVALID_ARGUMENT_TYPE)
+        INVALID_ARGUMENT_TYPE
       else if (msg.matches(semanticError("Variable `.+` not defined")))
-        detail should equal(UNDEFINED_VARIABLE)
+        UNDEFINED_VARIABLE
       else if (msg.matches(semanticError(".+ not defined")))
-        detail should equal(UNDEFINED_VARIABLE)
+        UNDEFINED_VARIABLE
       else if (msg.matches(semanticError("Type mismatch: .+ already defined with conflicting type .+ \\(expected .+\\)")))
-        detail should equal(VARIABLE_TYPE_CONFLICT)
+        VARIABLE_TYPE_CONFLICT
       else if (msg.matches(semanticError("Cannot use the same relationship variable '.+' for multiple patterns")))
-        detail should equal(RELATIONSHIP_UNIQUENESS_VIOLATION)
+        RELATIONSHIP_UNIQUENESS_VIOLATION
       else if (msg.matches(semanticError("Cannot use the same relationship identifier '.+' for multiple patterns")))
-        detail should equal(RELATIONSHIP_UNIQUENESS_VIOLATION)
+        RELATIONSHIP_UNIQUENESS_VIOLATION
       else if (msg.matches(semanticError("Variable length relationships cannot be used in ((CREATE)|(MERGE))")))
-        detail should equal(CREATING_VAR_LENGTH)
+        CREATING_VAR_LENGTH
       else if (msg.matches(semanticError("Parameter maps cannot be used in ((MATCH)|(MERGE)) patterns \\(use a literal map instead, eg. \"\\{id: \\{param\\}\\.id\\}\"\\)")))
-        detail should equal(INVALID_PARAMETER_USE)
+        INVALID_PARAMETER_USE
       else if (msg.matches(semanticError("Variable `.+` already declared")))
-        detail should equal(VARIABLE_ALREADY_BOUND)
+        VARIABLE_ALREADY_BOUND
       else if (msg.matches(semanticError("MATCH cannot follow OPTIONAL MATCH \\(perhaps use a WITH clause between them\\)")))
-        detail should equal(INVALID_CLAUSE_COMPOSITION)
+        INVALID_CLAUSE_COMPOSITION
       else if (msg.matches(semanticError("Invalid combination of UNION and UNION ALL")))
-        detail should equal(INVALID_CLAUSE_COMPOSITION)
+        INVALID_CLAUSE_COMPOSITION
       else if (msg.matches(semanticError("floating point number is too large")))
-        detail should equal(FLOATING_POINT_OVERFLOW)
+        FLOATING_POINT_OVERFLOW
       else if (msg.matches(semanticError("Argument to exists\\(\\.\\.\\.\\) is not a property or pattern")))
-        detail should equal(INVALID_ARGUMENT_EXPRESSION)
+        INVALID_ARGUMENT_EXPRESSION
       else if (msg.startsWith("Invalid input '—':"))
-        detail should equal(INVALID_UNICODE_CHARACTER)
+        INVALID_UNICODE_CHARACTER
       else if (msg.matches(semanticError("Can't use aggregating expressions inside of expressions executing over lists")))
-        detail should equal(INVALID_AGGREGATION)
+        INVALID_AGGREGATION
       else if (msg.matches(semanticError("Can't use aggregating expressions inside of expressions executing over collections")))
-        detail should equal(INVALID_AGGREGATION)
+        INVALID_AGGREGATION
       else if (msg.matches(semanticError("It is not allowed to refer to variables in ((SKIP)|(LIMIT))")))
-        detail should equal(NON_CONSTANT_EXPRESSION)
+        NON_CONSTANT_EXPRESSION
       else if (msg.matches(semanticError("It is not allowed to refer to identifiers in ((SKIP)|(LIMIT))")))
-        detail should equal(NON_CONSTANT_EXPRESSION)
+        NON_CONSTANT_EXPRESSION
       else if (msg.matches("Can't use non-deterministic \\(random\\) functions inside of aggregate functions\\."))
-        detail should equal(NON_CONSTANT_EXPRESSION)
+        NON_CONSTANT_EXPRESSION
       else if (msg.matches(semanticError("A single relationship type must be specified for ((CREATE)|(MERGE))\\")) ||
         msg.matches(semanticError("Exactly one relationship type must be specified for ((CREATE)|(MERGE))\\. " +
           "Did you forget to prefix your relationship type with a \\'\\:\\'\\?")))
-        detail should equal(NO_SINGLE_RELATIONSHIP_TYPE)
+        NO_SINGLE_RELATIONSHIP_TYPE
       else if (msg.matches(s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
-        detail should equal(INVALID_RELATIONSHIP_PATTERN)
+        INVALID_RELATIONSHIP_PATTERN
       else if (msg.matches(s"${DOTALL}Invalid input '.*': expected whitespace, RangeLiteral, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
-        detail should equal(INVALID_RELATIONSHIP_PATTERN)
+        INVALID_RELATIONSHIP_PATTERN
       else if (msg.matches(semanticError("invalid literal number")))
-        detail should equal(INVALID_NUMBER_LITERAL)
+        INVALID_NUMBER_LITERAL
       else if (msg.matches(semanticError("Unknown function '.+'")))
-        detail should equal(UNKNOWN_FUNCTION)
+        UNKNOWN_FUNCTION
       else if (msg.matches(semanticError("Invalid input '.+': expected four hexadecimal digits specifying a unicode character")))
-        detail should equal(INVALID_UNICODE_LITERAL)
+        INVALID_UNICODE_LITERAL
       else if (msg.matches("Cannot merge ((relationship)|(node)) using null property value for .+"))
-        detail should equal(MERGE_READ_OWN_WRITES)
+        MERGE_READ_OWN_WRITES
       else if (msg.matches(semanticError("Invalid use of aggregating function count\\(\\.\\.\\.\\) in this context")))
-        detail should equal(INVALID_AGGREGATION)
+        INVALID_AGGREGATION
       else if (msg.matches(semanticError("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding ((RETURN)|(WITH))")))
-        detail should equal(INVALID_AGGREGATION)
+        INVALID_AGGREGATION
       else if (msg.matches(semanticError("Expression in WITH must be aliased \\(use AS\\)")))
-        detail should equal(NO_EXPRESSION_ALIAS)
+        NO_EXPRESSION_ALIAS
       else if (msg.matches(semanticError("All sub queries in an UNION must have the same column names")))
-        detail should equal(DIFFERENT_COLUMNS_IN_UNION)
+        DIFFERENT_COLUMNS_IN_UNION
       else if (msg.matches(semanticError("DELETE doesn't support removing labels from a node. Try REMOVE.")))
-        detail should equal(INVALID_DELETE)
+        INVALID_DELETE
       else if (msg.matches("Property values can only be of primitive types or arrays thereof"))
-        detail should equal(INVALID_PROPERTY_TYPE)
+        INVALID_PROPERTY_TYPE
       else if (msg.matches(semanticError("Multiple result columns with the same name are not supported")))
-        detail should equal(COLUMN_NAME_CONFLICT)
+        COLUMN_NAME_CONFLICT
       else if (msg.matches(semanticError("RETURN \\* is not allowed when there are no variables in scope")))
-        detail should equal(NO_VARIABLES_IN_SCOPE)
+        NO_VARIABLES_IN_SCOPE
       else if (msg.matches(semanticError("RETURN \\* is not allowed when there are no identifiers in scope")))
-        detail should equal(NO_VARIABLES_IN_SCOPE)
+        NO_VARIABLES_IN_SCOPE
       else if (msg.matches(semanticError("Procedure call does not provide the required number of arguments.+")))
-        detail should equal("InvalidNumberOfArguments")
+        "InvalidNumberOfArguments"
       else if (msg.matches("Expected a parameter named .+"))
-        detail should equal("MissingParameter")
+        "MissingParameter"
       else if (msg.startsWith("Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement."))
-        detail should equal("InvalidAggregation")
+        "InvalidAggregation"
       else if (msg.startsWith("Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)"))
-        detail should equal("InvalidArgumentPassingMode")
+        "InvalidArgumentPassingMode"
       else if (msg.matches("There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
-        detail should equal("ProcedureNotFound")
-      else r = false
-      r
+        "ProcedureNotFound"
+      else
+        "unsupportedDetail"
     }
-    */
+
+  private val DOTALL = "(?s)"
+
+  private val POSITION_PATTERN = " \\(line .+, column .+ \\(offset: .+\\)\\).*"
+
+  private def semanticError(pattern: String): String = DOTALL + pattern + POSITION_PATTERN
+
+}
+
+object TCKErrorDetails {
+
+  val INVALID_ELEMENT_ACCESS = "InvalidElementAccess"
+  val MAP_ELEMENT_ACCESS_BY_NON_STRING = "MapElementAccessByNonString"
+  val LIST_ELEMENT_ACCESS_BY_NON_INTEGER = "ListElementAccessByNonInteger"
+  val NESTED_AGGREGATION = "NestedAggregation"
+  val NEGATIVE_INTEGER_ARGUMENT = "NegativeIntegerArgument"
+  val DELETE_CONNECTED_NODE = "DeleteConnectedNode"
+  val REQUIRES_DIRECTED_RELATIONSHIP = "RequiresDirectedRelationship"
+  val INVALID_RELATIONSHIP_PATTERN = "InvalidRelationshipPattern"
+  val VARIABLE_ALREADY_BOUND = "VariableAlreadyBound"
+  val INVALID_ARGUMENT_TYPE = "InvalidArgumentType"
+  val INVALID_ARGUMENT_VALUE = "InvalidArgumentValue"
+  val NUMBER_OUT_OF_RANGE = "NumberOutOfRange"
+  val UNDEFINED_VARIABLE = "UndefinedVariable"
+  val VARIABLE_TYPE_CONFLICT = "VariableTypeConflict"
+  val RELATIONSHIP_UNIQUENESS_VIOLATION = "RelationshipUniquenessViolation"
+  val CREATING_VAR_LENGTH = "CreatingVarLength"
+  val INVALID_PARAMETER_USE = "InvalidParameterUse"
+  val INVALID_CLAUSE_COMPOSITION = "InvalidClauseComposition"
+  val FLOATING_POINT_OVERFLOW = "FloatingPointOverflow"
+  val PROPERTY_ACCESS_ON_NON_MAP = "PropertyAccessOnNonMap"
+  val INVALID_ARGUMENT_EXPRESSION = "InvalidArgumentExpression"
+  val INVALID_UNICODE_CHARACTER = "InvalidUnicodeCharacter"
+  val NON_CONSTANT_EXPRESSION = "NonConstantExpression"
+  val NO_SINGLE_RELATIONSHIP_TYPE = "NoSingleRelationshipType"
+  val INVALID_AGGREGATION = "InvalidAggregation"
+  val UNKNOWN_FUNCTION = "UnknownFunction"
+  val INVALID_NUMBER_LITERAL = "InvalidNumberLiteral"
+  val INVALID_UNICODE_LITERAL = "InvalidUnicodeLiteral"
+  val MERGE_READ_OWN_WRITES = "MergeReadOwnWrites"
+  val NO_EXPRESSION_ALIAS = "NoExpressionAlias"
+  val DIFFERENT_COLUMNS_IN_UNION = "DifferentColumnsInUnion"
+  val INVALID_DELETE = "InvalidDelete"
+  val INVALID_PROPERTY_TYPE = "InvalidPropertyType"
+  val COLUMN_NAME_CONFLICT = "ColumnNameConflict"
+  val NO_VARIABLES_IN_SCOPE = "NoVariablesInScope"
+  val DELETED_ENTITY_ACCESS = "DeletedEntityAccess"
+  val INVALID_ARGUMENT_PASSING_MODE = "InvalidArgumentPassingMode"
+  val INVALID_NUMBER_OF_ARGUMENTS = "InvalidNumberOfArguments"
+  val MISSING_PARAMETER = "MissingParameter"
+  val PROCEDURE_NOT_FOUND = "ProcedureNotFound"
+
+  val ALL = Set(INVALID_ELEMENT_ACCESS,
+    MAP_ELEMENT_ACCESS_BY_NON_STRING,
+    LIST_ELEMENT_ACCESS_BY_NON_INTEGER,
+    NESTED_AGGREGATION,
+    NEGATIVE_INTEGER_ARGUMENT,
+    REQUIRES_DIRECTED_RELATIONSHIP,
+    DELETE_CONNECTED_NODE,
+    INVALID_RELATIONSHIP_PATTERN,
+    VARIABLE_ALREADY_BOUND,
+    INVALID_ARGUMENT_TYPE,
+    INVALID_ARGUMENT_VALUE,
+    NUMBER_OUT_OF_RANGE,
+    UNDEFINED_VARIABLE,
+    VARIABLE_TYPE_CONFLICT,
+    RELATIONSHIP_UNIQUENESS_VIOLATION,
+    CREATING_VAR_LENGTH,
+    INVALID_PARAMETER_USE,
+    INVALID_CLAUSE_COMPOSITION,
+    FLOATING_POINT_OVERFLOW,
+    PROPERTY_ACCESS_ON_NON_MAP,
+    INVALID_ARGUMENT_EXPRESSION,
+    INVALID_UNICODE_CHARACTER,
+    NON_CONSTANT_EXPRESSION,
+    NO_SINGLE_RELATIONSHIP_TYPE,
+    INVALID_AGGREGATION,
+    UNKNOWN_FUNCTION,
+    INVALID_NUMBER_LITERAL,
+    INVALID_UNICODE_LITERAL,
+    MERGE_READ_OWN_WRITES,
+    NO_EXPRESSION_ALIAS,
+    DIFFERENT_COLUMNS_IN_UNION,
+    INVALID_DELETE,
+    INVALID_PROPERTY_TYPE,
+    COLUMN_NAME_CONFLICT,
+    NO_VARIABLES_IN_SCOPE,
+    INVALID_ARGUMENT_PASSING_MODE,
+    INVALID_NUMBER_OF_ARGUMENTS,
+    MISSING_PARAMETER,
+    PROCEDURE_NOT_FOUND,
+    DELETED_ENTITY_ACCESS)
 }
