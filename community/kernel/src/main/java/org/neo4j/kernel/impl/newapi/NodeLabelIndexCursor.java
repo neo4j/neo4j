@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeLabelClient;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
@@ -32,6 +35,8 @@ class NodeLabelIndexCursor extends IndexCursor
     private Read read;
     private long node;
     private LabelSet labels;
+    private PrimitiveLongIterator added;
+    private ReadableDiffSets<Long> changes;
 
     NodeLabelIndexCursor()
     {
@@ -39,23 +44,44 @@ class NodeLabelIndexCursor extends IndexCursor
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, boolean providesLabels )
+    public void initialize( IndexProgressor progressor, boolean providesLabels, int... labels )
     {
         super.initialize( progressor );
+        if ( read.hasTxStateWithChanges() )
+        {
+            changes = read.txState().nodesWithLabelChanged( labels );
+            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
+        }
     }
 
     @Override
     public boolean acceptNode( long reference, LabelSet labels )
     {
-        this.node = reference;
-        this.labels = labels;
-        return true;
+        if ( isRemoved( reference ) )
+        {
+            return false;
+        }
+        else
+        {
+            this.node = reference;
+            this.labels = labels;
+
+            return true;
+        }
     }
 
     @Override
     public boolean next()
     {
-        return innerNext();
+        if ( added != null && added.hasNext() )
+        {
+            this.node = added.next();
+            return true;
+        }
+        else
+        {
+            return innerNext();
+        }
     }
 
     public void setRead( Read read )
@@ -108,5 +134,11 @@ class NodeLabelIndexCursor extends IndexCursor
             return "NodeLabelIndexCursor[node=" + node + ", labels= " + labels +
                     ", underlying record=" + super.toString() + " ]";
         }
+    }
+
+    private boolean isRemoved( long reference )
+    {
+        return (changes != null && changes.isRemoved( reference ) ) ||
+               (read.hasTxStateWithChanges() && read.txState().addedAndRemovedNodes().isRemoved( reference ));
     }
 }

@@ -150,7 +150,7 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
 
         ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAnyOfLabels( labels ) );
+        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAnyOfLabels( labels ), labels );
     }
 
     @Override
@@ -159,12 +159,12 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
 
         ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
+        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ), labels );
     }
 
-    private void labelScan( IndexProgressor.NodeLabelClient client, PrimitiveLongResourceIterator iterator )
+    private void labelScan( IndexProgressor.NodeLabelClient client, PrimitiveLongResourceIterator iterator, int... labels )
     {
-        client.initialize( new NodeLabelIndexProgressor( iterator, client ), false );
+        client.initialize( new NodeLabelIndexProgressor( iterator, client ), false, labels );
     }
 
     @Override

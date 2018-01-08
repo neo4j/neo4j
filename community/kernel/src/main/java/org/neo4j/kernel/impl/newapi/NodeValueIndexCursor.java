@@ -21,21 +21,16 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.stream;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertOnlyExactPredicates;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
@@ -232,7 +227,7 @@ class NodeValueIndexCursor extends IndexCursor
             changes = read.txState().indexUpdatesForRangeSeekByNumber(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
-            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
+            added = changes.augment( emptyIterator() );
         }
     }
 
@@ -241,7 +236,7 @@ class NodeValueIndexCursor extends IndexCursor
         if ( read.hasTxStateWithChanges() )
         {
             changes = read.txState().indexUpdatesForScan( descriptor );
-            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
+            added = changes.augment( emptyIterator() );
         }
     }
 
@@ -252,8 +247,7 @@ class NodeValueIndexCursor extends IndexCursor
         {
             changes = read.txState()
                     .indexUpdatesForSeek( descriptor, IndexQuery.asValueTuple( exactPreds ) );
-            added = changes
-                    .augment( PrimitiveLongCollections.emptyIterator() );
+            added = changes.augment( emptyIterator() );
         }
     }
 }

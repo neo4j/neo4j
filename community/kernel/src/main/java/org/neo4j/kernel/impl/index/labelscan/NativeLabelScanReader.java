@@ -123,7 +123,7 @@ class NativeLabelScanReader implements LabelScanReader
             throw new UncheckedIOException( e );
         }
 
-        client.initialize( new LabelScanValueIndexProgressor( cursor, openCursors, client ), false );
+        client.initialize( new LabelScanValueIndexProgressor( cursor, openCursors, client ), false, labelId );
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( int[] labelIds )

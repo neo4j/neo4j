@@ -146,6 +146,27 @@ public class TxStateTest
     }
 
     @Test
+    public void shouldHandleMultipleLabels() throws Exception
+    {
+        // GIVEN
+        state.nodeDoRemoveLabel( 1, 0 );
+        state.nodeDoRemoveLabel( 2, 1 );
+        state.nodeDoRemoveLabel( 3, 2 );
+        state.nodeDoAddLabel( 1, 3 );
+        state.nodeDoAddLabel( 2, 4 );
+        state.nodeDoAddLabel( 3, 5 );
+
+
+        // WHEN
+        Set<Long> removed = state.nodesWithLabelChanged( 1, 2, 3 ).getRemoved();
+        Set<Long> added = state.nodesWithLabelChanged( 1, 2, 3 ).getAdded();
+
+        // THEN
+        assertEquals( asSet( 0L, 1L, 2L ), Iterables.asSet( removed ) );
+        assertEquals( asSet( 3L, 4L, 5L ), Iterables.asSet( added ) );
+    }
+
+    @Test
     public void shouldMapFromRemovedLabelToNodes() throws Exception
     {
         // GIVEN

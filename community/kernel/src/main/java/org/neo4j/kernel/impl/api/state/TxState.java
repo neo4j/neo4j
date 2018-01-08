@@ -720,9 +720,25 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> nodesWithLabelChanged( int labelId )
+    public ReadableDiffSets<Long> nodesWithLabelChanged( int... labels )
     {
-        return LABEL_STATE.get( this, labelId ).nodeDiffSets();
+        assert labels.length > 0;
+
+        if ( labels.length == 1 )
+        {
+            return LABEL_STATE.get( this, labels[0] ).nodeDiffSets();
+        }
+        else
+        {
+            DiffSets<Long> changes = new DiffSets<>();
+            for ( int label : labels )
+            {
+                LabelState labelState = LABEL_STATE.get( this, label );
+                changes.addAll( labelState.nodeDiffSets().getAdded().iterator() );
+                changes.removeAll( labelState.nodeDiffSets().getRemoved().iterator() );
+            }
+            return changes;
+        }
     }
 
     @Override
