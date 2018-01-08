@@ -5450,5 +5450,4 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             verifyNoFaultReadIsNotInMemory( nofault );
         }
     }
-    // todo no fault read cursor must allow eviction of page
 }
