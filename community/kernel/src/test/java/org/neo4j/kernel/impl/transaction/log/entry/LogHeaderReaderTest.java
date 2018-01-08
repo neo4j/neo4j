@@ -30,6 +30,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -49,6 +50,8 @@ public class LogHeaderReaderTest
 
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void shouldReadALogHeaderFromAByteChannel() throws IOException
@@ -96,7 +99,7 @@ public class LogHeaderReaderTest
     public void shouldReadALogHeaderFromAFile() throws IOException
     {
         // given
-        final File file = File.createTempFile( "ReadLogHeader", getClass().getSimpleName() );
+        final File file = testDirectory.file( "ReadLogHeader" );
 
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         buffer.putLong( encodeLogVersion( expectedLogVersion ) );
@@ -119,7 +122,8 @@ public class LogHeaderReaderTest
     public void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException
     {
         // given
-        final File file = File.createTempFile( "ReadLogHeaderFail", getClass().getSimpleName() );
+        final File file = testDirectory.file( "ReadLogHeader" );
+        fileSystemRule.create( file ).close();
         try
         {
             // when
