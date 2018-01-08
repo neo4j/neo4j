@@ -79,7 +79,7 @@ trait Compatibility {
                                 Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       def plan(transactionalContext: TransactionalContextWrapper,
-               tracer: v3_3.phases.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler
+               tracer: v3_3.phases.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any], Seq[String]) = exceptionHandler
         .runSafely {
           val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
           val (planImpl, extractedParameters) = compiler
@@ -88,7 +88,7 @@ trait Compatibility {
           // Log notifications/warnings from planning
           planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)), extractedParameters)
+          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)), extractedParameters, Seq.empty[String])
         }
 
       override protected val trier = preparedQueryForV_2_3

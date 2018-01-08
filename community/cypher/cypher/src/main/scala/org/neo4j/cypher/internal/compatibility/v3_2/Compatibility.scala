@@ -77,7 +77,7 @@ trait Compatibility[C <: CompilerContext] {
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapperV3_3,
                         tracer: frontend.v3_3.phases.CompilationPhaseTracer):
-      (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
+      (ExecutionPlan, Map[String, Any], Seq[String]) = exceptionHandler.runSafely {
         val tc = TransactionalContextWrapperV3_2(transactionalContext.tc)
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
         val syntacticQuery = preparedSyntacticQueryForV_3_2.get
@@ -98,7 +98,7 @@ trait Compatibility[C <: CompilerContext] {
           pos3_2,
           searchMonitor,
           executionMonitor)
-        (executionPlanWrapper, extractedParameters)
+        (executionPlanWrapper, extractedParameters, Seq.empty[String])
       }
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
