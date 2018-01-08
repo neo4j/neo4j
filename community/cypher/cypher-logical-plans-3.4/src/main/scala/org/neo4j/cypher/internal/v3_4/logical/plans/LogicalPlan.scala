@@ -46,7 +46,7 @@ abstract class LogicalPlan(idGen: IdGen)
 
   self =>
 
-  // FIXME this should be removed ASAP
+  // FIXME this is a workaround due to a scala bug (https://github.com/scala/bug/issues/10667, should be removed when the scala bug is fixed
   def selfThis: this.type = this
 
   def lhs: Option[LogicalPlan]

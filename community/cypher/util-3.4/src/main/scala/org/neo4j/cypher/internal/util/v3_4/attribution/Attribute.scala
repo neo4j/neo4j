@@ -27,13 +27,9 @@ trait Attribute[T] {
 
   def set(id:Id, t:T): Unit = {
     val requiredSize = id.x + 1
-    if (array.size < requiredSize) {
-      while (array.size < requiredSize)
-        array += new Unchangeable
-      array(id.x).value = t
-    } else {
-      array(id.x).value = t
-    }
+    if (array.size < requiredSize)
+      resizeArray(requiredSize)
+    array(id.x).value = t
   }
 
   def get(id:Id): T = {
@@ -50,5 +46,10 @@ trait Attribute[T] {
     for ( i <- array.indices )
       sb ++= s"$i : ${array(i)}\n"
     sb.result()
+  }
+
+  private def resizeArray(requiredSize: Int): Unit = {
+      while (array.size < requiredSize)
+        array += new Unchangeable
   }
 }
