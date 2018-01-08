@@ -191,7 +191,7 @@ public class DiagnosticsReportCommandTest
             diagnosticsReportCommand.execute( args );
 
             assertThat( baos.toString(), is(String.format(
-                    "Trying to find running instance of neo4j%n" +
+                    "Finding running instance of neo4j%n" +
                             "No running instance of neo4j was found. Online reports will be omitted.%n" +
                             "All available classifiers:%n" +
                             "  config     include configuration file%n" +

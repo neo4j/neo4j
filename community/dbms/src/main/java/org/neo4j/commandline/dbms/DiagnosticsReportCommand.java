@@ -22,11 +22,9 @@ package org.neo4j.commandline.dbms;
 import org.jutils.jprocesses.JProcesses;
 import org.jutils.jprocesses.model.ProcessInfo;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -46,9 +44,8 @@ import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.PositionalArgument;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
+import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
-import org.neo4j.dbms.diagnostics.jmx.LocalVirtualMachine;
-import org.neo4j.diagnostics.DiagnosticsOfflineReportProvider;
 import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.diagnostics.DiagnosticsReportSources;
 import org.neo4j.diagnostics.DiagnosticsReporter;
@@ -56,7 +53,6 @@ import org.neo4j.diagnostics.DiagnosticsReporterProgressCallback;
 import org.neo4j.diagnostics.InteractiveProgress;
 import org.neo4j.diagnostics.NonInteractiveProgress;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
@@ -77,8 +73,9 @@ public class DiagnosticsReportCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config", "plugins", "tree", "metrics", "threads", "env", "sysprop", "ps"};
+
+    private final JMXDumper jmxDumper;
     private boolean verbose;
-    private final PrintStream err;
     private final PrintStream out;
     private final FileSystemAbstraction fs;
 
@@ -88,7 +85,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         this.configDir = configDir;
         this.fs = outsideWorld.fileSystem();
         this.out = outsideWorld.outStream();
-        this.err = outsideWorld.errorStream();
+        this.jmxDumper = new JMXDumper( homeDir, fs, out, outsideWorld.errorStream(), verbose );
     }
 
     public static Arguments allArguments()
@@ -102,63 +99,33 @@ public class DiagnosticsReportCommand implements AdminCommand
         Args args = Args.withFlags( "list", "to", "verbose" ).parse( stringArgs );
         verbose = args.has( "verbose" );
 
-        // Make sure we can access the configuration file
-        File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
-        if ( !fs.fileExists( configFile ) )
-        {
-            throw new CommandFailed( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
-        }
-        Config config = Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
+        DiagnosticsReporter reporter = createAndRegisterSources();
 
-        DiagnosticsReporter reporter = createAndRegisterSources( config, configFile );
-        Set<String> availableClassifiers = reporter.getAvailableClassifiers();
-
-        // Passing '--list' should print list and end execution
-        if ( args.has( "list" ) )
+        Optional<Set<String>> classifiers = parseAndValidateArguments( args, reporter );
+        if ( !classifiers.isPresent() )
         {
-            out.println( "All available classifiers:" );
-            for ( String classifier : availableClassifiers )
-            {
-                out.printf( "  %-10s %s\n", classifier, describeClassifier( classifier ) );
-            }
             return;
         }
 
-        // Make sure 'all' is the only classifier if specified
-        Set<String> orphans = new TreeSet<>( args.orphans() );
-        if ( orphans.contains( "all" ) )
-        {
-            if ( orphans.size() != 1 )
-            {
-                orphans.remove( "all" );
-                throw new IncorrectUsage( "If you specify 'all' this has to be the only classifier. Found ['" +
-                        orphans.stream().collect( Collectors.joining( "','" ) ) + "'] as well." );
-            }
-        }
-        else
-        {
-            // Add default classifiers that are available
-            if ( orphans.isEmpty() )
-            {
-                for ( String classifier : DEFAULT_CLASSIFIERS )
-                {
-                    if ( availableClassifiers.contains( classifier ) )
-                    {
-                        orphans.add( classifier );
-                    }
-                }
-            }
+        DiagnosticsReporterProgressCallback progress = buildProgress();
 
-            // Validate classifiers
-            for ( String classifier : orphans )
-            {
-                if ( !availableClassifiers.contains( classifier ) )
-                {
-                    throw new IncorrectUsage( "Unknown classifier: " + classifier );
-                }
-            }
+        // Start dumping
+        Path destinationDir = new File( destinationArgument.parse( args ) ).toPath();
+        try
+        {
+            SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
+            Path reportFile = destinationDir.resolve( dumpFormat.format( new Date() ) + ".zip" );
+            out.println( "Writing report to " + reportFile.toAbsolutePath().toString() );
+            reporter.dump( classifiers.get(), reportFile, progress );
         }
+        catch ( IOException e )
+        {
+            throw new CommandFailed( "Creating archive failed", e );
+        }
+    }
 
+    private DiagnosticsReporterProgressCallback buildProgress()
+    {
         DiagnosticsReporterProgressCallback progress;
         if ( System.console() != null )
         {
@@ -168,40 +135,99 @@ public class DiagnosticsReportCommand implements AdminCommand
         {
             progress = new NonInteractiveProgress( out, verbose );
         }
+        return progress;
+    }
 
-        // Start dumping
-        Path destinationDir = new File( destinationArgument.parse( args ) ).toPath();
-        try
+    private Optional<Set<String>> parseAndValidateArguments( Args args, DiagnosticsReporter reporter ) throws IncorrectUsage
+    {
+        Set<String> availableClassifiers = reporter.getAvailableClassifiers();
+
+        // Passing '--list' should print list and end execution
+        if ( args.has( "list" ) )
         {
-            SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
-            Path reportFile = destinationDir.resolve( dumpFormat.format( new Date() ) + ".zip" );
-            out.println( "Writing report to " + reportFile.toAbsolutePath().toString() );
-            reporter.dump( orphans, reportFile, progress );
+            listClassifiers( availableClassifiers );
+            return Optional.empty();
         }
-        catch ( IOException e )
+
+        // Make sure 'all' is the only classifier if specified
+        Set<String> classifiers = new TreeSet<>( args.orphans() );
+        if ( classifiers.contains( "all" ) )
         {
-            throw new CommandFailed( "Creating archive failed", e );
+            if ( classifiers.size() != 1 )
+            {
+                classifiers.remove( "all" );
+                throw new IncorrectUsage( "If you specify 'all' this has to be the only classifier. Found ['" +
+                        classifiers.stream().collect( Collectors.joining( "','" ) ) + "'] as well." );
+            }
+        }
+        else
+        {
+            // Add default classifiers that are available
+            if ( classifiers.isEmpty() )
+            {
+                addDefaultClassifiers( availableClassifiers, classifiers );
+            }
+
+            validateClassifiers( availableClassifiers, classifiers );
+        }
+        return Optional.of( classifiers );
+    }
+
+    private void validateClassifiers( Set<String> availableClassifiers, Set<String> orphans ) throws IncorrectUsage
+    {
+        for ( String classifier : orphans )
+        {
+            if ( !availableClassifiers.contains( classifier ) )
+            {
+                throw new IncorrectUsage( "Unknown classifier: " + classifier );
+            }
         }
     }
 
-    private DiagnosticsReporter createAndRegisterSources( Config config, File configFile )
+    private void addDefaultClassifiers( Set<String> availableClassifiers, Set<String> orphans )
+    {
+        for ( String classifier : DEFAULT_CLASSIFIERS )
+        {
+            if ( availableClassifiers.contains( classifier ) )
+            {
+                orphans.add( classifier );
+            }
+        }
+    }
+
+    private void listClassifiers( Set<String> availableClassifiers )
+    {
+        out.println( "All available classifiers:" );
+        for ( String classifier : availableClassifiers )
+        {
+            out.printf( "  %-10s %s\n", classifier, describeClassifier( classifier ) );
+        }
+    }
+
+    private DiagnosticsReporter createAndRegisterSources() throws CommandFailed
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter();
+        File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+        Config config = getConfig( configFile );
+
         File storeDirectory = config.get( database_path );
 
-        // Find all offline providers and register them
-        for ( DiagnosticsOfflineReportProvider provider : Service.load( DiagnosticsOfflineReportProvider.class ) )
-        {
-            provider.init( fs, config, storeDirectory );
-            reporter.registerOfflineProvider( provider );
-        }
+        reporter.registerAllOfflineProviders( config, storeDirectory, this.fs );
 
         // Register sources provided by this tool
-        reporter.registerSource( "config", DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", fs, configFile ) );
+        reporter.registerSource( "config",
+                DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", fs, configFile ) );
+
         reporter.registerSource( "ps", runningProcesses() );
 
         // Online connection
-        Optional<JmxDump> jmxDump = connectToNeo4jInstance();
+        registerJMXSources( reporter );
+        return reporter;
+    }
+
+    private void registerJMXSources( DiagnosticsReporter reporter )
+    {
+        Optional<JmxDump> jmxDump = jmxDumper.getJMXDump();
         if ( jmxDump.isPresent() )
         {
             JmxDump jmx = jmxDump.get();
@@ -211,83 +237,15 @@ public class DiagnosticsReportCommand implements AdminCommand
             reporter.registerSource( "env", jmx.environmentVariables() );
             reporter.registerSource( "activetxs", jmx.listTransactions() );
         }
-        return reporter;
     }
 
-    private Optional<JmxDump> connectToNeo4jInstance()
+    private Config getConfig( File configFile ) throws CommandFailed
     {
-        out.println( "Trying to find running instance of neo4j" );
-
-        Optional<Long> pid = getPid();
-        if ( pid.isPresent() )
+        if ( !fs.fileExists( configFile ) )
         {
-            try
-            {
-                LocalVirtualMachine vm = LocalVirtualMachine.from( pid.get() );
-                out.println( "Attached to running process with process id " + pid.get() );
-                try
-                {
-                    JmxDump jmxDump = JmxDump.connectTo( vm.getJmxAddress() );
-                    jmxDump.attachSystemProperties( vm.getSystemProperties() );
-                    out.println( "Connected to JMX endpoint" );
-                    return Optional.of( jmxDump );
-                }
-                catch ( IOException e )
-                {
-                    printError( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage(), e );
-                }
-            }
-            catch ( IOException e )
-            {
-                printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
-            }
+            throw new CommandFailed( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
         }
-        else
-        {
-            out.println( "No running instance of neo4j was found. Online reports will be omitted." );
-        }
-
-        return Optional.empty();
-    }
-
-    private Optional<Long> getPid()
-    {
-        Path pidFile = homeDir.resolve( "run/neo4j.pid" );
-        if ( fs.fileExists( pidFile.toFile() ) )
-        {
-            try ( BufferedReader reader = new BufferedReader( fs.openAsReader( pidFile.toFile(), Charset.defaultCharset() ) ) )
-            {
-                String pidFileContent = reader.readLine();
-                try
-                {
-                    return Optional.of( Long.parseLong( pidFileContent ) );
-                }
-
-                catch ( NumberFormatException e )
-                {
-                    printError( pidFile.toString() + " does not contain a valid id. Found: " + pidFileContent );
-                }
-            }
-            catch ( IOException e )
-            {
-                printError( "Error reading the .pid file. Reason: " + e.getMessage(), e );
-            }
-        }
-        return Optional.empty();
-    }
-
-    private void printError( String message )
-    {
-        printError( message, null );
-    }
-
-    private void printError( String message, Throwable e )
-    {
-        err.println( message );
-        if ( verbose && e != null )
-        {
-            e.printStackTrace( err );
-        }
+        return Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
     }
 
     static String describeClassifier( String classifier )

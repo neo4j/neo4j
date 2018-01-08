@@ -19,6 +19,7 @@
  */
 package org.neo4j.diagnostics;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -31,6 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+
+import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 
 
 public class DiagnosticsReporter
@@ -109,5 +114,14 @@ public class DiagnosticsReporter
     public Set<String> getAvailableClassifiers()
     {
         return availableClassifiers;
+    }
+
+    public void registerAllOfflineProviders( Config config, File storeDirectory, FileSystemAbstraction fs )
+    {
+        for ( DiagnosticsOfflineReportProvider provider : Service.load( DiagnosticsOfflineReportProvider.class ) )
+        {
+            provider.init( fs, config, storeDirectory );
+            registerOfflineProvider( provider );
+        }
     }
 }
