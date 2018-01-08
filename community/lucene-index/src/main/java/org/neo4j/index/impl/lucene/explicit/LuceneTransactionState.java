@@ -173,7 +173,7 @@ class LuceneTransactionState implements Closeable
     }
 
     // Bad name
-    private class TxDataBoth
+    private static class TxDataBoth
     {
         private TxDataHolder add;
         private TxDataHolder remove;

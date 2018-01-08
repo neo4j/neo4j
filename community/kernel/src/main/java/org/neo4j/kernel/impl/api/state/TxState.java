@@ -114,8 +114,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     // Tracks added and removed relationships, not modified relationships
     private RelationshipDiffSets<Long> relationships;
 
-    private PrimitiveLongObjectMap<PropertyContainerState> propertiesMap = Primitive.longObjectMap();
-
     /**
      * These two sets are needed because create-delete in same transaction is a no-op in {@link DiffSets}
      * but we still need to provide correct answer in {@link #nodeIsDeletedInThisTx(long)} and
@@ -604,12 +602,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void registerProperties( long ref, PropertyContainerState state )
-    {
-        propertiesMap.put( ref, state );
-    }
-
-    @Override
     public void labelDoCreateForName( String labelName, int id )
     {
         if ( createdLabelTokens == null )
@@ -652,12 +644,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public RelationshipState getRelationshipState( long id )
     {
         return RELATIONSHIP_STATE.get( this, id );
-    }
-
-    @Override
-    public PropertyContainerState getPropertiesState( long reference )
-    {
-        return propertiesMap.get( reference );
     }
 
     @Override

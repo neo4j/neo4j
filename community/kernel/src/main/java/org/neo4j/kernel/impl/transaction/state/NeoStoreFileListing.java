@@ -130,7 +130,7 @@ public class NeoStoreFileListing
         {
             ResourceIterator<File> snapshot = indexProvider.listStoreFiles();
             snapshots.add( snapshot );
-            snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> files ) );
+            files.addAll( getSnapshotFilesMetadata( snapshot ) );
         }
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
@@ -140,7 +140,7 @@ public class NeoStoreFileListing
     private Resource gatherSchemaIndexFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
     {
         ResourceIterator<File> snapshot = indexingService.snapshotStoreFiles();
-        snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> targetFiles ) );
+        targetFiles.addAll( getSnapshotFilesMetadata( snapshot ) );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
@@ -149,10 +149,15 @@ public class NeoStoreFileListing
     private Resource gatherLabelScanStoreFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
     {
         ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
-        snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> targetFiles ) );
+        targetFiles.addAll( getSnapshotFilesMetadata( snapshot ) );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
+    }
+
+    private List<StoreFileMetadata> getSnapshotFilesMetadata( ResourceIterator<File> snapshot )
+    {
+        return snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toList() );
     }
 
     private void gatherNeoStoreFiles( final Collection<StoreFileMetadata> targetFiles )

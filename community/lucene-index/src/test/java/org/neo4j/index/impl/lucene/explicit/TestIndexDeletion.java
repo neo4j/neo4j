@@ -183,6 +183,7 @@ public class TestIndexDeletion
         try
         {
             index.add( node, key, value );
+            fail();
         }
         catch ( NotFoundException e )
         {

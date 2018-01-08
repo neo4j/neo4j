@@ -54,12 +54,13 @@ public class LogPositionTest
                         new LogPosition( Long.MAX_VALUE, Long.MAX_VALUE - 1 )} );
     }
 
-    @SuppressWarnings( "EqualsWithItself" )
+    @SuppressWarnings( {"EqualsWithItself", "SelfComparison"} )
     @Test
     public void logPositionComparison() throws Exception
     {
         assertEquals( 1, logPositionA.compareTo( logPositionB ) );
         assertEquals( -1, logPositionB.compareTo( logPositionA ) );
+
         assertEquals( 0, logPositionA.compareTo( logPositionA ) );
         assertEquals( 0, logPositionB.compareTo( logPositionB ) );
     }

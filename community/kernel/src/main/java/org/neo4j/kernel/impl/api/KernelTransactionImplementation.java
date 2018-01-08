@@ -468,6 +468,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    @Override
     public void assertOpen()
     {
         Status reason = this.terminationReason;

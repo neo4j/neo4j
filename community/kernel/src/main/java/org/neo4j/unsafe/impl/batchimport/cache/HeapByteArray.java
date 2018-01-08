@@ -52,12 +52,15 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     @Override
     public void swap( long fromIndex, long toIndex )
     {
-        byte[] a = defaultValue.clone();
-        byte[] b = defaultValue.clone();
-        get( fromIndex, a );
-        get( toIndex, b );
-        set( fromIndex, b );
-        set( toIndex, a );
+        // Byte-wise swap
+        for ( int i = 0; i < itemSize; i++ )
+        {
+            int fromOffset = index( fromIndex, i );
+            int toOffset = index( toIndex, i );
+            byte intermediary = array[fromOffset];
+            array[fromOffset] = array[toOffset];
+            array[toOffset] = intermediary;
+        }
     }
 
     @Override

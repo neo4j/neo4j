@@ -69,7 +69,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         super( NO_ID );
     }
 
-    void init( long reference, Read read, AssertOpen assertOpen )
+    void init( long entityReference, long reference, Read read, AssertOpen assertOpen )
     {
         if ( getId() != NO_ID )
         {
@@ -80,41 +80,35 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         //Set to high value to force a read
         this.block = Integer.MAX_VALUE;
         this.read = read;
-        if ( reference == NO_ID )
+        if ( reference != NO_ID )
         {
-            this.next = reference;
-            return;
-        }
-        if ( page == null )
-        {
-            page = read.propertyPage( reference );
+            if ( page == null )
+            {
+                page = read.propertyPage( reference );
+            }
         }
 
-        if ( References.hasTxStateFlag( reference ) ) // both in tx-state and store
+        // Transaction state
+        if ( read.hasTxStateWithChanges() )
         {
-            this.propertiesState = read.txState().getPropertiesState( reference );
+            if ( entityReference == NO_ID )
+            {
+                throw new UnsupportedOperationException(
+                        "Tx state has no method for accessing graph property state, please add when needed" );
+            }
+            else if ( References.hasNodeFlag( entityReference ) )
+            {
+                this.propertiesState = read.txState().getNodeState( References.clearFlags( entityReference ) );
+            }
+            else if ( References.hasRelationshipFlag( entityReference ) )
+            {
+                this.propertiesState = read.txState().getRelationshipState( References.clearFlags( entityReference ) );
+            }
             this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
-            this.next = References.clearFlags( reference );
         }
-        else if ( References.hasNodeFlag( reference ) ) // only in tx-state
-        {
-            this.propertiesState = read.txState().getNodeState( References.clearFlags( reference ) );
-            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
-            this.next = NO_ID;
-        }
-        else if ( References.hasRelationshipFlag( reference ) ) // only in tx-state
-        {
-            this.propertiesState = read.txState().getRelationshipState( References.clearFlags( reference ) );
-            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
-            this.next = NO_ID;
-        }
-        else
-        {
-            this.propertiesState = null;
-            this.txStateChangedProperties = null;
-            this.txStateValue = null;
-            this.next = reference;
-        }
+
+        // Store state
+        this.next = reference;
     }
 
     @Override
@@ -510,6 +504,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         throw new UnsupportedOperationException( "not implemented" );
     }
 
+    @Override
     public boolean isClosed()
     {
         return page == null;

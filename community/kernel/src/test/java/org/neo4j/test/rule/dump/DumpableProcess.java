@@ -39,6 +39,9 @@ public class DumpableProcess extends UnicastRemoteObject
         // The parent process will listen to this signal to know that it's here.
         System.out.println( signal );
 
-        wait();
+        while ( true )
+        {
+            wait();
+        }
     }
 }

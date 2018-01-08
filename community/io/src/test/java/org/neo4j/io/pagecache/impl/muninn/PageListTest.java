@@ -1398,6 +1398,7 @@ public class PageListTest
         try
         {
             pageList.fault( pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL );
+            fail();
         }
         catch ( IOException e )
         {

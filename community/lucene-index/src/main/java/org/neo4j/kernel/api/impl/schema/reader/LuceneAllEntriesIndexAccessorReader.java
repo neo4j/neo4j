@@ -48,11 +48,13 @@ public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long
         Iterator<Document> iterator = documents.iterator();
         return new Iterator<Long>()
         {
+            @Override
             public boolean hasNext()
             {
                 return iterator.hasNext();
             }
 
+            @Override
             public Long next()
             {
                 return getNodeId( iterator.next() );

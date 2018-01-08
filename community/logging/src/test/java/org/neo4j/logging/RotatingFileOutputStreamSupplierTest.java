@@ -502,6 +502,7 @@ public class RotatingFileOutputStreamSupplierTest
         try
         {
             supplier.close();
+            fail();
         }
         catch ( IOException e )
         {

@@ -43,10 +43,8 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.util.Arrays.asList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
 public class CountsStoreRecoveryTest
@@ -99,7 +97,6 @@ public class CountsStoreRecoveryTest
                                       .getCounts();
     }
 
-    @SuppressWarnings( "deprecated" )
     private void checkPoint() throws IOException
     {
         ((GraphDatabaseAPI) db).getDependencyResolver()
@@ -111,7 +108,7 @@ public class CountsStoreRecoveryTest
     private void crashAndRestart() throws Exception
     {
         final GraphDatabaseService db1 = db;
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( () -> db1.shutdown() );
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
         db = databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 

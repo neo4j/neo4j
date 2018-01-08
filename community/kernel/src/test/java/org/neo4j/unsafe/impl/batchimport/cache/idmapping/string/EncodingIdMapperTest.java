@@ -585,19 +585,15 @@ public class EncodingIdMapperTest
         long id = 0;
 
         // Generate and add all input ids
-        while ( id < count )
+        for ( int elements = 0; elements < count; elements++ )
         {
             String inputId = UUID.randomUUID().toString();
-            ids.add( inputId );
-            mapper.put( inputId, id++, GLOBAL );
+            for ( int i = 0; i < 2; i++ )
+            {
+                ids.add( inputId );
+                mapper.put( inputId, id++, GLOBAL );
+            }
         }
-
-        // And add them one more time
-        for ( Object inputId : ids )
-        {
-            mapper.put( inputId, id++, GLOBAL );
-        }
-        ids.addAll( ids );
 
         // WHEN
         CountingCollector collector = new CountingCollector();

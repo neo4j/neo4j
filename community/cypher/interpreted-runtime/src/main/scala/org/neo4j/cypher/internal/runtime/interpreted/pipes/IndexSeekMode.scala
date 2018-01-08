@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekMode.{MultipleValueQuery, assertSingleValue}
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QueryExpression, RangeQueryExpression}
+import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.virtual.NodeValue
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
@@ -46,15 +46,15 @@ object IndexSeekMode {
  }
 
 sealed trait IndexSeekMode {
-  def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery
+  def indexFactory(index: IndexReference): MultipleValueQuery
 
   def name: String
 }
 
 sealed trait ExactSeek {
   self: IndexSeekMode =>
-  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
-    (state: QueryState) => (values: Seq[Any]) => state.query.indexSeek(descriptor, values)
+  override def indexFactory(index: IndexReference): MultipleValueQuery =
+    (state: QueryState) => (values: Seq[Any]) => state.query.indexSeek(index, values)
 }
 
 case object IndexSeek extends IndexSeekMode with ExactSeek {
@@ -67,9 +67,9 @@ case object UniqueIndexSeek extends IndexSeekMode with ExactSeek {
 
 case object LockingUniqueIndexSeek extends IndexSeekMode {
 
-  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
+  override def indexFactory(index: IndexReference): MultipleValueQuery =
     (state: QueryState) => (x: Seq[Any]) => {
-      state.query.lockingUniqueIndexSeek(descriptor, x).toIterator
+      state.query.lockingUniqueIndexSeek(index, x).toIterator
     }
 
   override def name: String = "NodeUniqueIndexSeek(Locking)"
@@ -77,8 +77,8 @@ case object LockingUniqueIndexSeek extends IndexSeekMode {
 
 sealed trait SeekByRange {
   self: IndexSeekMode =>
-  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
-    (state: QueryState) => (x: Seq[Any]) => state.query.indexSeekByRange(descriptor, assertSingleValue(x))
+  override def indexFactory(index: IndexReference): MultipleValueQuery =
+    (state: QueryState) => (x: Seq[Any]) => state.query.indexSeekByRange(index, assertSingleValue(x))
 }
 
 case object IndexSeekByRange extends IndexSeekMode with SeekByRange {

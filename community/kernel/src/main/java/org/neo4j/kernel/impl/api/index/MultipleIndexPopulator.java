@@ -565,7 +565,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    protected class DelegatingStoreScan<E extends Exception> implements StoreScan<E>
+    protected static class DelegatingStoreScan<E extends Exception> implements StoreScan<E>
     {
         private final StoreScan<E> delegate;
 

@@ -61,6 +61,7 @@ public interface IndexProgressor extends AutoCloseable
     /**
      * Close the progressor and all attached resources. Idempotent.
      */
+    @Override
     void close();
 
     /**

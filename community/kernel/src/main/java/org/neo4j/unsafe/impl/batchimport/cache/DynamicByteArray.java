@@ -39,12 +39,16 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     @Override
     public void swap( long fromIndex, long toIndex )
     {
-        byte[] a = defaultValue.clone();
-        byte[] b = defaultValue.clone();
-        get( fromIndex, a );
-        get( toIndex, b );
-        set( fromIndex, b );
-        set( toIndex, a );
+        ByteArray fromArray = at( fromIndex );
+        ByteArray toArray = at( toIndex );
+
+        // Byte-wise swap
+        for ( int i = 0; i < defaultValue.length; i++ )
+        {
+            byte intermediary = fromArray.getByte( fromIndex, i );
+            fromArray.setByte( fromIndex, i, toArray.getByte( toIndex, i ) );
+            toArray.setByte( toIndex, i, intermediary );
+        }
     }
 
     @Override

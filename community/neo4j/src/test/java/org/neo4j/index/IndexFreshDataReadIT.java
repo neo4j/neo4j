@@ -44,7 +44,7 @@ public class IndexFreshDataReadIT
     private ExecutorService executor = Executors.newCachedThreadPool();
 
     @After
-    public void setUp() throws Exception
+    public void tearDown()
     {
         executor.shutdown();
     }

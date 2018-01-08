@@ -633,6 +633,7 @@ public enum ShortArray
             }
         }
 
+        @Override
         public void writeAll( Object array, byte[] result, int offset )
         {
             if ( isPrimitive( array ) )
