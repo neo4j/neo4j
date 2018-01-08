@@ -30,10 +30,10 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -125,7 +125,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
 
         // Make sure 'all' is the only classifier if specified
-        Set<String> orphans = new HashSet<>( args.orphans() );
+        Set<String> orphans = new TreeSet<>( args.orphans() );
         if ( orphans.contains( "all" ) )
         {
             if ( orphans.size() != 1 )
