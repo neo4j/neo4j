@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.stream;
@@ -46,7 +48,7 @@ class NodeValueIndexCursor extends IndexCursor
     private IndexQuery[] query;
     private Value[] values;
     private PrimitiveLongIterator added;
-    private PrimitiveLongSet removed;
+    private PrimitiveLongReadableDiffSets changes;
 
     NodeValueIndexCursor()
     {
@@ -76,12 +78,12 @@ class NodeValueIndexCursor extends IndexCursor
         case rangeNumeric:
             assert query.length == 1;
             numericRangeQuery( descriptor, (IndexQuery.NumberRangePredicate) query[0] );
-        break;
+            break;
 
         case rangeString:
             assert query.length == 1;
             stringRangeQuery( descriptor, (IndexQuery.StringRangePredicate) query[0] );
-        break;
+            break;
 
         case stringPrefix:
             prefixQuery( descriptor, (IndexQuery.StringPrefixPredicate) query[0] );
@@ -94,7 +96,8 @@ class NodeValueIndexCursor extends IndexCursor
 
     private boolean isRemoved( long reference )
     {
-        return removed != null && removed.contains( reference );
+        return (changes != null && changes.isRemoved( reference )) ||
+               (read.hasTxStateWithChanges() && read.txState().addedAndRemovedNodes().isRemoved( reference ));
     }
 
     @Override
@@ -177,7 +180,7 @@ class NodeValueIndexCursor extends IndexCursor
         this.values = null;
         this.read = null;
         this.added = null;
-        this.removed = null;
+        this.changes = null;
     }
 
     @Override
@@ -206,11 +209,8 @@ class NodeValueIndexCursor extends IndexCursor
     {
         if ( read.hasTxStateWithChanges() )
         {
-            TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes =
-                    txState.indexUpdatesForRangeSeekByPrefix( descriptor, predicate.prefix() );
+            changes = read.txState().indexUpdatesForRangeSeekByPrefix( descriptor, predicate.prefix() );
             added = changes.augment( emptyIterator() );
-            removed = removed( txState, changes );
         }
     }
 
@@ -218,12 +218,10 @@ class NodeValueIndexCursor extends IndexCursor
     {
         if ( read.hasTxStateWithChanges() )
         {
-            TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByString(
+            changes = read.txState().indexUpdatesForRangeSeekByString(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
             added = changes.augment( emptyIterator() );
-            removed = removed( txState, changes );
         }
     }
 
@@ -231,12 +229,10 @@ class NodeValueIndexCursor extends IndexCursor
     {
         if ( read.hasTxStateWithChanges() )
         {
-            TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByNumber(
+            changes = read.txState().indexUpdatesForRangeSeekByNumber(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
-            added = changes.augment( emptyIterator() );
-            removed = removed( txState, changes );
+            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
         }
     }
 
@@ -244,10 +240,8 @@ class NodeValueIndexCursor extends IndexCursor
     {
         if ( read.hasTxStateWithChanges() )
         {
-            TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForScan( descriptor );
-            added = changes.augment( emptyIterator() );
-            removed = removed( txState, changes );
+            changes = read.txState().indexUpdatesForScan( descriptor );
+            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
         }
     }
 
@@ -256,18 +250,10 @@ class NodeValueIndexCursor extends IndexCursor
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );
         if ( read.hasTxStateWithChanges() )
         {
-            TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState
+            changes = read.txState()
                     .indexUpdatesForSeek( descriptor, IndexQuery.asValueTuple( exactPreds ) );
-            added = changes.augment( emptyIterator() );
-            removed = removed( txState, changes );
+            added = changes
+                    .augment( PrimitiveLongCollections.emptyIterator() );
         }
-    }
-
-    private PrimitiveLongSet removed( TransactionState txState, PrimitiveLongReadableDiffSets changes )
-    {
-        PrimitiveLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
-        longSet.addAll( changes.getRemoved().iterator() );
-        return longSet;
     }
 }
