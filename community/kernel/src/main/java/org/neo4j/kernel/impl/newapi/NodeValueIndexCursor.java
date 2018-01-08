@@ -126,7 +126,7 @@ class NodeValueIndexCursor extends IndexCursor
         }
         else
         {
-            return super.next();
+            return innerNext();
         }
     }
 
