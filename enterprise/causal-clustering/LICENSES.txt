@@ -27,8 +27,8 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   Netty
   Netty/All-in-One
-  WMI4Java
   Objenesis
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License
