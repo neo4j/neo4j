@@ -35,7 +35,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Reference;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -692,10 +691,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private AtomicReference<CpuClock> setupCpuClockAtomicReference()
     {
         AtomicReference<CpuClock> cpuClock = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
-        if ( config.get( GraphDatabaseSettings.track_query_cpu_time ) )
-        {
-            cpuClock.set( CpuClock.CPU_CLOCK );
-        }
         BiConsumer<Boolean,Boolean> cpuClockUpdater = ( before, after ) ->
         {
             if ( after )
@@ -707,6 +702,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 cpuClock.set( CpuClock.NOT_AVAILABLE );
             }
         };
+        cpuClockUpdater.accept( null, config.get( GraphDatabaseSettings.track_query_cpu_time ) );
         config.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
         return cpuClock;
     }
@@ -714,10 +710,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private AtomicReference<HeapAllocation> setupHeapAllocationAtomicReference()
     {
         AtomicReference<HeapAllocation> heapAllocation = new AtomicReference<>( HeapAllocation.NOT_AVAILABLE );
-        if ( config.get( GraphDatabaseSettings.track_query_allocation ) )
-        {
-            heapAllocation.set( HeapAllocation.HEAP_ALLOCATION );
-        }
         BiConsumer<Boolean,Boolean> heapAllocationUpdater = ( before, after ) ->
         {
             if ( after )
@@ -729,6 +721,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 heapAllocation.set( HeapAllocation.NOT_AVAILABLE );
             }
         };
+        heapAllocationUpdater.accept( null, config.get( GraphDatabaseSettings.track_query_allocation ) );
         config.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_allocation, heapAllocationUpdater );
         return heapAllocation;
     }
