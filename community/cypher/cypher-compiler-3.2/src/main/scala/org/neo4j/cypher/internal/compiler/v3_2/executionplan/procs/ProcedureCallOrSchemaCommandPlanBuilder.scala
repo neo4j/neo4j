@@ -89,7 +89,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case DropNodePropertyExistenceConstraint(_, label, prop) =>
-        Some(PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
+        Some(PureSideEffectExecutionPlan("DropNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         }))
 
