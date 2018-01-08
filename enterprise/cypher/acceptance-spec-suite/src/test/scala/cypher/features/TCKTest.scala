@@ -32,20 +32,18 @@ import scala.collection.JavaConverters._
 
 class TCKTest {
 
-  val tckSemanticFailures = Set("Multiple unwinds after each other", "Return all variables",
-    "Copying properties from node with ON CREATE", "Copying properties from node with ON MATCH",
-    "Using `keys()` on a parameter map", "Create a pattern with multiple hops in the reverse direction",
-    "Create a pattern with multiple hops in varying directions",
-    "Creating a pattern with multiple hops and changing directions",
-    "Calling the same procedure twice using the same outputs in each call",
-    "In-query call to VOID procedure that takes no arguments",
+  val tckSemanticFailures = Set(
+    // To blacklist
     "In-query call to procedure that takes no arguments and yields no results",
     "In-query call to procedure with explicit arguments that drops all result fields",
     "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT",
-    "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT")
+    "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
+  )
 
-  val scenarios = CypherTCK.allTckScenarios.filterNot(_.steps.exists(_.isInstanceOf[ExpectError]))
-    .filterNot(scenario => tckSemanticFailures.contains(scenario.name))
+  val scenarios = CypherTCK.allTckScenarios
+//    .filter(s => tckSemanticFailures.contains(s.name))
+      .filterNot(_.steps.exists(_.isInstanceOf[ExpectError]))
+      .filterNot(scenario => tckSemanticFailures.contains(scenario.name))
 
   @TestFactory
   def runTCKTestsDefault(): util.Collection[DynamicTest] = {
