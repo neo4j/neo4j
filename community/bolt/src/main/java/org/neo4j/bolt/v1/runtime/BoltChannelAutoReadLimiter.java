@@ -34,9 +34,6 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
     protected static final String LOW_WATERMARK_NAME = "low_watermark";
     protected static final String HIGH_WATERMARK_NAME = "high_watermark";
 
-    private static final int defaultLowWatermark = FeatureToggles.getInteger( BoltChannelAutoReadLimiter.class, LOW_WATERMARK_NAME, 100 );
-    private static final int defaultHighWatermark = FeatureToggles.getInteger( BoltChannelAutoReadLimiter.class, HIGH_WATERMARK_NAME, 300 );
-
     private final AtomicInteger queueSize = new AtomicInteger( 0 );
     private final Channel channel;
     private final Log log;
@@ -45,7 +42,8 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
 
     public BoltChannelAutoReadLimiter( Channel channel, Log log )
     {
-        this( channel, log, defaultLowWatermark, defaultHighWatermark );
+        this( channel, log, FeatureToggles.getInteger( BoltChannelAutoReadLimiter.class, LOW_WATERMARK_NAME, 100 ),
+                FeatureToggles.getInteger( BoltChannelAutoReadLimiter.class, HIGH_WATERMARK_NAME, 300 ) );
     }
 
     public BoltChannelAutoReadLimiter( Channel channel, Log log, int lowWatermark, int highWatermark)
