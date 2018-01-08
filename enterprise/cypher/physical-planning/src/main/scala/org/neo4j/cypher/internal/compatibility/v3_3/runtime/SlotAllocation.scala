@@ -272,7 +272,7 @@ object SlotAllocation {
 
       case _:CartesianProduct =>
         val cartesianProductPipeline = lhsPipeline.seedClone()
-        rhsPipeline.foreachSlot {
+        rhsPipeline.foreachSlotOrdered {
           case (k, slot) =>
             cartesianProductPipeline.add(k, slot)
         }

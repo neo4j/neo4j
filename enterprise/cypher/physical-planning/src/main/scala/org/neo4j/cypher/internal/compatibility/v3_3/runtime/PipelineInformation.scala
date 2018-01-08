@@ -181,8 +181,8 @@ class PipelineInformation(private var slots: Map[String, Slot],
     case _ => throw new InternalException("Uh oh... There was no slot for `$name`")
   }
 
-  def foreachSlot[U](f: ((String,Slot)) => U): Unit =
-    slots.foreach(f)
+  def foreachSlotOrdered[U](f: ((String, Slot)) => U): Unit =
+    slots.toSeq.sortBy(_._2)(SlotOrdering).foreach(f)
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]
 
@@ -205,4 +205,15 @@ class PipelineInformation(private var slots: Map[String, Slot],
   private def checkNotAlreadyTaken(key: String) =
     if (slots.contains(key))
       throw new InternalException("Tried overwriting already taken variable name")
+
+  object SlotOrdering extends Ordering[Slot] {
+    def compare(x: Slot, y: Slot): Int = (x, y) match {
+      case (_: LongSlot, _: RefSlot) =>
+        -1
+      case (_: RefSlot, _: LongSlot) =>
+        1
+      case _ =>
+        x.offset - y.offset
+    }
+  }
 }

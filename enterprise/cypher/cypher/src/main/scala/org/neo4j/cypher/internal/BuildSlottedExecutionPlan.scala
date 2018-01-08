@@ -42,7 +42,7 @@ import org.neo4j.values.virtual.MapValue
 object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
 
-  override def description = "create interpreted execution plan"
+  override def description = "create slotted execution plan"
 
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
