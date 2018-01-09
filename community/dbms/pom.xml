@@ -47,6 +47,44 @@
     </license>
   </licenses>
 
+  <!-- com.sun.tools is special prior to java 9... -->
+  <profiles>
+    <profile>
+      <id>default-jdk</id>
+      <activation>
+        <file>
+          <exists>${java.home}/../lib/tools.jar</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>jdk.tools</groupId>
+          <artifactId>jdk.tools</artifactId>
+          <scope>system</scope>
+          <version>1.6</version>
+          <systemPath>${java.home}/../lib/tools.jar</systemPath>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>osx-jdk</id>
+      <activation>
+        <file>
+          <exists>${java.home}/../Classes/classes.jar</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>jdk.tools</groupId>
+          <artifactId>jdk.tools</artifactId>
+          <scope>system</scope>
+          <version>1.6</version>
+          <systemPath>${java.home}/../Classes/classes.jar</systemPath>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -81,6 +119,16 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-import-tool</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-jmx</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jprocesses</groupId>
+      <artifactId>jProcesses</artifactId>
     </dependency>
 
     <dependency>

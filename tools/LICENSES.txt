@@ -9,6 +9,8 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Guava: Google Core Libraries for Java
   javax.inject
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -16,6 +18,7 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   Netty
   Netty/All-in-One
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License

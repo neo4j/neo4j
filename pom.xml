@@ -1174,6 +1174,11 @@
         <artifactId>metrics-graphite</artifactId>
         <version>3.1.2</version>
       </dependency>
+      <dependency>
+        <groupId>org.jprocesses</groupId>
+        <artifactId>jProcesses</artifactId>
+        <version>1.6.4</version>
+      </dependency>
 
       <dependency>
         <groupId>com.google.code.findbugs</groupId>

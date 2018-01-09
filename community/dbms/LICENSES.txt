@@ -5,12 +5,15 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Text
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
   Netty/All-in-One
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License

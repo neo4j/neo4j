@@ -117,7 +117,7 @@ public class AdminTool
             if ( Args.parse( commandArgs ).has( "help" ) )
             {
                 outsideWorld.stdErrLine( "unknown argument: --help" );
-                usage.printUsageForCommand( commandLocator.findProvider( name ), outsideWorld::stdErrLine );
+                usage.printUsageForCommand( provider, outsideWorld::stdErrLine );
                 failure();
             }
             else

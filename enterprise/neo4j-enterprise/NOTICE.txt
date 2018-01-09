@@ -45,6 +45,8 @@ Apache Software License, Version 2.0
   Graphite Integration for Metrics
   hazelcast-all
   Jackson
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -60,6 +62,7 @@ Apache Software License, Version 2.0
   Prometheus Java Simpleclient Common
   Prometheus Java Simpleclient Dropwizard
   Prometheus Java Simpleclient Httpserver
+  WMI4Java
 
 BSD - Scala License
   Scala Library
