@@ -44,9 +44,9 @@ import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 import org.neo4j.time.Clocks;
 
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */
