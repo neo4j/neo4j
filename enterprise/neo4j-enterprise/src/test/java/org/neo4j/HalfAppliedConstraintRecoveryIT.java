@@ -81,29 +81,21 @@ public class HalfAppliedConstraintRecoveryIT
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
     private static final String KEY2 = "key2";
-    private static final Consumer<GraphDatabaseAPI> UNIQUE_CONSTRAINT_CREATOR = ( db ) ->
-    {
-        db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
-    };
+    private static final Consumer<GraphDatabaseAPI> UNIQUE_CONSTRAINT_CREATOR =
+            db -> db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
 
-    private static final Consumer<GraphDatabaseAPI> NODE_KEY_CONSTRAINT_CREATOR = ( db ) ->
-    {
-        db.execute( "CREATE CONSTRAINT ON (n:" + LABEL.name() + ") ASSERT (n." + KEY + ") IS NODE KEY" );
-    };
+    private static final Consumer<GraphDatabaseAPI> NODE_KEY_CONSTRAINT_CREATOR =
+            db -> db.execute( "CREATE CONSTRAINT ON (n:" + LABEL.name() + ") ASSERT (n." + KEY + ") IS NODE KEY" );
 
-    private static final Consumer<GraphDatabaseAPI> COMPOSITE_NODE_KEY_CONSTRAINT_CREATOR = ( db ) ->
-    {
-        db.execute( "CREATE CONSTRAINT ON (n:" + LABEL.name() + ") ASSERT (n." + KEY + ", n." + KEY2 + ") IS NODE KEY" );
-    };
+    private static final Consumer<GraphDatabaseAPI> COMPOSITE_NODE_KEY_CONSTRAINT_CREATOR =
+            db -> db.execute( "CREATE CONSTRAINT ON (n:" + LABEL.name() + ") ASSERT (n." + KEY + ", n." + KEY2 + ") IS NODE KEY" );
     private static final BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> REAPPLY =
-            (db,txs) -> apply( db, txs.subList( txs.size() - 1, txs.size() ) );
-
+            ( db, txs ) -> apply( db, txs.subList( txs.size() - 1, txs.size() ) );
 
     private static BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> recreate( Consumer<GraphDatabaseAPI> constraintCreator )
     {
         return ( db, txs ) -> createConstraint( db, constraintCreator );
     }
-
 
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
