@@ -261,7 +261,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    public void pareModificationTrackingNoticeWriteFromAnotherThread() throws Exception
+    public void pageModificationTrackingNoticeWriteFromAnotherThread() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
         VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
@@ -326,6 +326,28 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             assertEquals( 12, ((MuninnPageCursor) cursor).page.getLastModifiedTxId() );
             assertEquals( 3, cursor.getLong() );
+        }
+    }
+
+    @Test
+    public void markCursorContextDirtyWhenRepositionCursorOnItsCurrentPage() throws IOException
+    {
+        TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
+        VersionContextSupplier versionContextSupplier = new ConfiguredVersionContextSupplier( cursorContext );
+        MuninnPageCache pageCache =
+                createPageCache( fs, 2, 8, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, versionContextSupplier );
+
+        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
+        cursorContext.initRead();
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next( 0 ) );
+            assertFalse( cursorContext.isDirty() );
+
+            ((MuninnPageCursor) cursor).page.setLastModifiedTxId( 17 );
+
+            assertTrue( cursor.next( 0 ) );
+            assertTrue( cursorContext.isDirty() );
         }
     }
 
@@ -635,12 +657,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         public boolean isDirty()
         {
             return dirty;
-        }
-
-        @Override
-        public void clear()
-        {
-
         }
     }
 }

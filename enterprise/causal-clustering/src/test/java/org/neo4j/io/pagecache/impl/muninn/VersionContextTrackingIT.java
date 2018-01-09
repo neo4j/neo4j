@@ -36,7 +36,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -157,7 +157,7 @@ public class VersionContextTrackingIT
 
         CursorPageAccessor( MuninnPageCursor delegate )
         {
-            super( -1, PageCursorTracer.NULL, EmptyVersionContext.INSTANCE );
+            super( -1, PageCursorTracer.NULL, EmptyVersionContextSupplier.INSTANCE );
             this.delegate = delegate;
         }
 

@@ -65,9 +65,4 @@ public class EmptyVersionContext implements VersionContext
     {
         return false;
     }
-
-    @Override
-    public void clear()
-    {
-    }
 }

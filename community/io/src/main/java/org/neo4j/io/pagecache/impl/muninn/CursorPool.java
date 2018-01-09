@@ -74,8 +74,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnReadPageCursor createReadCursor( CursorSets cursorSets )
     {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage, getPageCursorTracer(), versionContextSupplier
-                .getVersionContext() );
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage, getPageCursorTracer(), versionContextSupplier );
         cursor.initialiseFile( pagedFile );
         return cursor;
     }
@@ -98,8 +97,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnWritePageCursor createWriteCursor( CursorSets cursorSets )
     {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage, getPageCursorTracer(), versionContextSupplier
-                .getVersionContext() );
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage, getPageCursorTracer(), versionContextSupplier );
         cursor.initialiseFile( pagedFile );
         return cursor;
     }

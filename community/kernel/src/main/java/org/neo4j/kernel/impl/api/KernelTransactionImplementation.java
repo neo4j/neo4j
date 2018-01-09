@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -118,7 +117,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private StatementOperationParts currentTransactionOperations;
-    private VersionContext versionContext;
     private final KernelStatement currentStatement;
     private final StorageStatement storageStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
@@ -185,7 +183,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.versionContextSupplier = versionContextSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement =
-                new KernelStatement( this, this, storageStatement, procedures, accessCapability, lockTracer );
+                new KernelStatement( this, this, storageStatement, procedures, accessCapability, lockTracer, versionContextSupplier );
         this.userMetaData = new HashMap<>();
     }
 
@@ -216,9 +214,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.currentTransactionOperations = timeoutMillis > 0 ? operationContainer.guardedParts() : operationContainer.nonGuarderParts();
-        this.versionContext = this.versionContextSupplier.getVersionContext();
-        this.currentStatement.initialize( statementLocks, currentTransactionOperations, cursorTracerSupplier.get(),
-                versionContext );
+        this.currentStatement.initialize( statementLocks, currentTransactionOperations, cursorTracerSupplier.get() );
         return this;
     }
 
@@ -593,7 +589,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation, versionContext );
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation,
+                            versionContextSupplier.getVersionContext() );
                     txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }

@@ -80,7 +80,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
             attempt++;
             versionContext.initRead();
             Result result = executor.execute( query, parameters, context );
-            eagerResult = new EagerResult( result );
+            eagerResult = new EagerResult( result, versionContext );
             eagerResult.consume();
             dirtySnapshot = versionContext.isDirty();
             if ( dirtySnapshot && result.getQueryStatistics().containsUpdates() )

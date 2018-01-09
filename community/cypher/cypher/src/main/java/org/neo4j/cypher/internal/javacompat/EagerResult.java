@@ -25,11 +25,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
 import static java.lang.System.lineSeparator;
 
@@ -40,12 +43,14 @@ class EagerResult implements Result
 {
     private static final String ITEM_SEPARATOR = ", ";
     private final Result originalResult;
+    private final VersionContext versionContext;
     private final List<Map<String, Object>> queryResult = new ArrayList<>();
     private int cursor;
 
-    EagerResult( Result result )
+    EagerResult( Result result, VersionContext versionContext )
     {
         this.originalResult = result;
+        this.versionContext = versionContext;
     }
 
     public void consume()
@@ -145,9 +150,28 @@ class EagerResult implements Result
     public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
             throws VisitationException
     {
-        for ( Map<String,Object> map : queryResult )
+        try
         {
-            visitor.visit( new MapRow( map ) );
+            for ( Map<String,Object> map : queryResult )
+            {
+                visitor.visit( new MapRow( map ) );
+            }
+            checkIfDirty();
+        }
+        catch ( NotFoundException e )
+        {
+            checkIfDirty();
+            throw e;
+        }
+    }
+
+    private void checkIfDirty()
+    {
+        if ( versionContext.isDirty() )
+        {
+            throw new QueryExecutionKernelException(
+                    new UnstableSnapshotException( "Unable to get clean data snapshot for query serialisation." ) )
+                    .asUserException();
         }
     }
 

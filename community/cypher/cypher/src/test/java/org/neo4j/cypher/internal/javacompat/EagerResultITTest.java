@@ -38,6 +38,8 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -199,6 +201,30 @@ public class EagerResultITTest
         } );
         assertThat( values, hasSize( 2 ) );
         assertThat( values, Matchers.containsInAnyOrder( "d", "y" ) );
+    }
+
+    @Test( expected = QueryExecutionException.class )
+    public void dirtyContextDuringResultVisitResultInUnstableSnapshotException() throws Exception
+    {
+        Result result = database.execute( "MATCH (n) RETURN n.c" );
+        List<String> values = new ArrayList<>();
+        result.accept( (Result.ResultVisitor<Exception>) row ->
+        {
+            testCursorContext.markAsDirty();
+            values.add( row.getString( "n.c" ) );
+            return false;
+        } );
+    }
+
+    @Test( expected = QueryExecutionException.class )
+    public void dirtyContextEntityNotFoundExceptionDuringResultVisitResultInUnstableSnapshotException() throws Exception
+    {
+        Result result = database.execute( "MATCH (n) RETURN n.c" );
+        result.accept( (Result.ResultVisitor<Exception>) row ->
+        {
+            testCursorContext.markAsDirty();
+            throw new NotFoundException( new RuntimeException() );
+        } );
     }
 
     private String printToStream( Result result )

@@ -64,9 +64,4 @@ public interface VersionContext
      */
     boolean isDirty();
 
-    /**
-     * Clear transaction ids that read/write context was initialised with
-     */
-    void clear();
-
 }
