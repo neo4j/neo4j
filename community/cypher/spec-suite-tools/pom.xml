@@ -110,7 +110,7 @@
     <dependency>
       <groupId>org.apache.xmlgraphics</groupId>
       <artifactId>batik-svggen</artifactId>
-      <version>1.8</version>
+      <version>1.9.1</version>
     </dependency>
 
     <!-- scala -->
