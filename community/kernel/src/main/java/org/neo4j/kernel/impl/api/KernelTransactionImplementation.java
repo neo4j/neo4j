@@ -184,7 +184,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.versionContextSupplier = versionContextSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
-                procedures, accessCapability, lockTracer, statementOperations );
+                procedures, accessCapability, lockTracer, statementOperations, versionContextSupplier );
         this.userMetaData = new HashMap<>();
     }
 
@@ -213,8 +213,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
-        this.versionContext = this.versionContextSupplier.getVersionContext();
-        this.currentStatement.initialize( statementLocks, cursorTracerSupplier.get(), versionContext );
+        this.currentStatement.initialize( statementLocks, cursorTracerSupplier.get() );
         return this;
     }
 
@@ -599,7 +598,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation, versionContext );
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation,
+                            versionContextSupplier.getVersionContext() );
                     txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }

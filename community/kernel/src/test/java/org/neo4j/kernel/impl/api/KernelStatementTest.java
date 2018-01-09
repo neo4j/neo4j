@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -48,7 +49,7 @@ public class KernelStatementTest
         when( transaction.securityContext() ).thenReturn( AUTH_DISABLED );
 
         KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite(),
-                LockTracer.NONE, mock( StatementOperationParts.class ) );
+                LockTracer.NONE, mock( StatementOperationParts.class ), EmptyVersionContextSupplier.INSTANCE );
         statement.acquire();
 
         statement.readOperations().nodeExists( 0 );
@@ -61,7 +62,7 @@ public class KernelStatementTest
         StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
                 null, storeStatement, new Procedures(), new CanWrite(), LockTracer.NONE,
-                mock( StatementOperationParts.class ) );
+                mock( StatementOperationParts.class ), EmptyVersionContextSupplier.INSTANCE );
         statement.acquire();
 
         // when
@@ -87,7 +88,8 @@ public class KernelStatementTest
         AccessCapability accessCapability = mock( AccessCapability.class );
         Procedures procedures = mock( Procedures.class );
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
-                storeStatement, procedures, accessCapability, LockTracer.NONE, mock( StatementOperationParts.class ) );
+                storeStatement, procedures, accessCapability, LockTracer.NONE, mock( StatementOperationParts.class ),
+                        EmptyVersionContextSupplier.INSTANCE );
 
         statement.assertOpen();
     }
