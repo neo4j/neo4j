@@ -119,6 +119,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def nodeFromNodeCursor(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), method[NodeCursor, Long]("nodeReference")))
 
+  override def nodeFromNodeLabelIndexCursor(targetVar: String, iterVar: String) =
+    generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), method[NodeLabelIndexCursor, Long]("nodeReference")))
+
   override def createRelExtractor(relVar: String) =
     generator.assign(typeRef[RelationshipDataExtractor], relExtractor(relVar), newRelationshipDataExtractor)
 
@@ -162,9 +165,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.expression(invoke(dataRead, method[Read, Unit]("allNodesScan", typeRef[NodeCursor]), generator.load(iterVar) ))
   }
 
-  override def labelScan(iterVar: String, labelIdVar: String) =
-    generator.assign(typeRef[PrimitiveLongIterator], iterVar,
-                     invoke(readOperations, nodesGetForLabel, generator.load(labelIdVar)))
+  override def labelScan(iterVar: String, labelIdVar: String) = {
+    generator.assign(typeRef[NodeLabelIndexCursor], iterVar, invoke(cursors, method[CursorFactory, NodeLabelIndexCursor]("allocateNodeLabelIndexCursor")))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[NodeLabelIndexCursor, Unit]("close"))))
+    generator.expression(invoke(dataRead, method[Read, Unit]("nodeLabelScan", typeRef[Int], typeRef[NodeLabelIndexCursor]),
+                                generator.load(labelIdVar), generator.load(iterVar) ))
+  }
 
   override def lookupLabelId(labelIdVar: String, labelName: String) =
     generator.assign(typeRef[Int], labelIdVar,
@@ -184,6 +192,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def advanceNodeCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[NodeCursor, Boolean]("next"))
+
+  override def advanceNodeLabelIndexCursor(iterVar: String) =
+    invoke(generator.load(iterVar), method[NodeLabelIndexCursor, Boolean]("next"))
 
   override def hasNextRelationship(iterVar: String) =
     invoke(generator.load(iterVar), hasMoreRelationship)
