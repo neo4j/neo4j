@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -503,7 +504,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         IndexEntryUpdate[] updates = new IndexEntryUpdate[]
                 {
                         IndexEntryUpdate.add( 0, indexDescriptor, Values.of( 0 ) ),
-                        IndexEntryUpdate.add( 1, indexDescriptor, Values.of(1 ) ),
+                        IndexEntryUpdate.add( 1, indexDescriptor, Values.of( 1 ) ),
                         IndexEntryUpdate.add( 2, indexDescriptor, Values.of( 2 ) ),
                         IndexEntryUpdate.add( 3, indexDescriptor, Values.of( 3 ) )
                 };
@@ -537,7 +538,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         IndexEntryUpdate[] updates = new IndexEntryUpdate[]
                 {
                         IndexEntryUpdate.add( 0, indexDescriptor, Values.of( 0 ) ),
-                        IndexEntryUpdate.add( 1, indexDescriptor, Values.of(1 ) ),
+                        IndexEntryUpdate.add( 1, indexDescriptor, Values.of( 1 ) ),
                         IndexEntryUpdate.add( 2, indexDescriptor, Values.of( 2 ) ),
                         IndexEntryUpdate.add( 3, indexDescriptor, Values.of( 3 ) ),
                         IndexEntryUpdate.add( 4, indexDescriptor, Values.of( 4 ) ),
@@ -768,6 +769,56 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         // then
         Set<Long> expectedIds = Collections.emptySet();
         assertEquals( expectedIds, ids );
+    }
+
+    @Test
+    public void shouldNotSeeFilteredEntries() throws Exception
+    {
+        // given
+        IndexEntryUpdate[] updates = new IndexEntryUpdate[]
+                {
+                        IndexEntryUpdate.add( 0, indexDescriptor, Values.of( 0 ) ),
+                        IndexEntryUpdate.add( 1, indexDescriptor, Values.of( 1 ) ),
+                        IndexEntryUpdate.add( 2, indexDescriptor, Values.of( 2 ) ),
+                };
+        //noinspection unchecked
+        processAll( updates );
+        IndexReader reader = accessor.newReader();
+
+        // when
+        NodeValueIterator iter = new NodeValueIterator();
+        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, Values.of( 1 ) );
+        IndexQuery.NumberRangePredicate rangeQuery = IndexQuery.range( 0, 0, true, 2, true );
+        IndexProgressor.NodeValueClient filterClient = filterClient( iter, filter );
+        reader.query( filterClient, IndexOrder.NONE, rangeQuery );
+
+        // then
+        assertTrue( iter.hasNext() );
+        assertEquals( 1, iter.next() );
+        assertFalse( iter.hasNext() );
+    }
+
+    private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery.ExactPredicate filter )
+    {
+        return new IndexProgressor.NodeValueClient()
+        {
+            @Override
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+            {
+                iter.initialize( descriptor, progressor, query );
+            }
+
+            @Override
+            public boolean acceptNode( long reference, Value... values )
+            {
+                //noinspection SimplifiableIfStatement
+                if ( values.length > 1 )
+                {
+                    return false;
+                }
+                return filter.acceptsValue( values[0] ) && iter.acceptNode( reference, values );
+            }
+        };
     }
 
     private PrimitiveLongIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException

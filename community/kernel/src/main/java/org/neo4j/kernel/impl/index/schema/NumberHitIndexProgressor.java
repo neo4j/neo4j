@@ -47,11 +47,13 @@ public class NumberHitIndexProgressor<KEY extends SchemaNumberKey, VALUE extends
     {
         try
         {
-            if ( seeker.next() )
+            while ( seeker.next() )
             {
                 KEY key = seeker.get().key();
-                client.acceptNode( key.entityId, key.asValue() );
-                return true;
+                if ( client.acceptNode( key.entityId, key.asValue() ) )
+                {
+                    return true;
+                }
             }
             return false;
         }
