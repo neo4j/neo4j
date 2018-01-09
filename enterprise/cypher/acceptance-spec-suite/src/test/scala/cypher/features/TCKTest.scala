@@ -19,75 +19,54 @@
  */
 package cypher.features
 
-import java.util
-
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import cypher.features.ScenarioTestHelper._
+import org.junit.jupiter.api.TestFactory
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings._
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-import org.opencypher.tools.tck.api.{CypherTCK, ExpectError, Graph}
-
-import scala.collection.JavaConverters._
+import org.opencypher.tools.tck.api.CypherTCK
 
 class TCKTest {
 
   val tckSemanticFailures = Set(
-    // Different error type in Neo4j
-    "Deleting connected nodes",
-    "Standalone call to unknown procedure should fail",
-    "In-query call to unknown procedure should fail",
-
     // Neo4j fails at runtime, should fail at compile time
     "Failing on merging relationship with null property",
     "Failing on merging node with null property",
     "Failing when setting a list of maps as a property",
 
-    // To blacklist
+    // YIELD -
     "In-query call to procedure that takes no arguments and yields no results",
     "In-query call to procedure with explicit arguments that drops all result fields",
+
+    // Integer/Float conversion
     "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT",
-    "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
+    "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT",
+
+    // Different error type in Neo4j
+    "Deleting connected nodes",
+    "Standalone call to unknown procedure should fail",
+    "In-query call to unknown procedure should fail"
   )
 
   val scenarios = CypherTCK.allTckScenarios
-//    .filter(s => tckSemanticFailures.contains(s.name))
-      .filterNot(scenario => tckSemanticFailures.contains(scenario.name))
+     // .filter(s => s.name == "Count nodes")
+      .filterNot(scenario => tckSemanticFailures.contains(scenario.name))  // -> blacklists
 
   @TestFactory
-  def runTCKTestsDefault(): util.Collection[DynamicTest] = {
-
-    def createTestGraph: Graph = {
-      Neo4jAdapter()
-    }
-
-    val dynamicTests = scenarios.map { scenario =>
-      val name = scenario.toString()
-      val executable = scenario(createTestGraph)
-      DynamicTest.dynamicTest(name, executable)
-    }
-    dynamicTests.asJavaCollection
+  def runTCKTestsDefault() = {
+    createTests(scenarios)
   }
 
   @TestFactory
-  def runTCKTestsCost(): util.Collection[DynamicTest] = {
-    val config = new util.HashMap[Setting[_], String]()
-    config.put(cypher_planner, "COST")
-    config.put(cypher_runtime, "COMPILED")
+  def runTCKTestsCost() = {
+    val config = Map[Setting[_],String](
+      cypher_planner -> "COST",
+      cypher_runtime -> "COMPILED",
+      cypher_hints_error -> "true")
+    val blacklist = "cost-compiled.txt"
 
-    def createTestGraph: Graph = {
-      val db = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config)
-      //TODO: DB seems to receive and accept the config, but not actually use it.
-      val service = new GraphDatabaseCypherService(db)
-      new Neo4jAdapter(service)
-    }
-
-    val dynamicTests = scenarios.map { scenario =>
-      val name = scenario.toString()
-      val executable = scenario(createTestGraph)
-      DynamicTest.dynamicTest(name, executable)
-    }
-    dynamicTests.asJavaCollection
+    createTests(scenarios, parseBlacklist(blacklist), config)
   }
+
+
 
 }

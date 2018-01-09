@@ -79,7 +79,7 @@ object Neo4jExceptionToExecutionFailed {
       else if (msg.matches("((Node)|(Relationship)) with id \\d+ has been deleted in this transaction"))
         DELETED_ENTITY_ACCESS
       else
-        "unsupportedDetail"
+        msg
     }
 
     private def compileTimeDetail(msg: String): String = {
@@ -187,7 +187,7 @@ object Neo4jExceptionToExecutionFailed {
       else if (msg.matches("There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
         "ProcedureNotFound"
       else
-        "unsupportedDetail"
+        msg
     }
 
   private val DOTALL = "(?s)"

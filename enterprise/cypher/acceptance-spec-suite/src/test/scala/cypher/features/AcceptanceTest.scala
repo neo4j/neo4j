@@ -20,14 +20,16 @@
 package cypher.features
 
 import java.io.File
-import java.util
 
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
-import org.opencypher.tools.tck.api.{CypherTCK, ExpectError, Graph}
-
-import scala.collection.JavaConverters._
+import cypher.features.ScenarioTestHelper.{createTests, parseBlacklist}
+import org.junit.jupiter.api.TestFactory
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.{cypher_hints_error, cypher_planner, cypher_runtime}
+import org.opencypher.tools.tck.api.CypherTCK
 
 class AcceptanceTest {
+
+  val featuresURI = getClass.getResource("/cypher/features").toURI
 
   val acceptanceSemanticFailures = Set[String](
     // Different error type in Neo4j
@@ -35,20 +37,23 @@ class AcceptanceTest {
     "In-query call to unknown procedure should fail"
   )
 
-  @TestFactory
-  def runAcceptanceTests(): util.Collection[DynamicTest] = {
-    val featuresURI = getClass.getResource("/cypher/features").toURI
-    val scenarios = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios).
+  val scenarios = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios).
     filterNot(scenario => acceptanceSemanticFailures.contains(scenario.name))
 
-    def createTestGraph(): Graph = Neo4jAdapter()
+  @TestFactory
+  def runAcceptanceTestsDefault() = {
+    createTests(scenarios)
+  }
 
-    val dynamicTests = scenarios.map { scenario =>
-      val name = scenario.toString()
-      val executable = scenario(createTestGraph())
-      DynamicTest.dynamicTest(name, executable)
-    }
-    dynamicTests.asJavaCollection
+  @TestFactory
+  def runAcceptanceTestsCostCompiled() = {
+    val config = Map[Setting[_],String](
+      cypher_planner -> "COST",
+      cypher_runtime -> "COMPILED",
+      cypher_hints_error -> "true")
+    val blacklist = "cost-compiled.txt"
+
+    createTests(scenarios, parseBlacklist(blacklist), config)
   }
 
 }
