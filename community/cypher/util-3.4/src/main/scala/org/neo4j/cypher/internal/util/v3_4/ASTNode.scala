@@ -28,7 +28,7 @@ trait ASTNode extends Product with Foldable with Rewritable {
     if (children.iterator eqElements this.children)
       this
     else {
-      val constructor = this.copyConstructor
+      val constructor = Rewritable.copyConstructor(this)
       val params = constructor.getParameterTypes
       val args = children.toVector
       val hasExtraParam = params.length == args.length + 1
