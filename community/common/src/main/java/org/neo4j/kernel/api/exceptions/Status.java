@@ -184,7 +184,7 @@ public interface Status
                 "transaction was active. Transaction may succeed if retried." ),
         LockClientStopped( TransientError,
                 "The transaction has been terminated, so no more locks can be acquired. This can occur because the " +
-                "transaction ran longer than the configured transaction timeout, or because a human operator manually " + 
+                "transaction ran longer than the configured transaction timeout, or because a human operator manually " +
                 "terminated the transaction, or because the database is shutting down."),
         LockAcquisitionTimeout( TransientError,
                 "Unable to acquire lock within configured timeout." ),
