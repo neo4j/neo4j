@@ -550,7 +550,6 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-
     @Test
     public void shouldFindUpdatedNodeInInLabelScan() throws Exception
     {
@@ -627,7 +626,6 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-
     @Test
     public void shouldFindUpdatedNodeInInDisjunctionLabelScan() throws Exception
     {
@@ -647,7 +645,6 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             assertEquals( node.node, cursor.nodeReference() );
         }
     }
-
 
     @Test
     public void shouldNotFindDeletedNodeInConjunctionLabelScan() throws Exception

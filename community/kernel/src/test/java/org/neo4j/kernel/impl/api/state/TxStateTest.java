@@ -156,7 +156,6 @@ public class TxStateTest
         state.nodeDoAddLabel( 2, 4 );
         state.nodeDoAddLabel( 3, 5 );
 
-
         // WHEN
         Set<Long> removed = state.nodesWithLabelChanged( 1, 2, 3 ).getRemoved();
         Set<Long> added = state.nodesWithLabelChanged( 1, 2, 3 ).getAdded();

@@ -56,10 +56,10 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -79,7 +79,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -111,7 +110,6 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -710,18 +708,39 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
     {
-        Statement statement = spi.currentStatement();
+        KernelTransaction ktx = spi.currentTransaction();
+        assertTransactionOpen( ktx );
 
-        int labelId = statement.readOperations().labelGetForName( myLabel.name() );
-        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+        int labelId = ktx.tokenRead().labelGetForName( myLabel.name() );
+        if ( labelId == NO_SUCH_LABEL )
         {
-            statement.close();
-            return emptyResourceIterator();
+            return ResourceIterator.empty();
         }
 
-        final PrimitiveLongResourceIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
-        return ResourceClosingIterator
-                .newResourceIterator( map( nodeId -> new NodeProxy( nodeActions, nodeId ), nodeIds ), statement, nodeIds );
+        NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
+        ktx.dataRead().nodeLabelScan( labelId, cursor );
+        return new PrefetchingResourceIterator<Node>()
+        {
+            @Override
+            protected Node fetchNextOrNull()
+            {
+                if ( cursor.next() )
+                {
+                    return new NodeProxy( nodeActions, cursor.nodeReference() );
+                }
+                else
+                {
+                    close();
+                    return null;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                cursor.close();
+            }
+        };
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )

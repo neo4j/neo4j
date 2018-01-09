@@ -41,9 +41,8 @@ public interface TokenRead
      * Returns the token corresponding to the provided name
      * @param name The name associated with the token
      * @return The token corresponding withe
-     * @throws LabelNotFoundKernelException
      */
-    int labelGetForName( String name ) throws LabelNotFoundKernelException;
+    int labelGetForName( String name );
 
     /**
      * Return the id of the provided label, or NO_TOKEN if the label isn't known to the graph.

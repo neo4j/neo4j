@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -29,7 +28,6 @@ import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -310,7 +308,7 @@ public class AllStoreHolder extends Read implements Token
     }
 
     @Override
-    public int labelGetForName( String name ) throws LabelNotFoundKernelException
+    public int labelGetForName( String name )
     {
         return storeReadLayer.labelGetForName( name );
     }
