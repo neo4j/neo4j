@@ -200,7 +200,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         out.println( "All available classifiers:" );
         for ( String classifier : availableClassifiers )
         {
-            out.printf( "  %-10s %s\n", classifier, describeClassifier( classifier ) );
+            out.printf( "  %-10s %s%n", classifier, describeClassifier( classifier ) );
         }
     }
 
