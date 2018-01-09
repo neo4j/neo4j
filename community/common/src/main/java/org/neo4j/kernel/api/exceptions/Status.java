@@ -183,7 +183,9 @@ public interface Status
                 "Transaction has seen state which has been invalidated by applied updates while " +
                 "transaction was active. Transaction may succeed if retried." ),
         LockClientStopped( TransientError,
-                "Transaction terminated, no more locks can be acquired." ),
+                "The transaction has been terminated, so no more locks can be acquired. This can occur because the " +
+                "transaction ran longer than the configured transaction timeout, or because a human operator manually " + 
+                "terminated the transaction, or because the database is shutting down."),
         LockAcquisitionTimeout( TransientError,
                 "Unable to acquire lock within configured timeout." ),
         Terminated( TransientError,
