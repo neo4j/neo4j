@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
@@ -48,7 +49,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
     case _ => false
   }
 
-  def apply(in: LogicalPlan, slotConfigurations: Map[Id, SlotConfiguration]): LogicalPlan = {
+  def apply(in: LogicalPlan, slotConfigurations: SlotConfigurations): LogicalPlan = {
     val newSlotConfigurations = mutable.HashMap[LogicalPlan, SlotConfiguration]()
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*
@@ -135,14 +136,14 @@ class SlottedRewriter(tokenContext: TokenContext) {
     resultPlan
   }
 
-  private def rewriteCreator(slotConfiguration: SlotConfiguration, thisPlan: LogicalPlan, slotConfigurations: Map[Id, SlotConfiguration]): Rewriter = {
+  private def rewriteCreator(slotConfiguration: SlotConfiguration, thisPlan: LogicalPlan, slotConfigurations: SlotConfigurations): Rewriter = {
     val innerRewriter = Rewriter.lift {
       case e: NestedPlanExpression =>
         // Rewrite expressions within the nested plan
         val rewrittenPlan = this.apply(e.plan, slotConfigurations)
-        val slotConfiguration = slotConfigurations.getOrElse(e.plan.id,
+        val innerSlotConf = slotConfigurations.getOrElse(e.plan.id,
           throw new InternalException(s"Missing slot configuration for plan with ${e.plan.id}"))
-        val rewriter = rewriteCreator(slotConfiguration, thisPlan, slotConfigurations)
+        val rewriter = rewriteCreator(innerSlotConf, thisPlan, slotConfigurations)
         val rewrittenProjection = e.projection.endoRewrite(rewriter)
         e.copy(plan = rewrittenPlan, projection = rewrittenProjection)(e.position)
 

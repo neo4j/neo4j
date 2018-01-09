@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.bitbucket.inkytonik.kiama.output.PrettyPrinter._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
@@ -53,7 +54,7 @@ trait DebugPrettyPrinter {
     println("\u001b[30m")
   }
 
-  protected def printPipeInfo(slotConfigurations: Map[Id, SlotConfiguration], pipeInfo: PipeInfo) = {
+  protected def printPipeInfo(slotConfigurations: SlotConfigurations, pipeInfo: PipeInfo) = {
     if (PRINT_PIPELINE_INFO) {
       println(s"\n\u001b[36m[SLOT CONFIGURATIONS]\n") // Cyan
       prettyPrintPipelines(slotConfigurations)
@@ -123,8 +124,8 @@ trait DebugPrettyPrinter {
     println(prettyDoc.layout)
   }
 
-  protected def prettyPrintPipelines(pipelines: Map[Id, SlotConfiguration]): Unit = {
-    val transformedPipelines = pipelines.foldLeft(Seq.empty[Any]) {
+  protected def prettyPrintPipelines(pipelines: SlotConfigurations): Unit = {
+    val transformedPipelines = pipelines.iterator.foldLeft(Seq.empty[Any]) {
       case (acc, (k: Id, v)) => acc :+ (k.x -> v)
     }.sortBy { case (k: Int, _) => k }
     val prettyDoc = pretty(any(transformedPipelines), w = 120)

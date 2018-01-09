@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{BaseExecutionResultBuilderFactory, ExecutionResultBuilder, PipeInfo}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.values.virtual.MapValue
 
@@ -30,7 +29,7 @@ import scala.collection.mutable
 class SlottedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                                            columns: List[String],
                                            logicalPlan: LogicalPlan,
-                                           pipelines: Map[Id, SlotConfiguration])
+                                           pipelines: SlotConfigurations)
   extends BaseExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan) {
 
   override def create(): ExecutionResultBuilder =
