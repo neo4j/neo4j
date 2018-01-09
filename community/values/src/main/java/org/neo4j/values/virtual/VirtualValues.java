@@ -171,21 +171,21 @@ public final class VirtualValues
         return new NodeReference( id );
     }
 
-    public static EdgeReference edge( long id )
+    public static RelationshipReference relationship( long id )
     {
-        return new EdgeReference( id );
+        return new RelationshipReference( id );
     }
 
-    public static PathValue path( NodeValue[] nodes, EdgeValue[] edges )
+    public static PathValue path( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         assert nodes != null;
-        assert edges != null;
-        if ( (nodes.length + edges.length) % 2 == 0 )
+        assert relationships != null;
+        if ( (nodes.length + relationships.length) % 2 == 0 )
         {
             throw new IllegalArgumentException(
                     "Tried to construct a path that is not built like a path: even number of elements" );
         }
-        return new PathValue( nodes, edges );
+        return new PathValue( nodes, relationships );
     }
 
     public static NodeValue nodeValue( long id, TextArray labels, MapValue properties )
@@ -193,9 +193,9 @@ public final class VirtualValues
         return new NodeValue.DirectNodeValue( id, labels, properties );
     }
 
-    public static EdgeValue edgeValue( long id, NodeValue startNode, NodeValue endNode, TextValue type,
+    public static RelationshipValue relationshipValue( long id, NodeValue startNode, NodeValue endNode, TextValue type,
             MapValue properties )
     {
-        return new EdgeValue.DirectEdgeValue( id, startNode, endNode, type, properties );
+        return new RelationshipValue.DirectRelationshipValue( id, startNode, endNode, type, properties );
     }
 }

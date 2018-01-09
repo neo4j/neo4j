@@ -52,7 +52,7 @@ class MorselResultRow(var morsel: Morsel,
     case Some(LongSlot(offset, _, symbols.CTNode)) => () =>
       node(morsel.longs(currentPos * slots.numberOfLongs + offset))
     case Some(LongSlot(offset, _, symbols.CTRelationship)) => () =>
-      edge(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      relationship(morsel.longs(currentPos * slots.numberOfLongs + offset))
     case _ => throw new IllegalStateException
   })
 

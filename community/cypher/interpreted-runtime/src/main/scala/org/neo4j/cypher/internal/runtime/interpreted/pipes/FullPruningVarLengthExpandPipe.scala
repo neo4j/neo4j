@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 case class FullPruningVarLengthExpandPipe(source: Pipe,
                                           fromName: String,
@@ -212,7 +212,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     */
   class NodeState() {
     // All relationships that connect to this node, filtered by the var-length predicates
-    var rels: Array[EdgeValue] = _
+    var rels: Array[RelationshipValue] = _
     // The fully expanded depth for each relationship in rels
     var depths:Array[Byte] = _
     // True if this node has been emitted before

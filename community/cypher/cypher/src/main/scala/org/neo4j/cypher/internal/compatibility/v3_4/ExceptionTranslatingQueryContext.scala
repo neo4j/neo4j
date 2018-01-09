@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
 
 import scala.collection.Iterator
 
@@ -73,8 +73,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeOps: Operations[NodeValue] =
     new ExceptionTranslatingOperations[NodeValue](inner.nodeOps)
 
-  override def relationshipOps: Operations[EdgeValue] =
-    new ExceptionTranslatingOperations[EdgeValue](inner.relationshipOps)
+  override def relationshipOps: Operations[RelationshipValue] =
+    new ExceptionTranslatingOperations[RelationshipValue](inner.relationshipOps)
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(inner.removeLabelsFromNode(node, labelIds))
@@ -186,10 +186,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getImportURL(url: URL) =
     translateException(inner.getImportURL(url))
 
-  override def edgeGetStartNode(edge: EdgeValue) =
+  override def edgeGetStartNode(edge: RelationshipValue) =
     translateException(inner.edgeGetStartNode(edge))
 
-  override def edgeGetEndNode(edge: EdgeValue) =
+  override def edgeGetEndNode(edge: RelationshipValue) =
     translateException(inner.edgeGetEndNode(edge))
 
   override def createRelationship(start: Long, end: Long, relType: Int) =
@@ -204,7 +204,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
     translateException(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
-  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): EdgeValue =
+  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     translateException(inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId))
 
   override def indexSeekByRange(index: IndexReference, value: Any) =

@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
 
 import scala.collection.Iterator
 
@@ -60,7 +60,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def createNodeId(): Long = singleDbHit(inner.createNodeId())
 
-  override def createRelationship(start: Long, end: Long, relType: Int): EdgeValue =
+  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue =
     singleDbHit(inner.createRelationship(start, end, relType))
 
   override def getOrCreateRelTypeId(relTypeName: String): Int = singleDbHit(inner.getOrCreateRelTypeId(relTypeName))
@@ -75,13 +75,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[EdgeValue] =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue] =
   manyDbHits(inner.getRelationshipsForIds(node, dir, types))
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
   manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
-  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): EdgeValue =
+  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId)
 
   override def nodeOps = inner.nodeOps
@@ -170,9 +170,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
 
-  override def edgeGetStartNode(edge: EdgeValue) = inner.edgeGetStartNode(edge)
+  override def edgeGetStartNode(edge: RelationshipValue) = inner.edgeGetStartNode(edge)
 
-  override def edgeGetEndNode(edge: EdgeValue) = inner.edgeGetEndNode(edge)
+  override def edgeGetEndNode(edge: RelationshipValue) = inner.edgeGetEndNode(edge)
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = singleDbHit(inner.nodeGetDegree(node, dir))
 

@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case node: NodeValue => Values.longValue(node.id())
-    case rel: EdgeValue => Values.longValue(rel.id())
+    case rel: RelationshipValue => Values.longValue(rel.id())
     case x => throw new CypherTypeException(
       "Expected `%s` to be a node or relationship, but it was `%s`".format(inner, x.getClass.getSimpleName))
   }

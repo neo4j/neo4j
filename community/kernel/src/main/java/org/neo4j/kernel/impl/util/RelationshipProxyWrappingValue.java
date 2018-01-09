@@ -25,12 +25,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class RelationshipProxyWrappingEdgeValue extends EdgeValue
+public class RelationshipProxyWrappingValue extends RelationshipValue
 {
     private final Relationship relationship;
     private volatile TextValue type;
@@ -38,7 +38,7 @@ public class RelationshipProxyWrappingEdgeValue extends EdgeValue
     private volatile NodeValue startNode;
     private volatile NodeValue endNode;
 
-    RelationshipProxyWrappingEdgeValue( Relationship relationship )
+    RelationshipProxyWrappingValue( Relationship relationship )
     {
         super( relationship.getId() );
         this.relationship = relationship;
@@ -65,10 +65,10 @@ public class RelationshipProxyWrappingEdgeValue extends EdgeValue
 
         if ( id() < 0 )
         {
-            writer.writeVirtualEdgeHack( relationship );
+            writer.writeVirtualRelationshipHack( relationship );
         }
 
-        writer.writeEdge( id(), startNode().id(), endNode().id(), type(), p );
+        writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p );
     }
 
     @Override

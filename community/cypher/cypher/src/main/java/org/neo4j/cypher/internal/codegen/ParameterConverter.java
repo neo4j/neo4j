@@ -39,7 +39,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
@@ -85,16 +85,16 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeEdgeReference( long edgeId ) throws RuntimeException
+    public void writeRelationshipReference( long relId ) throws RuntimeException
     {
-        writeValue( new RelationshipIdWrapperImpl( edgeId ) );
+        writeValue( new RelationshipIdWrapperImpl( relId ) );
     }
 
     @Override
-    public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
             throws RuntimeException
     {
-        writeValue( new RelationshipIdWrapperImpl( edgeId ) );
+        writeValue( new RelationshipIdWrapperImpl( relId ) );
     }
 
     @Override
@@ -124,22 +124,22 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws RuntimeException
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws RuntimeException
     {
         assert nodes != null;
         assert nodes.length > 0;
-        assert edges != null;
-        assert nodes.length == edges.length + 1;
+        assert relationships != null;
+        assert nodes.length == relationships.length + 1;
 
         Node[] nodeProxies = new Node[nodes.length];
         for ( int i = 0; i < nodes.length; i++ )
         {
             nodeProxies[i] = nodeManager.newNodeProxyById( nodes[i].id() );
         }
-        Relationship[] relationship = new Relationship[edges.length];
-        for ( int i = 0; i < edges.length; i++ )
+        Relationship[] relationship = new Relationship[relationships.length];
+        for ( int i = 0; i < relationships.length; i++ )
         {
-            relationship[i] = nodeManager.newRelationshipProxyById( edges[i].id() );
+            relationship[i] = nodeManager.newRelationshipProxyById( relationships[i].id() );
         }
         writeValue( new Path()
         {

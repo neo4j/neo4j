@@ -29,16 +29,16 @@ import org.neo4j.values.VirtualValue;
 public final class PathValue extends VirtualValue
 {
     private final NodeValue[] nodes;
-    private final EdgeValue[] edges;
+    private final RelationshipValue[] relationships;
 
-    PathValue( NodeValue[] nodes, EdgeValue[] edges )
+    PathValue( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         assert nodes != null;
-        assert edges != null;
-        assert nodes.length == edges.length + 1;
+        assert relationships != null;
+        assert nodes.length == relationships.length + 1;
 
         this.nodes = nodes;
-        this.edges = edges;
+        this.relationships = relationships;
     }
 
     public NodeValue startNode()
@@ -51,10 +51,10 @@ public final class PathValue extends VirtualValue
         return nodes[nodes.length - 1];
     }
 
-    public EdgeValue lastEdge()
+    public RelationshipValue lastRelationship()
     {
-        assert edges.length > 0;
-        return edges[edges.length - 1];
+        assert relationships.length > 0;
+        return relationships[relationships.length - 1];
     }
 
     @Override
@@ -67,7 +67,7 @@ public final class PathValue extends VirtualValue
         PathValue that = (PathValue) other;
         return size() == that.size() &&
                Arrays.equals( nodes, that.nodes ) &&
-               Arrays.equals( edges, that.edges );
+               Arrays.equals( relationships, that.relationships );
     }
 
     @Override
@@ -76,7 +76,7 @@ public final class PathValue extends VirtualValue
         int result = nodes[0].hashCode();
         for ( int i = 1; i < nodes.length; i++ )
         {
-            result += 31 * (result + edges[i - 1].hashCode());
+            result += 31 * (result + relationships[i - 1].hashCode());
             result += 31 * (result + nodes[i].hashCode());
         }
         return result;
@@ -85,7 +85,7 @@ public final class PathValue extends VirtualValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.writePath( nodes, edges );
+        writer.writePath( nodes, relationships );
     }
 
     @Override
@@ -108,17 +108,17 @@ public final class PathValue extends VirtualValue
         if ( x == 0 )
         {
             int i = 0;
-            int length = Math.min( edges.length, otherPath.edges.length );
+            int length = Math.min( relationships.length, otherPath.relationships.length );
 
             while ( x == 0 && i < length )
             {
-                x = edges[i].compareTo( otherPath.edges[i], comparator );
+                x = relationships[i].compareTo( otherPath.relationships[i], comparator );
                 ++i;
             }
 
             if ( x == 0 )
             {
-                x = Integer.compare( edges.length, otherPath.edges.length );
+                x = Integer.compare( relationships.length, otherPath.relationships.length );
             }
         }
 
@@ -130,10 +130,10 @@ public final class PathValue extends VirtualValue
     {
         StringBuilder sb = new StringBuilder( "Path{" );
         int i = 0;
-        for ( ; i < edges.length; i++ )
+        for ( ; i < relationships.length; i++ )
         {
             sb.append( nodes[i] );
-            sb.append( edges[i] );
+            sb.append( relationships[i] );
         }
         sb.append( nodes[i] );
         sb.append( '}' );
@@ -142,7 +142,7 @@ public final class PathValue extends VirtualValue
 
     public ListValue asList()
     {
-        int size = nodes.length + edges.length;
+        int size = nodes.length + relationships.length;
         AnyValue[] anyValues = new AnyValue[size];
         for ( int i = 0; i < size; i++ )
         {
@@ -152,7 +152,7 @@ public final class PathValue extends VirtualValue
             }
             else
             {
-                anyValues[i] = edges[i / 2];
+                anyValues[i] = relationships[i / 2];
             }
         }
         return VirtualValues.list( anyValues );
@@ -160,7 +160,7 @@ public final class PathValue extends VirtualValue
 
     public int size()
     {
-        return edges.length;
+        return relationships.length;
     }
 
     public NodeValue[] nodes()
@@ -168,8 +168,8 @@ public final class PathValue extends VirtualValue
         return nodes;
     }
 
-    public EdgeValue[] edges()
+    public RelationshipValue[] relationships()
     {
-        return edges;
+        return relationships;
     }
 }

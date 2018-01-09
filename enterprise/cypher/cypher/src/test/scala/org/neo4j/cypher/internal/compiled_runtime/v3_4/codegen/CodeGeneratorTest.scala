@@ -54,7 +54,7 @@ import org.neo4j.time.Clocks
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.values.virtual.{EdgeValue, ListValue, MapValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, ListValue, MapValue, NodeValue}
 
 import scala.collection.JavaConverters._
 import scala.collection.{JavaConverters, mutable}
@@ -1643,7 +1643,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   private def toObjectConverter(a: AnyRef): AnyRef = a match {
     case Values.NO_VALUE => null
     case n: NodeValue => allNodes(n.id().asInstanceOf[Int])
-    case r: EdgeValue => relMap(r.id()).relationship
+    case r: RelationshipValue => relMap(r.id()).relationship
     case s: TextValue => s.stringValue()
     case b: BooleanValue => Boolean.box(b.booleanValue())
     case f: FloatingPointValue => Double.box(f.doubleValue())

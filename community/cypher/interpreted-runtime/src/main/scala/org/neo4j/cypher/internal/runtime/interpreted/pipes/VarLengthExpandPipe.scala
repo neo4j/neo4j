@@ -30,7 +30,7 @@ import scala.collection.mutable
 
 trait VarLengthPredicate {
   def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean
-  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: EdgeValue): Boolean
+  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean
 }
 
 object VarLengthPredicate {
@@ -39,7 +39,7 @@ object VarLengthPredicate {
 
     override def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean = true
 
-    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: EdgeValue): Boolean = true
+    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean = true
   }
 }
 case class VarLengthExpandPipe(source: Pipe,
@@ -55,15 +55,15 @@ case class VarLengthExpandPipe(source: Pipe,
                                filteringStep: VarLengthPredicate= VarLengthPredicate.NONE)
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
-                              row: ExecutionContext): Iterator[(NodeValue, Seq[EdgeValue])] = {
-    val stack = new mutable.Stack[(NodeValue, Seq[EdgeValue])]
+                              row: ExecutionContext): Iterator[(NodeValue, Seq[RelationshipValue])] = {
+    val stack = new mutable.Stack[(NodeValue, Seq[RelationshipValue])]
     stack.push((node, Seq.empty))
 
-    new Iterator[(NodeValue, Seq[EdgeValue])] {
-      def next(): (NodeValue, Seq[EdgeValue]) = {
+    new Iterator[(NodeValue, Seq[RelationshipValue])] {
+      def next(): (NodeValue, Seq[RelationshipValue]) = {
         val (node, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
-          val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(node.id(), dir,
+          val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(node.id(), dir,
                                                                                       types.types(state.query))
 
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>

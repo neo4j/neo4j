@@ -25,19 +25,19 @@ import java.util.Comparator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.VirtualValue;
 
-public abstract class VirtualEdgeValue extends VirtualValue
+public abstract class VirtualRelationshipValue extends VirtualValue
 {
     public abstract long id();
 
     @Override
     public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( !(other instanceof VirtualEdgeValue) )
+        if ( !(other instanceof VirtualRelationshipValue) )
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
 
-        VirtualEdgeValue otherNode = (VirtualEdgeValue) other;
+        VirtualRelationshipValue otherNode = (VirtualRelationshipValue) other;
         return Long.compare( id(), otherNode.id() );
     }
 
@@ -50,11 +50,11 @@ public abstract class VirtualEdgeValue extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( !(other instanceof VirtualEdgeValue) )
+        if ( !(other instanceof VirtualRelationshipValue) )
         {
             return false;
         }
-        VirtualEdgeValue that = (VirtualEdgeValue) other;
+        VirtualRelationshipValue that = (VirtualRelationshipValue) other;
         return id() == that.id();
     }
 

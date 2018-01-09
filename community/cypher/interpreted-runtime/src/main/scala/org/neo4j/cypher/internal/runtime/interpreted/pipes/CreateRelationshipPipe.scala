@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                     properties: Option[Expression])
@@ -56,7 +56,7 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
   private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
     properties.foreach { expr =>
       expr(context, state) match {
-        case _: NodeValue | _: EdgeValue =>
+        case _: NodeValue | _: RelationshipValue =>
           throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
         case IsMap(map) =>
           map(state.query).foreach(new BiConsumer[String, AnyValue] {

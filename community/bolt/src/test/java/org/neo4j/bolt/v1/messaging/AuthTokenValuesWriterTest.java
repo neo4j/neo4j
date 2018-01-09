@@ -25,8 +25,8 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -35,8 +35,8 @@ import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 public class AuthTokenValuesWriterTest
 {
@@ -64,7 +64,7 @@ public class AuthTokenValuesWriterTest
 
         NodeValue startNode = nodeValue( 24, stringArray( "Person" ), EMPTY_MAP );
         NodeValue endNode = nodeValue( 42, stringArray( "Person" ), EMPTY_MAP );
-        EdgeValue value = edgeValue( 42, startNode, endNode, stringValue( "KNOWS" ), EMPTY_MAP );
+        RelationshipValue value = relationshipValue( 42, startNode, endNode, stringValue( "KNOWS" ), EMPTY_MAP );
 
         try
         {

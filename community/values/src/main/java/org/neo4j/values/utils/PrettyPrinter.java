@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
@@ -91,15 +91,15 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeEdgeReference( long edgeId )
+    public void writeRelationshipReference( long relId )
     {
-        append( format( "-[id=%d]-", edgeId ) );
+        append( format( "-[id=%d]-", relId ) );
     }
 
     @Override
-    public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
     {
-        append( format( "-[id=%d :%s", edgeId, type.stringValue() ) );
+        append( format( "-[id=%d :%s", relId, type.stringValue() ) );
         if ( properties.size() > 0 )
         {
             append( " " );
@@ -135,7 +135,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, EdgeValue[] edges )
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         if ( nodes.length == 0 )
         {
@@ -143,9 +143,9 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         }
         //Path guarantees that nodes.length = edges.length = 1
         nodes[0].writeTo( this );
-        for ( int i = 0; i < edges.length; i++ )
+        for ( int i = 0; i < relationships.length; i++ )
         {
-            edges[i].writeTo( this );
+            relationships[i].writeTo( this );
             append( ">" );
             nodes[i + 1].writeTo( this );
         }

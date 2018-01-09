@@ -38,10 +38,10 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.bolt.v1.packstream.PackStream.UNKNOWN_SIZE;
@@ -77,7 +77,7 @@ public class Neo4jPackV1 implements Neo4jPack
         private static final int NO_SUCH_ID = -1;
         private final PrimitiveLongIntKeyValueArray nodeIndexes =
                 new PrimitiveLongIntKeyValueArray( INITIAL_PATH_CAPACITY + 1 );
-        private final PrimitiveLongIntKeyValueArray edgeIndexes =
+        private final PrimitiveLongIntKeyValueArray relationshipIndexes =
                 new PrimitiveLongIntKeyValueArray( INITIAL_PATH_CAPACITY );
 
         Packer( PackOutput output )
@@ -123,17 +123,17 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeEdgeReference( long edgeId ) throws IOException
+        public void writeRelationshipReference( long relationshipId ) throws IOException
         {
-            throw new UnsupportedOperationException( "Cannot write a raw edge reference" );
+            throw new UnsupportedOperationException( "Cannot write a raw relationship reference" );
         }
 
         @Override
-        public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+        public void writeRelationship( long relationshipId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
                 throws IOException
         {
             packStructHeader( 5, RELATIONSHIP );
-            pack( edgeId );
+            pack( relationshipId );
             pack( startNodeId );
             pack( endNodeId );
             type.writeTo( this );
@@ -165,7 +165,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws IOException
+        public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws IOException
         {
             //A path is serialized in the following form
             // Given path: (a {id: 42})-[r1 {id: 10}]->(b {id: 43})<-[r1 {id: 11}]-(c {id: 44})
@@ -191,16 +191,16 @@ public class Neo4jPackV1 implements Neo4jPack
             packStructHeader( 3, PATH );
 
             writeNodesForPath( nodes );
-            writeEdgesForPath( edges );
+            writeRelationshipsForPath( relationships );
 
-            packListHeader( 2 * edges.length );
-            if ( edges.length == 0 )
+            packListHeader( 2 * relationships.length );
+            if ( relationships.length == 0 )
             {
                 return;
             }
 
             NodeValue node = nodes[0];
-            for ( int i = 1; i <= 2 * edges.length; i++ )
+            for ( int i = 1; i <= 2 * relationships.length; i++ )
             {
                 if ( i % 2 == 0 )
                 {
@@ -210,10 +210,10 @@ public class Neo4jPackV1 implements Neo4jPack
                 }
                 else
                 {
-                    EdgeValue edge = edges[i / 2];
-                    int index = edgeIndexes.getOrDefault( edge.id(), NO_SUCH_ID );
+                    RelationshipValue r = relationships[i / 2];
+                    int index = relationshipIndexes.getOrDefault( r.id(), NO_SUCH_ID );
 
-                    if ( node.id() == edge.startNode().id() )
+                    if ( node.id() == r.startNode().id() )
                     {
                         pack( index );
                     }
@@ -251,30 +251,30 @@ public class Neo4jPackV1 implements Neo4jPack
             }
         }
 
-        private void writeEdgesForPath( EdgeValue[] edges ) throws IOException
+        private void writeRelationshipsForPath( RelationshipValue[] relationships ) throws IOException
         {
-            edgeIndexes.reset( edges.length );
-            for ( EdgeValue node : edges )
+            relationshipIndexes.reset( relationships.length );
+            for ( RelationshipValue node : relationships )
             {
                 // relationship indexes are one-based
-                edgeIndexes.putIfAbsent( node.id(), edgeIndexes.size() + 1 );
+                relationshipIndexes.putIfAbsent( node.id(), relationshipIndexes.size() + 1 );
             }
 
-            int size = edgeIndexes.size();
+            int size = relationshipIndexes.size();
             packListHeader( size );
             if ( size > 0 )
             {
                 {
-                    EdgeValue edge = edges[0];
-                    for ( long id : edgeIndexes.keys() )
+                    RelationshipValue edge = relationships[0];
+                    for ( long id : relationshipIndexes.keys() )
                     {
                         int i = 1;
                         while ( edge.id() != id )
                         {
-                            edge = edges[i++];
+                            edge = relationships[i++];
                         }
-                        //Note that we are not doing edge.writeTo(this) here since the serialization protocol
-                        //requires these to be _unbound relationships_, thus edges without any start node nor
+                        //Note that we are not doing relationship.writeTo(this) here since the serialization protocol
+                        //requires these to be _unbound relationships_, thus relationships without any start node nor
                         // end node.
                         packStructHeader( 3, UNBOUND_RELATIONSHIP );
                         pack( edge.id() );

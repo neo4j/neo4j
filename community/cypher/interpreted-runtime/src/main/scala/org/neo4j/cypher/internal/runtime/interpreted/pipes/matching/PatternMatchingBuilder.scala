@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.Map
 
@@ -32,7 +32,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
                              predicates: Seq[Predicate],
                              variablesInClause: Set[String]) extends MatcherBuilder {
   def getMatches(sourceRow: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
-    val bindings: Map[String, AnyValue] = sourceRow.filter(s => s._2.isInstanceOf[NodeValue] || s._2.isInstanceOf[EdgeValue])
+    val bindings: Map[String, AnyValue] = sourceRow.filter(s => s._2.isInstanceOf[NodeValue] || s._2.isInstanceOf[RelationshipValue])
     val boundPairs: Map[String, Set[MatchingPair]] = extractBoundMatchingPairs(bindings)
 
     val undirectedBoundRelationships: Iterable[PatternRelationship] = bindings.keys.
@@ -57,7 +57,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
                                                              Iterable[PatternRelationship], bindings: Map[String,
     Any]): Seq[Map[String, Set[MatchingPair]]] = {
     val toList = undirectedBoundRelationships.map(patternRel => {
-      val rel = bindings(patternRel.key).asInstanceOf[EdgeValue]
+      val rel = bindings(patternRel.key).asInstanceOf[RelationshipValue]
       val x = patternRel.key -> Set(MatchingPair(patternRel, rel))
 
       // Outputs the first direction of the pattern relationship
@@ -88,7 +88,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
   private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, Set[MatchingPair]] = bindings.flatMap {
     case (key, node: NodeValue) if patternGraph.contains(key) =>
       Seq(key -> patternGraph(key).map(pNode => MatchingPair(pNode, node)).toSet)
-    case (key, rel: EdgeValue) if patternGraph.contains(key) =>
+    case (key, rel: RelationshipValue) if patternGraph.contains(key) =>
       val patternRels = patternGraph(key).asInstanceOf[Seq[PatternRelationship]]
       patternRels.flatMap(pRel => {
         def extractMatchingPairs(startNode: PatternNode, endNode: PatternNode): Seq[(String, Set[MatchingPair])] = {

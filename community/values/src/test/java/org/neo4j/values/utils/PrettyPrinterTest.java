@@ -30,8 +30,8 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.virtual.EdgeReference;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipReference;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeReference;
@@ -125,11 +125,11 @@ public class PrettyPrinterTest
     public void shouldHandleEdgeReference()
     {
         // Given
-        EdgeReference edge = VirtualValues.edge( 42L );
+        RelationshipReference rel = VirtualValues.relationship( 42L );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
-        edge.writeTo( printer );
+        rel.writeTo( printer );
 
         // Then
         assertThat( printer.value(), equalTo( "-[id=42]-" ) );
@@ -141,12 +141,12 @@ public class PrettyPrinterTest
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        EdgeValue edge = VirtualValues.edgeValue( 42L, startNode, endNode, stringValue( "R" ),
+        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ),
                 props( "foo", intValue( 42 ), "bar", list( intValue( 1337 ), stringValue( "baz" ) ) ) );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
-        edge.writeTo( printer );
+        rel.writeTo( printer );
 
         // Then
         assertThat( printer.value(), equalTo( "-[id=42 :R {bar: [1337, \"baz\"], foo: 42}]-" ) );
@@ -157,11 +157,11 @@ public class PrettyPrinterTest
     {
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        EdgeValue edge = VirtualValues.edgeValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
+        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
-        edge.writeTo( printer );
+        rel.writeTo( printer );
 
         // Then
         assertThat( printer.value(), equalTo( "-[id=42 :R]-" ) );
@@ -187,8 +187,8 @@ public class PrettyPrinterTest
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        EdgeValue edge = VirtualValues.edgeValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
-        PathValue path = VirtualValues.path( new NodeValue[]{startNode, endNode}, new EdgeValue[]{edge} );
+        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
+        PathValue path = VirtualValues.path( new NodeValue[]{startNode, endNode}, new RelationshipValue[]{rel} );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When

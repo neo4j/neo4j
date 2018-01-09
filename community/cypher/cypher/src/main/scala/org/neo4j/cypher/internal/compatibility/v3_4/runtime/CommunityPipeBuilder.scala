@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Equals => ASTEquals, Expressi
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -338,7 +338,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
 
-      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: EdgeValue): Boolean = relCommand(row, state, rel)
+      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = relCommand(row, state, rel)
     }
   }
 

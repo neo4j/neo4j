@@ -59,10 +59,10 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
+import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value, Values}
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue, VirtualValues}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -127,7 +127,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def createNodeId(): Long = writes().nodeCreate()
 
-  override def createRelationship(start: Long, end: Long, relType: Int): EdgeValue = {
+  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = {
     val relId = transactionalContext.statement.dataWriteOperations().relationshipCreate(relType, start, end)
     relationshipOps.getById(relId)
   }
@@ -169,7 +169,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     else tokenWrite.labelGetOrCreateForName(labelName)
   }
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[EdgeValue] = {
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue] = {
     val relationships = types match {
       case None =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir))
@@ -189,7 +189,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long,
-                                  endNodeId: Long): EdgeValue = try {
+                                  endNodeId: Long): RelationshipValue = try {
     fromRelationshipProxy(entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId))
   } catch {
     case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
@@ -401,7 +401,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def asObject(value: AnyValue): Any = {
     value match {
       case node: NodeProxyWrappingNodeValue => node.nodeProxy
-      case edge: RelationshipProxyWrappingEdgeValue => edge.relationshipProxy
+      case edge: RelationshipProxyWrappingValue => edge.relationshipProxy
       case _ =>
 
         val converter = new ValueToObjectSerializer(entityAccessor)
@@ -546,7 +546,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         None
   }
 
-  class RelationshipOperations extends BaseOperations[EdgeValue] {
+  class RelationshipOperations extends BaseOperations[RelationshipValue] {
 
     override def delete(id: Long) {
       try {
@@ -595,13 +595,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def getById(id: Long): EdgeValue = try {
+    override def getById(id: Long): RelationshipValue = try {
       fromRelationshipProxy(entityAccessor.newRelationshipProxyById(id))
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
 
-    override def getByIdIfExists(id: Long): Option[EdgeValue] = try {
+    override def getByIdIfExists(id: Long): Option[RelationshipValue] = try {
       var relationship: RelationshipProxy = null
       transactionalContext.statement.readOperations().relationshipVisit(id, new RelationshipVisitor[Exception] {
         override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {
@@ -613,7 +613,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case _: exceptions.EntityNotFoundException => None
     }
 
-    override def all: Iterator[EdgeValue] = {
+    override def all: Iterator[RelationshipValue] = {
       JavaConversionSupport
         .mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipsGetAll())(getById)
     }
@@ -621,11 +621,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def allPrimitive: PrimitiveLongIterator =
       transactionalContext.statement.readOperations().relationshipsGetAll()
 
-    override def indexGet(name: String, key: String, value: Any): Iterator[EdgeValue] =
+    override def indexGet(name: String, key: String, value: Any): Iterator[RelationshipValue] =
       JavaConversionSupport.mapToScalaENFXSafe(
         transactionalContext.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getById)
 
-    override def indexQuery(name: String, query: Any): Iterator[EdgeValue] =
+    override def indexQuery(name: String, query: Any): Iterator[RelationshipValue] =
       JavaConversionSupport.mapToScalaENFXSafe(
         transactionalContext.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getById)
 
@@ -744,9 +744,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
   }
 
-  override def edgeGetStartNode(edge: EdgeValue) = edge.startNode()
+  override def edgeGetStartNode(edge: RelationshipValue) = edge.startNode()
 
-  override def edgeGetEndNode(edge: EdgeValue) = edge.endNode()
+  override def edgeGetEndNode(edge: RelationshipValue) = edge.endNode()
 
   private lazy val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
 

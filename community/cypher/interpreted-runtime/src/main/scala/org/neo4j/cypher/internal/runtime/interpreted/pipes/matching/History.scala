@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
 
 import scala.collection.Set
 
@@ -52,10 +52,10 @@ abstract class History {
 
 }
 
-class InitialHistory(source: ExecutionContext, alreadySeen: Seq[EdgeValue]) extends History {
+class InitialHistory(source: ExecutionContext, alreadySeen: Seq[RelationshipValue]) extends History {
 
   def hasSeen(p: Any) = p match {
-    case r: EdgeValue => alreadySeen.contains(r)
+    case r: RelationshipValue => alreadySeen.contains(r)
     case _ => false
   }
 

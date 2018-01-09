@@ -23,11 +23,11 @@ import org.neo4j.values.AnyValueWriter;
 
 import static java.lang.String.format;
 
-public class EdgeReference extends VirtualEdgeValue
+public class RelationshipReference extends VirtualRelationshipValue
 {
     private final long id;
 
-    EdgeReference( long id )
+    RelationshipReference( long id )
     {
         this.id = id;
     }
@@ -35,7 +35,7 @@ public class EdgeReference extends VirtualEdgeValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.writeEdgeReference( id );
+        writer.writeRelationshipReference( id );
     }
 
     @Override

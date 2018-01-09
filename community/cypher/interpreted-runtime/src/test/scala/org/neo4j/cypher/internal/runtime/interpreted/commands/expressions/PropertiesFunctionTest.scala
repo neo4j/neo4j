@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 import org.neo4j.values.virtual.VirtualValues.map
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import org.mockito.ArgumentMatchers.any
 
@@ -41,7 +41,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
 
   val query = mock[QueryContext]
   val nodeOps = mock[Operations[NodeValue]]
-  val relOps = mock[Operations[EdgeValue]]
+  val relOps = mock[Operations[RelationshipValue]]
 
   when(query.nodeOps).thenReturn(nodeOps)
   when(query.relationshipOps).thenReturn(relOps)

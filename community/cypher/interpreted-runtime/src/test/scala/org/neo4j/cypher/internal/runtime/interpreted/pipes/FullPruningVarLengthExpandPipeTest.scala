@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random
@@ -431,7 +431,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
         result
       }
 
-      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: EdgeValue): Boolean = {
+      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = {
         row("r") = rel
         val result = relationshipPredicate.isTrue(row, state)
         row.remove("r")
