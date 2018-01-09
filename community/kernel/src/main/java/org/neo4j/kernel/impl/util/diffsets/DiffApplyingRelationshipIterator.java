@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Set;
 
@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
  * Applies a diffset to the given source {@link RelationshipIterator}.
  * If the given source is a {@link Resource}, then so is this {@link DiffApplyingRelationshipIterator}.
  */
-public class DiffApplyingRelationshipIterator extends DiffApplyingPrimitiveLongIterator implements RelationshipIterator
+public class DiffApplyingRelationshipIterator extends DiffApplyingLongIterator implements RelationshipIterator
 {
     private final RelationshipVisitor.Home sourceHome;
     private final RelationshipVisitor.Home addedHome;

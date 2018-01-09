@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -31,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -45,7 +45,8 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     private DiffSets<Integer> labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
-    private Set<DiffSets<Long>> indexDiffs; // TODO: does this really fill any function?
+
+    private Set<PrimitiveLongDiffSets> indexDiffs;
     private final TxState state;
 
     NodeStateImpl( long id, TxState state )
@@ -176,16 +177,16 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
         return intSet();
     }
 
-    void addIndexDiff( DiffSets<Long> diff )
+    void addIndexDiff( PrimitiveLongDiffSets diff )
     {
         if ( indexDiffs == null )
         {
-            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<DiffSets<Long>, Boolean>() );
+            indexDiffs = new HashSet<>();
         }
         indexDiffs.add( diff );
     }
 
-    void removeIndexDiff( DiffSets<Long> diff )
+    void removeIndexDiff( PrimitiveLongDiffSets diff )
     {
         if ( indexDiffs != null )
         {
@@ -197,7 +198,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     {
         if ( indexDiffs != null )
         {
-            for ( DiffSets<Long> diff : indexDiffs )
+            for ( PrimitiveLongDiffSets diff : indexDiffs )
             {
                 if ( diff.getAdded().contains( nodeId ) )
                 {

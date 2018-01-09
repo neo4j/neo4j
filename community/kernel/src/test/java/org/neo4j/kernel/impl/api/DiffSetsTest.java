@@ -38,6 +38,8 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 
 public class DiffSetsTest
 {
+    private static final Predicate<Long> ODD_FILTER = item -> item % 2 == 1L;
+
     @Test
     public void testAdd()
     {
@@ -244,6 +246,4 @@ public class DiffSetsTest
         assertEquals( asSet( 2 ), diff.getAdded() );
         assertEquals( asSet( 0 ), diff.getRemoved() );
     }
-
-    private static final Predicate<Long> ODD_FILTER = item -> item % 2 == 1L;
 }

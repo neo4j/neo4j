@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -27,18 +27,18 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphdb.Resource;
 
 /**
- * Please dedup with {@link DiffApplyingPrimitiveLongIterator}
+ * Please dedup with {@link DiffApplyingLongIterator}
  * Applies a diffset to the given source PrimitiveIntIterator.
  * If the given source is a Resource, then so is this DiffApplyingPrimitiveIntIterator.
  */
-public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIterator implements Resource
+public final class DiffApplyingIntIterator extends PrimitiveIntBaseIterator implements Resource
 {
     private enum Phase
     {
         FILTERED_SOURCE
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingIntIterator self )
             {
                 return self.computeNextFromSourceAndFilter();
             }
@@ -47,7 +47,7 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
         ADDED_ELEMENTS
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingIntIterator self )
             {
                 return self.computeNextFromAddedElements();
             }
@@ -56,13 +56,13 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
         NO_ADDED_ELEMENTS
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingIntIterator self )
             {
                 return false;
             }
         };
 
-        abstract boolean fetchNext( DiffApplyingPrimitiveIntIterator self );
+        abstract boolean fetchNext( DiffApplyingIntIterator self );
     }
 
     private final PrimitiveIntIterator source;
@@ -71,7 +71,7 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
     private final Set<?> removedElements;
     private Phase phase;
 
-    public DiffApplyingPrimitiveIntIterator( PrimitiveIntIterator source,
+    public DiffApplyingIntIterator( PrimitiveIntIterator source,
                                               Set<?> addedElements, Set<?> removedElements )
     {
         this.source = source;

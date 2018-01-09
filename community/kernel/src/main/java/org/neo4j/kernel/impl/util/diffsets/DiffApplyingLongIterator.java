@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 
@@ -32,14 +31,15 @@ import org.neo4j.graphdb.Resource;
  * Applies a diffset to the given source PrimitiveLongIterator.
  * If the given source is a Resource, then so is this DiffApplyingPrimitiveLongIterator.
  */
-public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
+
+public class DiffApplyingLongIterator extends PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
     protected enum Phase
     {
         FILTERED_SOURCE
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
+            boolean fetchNext( DiffApplyingLongIterator self )
             {
                 return self.computeNextFromSourceAndFilter();
             }
@@ -48,7 +48,7 @@ public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator
         ADDED_ELEMENTS
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
+            boolean fetchNext( DiffApplyingLongIterator self )
             {
                 return self.computeNextFromAddedElements();
             }
@@ -57,13 +57,13 @@ public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator
         NO_ADDED_ELEMENTS
         {
             @Override
-            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
+            boolean fetchNext( DiffApplyingLongIterator self )
             {
                 return false;
             }
         };
 
-        abstract boolean fetchNext( DiffApplyingPrimitiveLongIterator self );
+        abstract boolean fetchNext( DiffApplyingLongIterator self );
     }
 
     private final PrimitiveLongIterator source;
@@ -72,8 +72,7 @@ public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator
     private final Set<?> removedElements;
     protected Phase phase;
 
-    public DiffApplyingPrimitiveLongIterator( PrimitiveLongIterator source,
-                                              Set<?> addedElements, Set<?> removedElements )
+    DiffApplyingLongIterator( PrimitiveLongIterator source, Set<?> addedElements, Set<?> removedElements )
     {
         this.source = source;
         this.addedElements = addedElements;

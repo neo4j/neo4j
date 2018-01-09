@@ -125,19 +125,19 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    ReadableDiffSets<Long> indexUpdatesForScan( IndexDescriptor index );
+    PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor index );
 
-    ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
+    PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
                                                              Number lower, boolean includeLower,
                                                              Number upper, boolean includeUpper );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor index,
                                                              String lower, boolean includeLower,
                                                              String upper, boolean includeUpper );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 
