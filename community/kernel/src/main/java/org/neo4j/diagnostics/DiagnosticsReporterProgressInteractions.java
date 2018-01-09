@@ -23,7 +23,7 @@ package org.neo4j.diagnostics;
  * Interface for handling feedback to the user. Implementations of this should be responsible of presenting the progress
  * to the user. Some specialised implementations can choose to omit any of the information provided here.
  */
-public interface DiagnosticsReporterProgressCallback
+public interface DiagnosticsReporterProgressInteractions
 {
     /**
      * Calling this will notify the user that the percentage has changed.
@@ -47,6 +47,14 @@ public interface DiagnosticsReporterProgressCallback
      * @param throwable optional exception, used to include a stacktrace if applicable.
      */
     void error( String msg, Throwable throwable );
+
+    /**
+     * A check whether to ignore the free available disk space when generating the archive.
+     *
+     * @param message with information about the disk space.
+     * @return true if the execution should continue even if risking to fill up the disk.
+     */
+    boolean shouldIgnorePotentialFullDisk( String message );
 
     /**
      * @apiNote Called by dispatching class. Should not be called from diagnostics sources.

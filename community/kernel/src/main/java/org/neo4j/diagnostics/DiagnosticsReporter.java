@@ -33,10 +33,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-
 
 public class DiagnosticsReporter
 {
@@ -56,7 +56,7 @@ public class DiagnosticsReporter
         additionalSources.computeIfAbsent( classifier, c -> new ArrayList<>() ).add( source );
     }
 
-    public void dump( Set<String> classifiers, Path destination, DiagnosticsReporterProgressCallback progress ) throws IOException
+    public void dump( Set<String> classifiers, Path destination, DiagnosticsReporterProgressInteractions progress ) throws IOException
     {
         // Collect sources
         List<DiagnosticsReportSource> sources = new ArrayList<>();
@@ -75,7 +75,23 @@ public class DiagnosticsReporter
         }
 
         // Make sure target directory exists
-        Files.createDirectories( destination.getParent() );
+        Path destinationFolder = destination.getParent();
+        Files.createDirectories( destinationFolder );
+
+        // Estimate an upper bound of the final size and make sure it will fit
+        long estimatedFinalSize = sources.stream().mapToLong(
+                diagnosticsReportSource -> diagnosticsReportSource.estimatedSize( progress ) ).sum();
+        long freeSpace = destinationFolder.toFile().getFreeSpace();
+        if ( estimatedFinalSize > freeSpace )
+        {
+            String message =
+                    String.format( "WARNING: Free available disk space for %s is %s, worst case estimate is %s",
+                            destination.getFileName(), Format.bytes( freeSpace ), Format.bytes( estimatedFinalSize ) );
+            if ( !progress.shouldIgnorePotentialFullDisk( message ) )
+            {
+                return;
+            }
+        }
 
         // Compress all files to destination
         Map<String,String> env = new HashMap<>();

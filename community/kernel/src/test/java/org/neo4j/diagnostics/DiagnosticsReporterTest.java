@@ -45,7 +45,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
 
 public class DiagnosticsReporterTest
@@ -102,10 +101,56 @@ public class DiagnosticsReporterTest
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor )
+        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressInteractions progress )
         {
-            monitor.percentChanged( 30 );
+            progress.percentChanged( 30 );
             throw new RuntimeException( "You had it coming..." );
+        }
+
+        @Override
+        public long estimatedSize( DiagnosticsReporterProgressInteractions progress )
+        {
+            return 0;
+        }
+    }
+
+    private static class AcceptingProgress implements DiagnosticsReporterProgressInteractions
+    {
+
+        @Override
+        public void percentChanged( int percent )
+        {
+        }
+
+        @Override
+        public void info( String info )
+        {
+        }
+
+        @Override
+        public void error( String msg, Throwable throwable )
+        {
+        }
+
+        @Override
+        public boolean shouldIgnorePotentialFullDisk( String message )
+        {
+            return true;
+        }
+
+        @Override
+        public void setTotalSteps( long steps )
+        {
+        }
+
+        @Override
+        public void started( long currentStepIndex, String target )
+        {
+        }
+
+        @Override
+        public void finished()
+        {
         }
     }
 
@@ -121,7 +166,7 @@ public class DiagnosticsReporterTest
 
         Path destination = testDirectory.file( "logs.zip" ).toPath();
 
-        reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgressCallback.class ) );
+        reporter.dump( Collections.singleton( "logs" ), destination, new AcceptingProgress() );
 
         // Verify content
         URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );
@@ -154,7 +199,7 @@ public class DiagnosticsReporterTest
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {
             PrintStream out = new PrintStream( baos );
-            NonInteractiveProgress progress = new NonInteractiveProgress( out, false );
+            NonInteractiveProgress progress = new NonInteractiveProgress( out, false, true );
 
             reporter.dump( classifiers, destination, progress );
 

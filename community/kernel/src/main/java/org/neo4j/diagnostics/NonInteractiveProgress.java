@@ -21,17 +21,19 @@ package org.neo4j.diagnostics;
 
 import java.io.PrintStream;
 
-public class NonInteractiveProgress implements DiagnosticsReporterProgressCallback
+public class NonInteractiveProgress implements DiagnosticsReporterProgressInteractions
 {
     private String totalSteps = "?";
     private final PrintStream out;
     private final boolean verbose;
+    private final boolean force;
     private int lastPercentage;
 
-    public NonInteractiveProgress( PrintStream out, boolean verbose )
+    public NonInteractiveProgress( PrintStream out, boolean verbose, boolean force )
     {
         this.out = out;
         this.verbose = verbose;
+        this.force = force;
     }
 
     @Override
@@ -78,6 +80,18 @@ public class NonInteractiveProgress implements DiagnosticsReporterProgressCallba
         {
             throwable.printStackTrace( out );
         }
+    }
+
+    @Override
+    public boolean shouldIgnorePotentialFullDisk( String message )
+    {
+        if ( force )
+        {
+            return true;
+        }
+        out.println( message );
+        out.println( "To ignore available disk space warning, add '--force' to the command" );
+        return false;
     }
 
     @Override
