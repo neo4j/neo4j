@@ -22,7 +22,7 @@ class AttributeTest extends CypherFunSuite {
 
   class TestAttribute extends Attribute[Int]
 
-  test("testSet") {
+  test("test set") {
     val attr = new TestAttribute
     attr.set(Id(2), 33)
 
@@ -31,7 +31,7 @@ class AttributeTest extends CypherFunSuite {
     a[Exception] should be thrownBy attr.get(Id(3))
   }
 
-  test("testIsDefinedAt") {
+  test("test isDefinedAt") {
     val attr = new TestAttribute
     attr.set(Id(2), 33)
     attr.set(Id(4), 27)
@@ -43,7 +43,7 @@ class AttributeTest extends CypherFunSuite {
 
   }
 
-  test("testIterator") {
+  test("test iterator") {
     val attr = new TestAttribute
     attr.set(Id(2), 33)
     attr.set(Id(4), 27)
@@ -54,6 +54,30 @@ class AttributeTest extends CypherFunSuite {
     iter.hasNext should be(true)
     iter.next() should be((Id(4),27))
     iter.hasNext should be(false)
+    intercept[NoSuchElementException](iter.next())
+  }
+
+  test("test empty iterator with hasNext") {
+    val attr = new TestAttribute
+    val iter = attr.iterator
+    iter.hasNext should be(false)
+    intercept[NoSuchElementException](iter.next())
+  }
+
+  test("test empty iterator without hasNext") {
+    val attr = new TestAttribute
+    val iter = attr.iterator
+    intercept[NoSuchElementException](iter.next())
+  }
+
+  test("test size") {
+    val attr = new TestAttribute
+    attr.set(Id(2), 33)
+    attr.set(Id(4), 27)
+    attr.size should be(2)
+
+    val attr2 = new TestAttribute
+    attr2.size should be(0)
   }
 
 }
