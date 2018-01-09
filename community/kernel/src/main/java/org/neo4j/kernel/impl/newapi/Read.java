@@ -141,7 +141,7 @@ abstract class Read implements TxStateHolder,
 
         NodeLabelIndexCursor indexCursor = (NodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        indexCursor.initialize( labelScanReader().nodesWithLabel( indexCursor, label ) );
+        labelScanReader().nodesWithLabel( indexCursor, label );
     }
 
     @Override

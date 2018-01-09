@@ -110,8 +110,7 @@ class NativeLabelScanReader implements LabelScanReader
     }
 
     @Override
-    public LabelScanValueIndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client,
-            int labelId )
+    public void nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId )
     {
         RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
         try
@@ -124,7 +123,7 @@ class NativeLabelScanReader implements LabelScanReader
             throw new UncheckedIOException( e );
         }
 
-        return new LabelScanValueIndexProgressor( cursor, openCursors, client );
+        client.initialize( new LabelScanValueIndexProgressor( cursor, openCursors, client ), false );
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( int[] labelIds )
