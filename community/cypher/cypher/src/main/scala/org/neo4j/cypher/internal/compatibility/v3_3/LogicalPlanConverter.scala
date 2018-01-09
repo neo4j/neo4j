@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, IdName => IdNameV3_4}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
-import org.neo4j.cypher.internal.util.v3_4.Rewritable.{DuplicatableProduct, RewritableAny}
+import org.neo4j.cypher.internal.util.v3_4.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
@@ -152,13 +152,6 @@ object LogicalPlanConverter {
           convertVersion("frontend.v3_3", "v3_4.logical.plans", item, children)
         case (item: compilerV3_3.SeekRange[_], children: Seq[AnyRef]) =>
           convertVersion("compiler.v3_3", "v3_4.logical.plans", item, children)
-
-        case (_: List[_], children: Seq[AnyRef]) => children.toList
-        case (_: Seq[_], children: Seq[AnyRef]) => children.toIndexedSeq
-        case (_: Set[_], children: Seq[AnyRef]) => children.toSet
-        case (_: Map[_, _], children: Seq[AnyRef]) => Map(children.map(_.asInstanceOf[(_, _)]): _*)
-        case (None, _) => None
-        case (p: Product, children: Seq[AnyRef]) => new DuplicatableProduct(p).copyConstructor.invoke(p, children: _*)
       }.apply(before)
       before._1 match {
         case plan: LogicalPlanV3_3 =>

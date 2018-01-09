@@ -18,6 +18,8 @@ package org.neo4j.cypher.internal.util.v3_4
 
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
+import scala.collection.mutable.ListBuffer
+
 object RewritableTest {
   trait Exp extends Product with Rewritable
   case class Val(int: Int) extends Exp {
@@ -191,5 +193,27 @@ class RewritableTest extends CypherFunSuite {
     }))
 
     assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
+  }
+
+  test("should not create unnecessary copies of objects that have Seq's as Children (when using ListBuffer)") {
+    import org.neo4j.cypher.internal.util.v3_4.Rewritable._
+    import org.neo4j.cypher.internal.util.v3_4.Foldable._
+
+    case class Thing(texts: Seq[String]) extends Rewritable {
+      def dup(children: Seq[AnyRef]): this.type =
+        if (children.iterator eqElements this.children)
+          this
+        else {
+          Thing(children.head.asInstanceOf[Seq[String]]).asInstanceOf[this.type]
+        }
+    }
+    case object NotUsed
+
+    val thing = Thing(ListBuffer("a", "b", "c"))
+    val rewritten = thing.rewrite(bottomUp(Rewriter.lift {
+      case NotUsed => NotUsed
+    }))
+
+    rewritten should be theSameInstanceAs(thing)
   }
 }

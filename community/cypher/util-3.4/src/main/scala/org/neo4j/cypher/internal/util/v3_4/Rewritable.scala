@@ -34,7 +34,11 @@ object Rewriter {
 
 object RewriterWithArgs {
   def lift(f: PartialFunction[(AnyRef, Seq[AnyRef]), AnyRef]): RewriterWithArgs =
-    f.orElse(PartialFunction({ case (a: AnyRef, _) => a }))
+    f.orElse(PartialFunction({
+      // We need to dup anything not matched by f given the children
+      case (p: Product, children) => Rewritable.dupProduct(p, children).asInstanceOf[AnyRef]
+      case (a: AnyRef, children) => Rewritable.dupAny(a, children)
+    }))
 }
 
 object Rewritable {
@@ -48,18 +52,37 @@ object Rewritable {
     }
   }
 
-  implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
+  private val productCopyConstructors = new ThreadLocal[MutableHashMap[Class[_], Method]]() {
+    override def initialValue: MutableHashMap[Class[_], Method] =
+      new MutableHashMap[Class[_], Method]
+  }
 
-    def dup(children: Seq[AnyRef]): AnyRef =
+  def copyConstructor(product: Product): Method = {
+    def getCopyMethod(productClass: Class[_ <: Product]): Method = {
       try {
+        productClass.getMethods.find(_.getName == "copy").get
+      } catch {
+        case e: NoSuchElementException =>
+          throw new InternalException(
+            s"Failed trying to rewrite $productClass - this class does not have a `copy` method"
+          )
+      }
+    }
+
+    val productClass = product.getClass
+    productCopyConstructors.get.getOrElseUpdate(productClass, getCopyMethod(productClass))
+  }
+
+  def dupAny(that: AnyRef, children: Seq[AnyRef]): AnyRef =
+    try {
+      if (children.iterator eqElements that.children) {
+        that
+      } else {
         that match {
           case a: Rewritable =>
             a.dup(children)
           case p: Product =>
-            if (children.iterator eqElements p.children)
-              p
-            else
-              p.copyConstructor.invoke(p, children: _*)
+              copyConstructor(p).invoke(p, children: _*)
           case _: IndexedSeq[_] =>
             children.toIndexedSeq
           case _: Seq[_] =>
@@ -71,44 +94,20 @@ object Rewritable {
           case t =>
             t
         }
-      } catch {
-        case e: IllegalArgumentException =>
-          throw new InternalException(s"Failed rewriting $that\nTried using children: $children", e)
       }
-  }
-
-  private val productCopyConstructors = new ThreadLocal[MutableHashMap[Class[_], Method]]() {
-    override def initialValue: MutableHashMap[Class[_], Method] =
-      new MutableHashMap[Class[_], Method]
-  }
-
-  implicit class DuplicatableProduct(val product: Product) extends AnyVal {
-
-    def dup(children: Seq[AnyRef]): Product = product match {
-      case a: Rewritable =>
-        a.dup(children)
-      case _ =>
-        if (children.iterator eqElements product.children)
-          product
-        else
-          copyConstructor.invoke(product, children: _*).asInstanceOf[Product]
+    } catch {
+      case e: IllegalArgumentException =>
+        throw new InternalException(s"Failed rewriting $that\nTried using children: $children", e)
     }
 
-    def copyConstructor: Method = {
-      val productClass = product.getClass
-      productCopyConstructors.get.getOrElseUpdate(productClass, getCopyMethod(productClass))
-    }
-
-    def getCopyMethod(productClass: Class[_ <: Product]): Method = {
-      try {
-        productClass.getMethods.find(_.getName == "copy").get
-      } catch {
-        case e: NoSuchElementException =>
-          throw new InternalException(
-            s"Failed trying to rewrite ${product.getClass()} - this class does not have a `copy` method"
-          )
-      }
-    }
+  def dupProduct(product: Product, children: Seq[AnyRef]): Product = product match {
+    case a: Rewritable =>
+      a.dup(children)
+    case _ =>
+      if (children.iterator eqElements product.children)
+        product
+      else
+        copyConstructor(product).invoke(product, children: _*).asInstanceOf[Product]
   }
 
   implicit class RewritableAny[T <: AnyRef](val that: T) extends AnyVal {
@@ -173,7 +172,7 @@ object topDown {
           newChildren
         } else {
           val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = job.dup(newChildren)
+          val doneJob = Rewritable.dupAny(job, newChildren)
           stack.push((jobs, doneJobs += doneJob))
           rec(stack)
         }
@@ -215,7 +214,7 @@ object bottomUp {
           newChildren
         } else {
           val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = job.dup(newChildren)
+          val doneJob = Rewritable.dupAny(job, newChildren)
           val rewrittenDoneJob = doneJob.rewrite(rewriter)
           stack.push((jobs, doneJobs += rewrittenDoneJob))
           rec(stack)
@@ -268,7 +267,7 @@ object bottomUpWithArgs {
           val (job :: jobs, doneJobs) = stack.pop()
           stack.push((jobs, doneJobs += job))
         } else {
-          stack.push((next.childrenWithListsAsSeq.toList, new mutable.MutableList()))
+          stack.push((next.children.toList, new mutable.MutableList()))
         }
         rec(stack)
       }
