@@ -20,6 +20,17 @@
 package org.neo4j.values.storable;
 
 import java.lang.reflect.Array;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -28,6 +39,12 @@ import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 
 /**
  * Entry point to the values library.
@@ -311,6 +328,76 @@ public final class Values
         return CoordinateReferenceSystem.get( crs );
     }
 
+    public static Value temporalValue( Temporal value )
+    {
+        if ( value instanceof ZonedDateTime )
+        {
+            return datetime( (ZonedDateTime) value );
+        }
+        if ( value instanceof OffsetDateTime )
+        {
+            return datetime( (OffsetDateTime) value );
+        }
+        if ( value instanceof LocalDateTime )
+        {
+            return localDateTime( (LocalDateTime) value );
+        }
+        if ( value instanceof OffsetTime )
+        {
+            return time( (OffsetTime) value );
+        }
+        if ( value instanceof LocalDate )
+        {
+            return date( (LocalDate) value );
+        }
+        if ( value instanceof LocalTime )
+        {
+            return localTime( (LocalTime) value );
+        }
+        if ( value instanceof TemporalValue )
+        {
+            return (Value) value;
+        }
+        if ( value == null )
+        {
+            return NO_VALUE;
+        }
+
+        throw new UnsupportedOperationException( "Unsupported type of Temporal " + value.toString() );
+    }
+
+    public static DurationValue durationValue( TemporalAmount value )
+    {
+        if ( value instanceof Duration )
+        {
+            return duration( (Duration) value );
+        }
+        if ( value instanceof Period )
+        {
+            return duration( (Period) value );
+        }
+        if ( value instanceof DurationValue )
+        {
+            return (DurationValue) value;
+        }
+        DurationValue duration = duration( 0, 0, 0, 0 );
+        for ( TemporalUnit unit : value.getUnits() )
+        {
+            duration = duration.plus( value.get( unit ), unit );
+        }
+        return duration;
+    }
+
+    public static ArrayValue temporalArray( Temporal[] temporals )
+    {
+        throw new UnsupportedOperationException( "TODO: add support for arrays of temporal values" );
+    }
+
+    public static ArrayValue durationArray( TemporalAmount[] amounts )
+    {
+        throw new UnsupportedOperationException( "TODO: add support for arrays of durations" );
+    }
+
     // BOXED FACTORY METHODS
 
     /**
@@ -365,6 +452,14 @@ public final class Values
         if ( value instanceof Character )
         {
             return charValue( (Character) value );
+        }
+        if ( value instanceof Temporal )
+        {
+            return temporalValue( (Temporal) value );
+        }
+        if ( value instanceof TemporalAmount )
+        {
+            return durationValue( (TemporalAmount) value );
         }
         if ( value instanceof byte[] )
         {
@@ -494,7 +589,18 @@ public final class Values
         }
         if ( value instanceof Point[] )
         {
-            return pointArray( copy( value, new Point[value.length] ) );
+            // no need to copy here, since the pointArray(...) method will copy into a PointValue[]
+            return pointArray( (Point[])value );
+        }
+        if ( value instanceof Temporal[] )
+        {
+            // no need to copy here, since the temporalArray(...) method will perform copying as appropriate
+            return temporalArray( (Temporal[]) value );
+        }
+        if ( value instanceof TemporalAmount[] )
+        {
+            // no need to copy here, since the durationArray(...) method will perform copying as appropriate
+            return durationArray( (TemporalAmount[]) value );
         }
         return null;
     }

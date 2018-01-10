@@ -19,6 +19,9 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
@@ -217,6 +220,12 @@ public abstract class StringValue extends TextValue
         public int compareTo( TextValue other )
         {
             return -other.length();
+        }
+
+        @Override
+        Matcher matcher( Pattern pattern )
+        {
+            return pattern.matcher( "" );
         }
 
         @Override

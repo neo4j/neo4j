@@ -19,6 +19,8 @@
  */
 package org.neo4j.values;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,12 @@ import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.booleanValue;
@@ -113,6 +121,12 @@ public class ValueMapperTest
                 new Object[] {floatArray( new float[] {Float.NEGATIVE_INFINITY, Float.MIN_VALUE} )},
                 new Object[] {doubleValue( Double.MIN_NORMAL )},
                 new Object[] {doubleArray( new double[] {Double.POSITIVE_INFINITY, Double.MAX_VALUE} )},
+                new Object[] {datetime( 2018, 1, 16, 10, 36, 43, 123456788, ZoneId.of( "Europe/Stockholm" ) )},
+                new Object[] {localDateTime( 2018, 1, 16, 10, 36, 43, 123456788 )},
+                new Object[] {date( 2018, 1, 16 )},
+                new Object[] {time( 10, 36, 43, 123456788, ZoneOffset.ofHours( 1 ) )},
+                new Object[] {localTime( 10, 36, 43, 123456788 )},
+                new Object[] {duration( 399, 4, 48424, 133701337 )},
                 new Object[] {pointValue( Cartesian, 11, 32 )},
                 new Object[] {
                         pointArray( new Point[] {pointValue( Cartesian, 11, 32 ), pointValue( WGS84, 13, 56 )} )} );

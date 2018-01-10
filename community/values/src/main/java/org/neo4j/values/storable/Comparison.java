@@ -19,30 +19,31 @@
  */
 package org.neo4j.values.storable;
 
-/**
- * The ValueGroup is the logical group or type of a Value. For example byte, short, int and long are all attempting
- * to represent mathematical integers, meaning that for comparison purposes they should be treated the same.
- *
- * The order here is defined in <a href="https://github.com/opencypher/openCypher/blob/master/cip/1.accepted/CIP2016-06-14-Define-comparability-and-equality-as-well-as-orderability-and-equivalence.adoc">
- *   The Cypher CIP defining orderability
- * </a>
- */
-public enum ValueGroup
+public enum Comparison
 {
-    UNKNOWN,
-    GEOMETRY_ARRAY,
-    TEXT_ARRAY,
-    BOOLEAN_ARRAY,
-    NUMBER_ARRAY,
-    GEOMETRY,
-    ZONED_DATE_TIME,
-    LOCAL_DATE_TIME,
-    DATE,
-    ZONED_TIME,
-    LOCAL_TIME,
-    DURATION,
-    TEXT,
-    BOOLEAN,
-    NUMBER,
-    NO_VALUE,
+    LHS_SMALLER_THAN_RHS( 1 ),
+    LHS_EQUAL_TO_RHS( 0 ),
+    LHS_GREATER_THAN_RHS( -1 );
+    private final int cmp;
+
+    Comparison( int cmp )
+    {
+        this.cmp = cmp;
+    }
+
+    public static Comparison comparison( long cmp )
+    {
+        if ( cmp == 0 )
+        {
+            return LHS_EQUAL_TO_RHS;
+        }
+        if ( cmp < 0 )
+        {
+            return LHS_SMALLER_THAN_RHS;
+        }
+        else
+        {
+            return LHS_GREATER_THAN_RHS;
+        }
+    }
 }

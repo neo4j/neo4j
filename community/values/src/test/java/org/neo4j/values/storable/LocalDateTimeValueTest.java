@@ -19,30 +19,21 @@
  */
 package org.neo4j.values.storable;
 
-/**
- * The ValueGroup is the logical group or type of a Value. For example byte, short, int and long are all attempting
- * to represent mathematical integers, meaning that for comparison purposes they should be treated the same.
- *
- * The order here is defined in <a href="https://github.com/opencypher/openCypher/blob/master/cip/1.accepted/CIP2016-06-14-Define-comparability-and-equality-as-well-as-orderability-and-equivalence.adoc">
- *   The Cypher CIP defining orderability
- * </a>
- */
-public enum ValueGroup
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalDateTimeValue.parse;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+
+public class LocalDateTimeValueTest
 {
-    UNKNOWN,
-    GEOMETRY_ARRAY,
-    TEXT_ARRAY,
-    BOOLEAN_ARRAY,
-    NUMBER_ARRAY,
-    GEOMETRY,
-    ZONED_DATE_TIME,
-    LOCAL_DATE_TIME,
-    DATE,
-    ZONED_TIME,
-    LOCAL_TIME,
-    DURATION,
-    TEXT,
-    BOOLEAN,
-    NUMBER,
-    NO_VALUE,
+    @Test
+    public void shouldParseDate() throws Exception
+    {
+        assertEquals(
+                localDateTime( date( 2017, 12, 17 ), localTime( 17, 14, 35, 123456789 ) ),
+                parse( "2017-12-17T17:14:35.123456789" ) );
+    }
 }

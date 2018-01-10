@@ -24,13 +24,13 @@ public abstract class AnyValue
     private int hash;
 
     @Override
-    public boolean equals( Object other )
+    public final boolean equals( Object other )
     {
-        return eq( other );
+        return this == other || other != null && eq( other );
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
         //We will always recompute hashcode for values
         //where `hashCode == 0`, e.g. empty strings and empty lists

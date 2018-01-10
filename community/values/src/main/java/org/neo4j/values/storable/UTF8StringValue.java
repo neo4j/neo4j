@@ -20,6 +20,8 @@
 package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
@@ -362,6 +364,12 @@ public final class UTF8StringValue extends StringValue
         }
 
         return length() - other.length();
+    }
+
+    @Override
+    Matcher matcher( Pattern pattern )
+    {
+        return pattern.matcher( value() ); // TODO: can we do better here?
     }
 
     private int codePointAt( byte[] bytes, int i )
