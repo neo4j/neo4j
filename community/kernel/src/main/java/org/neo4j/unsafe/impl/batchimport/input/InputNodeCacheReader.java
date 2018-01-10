@@ -31,11 +31,11 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_REMOVAL;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 
 /**
- * Reads cached input nodes previously stored using {@link InputNodeCacher}.
+ * Reads cached input nodes previously stored using {@link InputNodeCacheWriter}.
  */
-public class InputNodeReader extends InputEntityReader
+public class InputNodeCacheReader extends InputEntityCacheReader
 {
-    public InputNodeReader( StoreChannel channel, StoreChannel header, Runnable closeAction ) throws IOException
+    public InputNodeCacheReader( StoreChannel channel, StoreChannel header, Runnable closeAction ) throws IOException
     {
         super( channel, header, closeAction );
     }
@@ -48,7 +48,7 @@ public class InputNodeReader extends InputEntityReader
 
     class InputNodeDeserializer extends InputEntityDeserializer
     {
-        protected String[] previousLabels = InputEntityCacher.EMPTY_STRING_ARRAY;
+        protected String[] previousLabels = InputEntityCacheWriter.EMPTY_STRING_ARRAY;
 
         @Override
         public boolean next( InputEntityVisitor visitor ) throws IOException

@@ -34,9 +34,9 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 /**
  * Caches input nodes to disk using a binary format.
  */
-public class InputNodeCacher extends InputEntityCacher
+public class InputNodeCacheWriter extends InputEntityCacheWriter
 {
-    public InputNodeCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
+    public InputNodeCacheWriter( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
             throws IOException
     {
         super( channel, header, recordFormats, chunkSize );

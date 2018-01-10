@@ -32,9 +32,9 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
 /**
  * Caches input relationships to disk using a binary format.
  */
-public class InputRelationshipCacher extends InputEntityCacher
+public class InputRelationshipCacheWriter extends InputEntityCacheWriter
 {
-    public InputRelationshipCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
+    public InputRelationshipCacheWriter( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
             throws IOException
     {
         super( channel, header, recordFormats, chunkSize );

@@ -145,13 +145,13 @@ public class InputCache implements Closeable
 
     public InputCacher cacheNodes( String subType ) throws IOException
     {
-        return new InputNodeCacher( channel( NODES, subType, READ_WRITE ), channel( NODES_HEADER, subType, READ_WRITE ),
+        return new InputNodeCacheWriter( channel( NODES, subType, READ_WRITE ), channel( NODES_HEADER, subType, READ_WRITE ),
                 recordFormats, chunkSize );
     }
 
     public InputCacher cacheRelationships( String subType ) throws IOException
     {
-        return new InputRelationshipCacher( channel( RELATIONSHIPS, subType, READ_WRITE ),
+        return new InputRelationshipCacheWriter( channel( RELATIONSHIPS, subType, READ_WRITE ),
                 channel( RELATIONSHIPS_HEADER, subType, READ_WRITE ), recordFormats, chunkSize );
     }
 
@@ -168,14 +168,14 @@ public class InputCache implements Closeable
 
     public InputIterable nodes( String subType, boolean deleteAfterUse )
     {
-        return entities( () -> new InputNodeReader( channel( NODES, subType, READ ),
+        return entities( () -> new InputNodeCacheReader( channel( NODES, subType, READ ),
                 channel( NODES_HEADER, subType, READ ),
                 deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ) ) );
     }
 
     public InputIterable relationships( String subType, boolean deleteAfterUse )
     {
-        return entities( () -> new InputRelationshipReader( channel( RELATIONSHIPS, subType, READ ),
+        return entities( () -> new InputRelationshipCacheReader( channel( RELATIONSHIPS, subType, READ ),
                 channel( RELATIONSHIPS_HEADER, subType, READ ),
                 deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ) ) );
     }

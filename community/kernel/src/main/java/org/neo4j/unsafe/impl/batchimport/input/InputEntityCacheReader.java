@@ -43,12 +43,12 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.newChunkHeaderBuffer;
 
 /**
- * Abstract class for reading cached entities previously stored using {@link InputEntityCacher} or derivative.
+ * Abstract class for reading cached entities previously stored using {@link InputEntityCacheWriter} or derivative.
  * Entity data is read in batches, each handed off to one ore more processors which interprets the bytes
  * into input data. From the outside this is simply an {@link InputIterator},
  * the parallelization happens inside.
  */
-abstract class InputEntityReader implements InputIterator
+abstract class InputEntityCacheReader implements InputIterator
 {
     // Used by workers, immutable
     private final PrimitiveIntObjectMap<String>[] tokens;
@@ -60,7 +60,7 @@ abstract class InputEntityReader implements InputIterator
     private boolean end;
 
     @SuppressWarnings( "unchecked" )
-    InputEntityReader( StoreChannel channel, StoreChannel header, Runnable closeAction )
+    InputEntityCacheReader( StoreChannel channel, StoreChannel header, Runnable closeAction )
             throws IOException
     {
         tokens = new PrimitiveIntObjectMap[HIGH_TOKEN_TYPE];
@@ -153,7 +153,7 @@ abstract class InputEntityReader implements InputIterator
             }
             buffer.clear();
             buffer.limit( chunkLength );
-            InputEntityReader.this.channel.read( buffer, startPosition );
+            InputEntityCacheReader.this.channel.read( buffer, startPosition );
             buffer.flip();
             clearState();
         }

@@ -29,11 +29,11 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TY
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
 
 /**
- * Reads cached input relationships previously stored using {@link InputRelationshipCacher}.
+ * Reads cached input relationships previously stored using {@link InputRelationshipCacheWriter}.
  */
-public class InputRelationshipReader extends InputEntityReader
+public class InputRelationshipCacheReader extends InputEntityCacheReader
 {
-    public InputRelationshipReader( StoreChannel channel, StoreChannel header, Runnable closeAction ) throws IOException
+    public InputRelationshipCacheReader( StoreChannel channel, StoreChannel header, Runnable closeAction ) throws IOException
     {
         super( channel, header, closeAction );
     }

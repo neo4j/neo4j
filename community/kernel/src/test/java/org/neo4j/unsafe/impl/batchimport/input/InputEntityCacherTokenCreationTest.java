@@ -105,7 +105,7 @@ public class InputEntityCacherTokenCreationTest
     private void cacheRelationship( int iterations, int maxNumberOfRelationshipTypes ) throws IOException
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, 1000, maxNumberOfRelationshipTypes, 1000 );
-        try ( InputRelationshipCacher cacher = getRelationshipCacher( recordFormats );
+        try ( InputRelationshipCacheWriter cacher = getRelationshipCacher( recordFormats );
               InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
             for ( int i = 0; i < iterations; i++ )
@@ -119,7 +119,7 @@ public class InputEntityCacherTokenCreationTest
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, maxNumberOfLabels, 1000, 1000 );
 
-        try ( InputNodeCacher cacher = getNodeCacher( recordFormats );
+        try ( InputNodeCacheWriter cacher = getNodeCacher( recordFormats );
               InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
             for ( int i = 0; i < iterations; i++ )
@@ -133,7 +133,7 @@ public class InputEntityCacherTokenCreationTest
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, 1000, 1000, maxNumberOfGroups );
 
-        try ( InputNodeCacher cacher = getNodeCacher( recordFormats );
+        try ( InputNodeCacheWriter cacher = getNodeCacher( recordFormats );
               InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
             Randoms randoms = getRandoms();
@@ -148,7 +148,7 @@ public class InputEntityCacherTokenCreationTest
     {
         RecordFormats recordFormats = mockRecordFormats( maxNumberOfProperties, 1000, 1000, 1000 );
 
-        try ( InputNodeCacher cacher = getNodeCacher( recordFormats );
+        try ( InputNodeCacheWriter cacher = getNodeCacher( recordFormats );
               InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
             Randoms randoms = getRandoms();
@@ -254,15 +254,15 @@ public class InputEntityCacherTokenCreationTest
         return new Randoms( randomRule.random(), Randoms.DEFAULT );
     }
 
-    private InputNodeCacher getNodeCacher( RecordFormats recordFormats ) throws IOException
+    private InputNodeCacheWriter getNodeCacher( RecordFormats recordFormats ) throws IOException
     {
-        return new InputNodeCacher( mock( StoreChannel.class ),
+        return new InputNodeCacheWriter( mock( StoreChannel.class ),
                 mock( StoreChannel.class ), recordFormats, 100 );
     }
 
-    private InputRelationshipCacher getRelationshipCacher( RecordFormats recordFormats ) throws IOException
+    private InputRelationshipCacheWriter getRelationshipCacher( RecordFormats recordFormats ) throws IOException
     {
-        return new InputRelationshipCacher( mock( StoreChannel.class ),
+        return new InputRelationshipCacheWriter( mock( StoreChannel.class ),
                 mock( StoreChannel.class ), recordFormats, 100 );
     }
 }

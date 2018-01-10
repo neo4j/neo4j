@@ -54,7 +54,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.newChunkHeaderB
  * its thread-local buffer. When full it {@link #writeChunk(ByteBuffer) writes} that chunk of data to the {@link #channel},
  * clearing its buffer and ready to serialize more data into it.
  */
-abstract class InputEntityCacher implements InputCacher
+abstract class InputEntityCacheWriter implements InputCacher
 {
     static final String[] EMPTY_STRING_ARRAY = new String[0];
 
@@ -70,7 +70,7 @@ abstract class InputEntityCacher implements InputCacher
     @SuppressWarnings( "unchecked" )
     private final Map<String,Integer>[] tokens = new Map[HIGH_TOKEN_TYPE];
 
-    protected InputEntityCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
+    protected InputEntityCacheWriter( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
     {
         this.chunkSize = chunkSize;
         initMaxTokenKeyIds( recordFormats );
