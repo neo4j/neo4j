@@ -28,7 +28,6 @@ import java.util.function.LongFunction;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.HighestId;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
@@ -53,7 +52,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelS
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
- * but {@link #needsPreparation() needs} {@link #prepare(InputIterable, Collector, ProgressListener) preparation}
+ * but {@link #needsPreparation() needs} {@link #prepare(LongFunction, Collector, ProgressListener) preparation}
  *
  * in order to {@link #get(Object, Group) get} ids back later.
  *
@@ -231,7 +230,7 @@ public class EncodingIdMapper implements IdMapper
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
                     processorsForParallelWork, progress, comparator ).run();
 
-            numberOfCollisions = detectAndMarkCollisions( progress, inputIdLookup );
+            numberOfCollisions = detectAndMarkCollisions( progress );
             if ( numberOfCollisions > 0 )
             {
                 buildCollisionInfo( inputIdLookup, collector, progress );
@@ -310,15 +309,13 @@ public class EncodingIdMapper implements IdMapper
 
         private int numberOfCollisions;
         private int localProgress;
-        private final LongFunction<Object> inputIdLookup;
 
-        DetectWorker( long fromInclusive, long toExclusive, boolean last, ProgressListener progress, LongFunction<Object> inputIdLookup )
+        DetectWorker( long fromInclusive, long toExclusive, boolean last, ProgressListener progress )
         {
             this.fromInclusive = fromInclusive;
             this.toExclusive = toExclusive;
             this.last = last;
             this.progress = progress;
-            this.inputIdLookup = inputIdLookup;
         }
 
         @Override
@@ -412,7 +409,7 @@ public class EncodingIdMapper implements IdMapper
      *   in the same id space
      *     ==> original input values needs to be kept
      */
-    private int detectAndMarkCollisions( ProgressListener progress, LongFunction<Object> inputIdLookup )
+    private int detectAndMarkCollisions( ProgressListener progress )
     {
         progress.started( "DETECT" );
         long totalCount = highestSetIndex + 1;
@@ -433,7 +430,7 @@ public class EncodingIdMapper implements IdMapper
             boolean last = i == processors - 1;
             fromInclusive = toExclusive;
             toExclusive = last ? totalCount : toExclusive + stride;
-            workers.start( new DetectWorker( fromInclusive, toExclusive, last, progress, inputIdLookup ) );
+            workers.start( new DetectWorker( fromInclusive, toExclusive, last, progress ) );
         }
         workers.awaitAndThrowOnErrorStrict( RuntimeException.class );
 
@@ -678,7 +675,7 @@ public class EncodingIdMapper implements IdMapper
     private long findCollisionIndex( long value )
     {
         // can't be done on unsorted data
-        long low = 0 + 0;
+        long low = 0;
         long high = numberOfCollisions - 1;
         while ( low <= high )
         {
