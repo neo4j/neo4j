@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
@@ -289,7 +288,7 @@ public class ExecutionResultTest
     @Test
     public void shouldContainCompletePlanFromFromLegacyVersions()
     {
-        for ( String version : new String[]{"2.3", "3.1", "3.2", "3.3"} )
+        for ( String version : new String[]{"2.3", "3.1", "3.3", "3.4"} )
         {
             // Given
             Result result = db.execute( String.format( "EXPLAIN CYPHER %s MATCH (n) RETURN n", version ) );
@@ -314,7 +313,7 @@ public class ExecutionResultTest
             tx.success();
         }
 
-        for ( String version : new String[]{"2.3", "3.1", "3.2"} )
+        for ( String version : new String[]{"2.3", "3.1", "3.3", "3.4"} )
         {
             // When
             Result result = db.execute( String.format( "PROFILE CYPHER %s MATCH (n) RETURN n", version ) );
@@ -325,13 +324,29 @@ public class ExecutionResultTest
                             .getProfilerStatistics();
 
             // Then
-            assertThat( stats.getDbHits(), equalTo( 2L ) );
-            assertThat( stats.getRows(), equalTo( 1L ) );
+            assertThat( "Mismatching db-hits for version " + version, stats.getDbHits(), equalTo( 2L ) );
+            assertThat( "Mismatching rows for version " + version, stats.getRows(), equalTo( 1L ) );
+
+            long expectedPageCacheHits = 2;
+            long expectedPageCacheMisses = 0;
+            double expectedPageCacheRatio = 1.0;
 
             //These stats are not available in older versions
-            assertThat( stats.getPageCacheHits(), equalTo( 0L ) );
-            assertThat( stats.getPageCacheMisses(), equalTo( 0L ) );
-            assertThat( stats.getPageCacheHitRatio(), equalTo( 0.0 ) );
+            int verAsInt = Integer.parseInt( version.replace( ".", "" ) );
+            if ( verAsInt < 33 )
+            {
+                expectedPageCacheHits = 0;
+                expectedPageCacheMisses = 0;
+                expectedPageCacheRatio = 0.0;
+            }
+            else if ( verAsInt == 33 )
+            {
+                expectedPageCacheHits = 1;
+            }
+
+            assertThat( "Mismatching page cache hits for version " + version, stats.getPageCacheHits(), equalTo( expectedPageCacheHits ) );
+            assertThat( "Mismatching page cache misses for version " + version, stats.getPageCacheMisses(), equalTo( expectedPageCacheMisses ) );
+            assertThat( "Mismatching page cache hit ratio for version " + version, stats.getPageCacheHitRatio(), equalTo( expectedPageCacheRatio ) );
         }
     }
 

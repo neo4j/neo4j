@@ -1,0 +1,22 @@
+MATCH (n:User) WHERE exists(n.id) RETURN n.id ORDER BY n.id ASC
+
+MATCH (n:User) WHERE exists(n.id) RETURN n.id ORDER BY n.id DESC
+
+MATCH (n:User)--(other) WHERE exists(n.id) RETURN n.id ORDER BY n.id DESC
+
+WITH point({latitude: 55.612149, longitude: 12.995090}) AS poi
+MATCH (l:Location)<-[:AT]-(b:Business)-[:OF]->(c:Category)
+  WHERE c.name = "coffee"
+    AND distance(l.location, poi) < 10000
+RETURN distance(l.location, poi) as distance, b.name as coffee_shop
+  ORDER BY distance DESC
+
+CREATE INDEX ON :User(location);
+
+CREATE (u:User) SET u.location = 'Malmö';
+
+CREATE (u:User) SET u.location = 42;
+
+CREATE (u:User) SET u.location = point({latitude: 55.612149, longitude: 12.995090});
+
+
