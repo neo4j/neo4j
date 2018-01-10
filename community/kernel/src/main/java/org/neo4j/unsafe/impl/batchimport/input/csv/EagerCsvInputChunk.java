@@ -21,12 +21,12 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
 
+import org.neo4j.csv.reader.Chunker;
 import org.neo4j.csv.reader.Source;
-import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
-class EagerlyReadInputChunk implements InputChunk, Source.Chunk
+class EagerCsvInputChunk implements CsvInputChunk, Source.Chunk
 {
     private InputEntity[] entities;
     private int cursor;
@@ -51,6 +51,12 @@ class EagerlyReadInputChunk implements InputChunk, Source.Chunk
     @Override
     public void close() throws IOException
     {
+    }
+
+    @Override
+    public boolean fillFrom( Chunker chunker ) throws IOException
+    {
+        return chunker.nextChunk( this );
     }
 
     @Override

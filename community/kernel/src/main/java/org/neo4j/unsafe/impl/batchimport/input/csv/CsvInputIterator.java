@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharReadable;
@@ -35,9 +36,8 @@ import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
-import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
-
 import static java.util.Arrays.copyOf;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvGroupInputIterator.extractors;
 
 /**
  * Iterates over one stream of data, where all data items conform to the same {@link Header}.
@@ -47,26 +47,37 @@ class CsvInputIterator implements SourceTraceability, Closeable
 {
     private final CharReadable stream;
     private final Chunker chunker;
-    private final Header header;
+    private final int groupId;
     private final Decorator decorator;
-    private final Configuration config;
+    private final Supplier<CsvInputChunk> realInputChunkSupplier;
 
     CsvInputIterator( CharReadable stream, Decorator decorator, Header header, Configuration config, IdType idType, Collector badCollector,
-            Extractors extractors )
+            Extractors extractors, int groupId )
     {
         this.stream = stream;
-        this.config = config;
         this.decorator = decorator;
-        this.header = header;
-        this.chunker = config.multilineFields()
-                ? new EagerParserChunker( stream, idType, header, badCollector, extractors, 1_000, config, decorator )
-                : new ClosestNewLineChunker( stream, config.bufferSize() );
+        this.groupId = groupId;
+        if ( config.multilineFields() )
+        {
+            // If we're expecting multi-line fields then there's no way to arbitrarily chunk the underlying data source
+            // and find record delimiters with certainty. This is why we opt for a chunker that does parsing inside
+            // the call that normally just hands out an arbitrary amount of characters to parse outside and in parallel.
+            // This chunker is single-threaded, as it was previously too and keeps the functionality of multi-line fields.
+            this.chunker = new EagerParserChunker( stream, idType, header, badCollector, extractors, 1_000, config, decorator );
+            this.realInputChunkSupplier = EagerCsvInputChunk::new;
+        }
+        else
+        {
+            this.chunker = new ClosestNewLineChunker( stream, config.bufferSize() );
+            this.realInputChunkSupplier = () -> new LazyCsvInputChunk( idType, config.delimiter(), badCollector,
+                    extractors( config ), chunker.newChunk(), config, decorator, header );
+        }
     }
 
-    CsvInputIterator( CharReadable stream, Decorator decorator, Header.Factory headerFactory, IdType idType,
-            Configuration config, Groups groups, Collector badCollector, Extractors extractors ) throws IOException
+    CsvInputIterator( CharReadable stream, Decorator decorator, Header.Factory headerFactory, IdType idType, Configuration config, Groups groups,
+            Collector badCollector, Extractors extractors, int groupId ) throws IOException
     {
-        this( stream, decorator, extractHeader( stream, headerFactory, idType, config, groups ), config, idType, badCollector, extractors );
+        this( stream, decorator, extractHeader( stream, headerFactory, idType, config, groups ), config, idType, badCollector, extractors, groupId );
     }
 
     static Header extractHeader( CharReadable stream, Header.Factory headerFactory, IdType idType,
@@ -86,27 +97,10 @@ class CsvInputIterator implements SourceTraceability, Closeable
         return headerFactory.create( null, null, null, null );
     }
 
-    public boolean next( InputChunk chunk ) throws IOException
+    public boolean next( CsvInputChunkProxy proxy ) throws IOException
     {
-        if ( config.multilineFields() )
-        {
-            EagerlyReadInputChunk csvChunk = (EagerlyReadInputChunk) chunk;
-            return chunker.nextChunk( csvChunk );
-        }
-
-        CsvInputChunk csvChunk = (CsvInputChunk) chunk;
-        Chunk processingChunk = csvChunk.processingChunk();
-        if ( chunker.nextChunk( processingChunk ) )
-        {
-            return initialized( chunk, seeker( processingChunk, config ) );
-        }
-        return false;
-    }
-
-    private boolean initialized( InputChunk chunk, CharSeeker seeker ) throws IOException
-    {
-        CsvInputChunk csvChunk = (CsvInputChunk) chunk;
-        return csvChunk.initialize( seeker, header.clone(), decorator );
+        proxy.ensureInstantiated( realInputChunkSupplier, groupId );
+        return proxy.fillFrom( chunker );
     }
 
     @Override
@@ -128,7 +122,7 @@ class CsvInputIterator implements SourceTraceability, Closeable
         return chunker.position();
     }
 
-    private static CharSeeker seeker( Chunk chunk, Configuration config )
+    static CharSeeker seeker( Chunk chunk, Configuration config )
     {
         return new BufferedCharSeeker( Source.singleChunk( chunk ), config );
     }

@@ -36,12 +36,10 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
-import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.input.Collector.EMPTY;
@@ -211,12 +209,13 @@ public class CsvInput implements Input
             ToIntFunction<Value[]> valueSizeCalculator, ToIntFunction<InputEntity> additionalCalculator ) throws IOException
     {
         long[] estimates = new long[4]; // [entity count, property count, property size, labels (for nodes only)]
-        try ( CsvGroupInputIterator group = new CsvGroupInputIterator( iterator(), headerFactory, idType, config, EMPTY, groups );
-              InputChunk chunk = group.newChunk() )
+        try ( CsvInputChunkProxy chunk = new CsvInputChunkProxy() )
         {
             // One group of input files
+            int groupId = 0;
             for ( DataFactory dataFactory : dataFactories ) // one input group
             {
+                groupId++;
                 Header header = null;
                 Data data = dataFactory.create( config );
                 RawIterator<CharReadable,IOException> sources = data.stream();
@@ -230,7 +229,7 @@ public class CsvInput implements Input
                             header = extractHeader( source, headerFactory, idType, config, groups );
                         }
                         try ( CsvInputIterator iterator = new CsvInputIterator( source, data.decorator(), header, config,
-                                idType, badCollector, extractors( config ) );
+                                idType, EMPTY, extractors( config ), groupId );
                               InputEntity entity = new InputEntity() )
                         {
                             int entities = 0;

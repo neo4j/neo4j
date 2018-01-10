@@ -33,7 +33,7 @@ import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 
 /**
  * {@link Chunker} which parses a chunk of entities when calling {@link #nextChunk(Chunk)},
- * injecting them into {@link EagerlyReadInputChunk}, which simply hands them out one by one.
+ * injecting them into {@link EagerCsvInputChunk}, which simply hands them out one by one.
  */
 public class EagerParserChunker implements Chunker
 {
@@ -63,7 +63,7 @@ public class EagerParserChunker implements Chunker
 
         if ( cursor > 0 )
         {
-            ((EagerlyReadInputChunk)chunk).initialize( entities.toArray() );
+            ((EagerCsvInputChunk)chunk).initialize( entities.toArray() );
             return true;
         }
         return false;

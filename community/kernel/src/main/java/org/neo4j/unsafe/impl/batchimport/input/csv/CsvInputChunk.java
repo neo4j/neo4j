@@ -20,98 +20,22 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
-import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
-import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.csv.reader.Extractors;
-import org.neo4j.csv.reader.Source.Chunk;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
+
+import org.neo4j.csv.reader.Chunker;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 /**
- * {@link InputChunk} parsing next entry on each call to {@link #next(InputEntityVisitor)}.
+ * {@link InputChunk} that gets data from {@link Chunker}. Making it explicit in the interface simplifies implementation
+ * where there are different types of {@link Chunker} for different scenarios.
  */
-public class CsvInputChunk implements InputChunk
+public interface CsvInputChunk extends InputChunk
 {
-    private final IdType idType;
-    private final int delimiter;
-    private final Collector badCollector;
-    private final Chunk processingChunk;
-
-    // Set in #initialize
-    private CsvInputParser parser;
-    private Decorator decorator;
-
-    // Set as #next is called
-    private InputEntityVisitor previousVisitor;
-    private InputEntityVisitor visitor;
-    private final Extractors extractors;
-
-    public CsvInputChunk( IdType idType, int delimiter, Collector badCollector, Extractors extractors,
-            ChunkImpl processingChunk )
-    {
-        this.idType = idType;
-        this.badCollector = badCollector;
-        this.extractors = extractors;
-        this.delimiter = delimiter;
-        this.processingChunk = processingChunk;
-    }
-
     /**
-     * Called every time this chunk is updated with new data. Potentially this data is from a different
-     * stream of data than the previous, therefore the header and decorator is also updated.
-     * @param seeker {@link CharSeeker} able to seek through the data.
-     * @param header {@link Header} spec to read data according to.
-     * @param decorator additional decoration of the {@link InputEntityVisitor} coming into
-     * {@link #next(InputEntityVisitor)}.
-     * @throws IOException on I/O error.
+     * Fills this {@link InputChunk} from the given {@link Chunker}.
+     *
+     * @param chunker to read next chunk from.
+     * @return {@code true} if there was data read, otherwise {@code false}, meaning end of stream.
+     * @throws IOException on I/O read error.
      */
-    boolean initialize( CharSeeker seeker, Header header, Decorator decorator ) throws IOException
-    {
-        closeCurrentParser();
-        this.decorator = decorator;
-        this.visitor = null;
-        this.parser = new CsvInputParser( seeker, delimiter, idType, header, badCollector, extractors );
-        if ( header.entries().length == 0 )
-        {
-            return false;
-        }
-        return true;
-    }
-
-    private void closeCurrentParser() throws IOException
-    {
-        if ( parser != null )
-        {
-            parser.close();
-        }
-    }
-
-    @Override
-    public boolean next( InputEntityVisitor nakedVisitor ) throws IOException
-    {
-        if ( visitor == null || nakedVisitor != previousVisitor )
-        {
-            decorateVisitor( nakedVisitor );
-        }
-
-        return parser.next( visitor );
-    }
-
-    private void decorateVisitor( InputEntityVisitor nakedVisitor )
-    {
-        visitor = decorator.apply( nakedVisitor );
-        previousVisitor = nakedVisitor;
-    }
-
-    protected Chunk processingChunk()
-    {
-        return processingChunk;
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        closeCurrentParser();
-    }
+    boolean fillFrom( Chunker chunker ) throws IOException;
 }

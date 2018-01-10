@@ -43,6 +43,7 @@ public class CsvGroupInputIterator extends InputIterator.Adapter
     private final Collector badCollector;
     private final Groups groups;
     private CsvInputIterator current;
+    private int groupId;
 
     public CsvGroupInputIterator( Iterator<DataFactory> source, Header.Factory headerFactory,
             IdType idType, Configuration config, Collector badCollector, Groups groups )
@@ -56,12 +57,9 @@ public class CsvGroupInputIterator extends InputIterator.Adapter
     }
 
     @Override
-    public InputChunk newChunk()
+    public CsvInputChunkProxy newChunk()
     {
-        return config.multilineFields()
-                ? new EagerlyReadInputChunk()
-                : new CsvInputChunk( idType, config.delimiter(), badCollector, extractors( config ),
-                        new ChunkImpl( new char[config.bufferSize()] ) );
+        return new CsvInputChunkProxy();
     }
 
     static Extractors extractors( Configuration config )
@@ -82,10 +80,10 @@ public class CsvGroupInputIterator extends InputIterator.Adapter
                 }
                 Data data = source.next().create( config );
                 current = new CsvInputIterator( new MultiReadable( data.stream() ), data.decorator(),
-                        headerFactory, idType, config, groups, badCollector, extractors( config ) );
+                        headerFactory, idType, config, groups, badCollector, extractors( config ), groupId++ );
             }
 
-            if ( current.next( chunk ) )
+            if ( current.next( (CsvInputChunkProxy) chunk ) )
             {
                 return true;
             }
