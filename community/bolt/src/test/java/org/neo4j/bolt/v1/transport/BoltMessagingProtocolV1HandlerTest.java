@@ -69,7 +69,7 @@ public class BoltMessagingProtocolV1HandlerTest
 
         // And given inbound data that'll explode when the protocol tries to interpret it
         ByteBuf bomb = mock(ByteBuf.class);
-        doThrow( IOException.class ).when( bomb ).readableBytes();
+        doThrow( RuntimeException.class ).when( bomb ).readableBytes();
 
         // When
         protocol.handle( mock(ChannelHandlerContext.class), bomb );

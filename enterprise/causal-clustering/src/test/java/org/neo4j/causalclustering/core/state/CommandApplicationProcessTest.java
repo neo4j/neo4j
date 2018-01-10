@@ -256,7 +256,7 @@ public class CommandApplicationProcessTest
     public void shouldPanicIfUnableToApply() throws Throwable
     {
         // given
-        doThrow( IOException.class ).when( commandDispatcher )
+        doThrow( RuntimeException.class ).when( commandDispatcher )
                 .dispatch( any( ReplicatedTransaction.class ), anyLong(), anyCallback() );
         applicationProcess.start();
 
