@@ -20,7 +20,6 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.impl.proc.Procedures
 
@@ -138,10 +137,6 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
 
     // Then
     result.toList should equal(List(Map("name" -> "Clint Eastwood")))
-  }
-
-  def testResult(call: String, onResult: (InternalExecutionResult) => Unit): Unit = {
-    onResult(executeWith(expectSucceed, call))
   }
 
   private def registerTestProcedures() = {
