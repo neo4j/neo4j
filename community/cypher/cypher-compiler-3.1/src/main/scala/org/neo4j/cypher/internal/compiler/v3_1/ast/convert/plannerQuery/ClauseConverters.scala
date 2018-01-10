@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.addUniquenessPredicates.{UniqueRel, collectUniqueRels, createPredicatesFor}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
@@ -323,6 +324,8 @@ object ClauseConverters {
 
         val pos = pattern.position
 
+        val selections = asSelections(clause.where)
+
         val hasLabels = nodes.flatMap(n =>
           n.labels.map(l => HasLabels(Variable(n.nodeName.name)(pos), Seq(l))(pos))
         )
@@ -336,7 +339,7 @@ object ClauseConverters {
           patternNodes = nodes.map(_.nodeName).toSet,
           patternRelationships = rels.map(r => PatternRelationship(r.relName, (r.leftNode, r.rightNode),
             r.direction, Seq(r.relType), SimplePatternLength)).toSet,
-          selections = Selections.from(hasLabels ++ hasProps:_*),
+          selections = selections ++ Selections.from(hasLabels ++ hasProps:_*),
           argumentIds = builder.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.nodeName)
         )
 

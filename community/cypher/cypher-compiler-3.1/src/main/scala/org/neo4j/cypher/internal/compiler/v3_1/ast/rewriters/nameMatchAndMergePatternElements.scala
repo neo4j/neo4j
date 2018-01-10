@@ -22,12 +22,15 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 
-case object nameMatchPatternElements extends Rewriter {
+case object nameMatchAndMergePatternElements extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
     case m: Match =>
+      val rewrittenPattern = m.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
+      m.copy(pattern = rewrittenPattern)(m.position)
+    case m: Merge =>
       val rewrittenPattern = m.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       m.copy(pattern = rewrittenPattern)(m.position)
   }

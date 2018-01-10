@@ -30,4 +30,10 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
       assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
     }
   }
+
+  test("Merging with self loop and relationship uniqueness") {
+    graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (a)-[:X]->(b)-[:X]->(c) RETURN 42")
+    assertStats(result, relationshipsCreated = 2, nodesCreated = 3)
+  }
 }

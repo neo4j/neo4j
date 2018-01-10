@@ -30,7 +30,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
 
-    val result = original.rewrite(nameMatchPatternElements)
+    val result = original.rewrite(nameMatchAndMergePatternElements)
     assert(result === expected)
   }
 
@@ -38,7 +38,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
     val expected = parser.parse("MATCH (n)-[`  UNNAMED10`:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
 
-    val result = original.rewrite(nameMatchPatternElements)
+    val result = original.rewrite(nameMatchAndMergePatternElements)
     assert(result === expected)
   }
 
@@ -46,7 +46,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n")
     val expected = parser.parse("MATCH (n)-[`  UNNAMED10`:Foo*]->(m) RETURN n")
 
-    val result = original.rewrite(nameMatchPatternElements)
+    val result = original.rewrite(nameMatchAndMergePatternElements)
     assert(result === expected)
   }
 
@@ -78,7 +78,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[r:Foo]->({p}) RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20` {p}) RETURN n")
 
-    val result = original.rewrite(nameMatchPatternElements)
+    val result = original.rewrite(nameMatchAndMergePatternElements)
     assert(result === expected)
   }
 
@@ -86,7 +86,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
     val expected = parser.parse("MATCH (a:Artist)-[`  UNNAMED17`:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
 
-    val result = original.rewrite(nameMatchPatternElements)
+    val result = original.rewrite(nameMatchAndMergePatternElements)
     assert(result === expected)
   }
 }
