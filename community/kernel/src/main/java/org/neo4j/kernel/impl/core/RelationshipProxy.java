@@ -467,21 +467,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public int compareTo( Object rel )
     {
         Relationship r = (Relationship) rel;
-        long ourId = this.getId();
-        long theirId = r.getId();
-
-        if ( ourId < theirId )
-        {
-            return -1;
-        }
-        else if ( ourId > theirId )
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
+        return Long.compare( this.getId(), r.getId() );
     }
 
     @Override

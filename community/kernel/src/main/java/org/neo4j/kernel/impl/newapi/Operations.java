@@ -169,11 +169,7 @@ public class Operations implements Write, ExplicitIndexWrite
         acquireExclusiveNodeLock( node );
 
         ktx.assertOpen();
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
+        singleNode( node );
 
         if ( nodeCursor.labels().contains( nodeLabel ) )
         {
@@ -204,6 +200,15 @@ public class Operations implements Write, ExplicitIndexWrite
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
         updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
         return true;
+    }
+
+    private void singleNode( long node ) throws EntityNotFoundException
+    {
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, node );
+        }
     }
 
     /**
@@ -300,11 +305,7 @@ public class Operations implements Write, ExplicitIndexWrite
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
+        singleNode( node );
 
         if ( !nodeCursor.labels().contains( nodeLabel ) )
         {
@@ -324,11 +325,7 @@ public class Operations implements Write, ExplicitIndexWrite
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
+        singleNode( node );
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL,
                 nodeCursor.labels().all() );
         Iterator<ConstraintDescriptor> constraints = Iterators.filter( hasProperty( propertyKey ),
@@ -341,7 +338,7 @@ public class Operations implements Write, ExplicitIndexWrite
                 {
                     if ( propertyIds.contains( propertyKey ) )
                     {
-                        Value previousValue = readNodeProperty( node, propertyKey );
+                        Value previousValue = readNodeProperty( propertyKey );
                         if ( value.equals( previousValue ) )
                         {
                             // since we are changing to the same value, there is no need to check
@@ -352,7 +349,7 @@ public class Operations implements Write, ExplicitIndexWrite
                             getAllPropertyValues( constraint.schema(), propertyKey, value ), node );
                 } );
 
-        Value existingValue = readNodeProperty( node, propertyKey );
+        Value existingValue = readNodeProperty( propertyKey );
 
         if ( existingValue == NO_VALUE )
         {
@@ -381,7 +378,8 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
-        Value existingValue = readNodeProperty( node, propertyKey );
+        singleNode( node );
+        Value existingValue = readNodeProperty( propertyKey );
 
         if ( existingValue != NO_VALUE )
         {
@@ -511,14 +509,8 @@ public class Operations implements Write, ExplicitIndexWrite
         allStoreHolder.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
-    private Value readNodeProperty( long node, int propertyKey ) throws EntityNotFoundException
+    private Value readNodeProperty( int propertyKey )
     {
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
-
         nodeCursor.properties( propertyCursor );
 
         //Find out if the property had a value

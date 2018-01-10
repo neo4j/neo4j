@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+
 import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
 import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 
@@ -105,10 +106,10 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            if ( txState.nodeIsAddedInThisTx( nodeReference() ) )
+            if ( txState.nodeIsAddedInThisTx( getId() ) )
             {
                 //Node just added, no reason to go down to store and check
-                return Labels.from( txState.nodeStateLabelDiffSets( nodeReference() ).getAdded() );
+                return Labels.from( txState.nodeStateLabelDiffSets( getId() ).getAdded() );
             }
             else
             {
@@ -121,7 +122,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
                 }
 
                 //Augment what was found in store with what we have in tx state
-                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( nodeReference() ) ) );
+                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( getId() ) ) );
             }
         }
         else
@@ -140,19 +141,19 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public void relationships( RelationshipGroupCursor cursor )
     {
-        read.relationshipGroups( nodeReference(), relationshipGroupReference(), cursor );
+        read.relationshipGroups( getId(), relationshipGroupReference(), cursor );
     }
 
     @Override
     public void allRelationships( RelationshipTraversalCursor cursor )
     {
-        read.relationships( nodeReference(), allRelationshipsReference(), cursor );
+        read.relationships( getId(), allRelationshipsReference(), cursor );
     }
 
     @Override
     public void properties( PropertyCursor cursor )
     {
-        read.nodeProperties( nodeReference(), propertiesReference(), cursor );
+        read.nodeProperties( getId(), propertiesReference(), cursor );
     }
 
     @Override

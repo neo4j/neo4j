@@ -367,11 +367,7 @@ public class NodeProxy implements Node
         {
             return defaultValue;
         }
-        transaction.dataRead().singleNode( nodeId, nodes );
-        if ( !nodes.next() )
-        {
-            throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
-        }
+        singleNode( transaction, nodes );
         nodes.properties( properties );
         while ( properties.next() )
         {
@@ -393,12 +389,8 @@ public class NodeProxy implements Node
         {
             NodeCursor nodes = transaction.nodeCursor();
             PropertyCursor properties = transaction.propertyCursor();
-            transaction.dataRead().singleNode( nodeId, nodes );
+            singleNode( transaction, nodes );
             TokenRead token = transaction.tokenRead();
-            if ( !nodes.next() )
-            {
-                throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
-            }
             nodes.properties( properties );
             while ( properties.next() )
             {
@@ -443,11 +435,7 @@ public class NodeProxy implements Node
 
         NodeCursor nodes = transaction.nodeCursor();
         PropertyCursor propertyCursor = transaction.propertyCursor();
-        transaction.dataRead().singleNode( nodeId, nodes );
-        if ( !nodes.next() )
-        {
-            throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
-        }
+        singleNode( transaction, nodes );
         nodes.properties( propertyCursor );
         int propertiesToFind = itemsToReturn;
         while ( propertiesToFind > 0 && propertyCursor.next() )
@@ -479,11 +467,7 @@ public class NodeProxy implements Node
             NodeCursor nodes = transaction.nodeCursor();
             PropertyCursor propertyCursor = transaction.propertyCursor();
             TokenRead token = transaction.tokenRead();
-            transaction.dataRead().singleNode( nodeId, nodes );
-            if ( !nodes.next() )
-            {
-                throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
-            }
+            singleNode( transaction, nodes );
             nodes.properties( propertyCursor );
             while ( propertyCursor.next() )
             {
@@ -514,11 +498,7 @@ public class NodeProxy implements Node
 
         NodeCursor nodes = transaction.nodeCursor();
         PropertyCursor properties = transaction.propertyCursor();
-        transaction.dataRead().singleNode( nodeId, nodes );
-        if ( !nodes.next() )
-        {
-            throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
-        }
+        singleNode( transaction, nodes );
         nodes.properties( properties );
         while ( properties.next() )
         {
@@ -552,11 +532,7 @@ public class NodeProxy implements Node
 
         NodeCursor nodes = transaction.nodeCursor();
         PropertyCursor properties = transaction.propertyCursor();
-        transaction.dataRead().singleNode( nodeId, nodes );
-        if ( !nodes.next() )
-        {
-            throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
-        }
+        singleNode( transaction, nodes );
         nodes.properties( properties );
         while ( properties.next() )
         {
@@ -582,21 +558,7 @@ public class NodeProxy implements Node
     public int compareTo( Object node )
     {
         Node n = (Node) node;
-        long ourId = this.getId();
-        long theirId = n.getId();
-
-        if ( ourId < theirId )
-        {
-            return -1;
-        }
-        else if ( ourId > theirId )
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
+        return Long.compare( this.getId(), n.getId() );
     }
 
     @Override
@@ -722,7 +684,6 @@ public class NodeProxy implements Node
             int labelId = transaction.tokenRead().labelGetForName( label.name() );
             transaction.dataRead().singleNode( nodeId, nodes );
             return nodes.next() && nodes.labels().contains( labelId );
-
         }
         catch ( LabelNotFoundKernelException e )
         {
@@ -737,11 +698,7 @@ public class NodeProxy implements Node
         try ( Statement ignore = actions.statement();
               NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
         {
-            transaction.dataRead().singleNode( nodeId, nodes );
-            if ( !nodes.next() )
-            {
-                throw new NotFoundException( "Node not found" );
-            }
+            singleNode( transaction, nodes );
             LabelSet labelSet = nodes.labels();
             TokenRead tokenRead = transaction.tokenRead();
             ArrayList<Label> list = new ArrayList<>( labelSet.numberOfLabels() );
@@ -866,6 +823,15 @@ public class NodeProxy implements Node
         catch ( RelationshipTypeIdNotFoundKernelException e )
         {
             throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + relTypeId );
+        }
+    }
+
+    private void singleNode( KernelTransaction transaction, NodeCursor nodes )
+    {
+        transaction.dataRead().singleNode( nodeId, nodes );
+        if ( !nodes.next() )
+        {
+            throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
         }
     }
 }
