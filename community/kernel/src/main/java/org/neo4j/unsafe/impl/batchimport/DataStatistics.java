@@ -160,7 +160,7 @@ public class DataStatistics implements Iterable<DataStatistics.RelationshipTypeC
         {
             if ( typeId >= counts.length )
             {
-                counts = Arrays.copyOf( counts, max( counts.length * 2, typeId ) );
+                counts = Arrays.copyOf( counts, max( counts.length * 2, typeId + 1 ) );
             }
             counts[typeId]++;
             if ( typeId > highestTypeId )

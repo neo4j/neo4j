@@ -22,8 +22,11 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Iterator;
+
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.unsafe.impl.batchimport.DataStatistics.Client;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 
 import static org.junit.Assert.assertEquals;
@@ -70,5 +73,37 @@ public class DataStatisticsTest
 
         // then
         stats.forEach( count -> assertEquals( expected[count.getTypeId()], count.getCount() ) );
+    }
+
+    @Test
+    public void shouldGrowArrayProperly() throws Exception
+    {
+        // given
+        DataStatistics stats = new DataStatistics( 1, 1, new RelationshipTypeCount[0] );
+
+        // when
+        int typeId = 1_000;
+        try ( Client client = stats.newClient() )
+        {
+            client.increment( typeId );
+        }
+
+        // then
+        RelationshipTypeCount count = typeCount( stats.iterator(), typeId );
+        assertEquals( 1, count.getCount() );
+        assertEquals( typeId, count.getTypeId() );
+    }
+
+    private RelationshipTypeCount typeCount( Iterator<RelationshipTypeCount> iterator, int typeId )
+    {
+        while ( iterator.hasNext() )
+        {
+            RelationshipTypeCount count = iterator.next();
+            if ( count.getTypeId() == typeId )
+            {
+                return count;
+            }
+        }
+        throw new IllegalStateException( "Couldn't find " + typeId );
     }
 }
