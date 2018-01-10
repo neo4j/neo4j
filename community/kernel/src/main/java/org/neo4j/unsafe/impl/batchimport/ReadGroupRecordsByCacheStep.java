@@ -63,7 +63,7 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
 
     private class NodeVisitor implements NodeChangeVisitor, AutoCloseable, GroupVisitor, Supplier<RelationshipGroupRecord[]>
     {
-        private final RecordDataAssembler<RelationshipGroupRecord> assembler = new RecordDataAssembler<>( store::newRecord, null );
+        private final RecordDataAssembler<RelationshipGroupRecord> assembler = new RecordDataAssembler<>( store::newRecord );
         private RelationshipGroupRecord[] batch = get();
         private int cursor;
         private long time = nanoTime();

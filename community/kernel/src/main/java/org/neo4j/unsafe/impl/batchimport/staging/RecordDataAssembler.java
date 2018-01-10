@@ -23,6 +23,7 @@ import java.lang.reflect.Array;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -37,6 +38,11 @@ public class RecordDataAssembler<RECORD extends AbstractBaseRecord>
     private final Supplier<RECORD> factory;
     private final Class<RECORD> klass;
     private final Predicate<RECORD> filter;
+
+    public RecordDataAssembler( Supplier<RECORD> factory )
+    {
+        this( factory, Predicates.alwaysTrue() );
+    }
 
     @SuppressWarnings( "unchecked" )
     public RecordDataAssembler( Supplier<RECORD> factory, Predicate<RECORD> filter )
@@ -60,11 +66,7 @@ public class RecordDataAssembler<RECORD extends AbstractBaseRecord>
     public boolean append( RecordCursor<RECORD> cursor, RECORD[] array, long id, int index )
     {
         RECORD record = array[index];
-        if ( !cursor.next( id, record, RecordLoad.CHECK ) || (filter != null && !filter.test( record )) )
-        {
-            return false;
-        }
-        return true;
+        return cursor.next( id, record, RecordLoad.CHECK ) && filter.test( record );
     }
 
     public RECORD[] cutOffAt( RECORD[] array, int length )

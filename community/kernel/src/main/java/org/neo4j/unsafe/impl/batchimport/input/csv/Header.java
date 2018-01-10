@@ -44,6 +44,10 @@ public class Header implements Cloneable
          */
         Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType, Groups groups );
 
+        /**
+         * @return whether or not this header is already defined. If this returns {@code false} then the header
+         * will be read from the top of the data stream.
+         */
         boolean isDefined();
     }
 

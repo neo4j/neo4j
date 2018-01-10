@@ -67,6 +67,7 @@ import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -354,10 +355,10 @@ public class ImportLogic implements Closeable
         String topic = " " + range + "/" + relationshipTypeDistribution.getNumberOfRelationshipTypes();
         int nodeTypes = thisIsTheFirstRound ? NodeType.NODE_TYPE_ALL : NodeType.NODE_TYPE_DENSE;
         Predicate<RelationshipRecord> readFilter = thisIsTheFirstRound
-                ? null // optimization when all rels are imported in this round
+                ? alwaysTrue() // optimization when all rels are imported in this round
                 : record -> typesToLinkThisRound.contains( record.getType() );
         Predicate<RelationshipRecord> denseChangeFilter = thisIsTheOnlyRound
-                ? null // optimization when all rels are imported in this round
+                ? alwaysTrue() // optimization when all rels are imported in this round
                 : record -> typesToLinkThisRound.contains( record.getType() );
 
         // LINK Forward

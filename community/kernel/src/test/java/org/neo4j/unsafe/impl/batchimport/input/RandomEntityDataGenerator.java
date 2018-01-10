@@ -128,7 +128,6 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
 
     private static Object randomProperty( Entry entry, Randoms random )
     {
-        // TODO crude way of determining value type
         String type = entry.extractor().name();
         if ( type.equals( "String" ) )
         {
