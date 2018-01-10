@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import java.util.Objects;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -145,6 +147,28 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
     public boolean isEmpty()
     {
         return addedElements.isEmpty() && removedElements.isEmpty();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        PrimitiveLongDiffSets<?> diffSets = (PrimitiveLongDiffSets<?>) o;
+        return Objects.equals( addedElements, diffSets.addedElements ) &&
+                Objects.equals( removedElements, diffSets.removedElements );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( addedElements, removedElements );
     }
 
     private void addElement( long element )
