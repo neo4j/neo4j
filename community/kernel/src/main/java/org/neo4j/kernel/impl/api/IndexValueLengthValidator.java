@@ -42,7 +42,7 @@ public class IndexValueLengthValidator implements Validator<byte[]>
         if ( bytes.length > MAX_TERM_LENGTH )
         {
             throw new IllegalArgumentException( "Property value bytes length: " + bytes.length +
-                    " is longer then " + MAX_TERM_LENGTH + ", which is maximum supported length" +
+                    " is longer than " + MAX_TERM_LENGTH + ", which is maximum supported length" +
                     " of indexed property value." );
         }
     }
