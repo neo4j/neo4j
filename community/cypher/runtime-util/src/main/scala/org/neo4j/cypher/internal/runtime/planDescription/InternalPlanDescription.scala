@@ -70,7 +70,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def totalDbHits: Option[Long] = {
     val allMaybeDbHits: Seq[Option[Long]] = flatten.map {
-      case plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
+      plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
     }
 
     allMaybeDbHits.reduce[Option[Long]] {
@@ -99,16 +99,15 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   override def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
 
   override def getProfilerStatistics: ExecutionPlanDescription.ProfilerStatistics = new ProfilerStatistics {
-    def getDbHits: Long = extract { case DbHits(count) => count }
+    def getDbHits: Long = extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
 
-    def getRows: Long = extract { case Rows(count) => count }
+    def getRows: Long = extract { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
 
-    def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }
+    def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(0)
 
-    def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }
+    def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(0)
 
-    private def extract(f: PartialFunction[Argument, Long]): Long =
-      arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))
+    private def extract(f: PartialFunction[Argument, Long]): Option[Long] = arguments.collectFirst(f)
   }
 
 }
