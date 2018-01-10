@@ -54,7 +54,7 @@ public class MonitoredBoltWorkerFactoryTest
 
         WorkerFactory delegate = mock( WorkerFactory.class );
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        when( delegate.newWorker( anyObject(), anyObject() ) )
+        when( delegate.newWorker( anyObject(), anyObject(), anyObject() ) )
                 .thenReturn( new BoltWorker()
                 {
                     @Override
@@ -115,7 +115,7 @@ public class MonitoredBoltWorkerFactoryTest
         monitors.addMonitorListener( monitor );
 
         WorkerFactory mockWorkers = mock( WorkerFactory.class );
-        when( mockWorkers.newWorker( anyObject(), any() ) ).thenReturn( mock( BoltWorker.class ) );
+        when( mockWorkers.newWorker( anyObject(), anyObject(), any() ) ).thenReturn( mock( BoltWorker.class ) );
 
         MonitoredWorkerFactory workerFactory = new MonitoredWorkerFactory( monitors, mockWorkers, systemClock() );
 
@@ -137,7 +137,7 @@ public class MonitoredBoltWorkerFactoryTest
         // after monitor listeners are added
         WorkerFactory workerFactory = mock( WorkerFactory.class );
         BoltWorker innerSession = mock( BoltWorker.class );
-        when( workerFactory.newWorker( anyObject(), anyObject() ) )
+        when( workerFactory.newWorker( anyObject(), anyObject(), anyObject() ) )
                 .thenReturn( innerSession );
 
         Monitors monitors = new Monitors();

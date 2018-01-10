@@ -36,6 +36,7 @@ import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
+import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
 import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
@@ -231,7 +232,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 {
                     BoltConnectionDescriptor descriptor = new BoltConnectionDescriptor(
                             channel.remoteAddress(), channel.localAddress() );
-                    BoltWorker worker = workerFactory.newWorker( descriptor, channel::close );
+                    BoltChannelAutoReadLimiter limiter =
+                            new BoltChannelAutoReadLimiter( channel, logging.getInternalLog( BoltChannelAutoReadLimiter.class ) );
+                    BoltWorker worker = workerFactory.newWorker( descriptor, limiter, channel::close );
                     return new BoltProtocolV1( worker, channel, logging );
                 }
         );

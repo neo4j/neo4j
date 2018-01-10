@@ -45,13 +45,13 @@ public class MonitoredWorkerFactory implements WorkerFactory
     }
 
     @Override
-    public BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose )
+    public BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, BoltWorkerQueueMonitor queueMonitor,  Runnable onClose )
     {
         if ( monitors.hasListeners( SessionMonitor.class ) )
         {
-            return new MonitoredBoltWorker( monitor, delegate.newWorker( connectionDescriptor, onClose ), clock );
+            return new MonitoredBoltWorker( monitor, delegate.newWorker( connectionDescriptor, queueMonitor, onClose ), clock );
         }
-        return delegate.newWorker( connectionDescriptor, onClose );
+        return delegate.newWorker( connectionDescriptor, queueMonitor, onClose );
     }
 
     static class MonitoredBoltWorker implements BoltWorker

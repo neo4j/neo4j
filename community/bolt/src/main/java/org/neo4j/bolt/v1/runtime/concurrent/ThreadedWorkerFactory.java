@@ -25,6 +25,7 @@ import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.v1.runtime.BoltWorkerQueueMonitor;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -60,10 +61,10 @@ public class ThreadedWorkerFactory implements WorkerFactory
     }
 
     @Override
-    public BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose )
+    public BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, BoltWorkerQueueMonitor queueMonitor, Runnable onClose )
     {
         BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, clock );
-        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging );
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging, queueMonitor );
 
         scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, machine.key() ) );
 
