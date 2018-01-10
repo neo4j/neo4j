@@ -92,6 +92,14 @@ public class DiagnosticsReportCommandIT
                     new DiagnosticsReportCommand( homeDir, homeDir, outsideWorld );
             diagnosticsReportCommand.execute( args );
         }
+        catch ( IncorrectUsage e )
+        {
+            if ( e.getMessage().equals( "Unknown classifier: threads" ) )
+            {
+                return; // If we get attach API is not available for example in some IBM jdk installs, ignore this test
+            }
+            throw e;
+        }
 
         // Verify that we took a thread dump
         File reports = testDirectory.directory( "reports" );

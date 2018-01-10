@@ -77,6 +77,15 @@ public class LocalVirtualMachine
         {
             throw new IOException( x.getMessage(), x );
         }
+        catch ( Exception e )
+        {
+            // ibm jdk uses a separate exception
+            if ( e.getClass().getCanonicalName().equals( "com.ibm.tools.attach.AttachNotSupportedException" ) )
+            {
+                throw new IOException( e );
+            }
+            throw e;
+        }
         finally
         {
             if ( vm != null )
@@ -85,5 +94,4 @@ public class LocalVirtualMachine
             }
         }
     }
-
 }
