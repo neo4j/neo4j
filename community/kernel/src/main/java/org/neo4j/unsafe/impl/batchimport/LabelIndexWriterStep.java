@@ -60,7 +60,7 @@ public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
     @Override
     public void close() throws Exception
     {
-        writer.close();
         super.close();
+        writer.close();
     }
 }
