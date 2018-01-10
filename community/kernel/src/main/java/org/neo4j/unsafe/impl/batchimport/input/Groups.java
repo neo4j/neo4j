@@ -32,7 +32,6 @@ import static java.util.Arrays.asList;
  */
 public class Groups
 {
-    public static final int MAX_NUMBER_OF_GROUPS = 0x10000;
     static final int LOWEST_NONGLOBAL_ID = 1;
 
     private final Map<String,Group> byName = new HashMap<>();

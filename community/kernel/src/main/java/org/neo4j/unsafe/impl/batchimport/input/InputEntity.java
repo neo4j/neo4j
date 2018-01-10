@@ -263,35 +263,6 @@ public class InputEntity implements InputEntityVisitor, Cloneable
     }
 
     @Override
-    public InputEntity clone() throws CloneNotSupportedException
-    {
-        InputEntity clone = new InputEntity();
-        clone.hasPropertyId = hasPropertyId;
-        clone.propertyId = propertyId;
-        clone.hasIntPropertyKeyIds = hasIntPropertyKeyIds;
-        clone.properties.addAll( properties );
-        clone.hasLongId = hasLongId;
-        clone.longId = longId;
-        clone.objectId = objectId;
-        clone.idGroup = idGroup;
-        clone.labels.addAll( labels );
-        clone.hasLabelField = hasLabelField;
-        clone.labelField = labelField;
-        clone.hasLongStartId = hasLongStartId;
-        clone.longStartId = longStartId;
-        clone.objectStartId = objectStartId;
-        clone.startIdGroup = startIdGroup;
-        clone.hasLongEndId = hasLongEndId;
-        clone.longEndId = longEndId;
-        clone.objectEndId = objectEndId;
-        clone.endIdGroup = endIdGroup;
-        clone.hasIntType = hasIntType;
-        clone.intType = intType;
-        clone.stringType = stringType;
-        return clone;
-    }
-
-    @Override
     public void close() throws IOException
     {
         delegate.close();

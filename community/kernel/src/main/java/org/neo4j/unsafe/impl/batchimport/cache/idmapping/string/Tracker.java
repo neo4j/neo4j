@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import java.util.function.LongFunction;
+
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;

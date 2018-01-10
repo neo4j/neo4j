@@ -122,8 +122,6 @@ public class InputCache implements Closeable
     static final byte NEW_TYPE = 1;
     static final byte END_OF_HEADER = -2;
     static final short END_OF_ENTITIES = -3;
-    static final int NO_ENTITIES = 0;
-    static final long END_OF_CACHE = 0L;
 
     private final FileSystemAbstraction fs;
     private final File cacheDirectory;
@@ -237,16 +235,5 @@ public class InputCache implements Closeable
     static ByteBuffer newChunkHeaderBuffer()
     {
         return ByteBuffer.allocate( Integer.BYTES );
-    }
-
-    static String sample( ByteBuffer buffer )
-    {
-        StringBuilder builder = new StringBuilder( "pos " + buffer.position() + " " );
-        for ( int i = 0; i < 10 && i < buffer.limit(); i++ )
-        {
-            builder.append( buffer.get() );
-        }
-        buffer.position( 0 );
-        return builder.toString();
     }
 }
