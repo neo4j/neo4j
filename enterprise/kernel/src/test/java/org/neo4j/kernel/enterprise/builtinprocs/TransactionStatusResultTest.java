@@ -25,9 +25,9 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -111,7 +111,7 @@ public class TransactionStatusResultTest
         assertEquals( Long.valueOf( 1L ), statusResult.cpuTimeMillis );
         assertEquals( 0L, statusResult.waitTimeMillis );
         assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
-        assertEquals( Long.valueOf( 0 ), statusResult.allocatedBytes );
+        assertEquals( Long.valueOf( 1 ), statusResult.allocatedBytes );
         assertEquals( 0L, statusResult.pageHits );
         assertEquals( 0L, statusResult.pageFaults );
     }
@@ -135,7 +135,7 @@ public class TransactionStatusResultTest
         assertEquals( Long.valueOf( 1 ), statusResult.cpuTimeMillis );
         assertEquals( 0L, statusResult.waitTimeMillis );
         assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
-        assertEquals( Long.valueOf( 0 ), statusResult.allocatedBytes );
+        assertEquals( Long.valueOf( 1 ), statusResult.allocatedBytes );
         assertEquals( 0, statusResult.pageHits );
         assertEquals( 0, statusResult.pageFaults );
     }
@@ -178,12 +178,29 @@ public class TransactionStatusResultTest
         public TransactionExecutionStatistic transactionStatistic()
         {
             KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-            KernelTransactionImplementation.Statistics statistics =
-                    new KernelTransactionImplementation.Statistics( transaction, new CountingCpuClock(), new CountingHeapAllocation() );
-            when( transaction.getStatistics() ).thenReturn(
-                    statistics );
+            TestStatistics statistics =
+                    new TestStatistics( transaction, new AtomicReference<>( new CountingCpuClock() ),
+                            new AtomicReference<>( new CountingHeapAllocation() ) );
+            statistics.init( Thread.currentThread().getId(), PageCursorTracer.NULL );
+            when( transaction.getStatistics() ).thenReturn( statistics );
             return new TransactionExecutionStatistic( transaction, Clocks.fakeClock().forward( 2010, MILLISECONDS ),
                     200 );
+        }
+    }
+
+    private static class TestStatistics extends KernelTransactionImplementation.Statistics
+    {
+        @Override
+        protected void init( long threadId, PageCursorTracer pageCursorTracer )
+        {
+            super.init( threadId, pageCursorTracer );
+        }
+
+        TestStatistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef,
+                AtomicReference<HeapAllocation> heapAllocationRef )
+        {
+            super( transaction, cpuClockRef, heapAllocationRef );
+
         }
     }
 

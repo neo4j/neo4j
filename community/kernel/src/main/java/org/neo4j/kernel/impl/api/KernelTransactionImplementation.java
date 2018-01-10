@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -176,7 +177,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess,
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
-            Pool<KernelTransactionImplementation> pool, Clock clock, CpuClock cpuClock, HeapAllocation heapAllocation,
+            Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
             StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore )
@@ -199,7 +200,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.currentStatement = new KernelStatement( this, this, storageStatement,
                 procedures, accessCapability, lockTracer, statementOperations );
         this.accessCapability = accessCapability;
-        this.statistics = new Statistics( this, cpuClock, heapAllocation );
+        this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
@@ -957,20 +958,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private volatile long heapAllocatedBytesWhenQueryStarted;
         private volatile long waitingTimeNanos;
         private volatile long transactionThreadId;
-        private final KernelTransactionImplementation transaction;
-        private final CpuClock cpuClock;
-        private final HeapAllocation heapAllocation;
         private volatile PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
+        private final KernelTransactionImplementation transaction;
+        private final AtomicReference<CpuClock> cpuClockRef;
+        private final AtomicReference<HeapAllocation> heapAllocationRef;
+        private CpuClock cpuClock;
+        private HeapAllocation heapAllocation;
 
-        public Statistics( KernelTransactionImplementation transaction, CpuClock cpuClock, HeapAllocation heapAllocation )
+        public Statistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef,
+                AtomicReference<HeapAllocation> heapAllocationRef )
         {
             this.transaction = transaction;
-            this.cpuClock = cpuClock;
-            this.heapAllocation = heapAllocation;
+            this.cpuClockRef = cpuClockRef;
+            this.heapAllocationRef = heapAllocationRef;
         }
 
-        void init( long threadId, PageCursorTracer pageCursorTracer )
+        protected void init( long threadId, PageCursorTracer pageCursorTracer )
         {
+            this.cpuClock = cpuClockRef.get();
+            this.heapAllocation = heapAllocationRef.get();
             this.transactionThreadId = threadId;
             this.pageCursorTracer = pageCursorTracer;
             this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( transactionThreadId );

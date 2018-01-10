@@ -58,6 +58,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -427,6 +428,40 @@ public class ListQueriesProcedureTest
     }
 
     @Test
+    public void cpuTimeTrackingShouldBeADynamicSetting() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        Map<String,Object> data;
+
+        // when
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), notNullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_cpu_time.name() + "', 'false')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), nullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_cpu_time.name() + "', 'true')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), notNullValue() ) );
+    }
+
+    @Test
     public void shouldDisableHeapAllocationTracking() throws Exception
     {
         // given
@@ -442,6 +477,40 @@ public class ListQueriesProcedureTest
 
         // then
         assertThat( data, hasEntry( equalTo( "allocatedBytes" ), nullValue() ) );
+    }
+
+    @Test
+    public void heapAllocationTrackingShouldBeADynamicSetting() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        Map<String,Object> data;
+
+        // when
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), notNullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_allocation.name() + "', 'false')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), nullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_allocation.name() + "', 'true')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), notNullValue() ) );
     }
 
     private void shouldListUsedIndexes( String label, String property ) throws Exception
