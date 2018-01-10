@@ -129,10 +129,11 @@ public class BoltRequestMessageTest
     private <T extends RequestMessage> T serializeAndDeserialize( T msg ) throws IOException
     {
         RecordingByteChannel channel = new RecordingByteChannel();
+        Neo4jPack neo4jPack = new Neo4jPackV1();
         BoltRequestMessageReader reader = new BoltRequestMessageReader(
-                new Neo4jPack.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
+                neo4jPack.newUnpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
         BoltRequestMessageWriter writer = new BoltRequestMessageWriter(
-                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                neo4jPack.newPacker( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
 
         writer.write( msg ).flush();
 

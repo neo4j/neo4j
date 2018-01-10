@@ -25,16 +25,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
-
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
+import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
 import org.neo4j.bolt.transport.SocketTransportHandler;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
@@ -45,6 +42,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -63,7 +61,7 @@ public class SocketTransportHandlerTest
         BoltStateMachine machine = mock( BoltStateMachine.class );
         ChannelHandlerContext ctx = channelHandlerContextMock();
 
-        SocketTransportHandler handler = newSocketTransportHandler( protocolChooser( machine ) );
+        SocketTransportHandler handler = newSocketTransportHandler( newHandshakeHandler( machine ) );
 
         // And Given a session has been established
         handler.channelRead( ctx, handshake() );
@@ -96,7 +94,7 @@ public class SocketTransportHandlerTest
         BoltStateMachine machine = mock( BoltStateMachine.class );
         ChannelHandlerContext ctx = channelHandlerContextMock();
 
-        SocketTransportHandler handler = newSocketTransportHandler( protocolChooser( machine ) );
+        SocketTransportHandler handler = newSocketTransportHandler( newHandshakeHandler( machine ) );
 
         // And Given a session has been established
         handler.channelRead( ctx, handshake() );
@@ -130,8 +128,8 @@ public class SocketTransportHandlerTest
         ChannelHandlerContext ctx = channelHandlerContextMock();
         AssertableLogProvider logging = new AssertableLogProvider();
 
-        BoltHandshakeProtocolHandler protocolChooser = protocolChooser( machine );
-        SocketTransportHandler handler = new SocketTransportHandler( protocolChooser, logging, BOLT_LOGGING );
+        BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( machine );
+        SocketTransportHandler handler = new SocketTransportHandler( handshakeHandler, logging, BOLT_LOGGING );
 
         // And Given a session has been established
         handler.channelRead( ctx, handshake() );
@@ -170,16 +168,16 @@ public class SocketTransportHandlerTest
     public void shouldInitializeProtocolOnFirstMessage() throws Exception
     {
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltHandshakeProtocolHandler chooser = protocolChooser( machine );
+        BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( machine );
         ChannelHandlerContext context = channelHandlerContextMock();
 
-        SocketTransportHandler handler = new SocketTransportHandler( chooser, LOG_PROVIDER, BOLT_LOGGING );
+        SocketTransportHandler handler = new SocketTransportHandler( handshakeHandler, LOG_PROVIDER, BOLT_LOGGING );
 
         handler.channelRead( context, handshake() );
-        BoltMessagingProtocolHandler protocol1 = chooser.chosenProtocol();
+        BoltMessagingProtocolHandler protocol1 = handshakeHandler.chosenProtocol();
 
         handler.channelRead( context, handshake() );
-        BoltMessagingProtocolHandler protocol2 = chooser.chosenProtocol();
+        BoltMessagingProtocolHandler protocol2 = handshakeHandler.chosenProtocol();
 
         assertSame( protocol1, protocol2 );
     }
@@ -201,15 +199,16 @@ public class SocketTransportHandlerTest
         return context;
     }
 
-    private BoltHandshakeProtocolHandler protocolChooser( final BoltStateMachine machine )
+    private static BoltHandshakeProtocolHandler newHandshakeHandler( BoltStateMachine machine )
     {
-        Map<Long,Function<BoltChannel, BoltMessagingProtocolHandler>> availableVersions = new HashMap<>();
-        availableVersions.put( (long) BoltMessagingProtocolV1Handler.VERSION,
-                boltChannel -> new BoltMessagingProtocolV1Handler( boltChannel, new SynchronousBoltWorker( machine ),
-                        TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() )
-        );
+        BoltProtocolHandlerFactory handlerFactory = ( version, channel ) ->
+        {
+            assertEquals( 1, version );
+            return new BoltMessagingProtocolV1Handler( channel, new Neo4jPackV1(), new SynchronousBoltWorker( machine ),
+                    TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
+        };
 
-        return new BoltHandshakeProtocolHandler( availableVersions, false, true );
+        return new BoltHandshakeProtocolHandler( handlerFactory, false, true );
     }
 
     private ByteBuf handshake()

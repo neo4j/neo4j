@@ -32,7 +32,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
@@ -124,8 +124,9 @@ public class FragmentedMessageDeliveryTest
         when( boltChannel.rawChannel() ).thenReturn( ch );
         when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
 
-        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
-                boltChannel, new SynchronousBoltWorker( machine ), TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel, new Neo4jPackV1(),
+                new SynchronousBoltWorker( machine ), TransportThrottleGroup.NO_THROTTLE,
+                NullLogService.getInstance() );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )
@@ -176,7 +177,7 @@ public class FragmentedMessageDeliveryTest
             RecordingByteChannel channel = new RecordingByteChannel();
 
             BoltRequestMessageWriter writer = new BoltRequestMessageWriter(
-                    new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                    new Neo4jPackV1().newPacker( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
             writer.write( msgs[i] ).flush();
             serialized[i] = channel.getBytes();
         }

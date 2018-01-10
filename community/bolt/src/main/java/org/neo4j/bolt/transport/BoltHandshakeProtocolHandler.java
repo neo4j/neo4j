@@ -23,8 +23,6 @@ import io.netty.buffer.ByteBuf;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Map;
-import java.util.function.Function;
 
 import org.neo4j.bolt.BoltChannel;
 
@@ -43,7 +41,7 @@ public class BoltHandshakeProtocolHandler
 {
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
 
-    private final Map<Long,Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers;
+    private final BoltProtocolHandlerFactory handlerFactory;
     private final boolean encryptionRequired;
     private final boolean isEncrypted;
     private final ByteBuffer handshakeBuffer = ByteBuffer.allocate( 5 * 4 ).order( ByteOrder.BIG_ENDIAN );
@@ -51,14 +49,14 @@ public class BoltHandshakeProtocolHandler
     private BoltMessagingProtocolHandler protocol;
 
     /**
-     * @param protocolHandlers version -> protocol mapping
+     * @param handlerFactory the factory to create protocol for specific version
      * @param encryptionRequired whether or not the server allows only encrypted connections
      * @param isEncrypted whether of not this connection is encrypted
      */
-    public BoltHandshakeProtocolHandler( Map<Long,Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers,
+    public BoltHandshakeProtocolHandler( BoltProtocolHandlerFactory handlerFactory,
                                          boolean encryptionRequired, boolean isEncrypted )
     {
-        this.protocolHandlers = protocolHandlers;
+        this.handlerFactory = handlerFactory;
         this.encryptionRequired = encryptionRequired;
         this.isEncrypted = isEncrypted;
     }
@@ -97,9 +95,10 @@ public class BoltHandshakeProtocolHandler
                 for ( int i = 0; i < 4; i++ )
                 {
                     long suggestion = handshakeBuffer.getInt() & 0xFFFFFFFFL;
-                    if ( protocolHandlers.containsKey( suggestion ) )
+
+                    protocol = handlerFactory.create( suggestion, boltChannel );
+                    if ( protocol != null )
                     {
-                        protocol = protocolHandlers.get( suggestion ).apply( boltChannel );
                         boltChannel.log().serverEvent( "HANDSHAKE", () -> format( "0x%02X", protocol.version() ) );
                         return HandshakeOutcome.PROTOCOL_CHOSEN;
                     }

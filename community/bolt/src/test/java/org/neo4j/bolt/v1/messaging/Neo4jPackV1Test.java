@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +40,6 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.UTF8StringValue;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.PathValue;
@@ -52,19 +52,24 @@ import static org.hamcrest.Matchers.is;
 import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
+import static org.neo4j.values.storable.Values.charArray;
 import static org.neo4j.values.storable.Values.charValue;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 
-public class Neo4jPackTest
+public class Neo4jPackV1Test
 {
+    private final Neo4jPackV1 neo4jPack = new Neo4jPackV1();
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     private byte[] packed( AnyValue object ) throws IOException
     {
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
         packer.pack( object );
         return output.bytes();
     }
@@ -72,18 +77,17 @@ public class Neo4jPackTest
     private AnyValue unpacked( byte[] bytes ) throws IOException
     {
         PackedInputArray input = new PackedInputArray( bytes );
-        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
         return unpacker.unpack();
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldBeAbleToPackAndUnpackListStream() throws IOException
+    public void shouldBeAbleToPackAndUnpackList() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        packer.packListStreamHeader();
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
+        packer.packListHeader( ALICE.labels().length() );
         List<String> expected = new ArrayList<>();
         TextArray labels = ALICE.labels();
         for ( int i = 0; i < labels.length(); i++ )
@@ -92,7 +96,6 @@ public class Neo4jPackTest
             packer.pack( labelName );
             expected.add( labelName );
         }
-        packer.packEndOfStream();
         AnyValue unpacked = unpacked( output.bytes() );
 
         // Then
@@ -101,14 +104,13 @@ public class Neo4jPackTest
         assertThat( unpackedList, equalTo( ValueUtils.asListValue( expected ) ) );
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldBeAbleToPackAndUnpackMapStream() throws IOException
+    public void shouldBeAbleToPackAndUnpackMap() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        packer.packMapStreamHeader();
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
+        packer.packMapHeader( ALICE.properties().size() );
         ALICE.properties().foreach( ( s, value ) ->
         {
             try
@@ -118,10 +120,9 @@ public class Neo4jPackTest
             }
             catch ( IOException e )
             {
-                e.printStackTrace();
+                throw new UncheckedIOException( e );
             }
         } );
-        packer.packEndOfStream();
         AnyValue unpacked = unpacked( output.bytes() );
 
         // Then
@@ -130,32 +131,30 @@ public class Neo4jPackTest
         assertThat( unpackedMap, equalTo( ALICE.properties() ) );
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldFailWhenTryingToPackAndUnpackMapStreamContainingNullKeys() throws IOException
+    public void shouldFailWhenTryingToPackAndUnpackMapContainingNullKeys() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        packer.packMapStreamHeader();
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
 
-        HashMap<String,AnyValue> map = new HashMap<>();
+        Map<String,AnyValue> map = new HashMap<>();
         map.put( null, longValue( 42L ) );
         map.put( "foo", longValue( 1337L ) );
+        packer.packMapHeader( map.size() );
         for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {
             packer.pack( entry.getKey() );
             packer.pack( entry.getValue() );
         }
-        packer.packEndOfStream();
 
         // When
         PackedInputArray input = new PackedInputArray( output.bytes() );
-        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
         unpacker.unpack();
 
         // Then
-        assertThat( unpacker.consumeError().get(), equalTo(
+        assertThat( unpacker.consumeError(), equalTo(
                 Neo4jError.from( Status.Request.Invalid,
                         "Value `null` is not supported as key in maps, must be a non-nullable string." ) ) );
     }
@@ -165,20 +164,20 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
         packer.packMapHeader( 2 );
         packer.pack( "key" );
-        packer.pack( 1 );
+        packer.pack( intValue( 1 ) );
         packer.pack( "key" );
-        packer.pack( 2 );
+        packer.pack( intValue( 2 ) );
 
         // When
         PackedInputArray input = new PackedInputArray( output.bytes() );
-        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
         unpacker.unpack();
 
         // Then
-        assertThat( unpacker.consumeError().get(),
+        assertThat( unpacker.consumeError(),
                 equalTo( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ) ) );
     }
 
@@ -217,7 +216,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
         packer.pack( charValue( 'C' ) );
         AnyValue unpacked = unpacked( output.bytes() );
 
@@ -231,8 +230,8 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        packer.pack( Values.charArray( new char[]{'W', 'H', 'Y'} ) );
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
+        packer.pack( charArray( new char[]{'W', 'H', 'Y'} ) );
         Object unpacked = unpacked( output.bytes() );
 
         // Then
@@ -247,9 +246,9 @@ public class Neo4jPackTest
         // Given
         String value = "\uD83D\uDE31";
         byte[] bytes = value.getBytes( StandardCharsets.UTF_8 );
-        TextValue textValue = Values.utf8Value( bytes, 0, bytes.length );
+        TextValue textValue = utf8Value( bytes, 0, bytes.length );
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
         packer.pack( textValue );
 
         // When

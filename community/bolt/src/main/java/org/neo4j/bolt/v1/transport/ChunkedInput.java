@@ -75,12 +75,6 @@ public class ChunkedInput implements PackInput
     }
 
     @Override
-    public boolean hasMoreData() throws IOException
-    {
-        return remaining > 0;
-    }
-
-    @Override
     public byte peekByte() throws IOException
     {
         ensureChunkAvailable();

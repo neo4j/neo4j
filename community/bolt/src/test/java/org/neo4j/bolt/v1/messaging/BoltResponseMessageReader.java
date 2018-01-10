@@ -39,11 +39,6 @@ public class BoltResponseMessageReader
         this.unpacker = unpacker;
     }
 
-    public boolean hasNext() throws IOException
-    {
-        return unpacker.hasNext();
-    }
-
     public <E extends Exception> void read( BoltResponseMessageHandler<E> handler ) throws IOException, E
     {
         try

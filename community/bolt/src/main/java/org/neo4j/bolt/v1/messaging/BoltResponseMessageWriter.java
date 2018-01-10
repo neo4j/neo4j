@@ -20,18 +20,11 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.cypher.result.QueryResult;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.utils.PrettyPrinter;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
@@ -80,7 +73,11 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
         //The record might contain unpackable values,
         //hence we must consume any errors that might
         //have occurred.
-        packer.consumeError();  // TODO: find a better way
+        IOException error = packer.consumeError();
+        if ( error != null )
+        {
+            throw error;
+        }
     }
 
     @Override
@@ -88,18 +85,8 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     {
         messageLogger.logSuccess( () -> metadata );
         packer.packStructHeader( 1, SUCCESS.signature() );
-        packer.packRawMap( metadata );
+        packer.pack( metadata );
         onMessageComplete.onMessageComplete();
-    }
-
-    private Supplier<String> metadataSupplier( MapValue metadata )
-    {
-        return () ->
-        {
-            PrettyPrinter printer = new PrettyPrinter();
-            metadata.writeTo( printer );
-            return printer.value();
-        };
     }
 
     @Override
@@ -138,30 +125,4 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     {
         packer.flush();
     }
-
-    private class MapToObjectWriter extends BaseToObjectValueWriter<RuntimeException>
-    {
-
-        private UnsupportedOperationException exception =
-                new UnsupportedOperationException( "Functionality not implemented." );
-
-        @Override
-        protected Node newNodeProxyById( long id )
-        {
-            throw exception;
-        }
-
-        @Override
-        protected Relationship newRelationshipProxyById( long id )
-        {
-            throw exception;
-        }
-
-        @Override
-        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
-        {
-            throw exception;
-        }
-    }
-
 }
