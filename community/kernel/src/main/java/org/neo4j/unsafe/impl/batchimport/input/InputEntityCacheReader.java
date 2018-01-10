@@ -168,23 +168,22 @@ abstract class InputEntityCacheReader implements InputIterator
         protected boolean readProperties( InputEntityVisitor visitor ) throws IOException
         {
             short count = channel.getShort();
-            switch ( count )
+            if ( count == END_OF_ENTITIES )
             {
-            // This is a special value denoting the end of the stream. This is done like this since
-            // properties are the first thing read for every entity.
-            case END_OF_ENTITIES:
+                // This is a special value denoting the end of the stream. This is done like this since
+                // properties are the first thing read for every entity.
                 return false;
-            case HAS_FIRST_PROPERTY_ID:
+            }
+            else if ( count == HAS_FIRST_PROPERTY_ID )
+            {
                 visitor.propertyId( channel.getLong() );
-                break;
-            case 0:
-                break;
-            default:
+            }
+            else
+            {
                 for ( int i = 0; i < count; i++ )
                 {
                     Object token = readToken( PROPERTY_KEY_TOKEN );
                     Object value = readValue( );
-                    // TODO fix this some other way
                     if ( token instanceof Integer )
                     {
                         visitor.property( (Integer) token, value );
