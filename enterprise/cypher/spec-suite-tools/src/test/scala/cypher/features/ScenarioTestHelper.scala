@@ -35,11 +35,27 @@ import scala.io.Source
 
 object ScenarioTestHelper {
 
+  def runAndCheckBlacklistedTests(scenarios: Seq[Scenario], blacklist : Set[String] = Set.empty, config: Map[Setting[_], String] = Map()) = {
+    println("Running all blacklisted scenarios now and expect them to fail.")
+    var counter = 0
+    scenarios.filter(scenario => blacklist.contains(scenario.name)).foreach { scenario =>
+      val name = scenario.toString()
+      val executable = scenario(createTestGraph(config))
+      try {
+        executable.execute()
+        throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario: " + name)
+      } catch {
+        case ill: IllegalStateException => throw ill
+        case _ => counter = counter + 1
+      }
+    }
+    println("Success! All " + counter + " blacklisted scenarios failed as expected.\n")
+
+  }
+
   def createTests(scenarios: Seq[Scenario], blacklist : Set[String] = Set.empty, config: Map[Setting[_], String] = Map()) : util.Collection[DynamicTest] = {
-    println("Total number of scenarios: " + scenarios.size)
-    val filteredScenarios = scenarios.filter(s => blacklist.contains(s.name))
-    println("Blacklisted scenarios: " + blacklist.size) // TODO: add SemanticFailures blacklists to actual blacklists
-    println("Executing " + filteredScenarios.size +  " scenarios now")
+    val filteredScenarios = scenarios.filterNot(s => blacklist.contains(s.name))
+    println("Executing " + filteredScenarios.size +  " scenarios now.")
 
     val dynamicTests: Seq[DynamicTest] = filteredScenarios.map { scenario =>
       val name = scenario.toString()

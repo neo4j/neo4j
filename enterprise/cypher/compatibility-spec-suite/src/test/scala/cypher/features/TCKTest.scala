@@ -27,44 +27,48 @@ import org.opencypher.tools.tck.api.CypherTCK
 
 class TCKTest {
 
-  val tckSemanticFailures = Set(
-    // Neo4j fails at runtime, should fail at compile time
-    "Failing on merging relationship with null property",
-    "Failing on merging node with null property",
-    "Failing when setting a list of maps as a property",
-
-    // YIELD -
-    "In-query call to procedure that takes no arguments and yields no results",
-    "In-query call to procedure with explicit arguments that drops all result fields",
-
-    // Integer/Float conversion
-    "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT",
-    "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT",
-
-    // Different error type in Neo4j
-    "Deleting connected nodes",
-    "Standalone call to unknown procedure should fail",
-    "In-query call to unknown procedure should fail"
-  )
+//  val tckSemanticFailures = Set(
+//    // Neo4j fails at runtime, should fail at compile time
+//    "Failing on merging relationship with null property",
+//    "Failing on merging node with null property",
+//    "Failing when setting a list of maps as a property",
+//
+//    // YIELD -
+//    "In-query call to procedure that takes no arguments and yields no results",
+//    "In-query call to procedure with explicit arguments that drops all result fields",
+//
+//    // Integer/Float conversion
+//    "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT",
+//    "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT",
+//
+//    // Different error type in Neo4j
+//    "Deleting connected nodes",
+//    "Standalone call to unknown procedure should fail",
+//    "In-query call to unknown procedure should fail"
+//  )
 
   val scenarios = CypherTCK.allTckScenarios
      // .filter(s => s.name == "Count nodes")
-      .filterNot(scenario => tckSemanticFailures.contains(scenario.name))  // -> blacklists
 
   @TestFactory
   def runTCKTestsDefault() = {
-    createTests(scenarios)
+    val blacklist = "default.txt"
+    val blacklistedScenarioNames = parseBlacklist(blacklist)
+    runAndCheckBlacklistedTests(scenarios, blacklistedScenarioNames)
+    createTests(scenarios, blacklistedScenarioNames)
   }
 
   @TestFactory
-  def runTCKTestsCost() = {
+  def runTCKTestsCostCompiled() = {
     val config = Map[Setting[_],String](
       cypher_planner -> "COST",
       cypher_runtime -> "COMPILED",
       cypher_hints_error -> "true")
     val blacklist = "cost-compiled.txt"
+    val blacklistedScenarioNames = parseBlacklist(blacklist)
 
-    createTests(scenarios, parseBlacklist(blacklist), config)
+    runAndCheckBlacklistedTests(scenarios, blacklistedScenarioNames, config)
+    createTests(scenarios, blacklistedScenarioNames, config)
   }
 
 

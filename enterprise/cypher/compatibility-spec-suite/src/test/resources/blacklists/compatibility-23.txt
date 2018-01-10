@@ -205,3 +205,13 @@ Overwrite values when using +=
 Non-existent values in a property map are removed with SET =
 Should be able to merge using property from match
 Merges should not be able to match on deleted nodes
+
+// Neo4j fails at runtime, should fail at compile time
+Failing on merging relationship with null property",
+Failing on merging node with null property",
+Failing when setting a list of maps as a property",
+
+// Different error type in Neo4j
+Deleting connected nodes
+Standalone call to unknown procedure should fail
+In-query call to unknown procedure should fail

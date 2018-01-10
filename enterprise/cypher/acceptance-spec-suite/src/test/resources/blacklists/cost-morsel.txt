@@ -198,3 +198,7 @@ Nested type support with mixed list and map literals
 Nested type support with mixed list and map literals with projection
 Primitive node type support in list literal
 Primitive relationship type support in list literal
+
+// Different error type in Neo4j
+Standalone call to unknown procedure should fail
+In-query call to unknown procedure should fail

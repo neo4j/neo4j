@@ -593,3 +593,13 @@ In-query call to procedure with null argument
 
 // TCK side effects are incorrectly specified -- need update
 Standalone call to procedure with explicit arguments
+
+// Neo4j fails at runtime, should fail at compile time
+Failing on merging relationship with null property",
+Failing on merging node with null property",
+Failing when setting a list of maps as a property",
+
+// Different error type in Neo4j
+Deleting connected nodes
+Standalone call to unknown procedure should fail
+In-query call to unknown procedure should fail

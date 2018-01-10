@@ -18,3 +18,4 @@ min() over list values
 Shorthand case with filter should work as expected
 equality with boolean lists
 optional equality with boolean lists
+

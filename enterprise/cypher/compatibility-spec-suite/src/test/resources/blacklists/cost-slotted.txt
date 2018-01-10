@@ -38,4 +38,3 @@ Non-existent values in a property map are removed with SET =
 Creating nodes from an unwound parameter list
 Unwind with merge
 Should be able to merge using property from match
-Merges should not be able to match on deleted nodes

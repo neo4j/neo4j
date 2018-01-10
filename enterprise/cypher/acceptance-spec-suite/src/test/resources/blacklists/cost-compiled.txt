@@ -211,3 +211,7 @@ Should handle complex IS NOT NULL on node property when node is null
 
 //DeleteAcceptance.feature
 Return properties from deleted node
+
+// Different error type in Neo4j
+Standalone call to unknown procedure should fail
+In-query call to unknown procedure should fail

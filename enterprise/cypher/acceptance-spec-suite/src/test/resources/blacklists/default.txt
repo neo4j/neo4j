@@ -1,1 +1,5 @@
 //if this file is not empty it means we have failed
+
+// Different error type in Neo4j
+Standalone call to unknown procedure should fail
+In-query call to unknown procedure should fail
