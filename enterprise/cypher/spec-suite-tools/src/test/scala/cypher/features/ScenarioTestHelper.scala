@@ -30,15 +30,15 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.opencypher.tools.tck.api.{Graph, Scenario}
 
+import scala.collection.JavaConverters._
 import scala.io.Source
-import collection.JavaConverters._
 
 object ScenarioTestHelper {
 
   def createTests(scenarios: Seq[Scenario], blacklist : Set[String] = Set.empty, config: Map[Setting[_], String] = Map()) : util.Collection[DynamicTest] = {
-    val filteredScenarios = scenarios.filterNot(s => blacklist.contains(s.name))
-
-    println("Blacklisted scenarios: " + blacklist.size)
+    println("Total number of scenarios: " + scenarios.size)
+    val filteredScenarios = scenarios.filter(s => blacklist.contains(s.name))
+    println("Blacklisted scenarios: " + blacklist.size) // TODO: add SemanticFailures blacklists to actual blacklists
     println("Executing " + filteredScenarios.size +  " scenarios now")
 
     val dynamicTests: Seq[DynamicTest] = filteredScenarios.map { scenario =>

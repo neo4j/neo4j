@@ -19,7 +19,6 @@
  */
 package cypher.features
 
-import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.kernel.api.exceptions.Status
 import org.opencypher.tools.tck.api.ExecutionFailed
 
