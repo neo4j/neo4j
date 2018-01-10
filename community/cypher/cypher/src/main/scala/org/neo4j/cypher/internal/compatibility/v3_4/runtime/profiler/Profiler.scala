@@ -31,7 +31,7 @@ import org.neo4j.helpers.MathUtil
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.mutable
 
@@ -174,7 +174,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   }
 
   override def nodeOps: Operations[NodeValue] = new ProfilerOperations(inner.nodeOps)
-  override def relationshipOps: Operations[EdgeValue] = new ProfilerOperations(inner.relationshipOps)
+  override def relationshipOps: Operations[RelationshipValue] = new ProfilerOperations(inner.relationshipOps)
 }
 
 class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, pipeId: Id,

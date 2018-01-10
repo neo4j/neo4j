@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -64,9 +64,9 @@ trait QueryContextAdaptation {
 
   override def asObject(value: AnyValue): AnyRef = ???
 
-  override def edgeGetStartNode(edge: EdgeValue): NodeValue = ???
+  override def edgeGetStartNode(edge: RelationshipValue): NodeValue = ???
 
-  override def edgeGetEndNode(edge: EdgeValue): NodeValue = ???
+  override def edgeGetEndNode(edge: RelationshipValue): NodeValue = ???
 
   /**
     * This should not be used. We'll remove sooner (or later). Don't do it.
@@ -92,11 +92,11 @@ trait QueryContextAdaptation {
 
   override def indexSeek(index: IndexReference, value: Seq[Any]): scala.Iterator[NodeValue] = ???
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): scala.Iterator[EdgeValue] = ???
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): scala.Iterator[RelationshipValue] = ???
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator = ???
 
-  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): EdgeValue = ???
+  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue = ???
 
   override def getLabelsForNode(node: Long): ListValue = ???
 
@@ -137,7 +137,7 @@ trait QueryContextAdaptation {
 
   override def lockNodes(nodeIds: Long*): Unit = ???
 
-  override def relationshipOps: Operations[EdgeValue] = ???
+  override def relationshipOps: Operations[RelationshipValue] = ???
 
   override def getNodesByLabel(id: Int): scala.Iterator[NodeValue] = ???
 
@@ -162,7 +162,7 @@ trait QueryContextAdaptation {
 
   override def removeLabelsFromNode(node: Long, labelIds: scala.Iterator[Int]): Int = ???
 
-  override def createRelationship(start: Long, end: Long, relType: Int): EdgeValue = ???
+  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = ???
 
   override def nodeCountByCountStore(labelId: Int): Long = ???
 

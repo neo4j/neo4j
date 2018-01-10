@@ -52,7 +52,7 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
         case Some(relName) =>
           result.iterator().asScala.map {
             case path: PathValue =>
-              val relations = VirtualValues.list(path.edges(): _*)
+              val relations = VirtualValues.list(path.relationships(): _*)
               executionContextFactory.copyWith(ctx, pathName, path, relName, relations)
 
             case value =>

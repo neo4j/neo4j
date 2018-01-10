@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 case class ExpandAllPipe(source: Pipe,
                          fromName: String,
@@ -40,7 +40,7 @@ case class ExpandAllPipe(source: Pipe,
       row =>
         getFromNode(row) match {
           case n: NodeValue =>
-            val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
+            val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             relationships.map { r =>
                 val other = r.otherNode(n)
                 executionContextFactory.copyWith(row, relName, r, toName, other)

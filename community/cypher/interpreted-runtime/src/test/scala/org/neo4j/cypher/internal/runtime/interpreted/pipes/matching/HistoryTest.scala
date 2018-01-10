@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Relationship, RelationshipType}
 import org.neo4j.values.storable.Values.{stringArray, stringValue}
-import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, edgeValue, nodeValue}
+import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, relationshipValue, nodeValue}
 
 class HistoryTest extends CypherFunSuite {
 
@@ -42,7 +42,7 @@ class HistoryTest extends CypherFunSuite {
   }
 
   test("should_known_that_it_has_seen_a_relationship") {
-    val r = edgeValue(11L, nodeValue(11L, stringArray("f"), EMPTY_MAP), nodeValue(12L, stringArray("f"), EMPTY_MAP), stringValue("T"), EMPTY_MAP)
+    val r = relationshipValue(11L, nodeValue(11L, stringArray("f"), EMPTY_MAP), nodeValue(12L, stringArray("f"), EMPTY_MAP), stringValue("T"), EMPTY_MAP)
     val history = new InitialHistory(ExecutionContext.empty, Seq(r))
     history.hasSeen(r) should equal(true)
   }

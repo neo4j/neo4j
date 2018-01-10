@@ -125,11 +125,11 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
 
 case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey,
                                             expression: Expression, needsExclusiveLock: Boolean = true)
-  extends SetEntityPropertyOperation[EdgeValue](relName, propertyKey, expression) {
+  extends SetEntityPropertyOperation[RelationshipValue](relName, propertyKey, expression) {
 
   override def name = "SetRelationshipProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[VirtualEdgeValue](item).id()
+  override protected def id(item: Any) = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }
@@ -144,7 +144,7 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
     if (resolvedEntity != Values.NO_VALUE) {
       val (entityId, ops) = resolvedEntity match {
         case node: VirtualNodeValue => (node.id(), state.query.nodeOps)
-        case rel: VirtualEdgeValue => (rel.id(), state.query.relationshipOps)
+        case rel: VirtualRelationshipValue => (rel.id(), state.query.relationshipOps)
         case _ => throw new InvalidArgumentException(
           s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")
       }
@@ -216,11 +216,11 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 
 case class SetRelationshipPropertyFromMapOperation(relName: String, expression: Expression,
                                                    removeOtherProps: Boolean, needsExclusiveLock: Boolean = true)
-  extends SetPropertyFromMapOperation[EdgeValue](relName, expression, removeOtherProps) {
+  extends SetPropertyFromMapOperation[RelationshipValue](relName, expression, removeOtherProps) {
 
   override def name = "SetRelationshipPropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[VirtualEdgeValue](item).id()
+  override protected def id(item: Any) = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }

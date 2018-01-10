@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.util.v3_4.ParameterWrongTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case r: EdgeValue => r.`type`()
+    case r: RelationshipValue => r.`type`()
 
     case x => throw new ParameterWrongTypeException("Expected a Relationship, got: " + x)
   }

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.{InternalException, ParameterWrongTyp
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue, VirtualValues}
+import org.neo4j.values.virtual.{VirtualRelationshipValue, VirtualNodeValue, VirtualValues}
 
 object SlottedExecutionContext {
   def empty = new SlottedExecutionContext(SlotConfiguration.empty)
@@ -132,7 +132,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
         Some(VirtualValues.node(getLongAt(offset)))
 
       case Some(LongSlot(offset, false, CTRelationship)) =>
-        Some(VirtualValues.edge(getLongAt(offset)))
+        Some(VirtualValues.relationship(getLongAt(offset)))
 
       case Some(LongSlot(offset, true, CTNode)) =>
         val nodeId = getLongAt(offset)
@@ -146,7 +146,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
         if (entityIsNull(relId))
           Some(Values.NO_VALUE)
         else
-          Some(VirtualValues.edge(relId))
+          Some(VirtualValues.relationship(relId))
 
       case _ =>
         None
@@ -229,7 +229,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
         setLongAt(offset, nodeVal.id())
 
       case (Some(LongSlot(offset, false, CTRelationship)),
-            relVal: VirtualEdgeValue) =>
+            relVal: VirtualRelationshipValue) =>
         setLongAt(offset, relVal.id())
 
       case (Some(LongSlot(offset, true, CTNode)), nodeVal) if nodeVal == Values.NO_VALUE =>
@@ -243,7 +243,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
         setLongAt(offset, nodeVal.id())
 
       case (Some(LongSlot(offset, true, CTRelationship)),
-            relVal: VirtualEdgeValue) =>
+            relVal: VirtualRelationshipValue) =>
         setLongAt(offset, relVal.id())
 
       case (Some(LongSlot(offset, _, CTNode)), value) =>

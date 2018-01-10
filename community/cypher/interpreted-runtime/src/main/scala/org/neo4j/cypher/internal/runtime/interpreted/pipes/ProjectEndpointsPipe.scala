@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.virtual.VirtualValues.reverse
-import org.neo4j.values.virtual.{EdgeReference, EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipReference, RelationshipValue, ListValue, NodeValue}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
@@ -71,8 +71,8 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
 
   private def findSimpleLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
     val relValue = context(relName) match {
-      case edgeValue: EdgeValue => edgeValue
-      case edgeRef: EdgeReference => qtx.relationshipOps.getById(edgeRef.id())
+      case relValue: RelationshipValue => relValue
+      case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
     }
     val rel = Some(relValue).filter(hasAllowedType)
     rel.flatMap { rel => pickStartAndEnd(rel, rel, context, qtx)}
@@ -82,12 +82,12 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     val rels = makeTraversable(context(relName))
     if (rels.nonEmpty && allHasAllowedType(rels, qtx)) {
       val firstRel = rels.head match {
-        case edgeValue: EdgeValue => edgeValue
-        case edgeRef: EdgeReference => qtx.relationshipOps.getById(edgeRef.id())
+        case relValue: RelationshipValue => relValue
+        case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
       val lastRel = rels.last match {
-        case edgeValue: EdgeValue => edgeValue
-        case edgeRef: EdgeReference => qtx.relationshipOps.getById(edgeRef.id())
+        case relValue: RelationshipValue => relValue
+        case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
       pickStartAndEnd(firstRel, lastRel, context, qtx).map { case (s, e) => (s, e, rels) }
     } else {
@@ -99,18 +99,18 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     val iterator = rels.iterator()
     while(iterator.hasNext) {
       val next = iterator.next() match {
-        case edgeValue: EdgeValue => edgeValue
-        case edgeRef: EdgeReference => qtx.relationshipOps.getById(edgeRef.id())
+        case relValue: RelationshipValue => relValue
+        case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
       if (!hasAllowedType(next)) return false
     }
     true
   }
 
-  private def hasAllowedType(rel: EdgeValue): Boolean =
+  private def hasAllowedType(rel: RelationshipValue): Boolean =
     relTypes.forall(_.names.contains(rel.`type`().stringValue()))
 
-  private def pickStartAndEnd(relStart: EdgeValue, relEnd: EdgeValue,
+  private def pickStartAndEnd(relStart: RelationshipValue, relEnd: RelationshipValue,
                               context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
     val startNode = relStart.startNode()
     val endNode = relEnd.endNode()

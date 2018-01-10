@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, IsList, IsMap}
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, NonEmptyList}
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
-import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue}
+import org.neo4j.values.virtual.{VirtualRelationshipValue, VirtualNodeValue}
 
 import scala.util.{Failure, Success, Try}
 
@@ -152,7 +152,7 @@ case class True() extends Predicate {
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = variable(m, state) match {
     case pc: VirtualNodeValue => Some(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc.id, _)))
-    case pc: VirtualEdgeValue => Some(
+    case pc: VirtualRelationshipValue => Some(
       propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc.id, _)))
     case IsMap(map) => Some(map(state.query).get(propertyKey.name) != Values.NO_VALUE)
     case Values.NO_VALUE => None

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 class ExpandAllPipeTest extends CypherFunSuite {
 
@@ -72,8 +72,8 @@ class ExpandAllPipeTest extends CypherFunSuite {
     val endNode2 = newMockedNode(3)
     val relationship1 = newMockedRelationship(1, startNode, endNode1)
     val relationship2 = newMockedRelationship(2, startNode, endNode2)
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]]{
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[EdgeValue] = {
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]]{
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[RelationshipValue] = {
         val arg = invocationOnMock.getArgument[Option[Array[Int]]](2)
         arg match {
           case None => Iterator.empty
@@ -178,8 +178,8 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   private def mockRelationships(rels: Relationship*) = {
     val query = mock[QueryContext]
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]] {
-      def answer(invocation: InvocationOnMock): Iterator[EdgeValue] = rels.iterator.map(fromRelationshipProxy)
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
+      def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipProxy)
     })
     query
   }

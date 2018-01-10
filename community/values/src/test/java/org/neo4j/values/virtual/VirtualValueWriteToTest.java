@@ -33,8 +33,8 @@ import static org.neo4j.values.BufferAnyValueWriter.Specials.beginList;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.beginMap;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.endList;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.endMap;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writeEdge;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writeEdgeReference;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writeRelationship;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writeRelationshipReference;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.writeNode;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.writeNodeReference;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.writePath;
@@ -44,8 +44,8 @@ import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.edge;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationship;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
@@ -85,22 +85,22 @@ public class VirtualValueWriteToTest
                         writeNodeReference( 1L )
                 ),
                 shouldWrite(
-                        edge( 2L ),
-                        writeEdgeReference( 2L )
+                        relationship( 2L ),
+                        writeRelationshipReference( 2L )
                 ),
                 shouldWrite(
                         VirtualValues.path(
                                 new NodeValue[]{nodeValue( 20L, stringArray( "L" ), emptyMap() ),
                                         nodeValue( 40L, stringArray( "L" ), emptyMap() )},
-                                new EdgeValue[]{
-                                        edgeValue( 100L, nodeValue( 40L, stringArray( "L" ), emptyMap() ),
+                                new RelationshipValue[]{
+                                        relationshipValue( 100L, nodeValue( 40L, stringArray( "L" ), emptyMap() ),
                                                 nodeValue( 20L, stringArray( "L" ), emptyMap() ),
                                                 stringValue( "T" ), emptyMap() )} ),
                         writePath(
                                 new NodeValue[]{nodeValue( 20L, stringArray( "L" ), emptyMap() ),
                                         nodeValue( 40L, stringArray( "L" ), emptyMap() )},
-                                new EdgeValue[]{
-                                        edgeValue( 100L, nodeValue( 40L, stringArray( "L" ), emptyMap() ),
+                                new RelationshipValue[]{
+                                        relationshipValue( 100L, nodeValue( 40L, stringArray( "L" ), emptyMap() ),
                                                 nodeValue( 20L, stringArray( "L" ), emptyMap() ),
                                                 stringValue( "T" ), emptyMap() )} )
                 ),
@@ -137,11 +137,11 @@ public class VirtualValueWriteToTest
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) )
                 ),
                 shouldWrite(
-                        edgeValue( 1337L, nodeValue( 42L, stringArray( "L" ), emptyMap() ),
+                        relationshipValue( 1337L, nodeValue( 42L, stringArray( "L" ), emptyMap() ),
                                 nodeValue( 43L, stringArray( "L" ), emptyMap() ),
                                 stringValue( "T" ),
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
-                        writeEdge( 1337L, 42L, 43L,
+                        writeRelationship( 1337L, 42L, 43L,
                                 stringValue( "T" ),
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ) )
         );

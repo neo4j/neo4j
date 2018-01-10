@@ -44,7 +44,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
     val number_of_relationships_in_path = resultPath.size()
 
     number_of_relationships_in_path should equal(1)
-    resultPath.lastEdge() should equal(fromRelationshipProxy(r))
+    resultPath.lastRelationship() should equal(fromRelationshipProxy(r))
     resultPath.startNode() should equal(fromNodeProxy(a))
     resultPath.endNode() should equal(fromNodeProxy(b))
   }

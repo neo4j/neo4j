@@ -24,11 +24,11 @@ import org.neo4j.values.storable.TextValue;
 
 import static java.lang.String.format;
 
-public abstract class EdgeValue extends VirtualEdgeValue
+public abstract class RelationshipValue extends VirtualRelationshipValue
 {
     private final long id;
 
-    protected EdgeValue( long id )
+    protected RelationshipValue( long id )
     {
         this.id = id;
     }
@@ -36,7 +36,7 @@ public abstract class EdgeValue extends VirtualEdgeValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.writeEdge( id, startNode().id(), endNode().id(), type(), properties() );
+        writer.writeRelationship( id, startNode().id(), endNode().id(), type(), properties() );
     }
 
     @Override
@@ -69,14 +69,14 @@ public abstract class EdgeValue extends VirtualEdgeValue
         return node == startNode().id() ? endNode().id() : startNode().id();
     }
 
-    static class DirectEdgeValue extends EdgeValue
+    static class DirectRelationshipValue extends RelationshipValue
     {
         private final NodeValue startNode;
         private final NodeValue endNode;
         private final TextValue type;
         private final MapValue properties;
 
-        DirectEdgeValue( long id, NodeValue startNode, NodeValue endNode, TextValue type, MapValue properties )
+        DirectRelationshipValue( long id, NodeValue startNode, NodeValue endNode, TextValue type, MapValue properties )
         {
             super( id );
             assert properties != null;

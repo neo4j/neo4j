@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{EdgeValue, NodeReference, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeReference, NodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
@@ -88,7 +88,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                       expandMap: PrimitiveLongObjectMap[FullExpandDepths]
                      ) extends State with Expandable with CheckPath {
 
-    private var rels: Iterator[EdgeValue] = _
+    private var rels: Iterator[RelationshipValue] = _
 
     /*
     Loads the relationship iterator of the nodes before min length has been reached.
@@ -118,7 +118,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     /**
       * Creates the appropriate state for following a relationship to the next node.
       */
-    private def traverseRelationship(r: EdgeValue, relId: Long): State = {
+    private def traverseRelationship(r: RelationshipValue, relId: Long): State = {
       val nextNode = r.otherNode(node)
       path(pathLength) = relId
       val nextPathLength = pathLength + 1
@@ -319,13 +319,13 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   }
 
   object FullExpandDepths {
-    def apply(rels: Array[EdgeValue]) = new FullExpandDepths(rels)
+    def apply(rels: Array[RelationshipValue]) = new FullExpandDepths(rels)
 
     val UNINITIALIZED: FullExpandDepths = null
   }
 
   class FullExpandDepths(// all relationships that connect to this node, filtered by the var-length predicates
-                         val rels: Array[EdgeValue]) {
+                         val rels: Array[RelationshipValue]) {
     // The fully expanded depth for each relationship in rels
     val depths = new Array[Int](rels.length)
 

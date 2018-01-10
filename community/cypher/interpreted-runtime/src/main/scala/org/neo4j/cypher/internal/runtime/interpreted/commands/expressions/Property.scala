@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue}
+import org.neo4j.values.virtual.{VirtualRelationshipValue, VirtualNodeValue}
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
@@ -38,7 +38,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
         case None => Values.NO_VALUE
         case Some(propId) => state.query.nodeOps.getProperty(n.id(), propId)
       }
-    case r: VirtualEdgeValue =>
+    case r: VirtualRelationshipValue =>
       propertyKey.getOptId(state.query) match {
         case None => Values.NO_VALUE
         case Some(propId) => state.query.relationshipOps.getProperty(r.id(), propId)

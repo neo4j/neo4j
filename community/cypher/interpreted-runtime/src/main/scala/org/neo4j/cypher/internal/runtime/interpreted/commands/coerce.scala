@@ -37,7 +37,7 @@ object coerce {
         case CTAny => value
         case CTString => value.asInstanceOf[TextValue]
         case CTNode => value.asInstanceOf[NodeValue]
-        case CTRelationship => value.asInstanceOf[EdgeValue]
+        case CTRelationship => value.asInstanceOf[RelationshipValue]
         case CTPath => value.asInstanceOf[PathValue]
         case CTInteger => Values.longValue(value.asInstanceOf[NumberValue].longValue())
         case CTFloat => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())

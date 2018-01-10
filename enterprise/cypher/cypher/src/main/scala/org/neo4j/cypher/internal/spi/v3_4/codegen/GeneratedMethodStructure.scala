@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, MapValue, NodeValue}
 
 import scala.collection.mutable
 
@@ -272,10 +272,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case CypherCodeGenType(CTNode, _) =>
       invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]), cast(typeRef[Node], expression))
     case CodeGenType.primitiveRel =>
-      invoke(method[ValueUtils, EdgeValue]("fromRelationshipProxy", typeRef[Node]),
+      invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Node]),
              invoke(nodeManager, newRelationshipProxyById, expression))
     case CypherCodeGenType(CTRelationship, _) =>
-      invoke(method[ValueUtils, EdgeValue]("fromRelationshipProxy", typeRef[Relationship]),
+      invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Relationship]),
              cast(typeRef[Relationship], expression))
     case CodeGenType.primitiveInt =>
       invoke(method[Values, LongValue]("longValue", typeRef[Long]), expression)

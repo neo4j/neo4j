@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.{InternalException, ParameterWrongTyp
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship, CypherType}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue, VirtualValues}
+import org.neo4j.values.virtual.{VirtualRelationshipValue, VirtualNodeValue, VirtualValues}
 
 object SlottedPipeBuilderUtils {
   // TODO: Check if having try/catch blocks inside some of these generated functions prevents inlining or other JIT optimizations
@@ -44,7 +44,7 @@ object SlottedPipeBuilderUtils {
 
       case LongSlot(offset, false, CTRelationship) =>
         (context: ExecutionContext) =>
-          VirtualValues.edge(context.getLongAt(offset))
+          VirtualValues.relationship(context.getLongAt(offset))
 
       case LongSlot(offset, true, CTNode) =>
         (context: ExecutionContext) => {
@@ -60,7 +60,7 @@ object SlottedPipeBuilderUtils {
           if (entityIsNull(relId))
             Values.NO_VALUE
           else
-            VirtualValues.edge(relId)
+            VirtualValues.relationship(relId)
         }
       case RefSlot(offset, _, _) =>
         (context: ExecutionContext) =>
@@ -94,7 +94,7 @@ object SlottedPipeBuilderUtils {
         (context: ExecutionContext) =>
           val value = context.getRefAt(offset)
           try {
-            value.asInstanceOf[VirtualEdgeValue].id()
+            value.asInstanceOf[VirtualRelationshipValue].id()
           } catch {
             case _: java.lang.ClassCastException =>
               throw new ParameterWrongTypeException(s"Expected to find a relationship at ref slot $offset but found $value instead")
@@ -120,7 +120,7 @@ object SlottedPipeBuilderUtils {
             if (value == Values.NO_VALUE)
               -1L
             else
-              value.asInstanceOf[VirtualEdgeValue].id()
+              value.asInstanceOf[VirtualRelationshipValue].id()
           } catch {
             case _: java.lang.ClassCastException =>
               throw new ParameterWrongTypeException(s"Expected to find a relationship at ref slot $offset but found $value instead")
@@ -162,7 +162,7 @@ object SlottedPipeBuilderUtils {
       case LongSlot(offset, false, CTRelationship) =>
         (context: ExecutionContext, value: AnyValue) =>
           try {
-            context.setLongAt(offset, value.asInstanceOf[VirtualEdgeValue].id())
+            context.setLongAt(offset, value.asInstanceOf[VirtualRelationshipValue].id())
           } catch {
             case _: java.lang.ClassCastException =>
               throw new ParameterWrongTypeException(s"Expected to find a relationship at long slot $offset but found $value instead")
@@ -187,7 +187,7 @@ object SlottedPipeBuilderUtils {
             context.setLongAt(offset, -1L)
           else {
             try {
-              context.setLongAt(offset, value.asInstanceOf[VirtualEdgeValue].id())
+              context.setLongAt(offset, value.asInstanceOf[VirtualRelationshipValue].id())
             } catch {
               case _: java.lang.ClassCastException =>
                 throw new ParameterWrongTypeException(s"Expected to find a relationship at long slot $offset but found $value instead")

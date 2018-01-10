@@ -76,7 +76,7 @@ object ImplicitValueConversion {
 
   implicit def toNodeValue(n: Node): NodeValue = ValueUtils.fromNodeProxy(n)
 
-  implicit def toEdgeValue(r: Relationship): EdgeValue = ValueUtils.fromRelationshipProxy(r)
+  implicit def toRelationshipValue(r: Relationship): RelationshipValue = ValueUtils.fromRelationshipProxy(r)
 
   implicit def toPathValue(p: Path): PathValue = ValueUtils.asPathValue(p)
 
