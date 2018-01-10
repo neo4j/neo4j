@@ -34,13 +34,12 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public NumberSchemaKey copyKey( NumberSchemaKey key,
-            NumberSchemaKey into )
+    public NumberSchemaKey copyKey( NumberSchemaKey key, NumberSchemaKey into )
     {
         into.type = key.type;
         into.rawValueBits = key.rawValueBits;
-        into.entityId = key.entityId;
-        into.entityIdIsSpecialTieBreaker = key.entityIdIsSpecialTieBreaker;
+        into.setEntityId( key.getEntityId() );
+        into.setEntityIdIsSpecialTieBreaker( key.getEntityIdIsSpecialTieBreaker() );
         return into;
     }
 
@@ -67,7 +66,7 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     {
         cursor.putByte( key.type );
         cursor.putLong( key.rawValueBits );
-        cursor.putLong( key.entityId );
+        cursor.putLong( key.getEntityId() );
     }
 
     @Override
@@ -80,7 +79,7 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     {
         into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
-        into.entityId = cursor.getLong();
+        into.setEntityId( cursor.getLong() );
     }
 
     @Override

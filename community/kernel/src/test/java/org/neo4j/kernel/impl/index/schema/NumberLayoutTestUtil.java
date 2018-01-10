@@ -42,4 +42,15 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
     {
         return Values.of( value );
     }
+
+    @Override
+    int compareIndexedPropertyValue( NumberSchemaKey key1, NumberSchemaKey key2 )
+    {
+        int typeCompare = Byte.compare( key1.type, key2.type );
+        if ( typeCompare == 0 )
+        {
+            return Long.compare( key1.rawValueBits, key2.rawValueBits );
+        }
+        return typeCompare;
+    }
 }

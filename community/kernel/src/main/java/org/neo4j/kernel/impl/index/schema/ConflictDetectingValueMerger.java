@@ -39,11 +39,11 @@ public class ConflictDetectingValueMerger<KEY extends NativeSchemaKey, VALUE ext
     @Override
     public VALUE merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue )
     {
-        if ( existingKey.entityId != newKey.entityId )
+        if ( existingKey.getEntityId() != newKey.getEntityId() )
         {
             conflict = true;
-            existingNodeId = existingKey.entityId;
-            addedNodeId = newKey.entityId;
+            existingNodeId = existingKey.getEntityId();
+            addedNodeId = newKey.getEntityId();
         }
         return null;
     }

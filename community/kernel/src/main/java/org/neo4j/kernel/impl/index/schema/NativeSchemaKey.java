@@ -20,31 +20,15 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values).
  * A value can be any {@link Number} and is represented as a {@code long} to store the raw bits and a type
  * to say if it's a long, double or float.
- *
- * Distinction between double and float exists because coersions between each other and long may differ.
- * TODO this should be figured out and potentially reduced to long, double types only.
  */
-public abstract class NativeSchemaKey extends ValueWriter.Adapter<RuntimeException>
+public interface NativeSchemaKey
 {
-//    public static final int SIZE =
-//            Byte.BYTES + /* type of value */
-//            Long.BYTES + /* raw value bits */
-//
-//            // TODO this could use 6 bytes instead and have the highest 2 bits stored in the type byte
-//            Long.BYTES;  /* entityId */
-
-    public byte type;
-    public long rawValueBits;
-    public long entityId;
-
     /**
      * Marks that comparisons with this key requires also comparing entityId, this allows functionality
      * of inclusive/exclusive bounds of range queries.
@@ -52,49 +36,25 @@ public abstract class NativeSchemaKey extends ValueWriter.Adapter<RuntimeExcepti
      * <p>
      * Note that {@code entityIdIsSpecialTieBreaker} is only an in memory state.
      */
-    public boolean entityIdIsSpecialTieBreaker;
+    void setEntityIdIsSpecialTieBreaker( boolean entityIdIsSpecialTieBreaker );
 
-    public void from( long entityId, Value... values )
-    {
-        extractRawBitsAndType( assertValidValue( values ) );
-        this.entityId = entityId;
-        entityIdIsSpecialTieBreaker = false;
-    }
+    boolean getEntityIdIsSpecialTieBreaker();
 
-    public abstract Value assertValidValue( Value... values );
+    long getEntityId();
 
-    public String propertiesAsString()
-    {
-        return asValue().toString();
-    }
+    void setEntityId( long entityId );
 
-    public abstract NumberValue asValue();
+    void from( long entityId, Value... values );
 
-    public abstract void initAsLowest();
+    String propertiesAsString();
 
-    public abstract void initAsHighest();
-    /**
-     * Compares the value of this key to that of another key.
-     * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
-     *
-     * @param other the {@link NativeSchemaKey} to compare to.
-     * @return comparison against the {@code other} {@link NativeSchemaKey}.
-     */
-    public int compareValueTo( NativeSchemaKey other )
-    {
-        return RawBits.compare( rawValueBits, type, other.rawValueBits, other.type );
-    }
+    Value asValue();
 
-    /**
-     * Extracts raw bits and type from a {@link Value} and store as state of this {@link NativeSchemaKey} instance.
-     *
-     * @param value actual {@link Value} value.
-     */
-    private void extractRawBitsAndType( Value value )
-    {
-        value.writeTo( this );
-    }
+    void initAsLowest();
+
+    void initAsHighest();
 
     @Override
-    public abstract String toString();
+    String toString();
+
 }

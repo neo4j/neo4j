@@ -60,7 +60,7 @@ public class NativeAllEntriesReader<KEY extends NativeSchemaKey,VALUE extends Na
                 {
                     try
                     {
-                        return seeker.next() ? seeker.get().key().entityId : null;
+                        return seeker.next() ? seeker.get().key().getEntityId() : null;
                     }
                     catch ( IOException e )
                     {

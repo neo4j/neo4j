@@ -57,6 +57,8 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
 
     abstract Value asValue( Number value );
 
+    abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
+
     IndexDescriptor indexDescriptor()
     {
         return indexDescriptor;
@@ -64,16 +66,6 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
 
     void copyValue( VALUE value, VALUE intoValue )
     {
-    }
-
-    int compareIndexedPropertyValue( NativeSchemaKey key1, NativeSchemaKey key2 )
-    {
-        int typeCompare = Byte.compare( key1.type, key2.type );
-        if ( typeCompare == 0 )
-        {
-            return Long.compare( key1.rawValueBits, key2.rawValueBits );
-        }
-        return typeCompare;
     }
 
     Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )

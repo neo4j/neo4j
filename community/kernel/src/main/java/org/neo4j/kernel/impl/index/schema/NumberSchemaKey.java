@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -33,7 +34,7 @@ import static java.lang.String.format;
  * Distinction between double and float exists because coersions between each other and long may differ.
  * TODO this should be figured out and potentially reduced to long, double types only.
  */
-class NumberSchemaKey extends NativeSchemaKey
+class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements NativeSchemaKey
 {
     static final int SIZE =
             Byte.BYTES + /* type of value */
@@ -42,8 +43,45 @@ class NumberSchemaKey extends NativeSchemaKey
             // TODO this could use 6 bytes instead and have the highest 2 bits stored in the type byte
             Long.BYTES;  /* entityId */
 
+    private long entityId;
+    private boolean entityIdIsSpecialTieBreaker;
+
+    byte type;
+    long rawValueBits;
+
     @Override
-    public NumberValue assertValidValue( Value... values )
+    public void setEntityIdIsSpecialTieBreaker( boolean entityIdIsSpecialTieBreaker )
+    {
+        this.entityIdIsSpecialTieBreaker = entityIdIsSpecialTieBreaker;
+    }
+
+    @Override
+    public boolean getEntityIdIsSpecialTieBreaker()
+    {
+        return entityIdIsSpecialTieBreaker;
+    }
+
+    @Override
+    public long getEntityId()
+    {
+        return entityId;
+    }
+
+    @Override
+    public void setEntityId( long entityId )
+    {
+        this.entityId = entityId;
+    }
+
+    @Override
+    public void from( long entityId, Value... values )
+    {
+        extractRawBitsAndType( assertValidValue( values ) );
+        this.entityId = entityId;
+        entityIdIsSpecialTieBreaker = false;
+    }
+
+    private NumberValue assertValidValue( Value... values )
     {
         // TODO: support multiple values, right?
         if ( values.length > 1 )
@@ -60,6 +98,12 @@ class NumberSchemaKey extends NativeSchemaKey
                     "Key layout does only support numbers, tried to create key from " + values[0] );
         }
         return (NumberValue) values[0];
+    }
+
+    @Override
+    public String propertiesAsString()
+    {
+        return asValue().toString();
     }
 
     @Override
@@ -82,6 +126,28 @@ class NumberSchemaKey extends NativeSchemaKey
         writeFloatingPoint( Double.POSITIVE_INFINITY );
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
+    }
+
+    /**
+     * Compares the value of this key to that of another key.
+     * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
+     *
+     * @param other the {@link NativeSchemaKey} to compare to.
+     * @return comparison against the {@code other} {@link NativeSchemaKey}.
+     */
+    int compareValueTo( NumberSchemaKey other )
+    {
+        return RawBits.compare( rawValueBits, type, other.rawValueBits, other.type );
+    }
+
+    /**
+     * Extracts raw bits and type from a {@link Value} and store as state of this {@link NativeSchemaKey} instance.
+     *
+     * @param value actual {@link Value} value.
+     */
+    private void extractRawBitsAndType( Value value )
+    {
+        value.writeTo( this );
     }
 
     @Override

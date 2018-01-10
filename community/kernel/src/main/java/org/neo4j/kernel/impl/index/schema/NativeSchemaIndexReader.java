@@ -94,7 +94,7 @@ public abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE
             long count = 0;
             while ( seeker.next() )
             {
-                if ( seeker.get().key().entityId == nodeId )
+                if ( seeker.get().key().getEntityId() == nodeId )
                 {
                     count++;
                 }
