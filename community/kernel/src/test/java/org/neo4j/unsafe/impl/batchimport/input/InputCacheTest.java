@@ -42,14 +42,11 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import static java.lang.Math.abs;
 
-import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 
 public class InputCacheTest
 {
@@ -60,7 +57,7 @@ public class InputCacheTest
     private final RandomRule randomRule = new RandomRule();
     private final int threads = Runtime.getRuntime().availableProcessors();
     private final ExecutorService executor = Executors.newFixedThreadPool( threads );
-    private final List<Future> futures = new ArrayList<>();
+    private final List<Future<?>> futures = new ArrayList<>();
     private final int totalCount = threads * countPerThread;
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( dir ).around( randomRule ).around( fileSystemRule );
@@ -72,13 +69,13 @@ public class InputCacheTest
         try ( InputCache cache =
                 new InputCache( fileSystemRule.get(), dir.directory(), Standard.LATEST_RECORD_FORMATS, (int) kibiBytes( 8 ) ) )
         {
-            try ( InputCacher cacher = cache.cacheNodes( MAIN ) )
+            try ( InputCacher cacher = cache.cacheNodes() )
             {
                 writeEntities( cacher, this::randomNode );
             }
 
             // WHEN/THEN
-            try ( InputIterator reader = cache.nodes( MAIN, true ).iterator() )
+            try ( InputIterator reader = cache.nodes().iterator() )
             {
                 List<InputEntity> allReadEntities = readEntities( reader );
                 assertEquals( totalCount, allReadEntities.size() );
@@ -95,13 +92,13 @@ public class InputCacheTest
         try ( InputCache cache =
                 new InputCache( fileSystemRule.get(), dir.directory(), Standard.LATEST_RECORD_FORMATS, 200 ) )
         {
-            try ( InputCacher cacher = cache.cacheRelationships( MAIN ) )
+            try ( InputCacher cacher = cache.cacheRelationships() )
             {
                 writeEntities( cacher, this::randomRelationship );
             }
 
             // WHEN/THEN
-            try ( InputIterator reader = cache.relationships( MAIN, true ).iterator() )
+            try ( InputIterator reader = cache.relationships().iterator() )
             {
                 List<InputEntity> allReadEntities = readEntities( reader );
                 assertEquals( totalCount, allReadEntities.size() );
@@ -165,35 +162,6 @@ public class InputCacheTest
     private void assertNoFilesLeftBehind()
     {
         assertEquals( 0, fileSystemRule.get().listFiles( dir.directory() ).length );
-    }
-
-    private void assertRelationshipsEquals( InputEntity expectedRelationship, InputEntity relationship )
-    {
-        assertProperties( expectedRelationship, relationship );
-        assertEquals( expectedRelationship.startId(), relationship.startId() );
-        assertEquals( expectedRelationship.startIdGroup, relationship.startIdGroup );
-        assertEquals( expectedRelationship.endId(), relationship.endId() );
-        assertEquals( expectedRelationship.endIdGroup, relationship.endIdGroup );
-        if ( expectedRelationship.hasIntType )
-        {
-            assertEquals( expectedRelationship.intType, relationship.intType );
-        }
-        else
-        {
-            assertEquals( expectedRelationship.stringType, relationship.stringType );
-        }
-    }
-
-    private void assertProperties( InputEntity expected, InputEntity entity )
-    {
-        if ( expected.hasPropertyId )
-        {
-            assertEquals( expected.propertyId, entity.propertyId );
-        }
-        else
-        {
-            assertArrayEquals( expected.properties(), entity.properties() );
-        }
     }
 
     private void randomRelationship( Randoms random, InputEntityVisitor relationship )
@@ -266,28 +234,6 @@ public class InputCacheTest
         return random.among( TOKENS );
     }
 
-    private void assertNodesEquals( InputEntity expectedNode, InputEntity node )
-    {
-        assertEquals( expectedNode.idGroup, node.idGroup );
-        assertEquals( expectedNode.id(), node.id() );
-        if ( expectedNode.hasPropertyId )
-        {
-            assertEquals( expectedNode.propertyId, node.propertyId );
-        }
-        else
-        {
-            assertArrayEquals( expectedNode.properties(), node.properties() );
-        }
-        if ( expectedNode.hasLabelField )
-        {
-            assertEquals( expectedNode.labelField, node.labelField );
-        }
-        else
-        {
-            assertEquals( asSet( expectedNode.labels() ), asSet( node.labels() ) );
-        }
-    }
-
     private Group randomGroup( Randoms random )
     {
         return new Group.Adapter( random.nextInt( 100 ), random.string() );
@@ -308,9 +254,10 @@ public class InputCacheTest
         futures.add( executor.submit( toRun ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     private <T> void results( Consumer<T> consumer ) throws Exception
     {
-        for ( Future future : futures )
+        for ( Future<?> future : futures )
         {
             consumer.accept( (T) future.get() );
         }

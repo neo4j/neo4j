@@ -25,8 +25,6 @@ import java.io.UncheckedIOException;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
-
 class CachingInputIterable implements InputIterable
 {
     private final InputIterable actual;
@@ -60,11 +58,11 @@ class CachingInputIterable implements InputIterable
             {
                 // wrap in an iterator which caches the data as it goes over it
                 firstTime = false;
-                InputCacher cacher = cache.cacheNodes( MAIN );
+                InputCacher cacher = cache.cacheNodes();
                 return new CachingInputIterator( actual.iterator(), cacher );
             }
             // for consecutive iterations just returned the cached data
-            return cache.nodes( MAIN, false ).iterator();
+            return cache.nodes().iterator();
         }
         catch ( IOException e )
         {

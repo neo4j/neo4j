@@ -35,9 +35,9 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
  */
 public class InputNodeCacheReader extends InputEntityCacheReader
 {
-    public InputNodeCacheReader( StoreChannel channel, StoreChannel header, Runnable closeAction ) throws IOException
+    public InputNodeCacheReader( StoreChannel channel, StoreChannel header ) throws IOException
     {
-        super( channel, header, closeAction );
+        super( channel, header );
     }
 
     @Override

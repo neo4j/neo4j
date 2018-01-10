@@ -23,10 +23,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Set;
-
-import org.neo4j.concurrent.Runnables;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -97,8 +93,6 @@ import static org.neo4j.io.fs.OpenMode.READ_WRITE;
  */
 public class InputCache implements Closeable
 {
-    public static final String MAIN = "main";
-
     private static final String HEADER = "-header";
     private static final String NODES = "nodes";
     private static final String RELATIONSHIPS = "relationships";
@@ -126,7 +120,6 @@ public class InputCache implements Closeable
     private final FileSystemAbstraction fs;
     private final File cacheDirectory;
     private final RecordFormats recordFormats;
-    private final Set<String> subTypes = new HashSet<>();
     private final int chunkSize;
 
     /**
@@ -143,56 +136,36 @@ public class InputCache implements Closeable
         this.chunkSize = chunkSize;
     }
 
-    public InputCacher cacheNodes( String subType ) throws IOException
+    public InputCacher cacheNodes() throws IOException
     {
-        return new InputNodeCacheWriter( channel( NODES, subType, READ_WRITE ), channel( NODES_HEADER, subType, READ_WRITE ),
+        return new InputNodeCacheWriter( channel( NODES, READ_WRITE ), channel( NODES_HEADER, READ_WRITE ),
                 recordFormats, chunkSize );
     }
 
-    public InputCacher cacheRelationships( String subType ) throws IOException
+    public InputCacher cacheRelationships() throws IOException
     {
-        return new InputRelationshipCacheWriter( channel( RELATIONSHIPS, subType, READ_WRITE ),
-                channel( RELATIONSHIPS_HEADER, subType, READ_WRITE ), recordFormats, chunkSize );
+        return new InputRelationshipCacheWriter( channel( RELATIONSHIPS, READ_WRITE ),
+                channel( RELATIONSHIPS_HEADER, READ_WRITE ), recordFormats, chunkSize );
     }
 
-    private StoreChannel channel( String type, String subType, OpenMode openMode ) throws IOException
+    private StoreChannel channel( String type, OpenMode openMode ) throws IOException
     {
-        return fs.open( file( type, subType ), openMode );
+        return fs.open( file( type ), openMode );
     }
 
-    private File file( String type, String subType )
+    private File file( String type )
     {
-        subTypes.add( subType );
-        return new File( cacheDirectory, "input-" + type + "-" + subType );
+        return new File( cacheDirectory, "input-" + type );
     }
 
-    public InputIterable nodes( String subType, boolean deleteAfterUse )
+    public InputIterable nodes()
     {
-        return entities( () -> new InputNodeCacheReader( channel( NODES, subType, READ ),
-                channel( NODES_HEADER, subType, READ ),
-                deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ) ) );
+        return entities( () -> new InputNodeCacheReader( channel( NODES, READ ), channel( NODES_HEADER, READ ) ) );
     }
 
-    public InputIterable relationships( String subType, boolean deleteAfterUse )
+    public InputIterable relationships()
     {
-        return entities( () -> new InputRelationshipCacheReader( channel( RELATIONSHIPS, subType, READ ),
-                channel( RELATIONSHIPS_HEADER, subType, READ ),
-                deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ) ) );
-    }
-
-    protected Runnable deleteAction( boolean deleteAfterUse, String type, String header, String subType )
-    {
-        if ( !deleteAfterUse )
-        {
-            return Runnables.EMPTY_RUNNABLE;
-        }
-
-        return () ->
-        {
-            fs.deleteFile( file( type, subType ) );
-            fs.deleteFile( file( header, subType ) );
-            subTypes.remove( subType );
-        };
+        return entities( () -> new InputRelationshipCacheReader( channel( RELATIONSHIPS, READ ), channel( RELATIONSHIPS_HEADER, READ ) ) );
     }
 
     private InputIterable entities( final ThrowingSupplier<InputIterator, IOException> factory )
@@ -223,13 +196,10 @@ public class InputCache implements Closeable
     @Override
     public void close() throws IOException
     {
-        for ( String subType : subTypes )
-        {
-            fs.deleteFile( file( NODES, subType ) );
-            fs.deleteFile( file( RELATIONSHIPS, subType ) );
-            fs.deleteFile( file( NODES_HEADER, subType ) );
-            fs.deleteFile( file( RELATIONSHIPS_HEADER, subType ) );
-        }
+        fs.deleteFile( file( NODES ) );
+        fs.deleteFile( file( RELATIONSHIPS ) );
+        fs.deleteFile( file( NODES_HEADER ) );
+        fs.deleteFile( file( RELATIONSHIPS_HEADER ) );
     }
 
     static ByteBuffer newChunkHeaderBuffer()

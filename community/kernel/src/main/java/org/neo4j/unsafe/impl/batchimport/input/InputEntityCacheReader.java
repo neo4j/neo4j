@@ -54,13 +54,12 @@ abstract class InputEntityCacheReader implements InputIterator
     private final PrimitiveIntObjectMap<String>[] tokens;
 
     // Not used by workers
-    private final Runnable closeAction;
     private final StoreChannel channel;
     private final ByteBuffer chunkHeaderBuffer = newChunkHeaderBuffer();
     private boolean end;
 
     @SuppressWarnings( "unchecked" )
-    InputEntityCacheReader( StoreChannel channel, StoreChannel header, Runnable closeAction )
+    InputEntityCacheReader( StoreChannel channel, StoreChannel header )
             throws IOException
     {
         tokens = new PrimitiveIntObjectMap[HIGH_TOKEN_TYPE];
@@ -69,7 +68,6 @@ abstract class InputEntityCacheReader implements InputIterator
         tokens[RELATIONSHIP_TYPE_TOKEN] = Primitive.intObjectMap();
         tokens[GROUP_TOKEN] = Primitive.intObjectMap();
         this.channel = channel;
-        this.closeAction = closeAction;
         readHeader( header );
     }
 
@@ -130,7 +128,6 @@ abstract class InputEntityCacheReader implements InputIterator
         try
         {
             channel.close();
-            closeAction.run();
         }
         catch ( IOException e )
         {

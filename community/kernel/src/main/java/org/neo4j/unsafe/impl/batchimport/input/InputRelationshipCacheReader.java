@@ -33,9 +33,9 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
  */
 public class InputRelationshipCacheReader extends InputEntityCacheReader
 {
-    public InputRelationshipCacheReader( StoreChannel channel, StoreChannel header, Runnable closeAction ) throws IOException
+    public InputRelationshipCacheReader( StoreChannel channel, StoreChannel header ) throws IOException
     {
-        super( channel, header, closeAction );
+        super( channel, header );
     }
 
     @Override
