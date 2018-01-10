@@ -30,6 +30,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 
+import static java.lang.Integer.max;
+
 import static org.neo4j.helpers.Numbers.safeCastLongToShort;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
@@ -46,6 +48,11 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.newChunkHeaderB
 /**
  * Abstract class for caching entities or derivative to disk using a binary format.
  * Currently each token type is limited to have a maximum of {#link Integer.MAX_VALUE} items.
+ *
+ * This instance provides means of wrapping {@link InputEntityVisitor} so that they automatically cache what they see.
+ * Each thread that visits data {@link #wrap(InputEntityVisitor)} its own visitor and serializes data into
+ * its thread-local buffer. When full it {@link #writeChunk(ByteBuffer) writes} that chunk of data to the {@link #channel},
+ * clearing its buffer and ready to serialize more data into it.
  */
 abstract class InputEntityCacher implements InputCacher
 {
@@ -63,7 +70,7 @@ abstract class InputEntityCacher implements InputCacher
     @SuppressWarnings( "unchecked" )
     private final Map<String,Integer>[] tokens = new Map[HIGH_TOKEN_TYPE];
 
-    protected InputEntityCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize ) throws IOException
+    protected InputEntityCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
     {
         this.chunkSize = chunkSize;
         initMaxTokenKeyIds( recordFormats );
@@ -217,12 +224,12 @@ abstract class InputEntityCacher implements InputCacher
             }
         }
 
-        protected ByteBuffer buffer( int withSufficientSpaceFor )
+        protected ByteBuffer buffer( int requiredSpace )
         {
             int position = buffer.position();
-            if ( position + withSufficientSpaceFor >= buffer.capacity() )
+            if ( position + requiredSpace >= buffer.capacity() )
             {
-                array = Arrays.copyOf( array, array.length * 2 ); // double in size
+                array = Arrays.copyOf( array, max( array.length * 2, position + requiredSpace ) ); // at least double in size
                 buffer = ByteBuffer.wrap( array );
                 buffer.position( position );
                 bufferAsChannel = new ByteBufferFlushableChannel( buffer );
@@ -249,19 +256,7 @@ abstract class InputEntityCacher implements InputCacher
             ValueType type = ValueType.typeOf( value );
             int length = type.length( value );
             buffer( 1 + length ).put( type.id() );
-            try
-            {
-                type.write( value, bufferAsChannel );
-            }
-            catch ( Exception e )
-            {
-                throw e;
-            }
-        }
-
-        private String stringify( Object value )
-        {
-            return value.getClass().isArray() ? Arrays.toString( (Object[]) value ) : value.toString();
+            type.write( value, bufferAsChannel );
         }
 
         protected void writeToken( byte type, Object key ) throws IOException
