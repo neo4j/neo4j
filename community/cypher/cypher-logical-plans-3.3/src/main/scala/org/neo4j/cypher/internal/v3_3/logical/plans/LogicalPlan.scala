@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 
+import scala.collection.mutable
+
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
 non-leaf nodes are algebraic operators like selections, projections, and joins. An intermediate node indicates the
@@ -46,7 +48,7 @@ abstract class LogicalPlan
   def availableSymbols: Set[IdName]
 
   /*
-  A id for the logical plan operator, unique inside of the given query tree. These identifiers will be
+  An id for the logical plan operator, unique inside of the given query tree. These identifiers will be
   copied to a rewritten version of the logical plan, as long as there is a one-to-one mapping between
   rewritten plans. In other words - once ids have been assigned, plan rewriting should not collapse multiple
   operators into one, or split a single one into multiple new ones.
@@ -67,6 +69,38 @@ abstract class LogicalPlan
   }
 
   private var _id: Option[LogicalPlanId] = None
+
+  override def equals(obj: scala.Any): Boolean = {
+    if (!obj.isInstanceOf[LogicalPlan]) false
+    else {
+      val otherPlan = obj.asInstanceOf[LogicalPlan]
+      if (this.eq(otherPlan)) return true
+      val stack = new mutable.Stack[(Iterator[Any], Iterator[Any])]()
+      var p1 = this.productIterator
+      var p2 = otherPlan.productIterator
+      while (p1.hasNext && p2.hasNext) {
+        val continue =
+          (p1.next, p2.next) match {
+            case (lp1:LogicalPlan, lp2:LogicalPlan) =>
+              stack.push((p1, p2))
+              p1 = lp1.productIterator
+              p2 = lp2.productIterator
+              true
+            case (_:LogicalPlan, _) => false
+            case (_, _:LogicalPlan) => false
+            case (a1, a2) => a1 == a2
+          }
+
+        if (!continue) return false
+        while (!p1.hasNext && !p2.hasNext && stack.nonEmpty) {
+          val (p1New, p2New) = stack.pop
+          p1 = p1New
+          p2 = p2New
+        }
+      }
+      p1.isEmpty && p2.isEmpty
+    }
+  }
 
   override def rememberMe(old: AnyRef): Unit = _id = old.asInstanceOf[LogicalPlan]._id
 
