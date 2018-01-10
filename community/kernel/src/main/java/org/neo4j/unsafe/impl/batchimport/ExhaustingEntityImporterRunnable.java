@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -72,14 +70,6 @@ class ExhaustingEntityImporterRunnable implements Runnable
         finally
         {
             visitor.close();
-            try
-            {
-                data.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
         }
     }
 }

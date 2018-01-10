@@ -69,7 +69,6 @@ import static org.neo4j.unsafe.impl.batchimport.stats.Stats.longStat;
  */
 public class DataImporter
 {
-    public static final String ID_PROPERTY = "__id";
     public static final String NODE_IMPORT_NAME = "Nodes";
     public static final String RELATIONSHIP_IMPORT_NAME = "Relationships";
 
@@ -138,30 +137,33 @@ public class DataImporter
         ControllableStep step = new ControllableStep( title, roughEntityCountProgress, Configuration.DEFAULT,
                 writeMonitor, memoryStatsProvider );
         StageExecution execution = new StageExecution( title, null, Configuration.DEFAULT, Collections.singletonList( step ), 0 );
-        InputIterator dataIterator = data.iterator();
-        for ( int i = 0; i < numRunners; i++ )
-        {
-            pool.submit( new ExhaustingEntityImporterRunnable(
-                    execution, dataIterator, visitors.get(), roughEntityCountProgress ) );
-        }
-        pool.shutdown();
-
-        executionMonitor.start( execution );
         long startTime = currentTimeMillis();
-        long nextWait = 0;
-        try
+        try ( InputIterator dataIterator = data.iterator() )
         {
-            while ( !pool.awaitTermination( nextWait, TimeUnit.MILLISECONDS ) )
+            for ( int i = 0; i < numRunners; i++ )
             {
-                executionMonitor.check( execution );
-                nextWait = executionMonitor.nextCheckTime() - currentTimeMillis();
+                pool.submit( new ExhaustingEntityImporterRunnable(
+                        execution, dataIterator, visitors.get(), roughEntityCountProgress ) );
+            }
+            pool.shutdown();
+
+            executionMonitor.start( execution );
+            long nextWait = 0;
+            try
+            {
+                while ( !pool.awaitTermination( nextWait, TimeUnit.MILLISECONDS ) )
+                {
+                    executionMonitor.check( execution );
+                    nextWait = executionMonitor.nextCheckTime() - currentTimeMillis();
+                }
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                throw new IOException( e );
             }
         }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-            throw new IOException( e );
-        }
+
         execution.assertHealthy();
         step.markAsCompleted();
         writeMonitor.stop();
@@ -175,8 +177,9 @@ public class DataImporter
             ExecutionMonitor executionMonitor, Monitor monitor )
                     throws IOException
     {
-        importData( NODE_IMPORT_NAME, numRunners, input.nodes(), stores, () ->
-            new NodeImporter( stores, idMapper, monitor ), executionMonitor, new MemoryUsageStatsProvider( stores, idMapper ) );
+        Supplier<EntityImporter> importers = () -> new NodeImporter( stores, idMapper, monitor );
+        importData( NODE_IMPORT_NAME, numRunners, input.nodes(), stores, importers, executionMonitor,
+                new MemoryUsageStatsProvider( stores, idMapper ) );
     }
 
     public static DataStatistics importRelationships( int numRunners, Input input,
@@ -185,9 +188,10 @@ public class DataImporter
                     throws IOException
     {
         DataStatistics typeDistribution = new DataStatistics( monitor.nodes.sum(), monitor.properties.sum(), new RelationshipTypeCount[0] );
-        importData( RELATIONSHIP_IMPORT_NAME, numRunners, input.relationships(), stores, () ->
-                new RelationshipImporter( stores, idMapper, typeDistribution, monitor, badCollector, validateRelationshipData,
-                        stores.usesDoubleRelationshipRecordUnits() ), executionMonitor, new MemoryUsageStatsProvider( stores, idMapper ) );
+        Supplier<EntityImporter> importers = () -> new RelationshipImporter( stores, idMapper, typeDistribution, monitor,
+                badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits() );
+        importData( RELATIONSHIP_IMPORT_NAME, numRunners, input.relationships(), stores, importers, executionMonitor,
+                new MemoryUsageStatsProvider( stores, idMapper ) );
         return typeDistribution;
     }
 
