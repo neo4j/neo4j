@@ -32,7 +32,7 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     registerTestProcedures()
 
     val result = executeWith(expectSucceed,
-      "CALL org.neo4j.stream123() YIELD count, name RETURN count, name")
+      "CALL org.neo4j.stream123() YIELD count, name RETURN count, name ORDER BY count")
 
     result.toList should equal(List(
       Map("count" -> 1, "name" -> "count1" ),
