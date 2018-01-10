@@ -250,6 +250,8 @@
                     <regex>true</regex>
                     <include>
                       <item>org\.neo4j\.helpers\.collection\.BoundedIterable</item>
+                      <item>org\.neo4j\.server\.rest\.web\.NodeNotFoundException</item>
+                      <item>org\.neo4j\.server\.rest\.web\.RelationshipNotFoundException</item>
                     </include>
                   </classes>
                   <packages>
@@ -266,7 +268,6 @@
                       <item>org\.neo4j\.server\.helpers(\\..+)?</item>
                       <item>org\.neo4j\.server\.plugins(\\..+)?</item>
                       <item>org\.neo4j\.server\.rest\.repr(\\..+)?</item>
-                      <item>org\.neo4j\.server\.rest\.web(\\..+)?</item>
                       <item>org\.neo4j\.unsafe\.batchinsert(\\..+)?</item>
                       <item>org\.neo4j\.logging(\\..+)?</item>
                       <item>org\.neo4j\.procedure(\\..+)?</item>
