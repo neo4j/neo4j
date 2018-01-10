@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.CompiledRuntimeName
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
@@ -50,7 +50,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
   type PlanDescriptionProvider =
           (InternalPlanDescription) => (Provider[InternalPlanDescription], Option[QueryExecutionTracer])
 
-  def generate(plan: LogicalPlan, planContext: PlanContext, semanticTable: SemanticTable, plannerName: PlannerName, solveds: Solveds, cardinalities: Cardinalities): CompiledPlan = {
+  def generate(plan: LogicalPlan, planContext: PlanContext, semanticTable: SemanticTable, plannerName: PlannerName, readOnlies: ReadOnlies, cardinalities: Cardinalities): CompiledPlan = {
     plan match {
       case res: ProduceResult =>
         val query: CodeStructureResult[GeneratedQuery] = try {
@@ -69,7 +69,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
 
         val description = new Provider[InternalPlanDescription] {
           override def get(): InternalPlanDescription = {
-            val d = LogicalPlan2PlanDescription(plan, plannerName, solveds, cardinalities)
+            val d = LogicalPlan2PlanDescription(plan, plannerName, readOnlies, cardinalities)
             query.code.foldLeft(d) {
               case (descriptionRoot, code) => descriptionRoot.addArgument(code)
             }.addArgument(Runtime(CompiledRuntimeName.toTextOutput))

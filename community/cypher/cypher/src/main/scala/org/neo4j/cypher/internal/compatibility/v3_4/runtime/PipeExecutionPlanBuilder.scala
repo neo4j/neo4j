@@ -49,7 +49,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
     }
 
     val periodicCommitInfo = periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
-    PipeInfo(topLevelPipe, !context.solveds.get(plan.id).readOnly,
+    PipeInfo(topLevelPipe, !context.readOnlies.get(plan.id),
              periodicCommitInfo, fingerprint, context.plannerName)
   }
 
@@ -76,7 +76,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
     val pipeBuilder = pipeBuilderFactory(
       monitors = monitors,
       recurse = p => buildPipe(p),
-      readOnly = context.solveds.get(plan.id).readOnly,
+      readOnly = context.readOnlies.get(plan.id),
       expressionConverters = expressionConverters)
 
     val planStack = new mutable.Stack[LogicalPlan]()

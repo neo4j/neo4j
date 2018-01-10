@@ -27,4 +27,5 @@ object PlanningAttributes {
   class TransactionLayers extends Attribute[Int]
   class Solveds extends Attribute[PlannerQuery]
   class Cardinalities extends Attribute[Cardinality]
+  class ReadOnlies extends Attribute[Boolean]
 }
