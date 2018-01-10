@@ -21,8 +21,10 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -48,6 +50,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private long propertyCount;
     private boolean hasPropertyId;
     private long propertyId;
+    private final DynamicRecordAllocator dynamicStringRecordAllocator;
+    private final DynamicRecordAllocator dynamicArrayRecordAllocator;
 
     protected EntityImporter( BatchingNeoStores stores, Monitor monitor )
     {
@@ -60,6 +64,12 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         }
         this.propertyRecord = propertyStore.newRecord();
         this.propertyIds = new BatchingIdGetter( propertyStore );
+        this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator(
+                new BatchingIdGetter( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordsPerPage() ),
+                propertyStore.getStringStore().getRecordDataSize() );
+        this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator(
+                new BatchingIdGetter( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordsPerPage() ),
+                propertyStore.getStringStore().getRecordDataSize() );
     }
 
     @Override
@@ -109,8 +119,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
     private void encodeProperty( PropertyBlock block, int key, Object value )
     {
-        // TODO: dynamic record ids, batching of those
-        propertyStore.encodeValue( block, key, Values.of( value ) );
+        PropertyStore.encodeValue( block, key, Values.of( value ), dynamicStringRecordAllocator, dynamicArrayRecordAllocator,
+                propertyStore.allowStorePoints() );
     }
 
     protected long createAndWritePropertyChain()

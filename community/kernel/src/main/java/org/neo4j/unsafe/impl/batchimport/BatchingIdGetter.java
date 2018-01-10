@@ -25,7 +25,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.id.RenewableBatchIdSequences;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -33,10 +32,8 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  * Exposes batches of ids from a {@link RecordStore} as a {@link PrimitiveLongIterator}.
  * It makes use of {@link IdSequence#nextIdBatch(int)} (with default batch size the number of records per page)
  * and caches that batch, exhausting it in {@link #next()} before getting next batch.
- *
- * TODO use the {@link RenewableBatchIdSequences} instead.
  */
-public class BatchingIdGetter extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+public class BatchingIdGetter extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements IdSequence
 {
     private final IdSequence source;
     private IdRangeIterator batch;
@@ -56,6 +53,12 @@ public class BatchingIdGetter extends PrimitiveLongCollections.PrimitiveLongBase
     @Override
     protected boolean fetchNext()
     {
+        return next( nextId() );
+    }
+
+    @Override
+    public long nextId()
+    {
         long id;
         if ( batch == null || (id = batch.nextId()) == -1 )
         {
@@ -67,6 +70,12 @@ public class BatchingIdGetter extends PrimitiveLongCollections.PrimitiveLongBase
             batch = new IdRangeIterator( idRange );
             id = batch.nextId();
         }
-        return next( id );
+        return id;
+    }
+
+    @Override
+    public IdRange nextIdBatch( int size )
+    {
+        throw new UnsupportedOperationException();
     }
 }
