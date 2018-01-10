@@ -44,6 +44,7 @@ import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.IdType.INTEGER;
@@ -76,7 +77,7 @@ public class HumanUnderstandableExecutionMonitorIT
 
         // when
         new ParallelBatchImporter( storage.directory().absolutePath(), storage.fileSystem(), storage.pageCache(), DEFAULT,
-                NullLogService.getInstance(), monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS ).doImport( input );
+                NullLogService.getInstance(), monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR ).doImport( input );
 
         // then
         progress.assertAllProgressReachedEnd();

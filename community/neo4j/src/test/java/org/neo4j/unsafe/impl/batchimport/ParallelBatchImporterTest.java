@@ -83,6 +83,7 @@ import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
@@ -170,7 +171,7 @@ public class ParallelBatchImporterTest
         storeDir.mkdirs();
         final BatchImporter inserter = new ParallelBatchImporter( storeDir,
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, Config.defaults(), getFormat() );
+                processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR );
 
         boolean successful = false;
         Groups groups = new Groups();

@@ -52,6 +52,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
@@ -80,7 +81,7 @@ public class ImportPanicIT
         // GIVEN
         BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(), fs, null, Configuration.DEFAULT,
                 NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
-                Config.defaults(), StandardV3_0.RECORD_FORMATS );
+                Config.defaults(), StandardV3_0.RECORD_FORMATS, NO_MONITOR );
         Iterable<DataFactory> nodeData =
                 datas( data( NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
         Input brokenCsvInput = new CsvInput(

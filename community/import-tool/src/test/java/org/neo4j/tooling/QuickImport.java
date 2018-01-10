@@ -50,6 +50,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaultVisible;
 
 /**
@@ -161,7 +162,7 @@ public class QuickImport
             {
                 consumer = new ParallelBatchImporter( dir, fileSystem, null, importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
-                        RecordFormatSelector.selectForConfig( dbConfig, logging ) );
+                        RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR );
                 ImportTool.printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
             }
             consumer.doImport( input );

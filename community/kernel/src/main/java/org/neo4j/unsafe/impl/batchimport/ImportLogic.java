@@ -54,7 +54,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.CachedInput;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker;
-import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
@@ -85,6 +84,33 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
  */
 public class ImportLogic implements Closeable
 {
+    public interface Monitor
+    {
+        void doubleRelationshipRecordUnitsEnabled();
+
+        void mayExceedNodeIdCapacity( long capacity, long estimatedCount );
+
+        void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount );
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount )
+        {   // no-op
+        }
+
+        @Override
+        public void mayExceedNodeIdCapacity( long capacity, long estimatedCount )
+        {   // no-op
+        }
+
+        @Override
+        public void doubleRelationshipRecordUnitsEnabled()
+        {   // no-op
+        }
+    };
+
     private final File storeDir;
     private final FileSystemAbstraction fileSystem;
     private final BatchingNeoStores neoStore;
@@ -95,6 +121,7 @@ public class ImportLogic implements Closeable
     private final DataImporter.Monitor storeUpdateMonitor = new DataImporter.Monitor();
     private final long maxMemory;
     private final Dependencies dependencies = new Dependencies();
+    private final Monitor monitor;
     private Input input;
 
     // This map contains additional state that gets populated, created and used throughout the stages.
@@ -122,16 +149,18 @@ public class ImportLogic implements Closeable
      * @param logService {@link LogService} to use.
      * @param executionMonitor {@link ExecutionMonitor} to follow progress as the import proceeds.
      * @param recordFormats which {@link RecordFormats record format} to use for the created db.
+     * @param monitor {@link Monitor} for some events.
      */
     public ImportLogic( File storeDir, FileSystemAbstraction fileSystem, BatchingNeoStores neoStore,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            RecordFormats recordFormats )
+            RecordFormats recordFormats, Monitor monitor )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.neoStore = neoStore;
         this.config = config;
         this.recordFormats = recordFormats;
+        this.monitor = monitor;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = ExecutionSupervisors.withDynamicProcessorAssignment( executionMonitor, config );
         this.maxMemory = config.maxMemoryUsage();
@@ -154,7 +183,7 @@ public class ImportLogic implements Closeable
 
         if ( neoStore.determineDoubleRelationshipRecordUnits( inputEstimates ) )
         {
-            System.out.println( "Will use double record units for all relationships" );
+            monitor.doubleRelationshipRecordUnitsEnabled();
         }
 
         executionMonitor.initialize( dependencies );
@@ -162,22 +191,7 @@ public class ImportLogic implements Closeable
 
     private void sanityCheckEstimatesWithRecordFormat( Estimates inputEstimates )
     {
-        new EstimationSanityChecker( recordFormats, new Monitor()
-        {
-            @Override
-            public void nodeCountCapacity( long capacity, long estimatedCount )
-            {
-                System.err.printf( "WARNING: estimated number of relationships %d may exceed capacity %d of selected record format%n",
-                        estimatedCount, capacity );
-            }
-
-            @Override
-            public void relationshipCountCapacity( long capacity, long estimatedCount )
-            {
-                System.err.printf( "WARNING: estimated number of nodes %d may exceed capacity %d of selected record format%n",
-                        estimatedCount, capacity );
-            }
-        } ).sanityCheck( inputEstimates );
+        new EstimationSanityChecker( recordFormats, monitor ).sanityCheck( inputEstimates );
     }
 
     /**

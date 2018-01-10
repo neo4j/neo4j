@@ -79,6 +79,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -111,7 +112,7 @@ public class CsvInputBatchImportIT
         Config dbConfig = Config.defaults();
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(), null,
                 smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), AdditionalInitialIds.EMPTY, dbConfig,
-                RecordFormatSelector.defaultFormat() );
+                RecordFormatSelector.defaultFormat(), NO_MONITOR );
         List<InputEntity> nodeData = randomNodeData();
         List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 

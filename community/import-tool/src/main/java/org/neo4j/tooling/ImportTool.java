@@ -564,7 +564,8 @@ public class ImportTool
                 ExecutionMonitors.defaultVisible( in ),
                 EMPTY,
                 dbConfig,
-                RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ) );
+                RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
+                new PrintingImportLogicMonitor( out, err ) );
         printOverview( storeDir, nodesFiles, relationshipsFiles, configuration, out );
         success = false;
         try
