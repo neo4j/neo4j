@@ -22,73 +22,51 @@ package org.neo4j.kernel.impl.index.labelscan;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
-import java.util.NoSuchElementException;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 
 /**
- * {@link PrimitiveLongIterator} which iterate over multiple {@link LabelScanValue} and for each
+ * {@link IndexProgressor} which steps over multiple {@link LabelScanValue} and for each
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
  *
- * The provided {@link RawCursor} is managed externally, e.g. {@link NativeLabelScanReader},
- * this because implemented interface lacks close-method.
  */
-class LabelScanValueIterator extends LabelScanValueIndexAccessor implements PrimitiveLongResourceIterator
+class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor implements IndexProgressor, Resource
 {
-    private boolean hasNextDecided;
-    private boolean hasNext;
-    protected long next;
 
-    @Override
-    public boolean hasNext()
-    {
-        if ( !hasNextDecided )
-        {
-            hasNext = fetchNext();
-            hasNextDecided = true;
-        }
-        return hasNext;
-    }
+    private final NodeLabelClient client;
 
-    @Override
-    public long next()
-    {
-        if ( !hasNext() )
-        {
-            throw new NoSuchElementException( "No more elements in " + this );
-        }
-        hasNextDecided = false;
-        return next;
-    }
-
-    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
-            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed )
+    LabelScanValueIndexProgressor( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
+            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed,
+            NodeLabelClient client )
     {
         super( toRemoveFromWhenClosed, cursor );
+        this.client = client;
     }
 
     /**
-     * @return next node id in the current {@link LabelScanValue} or, if current value exhausted,
-     * goes to next {@link LabelScanValue} from {@link RawCursor}. Returns {@code true} if next node id
-     * was found, otherwise {@code false}.
+     *  Progress through the index until the next accepted entry.
+     *
+     *  Progress the cursor to the current {@link LabelScanValue}, if this is not accepted by the client or if current
+     *  value is exhausted it continues to the next {@link LabelScanValue}  from {@link RawCursor}.
+     * @return <code>true</code> if an accepted entry was found, <code>false</code> otherwise
      */
-    protected boolean fetchNext()
+    @Override
+    public boolean next()
     {
-        while ( true )
+        for ( ; ; )
         {
-            if ( bits != 0 )
+            while ( bits != 0 )
             {
                 int delta = Long.numberOfTrailingZeros( bits );
                 bits &= bits - 1;
-                next =  baseNodeId + delta ;
-                hasNext = true;
-                return true;
+                if ( client.acceptNode( baseNodeId + delta, null ) )
+                {
+                    return true;
+                }
             }
-
             try
             {
                 if ( !cursor.next() )
