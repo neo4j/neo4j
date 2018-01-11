@@ -43,7 +43,7 @@ public interface CleanupJob extends Runnable
     Exception getCause();
 
     /**
-     * Mark this job and cleanup all it's resources.
+     * Mark this job as closed and cleanup all it's resources.
      */
     void close();
 
