@@ -76,7 +76,10 @@ class AcceptanceTest {
     createTests(scenarios, CostTestConfig)
   }
 
-  //TODO 3.3?
+  @TestFactory
+  def runAcceptanceTestsCompatibility33(): Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility33TestConfig)
+  }
 
   @TestFactory
   def runAcceptanceTestsCompatibility31(): Collection[DynamicTest] = {

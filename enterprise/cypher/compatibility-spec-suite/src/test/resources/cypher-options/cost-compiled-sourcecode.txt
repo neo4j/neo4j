@@ -1,2 +1,0 @@
-// Compiled runtime should generate source code
-CYPHER debug=generate_java_source
