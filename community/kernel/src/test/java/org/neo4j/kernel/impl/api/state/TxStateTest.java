@@ -157,8 +157,8 @@ public class TxStateTest
         state.nodeDoAddLabel( 3, 5 );
 
         // WHEN
-        Set<Long> removed = state.nodesWithLabelChanged( 1, 2, 3 ).getRemoved();
-        Set<Long> added = state.nodesWithLabelChanged( 1, 2, 3 ).getAdded();
+        Set<Long> removed = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getRemoved();
+        Set<Long> added = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getAdded();
 
         // THEN
         assertEquals( asSet( 0L, 1L, 2L ), Iterables.asSet( removed ) );

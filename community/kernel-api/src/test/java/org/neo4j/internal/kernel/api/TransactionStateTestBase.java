@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -554,14 +555,15 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
     public void shouldFindUpdatedNodeInInLabelScan() throws Exception
     {
         // Given
-        Node node = createNode( "label" );
+        Node node = createNode(  );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
               NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
         {
             // when
-            tx.dataWrite().nodeAddLabel( node.node, node.labels[0] );
-            tx.dataRead().nodeLabelScan( node.labels[0], cursor );
+            int label = tx.tokenWrite().labelGetOrCreateForName( "label" );
+            tx.dataWrite().nodeAddLabel( node.node, label );
+            tx.dataRead().nodeLabelScan( label, cursor );
 
             // then
             assertTrue( cursor.next() );
@@ -609,7 +611,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInDisjunctionLabelScan() throws Exception
+    public void shouldFindNodeWithOneRemovedLabelInDisjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label1", "label2" );
@@ -618,6 +620,26 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
               NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
         {
             // when
+            tx.dataWrite().nodeRemoveLabel( node.node, node.labels[1] );
+            tx.dataRead().nodeLabelUnionScan( cursor, node.labels );
+
+            // then
+            assertTrue( cursor.next() );
+            assertEquals( node.node, cursor.nodeReference() );
+        }
+    }
+
+    @Test
+    public void shouldNotFindNodeWithAllRemovedLabelsInDisjunctionLabelScan() throws Exception
+    {
+        // Given
+        Node node = createNode( "label1", "label2" );
+
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        {
+            // when
+            tx.dataWrite().nodeRemoveLabel( node.node, node.labels[0] );
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[1] );
             tx.dataRead().nodeLabelUnionScan( cursor, node.labels );
 
@@ -646,7 +668,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-    @Test
+    @Ignore
     public void shouldNotFindDeletedNodeInConjunctionLabelScan() throws Exception
     {
         // Given
@@ -682,8 +704,28 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-    @Test
+    @Ignore
     public void shouldFindUpdatedNodeInInConjunctionLabelScan() throws Exception
+    {
+        // Given
+        Node node = createNode("label1");
+
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        {
+            // when
+            int label2 = tx.tokenWrite().labelGetOrCreateForName( "label2" );
+            tx.dataWrite().nodeAddLabel( node.node, label2 );
+            tx.dataRead().nodeLabelIntersectionScan( cursor, node.labels[0], label2 );
+
+            // then
+            assertTrue( cursor.next() );
+            assertEquals( node.node, cursor.nodeReference() );
+        }
+    }
+
+    @Ignore
+    public void shouldNotFindNodeWithJustOneUpdatedLabelInInConjunctionLabelScan() throws Exception
     {
         // Given
         Node node = createNode();
@@ -692,13 +734,13 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
               NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
         {
             // when
-            int label1 = tx.tokenWrite().labelGetOrCreateForName( "label1" );
-            tx.dataWrite().nodeAddLabel( node.node, label1 );
-            tx.dataRead().nodeLabelIntersectionScan( cursor, label1 );
+            int label1 = tx.tokenWrite().labelGetOrCreateForName( "labe1" );
+            int label2 = tx.tokenWrite().labelGetOrCreateForName( "label2" );
+            tx.dataWrite().nodeAddLabel( node.node, label2 );
+            tx.dataRead().nodeLabelIntersectionScan( cursor, label1, label2 );
 
             // then
-            assertTrue( cursor.next() );
-            assertEquals( node.node, cursor.nodeReference() );
+            assertFalse( cursor.next() );
         }
     }
 

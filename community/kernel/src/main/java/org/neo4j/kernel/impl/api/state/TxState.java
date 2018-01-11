@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -720,25 +721,46 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> nodesWithLabelChanged( int... labels )
+    public ReadableDiffSets<Long> nodesWithLabelChanged( int label )
     {
-        assert labels.length > 0;
+        return LABEL_STATE.get( this, label ).nodeDiffSets();
+    }
 
-        if ( labels.length == 1 )
+    @Override
+    public ReadableDiffSets<Long> nodesWithAnyOfLabelsChanged( int... labels )
+    {
+        //It is enough that one of the labels is added
+        //It is necessary for all the labels are removed
+        Set<Long> added = new HashSet<>();
+        Set<Long> removed = new HashSet<>();
+        for ( int i = 0; i < labels.length; i++ )
         {
-            return LABEL_STATE.get( this, labels[0] ).nodeDiffSets();
-        }
-        else
-        {
-            DiffSets<Long> changes = new DiffSets<>();
-            for ( int label : labels )
+            ReadableDiffSets<Long> nodeDiffSets = LABEL_STATE.get( this, labels[i] ).nodeDiffSets();
+            if ( i == 0 )
             {
-                LabelState labelState = LABEL_STATE.get( this, label );
-                changes.addAll( labelState.nodeDiffSets().getAdded().iterator() );
-                changes.removeAll( labelState.nodeDiffSets().getRemoved().iterator() );
+                removed.addAll( nodeDiffSets.getRemoved() );
             }
-            return changes;
+            else
+            {
+                removed.retainAll( nodeDiffSets.getRemoved() );
+            }
+            added.addAll( nodeDiffSets.getAdded() );
         }
+
+        return new DiffSets<>( added, removed );
+    }
+
+    @Override
+    public ReadableDiffSets<Long> nodesWithAllLabelsChanged( int... labels )
+    {
+        DiffSets<Long> changes = new DiffSets<>();
+        for ( int label : labels )
+        {
+            LabelState labelState = LABEL_STATE.get( this, label );
+            changes.addAll( labelState.nodeDiffSets().getAdded().iterator() );
+            changes.removeAll( labelState.nodeDiffSets().getRemoved().iterator() );
+        }
+        return changes;
     }
 
     @Override

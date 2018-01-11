@@ -44,14 +44,36 @@ class NodeLabelIndexCursor extends IndexCursor
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, boolean providesLabels, int... labels )
+    public void scan( IndexProgressor progressor, boolean providesLabels, int label )
     {
         super.initialize( progressor );
         if ( read.hasTxStateWithChanges() )
         {
-            changes = read.txState().nodesWithLabelChanged( labels );
+            changes = read.txState().nodesWithLabelChanged( label );
             added = changes.augment( PrimitiveLongCollections.emptyIterator() );
         }
+    }
+
+    @Override
+    public void unionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
+    {
+        super.initialize( progressor );
+        if ( read.hasTxStateWithChanges() )
+        {
+            changes = read.txState().nodesWithAnyOfLabelsChanged( labels );
+            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
+        }
+    }
+
+    @Override
+    public void intersectionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
+    {
+        super.initialize( progressor );
+        //TODO: Currently we don't have a good way of handling this in the tx state
+        //The problem is for the nodes where some - but not all of the labels - are
+        //added in the transaction. For these we need to go to disk and check if they
+        //have the missing labels and hence return them or if not discard them.
+        throw new UnsupportedOperationException(  );
     }
 
     @Override
