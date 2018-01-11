@@ -61,6 +61,21 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  */
 public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 {
+    /**
+     * Concepts
+     * Total space - The space available for data (pageSize - headerSize)
+     * Active space - Space currently occupied by active data (not including dead keys)
+     * Dead space - Space currently occupied by dead data that could be reclaimed by defragment
+     * Alloc offset - Exact offset to leftmost key and thus the end of alloc space
+     * Alloc space - The available space between offset array and data space
+     *
+     * TotalSpace  |----------------------------------------|
+     * ActiveSpace |-----------|   +    |---------|  + |----|
+     * DeadSpace                                  |----|
+     * AllocSpace              |--------|
+     * AllocOffset                      v
+     *     [Header][OffsetArray]........[_________,XXXX,____] (_ = alive key, X = dead key)
+     */
     private static final int BYTE_POS_ALLOCOFFSET = BASE_HEADER_LENGTH;
     private static final int BYTE_POS_DEADSPACE = BYTE_POS_ALLOCOFFSET + bytesPageOffset();
     private static final int HEADER_LENGTH_DYNAMIC = BYTE_POS_DEADSPACE + bytesPageOffset();
@@ -1015,7 +1030,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return totalSpace( pageSize ) / 2;
     }
 
-    private int totalSpaceOfKeyValue( KEY key, VALUE value )
+     int totalSpaceOfKeyValue( KEY key, VALUE value )
     {
         return bytesKeyOffset() + bytesKeySize() + bytesValueSize() + layout.keySize( key ) + layout.valueSize( value );
     }
