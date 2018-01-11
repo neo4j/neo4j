@@ -416,6 +416,36 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   }
 
+  test("cartesian product should allocate lhs followed by rhs, in order") {
+    def expand(n:Int): LogicalPlan =
+      n match {
+        case 1 => NodeByLabelScan(IdName("n1"), LabelName("label2")(pos), Set.empty)(solved)
+        case n => Expand(expand(n-1), IdName("n"+(n-1)), SemanticDirection.INCOMING, Seq.empty, IdName("n"+n), IdName("r"+(n-1)), ExpandAll)(solved)
+      }
+    val N = 10
+
+    // given
+    val lhs = NodeByLabelScan(x, LabelName("label1")(pos), Set.empty)(solved)
+    val rhs = expand(N)
+    val Xproduct = CartesianProduct(lhs, rhs)(solved)
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(Xproduct, semanticTable).slotConfigurations
+
+    // then
+    allocations should have size N+2
+
+    val expectedPipelines =
+      (1 until N).foldLeft(allocations(lhs.id))(
+        (acc, i) =>
+          acc
+            .newLong("n"+i, false, CTNode)
+            .newLong("r"+i, false, CTRelationship)
+      ).newLong("n"+N, false, CTNode)
+
+    allocations(Xproduct.id) should equal(expectedPipelines)
+  }
+
   test("node hash join I") {
     // given
     val lhs = NodeByLabelScan(x, LabelName("label1")(pos), Set.empty)(solved)

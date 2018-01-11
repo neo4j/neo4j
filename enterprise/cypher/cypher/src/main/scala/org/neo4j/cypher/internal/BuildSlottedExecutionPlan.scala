@@ -59,7 +59,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
 
-  override def description = "create interpreted execution plan"
+  override def description = "create slotted execution plan"
 
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
