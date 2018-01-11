@@ -468,7 +468,7 @@ class InternalTreeLogic<KEY,VALUE>
 
             // Do split
             bTreeNode.doSplitInternal( cursor, keyCount, rightCursor, pos, newKey, newRightChild, stableGeneration, unstableGeneration,
-                    structurePropagation );
+                    structurePropagation.rightKey );
         }
 
         // Update old right with new left sibling (newRight)
@@ -653,7 +653,7 @@ class InternalTreeLogic<KEY,VALUE>
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
 
             // Do split
-            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, pos, newKey, newValue, structurePropagation );
+            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, pos, newKey, newValue, structurePropagation.rightKey );
         }
 
         // Update old right with new left sibling (newRight)

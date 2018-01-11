@@ -346,18 +346,18 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            VALUE newValue, StructurePropagation<KEY> structurePropagation )
+            VALUE newValue, KEY newSplitter )
     {
         int keyCountAfterInsert = leftKeyCount + 1;
         int middlePos = middle( keyCountAfterInsert );
 
         if ( middlePos == insertPos )
         {
-            layout.copyKey( newKey, structurePropagation.rightKey );
+            layout.copyKey( newKey, newSplitter );
         }
         else
         {
-            keyAt( leftCursor, structurePropagation.rightKey, insertPos < middlePos ? middlePos - 1 : middlePos, LEAF );
+            keyAt( leftCursor, newSplitter, insertPos < middlePos ? middlePos - 1 : middlePos, LEAF );
         }
         int rightKeyCount = keyCountAfterInsert - middlePos;
 
@@ -402,18 +402,18 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            long newRightChild, long stableGeneration, long unstableGeneration, StructurePropagation<KEY> structurePropagation )
+            long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter )
     {
         int keyCountAfterInsert = leftKeyCount + 1;
         int middlePos = middle( keyCountAfterInsert );
 
         if ( middlePos == insertPos )
         {
-            layout.copyKey( newKey, structurePropagation.rightKey );
+            layout.copyKey( newKey, newSplitter );
         }
         else
         {
-            keyAt( leftCursor, structurePropagation.rightKey, insertPos < middlePos ? middlePos - 1 : middlePos, INTERNAL );
+            keyAt( leftCursor, newSplitter, insertPos < middlePos ? middlePos - 1 : middlePos, INTERNAL );
         }
         int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
 

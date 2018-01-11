@@ -330,7 +330,7 @@ abstract class TreeNode<KEY,VALUE>
      * Key count is updated.
      */
     abstract void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey, VALUE newValue,
-            StructurePropagation<KEY> structurePropagation );
+            KEY newSplitter );
 
     /**
      * Performs the entry moving part of split in internal.
@@ -341,7 +341,7 @@ abstract class TreeNode<KEY,VALUE>
      */
     abstract void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos,
             KEY newKey,
-            long newRightChild, long stableGeneration, long unstableGeneration, StructurePropagation<KEY> structurePropagation );
+            long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter );
 
     /**
      * Move all rightmost keys and values in left leaf from given position to right leaf.
