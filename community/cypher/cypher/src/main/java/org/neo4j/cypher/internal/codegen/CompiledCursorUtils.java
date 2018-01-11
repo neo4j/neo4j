@@ -59,11 +59,7 @@ public final class CompiledCursorUtils
         {
             return Values.NO_VALUE;
         }
-        read.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
+        singleNode( read, nodeCursor, node );
         nodeCursor.properties( propertyCursor );
         while ( propertyCursor.next() )
         {
@@ -93,13 +89,18 @@ public final class CompiledCursorUtils
         {
             return false;
         }
+        singleNode( read, nodeCursor, node );
+
+        return nodeCursor.labels().contains( label );
+    }
+
+    private static void singleNode( Read read, NodeCursor nodeCursor, long node ) throws EntityNotFoundException
+    {
         read.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
             throw new EntityNotFoundException( EntityType.NODE, node );
         }
-
-        return nodeCursor.labels().contains( label );
     }
 }
 
