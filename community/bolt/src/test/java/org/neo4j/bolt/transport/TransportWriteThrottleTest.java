@@ -32,10 +32,8 @@ import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,7 +46,10 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,16 +59,17 @@ public class TransportWriteThrottleTest
     private ChannelHandlerContext context;
     private Channel channel;
     private SocketChannelConfig config;
-    private TestThrottleLock lock;
+    private ThrottleLock lock;
+    private Attribute lockAttribute;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
-        lock = new TestThrottleLock();
+        lock = mock( ThrottleLock.class );
 
         config = mock( SocketChannelConfig.class );
 
-        Attribute lockAttribute = mock( Attribute.class );
+        lockAttribute = mock( Attribute.class );
         when( lockAttribute.get() ).thenReturn( lock );
 
         channel = mock( SocketChannel.class, Answers.RETURNS_MOCKS );
@@ -120,8 +122,8 @@ public class TransportWriteThrottleTest
         }
 
         assertTrue( future.isDone() );
-        assertThat( lock.lockCallCount(), is( 0 ) );
-        assertThat( lock.unlockCallCount(), is( 0 ) );
+        verify( lock, never() ).lock( any(), anyLong() );
+        verify( lock, never() ).unlock( any() );
     }
 
     @Test
@@ -145,14 +147,10 @@ public class TransportWriteThrottleTest
         {
             // expected
         }
-        catch ( Throwable t )
-        {
-            fail( "should timeout" );
-        }
 
         assertFalse( future.isDone() );
-        assertThat( lock.lockCallCount(), greaterThan( 0 ) );
-        assertThat( lock.unlockCallCount(), is( 0 ) );
+        verify( lock, atLeast( 1 ) ).lock( any(), anyLong() );
+        verify( lock, never() ).unlock( any() );
     }
 
     @Test
@@ -166,24 +164,23 @@ public class TransportWriteThrottleTest
         throttle.acquire( channel );
 
         // expect
-        assertThat( lock.lockCallCount(), greaterThan( 0 ) );
-        assertThat( lock.unlockCallCount(), is( 0 ) );
+        verify( lock, atLeast( 1 ) ).lock( any(), anyLong() );
+        verify( lock, never() ).unlock( any() );
     }
 
     @Test
     public void shouldResumeWhenWritabilityChanged() throws Exception
     {
+        TestThrottleLock lockOverride = new TestThrottleLock();
+
         // given
-        TransportThrottle throttle = newThrottleAndInstall( channel );
+        TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride );
         when( channel.isWritable() ).thenReturn( false );
 
-        Future future = Executors.newSingleThreadExecutor().submit( () -> throttle.acquire( channel ) );
+        Thread throttleThread = Executors.defaultThreadFactory().newThread( () -> throttle.acquire( channel ) );
+        throttleThread.start();
 
-        // Wait until lock is acquired.
-        if ( !lock.waitLocked( 1, TimeUnit.MINUTES ) )
-        {
-            fail( "lock should be acquired" );
-        }
+        awaitWaitingState( throttleThread, TimeUnit.MINUTES.toMillis( 1 ) );
 
         // when
         when( channel.isWritable() ).thenReturn( true );
@@ -191,60 +188,98 @@ public class TransportWriteThrottleTest
         verify( channel.pipeline() ).addLast( captor.capture() );
         captor.getValue().channelWritabilityChanged( context );
 
-        // expect
-        try
-        {
-            future.get( 1, TimeUnit.MINUTES );
-        }
-        catch ( Throwable t )
-        {
-            fail( "should not throw" );
-        }
+        throttleThread.join( TimeUnit.MINUTES.toMillis( 1 ) );
 
-        assertThat( lock.lockCallCount(), greaterThan( 0 ) );
-        assertThat( lock.unlockCallCount(), is( 1 ) );
+        assertFalse( throttleThread.isAlive() );
+        assertThat( lockOverride.lockCallCount(), greaterThan( 0 ) );
+        assertThat( lockOverride.unlockCallCount(), is( 1 ) );
     }
 
     private TransportThrottle newThrottle()
     {
+        return newThrottle( null );
+    }
+
+    private TransportThrottle newThrottle( ThrottleLock lockOverride )
+    {
+        if ( lockOverride != null )
+        {
+            lock = lockOverride;
+
+            when( lockAttribute.get() ).thenReturn( lockOverride );
+        }
+
         return new TransportWriteThrottle( 64, 256, () -> lock );
     }
 
     private TransportThrottle newThrottleAndInstall( Channel channel )
     {
-        TransportThrottle throttle = newThrottle();
+        return newThrottleAndInstall( channel, null );
+    }
+
+    private TransportThrottle newThrottleAndInstall( Channel channel, ThrottleLock lockOverride )
+    {
+        TransportThrottle throttle = newThrottle( lockOverride );
 
         throttle.install( channel );
 
         return throttle;
     }
 
+    public static void awaitWaitingState( Thread thread, long timeoutMillis ) throws TimeoutException
+    {
+        long startTime = -1;
+
+        do
+        {
+            long currentTime = System.currentTimeMillis();
+            if ( startTime == -1 )
+            {
+                startTime = currentTime;
+            }
+
+            long elapsedTime = currentTime - startTime;
+            if ( elapsedTime > timeoutMillis )
+            {
+                throw new TimeoutException( "timed out waiting for thread to be blocked" );
+            }
+
+            sleep( 500 );
+        }
+        while ( thread.getState() != Thread.State.WAITING );
+    }
+
+    public static void sleep( int millis )
+    {
+        try
+        {
+            Thread.sleep( millis );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException( e );
+        }
+    }
+
     private static class TestThrottleLock implements ThrottleLock
     {
         private AtomicInteger lockCount = new AtomicInteger( 0 );
         private AtomicInteger unlockCount = new AtomicInteger( 0 );
-        private Semaphore semaphore = new Semaphore( 1 );
-        private volatile CountDownLatch lockWaiter = new CountDownLatch( 1 );
+        private ThrottleLock actualLock = new DefaultThrottleLock();
 
         @Override
         public void lock( Channel channel, long timeout ) throws InterruptedException
         {
-            semaphore.acquire();
+            actualLock.lock( channel, 0 );
             lockCount.incrementAndGet();
-            lockWaiter.countDown();
         }
 
         @Override
         public void unlock( Channel channel )
         {
-            semaphore.release();
+            actualLock.unlock( channel );
             unlockCount.incrementAndGet();
-            lockWaiter = new CountDownLatch( 1 );
-        }
-
-        public boolean waitLocked( long timeout, TimeUnit unit ) throws InterruptedException
-        {
-            return lockWaiter.await( timeout, unit );
         }
 
         public int lockCallCount()
