@@ -24,8 +24,8 @@ import org.neo4j.values.storable.Value;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values).
- * A value can be any {@link Number} and is represented as a {@code long} to store the raw bits and a type
- * to say if it's a long, double or float.
+ * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
+ * Note that it says nothing about how keys are compared, serialized, read, written, etc. That is the job of Layout.
  */
 public interface NativeSchemaKey
 {

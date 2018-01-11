@@ -115,12 +115,26 @@ public abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE
         return nodeValueIterator;
     }
 
-    public abstract void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates );
+    @Override
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
+    {
+        validateQuery( indexOrder, predicates );
+
+        KEY treeKeyFrom = layout.newKey();
+        KEY treeKeyTo = layout.newKey();
+
+        initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates );
+    }
 
     @Override
     public abstract boolean hasFullNumberPrecision( IndexQuery... predicates );
 
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query )
+    abstract void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates );
+
+    abstract void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
+
+    private void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {

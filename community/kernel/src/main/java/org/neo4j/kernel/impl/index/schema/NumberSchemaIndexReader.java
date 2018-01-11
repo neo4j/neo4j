@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -47,39 +46,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
-    {
-        validateQuery( indexOrder, predicates );
-
-        KEY treeKeyFrom = layout.newKey();
-        KEY treeKeyTo = layout.newKey();
-
-        IndexQuery predicate = predicates[0];
-        switch ( predicate.type() )
-        {
-        case exists:
-            treeKeyFrom.initAsLowest();
-            treeKeyTo.initAsHighest();
-            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates );
-            break;
-        case exact:
-            ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
-            treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates );
-            break;
-        case rangeNumeric:
-            NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
-            initFromForRange( rangePredicate, treeKeyFrom );
-            initToForRange( rangePredicate, treeKeyTo );
-            startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates );
-            break;
-        default:
-            throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
-        }
-    }
-
-    private void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates )
+    void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates )
     {
         if ( predicates.length != 1 )
         {
@@ -97,6 +64,31 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
                         format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.", indexOrder,
                                 Arrays.toString( predicates ), Arrays.toString( capability ) ) );
             }
+        }
+    }
+
+    @Override
+    void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    {
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case exists:
+            treeKeyFrom.initAsLowest();
+            treeKeyTo.initAsHighest();
+            break;
+        case exact:
+            ExactPredicate exactPredicate = (ExactPredicate) predicate;
+            treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
+            treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
+            break;
+        case rangeNumeric:
+            NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
+            initFromForRange( rangePredicate, treeKeyFrom );
+            initToForRange( rangePredicate, treeKeyTo );
+            break;
+        default:
+            throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
     }
 

@@ -132,8 +132,8 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
      * Compares the value of this key to that of another key.
      * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
      *
-     * @param other the {@link NativeSchemaKey} to compare to.
-     * @return comparison against the {@code other} {@link NativeSchemaKey}.
+     * @param other the {@link NumberSchemaKey} to compare to.
+     * @return comparison against the {@code other} {@link NumberSchemaKey}.
      */
     int compareValueTo( NumberSchemaKey other )
     {
@@ -141,11 +141,11 @@ class NumberSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     }
 
     /**
-     * Extracts raw bits and type from a {@link Value} and store as state of this {@link NativeSchemaKey} instance.
+     * Extracts raw bits and type from a {@link NumberValue} and store as state of this {@link NumberSchemaKey} instance.
      *
-     * @param value actual {@link Value} value.
+     * @param value actual {@link NumberValue} value.
      */
-    private void extractRawBitsAndType( Value value )
+    private void extractRawBitsAndType( NumberValue value )
     {
         value.writeTo( this );
     }
