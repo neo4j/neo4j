@@ -36,4 +36,24 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = updateWithBothPlannersAndCompatibilityMode("MERGE (a)-[:X]->(b)-[:X]->(c) RETURN 42")
     assertStats(result, relationshipsCreated = 2, nodesCreated = 3)
   }
+
+  test("Merging with self loop and relationship uniqueness - no stats") {
+    graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (a)-[r1:X]->(b)-[r2:X]->(c) RETURN id(r1) = id(r2) as sameEdge")
+    result.columnAs[Boolean]("sameEdge").toList should equal(List(false))
+  }
+
+  test("Merging with self loop and relationship uniqueness - no stats - reverse direction") {
+    graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge")
+    result.columnAs[Boolean]("sameEdge").toList should equal(List(false))
+  }
+
+  test("Merging with non-self-loop but require relationship uniqueness") {
+    val a = createLabeledNode(Map("name" -> "a"), "A")
+    val b = createLabeledNode(Map("name" -> "b"), "B")
+    relate(a, b, "X")
+    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge, c.name as name")
+    result.toList should equal(List(Map("sameEdge" -> false, "name" -> null)))
+  }
 }

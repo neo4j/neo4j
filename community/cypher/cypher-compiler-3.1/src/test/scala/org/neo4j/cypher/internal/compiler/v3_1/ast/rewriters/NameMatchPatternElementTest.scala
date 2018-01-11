@@ -30,7 +30,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
 
-    val result = original.rewrite(nameMatchAndMergePatternElements)
+    val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
@@ -38,7 +38,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
     val expected = parser.parse("MATCH (n)-[`  UNNAMED10`:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
 
-    val result = original.rewrite(nameMatchAndMergePatternElements)
+    val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
@@ -46,7 +46,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n")
     val expected = parser.parse("MATCH (n)-[`  UNNAMED10`:Foo*]->(m) RETURN n")
 
-    val result = original.rewrite(nameMatchAndMergePatternElements)
+    val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
@@ -74,11 +74,19 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     assert(result === expected)
   }
 
+  test("merge (a)-[:R]->() return a") {
+    val original = parser.parse("merge (a)-[:R]->() return a")
+    val expected = parser.parse("merge (a)-[`  UNNAMED10`:R]->(`  UNNAMED17`) return a")
+
+    val result = original.rewrite(nameUpdatingClauses)
+    assert(result === expected)
+  }
+
   test("does not touch parameters") {
     val original = parser.parse("MATCH (n)-[r:Foo]->({p}) RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20` {p}) RETURN n")
 
-    val result = original.rewrite(nameMatchAndMergePatternElements)
+    val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
@@ -86,7 +94,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
     val expected = parser.parse("MATCH (a:Artist)-[`  UNNAMED17`:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
 
-    val result = original.rewrite(nameMatchAndMergePatternElements)
+    val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 }

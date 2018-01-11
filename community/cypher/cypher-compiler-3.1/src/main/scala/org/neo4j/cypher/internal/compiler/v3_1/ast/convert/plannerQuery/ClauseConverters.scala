@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.plannerQuery.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.addUniquenessPredicates.{UniqueRel, collectUniqueRels, createPredicatesFor}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
