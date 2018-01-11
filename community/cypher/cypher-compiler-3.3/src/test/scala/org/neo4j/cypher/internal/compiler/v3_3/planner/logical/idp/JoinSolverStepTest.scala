@@ -105,7 +105,6 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
   }
 
-
   test("does not join plans that overlap on non-nodes") {
     implicit val registry = IdRegistry[PatternRelationship]
     val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd)

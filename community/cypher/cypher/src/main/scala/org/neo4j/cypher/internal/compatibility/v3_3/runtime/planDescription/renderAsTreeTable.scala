@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 
+import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{Map, mutable}
 
 object renderAsTreeTable extends (InternalPlanDescription => String) {
@@ -105,19 +107,31 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     result.toString()
   }
 
-  private def accumulate(incoming: InternalPlanDescription, level: Level = Root)(implicit columns: mutable.Map[String,
+  private def accumulate(incoming: InternalPlanDescription)(implicit columns: mutable.Map[String,
     Int]): Seq[Line] = {
-    val plan = compactPlan(incoming)
-    val line = level.line + plan.name
-    mapping(OPERATOR, Left(line))
-    Seq(Line(line, details(plan), plan.variables, level.connector)) ++ (plan.children match {
-      case NoChildren => Seq.empty
-      case SingleChild(inner) => accumulate(inner, level.child)
-      case TwoChildren(lhs, rhs) => accumulate(rhs, level.fork) ++ accumulate(lhs, level.child)
-    })
+
+    val stack = new mutable.Stack[(InternalPlanDescription, Level)]
+    stack.push((compactPlan(incoming), Root))
+    val lines = new ArrayBuffer[Line]()
+    while (stack.nonEmpty) {
+      val (plan, level) = stack.pop()
+
+      val line = level.line + plan.name
+      mapping(OPERATOR, Left(line))
+      lines.append(Line(line, details(plan), plan.variables, level.connector))
+      plan.children match {
+        case NoChildren =>
+        case SingleChild(inner) => stack.push((inner, level.child))
+        case TwoChildren(lhs, rhs) =>
+          stack.push((rhs, level.fork))
+          stack.push((lhs, level.child))
+      }
+    }
+    lines
   }
 
   private def compactPlan(plan: InternalPlanDescription): InternalPlanDescription = {
+    @tailrec
     def compactPlanAcc(acc: Seq[InternalPlanDescription], plan: InternalPlanDescription):
     Seq[InternalPlanDescription] = {
       plan.children match {
