@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.feature.steps
+package cypher.features
 
-import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
+import org.junit.Test
 
-object ProcedureSignature {
-  private val parser = new ProcedureSignatureParser
+class DebugTokenTest {
 
-  def parse(signatureText: String) =
-    parser.parse(signatureText)
-}
-
-case class ProcedureSignature(namespace: Seq[String],
-                              name: String,
-                              inputs: Seq[(String, CypherType)],
-                              outputs: Option[Seq[(String, CypherType)]]) {
-
-  val fields: List[String] =
-    (inputs ++ outputs.getOrElse(Seq.empty)).map { case (fieldName, _) => fieldName }.toList
+  @Test
+  def checkThatDebugTokensAreEmpty(): Unit ={
+    val t = new TCKTest
+    assert(t.scenarioToRun.equals(""), "scenarioToRun is only for debugging and should not be committed")
+    assert(t.featureToRun.equals(""), "featureToRun is only for debugging and should not be committed")
+  }
 }

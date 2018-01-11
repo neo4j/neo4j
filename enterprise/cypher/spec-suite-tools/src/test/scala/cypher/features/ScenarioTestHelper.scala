@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,10 +34,9 @@ import scala.util.{Failure, Success, Try}
 
 object ScenarioTestHelper {
   def createTests(scenarios: Seq[Scenario],
-                  blacklist: Set[BlacklistEntry] = Set.empty,
-                  executionPrefix: String = "",
+                  config: TestConfig,
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
-
+    val blacklist = config.blacklist.map(parseBlacklist).getOrElse(Set.empty[BlacklistEntry])
     val (expectFail, expectPass) = scenarios.partition { s => blacklist.exists(_.isBlacklisted(s)) }
     if (debugOutput) {
       val unusedBlacklistEntries = blacklist.filterNot(b => expectFail.exists(s => b.isBlacklisted(s)))
@@ -52,7 +51,7 @@ object ScenarioTestHelper {
       val executable = new Executable {
         override def execute(): Unit = {
           Try {
-            scenario(Neo4jAdapter(executionPrefix)).execute()
+            scenario(Neo4jAdapter(config.executionPrefix)).execute()
           } match {
             case Success(_) => throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
             case Failure(e) => println("Failed as expected with\n  " + e.getMessage)
@@ -64,7 +63,7 @@ object ScenarioTestHelper {
 
     val expectPassTests: Seq[DynamicTest] = expectPass.map { scenario =>
       val name = scenario.toString()
-      val executable = scenario(Neo4jAdapter(executionPrefix))
+      val executable = scenario(Neo4jAdapter(config.executionPrefix))
       DynamicTest.dynamicTest(name, executable)
     }
     (expectPassTests ++ expectFailTests).asJavaCollection
@@ -72,15 +71,14 @@ object ScenarioTestHelper {
 
   def parseBlacklist(blacklistFile: String): Set[BlacklistEntry] = {
     def validate(scenarioName: String): Unit = {
-      if(scenarioName.head.isWhitespace || scenarioName.last.isWhitespace) {
+      if (scenarioName.head.isWhitespace || scenarioName.last.isWhitespace) {
         throw new Exception(s"Invalid whitespace in scenario name $scenarioName from file $blacklistFile")
       }
     }
 
     val uri = new URI("/blacklists/" + blacklistFile)
-
     val url = getClass.getResource(uri.getPath)
-    if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
+    if (url == null) throw new FileNotFoundException(s"Blacklist file not found at: $blacklistFile")
     val lines = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
     val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty).toSet // comments in blacklist are being ignored
     scenarios.foreach(validate)
@@ -88,12 +86,13 @@ object ScenarioTestHelper {
   }
 
   def printComputedBlacklist(scenarios: Seq[Scenario],
-                             executionPrefix: String = ""): List[String] = {
+                             config: TestConfig): List[String] = {
     println("Evaluating scenarios")
     val numberOfScenarios = scenarios.size
     val blacklist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
-      val isFailure = Try(scenario(Neo4jAdapter(executionPrefix)).execute()).isFailure
-      println(s"Processing scenario ${index + 1}/$numberOfScenarios")
+      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix)).execute()).isFailure
+      print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
+      Console.out.flush() // to make sure we see progress
       if (isFailure) Some(scenario.toString) else None
     }.toList
     println()

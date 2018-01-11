@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,6 @@
  */
 package cypher.features
 
-import cypher.feature.steps.ProcedureSignature
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTBoolean, CTFloat, CTInteger, CTMap, CTNode, CTNumber, CTPath, CTRelationship, CTString, CypherType, ListType}
 import org.neo4j.kernel.api.InwardKernel
@@ -38,9 +37,10 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
   self: Graph =>
 
   protected def instance: GraphDatabaseAPI
+  protected val parser = new ProcedureSignatureParser
 
   override def registerProcedure(signature: String, values: CypherValueRecords): Unit = {
-    val parsedSignature = ProcedureSignature.parse(signature)
+    val parsedSignature = parser.parse(signature)
     val kernelProcedure = buildProcedure(parsedSignature, values)
     Try(instance.getDependencyResolver.resolveDependency(classOf[InwardKernel]).registerProcedure(kernelProcedure)) match {
       case Success(_) =>

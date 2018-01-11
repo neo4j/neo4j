@@ -19,24 +19,14 @@
  */
 package cypher.features
 
-import org.opencypher.tools.tck.values._
+import org.junit.Test
 
-import scala.collection.JavaConverters._
+class DebugTokenTest {
 
-object TCKValueToNeo4jValue extends (CypherValue => Object) {
-
-  def apply(value: CypherValue): Object = {
-    value match {
-      case CypherString(s) => s
-      case CypherInteger(v) => Long.box(v)
-      case CypherFloat(v) => Double.box(v)
-      case CypherBoolean(v) => Boolean.box(v)
-      case CypherProperty(k, v) => (k, TCKValueToNeo4jValue(v))
-      case CypherPropertyMap(ps) => ps.map { case (k, v) => k -> TCKValueToNeo4jValue(v) }.asJava
-      case l: CypherList => l.elements.map(TCKValueToNeo4jValue).asJava
-      case CypherNull => null
-      case _ => throw new UnsupportedOperationException(s"Could not convert value $value to a Neo4j representation")
-    }
+  @Test
+  def checkThatDebugTokensAreEmpty(): Unit ={
+    val t = new AcceptanceTest
+    assert(t.scenarioToRun.equals(""), "scenarioToRun is only for debugging and should not be committed")
+    assert(t.featureToRun.equals(""), "featureToRun is only for debugging and should not be committed")
   }
-
 }

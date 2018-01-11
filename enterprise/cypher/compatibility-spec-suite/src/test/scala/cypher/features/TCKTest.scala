@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,68 +19,70 @@
  */
 package cypher.features
 
-import java.util
-
+import java.util.Collection
 import cypher.features.ScenarioTestHelper._
 import org.junit.jupiter.api.{DynamicTest, TestFactory}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
 class TCKTest {
 
-  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios
-     // .filter(s => s.name == "Count nodes") //TODO
+  val featureToRun = ""
+  val scenarioToRun = ""
 
-  @TestFactory
-  def runTCKTestsDefault(): util.Collection[DynamicTest] = {
-    val blacklist = "default.txt"
-    createTests(scenarios, parseBlacklist(blacklist))
+  val scenarios: Seq[Scenario] = {
+    val all = CypherTCK.allTckScenarios
+    if (featureToRun.nonEmpty) {
+      val filteredFeature = all.filter(s => s.featureName == featureToRun)
+      if (scenarioToRun.nonEmpty) {
+        filteredFeature.filter(s => s.name == scenarioToRun)
+      } else
+        filteredFeature
+    } else if (scenarioToRun.nonEmpty) {
+      all.filter(s => s.name == scenarioToRun)
+    } else
+      all
   }
 
   @TestFactory
-  def runTCKTestsCostSlotted() = {
-    val executionPrefix = "CYPHER planner=cost runtime=slotted"
-    val blacklist = "cost-slotted.txt"
-    printComputedBlacklist(scenarios, executionPrefix)
-    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  def runTCKTestsDefault(): Collection[DynamicTest] = {
+    createTests(scenarios, DefaultTestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCostMorsel() = {
-    val executionPrefix = "CYPHER planner=cost runtime=morsel"
-    val blacklist = "cost-morsel.txt"
-    printComputedBlacklist(scenarios, executionPrefix)
-    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  def runTCKTestsCostSlotted(): Collection[DynamicTest] = {
+    createTests(scenarios, CostSlottedTestConfig)
+  }
+
+  //  Morsel engine is not complete and executes tests very slowly
+  // eg. MorselExecutionContext.createClone is not implemented
+  //  @TestFactory
+  //  def runTCKTestsCostMorsel() = {
+  // TODO: once Morsel is complete, generate blacklist with: printComputedBlacklist(scenarios, CostMorselTestConfig)
+  //    createTests(scenarios, CostMorselTestConfig)
+  //  }
+
+  @TestFactory
+  def runTCKTestsCostCompiled(): Collection[DynamicTest] = {
+    createTests(scenarios, CostCompiledTestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCostCompiled() = {
-    val executionPrefix = "CYPHER planner=cost runtime=compiled"
-    val blacklist = "cost-compiled.txt"
-    createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  def runTCKTestsCost(): Collection[DynamicTest] = {
+    createTests(scenarios, CostTestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCost() = {
-    val executionPrefix = "CYPHER planner=cost"
-    val blacklist = "cost.txt"
-    printComputedBlacklist(scenarios, executionPrefix)
-    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  def runTCKTestsCompatibility33(): Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility33TestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCompatibility31() = {
-    val executionPrefix = "CYPHER 3.1"
-    val blacklist = "compatibility-31.txt"
-    printComputedBlacklist(scenarios, executionPrefix)
-    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  def runTCKTestsCompatibility31(): Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility31TestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCompatibility23() = {
-    val executionPrefix = "CYPHER 2.3"
-    val blacklist = "compatibility-23.txt"
-    printComputedBlacklist(scenarios, executionPrefix)
-    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  def runTCKTestsCompatibility23(): Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility23TestConfig)
   }
-
 }

@@ -1,217 +1,212 @@
-// not returning longs
-Aggregates inside normal functions
-Aggregation of named paths
-Aggregation with `min()`
-Return a var length path of length zero
-Remove multiple node properties
-Remove multiple relationship properties
-Absolute function
-Return collection size
-Setting and returning the size of a list property
-Arithmetic expressions inside aggregation
-Concatenating and returning the size of literal lists
-
-// missing toInteger()
-Number-typed integer comparison
-Number-typed float comparison
-Any-typed string comparison
-Use collection lookup based on parameters when there is rhs type information
-SKIP with an expression that does not depend on variables
-LIMIT with an expression that does not depend on variables
-`toInteger()`
-`toInteger()` on float
-`toInteger()` returning null on non-numerical string
-`toInteger()` handling mixed number types
-`toInteger()` handling Any type
-`toInteger()` on a list of strings
-`toInteger()` failing on invalid arguments
-`toInteger()` on a complex-typed expression
-
-// missing properties()
-`properties()` on a node
-`properties()` on a relationship
-`properties()` on a map
-`properties()` failing on an integer literal
-`properties()` failing on a string literal
-`properties()` failing on a list of booleans
-`properties()` on null
-
-// missing toBoolean()
-`toBoolean()` on valid literal string
-`toBoolean()` on booleans
-`toBoolean()` on variables with valid string values
-`toBoolean()` on invalid strings
-`toBoolean()` on invalid types
-
-// any-type
-`type()` handling Any type
-`type()` failing on invalid arguments
-`labels()` should accept type Any
-Handling property access on the Any type
-Failing when performing property access on a non-map 1
-`toFloat()` handling Any type
-`toFloat()` failing on invalid arguments
-`toString()` should work on Any type
-`toString()` failing on invalid arguments
-`max()` should aggregate strings
-`min()` should aggregate strings
-Handling non-string operands for STARTS WITH
-Handling non-string operands for CONTAINS
-Handling non-string operands for ENDS WITH
-
-// other
-`percentileCont()` failing on bad arguments
-`percentileDisc()` failing on bad arguments
-`percentileDisc()` failing in more involved query
-Fail when adding new label predicate on a node that is already bound 5
-Fail when imposing new predicates on a variable that is already bound
-Ignore null when setting properties using an appending map
-Ignore null when setting properties using an overriding map
-Ignore null when setting label
-Ignore null when removing label
-Fail when returning properties of deleted nodes
-Fail when returning labels of deleted nodes
-Fail when returning properties of deleted relationships
-`toFloat()` on mixed number types
-`toString()` handling boolean properties
-`toString()` handling inlined boolean
-`toString()` handling boolean literal
-IN should work with nested list subscripting
-IN should work with nested literal list subscripting
-IN should work with list slices
-IN should work with literal list slices
-`labels()` failing on invalid arguments
-
-// new parameter syntax $
-Delete node from a list
-Delete relationship from a list
-Use dynamic property lookup based on parameters when there is no type information
-Use dynamic property lookup based on parameters when there is lhs type information
-Use dynamic property lookup based on parameters when there is rhs type information
-Use collection lookup based on parameters when there is no type information
-Use collection lookup based on parameters when there is lhs type information
-Fail at runtime when attempting to index with an Int into a Map
-Fail at runtime when trying to index into a map with a non-string
-Fail at runtime when attempting to index with a String into a Collection
-Fail at runtime when trying to index into a list with a list
-Fail at runtime when trying to index something which is not a map or collection
-`percentileDisc()`
-`percentileCont()`
-Using `keys()` on a parameter map
-Use params in pattern matching predicates
-Matching with many predicates and larger pattern
-ORDER BY with negative parameter for LIMIT should not generate errors
-Start the result from the second row by param
-Get rows in the middle by param
-Using null in AND
-Using null in OR
-Using null in XOR
-Using null in IN
-Creating nodes from an unwound parameter list
-Unwind with merge
-Failing when using parameter as node predicate in MATCH
-Failing when using parameter as relationship predicate in MATCH
-Failing when using parameter as node predicate in MERGE
-Failing when using parameter as relationship predicate in MERGE
-
-// unsupported pattern comprehensions
-Pattern comprehension and ORDER BY
-Returning a pattern comprehension
-Returning a pattern comprehension with label predicate
-Returning a pattern comprehension with bound nodes
-Using a pattern comprehension in a WITH
-Using a variable-length pattern comprehension in a WITH
-Using pattern comprehension in RETURN
-Aggregating on pattern comprehension
-Using pattern comprehension to test existence
-Pattern comprehension inside list comprehension
-Get node degree via size of pattern comprehension
-Get node degree via size of pattern comprehension that specifies a relationship type
-Get node degree via size of pattern comprehension that specifies multiple relationship types
-Introducing new node variable in pattern comprehension
-Introducing new relationship variable in pattern comprehension
-
-// unsupported procedures
-In-query call to procedure that takes arguments fails when trying to pass them implicitly
-Standalone call to procedure that takes no arguments
-In-query call to procedure that takes no arguments
-Calling the same procedure twice using the same outputs in each call
-Standalone call to VOID procedure that takes no arguments
-In-query call to VOID procedure that takes no arguments
-In-query call to VOID procedure does not consume rows
-Standalone call to VOID procedure that takes no arguments, called with implicit arguments
-In-query call to procedure that takes no arguments and yields no results
-Standalone call to procedure that takes no arguments and yields no results
-Standalone call to procedure that takes no arguments and yields no results, called with implicit arguments
-In-query call to procedure with explicit arguments
-In-query call to procedure with explicit arguments that drops all result fields
-Standalone call to procedure with explicit arguments
-Standalone call to procedure with implicit arguments
-Standalone call to procedure with argument of type NUMBER accepts value of type INTEGER
-In-query call to procedure with argument of type NUMBER accepts value of type INTEGER
-Standalone call to procedure with argument of type NUMBER accepts value of type FLOAT
-In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
-Standalone call to procedure with argument of type FLOAT accepts value of type INTEGER
-In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
-Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
-In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
-Standalone call to procedure with null argument
-In-query call to procedure with null argument
-Standalone call to procedure should fail if input type is wrong
-In-query call to procedure should fail if input type is wrong
-Standalone call to procedure should fail if explicit argument is missing
-In-query call to procedure should fail if explicit argument is missing
-Standalone call to procedure should fail if too many explicit argument are given
-In-query call to procedure should fail if too many explicit argument are given
-Standalone call to procedure should fail if implicit argument is missing
-In-query call to procedure that has outputs fails if no outputs are yielded
-In-query call to procedure that both takes arguments and has outputs fails if the arguments are passed implicitly and no outputs are yielded
-Standalone call to unknown procedure should fail
-In-query call to unknown procedure should fail
-In-query procedure call should fail if shadowing an already bound variable
-In-query procedure call should fail if one of the argument expressions uses an aggregation function
-
-// throwing exceptions when comparing
-Comparing strings and integers using > in an AND'd predicate
-Comparing strings and integers using > in a OR'd predicate
-Comparing across types yields null, except numbers
-
-// rule planner/eagerness bug
-Combine MATCH, WITH and CREATE
-
-// TCK side effects are incorrectly specified -- need update
-Detach deleting connected nodes and relationships
-Detach deleting paths
-Create and delete in same query
-Delete nodes from a map
-Delete paths from nested map/list
-Delete relationship with bidirectional matching
-Generate the movie graph correctly
-Many CREATE clauses
-Copying properties from literal map with ON MATCH
-Merge node should create when it doesn't match, properties and label
-Should work when finding multiple elements
-Should be able to use properties from match in ON MATCH and ON CREATE
-Should support updates while merging
-Merge must properly handle multiple labels
-UNWIND with multiple merges
-Do not match on deleted entities
-Do not match on deleted relationships
-Set a property
-Set a property to an expression
-Concatenate elements onto a list property
-Concatenate elements in reverse onto a list property
-Overwrite values when using +=
-Non-existent values in a property map are removed with SET =
-Should be able to merge using property from match
-Merges should not be able to match on deleted nodes
-
-// Neo4j fails at runtime, should fail at compile time
-Failing on merging relationship with null property",
-Failing on merging node with null property",
-Failing when setting a list of maps as a property",
-
-// Different error type in Neo4j
-Deleting connected nodes
-Standalone call to unknown procedure should fail
-In-query call to unknown procedure should fail
+Feature "UnwindAcceptance": Scenario "Creating nodes from an unwound parameter list"
+Feature "UnwindAcceptance": Scenario "Unwind with merge"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on valid literal string"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on booleans"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on variables with valid string values"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on invalid strings"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on invalid types"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on invalid types"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on invalid types"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on invalid types"
+Feature "TypeConversionFunctions": Scenario "`toInteger()`"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` on float"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` returning null on non-numerical string"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` handling mixed number types"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` handling Any type"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` on a list of strings"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` on a complex-typed expression"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` on mixed number types"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` handling Any type"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toString()` handling boolean properties"
+Feature "TypeConversionFunctions": Scenario "`toString()` handling inlined boolean"
+Feature "TypeConversionFunctions": Scenario "`toString()` handling boolean literal"
+Feature "TypeConversionFunctions": Scenario "`toString()` should work on Any type"
+Feature "TypeConversionFunctions": Scenario "`toString()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toString()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toString()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toString()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toString()` failing on invalid arguments"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in AND"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in AND"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in AND"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in AND"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in AND"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in OR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in OR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in OR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in OR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in OR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in XOR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in XOR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in XOR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in XOR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in XOR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "StartsWithAcceptance": Scenario "Handling non-string operands for STARTS WITH"
+Feature "StartsWithAcceptance": Scenario "Handling non-string operands for CONTAINS"
+Feature "StartsWithAcceptance": Scenario "Handling non-string operands for ENDS WITH"
+Feature "SkipLimitAcceptanceTest": Scenario "SKIP with an expression that does not depend on variables"
+Feature "SkipLimitAcceptanceTest": Scenario "LIMIT with an expression that does not depend on variables"
+Feature "SemanticErrorAcceptance": Scenario "Failing when using parameter as node predicate in MATCH"
+Feature "SemanticErrorAcceptance": Scenario "Failing when using parameter as relationship predicate in MATCH"
+Feature "SemanticErrorAcceptance": Scenario "Failing when using parameter as node predicate in MERGE"
+Feature "SemanticErrorAcceptance": Scenario "Failing when using parameter as relationship predicate in MERGE"
+Feature "SemanticErrorAcceptance": Scenario "Handling property access on the Any type"
+Feature "SemanticErrorAcceptance": Scenario "Failing when performing property access on a non-map 1"
+Feature "ReturnAcceptance2": Scenario "Fail when returning properties of deleted nodes"
+Feature "ReturnAcceptance2": Scenario "Fail when returning labels of deleted nodes"
+Feature "ReturnAcceptance2": Scenario "Fail when returning properties of deleted relationships"
+Feature "ReturnAcceptance2": Scenario "Arithmetic expressions inside aggregation"
+Feature "ReturnAcceptanceTest": Scenario "Start the result from the second row by param"
+Feature "ReturnAcceptanceTest": Scenario "Get rows in the middle by param"
+Feature "ReturnAcceptanceTest": Scenario "Absolute function"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes arguments fails when trying to pass them implicitly"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure that takes no arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes no arguments"
+Feature "ProcedureCallAcceptance": Scenario "Calling the same procedure twice using the same outputs in each call"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to VOID procedure that takes no arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to VOID procedure that takes no arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to VOID procedure does not consume rows"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to VOID procedure that takes no arguments, called with implicit arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes no arguments and yields no results"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure that takes no arguments and yields no results"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure that takes no arguments and yields no results, called with implicit arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments that drops all result fields"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with explicit arguments"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with implicit arguments"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type NUMBER accepts value of type INTEGER"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type NUMBER accepts value of type INTEGER"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type NUMBER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type NUMBER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type FLOAT accepts value of type INTEGER"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type FLOAT accepts value of type INTEGER"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with null argument"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with null argument"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if input type is wrong"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure should fail if input type is wrong"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if explicit argument is missing"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure should fail if explicit argument is missing"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if too many explicit argument are given"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure should fail if too many explicit argument are given"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that has outputs fails if no outputs are yielded"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that both takes arguments and has outputs fails if the arguments are passed implicitly and no outputs are yielded"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
+Feature "ProcedureCallAcceptance": Scenario "In-query procedure call should fail if shadowing an already bound variable"
+Feature "ProcedureCallAcceptance": Scenario "In-query procedure call should fail if one of the argument expressions uses an aggregation function"
+Feature "PatternComprehension": Scenario "Pattern comprehension and ORDER BY"
+Feature "PatternComprehension": Scenario "Returning a pattern comprehension"
+Feature "PatternComprehension": Scenario "Returning a pattern comprehension with label predicate"
+Feature "PatternComprehension": Scenario "Returning a pattern comprehension with bound nodes"
+Feature "PatternComprehension": Scenario "Using a pattern comprehension in a WITH"
+Feature "PatternComprehension": Scenario "Using a variable-length pattern comprehension in a WITH"
+Feature "PatternComprehension": Scenario "Using pattern comprehension in RETURN"
+Feature "PatternComprehension": Scenario "Aggregating on pattern comprehension"
+Feature "PatternComprehension": Scenario "Using pattern comprehension to test existence"
+Feature "PatternComprehension": Scenario "Pattern comprehension inside list comprehension"
+Feature "PatternComprehension": Scenario "Get node degree via size of pattern comprehension"
+Feature "PatternComprehension": Scenario "Get node degree via size of pattern comprehension that specifies a relationship type"
+Feature "PatternComprehension": Scenario "Get node degree via size of pattern comprehension that specifies multiple relationship types"
+Feature "PatternComprehension": Scenario "Introducing new node variable in pattern comprehension"
+Feature "PatternComprehension": Scenario "Introducing new relationship variable in pattern comprehension"
+Feature "OrderByAcceptance": Scenario "ORDER BY with negative parameter for LIMIT should not generate errors"
+Feature "NullAcceptance": Scenario "Ignore null when setting properties using an appending map"
+Feature "NullAcceptance": Scenario "Ignore null when setting properties using an overriding map"
+Feature "NullAcceptance": Scenario "Ignore null when setting label"
+Feature "NullAcceptance": Scenario "Ignore null when removing label"
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging relationship with null property"
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging node with null property"
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of maps as a property"
+Feature "MergeRelationshipAcceptance": Scenario "Fail when imposing new predicates on a variable that is already bound"
+Feature "MatchAcceptance2": Scenario "Matching with many predicates and larger pattern"
+Feature "MatchAcceptance": Scenario "Use params in pattern matching predicates"
+Feature "LabelsAcceptance": Scenario "Fail when adding new label predicate on a node that is already bound 5"
+Feature "KeysAcceptance": Scenario "Using `keys()` on a parameter map"
+Feature "FunctionsAcceptance": Scenario "`properties()` on a node"
+Feature "FunctionsAcceptance": Scenario "`properties()` on a relationship"
+Feature "FunctionsAcceptance": Scenario "`properties()` on a map"
+Feature "FunctionsAcceptance": Scenario "`properties()` failing on an integer literal"
+Feature "FunctionsAcceptance": Scenario "`properties()` failing on a string literal"
+Feature "FunctionsAcceptance": Scenario "`properties()` failing on a list of booleans"
+Feature "FunctionsAcceptance": Scenario "`properties()` on null"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()`"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()`"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()`"
+Feature "FunctionsAcceptance": Scenario "`percentileCont()`"
+Feature "FunctionsAcceptance": Scenario "`percentileCont()`"
+Feature "FunctionsAcceptance": Scenario "`percentileCont()`"
+Feature "FunctionsAcceptance": Scenario "`percentileCont()` failing on bad arguments"
+Feature "FunctionsAcceptance": Scenario "`percentileCont()` failing on bad arguments"
+Feature "FunctionsAcceptance": Scenario "`percentileCont()` failing on bad arguments"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()` failing on bad arguments"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()` failing on bad arguments"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()` failing on bad arguments"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()` failing in more involved query"
+Feature "FunctionsAcceptance": Scenario "`type()` handling Any type"
+Feature "FunctionsAcceptance": Scenario "`type()` failing on invalid arguments"
+Feature "FunctionsAcceptance": Scenario "`type()` failing on invalid arguments"
+Feature "FunctionsAcceptance": Scenario "`type()` failing on invalid arguments"
+Feature "FunctionsAcceptance": Scenario "`type()` failing on invalid arguments"
+Feature "FunctionsAcceptance": Scenario "`type()` failing on invalid arguments"
+Feature "FunctionsAcceptance": Scenario "`labels()` should accept type Any"
+Feature "FunctionsAcceptance": Scenario "`labels()` failing on invalid arguments"
+Feature "ExpressionAcceptance": Scenario "IN should work with nested list subscripting"
+Feature "ExpressionAcceptance": Scenario "IN should work with nested literal list subscripting"
+Feature "ExpressionAcceptance": Scenario "IN should work with list slices"
+Feature "ExpressionAcceptance": Scenario "IN should work with literal list slices"
+Feature "ExpressionAcceptance": Scenario "Use dynamic property lookup based on parameters when there is no type information"
+Feature "ExpressionAcceptance": Scenario "Use dynamic property lookup based on parameters when there is lhs type information"
+Feature "ExpressionAcceptance": Scenario "Use dynamic property lookup based on parameters when there is rhs type information"
+Feature "ExpressionAcceptance": Scenario "Use collection lookup based on parameters when there is no type information"
+Feature "ExpressionAcceptance": Scenario "Use collection lookup based on parameters when there is lhs type information"
+Feature "ExpressionAcceptance": Scenario "Use collection lookup based on parameters when there is rhs type information"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when attempting to index with an Int into a Map"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index into a map with a non-string"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when attempting to index with a String into a Collection"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index into a list with a list"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index something which is not a map or collection"
+Feature "EqualsAcceptance": Scenario "Number-typed integer comparison"
+Feature "EqualsAcceptance": Scenario "Number-typed float comparison"
+Feature "EqualsAcceptance": Scenario "Any-typed string comparison"
+Feature "DeleteAcceptance": Scenario "Deleting connected nodes"
+Feature "DeleteAcceptance": Scenario "Delete node from a list"
+Feature "DeleteAcceptance": Scenario "Delete relationship from a list"
+Feature "CreateAcceptance": Scenario "Combine MATCH, WITH and CREATE"
+Feature "Comparability": Scenario "Comparing strings and integers using > in an AND'd predicate"
+Feature "Comparability": Scenario "Comparing strings and integers using > in a OR'd predicate"
+Feature "Comparability": Scenario "Comparing across types yields null, except numbers"
+Feature "Comparability": Scenario "Comparing across types yields null, except numbers"
+Feature "Comparability": Scenario "Comparing across types yields null, except numbers"
+Feature "Comparability": Scenario "Comparing across types yields null, except numbers"
+Feature "AggregationAcceptance": Scenario "`max()` should aggregate strings"
+Feature "AggregationAcceptance": Scenario "`min()` should aggregate strings"
+Feature "Aggregation": Scenario "`max()` over strings"
+Feature "Aggregation": Scenario "`min()` over strings"
+Feature "Aggregation": Scenario "`max()` over mixed numeric values"
+Feature "Aggregation": Scenario "`min()` over mixed numeric values"
+Feature "Aggregation": Scenario "`max()` over mixed values"
+Feature "Aggregation": Scenario "`min()` over mixed values"
+Feature "Aggregation": Scenario "`max()` over list values"
+Feature "Aggregation": Scenario "`min()` over list values"

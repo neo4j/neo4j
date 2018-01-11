@@ -19,24 +19,13 @@
  */
 package cypher.features
 
-import org.opencypher.tools.tck.values._
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 
-import scala.collection.JavaConverters._
+case class ProcedureSignature(namespace: Seq[String],
+                              name: String,
+                              inputs: Seq[(String, CypherType)],
+                              outputs: Option[Seq[(String, CypherType)]]) {
 
-object TCKValueToNeo4jValue extends (CypherValue => Object) {
-
-  def apply(value: CypherValue): Object = {
-    value match {
-      case CypherString(s) => s
-      case CypherInteger(v) => Long.box(v)
-      case CypherFloat(v) => Double.box(v)
-      case CypherBoolean(v) => Boolean.box(v)
-      case CypherProperty(k, v) => (k, TCKValueToNeo4jValue(v))
-      case CypherPropertyMap(ps) => ps.map { case (k, v) => k -> TCKValueToNeo4jValue(v) }.asJava
-      case l: CypherList => l.elements.map(TCKValueToNeo4jValue).asJava
-      case CypherNull => null
-      case _ => throw new UnsupportedOperationException(s"Could not convert value $value to a Neo4j representation")
-    }
-  }
-
+  val fields: List[String] =
+    (inputs ++ outputs.getOrElse(Seq.empty)).map { case (fieldName, _) => fieldName }.toList
 }

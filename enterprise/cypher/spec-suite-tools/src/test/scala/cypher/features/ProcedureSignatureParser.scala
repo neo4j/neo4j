@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.feature.steps
+package cypher.features
 
-import cypher.feature.steps
-import org.neo4j.cypher.internal.util.v3_4.SyntaxException
+import cypher.features
 import org.neo4j.cypher.internal.frontend.v3_4.parser.{Base, Expressions, Literals}
+import org.neo4j.cypher.internal.util.v3_4.SyntaxException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.parboiled.scala._
 
@@ -32,7 +32,7 @@ import org.parboiled.scala._
 class ProcedureSignatureParser extends Parser with Base with Expressions with Literals {
 
   @throws(classOf[SyntaxException])
-  def parse(signatureText: String): steps.ProcedureSignature = {
+  def parse(signatureText: String): ProcedureSignature = {
     val parsingResults = ReportingParseRunner(ProcedureSignature).run(signatureText.trim)
     parsingResults.result match {
       case Some(signature) =>
@@ -43,10 +43,10 @@ class ProcedureSignatureParser extends Parser with Base with Expressions with Li
     }
   }
 
-  private def ProcedureSignature: Rule1[steps.ProcedureSignature] = rule("procedure signature") {
+  private def ProcedureSignature: Rule1[ProcedureSignature] = rule("procedure signature") {
     ProcedureSignatureNameParts ~ ProcedureSignatureInputs ~~ "::" ~~ ProcedureSignatureOutputs ~~> {
       (nameParts: Seq[String], inputs: Seq[(String, CypherType)], outputs: Option[Seq[(String, CypherType)]]) =>
-        steps.ProcedureSignature(nameParts.dropRight(1), nameParts.last, inputs, outputs)
+        features.ProcedureSignature(nameParts.dropRight(1), nameParts.last, inputs, outputs)
     }
   }
 

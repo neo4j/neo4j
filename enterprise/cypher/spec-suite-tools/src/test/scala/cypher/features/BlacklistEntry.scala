@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,6 +21,8 @@ package cypher.features
 
 import org.opencypher.tools.tck.api.Scenario
 
+import scala.util.matching.Regex
+
 case class BlacklistEntry(featureName: Option[String], scenarioName: String) {
   def isBlacklisted(scenario: Scenario): Boolean = {
     scenarioName == scenario.name && (featureName.isEmpty || featureName.get == scenario.featureName)
@@ -28,7 +30,7 @@ case class BlacklistEntry(featureName: Option[String], scenarioName: String) {
 }
 
 object BlacklistEntry{
-  val entryPattern = """Feature "(.*)": Scenario "(.*)"""".r
+  val entryPattern: Regex = """Feature "(.*)": Scenario "(.*)"""".r
 
   def apply(line: String): BlacklistEntry = {
     if(line.startsWith("Feature")){

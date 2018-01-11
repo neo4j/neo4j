@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,32 +20,71 @@
 package cypher.features
 
 import java.io.File
+import java.net.URI
+import java.util.Collection
 
 import cypher.features.ScenarioTestHelper._
-import org.junit.jupiter.api.TestFactory
-import org.opencypher.tools.tck.api.CypherTCK
+import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
 class AcceptanceTest {
 
-  val featuresURI = getClass.getResource("/cypher/features").toURI
+  val featureToRun = ""
+  val scenarioToRun = ""
 
-  val scenarios = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
+  val featuresURI: URI = getClass.getResource("/cypher/features").toURI
 
-  //TODO: Prepared access to only execute a feature or scenario
-
-  @TestFactory
-  def runAcceptanceTestsDefault() = {
-    val blacklist = "default.txt"
-    val blacklistedScenarioNames = parseBlacklist(blacklist)
-    createTests(scenarios, blacklistedScenarioNames)
+  val scenarios: Seq[Scenario] = {
+    val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
+    if (featureToRun.nonEmpty) {
+      val filteredFeature = all.filter(s => s.featureName == featureToRun)
+      if (scenarioToRun.nonEmpty) {
+        filteredFeature.filter(s => s.name == scenarioToRun)
+      } else
+        filteredFeature
+    } else if (scenarioToRun.nonEmpty) {
+      all.filter(s => s.name == scenarioToRun)
+    } else
+      all
   }
 
   @TestFactory
-  def runAcceptanceTestsCostCompiled() = {
-    val executionPrefix = "CYPHER runtime=compiled planner=cost"
-    val blacklist = "cost-compiled.txt"
-    val blacklistedScenarioNames = parseBlacklist(blacklist)
+  def runAcceptanceTestsDefault(): Collection[DynamicTest] = {
+    createTests(scenarios, DefaultTestConfig)
+  }
 
-    createTests(scenarios, blacklistedScenarioNames, executionPrefix)
+  @TestFactory
+  def runAcceptanceTestsCostSlotted(): Collection[DynamicTest] = {
+    createTests(scenarios, CostSlottedTestConfig)
+  }
+
+  //  Morsel engine is not complete and executes tests very slowly
+  // eg. MorselExecutionContext.createClone is not implemented
+  //  @TestFactory
+  //  def runAcceptanceTestsCostMorsel() = {
+  // TODO: once Morsel is complete, generate blacklist with: printComputedBlacklist(scenarios, CostMorselTestConfig)
+  //    createTests(scenarios, CostMorselTestConfig)
+  //  }
+
+  @TestFactory
+  def runAcceptanceTestsCostCompiled(): Collection[DynamicTest] = {
+    createTests(scenarios, CostCompiledTestConfig)
+  }
+
+  @TestFactory
+  def runAcceptanceTestsCost(): Collection[DynamicTest] = {
+    createTests(scenarios, CostTestConfig)
+  }
+
+  //TODO 3.3?
+
+  @TestFactory
+  def runAcceptanceTestsCompatibility31(): Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility31TestConfig)
+  }
+
+  @TestFactory
+  def runAcceptanceTestsCompatibility23(): Collection[DynamicTest] = {
+    createTests(scenarios, Compatibility23TestConfig)
   }
 }
