@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, Planner
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, _}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => logicalPlans}
 
+//noinspection NameBooleanParameters
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val x = IdName("x")
@@ -383,6 +384,37 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       "x" -> LongSlot(0, nullable = false, CTNode, "x"),
       "y" -> LongSlot(1, nullable = false, CTNode, "y")
     )))
+  }
+
+  test("cartesian product should allocate lhs followed by rhs, in order") {
+    def expand(n:Int): LogicalPlan =
+      n match {
+        case 1 => NodeByLabelScan(IdName("n1"), LabelName("label2")(pos), Set.empty)(solved)
+        case n => Expand(expand(n-1), IdName("n"+(n-1)), SemanticDirection.INCOMING, Seq.empty, IdName("n"+n), IdName("r"+(n-1)), ExpandAll)(solved)
+      }
+    val N = 10
+
+    // given
+    val lhs = NodeByLabelScan(x, LabelName("label1")(pos), Set.empty)(solved)
+    val rhs = expand(N)
+    val Xproduct = CartesianProduct(lhs, rhs)(solved)
+    Xproduct.assignIds()
+
+    // when
+    val allocations = SlotAllocation.allocateSlots(Xproduct)
+
+    // then
+    allocations should have size N+2
+
+    val expectedPipelines =
+      (1 until N).foldLeft(allocations(lhs.assignedId))(
+        (acc, i) =>
+          acc
+            .newLong("n"+i, false, CTNode)
+            .newLong("r"+i, false, CTRelationship)
+      ).newLong("n"+N, false, CTNode)
+
+    allocations(Xproduct.assignedId) should equal(expectedPipelines)
   }
 
   test("that argument does not apply here") {

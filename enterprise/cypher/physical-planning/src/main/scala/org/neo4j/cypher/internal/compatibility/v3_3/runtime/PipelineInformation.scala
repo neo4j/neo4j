@@ -181,8 +181,8 @@ class PipelineInformation(private var slots: Map[String, Slot],
     case _ => throw new InternalException("Uh oh... There was no slot for `$name`")
   }
 
-  def foreachSlot[U](f: ((String,Slot)) => U): Unit =
-    slots.foreach(f)
+  def foreachSlotOrdered[U](f: ((String, Slot)) => U): Unit =
+    slots.toIndexedSeq.sortBy(_._2)(SlotOrdering).foreach(f)
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]
 
@@ -205,4 +205,20 @@ class PipelineInformation(private var slots: Map[String, Slot],
   private def checkNotAlreadyTaken(key: String) =
     if (slots.contains(key))
       throw new InternalException("Tried overwriting already taken variable name")
+
+  /**
+    * Orders LongSlots before RefSlots, and lower offsets before higher. As we keep separate arrays for
+    * references and longs it doesn't matter which of these we do first. It is crucial that we process
+    * slots in their offset order withing the slot group though, when merging PipelineInformations.
+    */
+  object SlotOrdering extends Ordering[Slot] {
+    def compare(x: Slot, y: Slot): Int = (x, y) match {
+      case (_: LongSlot, _: RefSlot) =>
+        -1
+      case (_: RefSlot, _: LongSlot) =>
+        1
+      case _ =>
+        x.offset - y.offset
+    }
+  }
 }
