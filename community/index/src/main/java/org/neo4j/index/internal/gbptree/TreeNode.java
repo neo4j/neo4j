@@ -43,7 +43,7 @@ abstract class TreeNode<KEY,VALUE>
     {
         YES,
         NO,
-        NEED_DEFRAG
+        NO_NEED_DEFRAG
     }
 
     // Shared between all node types: TreeNode and FreelistNode

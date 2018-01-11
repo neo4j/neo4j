@@ -39,7 +39,7 @@ import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
-import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NEED_DEFRAG;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO_NEED_DEFRAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
@@ -545,7 +545,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                 VALUE newValue = value( random.nextLong() );
 
                 Overflow overflow = node.leafOverflow( cursor, expectedKeyCount, newKey, newValue );
-                if ( overflow == NEED_DEFRAG )
+                if ( overflow == NO_NEED_DEFRAG )
                 {
                     node.defragmentLeaf( cursor );
                 }

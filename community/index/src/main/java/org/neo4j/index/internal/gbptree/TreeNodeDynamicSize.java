@@ -356,7 +356,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // There is your answer!
         return neededSpace < allocSpace ? Overflow.NO :
-               neededSpace < allocSpace + deadSpace ? Overflow.NEED_DEFRAG : Overflow.YES;
+               neededSpace < allocSpace + deadSpace ? Overflow.NO_NEED_DEFRAG : Overflow.YES;
     }
 
     @Override
@@ -371,7 +371,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // There is your answer!
         return neededSpace < allocSpace ? Overflow.NO :
-               neededSpace < allocSpace + deadSpace ? Overflow.NEED_DEFRAG : Overflow.YES;
+               neededSpace < allocSpace + deadSpace ? Overflow.NO_NEED_DEFRAG : Overflow.YES;
     }
 
     @Override

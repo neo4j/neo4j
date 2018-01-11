@@ -34,7 +34,7 @@ import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceSt
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_LEFT_CHILD;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_MID_CHILD;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_RIGHT_CHILD;
-import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NEED_DEFRAG;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO_NEED_DEFRAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
@@ -418,7 +418,7 @@ class InternalTreeLogic<KEY,VALUE>
             return;
         }
 
-        if ( overflow == NEED_DEFRAG )
+        if ( overflow == NO_NEED_DEFRAG )
         {
             bTreeNode.defragmentInternal( cursor );
         }
@@ -553,7 +553,7 @@ class InternalTreeLogic<KEY,VALUE>
             return true;
         }
 
-        if ( overflow == NEED_DEFRAG )
+        if ( overflow == NO_NEED_DEFRAG )
         {
             bTreeNode.defragmentLeaf( cursor );
         }
