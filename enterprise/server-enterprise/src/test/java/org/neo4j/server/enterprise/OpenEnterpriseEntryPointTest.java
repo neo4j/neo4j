@@ -30,8 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.commandline.Util.neo4jVersion;
 
-
-public class EnterpriseEntryPointTest
+public class OpenEnterpriseEntryPointTest
 {
     private PrintStream realSystemOut;
     private PrintStream fakeSystemOut;
@@ -51,10 +50,10 @@ public class EnterpriseEntryPointTest
     }
 
     @Test
-    public void mainPrintsVersion() throws Exception
+    public void mainPrintsVersion()
     {
         // when
-        EnterpriseEntryPoint.main( new String[]{ "--version" } );
+        OpenEnterpriseEntryPoint.main( new String[]{ "--version" } );
 
         // then
         verify( fakeSystemOut ).println( "neo4j " + neo4jVersion() );
