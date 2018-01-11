@@ -25,29 +25,50 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.getUnsignedShort;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
 
 /**
- * keySize and valueSize indicate size of key and value in number of bytes.
+ * Gather utility methods for reading and writing individual dynamic sized
+ * keys. It thus define the layout for:
+ * - Key pointer in offset array (K*), 2B
+ * - Key size, 2B
+ * - Value size, 2B
+ * - Key tombstone, first bit in key size
  *
- * In LEAF:
- * [keySize 2B|valueSize 2B|actualKey|actualValue]
+ * Relative layout of key and key_value
+ * KeyOffset points to the exact offset where key entry or key_value entry
+ * can be read.
+ * key entry - [keySize 2B|actualKey]
+ * key_value entry - [keySize 2B|valueSize 2B|actualKey|actualValue]
  *
- * In INTERNAL:
- * [keySize 2B|actualKey]
- *
+ * Tombstone
  * First bit in keySize is used as a tombstone, set to 1 if key is dead.
  * This leaves 15 bits for actual size -> max possible key size is 32768 bytes
  * which is more than page size and therefore be enough.
  */
 class DynamicSizeUtil
 {
-    static final int BYTE_SIZE_OFFSET = 2;
-    static final int BYTE_SIZE_KEY_SIZE = 2;
-    static final int BYTE_SIZE_VALUE_SIZE = 2;
-    static final int BYTE_SIZE_TOTAL_OVERHEAD = BYTE_SIZE_OFFSET + BYTE_SIZE_KEY_SIZE + BYTE_SIZE_VALUE_SIZE;
-    static final int FLAG_TOMBSTONE = 0x8000;
+    static final int SIZE_OFFSET = 2;
+    static final int SIZE_KEY_SIZE = 2;
+    static final int SIZE_VALUE_SIZE = 2;
+    static final int SIZE_TOTAL_OVERHEAD = SIZE_OFFSET + SIZE_KEY_SIZE + SIZE_VALUE_SIZE;
+    private static final int FLAG_TOMBSTONE = 0x8000;
+
+    static void putKeyOffset( PageCursor cursor, int keyOffset )
+    {
+        putUnsignedShort( cursor, keyOffset );
+    }
 
     static int readKeyOffset( PageCursor cursor )
     {
         return getUnsignedShort( cursor );
+    }
+
+    static void putKeySize( PageCursor cursor, int keySize )
+    {
+        putUnsignedShort( cursor, keySize );
+    }
+
+    static void putValueSize( PageCursor cursor, int valueSize )
+    {
+        putUnsignedShort( cursor, valueSize );
     }
 
     /**
@@ -61,33 +82,9 @@ class DynamicSizeUtil
         return getUnsignedShort( cursor );
     }
 
-    /**
-     * Check read key size for tombstone.
-     * @return True if read key size has tombstone.
-     */
-    static boolean hasTombstone( int readKeySize )
-    {
-        return (readKeySize & FLAG_TOMBSTONE) != 0;
-    }
-
     static int readValueSize( PageCursor cursor )
     {
         return getUnsignedShort( cursor );
-    }
-
-    static void putKeyOffset( PageCursor cursor, int keyOffset )
-    {
-        putUnsignedShort( cursor, keyOffset );
-    }
-
-    static void putKeySize( PageCursor cursor, int keySize )
-    {
-        putUnsignedShort( cursor, keySize );
-    }
-
-    static void putValueSize( PageCursor cursor, int valueSize )
-    {
-        putUnsignedShort( cursor, valueSize );
     }
 
     /**
@@ -103,14 +100,23 @@ class DynamicSizeUtil
         putKeySize( cursor, keySize );
     }
 
-    private static int withTombstoneFlag( int keySize )
+    /**
+     * Check read key size for tombstone.
+     * @return True if read key size has tombstone.
+     */
+    static boolean hasTombstone( int readKeySize )
     {
-        assert (keySize & FLAG_TOMBSTONE) == 0 : "Key size " + keySize + " is to large to fit tombstone.";
-        return keySize | FLAG_TOMBSTONE;
+        return (readKeySize & FLAG_TOMBSTONE) != 0;
     }
 
     static int stripTombstone( int keySize )
     {
         return keySize & ~FLAG_TOMBSTONE;
+    }
+
+    private static int withTombstoneFlag( int keySize )
+    {
+        assert (keySize & FLAG_TOMBSTONE) == 0 : "Key size " + keySize + " is to large to fit tombstone.";
+        return keySize | FLAG_TOMBSTONE;
     }
 }

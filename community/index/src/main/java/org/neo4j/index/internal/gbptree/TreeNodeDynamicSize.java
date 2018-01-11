@@ -26,10 +26,10 @@ import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.BYTE_SIZE_KEY_SIZE;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.BYTE_SIZE_OFFSET;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.BYTE_SIZE_TOTAL_OVERHEAD;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.BYTE_SIZE_VALUE_SIZE;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_KEY_SIZE;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_OFFSET;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_TOTAL_OVERHEAD;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_VALUE_SIZE;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.hasTombstone;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyOffset;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeySize;
@@ -56,6 +56,8 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * [                                   HEADER   86B                                                   ]|[  KEY_OFFSET_CHILDREN  ]######[  KEYS  ]
  * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR][ALLOCOFFSET][DEADSPACE]|[C0,K0*,C1,K1*,C2,K2*,C3]->  <-[K2,K0,K1]
  *  0         1     2           6         10            34           58         82           84          86
+ *
+ * See {@link DynamicSizeUtil} for more detailed layout for individual offset array entries and key / key_value entries.
  */
 public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 {
@@ -76,7 +78,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         super( pageSize, layout );
 
-        keyValueSizeCap = totalSpace( pageSize ) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - BYTE_SIZE_TOTAL_OVERHEAD;
+        keyValueSizeCap = totalSpace( pageSize ) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
 
         if ( keyValueSizeCap < MINIMUM_ENTRY_SIZE_CAP )
         {
@@ -326,7 +328,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean reasonableKeyCount( int keyCount )
     {
-        return keyCount >= 0 && keyCount <= totalSpace( pageSize ) / BYTE_SIZE_TOTAL_OVERHEAD;
+        return keyCount >= 0 && keyCount <= totalSpace( pageSize ) / SIZE_TOTAL_OVERHEAD;
     }
 
     @Override
@@ -1118,22 +1120,22 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private static int bytesKeySize()
     {
-        return BYTE_SIZE_KEY_SIZE;
+        return SIZE_KEY_SIZE;
     }
 
     private static int bytesValueSize()
     {
-        return BYTE_SIZE_VALUE_SIZE;
+        return SIZE_VALUE_SIZE;
     }
 
     private static int bytesKeyOffset()
     {
-        return BYTE_SIZE_OFFSET;
+        return SIZE_OFFSET;
     }
 
     private static int bytesPageOffset()
     {
-        return BYTE_SIZE_OFFSET;
+        return SIZE_OFFSET;
     }
 
     @Override
