@@ -624,6 +624,21 @@ public class GBPTreeTest
         verifyHeader( pageCache, expectedHeader );
     }
 
+    @Test( timeout = 10_000 )
+    public void writeHeaderInDirtyTreeMustNotDeadlock() throws Exception
+    {
+        PageCache pageCache = createPageCache( 256 );
+        makeDirty( pageCache );
+
+        Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.IGNORE ).build() )
+        {
+            index.checkpoint( IOLimiter.unlimited(), headerWriter );
+        }
+
+        verifyHeader( pageCache, "failed".getBytes() );
+    }
+
     private void verifyHeader( PageCache pageCache, byte[] expectedHeader ) throws IOException
     {
         // WHEN
@@ -1604,8 +1619,15 @@ public class GBPTreeTest
             CleanupJob job;
             while ( (job = jobs.poll()) != null )
             {
-                job.run();
-                startedJobs.add( job );
+                try
+                {
+                    job.run();
+                    startedJobs.add( job );
+                }
+                finally
+                {
+                    job.close();
+                }
             }
         }
 
@@ -1688,7 +1710,12 @@ public class GBPTreeTest
 
     private void makeDirty() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        makeDirty( createPageCache( DEFAULT_PAGE_SIZE ) );
+    }
+
+    private void makeDirty( PageCache pageCache ) throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
         {
             // Make dirty
             index.writer().close();

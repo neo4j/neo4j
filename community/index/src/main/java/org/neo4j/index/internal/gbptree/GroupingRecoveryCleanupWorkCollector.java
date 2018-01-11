@@ -80,7 +80,14 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
             CleanupJob job;
             while ( (job = jobs.poll()) != null )
             {
-                job.run();
+                try
+                {
+                    job.run();
+                }
+                finally
+                {
+                    job.close();
+                }
             }
         };
     }
