@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -125,10 +126,7 @@ public class InputEntity implements InputEntityVisitor, Cloneable
     public boolean labels( String[] labels )
     {
         checkClear();
-        for ( String label : labels )
-        {
-            this.labels.add( label );
-        }
+        Collections.addAll( this.labels, labels );
         return delegate.labels( labels );
     }
 
