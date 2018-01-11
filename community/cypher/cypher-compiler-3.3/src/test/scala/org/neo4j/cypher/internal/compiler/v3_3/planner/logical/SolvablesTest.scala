@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, QueryGraph, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.{PatternRelationship, QueryGraph, SimplePatternLength}
 
 class SolvablesTest extends CypherFunSuite {
 
-  val node1Name = IdName("a")
-  val node2Name = IdName("b")
+  val node1Name = "a"
+  val node2Name = "b"
 
-  val relName = IdName("rel")
+  val relName = "rel"
   val rel = PatternRelationship(relName, (node1Name, node2Name), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("should compute solvables from empty query graph") {

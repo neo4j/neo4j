@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
-case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
+case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)
                        (val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractLetSemiApply(left, right, idName, solved)
 
-case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
+case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)
                            (val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractLetSemiApply(left, right, idName, solved)
 
 abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan,
-                                    idName: IdName, solved: PlannerQuery with CardinalityEstimation)
+                                    idName: String, solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)

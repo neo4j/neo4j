@@ -24,18 +24,18 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery, VarPatternLength}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, _}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => logicalPlans}
 
 //noinspection NameBooleanParameters
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  private val x = IdName("x")
-  private val y = IdName("y")
-  private val z = IdName("z")
+  private val x = "x"
+  private val y = "y"
+  private val z = "z"
   private val LABEL = LabelName("label")(pos)
-  private val r = IdName("r")
+  private val r = "r"
 
   test("only single allnodes scan") {
     // given
@@ -203,8 +203,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
     val varLength = VarPatternLength(1, Some(15))
-    val tempNode = IdName("r_NODES")
-    val tempEdge = IdName("r_EDGES")
+    val tempNode = "r_NODES"
+    val tempEdge = "r_EDGES"
     val expand = VarExpand(allNodesScan, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty, z, r,
       varLength, ExpandAll, tempNode, tempEdge, True()(pos), True()(pos), Seq.empty)(solved)
     expand.assignIds()
@@ -389,8 +389,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("cartesian product should allocate lhs followed by rhs, in order") {
     def expand(n:Int): LogicalPlan =
       n match {
-        case 1 => NodeByLabelScan(IdName("n1"), LabelName("label2")(pos), Set.empty)(solved)
-        case n => Expand(expand(n-1), IdName("n"+(n-1)), SemanticDirection.INCOMING, Seq.empty, IdName("n"+n), IdName("r"+(n-1)), ExpandAll)(solved)
+        case 1 => NodeByLabelScan("n1", LabelName("label2")(pos), Set.empty)(solved)
+        case n => Expand(expand(n-1), "n"+(n-1), SemanticDirection.INCOMING, Seq.empty, "n"+n, "r"+(n-1), ExpandAll)(solved)
       }
     val N = 10
 
@@ -450,7 +450,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("unwind and project") {
     // given UNWIND [1,2,3] as x RETURN x
     val leaf = SingleRow()(solved)
-    val unwind = UnwindCollection(leaf, IdName("x"), listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
+    val unwind = UnwindCollection(leaf, "x", listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val produceResult = ProduceResult(Seq("x"), unwind)
     produceResult.assignIds()
 
@@ -471,7 +471,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("unwind and project and sort") {
     // given UNWIND [1,2,3] as x RETURN x ORDER BY x
     val xVar = varFor("x")
-    val xVarName = IdName.fromVariable(xVar)
+    val xVarName = xVar.name
     val leaf = SingleRow()(solved)
     val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val sort = Sort(unwind, List(Ascending(xVarName)))(solved)

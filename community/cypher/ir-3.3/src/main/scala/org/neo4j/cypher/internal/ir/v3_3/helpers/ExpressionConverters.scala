@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{LabelPredicateNorm
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Ands, Expression, HasLabels, Not, Ors, PatternComprehension, PatternExpression, Range, RelationshipChain, Variable}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
-import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.ir.v3_3.helpers.PatternConverters._
-import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.{QueryGraph, _}
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)
@@ -47,7 +46,7 @@ object ExpressionConverters {
         patternRelationships = patternContent.rels.toSet,
         patternNodes = patternContent.nodeIds.toSet
       ).addPredicates(predicates: _*)
-      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toIndexedSeq)
+      qg.addArgumentIds(qg.coveredIds.filter(_.isNamed).toIndexedSeq)
     }
   }
 
@@ -68,7 +67,7 @@ object ExpressionConverters {
         patternRelationships = patternContent.rels.toSet,
         patternNodes = patternContent.nodeIds.toSet
       ).addPredicates(predicates: _*)
-      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toIndexedSeq)
+      qg.addArgumentIds(qg.coveredIds.filter(_.isNamed).toIndexedSeq)
     }
   }
 
@@ -78,7 +77,7 @@ object ExpressionConverters {
         // n:Label
         case p@HasLabels(Variable(name), labels) =>
           acc => val newAcc = acc ++ labels.map { label =>
-                Predicate(Set(IdName(name)), p.copy(labels = Seq(label))(p.position))
+                Predicate(Set(name), p.copy(labels = Seq(label))(p.position))
             }
             (newAcc, None)
         // and
@@ -91,16 +90,16 @@ object ExpressionConverters {
 
     private def filterUnnamed(predicate: Predicate): Predicate = predicate match {
       case Predicate(deps, e: PatternExpression) =>
-        Predicate(deps.filter(x => isNamed(x.name)), e)
+        Predicate(deps.filter(x => isNamed(x)), e)
       case Predicate(deps, e@Not(_: PatternExpression)) =>
-        Predicate(deps.filter(x => isNamed(x.name)), e)
+        Predicate(deps.filter(x => isNamed(x)), e)
       case Predicate(deps, ors@Ors(exprs)) =>
-        val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
+        val newDeps = exprs.foldLeft(Set.empty[String]) { (acc, exp) =>
           exp match {
             case e: PatternExpression =>
-              acc ++ e.idNames.filter(x => isNamed(x.name))
+              acc ++ e.idNames.filter(x => isNamed(x))
             case e@Not(_: PatternExpression) =>
-              acc ++ e.idNames.filter(x => isNamed(x.name))
+              acc ++ e.idNames.filter(x => isNamed(x))
             case e if e.treeExists { case _: PatternExpression => true} =>
               acc ++ (e.idNames -- unnamedIdNamesInNestedPatternExpressions(e))
             case e =>
@@ -119,7 +118,7 @@ object ExpressionConverters {
       }
 
       val unnamedIdsInPatternExprs = patternExpressions.flatMap(_.idNames)
-        .filterNot(x => isNamed(x.name))
+        .filterNot(x => isNamed(x))
         .toSet
 
       unnamedIdsInPatternExprs
@@ -128,7 +127,7 @@ object ExpressionConverters {
   }
 
   implicit class IdExtractor(val exp: Expression) extends AnyVal {
-    def idNames: Set[IdName] = exp.dependencies.map(id => IdName(id.name))
+    def idNames: Set[String] = exp.dependencies.map(id => id.name)
   }
 
   implicit class RangeConvertor(val length: Option[Option[Range]]) extends AnyVal {

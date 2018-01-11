@@ -167,7 +167,7 @@ case object PlanUpdates
     val innerContext: LogicalPlanningContext =
       context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
 
-    val ids: Seq[IdName] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
+    val ids: Seq[String] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
 
     val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, innerContext, ids)
 
@@ -210,7 +210,7 @@ case object PlanUpdates
                              createNodePatterns: Seq[CreateNodePattern],
                              createRelationshipPatterns: Seq[CreateRelationshipPattern],
                              context: LogicalPlanningContext,
-                             ids: Seq[IdName]): LogicalPlan = {
+                             ids: Seq[String]): LogicalPlan = {
     def mergeRead(ctx: LogicalPlanningContext) = {
       val mergeReadPart = ctx.strategy.plan(matchGraph)(ctx)
       if (mergeReadPart.solved.queryGraph != matchGraph)

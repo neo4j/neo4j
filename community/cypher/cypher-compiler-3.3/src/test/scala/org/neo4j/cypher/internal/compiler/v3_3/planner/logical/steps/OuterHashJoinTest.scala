@@ -33,13 +33,13 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
-  val aNode = IdName("a")
-  val bNode = IdName("b")
-  val cNode = IdName("c")
-  val dNode = IdName("d")
-  val r1Name = IdName("r1")
-  val r2Name = IdName("r2")
-  val r3Name = IdName("r3")
+  val aNode = "a"
+  val bNode = "b"
+  val cNode = "c"
+  val dNode = "d"
+  val r1Name = "r1"
+  val r2Name = "r2"
+  val r3Name = "r3"
   val r1Rel = PatternRelationship(r1Name, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val r2Rel = PatternRelationship(r2Name, (bNode, cNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val r3Rel = PatternRelationship(r3Name, (cNode, dNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -54,7 +54,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
-      case AllNodesScan(IdName("b"), _) => Cost(1) // Make sure we start the inner plan using b
+      case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
 

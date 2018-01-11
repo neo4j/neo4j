@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{AllNodesScan, ProduceResult, Selection, _}
 
 class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -35,7 +35,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   private def edgeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTRelationship, name = name)
 
   test("selection with property comparison MATCH (n) WHERE n.prop > 42 RETURN n") {
-    val allNodes = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val allNodes = AllNodesScan("x", Set.empty)(solved)
     val predicate = GreaterThan(prop("x", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), allNodes)(solved)
     val produceResult = ProduceResult(Seq("x"), selection)
@@ -61,11 +61,11 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("comparing two relationship ids simpler") {
     // match (a)-[r1]->b-[r2]->(c) where not(r1 = r2)
     // given
-    val node1 = IdName("a")
-    val node2 = IdName("b")
-    val node3 = IdName("c")
-    val rel1 = IdName("r1")
-    val rel2 = IdName("r2")
+    val node1 = "a"
+    val node2 = "b"
+    val node3 = "c"
+    val rel1 = "r1"
+    val rel2 = "r2"
     val argument = Argument(Set(node1, node2, node3, rel1, rel2))(solved)()
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
@@ -96,7 +96,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("return nullable node") {
     // match optional (a) return (a)
     // given
-    val node1 = IdName("a")
+    val node1 = "a"
     val argument = AllNodesScan(node1, Set.empty)(solved)
     val predicate = Equals(prop("a", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
@@ -124,7 +124,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   }
 
   test("selection with property comparison MATCH (n) WHERE n.prop > 42 RETURN n when token is unknown") {
-    val allNodes = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val allNodes = AllNodesScan("x", Set.empty)(solved)
     val predicate = GreaterThan(prop("x", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), allNodes)(solved)
     val produceResult = ProduceResult(Seq("x"), selection)
@@ -149,9 +149,9 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("reading property key when the token does not exist at compile time") {
     // match (a)-[r1]->b-[r2]->(c) where not(r1 = r2)
     // given
-    val node1 = IdName("a")
-    val node2 = IdName("b")
-    val edge = IdName("r")
+    val node1 = "a"
+    val node2 = "b"
+    val edge = "r"
     val argument = Argument(Set(node1, node2, edge))(solved)()
     val predicate = Equals(prop("r", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
@@ -180,7 +180,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("projection with map lookup MATCH (n) RETURN n.prop") {
     // given
     val node = Variable("n")(pos)
-    val allNodes = AllNodesScan(IdName.fromVariable(node), Set.empty)(solved)
+    val allNodes = AllNodesScan(node.name, Set.empty)(solved)
     val projection = Projection(allNodes, Map("n.prop" -> prop("n", "prop")))(solved)
     val produceResult = ProduceResult(Seq("n.prop"), projection)
     produceResult.assignIds()
@@ -210,7 +210,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
   test("rewriting variable should always work, even if Variable is not part of a bigger tree") {
     // given
-    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan("x", LabelName("label")(pos), Set.empty)(solved)
     val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
     projection.assignIds()
     val tokenContext = mock[TokenContext]
@@ -235,7 +235,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
   test("make sure to handle nullable nodes correctly") {
     // given
-    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan("x", LabelName("label")(pos), Set.empty)(solved)
     val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
     projection.assignIds()
     val tokenContext = mock[TokenContext]

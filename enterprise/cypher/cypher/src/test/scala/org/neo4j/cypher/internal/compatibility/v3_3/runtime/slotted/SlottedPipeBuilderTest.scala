@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTList, CTNode, CTRelationship}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.VarPatternLength
 import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
@@ -64,9 +64,9 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     executionPlanBuilder.build(None, logicalPlan)(pipeBuildContext, context.planContext).pipe
   }
 
-  private val x = IdName("x")
-  private val z = IdName("z")
-  private val r = IdName("r")
+  private val x = "x"
+  private val z = "z"
+  private val r = "r"
   private val LABEL = LabelName("label1")(pos)
 
   test("only single allnodes scan") {
@@ -222,9 +222,9 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("single optional node with expand") {
     // given
-    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val allNodesScan = AllNodesScan("x", Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
-    val expand = Expand(optional, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("z"), IdName("r"), ExpandAll)(solved)
+    val expand = Expand(optional, "x", SemanticDirection.INCOMING, Seq.empty, "z", "r", ExpandAll)(solved)
 
     // when
     val pipe = build(expand)
@@ -255,9 +255,9 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("single optional node with expand into") {
     // given
-    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val allNodesScan = AllNodesScan("x", Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
-    val expand = Expand(optional, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("x"), IdName("r"), ExpandInto)(solved)
+    val expand = Expand(optional, "x", SemanticDirection.INCOMING, Seq.empty, "x", "r", ExpandInto)(solved)
 
     // when
     val pipe = build(expand)
@@ -340,8 +340,8 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
     val varLength = VarPatternLength(1, Some(15))
-    val tempNode = IdName("r_NODES")
-    val tempEdge = IdName("r_EDGES")
+    val tempNode = "r_NODES"
+    val tempEdge = "r_EDGES"
     val expand = VarExpand(allNodesScan, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty,
       z, r, varLength, ExpandAll, tempNode, tempEdge, True()(pos), True()(pos), Seq())(solved)
 
@@ -380,10 +380,10 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
     val varLength = VarPatternLength(1, Some(15))
-    val tempNode = IdName("r_NODES")
-    val tempEdge = IdName("r_EDGES")
-    val nodePredicate = Equals(prop(tempNode.name, "propertyKey"), literalInt(4))(pos)
-    val edgePredicate = Not(LessThan(prop(tempEdge.name, "propertyKey"), literalInt(4))(pos))(pos)
+    val tempNode = "r_NODES"
+    val tempEdge = "r_EDGES"
+    val nodePredicate = Equals(prop(tempNode, "propertyKey"), literalInt(4))(pos)
+    val edgePredicate = Not(LessThan(prop(tempEdge, "propertyKey"), literalInt(4))(pos))(pos)
 
     val expand = VarExpand(allNodesScan, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty,
       z, r, varLength, ExpandAll, tempNode, tempEdge, nodePredicate, edgePredicate, Seq())(solved)
@@ -548,7 +548,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   ignore("cartesian product") {
     // given
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
-    val rhs = NodeByLabelScan(IdName("y"), LabelName("label2")(pos), Set.empty)(solved)
+    val rhs = NodeByLabelScan("y", LabelName("label2")(pos), Set.empty)(solved)
     val Xproduct = CartesianProduct(lhs, rhs)(solved)
 
     // when
@@ -639,7 +639,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("unwind and sort") {
     // given UNWIND [1,2,3] as x RETURN x ORDER BY x
     val xVar = varFor("x")
-    val xVarName = IdName.fromVariable(xVar)
+    val xVarName = xVar.name
     val leaf = SingleRow()(solved)
     val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
     val sort = Sort(unwind, List(plans.Ascending(xVarName)))(solved)

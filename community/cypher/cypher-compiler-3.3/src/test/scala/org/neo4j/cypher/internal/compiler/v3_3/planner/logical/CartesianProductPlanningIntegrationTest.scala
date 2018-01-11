@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.RegularPlannerQuery
 import org.neo4j.cypher.internal.v3_3.logical.plans.{AllNodesScan, CartesianProduct, NodeByLabelScan, Selection}
 
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -30,8 +30,8 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans for simple cartesian product") {
     planFor("MATCH (n), (m) RETURN n, m")._2 should equal(
       CartesianProduct(
-        AllNodesScan(IdName("n"), Set.empty)(solved),
-        AllNodesScan(IdName("m"), Set.empty)(solved)
+        AllNodesScan("n", Set.empty)(solved),
+        AllNodesScan("m", Set.empty)(solved)
       )(solved)
     )
   }

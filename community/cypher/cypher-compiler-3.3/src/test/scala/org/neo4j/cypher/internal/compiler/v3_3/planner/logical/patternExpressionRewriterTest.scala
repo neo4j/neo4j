@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans.{AllNodesScan, LogicalPlan, Selection}
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -90,7 +89,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
   private val patExpr3 = newPatExpr( "e", "f ")
   private val patExpr4 = newPatExpr( "g", "h" )
 
-  private val dummyPlan = AllNodesScan(IdName("a"), Set.empty)(solved)
+  private val dummyPlan = AllNodesScan("a", Set.empty)(solved)
 
   private def newPatExpr(left: String, right: String): PatternExpression = {
     PatternExpression(RelationshipsPattern(RelationshipChain(
@@ -101,7 +100,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   private def createStrategy: QueryGraphSolver = {
     val strategy = mock[QueryGraphSolver]
-    when(strategy.planPatternExpression(any[Set[IdName]], any[PatternExpression])(any[LogicalPlanningContext])).thenAnswer(
+    when(strategy.planPatternExpression(any[Set[String]], any[PatternExpression])(any[LogicalPlanningContext])).thenAnswer(
       new Answer[(LogicalPlan, PatternExpression)] {
         override def answer(invocation: InvocationOnMock): (LogicalPlan, PatternExpression) = {
           val expr = invocation.getArguments()(1).asInstanceOf[PatternExpression]

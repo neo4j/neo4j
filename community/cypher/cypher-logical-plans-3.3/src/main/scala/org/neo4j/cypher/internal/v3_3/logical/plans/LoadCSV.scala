@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ir.v3_3._
 
 case class LoadCSV(source: LogicalPlan,
                    url: Expression,
-                   variableName: IdName,
+                   variableName: String,
                    format: CSVFormat,
                    fieldTerminator: Option[String],
                    legacyCsvQuoteEscaping: Boolean)

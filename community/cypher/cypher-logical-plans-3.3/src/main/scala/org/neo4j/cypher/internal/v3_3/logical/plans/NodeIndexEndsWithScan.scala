@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
 /*
   * This operator does a full scan of an index, returning all entries that end with a string value
@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, Planner
   * It's much slower than an index seek, since all index entries must be examined, but also much faster than an
   * all-nodes scan or label scan followed by a property value filter.
   */
-case class NodeIndexEndsWithScan(idName: IdName,
+case class NodeIndexEndsWithScan(idName: String,
                                  label: LabelToken,
                                  propertyKey: PropertyKeyToken,
                                  valueExpr: Expression,
-                                 argumentIds: Set[IdName])
+                                 argumentIds: Set[String])
                                 (val solved: PlannerQuery with CardinalityEstimation)
   extends NodeLogicalLeafPlan {
 

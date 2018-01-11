@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
-case class NodeByIdSeek(idName: IdName, nodeIds: SeekableArgs, argumentIds: Set[IdName])
+case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[String])
                        (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  def availableSymbols: Set[IdName] = argumentIds + idName
+  def availableSymbols: Set[String] = argumentIds + idName
 }

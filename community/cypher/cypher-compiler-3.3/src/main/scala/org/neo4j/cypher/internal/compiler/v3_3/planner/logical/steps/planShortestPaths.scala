@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.notification.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.frontend.v3_3.{ExhaustiveShortestPathForbiddenException, InternalException}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.ir.v3_3.{Predicate, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 
 case object planShortestPaths {
@@ -47,7 +47,7 @@ case object planShortestPaths {
     }.toIndexedSeq
 
     def doesNotDependOnFullPath(predicate: Expression): Boolean = {
-      (predicate.dependencies.map(IdName.fromVariable) intersect variables).isEmpty
+      (predicate.dependencies.map(_.name) intersect variables).isEmpty
     }
 
     val (safePredicates, needFallbackPredicates) = predicates.partition {
@@ -126,7 +126,7 @@ case object planShortestPaths {
       .getOrElse(throw new InternalException("Expected the nodes needed for this expansion to exist"))
 
     // Projection with path
-    val map = Map(pathName.name -> createPathExpression(shortestPath.expr.element))
+    val map = Map(pathName -> createPathExpression(shortestPath.expr.element))
     val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, map)
 
     // Filter using predicates
@@ -134,13 +134,13 @@ case object planShortestPaths {
 
     // Plan Sort and Limit
     val pos = shortestPath.expr.position
-    val pathVariable = Variable(pathName.name)(pos)
+    val pathVariable = Variable(pathName)(pos)
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
     val columnName = FreshIdNameGenerator.name(pos)
 
     val rhsProjMap = Map(columnName -> lengthOfPath)
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, rhsProjMap)
-    val sortDescription = Seq(Ascending(IdName(columnName)))
+    val sortDescription = Seq(Ascending(columnName))
     val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty)
     val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
     lpp.planLimit(sorted, SignedDecimalIntegerLiteral("1")(pos), ties)

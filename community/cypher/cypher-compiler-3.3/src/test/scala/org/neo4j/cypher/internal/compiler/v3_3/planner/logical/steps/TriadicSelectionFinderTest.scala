@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {
@@ -223,9 +223,9 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
   private def produceTriadicTestCase(aLabel: String = "X",
                                      r1Types: Seq[String] = Seq.empty, r1Direction: SemanticDirection = OUTGOING, bLabels: Seq[String] = Seq.empty,
                                      r2Types: Seq[String] = Seq.empty, r2Direction: SemanticDirection = OUTGOING, cLabels: Seq[String] = Seq.empty): (Expand, Selection) = {
-    val lblScan = NodeByLabelScan(IdName("a"), lblName(aLabel), Set.empty)(solved)
-    val expand1 = Expand(lblScan, IdName("a"), OUTGOING, r1Types.map(RelTypeName(_)(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val expand2 = Expand(expand1, IdName("b"), r2Direction, r2Types.map(RelTypeName(_)(pos)), IdName("c"), IdName("r2"), ExpandAll)(solved)
+    val lblScan = NodeByLabelScan("a", lblName(aLabel), Set.empty)(solved)
+    val expand1 = Expand(lblScan, "a", OUTGOING, r1Types.map(RelTypeName(_)(pos)), "b", "r1", ExpandAll)(solved)
+    val expand2 = Expand(expand1, "b", r2Direction, r2Types.map(RelTypeName(_)(pos)), "c", "r2", ExpandAll)(solved)
     val relationshipUniqueness = Not(Equals(Variable("r1")(pos), Variable("r2")(pos))(pos))(pos)
     val labelPredicates = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
     val selection = Selection(labelPredicates :+ relationshipUniqueness, expand2)(solved)
@@ -236,10 +236,10 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
                                      r1Types: Seq[String] = Seq.empty, r1Direction: SemanticDirection = OUTGOING, bLabels: Seq[String] = Seq.empty,
                                      r2Types: Seq[String] = Seq.empty, r2Direction: SemanticDirection = OUTGOING, cLabels: Seq[String] = Seq.empty) = {
     val argument = Argument(expand1.availableSymbols)(solved)()
-    val expand2B = Expand(argument, IdName("b"), r2Direction, r2Types.map(RelTypeName(_)(pos)), IdName("c"), IdName("r2"), ExpandAll)(solved)
+    val expand2B = Expand(argument, "b", r2Direction, r2Types.map(RelTypeName(_)(pos)), "c", "r2", ExpandAll)(solved)
     val relationshipUniqueness = Not(Equals(Variable("r1")(pos), Variable("r2")(pos))(pos))(pos)
     val labelPredicates = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
     val selectionB = Selection(labelPredicates :+ relationshipUniqueness, expand2B)(solved)
-    TriadicSelection(predicateExpressionCase, expand1, IdName("a"), IdName("b"), IdName("c"), selectionB)(solved)
+    TriadicSelection(predicateExpressionCase, expand1, "a", "b", "c", selectionB)(solved)
   }
 }

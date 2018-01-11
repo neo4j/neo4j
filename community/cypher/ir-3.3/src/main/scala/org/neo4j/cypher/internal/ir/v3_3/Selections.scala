@@ -25,17 +25,17 @@ import org.neo4j.cypher.internal.ir.v3_3.helpers.ExpressionConverters._
 case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty
 
-  def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
+  def predicatesGiven(ids: Set[String]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
   }.toIndexedSeq
 
-  def predicatesGivenForRequiredSymbol(allowed: Set[IdName], required: IdName): Seq[Expression] = predicates.collect {
+  def predicatesGivenForRequiredSymbol(allowed: Set[String], required: String): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMetForRequiredSymbol(allowed, required) => predicate
   }.toIndexedSeq
 
-  def scalarPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
+  def scalarPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
 
-  def patternPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
+  def patternPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
 
   private def containsPatternPredicates(e: Expression): Boolean = e match {
     case _: PatternExpression      => true
@@ -47,38 +47,37 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def flatPredicates: Seq[Expression] =
     predicates.map(_.expr).toIndexedSeq
 
-  def labelPredicates: Map[IdName, Set[HasLabels]] =
-    predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) {
+  def labelPredicates: Map[String, Set[HasLabels]] =
+    predicates.foldLeft(Map.empty[String, Set[HasLabels]]) {
       case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), labels))) =>
         // FIXME: remove when we have test for checking that we construct the expected plan
         if (labels.size > 1) {
           throw new IllegalStateException("Rewriting should introduce single label HasLabels predicates in the WHERE clause")
         }
-        val idName = IdName(name)
-        acc.updated(idName, acc.getOrElse(idName, Set.empty) + hasLabels)
+        acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
       case (acc, _) => acc
     }
 
-  def propertyPredicatesForSet: Map[IdName, Set[Property]] = {
-    def updateMap(map: Map[IdName, Set[Property]], key: IdName, prop: Property) =
+  def propertyPredicatesForSet: Map[String, Set[Property]] = {
+    def updateMap(map: Map[String, Set[Property]], key: String, prop: Property) =
       map.updated(key, map.getOrElse(key, Set.empty) + prop)
 
-    predicates.foldLeft(Map.empty[IdName, Set[Property]]) {
+    predicates.foldLeft(Map.empty[String, Set[Property]]) {
 
       // We rewrite set property expressions to use In (and not Equals)
       case (acc, Predicate(_, In(prop@Property(key: Variable, _), _))) =>
-        updateMap(acc, IdName.fromVariable(key), prop)
+        updateMap(acc, key.name, prop)
       case (acc, Predicate(_, In(_, prop@Property(key: Variable, _)))) =>
-        updateMap(acc, IdName.fromVariable(key), prop)
+        updateMap(acc, key.name, prop)
       case (acc, _) => acc
     }
   }
 
-  def variableDependencies: Set[IdName] = predicates.flatMap(_.dependencies)
+  def variableDependencies: Set[String] = predicates.flatMap(_.dependencies)
 
-  def labelsOnNode(id: IdName): Set[LabelName] = labelInfo.getOrElse(id, Set.empty)
+  def labelsOnNode(id: String): Set[LabelName] = labelInfo.getOrElse(id, Set.empty)
 
-  lazy val labelInfo: Map[IdName, Set[LabelName]] =
+  lazy val labelInfo: Map[String, Set[LabelName]] =
     labelPredicates.mapValues(_.map(_.labels.head))
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =

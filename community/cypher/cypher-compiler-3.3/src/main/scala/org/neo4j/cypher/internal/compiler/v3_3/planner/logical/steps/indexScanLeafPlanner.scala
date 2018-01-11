@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpr
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.notification.IndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 import org.neo4j.cypher.internal.v3_3.logical.plans.{AsDynamicPropertyNonScannable, AsStringRangeNonSeekable, LogicalPlan}
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
@@ -78,13 +78,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         None
     }.toSet
 
-  type PlanProducer = (IdName, LabelToken, PropertyKeyToken, Seq[Expression], Option[UsingIndexHint], Set[IdName]) => LogicalPlan
+  type PlanProducer = (String, LabelToken, PropertyKeyToken, Seq[Expression], Option[UsingIndexHint], Set[String]) => LogicalPlan
 
   private def produce(variableName: String, propertyKeyName: String, qg: QueryGraph, property: Property,
                       predicate: Expression, planProducer: PlanProducer)
                      (implicit context: LogicalPlanningContext, semanticTable: SemanticTable): Set[LogicalPlan] = {
-    val labelPredicates: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
-    val idName = IdName(variableName)
+    val labelPredicates: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
+    val idName = variableName
 
     for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
          labelName <- labelPredicate.labels;

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.{ast => frontEndAst, _}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.VarPatternLength
 import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue
@@ -62,43 +62,43 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
       case Argument(_) =>
         ArgumentPipe()(id = id)
 
-      case AllNodesScan(IdName(ident), _) =>
+      case AllNodesScan(ident, _) =>
         AllNodesScanPipe(ident)(id = id)
 
-      case NodeCountFromCountStore(IdName(ident), labels, _) =>
+      case NodeCountFromCountStore(ident, labels, _) =>
         NodeCountFromCountStorePipe(ident, labels.map(l => l.map(LazyLabel.apply)))(id = id)
 
-      case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
+      case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
         RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply),
                                             new LazyTypes(typeNames.map(_.name).toArray), endLabel.map(LazyLabel.apply))(id = id)
 
-      case NodeByLabelScan(IdName(ident), label, _) =>
+      case NodeByLabelScan(ident, label, _) =>
         NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)
 
-      case NodeByIdSeek(IdName(ident), nodeIdExpr, _) =>
+      case NodeByIdSeek(ident, nodeIdExpr, _) =>
         NodeByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(nodeIdExpr))(id = id)
 
-      case DirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
+      case DirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
         DirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
 
-      case UndirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
+      case UndirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
         UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
 
-      case NodeIndexSeek(IdName(ident), label, propertyKeys, valueExpr, _) =>
+      case NodeIndexSeek(ident, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(ident, label, propertyKeys, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
-      case NodeUniqueIndexSeek(IdName(ident), label, propertyKeys, valueExpr, _) =>
+      case NodeUniqueIndexSeek(ident, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(ident, label, propertyKeys, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
-      case NodeIndexScan(IdName(ident), label, propertyKey, _) =>
+      case NodeIndexScan(ident, label, propertyKey, _) =>
         NodeIndexScanPipe(ident, label, propertyKey)(id = id)
 
-      case NodeIndexContainsScan(IdName(ident), label, propertyKey, valueExpr, _) =>
+      case NodeIndexContainsScan(ident, label, propertyKey, valueExpr, _) =>
         NodeIndexContainsScanPipe(ident, label, propertyKey, buildExpression(valueExpr))(id = id)
 
-      case NodeIndexEndsWithScan(IdName(ident), label, propertyKey, valueExpr, _) =>
+      case NodeIndexEndsWithScan(ident, label, propertyKey, valueExpr, _) =>
         NodeIndexEndsWithScanPipe(ident, label, propertyKey, buildExpression(valueExpr))(id = id)
     }
   }
@@ -110,9 +110,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         ProjectionPipe(source, Eagerly.immutableMapValues(expressions, buildExpression))(id = id)
 
       case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, directed, length) =>
-        ProjectEndpointsPipe(source, rel.name,
-          start.name, startInScope,
-          end.name, endInScope,
+        ProjectEndpointsPipe(source, rel,
+          start, startInScope,
+          end, endInScope,
           types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)()
 
       case EmptyResult(_) =>
@@ -121,30 +121,30 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
       case Selection(predicates, _) =>
         FilterPipe(source, predicates.map(buildPredicate).reduce(_ andWith _))(id = id)
 
-      case Expand(_, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandAll) =>
+      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll) =>
         ExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
 
-      case Expand(_, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandInto) =>
+      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandInto) =>
         ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
 
       case LockNodes(_, nodesToLock) =>
-        LockNodesPipe(source, nodesToLock.map(_.name))()
+        LockNodesPipe(source, nodesToLock)()
 
-      case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
+      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicates) =>
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate)(id = id)
 
-      case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
+      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandInto, predicates) =>
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate)(id = id)
 
       case VarExpand(_,
-                     IdName(fromName),
+                     fromName,
                      dir,
                      projectedDir,
                      types,
-                     IdName(toName),
-                     IdName(relName),
+                     toName,
+                     relName,
                      VarPatternLength(min, max),
                      expansionMode,
                      _, _, _, _, predicates) =>
@@ -159,9 +159,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
           LazyTypes(types.toArray), min, max, nodeInScope, predicate)(id = id)
 
       case Optional(inner, protectedSymbols) =>
-        OptionalPipe((inner.availableSymbols -- protectedSymbols).map(_.name), source)(id = id)
+        OptionalPipe((inner.availableSymbols -- protectedSymbols), source)(id = id)
 
-      case PruningVarExpand(_, IdName(from), dir, types, IdName(toName), minLength, maxLength, predicates) =>
+      case PruningVarExpand(_, from, dir, types, toName, minLength, maxLength, predicates) =>
         val predicate = varLengthPredicate(predicates)
         PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)()
 
@@ -214,11 +214,11 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         )(id = id)
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
-        val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name.map(_.name), expressionConverters).head
+        val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name, expressionConverters).head
         ShortestPathPipe(source, legacyShortestPath, predicates.map(p => buildPredicate(p)), withFallBack, disallowSameNode)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
-        UnwindPipe(source, buildExpression(collection), variable.name)(id = id)
+        UnwindPipe(source, buildExpression(collection), variable)(id = id)
 
       case ProcedureCall(_, call@ResolvedCall(signature, callArguments, _, _, _)) =>
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
@@ -229,39 +229,39 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         ProcedureCallPipe(source, signature, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)(id = id)
 
       case LoadCSVPlan(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping) =>
-        LoadCSVPipe(source, format, buildExpression(url), variableName.name, fieldTerminator, legacyCsvQuoteEscaping)(id = id)
+        LoadCSVPipe(source, format, buildExpression(url), variableName, fieldTerminator, legacyCsvQuoteEscaping)(id = id)
 
       case ProduceResult(columns, _) =>
         ProduceResultsPipe(source, columns)(id = id)
 
       case CreateNode(_, idName, labels, props) =>
-        CreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
+        CreateNodePipe(source, idName, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
 
       case MergeCreateNode(_, idName, labels, props) =>
-        MergeCreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
+        MergeCreateNodePipe(source, idName, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
 
       case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        CreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(buildExpression))(id = id)
+        CreateRelationshipPipe(source, idName, startNode, LazyType(typ)(context.semanticTable), endNode, props.map(buildExpression))(id = id)
 
       case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        MergeCreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(buildExpression))(id = id)
+        MergeCreateRelationshipPipe(source, idName, startNode, LazyType(typ)(context.semanticTable), endNode, props.map(buildExpression))(id = id)
 
-      case SetLabels(_, IdName(name), labels) =>
+      case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
 
-      case SetNodeProperty(_, IdName(name), propertyKey, expression) =>
+      case SetNodeProperty(_, name, propertyKey, expression) =>
         SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
           buildExpression(expression)))(id = id)
 
-      case SetNodePropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
+      case SetNodePropertiesFromMap(_, name, expression, removeOtherProps) =>
         SetPipe(source,
           SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
 
-      case SetRelationshipPropery(_, IdName(name), propertyKey, expression) =>
+      case SetRelationshipPropery(_, name, propertyKey, expression) =>
         SetPipe(source,
           SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression)))(id = id)
 
-      case SetRelationshipPropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
+      case SetRelationshipPropertiesFromMap(_, name, expression, removeOtherProps) =>
         SetPipe(source,
           SetRelationshipPropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
 
@@ -269,7 +269,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         SetPipe(source, SetPropertyOperation(
           buildExpression(entityExpr), LazyPropertyKey(propertyKey), buildExpression(expression)))(id = id)
 
-      case RemoveLabels(_, IdName(name), labels) =>
+      case RemoveLabels(_, name, labels) =>
         RemoveLabelsPipe(source, name, labels.map(LazyLabel.apply))(id = id)
 
       case DeleteNode(_, expression) =>
@@ -339,15 +339,15 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         CartesianProductPipe(lhs, rhs)(id = id)
 
       case NodeHashJoin(nodes, _, _) =>
-        NodeHashJoinPipe(nodes.map(_.name), lhs, rhs)(id = id)
+        NodeHashJoinPipe(nodes, lhs, rhs)(id = id)
 
       case OuterHashJoin(nodes, l, r) =>
-        NodeOuterHashJoinPipe(nodes.map(_.name), lhs, rhs, (r.availableSymbols -- l.availableSymbols).map(_.name))(id = id)
+        NodeOuterHashJoinPipe(nodes, lhs, rhs, r.availableSymbols -- l.availableSymbols)(id = id)
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 
       case AssertSameNode(node, _, _) =>
-        AssertSameNodePipe(lhs, rhs, node.name)(id = id)
+        AssertSameNodePipe(lhs, rhs, node)(id = id)
 
       case SemiApply(_, _) =>
         SemiApplyPipe(lhs, rhs, negated = false)(id = id)
@@ -356,10 +356,10 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         SemiApplyPipe(lhs, rhs, negated = true)(id = id)
 
       case LetSemiApply(_, _, idName) =>
-        LetSemiApplyPipe(lhs, rhs, idName.name, negated = false)(id = id)
+        LetSemiApplyPipe(lhs, rhs, idName, negated = false)(id = id)
 
       case LetAntiSemiApply(_, _, idName) =>
-        LetSemiApplyPipe(lhs, rhs, idName.name, negated = true)(id = id)
+        LetSemiApplyPipe(lhs, rhs, idName, negated = true)(id = id)
 
       case SelectOrSemiApply(_, _, predicate) =>
         SelectOrSemiApplyPipe(lhs, rhs, buildPredicate(predicate), negated = false)(id = id)
@@ -368,22 +368,22 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         SelectOrSemiApplyPipe(lhs, rhs, buildPredicate(predicate), negated = true)(id = id)
 
       case LetSelectOrSemiApply(_, _, idName, predicate) =>
-        LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = false)(id = id)
+        LetSelectOrSemiApplyPipe(lhs, rhs, idName, buildPredicate(predicate), negated = false)(id = id)
 
       case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
-        LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = true)(id = id)
+        LetSelectOrSemiApplyPipe(lhs, rhs, idName, buildPredicate(predicate), negated = true)(id = id)
 
       case ConditionalApply(_, _, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = false)(id = id)
+        ConditionalApplyPipe(lhs, rhs, ids, negated = false)(id = id)
 
       case AntiConditionalApply(_, _, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = true)(id = id)
+        ConditionalApplyPipe(lhs, rhs, ids, negated = true)(id = id)
 
       case Union(_, _) =>
         UnionPipe(lhs, rhs)(id = id)
 
       case TriadicSelection(positivePredicate, _, sourceId, seenId, targetId, _) =>
-        TriadicSelectionPipe(positivePredicate, lhs, sourceId.name, seenId.name, targetId.name, rhs)(id = id)
+        TriadicSelectionPipe(positivePredicate, lhs, sourceId, seenId, targetId, rhs)(id = id)
 
       case ValueHashJoin(_, _, frontEndAst.Equals(lhsExpression, rhsExpression)) =>
         ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)(id = id)
@@ -392,7 +392,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         ForeachPipe(lhs, rhs, variable, buildExpression(expression))(id = id)
 
       case RollUpApply(_, _, collectionName, identifierToCollection, nullables) =>
-        RollUpApplyPipe(lhs, rhs, collectionName.name, identifierToCollection.name, nullables.map(_.name))(id = id)
+        RollUpApplyPipe(lhs, rhs, collectionName, identifierToCollection, nullables)(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")
@@ -408,7 +408,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   }
 
   private def translateColumnOrder(s: ColumnOrder): pipes.ColumnOrder = s match {
-    case plans.Ascending(IdName(name)) => pipes.Ascending(name)
-    case plans.Descending(IdName(name)) => pipes.Descending(name)
+    case plans.Ascending(name) => pipes.Ascending(name)
+    case plans.Descending(name) => pipes.Descending(name)
   }
 }

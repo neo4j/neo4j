@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, Rewriter, topDown}
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -83,7 +82,7 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("can assign inside expressions as well") {
     val singleRow = SingleRow()(solved)
-    val inner = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val inner = AllNodesScan("x", Set.empty)(solved)
     val filter = Selection(Seq(NestedPlanExpression(inner, literalInt(42))(pos)), singleRow)(solved)
 
     filter.assignIds()

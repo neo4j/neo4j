@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery, StrictnessMode}
 
 case class EmptyResult(inner: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(inner)
 
-  override def availableSymbols: Set[IdName] = inner.availableSymbols
+  override def availableSymbols: Set[String] = inner.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
 

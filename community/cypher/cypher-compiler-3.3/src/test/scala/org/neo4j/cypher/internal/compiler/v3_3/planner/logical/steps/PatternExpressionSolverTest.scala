@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, Projection, RollUpApply}
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -46,7 +46,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // then
     val expectedInnerPlan = Projection(otherSide, Map("  FRESHID0" -> PathExpression(pathStep)(pos)))(solved)
 
-    resultPlan should equal(RollUpApply(source, expectedInnerPlan, IdName("x"), IdName("  FRESHID0"), Set(IdName("a")))(solved))
+    resultPlan should equal(RollUpApply(source, expectedInnerPlan, "x", "  FRESHID0", Set("a"))(solved))
     expressions should equal(Map("x" -> Variable("x")(pos)))
   }
 
@@ -67,10 +67,10 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
-    val rollUp1 = RollUpApply(source, expectedInnerPlan1, IdName("x"), IdName("  FRESHID0"), Set(IdName("a")))(solved)
+    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "x", "  FRESHID0", Set("a"))(solved)
 
     val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))(solved)
-    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, IdName("y"), IdName("  FRESHID3"), Set(IdName("a")))(solved)
+    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "y", "  FRESHID3", Set("a"))(solved)
 
     resultPlan should equal(rollUp2)
     expressions should equal(Map("x" -> Variable("x")(pos), "y" -> Variable("y")(pos)))
@@ -94,10 +94,10 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
-    val rollUp1 = RollUpApply(source, expectedInnerPlan1, IdName("  FRESHID1"), IdName("  FRESHID0"), Set(IdName("a")))(solved)
+    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "  FRESHID1", "  FRESHID0", Set("a"))(solved)
 
     val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))(solved)
-    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, IdName("  FRESHID4"), IdName("  FRESHID3"), Set(IdName("a")))(solved)
+    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))(solved)
 
     resultPlan should equal(rollUp2)
     expressions should equal(Map("x" -> Equals(Variable("  FRESHID1")(pos), Variable("  FRESHID4")(pos))(pos)))
@@ -121,10 +121,10 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
-    val rollUp1 = RollUpApply(source, expectedInnerPlan1, IdName("  FRESHID1"), IdName("  FRESHID0"), Set(IdName("a")))(solved)
+    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "  FRESHID1", "  FRESHID0", Set("a"))(solved)
 
     val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))(solved)
-    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, IdName("  FRESHID4"), IdName("  FRESHID3"), Set(IdName("a")))(solved)
+    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))(solved)
 
     resultPlan should equal(rollUp2)
     expressions should equal(Seq(Equals(Variable("  FRESHID1")(pos), Variable("  FRESHID4")(pos))(pos)))

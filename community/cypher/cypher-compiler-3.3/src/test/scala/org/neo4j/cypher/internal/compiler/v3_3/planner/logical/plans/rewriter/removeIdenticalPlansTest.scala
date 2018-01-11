@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans.{AllNodesScan, NodeHashJoin}
 
 class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should not contain copies") {
-    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val join = NodeHashJoin(Set(IdName("a")), scan, scan)(solved)
+    val scan = AllNodesScan("a", Set.empty)(solved)
+    val join = NodeHashJoin(Set("a"), scan, scan)(solved)
 
     val rewritten = join.endoRewrite(removeIdenticalPlans)
 
@@ -38,9 +37,9 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("should not rewrite when not needed") {
-    val scan1 = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val scan2 = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val join = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
+    val scan1 = AllNodesScan("a", Set.empty)(solved)
+    val scan2 = AllNodesScan("a", Set.empty)(solved)
+    val join = NodeHashJoin(Set("a"), scan1, scan2)(solved)
 
     val rewritten = join.endoRewrite(removeIdenticalPlans)
 

@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
-case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
+case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)
                                (val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)
 
-case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
+case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)
                                    (val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)
 
-abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression,
+abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression,
                                             solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)

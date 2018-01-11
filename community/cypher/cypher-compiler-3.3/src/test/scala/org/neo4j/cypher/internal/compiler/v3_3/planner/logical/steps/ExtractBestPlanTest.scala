@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, VarPatternLength, _}
+import org.neo4j.cypher.internal.ir.v3_3.{PatternRelationship, VarPatternLength, _}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -42,12 +42,12 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   private def newQueryWithIdxHint() = RegularPlannerQuery(
     QueryGraph(
-      patternNodes = Set(IdName("a"), IdName("b"))
+      patternNodes = Set("a", "b")
     ).addHints(Set(newIndexHint())))
 
   private def newQueryWithJoinHint() = RegularPlannerQuery(
     QueryGraph(
-      patternNodes = Set(IdName("a"), IdName("b"))
+      patternNodes = Set("a", "b")
     ).addHints(Set(newJoinHint())))
 
   private def getPlanContext(hasIndex: Boolean): PlanContext = {
@@ -69,7 +69,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("should throw when finding plan that does not solve all pattern nodes") {
     val query = RegularPlannerQuery(
       QueryGraph(
-        patternNodes = Set(IdName("a"), IdName("b"))
+        patternNodes = Set("a", "b")
       )
     )
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
@@ -85,7 +85,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength.unlimited)
     val query = RegularPlannerQuery(
       QueryGraph(
-        patternNodes = Set(IdName("a"), IdName("b")),
+        patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel)
       )
     )
@@ -101,13 +101,13 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("should not throw when finding plan that does solve all pattern nodes") {
     val query = RegularPlannerQuery(
       QueryGraph(
-        patternNodes = Set(IdName("a"), IdName("b"))
+        patternNodes = Set("a", "b")
       )
     )
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext)
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(), query).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), query).availableSymbols should equal(Set("a", "b"))
   }
 
   test("should throw when finding plan that contains unfulfillable index hint") {
@@ -134,7 +134,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(false), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint()).availableSymbols should equal(Set("a", "b"))
     notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", Seq("name")))
   }
 
@@ -144,7 +144,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(false), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
 
-    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithJoinHint()).availableSymbols should equal(Set("a", "b"))
     val result = notificationLogger.notifications
     result should contain(JoinHintUnfulfillableNotification(Array("a")))
   }
@@ -154,9 +154,9 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(true), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
-    val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](newIndexHint()))
+    val plan: LogicalPlan = newMockedLogicalPlan(Set("a", "b"), hints = Set[Hint](newIndexHint()))
 
-    verifyBestPlan(plan, newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(plan, newQueryWithIdxHint()).availableSymbols should equal(Set("a", "b"))
     notificationLogger.notifications should be(empty)
   }
 
@@ -165,9 +165,9 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(true), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
-    val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](newJoinHint()))
+    val plan: LogicalPlan = newMockedLogicalPlan(Set("a", "b"), hints = Set[Hint](newJoinHint()))
 
-    verifyBestPlan(plan, newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(plan, newQueryWithJoinHint()).availableSymbols should equal(Set("a", "b"))
     notificationLogger.notifications should be(empty)
   }
 

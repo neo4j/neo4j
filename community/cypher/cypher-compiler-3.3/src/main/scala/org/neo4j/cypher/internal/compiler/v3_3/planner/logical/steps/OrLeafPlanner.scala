@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.PartialPredicate.PartialPredicateWrapper
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Ors}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.SeqCombiner.combine
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph, Selections}
+import org.neo4j.cypher.internal.ir.v3_3.{QueryGraph, Selections}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
@@ -74,7 +74,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
   }
 
   private def hasPlanSolvingOtherVariable(plansPerExpression: Seq[Seq[LeafPlansForVariable]]) = {
-    val id: IdName = plansPerExpression.head.head.id
+    val id: String = plansPerExpression.head.head.id
 
     plansPerExpression.exists(leafs => leafs.exists(_.id != id))
   }

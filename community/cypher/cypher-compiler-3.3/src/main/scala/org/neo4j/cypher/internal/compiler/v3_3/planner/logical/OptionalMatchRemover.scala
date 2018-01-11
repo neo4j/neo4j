@@ -51,7 +51,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
   private def rewrite(projectionDeps: Iterable[Variable], graph: QueryGraph, proj: QueryProjection, tail: Option[PlannerQuery]): RegularPlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
-    val dependencies: Set[IdName] = projectionDeps.map(IdName.fromVariable).toSet ++ updateDeps
+    val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
 
     val optionalMatches = graph.optionalMatches.flatMapWithTail {
       (original: QueryGraph, tail: Seq[QueryGraph]) =>
@@ -80,7 +80,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
           val elementsToKeep = {
             val variablesNeededForPredicates =
-              remaining.flatMap(expression => expression.dependencies.map(IdName.fromVariable))
+              remaining.flatMap(expression => expression.dependencies.map(_.name))
             original.smallestGraphIncluding(mustInclude ++ original.argumentIds ++ variablesNeededForPredicates)
           }
 
@@ -116,17 +116,17 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     * @return Map of label and property equality comparisons to move to pattern expressions,
     *         and the set of remaining predicates
     */
-  private def partitionPredicates(predicates: Set[Predicate], kept: Set[IdName]): (Map[IdName, LabelsAndEquality], Set[Expression]) = {
+  private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): (Map[String, LabelsAndEquality], Set[Expression]) = {
 
-    val patternPredicates = mutable.Map.empty[IdName, LabelsAndEquality]
+    val patternPredicates = mutable.Map.empty[String, LabelsAndEquality]
     val predicatesToKeep = mutable.Set.empty[Expression]
 
-    def addLabel(idName: IdName, labelName: LabelName) = {
+    def addLabel(idName: String, labelName: LabelName) = {
       val current = patternPredicates.getOrElse(idName, LabelsAndEquality.empty)
       patternPredicates += idName -> current.copy(labels = current.labels :+ labelName)
     }
 
-    def addProperty(idName: IdName, prop: PropertyKeyName, rhs: Expression) = {
+    def addProperty(idName: String, prop: PropertyKeyName, rhs: Expression) = {
       val current = patternPredicates.getOrElse(idName, LabelsAndEquality.empty)
       patternPredicates += idName -> current.copy(equality = current.equality :+ prop -> rhs)
     }
@@ -153,16 +153,16 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
         case _ => false
       }
 
-  private def toAst(elementsToKeep: Set[IdName], predicates: Map[IdName, LabelsAndEquality], pattern: PatternRelationship) = {
+  private def toAst(elementsToKeep: Set[String], predicates: Map[String, LabelsAndEquality], pattern: PatternRelationship) = {
     val pos = InputPosition.NONE
-    def createVariable(name: IdName): Option[Variable] =
+    def createVariable(name: String): Option[Variable] =
       if (!elementsToKeep(name))
         None
       else {
-        Some(Variable(name.name)(pos))
+        Some(Variable(name)(pos))
       }
 
-    def createNode(name: IdName): NodePattern = {
+    def createNode(name: String): NodePattern = {
       val labelsAndProps = predicates.getOrElse(name, LabelsAndEquality.empty)
       val props = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(pos))
       NodePattern(createVariable(name), labels = labelsAndProps.labels, properties = props)(pos)

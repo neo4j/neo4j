@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.assu
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.{ABCDCardinalityData, RandomizedCardinalityModelTestSuite}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
 
@@ -231,7 +230,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 
   test("honours bound arguments") {
     givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
-    withQueryGraphArgumentIds(IdName("a")).
+    withQueryGraphArgumentIds("a").
     withInboundCardinality(13.0).
     withGraphNodes(500).
     withLabel('FOO -> 100).
@@ -242,7 +241,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 
   test("input cardinality of zero on a different variable should not affect cardinality estimation of the pattern") {
     givenPattern("MATCH (a)").
-    withQueryGraphArgumentIds(IdName("e")).
+    withQueryGraphArgumentIds("e").
     withInboundCardinality(0.0).
     withGraphNodes(500).
     shouldHaveQueryGraphCardinality(500)

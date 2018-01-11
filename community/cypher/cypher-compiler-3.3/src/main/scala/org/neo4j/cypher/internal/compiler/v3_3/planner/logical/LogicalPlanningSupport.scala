@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Hint
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 object LogicalPlanningSupport {
 
   implicit class RichHint(val hint: Hint) extends AnyVal {
-    def ids = hint.variables.map { variable => IdName(variable.name) }
-    def coveredBy(overlappingIds: Set[IdName]) = ids.forall(id => overlappingIds contains id)
+    def ids = hint.variables.map { variable => variable.name }
+    def coveredBy(overlappingIds: Set[String]) = ids.forall(id => overlappingIds contains id)
   }
 }

@@ -58,7 +58,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
                       knownRelationshipCardinality: Map[(String, String, String), Double] = Map.empty,
                       knownNodeNames: Set[String] = Set.empty,
                       knownRelNames: Set[String] = Set.empty,
-                      queryGraphArgumentIds: Set[IdName] = Set.empty,
+                      queryGraphArgumentIds: Set[String] = Set.empty,
                       inboundCardinality: Cardinality = Cardinality(1),
                       strictness: Option[StrictnessMode] = None) {
 
@@ -79,7 +79,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       copy(knownLabelCardinality = knownLabelCardinality.fuse(increments)(_ + _))
     }
 
-    def withQueryGraphArgumentIds(idNames: IdName*): TestUnit =
+    def withQueryGraphArgumentIds(idNames: String*): TestUnit =
       copy(queryGraphArgumentIds = Set(idNames: _*))
 
     def withGraphNodes(number: Double): TestUnit = copy(allNodes = Some(number))

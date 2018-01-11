@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, QueryGraph, Selections}
+import org.neo4j.cypher.internal.ir.v3_3.{Predicate, QueryGraph, Selections}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{CompositeQueryExpression, NodeIndexSeek, NodeUniqueIndexSeek, SingleQueryExpression}
 
 import scala.language.reflectiveCalls
 
 class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val idName = IdName("n")
+  val idName = "n"
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
   val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _)_
   val property2: Expression = Property(varFor("n"), PropertyKeyName("prop2") _)_
@@ -194,7 +194,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     new given {
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
       val x = varFor("x")
-      qg = queryGraph(In(property, ListLiteral(Seq(x)) _) _, hasLabels).addArgumentIds(Seq(IdName("x")))
+      qg = queryGraph(In(property, ListLiteral(Seq(x)) _) _, hasLabels).addArgumentIds(Seq("x"))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>

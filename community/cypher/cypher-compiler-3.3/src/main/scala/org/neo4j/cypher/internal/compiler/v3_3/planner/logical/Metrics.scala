@@ -61,7 +61,7 @@ object Metrics {
 
   type QueryGraphCardinalityModel = (QueryGraph, QueryGraphSolverInput, SemanticTable) => Cardinality
 
-  type LabelInfo = Map[IdName, Set[LabelName]]
+  type LabelInfo = Map[String, Set[LabelName]]
 }
 
 trait ExpressionEvaluator {
