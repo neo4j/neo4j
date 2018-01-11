@@ -19,58 +19,68 @@
  */
 package cypher.features
 
+import java.util
+
 import cypher.features.ScenarioTestHelper._
-import org.junit.jupiter.api.TestFactory
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.graphdb.factory.GraphDatabaseSettings._
-import org.opencypher.tools.tck.api.CypherTCK
+import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
 class TCKTest {
 
-//  val tckSemanticFailures = Set(
-//    // Neo4j fails at runtime, should fail at compile time
-//    "Failing on merging relationship with null property",
-//    "Failing on merging node with null property",
-//    "Failing when setting a list of maps as a property",
-//
-//    // YIELD -
-//    "In-query call to procedure that takes no arguments and yields no results",
-//    "In-query call to procedure with explicit arguments that drops all result fields",
-//
-//    // Integer/Float conversion
-//    "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT",
-//    "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT",
-//
-//    // Different error type in Neo4j
-//    "Deleting connected nodes",
-//    "Standalone call to unknown procedure should fail",
-//    "In-query call to unknown procedure should fail"
-//  )
-
-  val scenarios = CypherTCK.allTckScenarios
-     // .filter(s => s.name == "Count nodes")
+  val scenarios: Seq[Scenario] = CypherTCK.allTckScenarios
+     // .filter(s => s.name == "Count nodes") //TODO
 
   @TestFactory
-  def runTCKTestsDefault() = {
+  def runTCKTestsDefault(): util.Collection[DynamicTest] = {
     val blacklist = "default.txt"
-    val blacklistedScenarioNames = parseBlacklist(blacklist)
-    runAndCheckBlacklistedTests(scenarios, blacklistedScenarioNames)
-    createTests(scenarios, blacklistedScenarioNames)
+    createTests(scenarios, parseBlacklist(blacklist))
+  }
+
+  @TestFactory
+  def runTCKTestsCostSlotted() = {
+    val executionPrefix = "CYPHER planner=cost runtime=slotted"
+    val blacklist = "cost-slotted.txt"
+    printComputedBlacklist(scenarios, executionPrefix)
+    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  }
+
+  @TestFactory
+  def runTCKTestsCostMorsel() = {
+    val executionPrefix = "CYPHER planner=cost runtime=morsel"
+    val blacklist = "cost-morsel.txt"
+    printComputedBlacklist(scenarios, executionPrefix)
+    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
   }
 
   @TestFactory
   def runTCKTestsCostCompiled() = {
-    val config = Map[Setting[_],String](
-      cypher_planner -> "COST",
-      cypher_runtime -> "COMPILED",
-      cypher_hints_error -> "true")
+    val executionPrefix = "CYPHER planner=cost runtime=compiled"
     val blacklist = "cost-compiled.txt"
-    val blacklistedScenarioNames = parseBlacklist(blacklist)
-
-    runAndCheckBlacklistedTests(scenarios, blacklistedScenarioNames, config)
-    createTests(scenarios, blacklistedScenarioNames, config)
+    createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
   }
 
+  @TestFactory
+  def runTCKTestsCost() = {
+    val executionPrefix = "CYPHER planner=cost"
+    val blacklist = "cost.txt"
+    printComputedBlacklist(scenarios, executionPrefix)
+    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  }
 
+  @TestFactory
+  def runTCKTestsCompatibility31() = {
+    val executionPrefix = "CYPHER 3.1"
+    val blacklist = "compatibility-31.txt"
+    printComputedBlacklist(scenarios, executionPrefix)
+    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  }
+
+  @TestFactory
+  def runTCKTestsCompatibility23() = {
+    val executionPrefix = "CYPHER 2.3"
+    val blacklist = "compatibility-23.txt"
+    printComputedBlacklist(scenarios, executionPrefix)
+    //createTests(scenarios, parseBlacklist(blacklist), executionPrefix)
+  }
 
 }

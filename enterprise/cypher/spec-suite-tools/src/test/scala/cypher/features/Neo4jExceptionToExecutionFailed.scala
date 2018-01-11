@@ -40,9 +40,7 @@ object Neo4jExceptionToExecutionFailed {
       case Phase.compile => compileTimeDetail(msg)
       case Phase.runtime => runtimeDetail(msg)
     }
-    val ef = ExecutionFailed(errorType.toString, phase, detail)
-    println(ef)
-    ef
+    ExecutionFailed(errorType.toString, phase, detail)
   }
 
   private def runtimeDetail(msg: String): String = {

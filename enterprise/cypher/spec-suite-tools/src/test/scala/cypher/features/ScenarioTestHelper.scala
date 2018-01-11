@@ -25,71 +25,79 @@ import java.nio.charset.StandardCharsets
 import java.util
 
 import org.junit.jupiter.api.DynamicTest
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-import org.opencypher.tools.tck.api.{Graph, Scenario}
+import org.junit.jupiter.api.function.Executable
+import org.opencypher.tools.tck.api.Scenario
 
 import scala.collection.JavaConverters._
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 object ScenarioTestHelper {
+  def createTests(scenarios: Seq[Scenario],
+                  blacklist: Set[BlacklistEntry] = Set.empty,
+                  executionPrefix: String = "",
+                  debugOutput: Boolean = false): util.Collection[DynamicTest] = {
 
-  def runAndCheckBlacklistedTests(scenarios: Seq[Scenario], blacklist : Set[String] = Set.empty, config: Map[Setting[_], String] = Map()) = {
-    println("Running all blacklisted scenarios now and expect them to fail.")
-    var counter = 0
-    scenarios.filter(scenario => blacklist.contains(scenario.name)).foreach { scenario =>
-      val name = scenario.toString()
-      val executable = scenario(createTestGraph(config))
-      try {
-        executable.execute()
-        throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario: " + name)
-      } catch {
-        case ill: IllegalStateException => throw ill
-        case _ => counter = counter + 1
+    val (expectFail, expectPass) = scenarios.partition { s => blacklist.exists(_.isBlacklisted(s)) }
+    if (debugOutput) {
+      val unusedBlacklistEntries = blacklist.filterNot(b => expectFail.exists(s => b.isBlacklisted(s)))
+      if (unusedBlacklistEntries.nonEmpty) {
+        println("The following entries of the blacklist were not found in the blacklist: \n"
+          + unusedBlacklistEntries.mkString("\n"))
       }
     }
-    println("Success! All " + counter + " blacklisted scenarios failed as expected.\n")
 
-  }
-
-  def createTests(scenarios: Seq[Scenario], blacklist : Set[String] = Set.empty, config: Map[Setting[_], String] = Map()) : util.Collection[DynamicTest] = {
-    val filteredScenarios = scenarios.filterNot(s => blacklist.contains(s.name))
-    println("Executing " + filteredScenarios.size +  " scenarios now.")
-
-    val dynamicTests: Seq[DynamicTest] = filteredScenarios.map { scenario =>
+    val expectFailTests: Seq[DynamicTest] = expectFail.map { scenario =>
       val name = scenario.toString()
-      val executable = scenario(createTestGraph(config))
+      val executable = new Executable {
+        override def execute(): Unit = {
+          Try {
+            scenario(Neo4jAdapter(executionPrefix)).execute()
+          } match {
+            case Success(_) => throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
+            case Failure(e) => println("Failed as expected with\n  " + e.getMessage)
+          }
+        }
+      }
+      DynamicTest.dynamicTest("Blacklisted Test: " + name, executable)
+    }
+
+    val expectPassTests: Seq[DynamicTest] = expectPass.map { scenario =>
+      val name = scenario.toString()
+      val executable = scenario(Neo4jAdapter(executionPrefix))
       DynamicTest.dynamicTest(name, executable)
     }
-    dynamicTests.asJavaCollection
+    (expectPassTests ++ expectFailTests).asJavaCollection
   }
 
-
-  def parseBlacklist(blacklistFile: String) : Set[String] = {
-    def validate(scenarioName : String) : Unit = {
+  def parseBlacklist(blacklistFile: String): Set[BlacklistEntry] = {
+    def validate(scenarioName: String): Unit = {
       if(scenarioName.head.isWhitespace || scenarioName.last.isWhitespace) {
         throw new Exception(s"Invalid whitespace in scenario name $scenarioName from file $blacklistFile")
       }
     }
+
     val uri = new URI("/blacklists/" + blacklistFile)
-    // This URI is only valid for the project we are in. currently this is acceptance tests!
-    // TODO: move TCKTests to compatability project
 
     val url = getClass.getResource(uri.getPath)
     if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
     val lines = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
     val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty).toSet // comments in blacklist are being ignored
     scenarios.foreach(validate)
-    scenarios
+    scenarios.map(BlacklistEntry(_))
   }
 
-  def createTestGraph(config: Map[Setting[_], String] = Map()): Graph = {
-    val db = createGraphDatabase(config)
-    new Neo4jAdapter(db)
-  }
-
-  protected def createGraphDatabase(config: collection.Map[Setting[_], String]): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
+  def printComputedBlacklist(scenarios: Seq[Scenario],
+                             executionPrefix: String = ""): List[String] = {
+    println("Evaluating scenarios")
+    val numberOfScenarios = scenarios.size
+    val blacklist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
+      val isFailure = Try(scenario(Neo4jAdapter(executionPrefix)).execute()).isFailure
+      println(s"Processing scenario ${index + 1}/$numberOfScenarios")
+      if (isFailure) Some(scenario.toString) else None
+    }.toList
+    println()
+    println(blacklist.mkString("\n"))
+    blacklist
   }
 }

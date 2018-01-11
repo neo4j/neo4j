@@ -21,6 +21,8 @@ package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.{cypher_hints_error, cypher_planner, cypher_runtime}
 import org.neo4j.graphdb.{Result => Neo4jResult}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -31,13 +33,18 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 object Neo4jAdapter {
-  def apply(): Neo4jAdapter = {
-    val service = new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase())
-    new Neo4jAdapter(service)
+  def apply(executionPrefix: String,
+            dbConfig: collection.Map[Setting[_], String] = Map[Setting[_], String](cypher_hints_error -> "true")): Neo4jAdapter = {
+    val service = createGraphDatabase(dbConfig)
+    new Neo4jAdapter(service, executionPrefix)
+  }
+
+  private def createGraphDatabase(config: collection.Map[Setting[_], String]): GraphDatabaseCypherService = {
+    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 }
 
-class Neo4jAdapter(service: GraphDatabaseCypherService) extends Graph with Neo4jProcedureAdapter {
+class Neo4jAdapter(service: GraphDatabaseCypherService, executionPrefix: String) extends Graph with Neo4jProcedureAdapter {
   protected val instance: GraphDatabaseFacade = service.getGraphDatabaseService
 
   private val explainPrefix = "EXPLAIN\n"
@@ -46,24 +53,27 @@ class Neo4jAdapter(service: GraphDatabaseCypherService) extends Graph with Neo4j
     val neo4jParams = params.mapValues(v => TCKValueToNeo4jValue(v)).asJava
 
     val tx = instance.beginTx
-    val result: Result = Try(instance.execute(query, neo4jParams)) match {
+    val queryToExecute = if (meta == ExecQuery) {
+      s"$executionPrefix $query"
+    }else query
+    val result: Result = Try(instance.execute(queryToExecute, neo4jParams)) match {
       case Success(r) =>
         Try(convertResult(r)) match {
           case Failure(exception) => convert(Phase.runtime, exception)
           case Success(converted) =>
-            tx.success
+            tx.success()
             converted
         }
       case Failure(exception) =>
-        val explainedResult = Try(instance.execute(explainPrefix + query))
+        val explainedResult = Try(instance.execute(explainPrefix + queryToExecute))
         val phase = explainedResult match {
           case Failure(_) => Phase.compile
           case Success(_) => Phase.runtime
         }
-        tx.failure
+        tx.failure()
         convert(phase, exception)
     }
-    Try(tx.close) match {
+    Try(tx.close()) match {
       case Failure(exception) =>
         convert(Phase.runtime, exception)
       case Success(_) => result

@@ -23,22 +23,13 @@ import java.io.File
 
 import cypher.features.ScenarioTestHelper._
 import org.junit.jupiter.api.TestFactory
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.{cypher_hints_error, cypher_planner, cypher_runtime}
 import org.opencypher.tools.tck.api.CypherTCK
 
 class AcceptanceTest {
 
   val featuresURI = getClass.getResource("/cypher/features").toURI
 
-//  val acceptanceSemanticFailures = Set[String](
-//    // Different error type in Neo4j
-//    "Standalone call to unknown procedure should fail",
-//    "In-query call to unknown procedure should fail"
-//  )
-
   val scenarios = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
-//  val cleanedScenarios = scenarios.filterNot(scenario => acceptanceSemanticFailures.contains(scenario.name))
 
   //TODO: Prepared access to only execute a feature or scenario
 
@@ -46,20 +37,15 @@ class AcceptanceTest {
   def runAcceptanceTestsDefault() = {
     val blacklist = "default.txt"
     val blacklistedScenarioNames = parseBlacklist(blacklist)
-    runAndCheckBlacklistedTests(scenarios, blacklistedScenarioNames)
     createTests(scenarios, blacklistedScenarioNames)
   }
 
   @TestFactory
   def runAcceptanceTestsCostCompiled() = {
-    val config = Map[Setting[_], String](
-      cypher_planner -> "COST",
-      cypher_runtime -> "COMPILED",
-      cypher_hints_error -> "true")
+    val executionPrefix = "CYPHER runtime=compiled planner=cost"
     val blacklist = "cost-compiled.txt"
     val blacklistedScenarioNames = parseBlacklist(blacklist)
 
-    runAndCheckBlacklistedTests(scenarios, blacklistedScenarioNames, config)
-    createTests(scenarios, blacklistedScenarioNames, config)
+    createTests(scenarios, blacklistedScenarioNames, executionPrefix)
   }
 }
