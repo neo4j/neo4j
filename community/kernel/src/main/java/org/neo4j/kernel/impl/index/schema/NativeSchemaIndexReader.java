@@ -45,7 +45,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         implements IndexReader
 {
     private final GBPTree<KEY,VALUE> tree;
-    private final Layout<KEY,VALUE> layout;
+    final Layout<KEY,VALUE> layout;
     private final IndexSamplingConfig samplingConfig;
 
     private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;

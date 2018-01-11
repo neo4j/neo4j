@@ -741,9 +741,9 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         // given
         IndexEntryUpdate[] updates = new IndexEntryUpdate[]
                 {
-                        IndexEntryUpdate.add( 0, indexDescriptor, Values.of( 0 ) ),
-                        IndexEntryUpdate.add( 1, indexDescriptor, Values.of( 1 ) ),
-                        IndexEntryUpdate.add( 2, indexDescriptor, Values.of( 2 ) ),
+                        IndexEntryUpdate.add( 0, indexDescriptor, layoutUtil.asValue( 0 ) ),
+                        IndexEntryUpdate.add( 1, indexDescriptor, layoutUtil.asValue( 1 ) ),
+                        IndexEntryUpdate.add( 2, indexDescriptor, layoutUtil.asValue( 2 ) ),
                 };
         //noinspection unchecked
         processAll( updates );
@@ -751,8 +751,8 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
 
         // when
         NodeValueIterator iter = new NodeValueIterator();
-        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, Values.of( 1 ) );
-        IndexQuery.NumberRangePredicate rangeQuery = IndexQuery.range( 0, 0, true, 2, true );
+        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, layoutUtil.asValue( 1 ) );
+        IndexQuery rangeQuery = layoutUtil.rangeQuery( 0, true, 2, true );
         IndexProgressor.NodeValueClient filterClient = filterClient( iter, filter );
         reader.query( filterClient, IndexOrder.NONE, rangeQuery );
 
