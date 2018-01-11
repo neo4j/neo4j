@@ -63,7 +63,7 @@ public class SystemTimeZoneLoggingIT
         TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
         File storeDir = testDirectory.directory( String.valueOf( hoursShift ) );
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.log_timezone, LogTimeZone.SYSTEM.name() ).newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() ).newGraphDatabase();
         database.shutdown();
         Path databasePath = storeDir.toPath();
         Path debugLog = Paths.get( "logs", "debug.log" );

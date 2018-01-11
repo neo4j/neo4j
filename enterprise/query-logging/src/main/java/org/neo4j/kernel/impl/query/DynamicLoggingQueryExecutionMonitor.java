@@ -73,7 +73,7 @@ class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
     synchronized void init() throws IOException
     {
         // This set of settings are currently not dynamic:
-        currentLogTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        currentLogTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         logBuilder = FormattedLog.withZoneId( currentLogTimeZone );
         currentQueryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
 

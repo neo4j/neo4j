@@ -173,7 +173,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     private static LogProvider setupLogging( Config config )
     {
         LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext()
-                            .withZoneId( config.get( GraphDatabaseSettings.log_timezone ).getZoneId() )
+                            .withZoneId( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() )
                             .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
                             .toOutputStream( System.out );
         JULBridge.resetJUL();

@@ -21,6 +21,7 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,11 +67,11 @@ public class TransactionStatusResult
 
     public TransactionStatusResult( KernelTransactionHandle transaction,
             TransactionDependenciesResolver transactionDependenciesResolver,
-            Map<KernelTransactionHandle,List<QuerySnapshot>> handleSnapshotsMap ) throws InvalidArgumentsException
+            Map<KernelTransactionHandle,List<QuerySnapshot>> handleSnapshotsMap, ZoneId zoneId ) throws InvalidArgumentsException
     {
         this.transactionId = transaction.getUserTransactionName();
         this.username = transaction.securityContext().subject().username();
-        this.startTime = ProceduresTimeFormatHelper.formatTime( transaction.startTime() );
+        this.startTime = ProceduresTimeFormatHelper.formatTime( transaction.startTime(), zoneId );
         Optional<Status> terminationReason = transaction.terminationReason();
         this.activeLockCount = transaction.activeLocks().count();
         List<QuerySnapshot> querySnapshots = handleSnapshotsMap.get( transaction );

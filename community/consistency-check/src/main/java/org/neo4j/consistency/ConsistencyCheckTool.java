@@ -114,7 +114,7 @@ public class ConsistencyCheckTool
 
         checkDbState( storeDir, tuningConfiguration );
 
-        ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         LogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( systemOut );
         try
         {

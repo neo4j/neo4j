@@ -366,7 +366,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
 
+    @Description( "Database timezone." )
+    public static final Setting<LogTimeZone> db_timezone =
+            setting( "dbms.db.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
+
     @Description( "Database logs timezone." )
+    @Deprecated
+    @ReplacedBy( "dbms.db.timezone" )
     public static final Setting<LogTimeZone> log_timezone =
             setting( "dbms.logs.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
 

@@ -91,7 +91,7 @@ public class DiagnosticsBean extends ManagementBeanProvider
         public String dumpAll(  )
         {
             StringWriter stringWriter = new StringWriter();
-            ZoneId zoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            ZoneId zoneId = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             FormattedLog.Builder logBuilder = FormattedLog.withZoneId( zoneId );
             diagnostics.dumpAll( logBuilder.toWriter( stringWriter ) );
             return stringWriter.toString();
@@ -101,7 +101,7 @@ public class DiagnosticsBean extends ManagementBeanProvider
         public String extract( String providerId )
         {
             StringWriter stringWriter = new StringWriter();
-            ZoneId zoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            ZoneId zoneId = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             FormattedLog.Builder logBuilder = FormattedLog.withZoneId( zoneId );
             diagnostics.extract( providerId, logBuilder.toWriter( stringWriter ) );
             return stringWriter.toString();

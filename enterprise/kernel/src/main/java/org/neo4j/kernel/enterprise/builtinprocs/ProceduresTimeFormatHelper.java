@@ -31,12 +31,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ProceduresTimeFormatHelper
 {
-    public static final ZoneId UTC_ZONE_ID = ZoneId.of( "UTC" );
-
-    static String formatTime( final long startTime )
+    static String formatTime( final long startTime, ZoneId zoneId )
     {
         return OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( startTime ), UTC_ZONE_ID )
+                .ofInstant( Instant.ofEpochMilli( startTime ), zoneId )
                 .format( ISO_OFFSET_DATE_TIME );
     }
 

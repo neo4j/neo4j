@@ -131,7 +131,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         File logFile = config.get( store_internal_log_path );
         try
         {
-            ZoneId zoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            ZoneId zoneId = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( zoneId ).toOutputStream( System.out );
             return StoreLogService.withUserLogProvider( logProvider )
                     .withInternalLog( logFile )
