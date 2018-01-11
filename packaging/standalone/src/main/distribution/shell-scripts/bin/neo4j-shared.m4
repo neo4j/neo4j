@@ -34,9 +34,11 @@ build_classpath() {
   CLASSPATH="${NEO4J_PLUGINS}:${NEO4J_CONF}:${NEO4J_LIB}/*:${NEO4J_PLUGINS}/*"
 
   # augment with tools.jar, will need JDK
-  JAVA_TOOLS="${JAVA_HOME}/lib/tools.jar"
-  if [ -e $JAVA_TOOLS ]; then
-    CLASSPATH="${CLASSPATH}:${JAVA_TOOLS}"
+  if [ "${JAVA_HOME:-}" ]; then
+    JAVA_TOOLS="${JAVA_HOME}/lib/tools.jar"
+    if [ -e $JAVA_TOOLS ]; then
+      CLASSPATH="${CLASSPATH}:${JAVA_TOOLS}"
+    fi
   fi
 }
 

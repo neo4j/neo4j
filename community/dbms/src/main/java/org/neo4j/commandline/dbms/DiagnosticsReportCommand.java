@@ -74,10 +74,11 @@ public class DiagnosticsReportCommand implements AdminCommand
     private final Path configDir;
     static final String[] DEFAULT_CLASSIFIERS = new String[]{"logs", "config", "plugins", "tree", "metrics", "threads", "env", "sysprop", "ps"};
 
-    private final JMXDumper jmxDumper;
+    private JMXDumper jmxDumper;
     private boolean verbose;
     private final PrintStream out;
     private final FileSystemAbstraction fs;
+    private final PrintStream err;
 
     DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
@@ -85,7 +86,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         this.configDir = configDir;
         this.fs = outsideWorld.fileSystem();
         this.out = outsideWorld.outStream();
-        this.jmxDumper = new JMXDumper( homeDir, fs, out, outsideWorld.errorStream(), verbose );
+        err = outsideWorld.errorStream();
     }
 
     public static Arguments allArguments()
@@ -98,6 +99,7 @@ public class DiagnosticsReportCommand implements AdminCommand
     {
         Args args = Args.withFlags( "list", "to", "verbose" ).parse( stringArgs );
         verbose = args.has( "verbose" );
+        jmxDumper = new JMXDumper( homeDir, fs, out, err, verbose );
 
         DiagnosticsReporter reporter = createAndRegisterSources();
 
