@@ -88,12 +88,15 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private final int maxKeyCount = pageSize / bytesKeyOffset() + bytesKeySize() + bytesValueSize();
     private final int[] oldOffset = new int[maxKeyCount];
     private final int[] newOffset = new int[maxKeyCount];
+    private int totalSpace;
+    private int halfSpace;
 
     TreeNodeDynamicSize( int pageSize, Layout<KEY,VALUE> layout )
     {
         super( pageSize, layout );
-
-        keyValueSizeCap = totalSpace( pageSize ) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
+        totalSpace = pageSize - HEADER_LENGTH_DYNAMIC;
+        halfSpace = totalSpace / 2;
+        keyValueSizeCap = totalSpace / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - SIZE_TOTAL_OVERHEAD;
 
         if ( keyValueSizeCap < MINIMUM_ENTRY_SIZE_CAP )
         {
@@ -343,7 +346,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean reasonableKeyCount( int keyCount )
     {
-        return keyCount >= 0 && keyCount <= totalSpace( pageSize ) / SIZE_TOTAL_OVERHEAD;
+        return keyCount >= 0 && keyCount <= totalSpace / SIZE_TOTAL_OVERHEAD;
     }
 
     @Override
@@ -542,7 +545,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean leafUnderflow( PageCursor cursor, int keyCount )
     {
-        int halfSpace = halfSpace();
+        int halfSpace = this.halfSpace;
         int allocSpace = getAllocSpace( cursor, keyCount, LEAF );
         int deadSpace = getDeadSpace( cursor );
         int availableSpace = allocSpace + deadSpace;
@@ -556,7 +559,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount );
         int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount );
 
-        if ( leftActiveSpace + rightActiveSpace < totalSpace( pageSize ) )
+        if ( leftActiveSpace + rightActiveSpace < totalSpace )
         {
             // We can merge
             return -1;
@@ -586,7 +589,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         leftActiveSpace += lastChunkSize;
         rightActiveSpace -= lastChunkSize;
 
-        int halfSpace = halfSpace();
+        int halfSpace = this.halfSpace;
         boolean canRebalance = leftActiveSpace > halfSpace && rightActiveSpace > halfSpace;
         return canRebalance ? keysToMove : 0;
     }
@@ -596,7 +599,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount );
         int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount );
-        int totalSpace = totalSpace( pageSize );
+        int totalSpace = this.totalSpace;
         return totalSpace >= leftActiveSpace + rightActiveSpace;
     }
 
@@ -945,7 +948,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private int middleInternal( PageCursor cursor, int insertPos, KEY newKey )
     {
-        int halfSpace = halfSpace();
+        int halfSpace = this.halfSpace;
         int middle = 0;
         int currentPos = 0;
         int middleSpace = childSize(); // Leftmost child will always be included in left side
@@ -980,7 +983,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private int middleLeaf( PageCursor cursor, int insertPos, KEY newKey, VALUE newValue )
     {
-        int halfSpace = halfSpace();
+        int halfSpace = this.halfSpace;
         int middle = 0;
         int currentPos = 0;
         int middleSpace = 0;
@@ -1017,17 +1020,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     {
         int deadSpace = getDeadSpace( cursor );
         int allocSpace = getAllocSpace( cursor, keyCount, LEAF );
-        return totalSpace( pageSize ) - deadSpace - allocSpace;
-    }
-
-    private int totalSpace( int pageSize )
-    {
-        return pageSize - HEADER_LENGTH_DYNAMIC;
-    }
-
-    private int halfSpace()
-    {
-        return totalSpace( pageSize ) / 2;
+        return totalSpace - deadSpace - allocSpace;
     }
 
      int totalSpaceOfKeyValue( KEY key, VALUE value )
