@@ -71,9 +71,16 @@ public class JMXDumper
                     printError( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage(), e );
                 }
             }
-            catch ( IOException e )
+            catch ( Throwable e )
             {
-                printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
+                if ( e instanceof IOException )
+                {
+                    printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
+                }
+                else
+                {
+                    printError( "JDK not available, please point environment variable JAVA_HOME to a valid JDK location.", e);
+                }
             }
         }
         else
