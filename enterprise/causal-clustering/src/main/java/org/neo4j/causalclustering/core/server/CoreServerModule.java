@@ -100,6 +100,7 @@ public class CoreServerModule
     private final LogProvider logProvider;
     private final PlatformModule platformModule;
     private final PipelineHandlerAppender pipelineAppender;
+    private final LifeSupport servicesToStopOnStoreCopy;
 
     public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule,
             ConsensusModule consensusModule,
@@ -130,7 +131,7 @@ public class CoreServerModule
         this.logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
 
-        LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
+        servicesToStopOnStoreCopy = new LifeSupport();
 
         StateStorage<Long> lastFlushedStorage = platformModule.life.add(
                 new DurableStateStorage<>( platformModule.fileSystem, clusterStateDirectory, LAST_FLUSHED_NAME, new LongIndexMarshal(),
@@ -177,6 +178,7 @@ public class CoreServerModule
                 config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(), logProvider ) );
 
         // Exposes this so that tests can start/stop the catchup server
+        servicesToStopOnStoreCopy.add( catchupServer );
         dependencies.satisfyDependency( this.catchupServer );
     }
 
@@ -259,8 +261,8 @@ public class CoreServerModule
         return overrideBackupSettings;
     }
 
-    public CatchupServer getCatchupServer()
+    public LifeSupport getCatchupServerLifeCycle()
     {
-        return catchupServer;
+        return servicesToStopOnStoreCopy;
     }
 }

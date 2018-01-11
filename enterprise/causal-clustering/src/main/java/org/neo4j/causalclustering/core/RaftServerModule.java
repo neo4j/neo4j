@@ -88,7 +88,7 @@ public class RaftServerModule
 
         platformModule.life.add( raftServer.getLifecycle() ); // must start before core state so that it can trigger snapshot downloads when necessary
         platformModule.life.add( coreServerModule.createCoreLife( messageHandlerChain ) );
-        platformModule.life.add( coreServerModule.getCatchupServer() );
+        platformModule.life.add( coreServerModule.getCatchupServerLifeCycle() );
         platformModule.life.add( coreServerModule.downloadService() );
     }
 

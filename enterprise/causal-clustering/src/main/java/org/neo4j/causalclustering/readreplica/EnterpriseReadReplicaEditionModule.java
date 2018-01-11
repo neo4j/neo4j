@@ -298,7 +298,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         dependencies.satisfyDependency( createSessionTracker() );
 
-        life.add( catchupServer ); // must start last and stop first, since it handles external requests
+        life.add( servicesToStopOnStoreCopy ); // must start last and stop first, since it handles external requests
     }
 
     protected void configureDiscoveryService( DiscoveryServiceFactory discoveryServiceFactory, Dependencies dependencies,
