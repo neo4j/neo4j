@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.{Apply, Argument, LogicalPla
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
     def lhs: Option[LogicalPlan] = ???
-    def availableSymbols: Set[String] = ???
+    val availableSymbols: Set[String] = Set.empty
     def rhs: Option[LogicalPlan] = ???
     def strictness = ???
   }

@@ -27,5 +27,5 @@ case class LockNodes(source: LogicalPlan, nodesToLock: Set[String])(val solved: 
 
   override def rhs: Option[LogicalPlan] = None
 
-  override def availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols
 }

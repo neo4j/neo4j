@@ -28,7 +28,7 @@ case class DeletePath(source: LogicalPlan, expression: Expression)
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
 

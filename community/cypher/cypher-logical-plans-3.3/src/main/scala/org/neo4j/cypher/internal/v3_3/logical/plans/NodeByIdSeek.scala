@@ -25,5 +25,5 @@ case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[
                        (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  def availableSymbols: Set[String] = argumentIds + idName
+  val availableSymbols: Set[String] = argumentIds + idName
 }

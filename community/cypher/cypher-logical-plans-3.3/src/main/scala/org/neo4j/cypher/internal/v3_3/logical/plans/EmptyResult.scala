@@ -26,7 +26,7 @@ case class EmptyResult(inner: LogicalPlan)(val solved: PlannerQuery with Cardina
 
   override def lhs: Option[LogicalPlan] = Some(inner)
 
-  override def availableSymbols: Set[String] = inner.availableSymbols
+  override val availableSymbols: Set[String] = inner.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
 

@@ -28,5 +28,5 @@ case class UnwindCollection(left: LogicalPlan, variable: String, expression: Exp
   val lhs = Some(left)
   def rhs = None
 
-  def availableSymbols: Set[String] = left.availableSymbols + variable
+  val availableSymbols: Set[String] = left.availableSymbols + variable
 }

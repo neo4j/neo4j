@@ -29,7 +29,7 @@ case class CreateRelationship(source: LogicalPlan, idName: String, startNode: St
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
+  override val availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
 
   override def rhs: Option[LogicalPlan] = None
 

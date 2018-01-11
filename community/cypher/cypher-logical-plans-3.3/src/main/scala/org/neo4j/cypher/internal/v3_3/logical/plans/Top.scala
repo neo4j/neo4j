@@ -28,5 +28,5 @@ case class Top(left: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression
 
   override def rhs: Option[LogicalPlan] = None
 
-  override def availableSymbols: Set[String] = left.availableSymbols
+  override val availableSymbols: Set[String] = left.availableSymbols
 }

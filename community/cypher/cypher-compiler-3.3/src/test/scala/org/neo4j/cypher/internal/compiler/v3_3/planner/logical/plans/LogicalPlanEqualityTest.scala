@@ -75,7 +75,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[String] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
 
@@ -89,7 +89,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[String] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
 
@@ -106,7 +106,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[String] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
   }

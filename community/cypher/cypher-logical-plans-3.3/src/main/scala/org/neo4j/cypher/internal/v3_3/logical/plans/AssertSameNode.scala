@@ -27,5 +27,5 @@ case class AssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan)(v
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols + node
+  val availableSymbols = left.availableSymbols ++ right.availableSymbols + node
 }

@@ -28,7 +28,7 @@ case class ErrorPlan(inner: LogicalPlan, exception: Exception)(val solved: Plann
 
   override val rhs: Option[LogicalPlan] = None
 
-  override def availableSymbols: Set[String] = inner.availableSymbols
+  override val availableSymbols: Set[String] = inner.availableSymbols
 
   override def strictness: StrictnessMode = inner.strictness
 }

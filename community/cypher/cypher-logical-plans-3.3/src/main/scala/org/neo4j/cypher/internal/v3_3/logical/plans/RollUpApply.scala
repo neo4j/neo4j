@@ -36,7 +36,7 @@ case class RollUpApply(source: LogicalPlan, inner: LogicalPlan, collectionName: 
 
   override def lhs = Some(source)
 
-  override def availableSymbols = source.availableSymbols + collectionName
+  override val availableSymbols = source.availableSymbols + collectionName
 
   override def rhs = Some(inner)
 }

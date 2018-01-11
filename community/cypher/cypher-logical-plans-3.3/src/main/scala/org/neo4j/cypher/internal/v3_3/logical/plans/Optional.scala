@@ -28,5 +28,5 @@ case class Optional(inputPlan: LogicalPlan, protectedSymbols: Set[String] = Set.
   val lhs = Some(inputPlan)
   val rhs = None
 
-  def availableSymbols = inputPlan.availableSymbols
+  val availableSymbols = inputPlan.availableSymbols
 }

@@ -28,7 +28,7 @@ case class CreateNode(source: LogicalPlan, idName: String, labels: Seq[LabelName
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[String] = {
+  override val availableSymbols: Set[String] = {
     source.availableSymbols + idName
   }
 

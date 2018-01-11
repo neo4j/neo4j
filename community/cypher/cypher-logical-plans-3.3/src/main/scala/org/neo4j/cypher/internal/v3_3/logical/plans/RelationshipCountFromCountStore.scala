@@ -27,5 +27,5 @@ case class RelationshipCountFromCountStore(idName: String, startLabel: Option[La
                                           (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  def availableSymbols = Set(idName)
+  val availableSymbols = Set(idName)
 }

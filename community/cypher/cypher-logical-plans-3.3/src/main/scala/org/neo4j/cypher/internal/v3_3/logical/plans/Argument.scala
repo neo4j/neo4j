@@ -27,7 +27,7 @@ case class Argument(argumentIds: Set[String])(val solved: PlannerQuery with Card
                     (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id -> CTNode).toMap)
   extends LogicalLeafPlan {
 
-  def availableSymbols = argumentIds
+  val availableSymbols = argumentIds
 
   override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation) =
     copy(argumentIds)(newSolved)(typeInfo)

@@ -36,5 +36,5 @@ case class ProjectEndpoints(left: LogicalPlan,
   val lhs = Some(left)
   def rhs = None
 
-  def availableSymbols: Set[String] = left.availableSymbols + rel + start + end
+  val availableSymbols: Set[String] = left.availableSymbols + rel + start + end
 }

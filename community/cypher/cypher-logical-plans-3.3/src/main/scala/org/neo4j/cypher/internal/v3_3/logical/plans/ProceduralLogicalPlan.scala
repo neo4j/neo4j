@@ -30,7 +30,7 @@ abstract class ProceduralLogicalPlan extends LogicalPlan {
 
   override def solved: PlannerQuery with CardinalityEstimation = CardinalityEstimation.lift(PlannerQuery.empty, 1.0)
 
-  override def availableSymbols: Set[String] = Set.empty
+  override val availableSymbols: Set[String] = Set.empty
 
   override def strictness: StrictnessMode = LazyMode
 

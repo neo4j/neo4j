@@ -36,5 +36,5 @@ abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols
+  val availableSymbols = left.availableSymbols
 }

@@ -28,5 +28,5 @@ case class NodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPla
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols
+  val availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

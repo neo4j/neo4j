@@ -24,7 +24,7 @@ case class ProduceResult(columns: Seq[String], inner: LogicalPlan) extends Logic
 
   def solved = inner.solved
 
-  def availableSymbols = inner.availableSymbols
+  val availableSymbols = inner.availableSymbols
 
   def rhs = None
 

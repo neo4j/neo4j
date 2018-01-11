@@ -27,5 +27,5 @@ case class Union(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols intersect right.availableSymbols
+  val availableSymbols = left.availableSymbols intersect right.availableSymbols
 }

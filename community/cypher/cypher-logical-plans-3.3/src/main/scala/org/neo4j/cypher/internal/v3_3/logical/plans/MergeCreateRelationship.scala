@@ -29,7 +29,7 @@ case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNod
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
+  override val availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
 
   override def rhs: Option[LogicalPlan] = None
 

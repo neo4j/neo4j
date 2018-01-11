@@ -25,7 +25,7 @@ case class Eager(inner: LogicalPlan)
                            (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with EagerLogicalPlan {
 
-  override def availableSymbols: Set[String] = inner.availableSymbols
+  override val availableSymbols: Set[String] = inner.availableSymbols
 
   override def lhs: Option[LogicalPlan] = Some(inner)
 

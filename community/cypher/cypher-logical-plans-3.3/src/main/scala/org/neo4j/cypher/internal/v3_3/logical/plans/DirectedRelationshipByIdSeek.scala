@@ -28,5 +28,5 @@ case class DirectedRelationshipByIdSeek(idName: String,
                                         argumentIds: Set[String])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  def availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
+  val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
 }

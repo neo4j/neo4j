@@ -32,14 +32,14 @@ case class Expand(left: LogicalPlan,
   extends LogicalPlan with LazyLogicalPlan {
   override val lhs = Some(left)
   override def rhs = None
-  override def availableSymbols: Set[String] = left.availableSymbols + relName + to
+  override val availableSymbols: Set[String] = left.availableSymbols + relName + to
 }
 
 case class OptionalExpand(left: LogicalPlan, from: String, dir: SemanticDirection, types: Seq[RelTypeName], to: String, relName: String, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)
                          (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   override val lhs = Some(left)
   override def rhs = None
-  override def availableSymbols = left.availableSymbols + relName + to
+  override val availableSymbols = left.availableSymbols + relName + to
 }
 
 case class VarExpand(left: LogicalPlan,
@@ -60,7 +60,7 @@ case class VarExpand(left: LogicalPlan,
   override val lhs = Some(left)
   override def rhs = None
 
-  override def availableSymbols: Set[String] = left.availableSymbols + relName + to
+  override val availableSymbols: Set[String] = left.availableSymbols + relName + to
 }
 
 case class PruningVarExpand(left: LogicalPlan,
@@ -76,7 +76,7 @@ case class PruningVarExpand(left: LogicalPlan,
   override val lhs = Some(left)
   override def rhs = None
 
-  override def availableSymbols: Set[String] = left.availableSymbols + to
+  override val availableSymbols: Set[String] = left.availableSymbols + to
 }
 
 sealed trait ExpansionMode

@@ -26,5 +26,5 @@ case class NodeByLabelScan(idName: String, label: LabelName, argumentIds: Set[St
                           (val solved: PlannerQuery with CardinalityEstimation)
   extends NodeLogicalLeafPlan {
 
-  def availableSymbols: Set[String] = argumentIds + idName
+  val availableSymbols: Set[String] = argumentIds + idName
 }

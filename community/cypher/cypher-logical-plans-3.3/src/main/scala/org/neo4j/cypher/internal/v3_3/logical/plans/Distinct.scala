@@ -29,5 +29,5 @@ case class Distinct(left: LogicalPlan,
 
   override def rhs: Option[LogicalPlan] = None
 
-  override def availableSymbols: Set[String] = groupingExpressions.keySet
+  override val availableSymbols: Set[String] = groupingExpressions.keySet
 }

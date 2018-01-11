@@ -29,5 +29,5 @@ case class NodeIndexSeek(idName: String,
                          argumentIds: Set[String])
                         (val solved: PlannerQuery with CardinalityEstimation) extends IndexLeafPlan {
 
-  def availableSymbols = argumentIds + idName
+  val availableSymbols = argumentIds + idName
 }

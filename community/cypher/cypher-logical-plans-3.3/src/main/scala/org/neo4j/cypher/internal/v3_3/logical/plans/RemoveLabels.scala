@@ -28,7 +28,7 @@ case class RemoveLabels(source: LogicalPlan, idName: String, labelNames: Seq[Lab
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[String] = source.availableSymbols + idName
 
   override def rhs: Option[LogicalPlan] = None
 

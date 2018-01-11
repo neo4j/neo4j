@@ -28,5 +28,5 @@ case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String,
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
+  val availableSymbols = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
 }

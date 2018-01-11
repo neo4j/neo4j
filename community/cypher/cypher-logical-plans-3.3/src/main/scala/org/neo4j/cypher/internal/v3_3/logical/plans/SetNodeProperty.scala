@@ -29,7 +29,7 @@ case class SetNodeProperty(source: LogicalPlan, idName: String, propertyKey: Pro
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[String] = source.availableSymbols + idName
+  override val availableSymbols: Set[String] = source.availableSymbols + idName
 
   override def rhs: Option[LogicalPlan] = None
 

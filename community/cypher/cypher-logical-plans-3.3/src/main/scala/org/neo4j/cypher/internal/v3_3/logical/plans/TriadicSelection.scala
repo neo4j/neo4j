@@ -67,5 +67,5 @@ extends LogicalPlan with LazyLogicalPlan {
 
   override def rhs: Option[LogicalPlan] = Some(right)
 
-  override def availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

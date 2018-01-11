@@ -26,5 +26,5 @@ case class SingleRow()(val solved: PlannerQuery with CardinalityEstimation)
 
   val argumentIds: Set[String] = Set.empty
 
-  def availableSymbols = argumentIds
+  val availableSymbols = argumentIds
 }

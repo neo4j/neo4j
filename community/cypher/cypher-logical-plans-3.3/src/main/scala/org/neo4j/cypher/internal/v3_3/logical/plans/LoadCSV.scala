@@ -30,7 +30,7 @@ case class LoadCSV(source: LogicalPlan,
                    legacyCsvQuoteEscaping: Boolean)
                   (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
 
-  override def availableSymbols = source.availableSymbols + variableName
+  override val availableSymbols = source.availableSymbols + variableName
 
   override def lhs = Some(source)
 

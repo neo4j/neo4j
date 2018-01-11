@@ -28,6 +28,6 @@ case class ProcedureCall(left: LogicalPlan, call: ResolvedCall)
 
   override def rhs = None
 
-  override def availableSymbols: Set[String] =
+  override val availableSymbols: Set[String] =
     left.availableSymbols ++ call.callResults.map { result => result.variable.name }
 }

@@ -45,7 +45,7 @@ abstract class LogicalPlan
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery with CardinalityEstimation
-  def availableSymbols: Set[String]
+  val availableSymbols: Set[String]
 
   /*
   An id for the logical plan operator, unique inside of the given query tree. These identifiers will be

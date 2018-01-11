@@ -27,5 +27,5 @@ case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Se
   override val lhs = Some(left)
   override val rhs = Some(right)
 
-  override def availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
+  override val availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
 }

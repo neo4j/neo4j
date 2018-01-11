@@ -36,5 +36,5 @@ case class NodeIndexEndsWithScan(idName: String,
                                 (val solved: PlannerQuery with CardinalityEstimation)
   extends NodeLogicalLeafPlan {
 
-  def availableSymbols = argumentIds + idName
+  val availableSymbols = argumentIds + idName
 }
