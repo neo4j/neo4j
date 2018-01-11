@@ -71,21 +71,14 @@ public class JMXDumper
                     printError( "Unable to communicate with JMX endpoint. Reason: " + e.getMessage(), e );
                 }
             }
-            catch ( Throwable e )
+            catch ( java.lang.NoClassDefFoundError e )
             {
-                if ( e instanceof IOException )
-                {
-                    printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
-                }
-                else if ( e instanceof java.lang.NoClassDefFoundError ) // Attach API is not available
-                {
-                    printError( "Unable to attach to process. Reason: JDK is not available, please point " +
-                            "environment variable JAVA_HOME to a valid JDK location.", e);
-                }
-                else
-                {
-                    throw new RuntimeException( e );
-                }
+                printError( "Unable to attach to process. Reason: JDK is not available, please point " +
+                        "environment variable JAVA_HOME to a valid JDK location.", e);
+            }
+            catch ( IOException e )
+            {
+                printError( "Unable to connect to process. Reason: " + e.getMessage(), e );
             }
         }
         else
