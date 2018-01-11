@@ -5,32 +5,37 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.constraints;
+package org.neo4j;
 
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -45,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
@@ -52,7 +58,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
@@ -73,13 +78,24 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
  */
 public class HalfAppliedConstraintRecoveryIT
 {
-    private static final BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> REAPPLY =
-            ( db, txs ) -> apply( db, txs.subList( txs.size() - 1, txs.size() ) );
-    private static final BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> RECREATE =
-            ( db, txs ) -> createConstraint( db );
-
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
+    private static final String KEY2 = "key2";
+    private static final Consumer<GraphDatabaseAPI> UNIQUE_CONSTRAINT_CREATOR =
+            db -> db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
+
+    private static final Consumer<GraphDatabaseAPI> NODE_KEY_CONSTRAINT_CREATOR =
+            db -> db.execute( "CREATE CONSTRAINT ON (n:" + LABEL.name() + ") ASSERT (n." + KEY + ") IS NODE KEY" );
+
+    private static final Consumer<GraphDatabaseAPI> COMPOSITE_NODE_KEY_CONSTRAINT_CREATOR =
+            db -> db.execute( "CREATE CONSTRAINT ON (n:" + LABEL.name() + ") ASSERT (n." + KEY + ", n." + KEY2 + ") IS NODE KEY" );
+    private static final BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> REAPPLY =
+            ( db, txs ) -> apply( db, txs.subList( txs.size() - 1, txs.size() ) );
+
+    private static BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> recreate( Consumer<GraphDatabaseAPI> constraintCreator )
+    {
+        return ( db, txs ) -> createConstraint( db, constraintCreator );
+    }
 
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -90,20 +106,44 @@ public class HalfAppliedConstraintRecoveryIT
     @Test
     public void recoverFromAndContinueApplyHalfConstraintAppliedBeforeCrash() throws Exception
     {
-        recoverFromHalfConstraintAppliedBeforeCrash( REAPPLY );
+        recoverFromHalfConstraintAppliedBeforeCrash( REAPPLY, UNIQUE_CONSTRAINT_CREATOR, false );
     }
 
     @Test
     public void recoverFromAndRecreateHalfConstraintAppliedBeforeCrash() throws Exception
     {
-        recoverFromHalfConstraintAppliedBeforeCrash( RECREATE );
+        recoverFromHalfConstraintAppliedBeforeCrash( recreate( UNIQUE_CONSTRAINT_CREATOR ), UNIQUE_CONSTRAINT_CREATOR, false );
     }
 
-    private void recoverFromHalfConstraintAppliedBeforeCrash(
-            BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> applier ) throws Exception
+    @Test
+    public void recoverFromAndContinueApplyHalfNodeKeyConstraintAppliedBeforeCrash() throws Exception
+    {
+        recoverFromHalfConstraintAppliedBeforeCrash( REAPPLY, NODE_KEY_CONSTRAINT_CREATOR, false );
+    }
+
+    @Test
+    public void recoverFromAndRecreateHalfNodeKeyConstraintAppliedBeforeCrash() throws Exception
+    {
+        recoverFromHalfConstraintAppliedBeforeCrash( recreate( NODE_KEY_CONSTRAINT_CREATOR ), NODE_KEY_CONSTRAINT_CREATOR, false );
+    }
+
+    @Test
+    public void recoverFromAndContinueApplyHalfCompositeNodeKeyConstraintAppliedBeforeCrash() throws Exception
+    {
+        recoverFromHalfConstraintAppliedBeforeCrash( REAPPLY, COMPOSITE_NODE_KEY_CONSTRAINT_CREATOR, true );
+    }
+
+    @Test
+    public void recoverFromAndRecreateHalfCompositeNodeKeyConstraintAppliedBeforeCrash() throws Exception
+    {
+        recoverFromHalfConstraintAppliedBeforeCrash( recreate( COMPOSITE_NODE_KEY_CONSTRAINT_CREATOR ), COMPOSITE_NODE_KEY_CONSTRAINT_CREATOR, true );
+    }
+
+    private void recoverFromHalfConstraintAppliedBeforeCrash( BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> applier,
+            Consumer<GraphDatabaseAPI> constraintCreator, boolean composite ) throws Exception
     {
         // GIVEN
-        List<TransactionRepresentation> transactions = createTransactionsForCreatingConstraint();
+        List<TransactionRepresentation> transactions = createTransactionsForCreatingConstraint( constraintCreator );
         GraphDatabaseAPI db = newDb();
         EphemeralFileSystemAbstraction crashSnapshot;
         try
@@ -118,7 +158,7 @@ public class HalfAppliedConstraintRecoveryIT
         }
 
         // WHEN
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( crashSnapshot ).newImpermanentDatabase();
+        db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().setFileSystem( crashSnapshot ).newImpermanentDatabase();
         try
         {
             applier.accept( db, transactions );
@@ -128,10 +168,24 @@ public class HalfAppliedConstraintRecoveryIT
             {
                 ConstraintDefinition constraint = single( db.schema().getConstraints( LABEL ) );
                 assertEquals( LABEL.name(), constraint.getLabel().name() );
-                assertEquals( KEY, single( constraint.getPropertyKeys() ) );
+                if ( composite )
+                {
+                    assertEquals( Arrays.asList( KEY, KEY2 ), Iterables.asList( constraint.getPropertyKeys() ) );
+                }
+                else
+                {
+                    assertEquals( KEY, single( constraint.getPropertyKeys() ) );
+                }
                 IndexDefinition index = single( db.schema().getIndexes( LABEL ) );
                 assertEquals( LABEL.name(), index.getLabel().name() );
-                assertEquals( KEY, single( index.getPropertyKeys() ) );
+                if ( composite )
+                {
+                    assertEquals( Arrays.asList( KEY, KEY2 ), Iterables.asList( index.getPropertyKeys() ) );
+                }
+                else
+                {
+                    assertEquals( KEY, single( index.getPropertyKeys() ) );
+                }
                 tx.success();
             }
         }
@@ -145,7 +199,26 @@ public class HalfAppliedConstraintRecoveryIT
     public void recoverFromNonUniqueHalfConstraintAppliedBeforeCrash() throws Exception
     {
         // GIVEN
-        List<TransactionRepresentation> transactions = createTransactionsForCreatingConstraint();
+        recoverFromConstraintAppliedBeforeCrash( UNIQUE_CONSTRAINT_CREATOR );
+    }
+
+    @Test
+    public void recoverFromNonUniqueHalfNodeKeyConstraintAppliedBeforeCrash() throws Exception
+    {
+        // GIVEN
+        recoverFromConstraintAppliedBeforeCrash( NODE_KEY_CONSTRAINT_CREATOR );
+    }
+
+    @Test
+    public void recoverFromNonUniqueHalfCompositeNodeKeyConstraintAppliedBeforeCrash() throws Exception
+    {
+        // GIVEN
+        recoverFromConstraintAppliedBeforeCrash( COMPOSITE_NODE_KEY_CONSTRAINT_CREATOR );
+    }
+
+    private void recoverFromConstraintAppliedBeforeCrash( Consumer<GraphDatabaseAPI> constraintCreator ) throws Exception
+    {
+        List<TransactionRepresentation> transactions = createTransactionsForCreatingConstraint( constraintCreator );
         EphemeralFileSystemAbstraction crashSnapshot;
         {
             GraphDatabaseAPI db = newDb();
@@ -190,14 +263,14 @@ public class HalfAppliedConstraintRecoveryIT
 
         // WHEN
         {
-            GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( crashSnapshot )
+            GraphDatabaseAPI db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().setFileSystem( crashSnapshot )
                     .newImpermanentDatabase();
             try
             {
-                RECREATE.accept( db, transactions );
+                recreate( constraintCreator ).accept( db, transactions );
                 fail( "Should not be able to create constraint on non-unique data" );
             }
-            catch ( ConstraintViolationException e )
+            catch ( ConstraintViolationException | QueryExecutionException e )
             {
                 // THEN good
             }
@@ -237,13 +310,14 @@ public class HalfAppliedConstraintRecoveryIT
         } );
     }
 
-    private static List<TransactionRepresentation> createTransactionsForCreatingConstraint() throws Exception
+    private static List<TransactionRepresentation> createTransactionsForCreatingConstraint( Consumer<GraphDatabaseAPI> uniqueConstraintCreator )
+            throws Exception
     {
         // A separate db altogether
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
         try
         {
-            createConstraint( db );
+            createConstraint( db, uniqueConstraintCreator );
             LogicalTransactionStore txStore =
                     db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
             List<TransactionRepresentation> transactions = new ArrayList<>();
@@ -259,11 +333,11 @@ public class HalfAppliedConstraintRecoveryIT
         }
     }
 
-    private static void createConstraint( GraphDatabaseAPI db )
+    private static void createConstraint( GraphDatabaseAPI db, Consumer<GraphDatabaseAPI> constraintCreator )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
+            constraintCreator.accept( db );
             tx.success();
         }
     }
