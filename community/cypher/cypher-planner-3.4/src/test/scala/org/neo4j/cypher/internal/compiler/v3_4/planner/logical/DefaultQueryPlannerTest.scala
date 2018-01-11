@@ -61,16 +61,12 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   private def createProduceResultOperator(columns: Seq[String],
                                           semanticTable: SemanticTable): ProduceResult = {
-    val solveds: Solveds = new Solveds
-    val cardinalities: Cardinalities = new Cardinalities
-    val transactionLayers: TransactionLayers = new TransactionLayers
+    val solveds = new FakeSolveds
+    val cardinalities = new FakeCardinalities
+    val transactionLayers: TransactionLayers = new FakeTransactionLayers
     val planningContext = mockLogicalPlanningContext(semanticTable, solveds, cardinalities, transactionLayers)
 
     val inputPlan = FakePlan(columns.map(IdName.apply).toSet)
-    solveds.set(inputPlan.id, PlannerQuery.empty)
-    cardinalities.set(inputPlan.id, 0.0)
-    transactionLayers.set(inputPlan.id, 0)
-
 
     val queryPlanner = QueryPlanner(planSingleQuery = new FakePlanner(inputPlan))
 
@@ -87,7 +83,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("should set strictness when needed") {
     // given
-    val plannerQuery = mock[RegularPlannerQuery with CardinalityEstimation]
+    val plannerQuery = mock[RegularPlannerQuery]
     when(plannerQuery.preferredStrictness).thenReturn(Some(LazyMode))
     when(plannerQuery.queryGraph).thenReturn(QueryGraph.empty)
     when(plannerQuery.lastQueryGraph).thenReturn(QueryGraph.empty)

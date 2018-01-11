@@ -30,15 +30,13 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should do projection if necessary") {
     // Given
-    new given().withLogicalPlanningContext { (cfg, context, solveds, cardinalities) =>
+    new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal)))
       val inputPlan = Argument()
-      solveds.set(inputPlan.id, PlannerQuery.empty)
-      cardinalities.set(inputPlan.id, 0.0)
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, context, solveds, cardinalities)
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new FakeSolveds, new FakeCardinalities)
 
       // Then
       producedPlan should equal(Projection(inputPlan, Map("a" -> literal)))
@@ -47,16 +45,14 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should plan procedure calls") {
     // Given
-    new given().withLogicalPlanningContext { (cfg, context, solveds, cardinalities) =>
+    new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val call = mock[ResolvedCall]
       val pq = RegularPlannerQuery(horizon = ProcedureCallProjection(call))
       val inputPlan = Argument()
-      solveds.set(inputPlan.id, PlannerQuery.empty)
-      cardinalities.set(inputPlan.id, 0.0)
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, context, solveds, cardinalities)
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new FakeSolveds, new FakeCardinalities)
 
       // Then
       producedPlan should equal(ProcedureCall(inputPlan, call))

@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, PlannerQuery}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies, Solveds, TransactionLayers}
+import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
 
 import scala.language.implicitConversions
 
@@ -29,4 +31,32 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
   implicit val idGen = new SequentialIdGen()
   implicit protected def idName(name: String): IdName = IdName(name)
   implicit protected def idSymbol(name: Symbol): IdName = IdName(name.name)
+
+  class FakeSolveds extends Solveds {
+    override def set(id: Id, t: PlannerQuery): Unit = {}
+    override def isDefinedAt(id: Id): Boolean = true
+    override def get(id: Id): PlannerQuery = PlannerQuery.empty
+    override def copy(from: Id, to: Id): Unit = {}
+  }
+
+  class FakeReadOnlies extends ReadOnlies {
+    override def set(id: Id, t: Boolean): Unit = {}
+    override def isDefinedAt(id: Id): Boolean = true
+    override def get(id: Id): Boolean = true
+    override def copy(from: Id, to: Id): Unit = {}
+  }
+
+  class FakeCardinalities extends Cardinalities {
+    override def set(id: Id, t: Cardinality): Unit = {}
+    override def isDefinedAt(id: Id): Boolean = true
+    override def get(id: Id): Cardinality = 0.0
+    override def copy(from: Id, to: Id): Unit = {}
+  }
+
+  class FakeTransactionLayers extends TransactionLayers {
+    override def set(id: Id, t: Int): Unit = {}
+    override def isDefinedAt(id: Id): Boolean = true
+    override def get(id: Id): Int = 0
+    override def copy(from: Id, to: Id): Unit = {}
+  }
 }

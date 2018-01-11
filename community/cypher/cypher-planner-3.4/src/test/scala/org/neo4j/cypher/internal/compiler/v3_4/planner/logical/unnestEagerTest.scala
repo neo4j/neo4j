@@ -32,95 +32,86 @@ import org.neo4j.cypher.internal.v3_4.expressions.{PropertyKeyName, RelTypeName}
 class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should unnest create node from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val create = CreateNode(rhs, IdName("a"), Seq.empty, None)
     val input = Apply(lhs, create)
 
-    rewrite(input, solveds) should equal(CreateNode(Apply(lhs, rhs), IdName("a"), Seq.empty, None))
+    rewrite(input) should equal(CreateNode(Apply(lhs, rhs), IdName("a"), Seq.empty, None))
   }
 
   test("should unnest create relationship from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val create = CreateRelationship(rhs, IdName("a"), IdName("b"), RelTypeName("R")(pos), IdName("c"), None)
     val input = Apply(lhs, create)
 
-    rewrite(input, solveds) should equal(CreateRelationship(Apply(lhs, rhs), IdName("a"), IdName("b"), RelTypeName("R")(pos), IdName("c"), None))
+    rewrite(input) should equal(CreateRelationship(Apply(lhs, rhs), IdName("a"), IdName("b"), RelTypeName("R")(pos), IdName("c"), None))
   }
 
   test("should unnest delete relationship from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val delete = DeleteRelationship(rhs, null)
     val input = Apply(lhs, delete)
 
-    rewrite(input, solveds) should equal(DeleteRelationship(Apply(lhs, rhs), null))
+    rewrite(input) should equal(DeleteRelationship(Apply(lhs, rhs), null))
   }
 
   test("should unnest delete node from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val delete = DeleteNode(rhs, null)
     val input = Apply(lhs, delete)
 
-    rewrite(input, solveds) should equal(DeleteNode(Apply(lhs, rhs), null))
+    rewrite(input) should equal(DeleteNode(Apply(lhs, rhs), null))
   }
 
   test("should unnest detach delete node from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val delete = DetachDeleteNode(rhs, null)
     val input = Apply(lhs, delete)
 
-    rewrite(input, solveds) should equal(DetachDeleteNode(Apply(lhs, rhs), null))
+    rewrite(input) should equal(DetachDeleteNode(Apply(lhs, rhs), null))
   }
 
   test("should unnest set node property from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val set = SetNodeProperty(rhs, IdName("a"), PropertyKeyName("prop")(pos), null)
     val input = Apply(lhs, set)
 
-    rewrite(input, solveds) should equal(SetNodeProperty(Apply(lhs, rhs), IdName("a"), PropertyKeyName("prop")(pos), null))
+    rewrite(input) should equal(SetNodeProperty(Apply(lhs, rhs), IdName("a"), PropertyKeyName("prop")(pos), null))
   }
 
   test("should unnest set node property from map from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val set = SetNodePropertiesFromMap(rhs, IdName("a"), null, removeOtherProps = false)
     val input = Apply(lhs, set)
 
-    rewrite(input, solveds) should equal(SetNodePropertiesFromMap(Apply(lhs, rhs), IdName("a"), null, removeOtherProps = false))
+    rewrite(input) should equal(SetNodePropertiesFromMap(Apply(lhs, rhs), IdName("a"), null, removeOtherProps = false))
   }
 
   test("should unnest set labels from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val set = SetLabels(rhs, IdName("a"), Seq.empty)
     val input = Apply(lhs, set)
 
-    rewrite(input, solveds) should equal(SetLabels(Apply(lhs, rhs), IdName("a"), Seq.empty))
+    rewrite(input) should equal(SetLabels(Apply(lhs, rhs), IdName("a"), Seq.empty))
   }
 
   test("should unnest remove labels from rhs of apply") {
-    val solveds = new Solveds
-    val lhs = newMockedLogicalPlan(solveds, new Cardinalities)
-    val rhs = newMockedLogicalPlan(solveds, new Cardinalities)
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
     val remove = RemoveLabels(rhs, IdName("a"), Seq.empty)
     val input = Apply(lhs, remove)
 
-    rewrite(input, solveds) should equal(RemoveLabels(Apply(lhs, rhs), IdName("a"), Seq.empty))
+    rewrite(input) should equal(RemoveLabels(Apply(lhs, rhs), IdName("a"), Seq.empty))
   }
 
-  private def rewrite(p: LogicalPlan, solveds: Solveds): LogicalPlan =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestEager(solveds, new Attributes(idGen))))(p)
+  private def rewrite(p: LogicalPlan) =
+    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestEager(new FakeSolveds, new Attributes(idGen))))(p)
 }

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds, TransactionLayers}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
@@ -38,7 +37,6 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
   implicit class RichTestUnit(testUnit: CardinalityTestHelper#TestUnit) {
     def shouldHaveQueryGraphCardinality(number: Double) {
-      import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.CardinalitySupport.Eq
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
@@ -46,17 +44,18 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
       val cardinalityModel = createCardinalityModel(statistics)
       val input = QueryGraphSolverInput(Map.empty, testUnit.inboundCardinality, testUnit.strictness)
       val result = cardinalityModel(queryGraph, input, rewrittenSemanticTable)
-      result should equal(Cardinality(number))
+
+      // to avoid double rounding errors
+      result.amount should equal(number +-  1e-4f)
     }
 
     def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
-      import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.CardinalitySupport.Eq
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
       val graphCardinalityModel = createCardinalityModel(statistics)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
-      val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query, new Solveds, new Cardinalities, new TransactionLayers)
+      val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
       cardinalityModelUnderTest(plannerQuery, QueryGraphSolverInput.empty, semanticTable) should equal(Cardinality(number))
     }
   }

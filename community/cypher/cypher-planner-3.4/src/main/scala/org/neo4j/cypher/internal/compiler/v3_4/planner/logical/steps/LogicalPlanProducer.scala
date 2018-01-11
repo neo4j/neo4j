@@ -674,14 +674,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTxLayer: 
     annotate(ErrorPlan(inner, exception), solveds.get(inner.id), context)
 
   def planProduceResult(inner: LogicalPlan, columns: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
-    annotate(ProduceResult(inner, columns), solveds.get(inner.id), context)
+    val produceResult = ProduceResult(inner, columns)
+    txLayers.set(produceResult.id, readTxLayer)
+    solveds.copy(inner.id, produceResult.id)
+    // Do not calculate cardinality for ProduceResult. Since the passed context does not have accurate label information
+    // It will get a wrong value with some projections. Use the cardinality of inner instead
+    cardinalities.copy(inner.id, produceResult.id)
+    produceResult
   }
 
   private def annotate(plan: LogicalPlan, plannerQuery: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
-    val solved = CardinalityEstimation.lift(plannerQuery, cardinality)
     txLayers.set(plan.id, readTxLayer)
-    solveds.set(plan.id, solved)
+    solveds.set(plan.id, plannerQuery)
     cardinalities.set(plan.id, cardinality)
     plan
   }

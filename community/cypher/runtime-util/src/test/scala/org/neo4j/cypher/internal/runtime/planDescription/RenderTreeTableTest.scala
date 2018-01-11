@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.runtime.planDescription
 
 import java.util.Locale
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.util.v3_4.DummyPosition
 import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll}
@@ -326,8 +326,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("Expand contains information about its relations") {
     val expandPlan = Expand(argument, IdName("from"), SemanticDirection.INCOMING, Seq.empty, IdName("to"), IdName("rel"), ExpandAll)
-    // TODO attach Cardinalities to all plans
     val cardinalities = new Cardinalities
+    cardinalities.set(expandPlan.id, 1.0)
+    cardinalities.set(argument.id, 1.0)
     val description = LogicalPlan2PlanDescription(true, cardinalities)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(

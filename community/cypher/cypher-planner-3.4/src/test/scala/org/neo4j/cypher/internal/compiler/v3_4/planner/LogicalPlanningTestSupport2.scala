@@ -196,7 +196,24 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       )
       f(config, ctx, solveds, cardinalities)
     }
+
+
+    def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new FakeTransactionLayers, new FakeSolveds, new FakeCardinalities, idGen)
+      val ctx = LogicalPlanningContext(
+        planContext = planContext,
+        logicalPlanProducer = logicalPlanProducer,
+        metrics = metrics,
+        semanticTable = semanticTable,
+        strategy = queryGraphSolver,
+        input = QueryGraphSolverInput.empty,
+        notificationLogger = devNullLogger
+      )
+      f(config, ctx)
+    }
   }
+
 
   def set[T](plan: LogicalPlan, attribute: Attribute[T], t: T): LogicalPlan = {
     attribute.set(plan.id, t)
@@ -208,11 +225,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     plan
   }
 
-  def fakeLogicalPlanFor(solveds: Solveds, cardinalities: Cardinalities, id: String*): FakePlan = {
-    val res = FakePlan(id.map(IdName(_)).toSet)
-    solveds.set(res.id, PlannerQuery.empty)
-    cardinalities.set(res.id, 0.0)
-    res
+  def fakeLogicalPlanFor(id: String*): FakePlan = {
+    FakePlan(id.map(IdName(_)).toSet)
   }
 
   def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, TransactionLayers, Solveds, Cardinalities) =

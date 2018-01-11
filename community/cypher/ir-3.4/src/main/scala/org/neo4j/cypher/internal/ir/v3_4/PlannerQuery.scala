@@ -189,24 +189,6 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
   override def dependencies: Set[IdName] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 }
 
-// TODO remove
-trait CardinalityEstimation {
-  self: PlannerQuery =>
-
-  def estimatedCardinality: Cardinality
-}
-
-object CardinalityEstimation {
-
-  def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) = plannerQuery match {
-    case _: RegularPlannerQuery =>
-      new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.horizon, plannerQuery.tail)
-        with CardinalityEstimation {
-        val estimatedCardinality = cardinality
-      }
-  }
-}
-
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName], periodicCommit: Option[PeriodicCommit]) {
   def readOnly: Boolean = queries.forall(_.readOnly)
 }

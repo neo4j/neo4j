@@ -58,9 +58,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   val mockRel = newPatternRelationship("a", "b", "r")
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-
-  def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
   def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
     PatternRelationship(rel, (start, end), dir, types, length)
@@ -151,6 +148,22 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default),
       solveds, cardinalities, transactionLayers)
+  }
+
+  def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
+                                      metrics: Metrics = mockedMetrics,
+                                      semanticTable: SemanticTable = newMockedSemanticTable,
+                                      strategy: QueryGraphSolver = new IDPQueryGraphSolver(
+                                        SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
+                                        cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor]),
+                                      cardinality: Cardinality = Cardinality(1),
+                                      strictness: Option[StrictnessMode] = None,
+                                      notificationLogger: InternalNotificationLogger = devNullLogger,
+                                      useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
+    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new FakeTransactionLayers, new FakeSolveds, new FakeCardinalities, idGen), metrics, semanticTable,
+      strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
+      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)
   }
 
   def newMockedStatistics = mock[GraphStatistics]

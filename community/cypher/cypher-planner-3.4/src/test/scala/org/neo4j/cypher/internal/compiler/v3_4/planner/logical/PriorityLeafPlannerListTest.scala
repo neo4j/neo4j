@@ -23,7 +23,6 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, verifyZeroInteractions, when}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.Argument
 
@@ -40,7 +39,7 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, context = context, solveds = new Solveds, cardinalities = new Cardinalities)
+    val result = list.candidates(queryGraph, context = context, solveds = new FakeSolveds, cardinalities = new FakeCardinalities)
 
     // THEN
     result should equal(candidates)
@@ -57,7 +56,7 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, context = context, solveds = new Solveds, cardinalities = new Cardinalities)
+    val result = list.candidates(queryGraph, context = context, solveds = new FakeSolveds, cardinalities = new FakeCardinalities)
 
     // THEN
     result should equal(candidates)

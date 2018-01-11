@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, ShortestPathPattern}
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, ShortestPathPattern}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
 /**
   * Find the shortest paths between two nodes, as specified by 'shortestPath'. For each shortest path found produce a
