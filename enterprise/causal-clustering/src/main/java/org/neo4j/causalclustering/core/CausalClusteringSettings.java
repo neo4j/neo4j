@@ -281,7 +281,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Configure if the `dbms.cluster.routing.getServers()` procedure should include followers as read " +
             "endpoints or return only read replicas. Note: if there are no read replicas in the cluster, followers " +
-            "are returned as read end points regardless the value of this setting. Defaults to true so that followers" +
+            "are returned as read end points regardless the value of this setting. Defaults to true so that followers " +
             "are available for read-only queries in a typical heterogeneous setup." )
     public static final Setting<Boolean> cluster_allow_reads_on_followers =
             setting( "causal_clustering.cluster_allow_reads_on_followers", BOOLEAN, TRUE );
