@@ -493,6 +493,18 @@ public class PrimitiveLongCollections
         return count;
     }
 
+    public static boolean contains( long[] values, long candidate )
+    {
+        for ( int i = 0; i < values.length; i++ )
+        {
+            if ( values[i] == candidate )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static long[] asArray( PrimitiveLongIterator iterator )
     {
         long[] array = new long[8];

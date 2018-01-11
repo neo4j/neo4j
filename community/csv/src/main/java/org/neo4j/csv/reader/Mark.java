@@ -30,8 +30,8 @@ public class Mark
 {
     public static int END_OF_LINE_CHARACTER = -1;
 
-    private long startPosition;
-    private long position;
+    private int startPosition;
+    private int position;
     private int character;
     private boolean quoted;
 
@@ -41,7 +41,7 @@ public class Mark
      * @param character use {@code -1} to denote that the matching character was an end-of-line or end-of-file
      * @param quoted whether or not the original data was quoted.
      */
-    void set( long startPosition, long position, int character, boolean quoted )
+    void set( int startPosition, int position, int character, boolean quoted )
     {
         this.startPosition = startPosition;
         this.position = position;
@@ -65,7 +65,7 @@ public class Mark
         return quoted;
     }
 
-    long position()
+    int position()
     {
         if ( position == -1 )
         {
@@ -74,13 +74,18 @@ public class Mark
         return position;
     }
 
-    long startPosition()
+    int startPosition()
     {
         if ( startPosition == -1 )
         {
             throw new IllegalStateException( "No value to extract here" );
         }
         return startPosition;
+    }
+
+    int length()
+    {
+        return position - startPosition;
     }
 
     @Override

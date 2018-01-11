@@ -21,49 +21,76 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.transaction.state.PropertyDeleter.deletePropertyRecordIncludingValueRecords;
 
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {
     private final NodeStore nodeStore;
+    private final PropertyStore propertyStore;
     private final PrimitiveLongIterator nodeIds;
-    private final LabelScanWriter labelScanWriter;
+    private final DataImporter.Monitor storeMonitor;
 
-    public DeleteDuplicateNodesStep( StageControl control, Configuration config, PrimitiveLongIterator nodeIds,
-            NodeStore nodeStore, LabelScanStore labelScanStore )
+    private long nodesRemoved;
+    private long propertiesRemoved;
+
+    public DeleteDuplicateNodesStep( StageControl control, Configuration config, PrimitiveLongIterator nodeIds, NodeStore nodeStore,
+            PropertyStore propertyStore, DataImporter.Monitor storeMonitor )
     {
         super( control, "DEDUP", config );
         this.nodeStore = nodeStore;
+        this.propertyStore = propertyStore;
         this.nodeIds = nodeIds;
-        this.labelScanWriter = labelScanStore.newWriter();
+        this.storeMonitor = storeMonitor;
     }
 
     @Override
     protected void process() throws IOException
     {
-        NodeRecord record = nodeStore.newRecord();
-        RecordCursor<NodeRecord> cursor = nodeStore.newRecordCursor( record ).acquire( 0, NORMAL );
-        while ( nodeIds.hasNext() )
+        NodeRecord nodeRecord = nodeStore.newRecord();
+        PropertyRecord propertyRecord = propertyStore.newRecord();
+        try ( RecordCursor<NodeRecord> cursor = nodeStore.newRecordCursor( nodeRecord ).acquire( 0, NORMAL );
+              RecordCursor<PropertyRecord> propertyCursor = propertyStore.newRecordCursor( propertyRecord ).acquire( 0, NORMAL ) )
         {
-            long duplicateNodeId = nodeIds.next();
-            cursor.next( duplicateNodeId );
-            long[] labels = NodeLabelsField.get( record, nodeStore );
-            record.setInUse( false );
-            nodeStore.updateRecord( record );
-            if ( labels.length > 0 )
+            while ( nodeIds.hasNext() )
             {
-                labelScanWriter.write( labelChanges( duplicateNodeId, labels, EMPTY_LONG_ARRAY ) );
+                long duplicateNodeId = nodeIds.next();
+                cursor.next( duplicateNodeId );
+                assert nodeRecord.inUse() : nodeRecord;
+                // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
+                nodeStore.ensureHeavy( nodeRecord );
+
+                // Delete property records
+                long nextProp = nodeRecord.getNextProp();
+                while ( !Record.NULL_REFERENCE.is( nextProp ) )
+                {
+                    propertyCursor.next( nextProp );
+                    assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
+                    propertyStore.ensureHeavy( propertyRecord );
+                    propertiesRemoved += propertyRecord.numberOfProperties();
+                    nextProp = propertyRecord.getNextProp();
+                    deletePropertyRecordIncludingValueRecords( propertyRecord );
+                    propertyStore.updateRecord( propertyRecord );
+                }
+
+                // Delete node (and dynamic label records, if any)
+                nodeRecord.setInUse( false );
+                for ( DynamicRecord labelRecord : nodeRecord.getDynamicLabelRecords() )
+                {
+                    labelRecord.setInUse( false );
+                }
+                nodeStore.updateRecord( nodeRecord );
+                nodesRemoved++;
             }
         }
     }
@@ -71,7 +98,8 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     @Override
     public void close() throws Exception
     {
-        labelScanWriter.close();
         super.close();
+        storeMonitor.nodesRemoved( nodesRemoved );
+        storeMonitor.propertiesRemoved( propertiesRemoved );
     }
 }

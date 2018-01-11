@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
+import org.neo4j.unsafe.impl.batchimport.staging.RecordDataAssembler;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
@@ -33,12 +34,12 @@ import org.neo4j.unsafe.impl.batchimport.store.PrepareIdSequence;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.backwards;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.RECYCLE_BATCHES;
 
 /**
  * Sets {@link RelationshipRecord#setFirstPrevRel(long)} and {@link RelationshipRecord#setSecondPrevRel(long)}
  * by going through the {@link RelationshipStore} in reversed order. It uses the {@link NodeRelationshipCache}
- * the same way as {@link RelationshipStage} does to link chains together, but this time for the "prev"
- * pointers of {@link RelationshipRecord}. Steps:
+ * to link chains together. Steps:
  *
  * <ol>
  * <li>{@link ReadRecordsStep} reads records from store and passes on downwards to be processed.
@@ -58,10 +59,10 @@ public class RelationshipLinkbackStage extends Stage
             NodeRelationshipCache cache, Predicate<RelationshipRecord> readFilter,
             Predicate<RelationshipRecord> changeFilter, int nodeTypes, StatsProvider... additionalStatsProvider )
     {
-        super( NAME, topic, config, ORDER_SEND_DOWNSTREAM );
+        super( NAME, topic, config, ORDER_SEND_DOWNSTREAM | RECYCLE_BATCHES );
         RelationshipStore store = stores.getRelationshipStore();
         add( new BatchFeedStep( control(), config, backwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, true, store, readFilter ) );
+        add( new ReadRecordsStep<>( control(), config, true, store, new RecordDataAssembler<>( store::newRecord, readFilter ) ) );
         add( new RelationshipLinkbackStep( control(), config, cache, changeFilter, nodeTypes, additionalStatsProvider ) );
         add( new UpdateRecordsStep<>( control(), config, store, PrepareIdSequence.of( stores.usesDoubleRelationshipRecordUnits() ) ) );
     }

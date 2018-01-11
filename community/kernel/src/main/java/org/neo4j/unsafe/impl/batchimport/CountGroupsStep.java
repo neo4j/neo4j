@@ -43,9 +43,12 @@ public class CountGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
     @Override
     protected void process( RelationshipGroupRecord[] batch, BatchSender sender ) throws Throwable
     {
-        for ( RelationshipGroupRecord group : batch )
+        for ( RelationshipGroupRecord record : batch )
         {
-            cache.incrementGroupCount( group.getOwningNode() );
+            if ( record.inUse() )
+            {
+                cache.incrementGroupCount( record.getOwningNode() );
+            }
         }
     }
 }

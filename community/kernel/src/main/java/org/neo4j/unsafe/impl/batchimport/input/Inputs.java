@@ -23,7 +23,6 @@ import java.util.function.ToIntFunction;
 
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.values.storable.Value;
@@ -36,19 +35,19 @@ public class Inputs
     }
 
     public static Input input(
-            final InputIterable<InputNode> nodes, final InputIterable<InputRelationship> relationships,
-            final IdMapper idMapper, final IdGenerator idGenerator, final Collector badCollector, Estimates estimates )
+            final InputIterable nodes, final InputIterable relationships,
+            final IdMapper idMapper, final Collector badCollector, Estimates estimates )
     {
         return new Input()
         {
             @Override
-            public InputIterable<InputRelationship> relationships()
+            public InputIterable relationships()
             {
                 return relationships;
             }
 
             @Override
-            public InputIterable<InputNode> nodes()
+            public InputIterable nodes()
             {
                 return nodes;
             }
@@ -57,12 +56,6 @@ public class Inputs
             public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
             {
                 return idMapper;
-            }
-
-            @Override
-            public IdGenerator idGenerator()
-            {
-                return idGenerator;
             }
 
             @Override

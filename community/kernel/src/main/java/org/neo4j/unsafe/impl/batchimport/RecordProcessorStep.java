@@ -53,7 +53,7 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
                 if ( !processor.process( item ) )
                 {
                     // No change for this record
-                    batch[i] = null;
+                    batch[i].setInUse( false );
                 }
             }
         }

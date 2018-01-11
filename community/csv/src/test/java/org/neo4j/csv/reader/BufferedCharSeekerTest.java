@@ -548,7 +548,7 @@ public class BufferedCharSeekerTest
         catch ( DataAfterQuoteException e )
         {
             // THEN good
-            assertEquals( 0, e.source().lineNumber() );
+            assertEquals( TEST_SOURCE, e.source().sourceDescription() );
         }
     }
 

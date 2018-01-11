@@ -19,18 +19,24 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import static java.util.Arrays.asList;
 
 /**
  * Mapping from name to {@link Group}. Assigns proper {@link Group#id() ids} to created groups.
  */
 public class Groups
 {
+    static final int LOWEST_NONGLOBAL_ID = 1;
+
     private final Map<String,Group> byName = new HashMap<>();
-    private int nextId;
-    private Boolean globalMode;
+    private final List<Group> byId = new ArrayList<>( asList( Group.GLOBAL ) );
+    private int nextId = LOWEST_NONGLOBAL_ID;
 
     /**
      * @param name group name or {@code null} for a {@link Group#GLOBAL global group}.
@@ -41,20 +47,7 @@ public class Groups
      */
     public synchronized Group getOrCreate( String name )
     {
-        boolean global = name == null;
-        if ( globalMode == null )
-        {
-            globalMode = global;
-        }
-        else
-        {
-            if ( global != globalMode )
-            {
-                throw mixingOfGroupModesException();
-            }
-        }
-
-        if ( name == null )
+        if ( isGlobalGroup( name ) )
         {
             return Group.GLOBAL;
         }
@@ -63,25 +56,19 @@ public class Groups
         if ( group == null )
         {
             byName.put( name, group = new Group.Adapter( nextId++, name ) );
+            byId.add( group );
         }
         return group;
     }
 
-    private IllegalStateException mixingOfGroupModesException()
+    private static boolean isGlobalGroup( String name )
     {
-        return new IllegalStateException( "Mixing specified and unspecified group belongings " +
-                "in a single import isn't supported" );
+        return name == null || Group.GLOBAL.name().equals( name );
     }
 
     public synchronized Group get( String name )
     {
-        boolean global = name == null;
-        if ( globalMode != null && global != globalMode )
-        {
-            throw mixingOfGroupModesException();
-        }
-
-        if ( name == null )
+        if ( isGlobalGroup( name ) )
         {
             return Group.GLOBAL;
         }
@@ -94,8 +81,22 @@ public class Groups
         return group;
     }
 
+    public Group get( int id )
+    {
+        if ( id < 0 || id >= byId.size() )
+        {
+            throw new HeaderException( "Group with id " + id + " not found" );
+        }
+        return byId.get( id );
+    }
+
     private String groupNames()
     {
         return Arrays.toString( byName.keySet().toArray( new String[byName.keySet().size()] ) );
+    }
+
+    public int size()
+    {
+        return nextId;
     }
 }

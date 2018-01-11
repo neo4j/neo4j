@@ -234,6 +234,40 @@ public class ReadablesTest
         shouldReadTextFromInputStreamWithBom( Magic.BOM_UTF_8, text );
     }
 
+    @Test
+    public void shouldExtractFirstLine() throws Exception
+    {
+        // given
+        String firstLine = "characters of first line";
+        String secondLine = "here on the second line";
+        CharReadable reader = Readables.wrap( firstLine + "\n" + secondLine );
+
+        // when
+        char[] firstLineCharacters = Readables.extractFirstLineFrom( reader );
+        char[] secondLineCharacters = new char[secondLine.length()];
+        reader.read( secondLineCharacters, 0, secondLineCharacters.length );
+
+        // then
+        assertArrayEquals( firstLine.toCharArray(), firstLineCharacters );
+        assertArrayEquals( secondLine.toCharArray(), secondLineCharacters );
+    }
+
+    @Test
+    public void shouldExtractOnlyLine() throws Exception
+    {
+        // given
+        String firstLine = "characters of only line";
+        CharReadable reader = Readables.wrap( firstLine );
+
+        // when
+        char[] firstLineCharacters = Readables.extractFirstLineFrom( reader );
+        int readAfterwards = reader.read( new char[1], 0, 1 );
+
+        // then
+        assertArrayEquals( firstLine.toCharArray(), firstLineCharacters );
+        assertEquals( -1, readAfterwards );
+    }
+
     private void shouldReadTextFromFileWithBom( Magic bom, String text ) throws IOException
     {
         assertReadText( writeToFile( bom.bytes(), text, bom.encoding() ), text );

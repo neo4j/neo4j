@@ -19,17 +19,17 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import java.util.function.LongFunction;
+
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 /**
- * Maps node ids as specified by {@link InputNode#id()}, {@link InputRelationship#startNode()} and
- * {@link InputRelationship#endNode()} from an id of some unknown sort, coming directly from input, to actual node ids.
+ * Maps input node ids as specified by data read into {@link InputEntityVisitor} into actual node ids.
  */
 public interface IdMapper extends MemoryStatsVisitor.Visitable
 {
@@ -58,19 +58,18 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable
      * After all mappings have been {@link #put(Object, long, Group)} call this method to prepare for
      * {@link #get(Object, Group)}.
      *
-     * @param allIds put earlier, in the event of difficult collisions so that more information have to be read
-     * from the input data again, data that normally isn't necessary and hence discarded.
+     * @param inputIdLookup can return input id of supplied node id. Used in the event of difficult collisions
+     * so that more information have to be read from the input data again, data that normally isn't necessary
+     * and hence discarded.
      * @param collector {@link Collector} for bad entries, such as duplicate node ids.
      * @param progress reports preparation progress.
      */
-    void prepare( InputIterable<Object> allIds, Collector collector, ProgressListener progress );
+    void prepare( LongFunction<Object> inputIdLookup, Collector collector, ProgressListener progress );
 
     /**
-     * Returns an actual node id representing {@code inputId}.
-     * For this call to work {@link #prepare(InputIterable, Collector, ProgressListener)} must have
      * been called after all calls to {@link #put(Object, long, Group)} have been made,
      * iff {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
-     * @link #put(Object, long) being put}
+     * {@link #put(Object, long, Group) being put}
      *
      * @param inputId the input id to get the actual node id for.
      * @param group {@link Group} the given {@code inputId} must exist in, i.e. have been put with.
@@ -78,6 +77,9 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable
      */
     long get( Object inputId, Group group );
 
+    /**
+     * Releases all resources used by this {@link IdMapper}.
+     */
     void close();
 
     /**

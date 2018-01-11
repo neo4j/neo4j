@@ -28,13 +28,17 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
  */
 public interface Collector extends AutoCloseable
 {
-    void collectBadRelationship( InputRelationship relationship, Object specificValue );
+    void collectBadRelationship(
+            Object startId, String startIdGroup, String type,
+            Object endId, String endIdGroup, Object specificValue );
 
-    void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource );
+    void collectDuplicateNode( Object id, long actualId, String group );
 
     void collectExtraColumns( String source, long row, String value );
 
     long badEntries();
+
+    boolean isCollectingBadRelationships();
 
     /**
      * @return iterator of node ids that were found to be duplicates of already imported nodes.
@@ -63,16 +67,6 @@ public interface Collector extends AutoCloseable
         }
 
         @Override
-        public void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource )
-        {
-        }
-
-        @Override
-        public void collectBadRelationship( InputRelationship relationship, Object specificValue )
-        {
-        }
-
-        @Override
         public void close()
         {
         }
@@ -81,6 +75,23 @@ public interface Collector extends AutoCloseable
         public long badEntries()
         {
             return 0;
+        }
+
+        @Override
+        public void collectBadRelationship( Object startId, String startIdGroup, String type, Object endId, String endIdGroup,
+                Object specificValue )
+        {
+        }
+
+        @Override
+        public void collectDuplicateNode( Object id, long actualId, String group )
+        {
+        }
+
+        @Override
+        public boolean isCollectingBadRelationships()
+        {
+            return true;
         }
     };
 }

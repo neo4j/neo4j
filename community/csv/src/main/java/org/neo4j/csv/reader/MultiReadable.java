@@ -66,12 +66,6 @@ public class MultiReadable implements CharReadable
     }
 
     @Override
-    public long lineNumber()
-    {
-        return current.lineNumber();
-    }
-
-    @Override
     public long position()
     {
         return previousPosition + current.position();

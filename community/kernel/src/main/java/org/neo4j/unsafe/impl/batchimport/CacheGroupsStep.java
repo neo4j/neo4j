@@ -46,7 +46,11 @@ public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
         // since the records exists in the store in reverse order.
         for ( int i = batch.length - 1; i >= 0; i-- )
         {
-            cache.put( batch[i] );
+            RelationshipGroupRecord record = batch[i];
+            if ( record.inUse() )
+            {
+                cache.put( record );
+            }
         }
     }
 }
