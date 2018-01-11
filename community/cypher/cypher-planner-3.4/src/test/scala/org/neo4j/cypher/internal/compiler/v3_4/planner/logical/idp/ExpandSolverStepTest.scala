@@ -32,16 +32,26 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
-
+  self =>
   private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
 
-  private val plan1 = mock[LogicalPlan]
-  private val plan2 = mock[LogicalPlan]
-  when(plan1.solved).thenReturn(solved)
-  when(plan2.solved).thenReturn(solved)
+  case class TestPlan(availableSymbols: Set[IdName] = Set.empty) extends LogicalPlan(new SequentialIdGen) {
+
+    override def lhs: Option[LogicalPlan] = None
+
+    override def rhs: Option[LogicalPlan] = None
+
+    override def solved: PlannerQuery with CardinalityEstimation = self.solved
+
+    override def strictness: StrictnessMode = ???
+  }
+
+  private val plan1 = TestPlan()
+
 
   private val pattern1 = PatternRelationship('r1, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val pattern2 = PatternRelationship('r2, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -61,25 +71,26 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   test("expands if an unsolved pattern relationship overlaps once with a single solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
 
-    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
-    table.put(register(pattern1), plan1)
+    val plan = TestPlan(Set[IdName]('a, 'r1, 'b))
+    table.put(register(pattern1), plan)
 
     expandSolverStep(qg)(registry, register(pattern1, pattern2), table, context).toSet should equal(Set(
-      Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
+      Expand(plan, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
     ))
   }
 
   test("expands if an unsolved pattern relationships overlaps twice with a single solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
 
-    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
-    table.put(register(pattern1), plan1)
+    val plan = TestPlan(Set[IdName]('a, 'r1, 'b))
+
+    table.put(register(pattern1), plan)
 
     val patternX = PatternRelationship('r2, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     expandSolverStep(qg)(registry, register(pattern1, patternX), table, context).toSet should equal(Set(
-      Expand(plan1, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
-      Expand(plan1, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
+      Expand(plan, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
+      Expand(plan, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
     ))
   }
 
@@ -96,15 +107,15 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
 
   test("expands if an unsolved pattern relationship overlaps with multiple solved plans") {
     implicit val registry = IdRegistry[PatternRelationship]
+    val plan = TestPlan(Set[IdName]('a, 'r1, 'b, 'c, 'r2, 'd))
 
-    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'c, 'r2, 'd))
-    table.put(register(pattern1, pattern2), plan1)
+    table.put(register(pattern1, pattern2), plan)
 
     val pattern3 = PatternRelationship('r3, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table, context).toSet should equal(Set(
-      Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
-      Expand(plan1, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
+      Expand(plan, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
+      Expand(plan, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
     ))
   }
 

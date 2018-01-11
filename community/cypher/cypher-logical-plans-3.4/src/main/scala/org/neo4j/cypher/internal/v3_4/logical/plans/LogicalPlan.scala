@@ -32,6 +32,8 @@ object LogicalPlan {
   val LOWEST_TX_LAYER = 0
 }
 
+import scala.collection.mutable
+
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
 non-leaf nodes are algebraic operators like selections, projections, and joins. An intermediate node indicates the
@@ -56,6 +58,38 @@ abstract class LogicalPlan(idGen: IdGen)
   val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   val id = idGen.id()
+
+  override def equals(obj: scala.Any): Boolean = {
+    if (!obj.isInstanceOf[LogicalPlan]) false
+    else {
+      val otherPlan = obj.asInstanceOf[LogicalPlan]
+      if (this.eq(otherPlan)) return true
+      val stack = new mutable.Stack[(Iterator[Any], Iterator[Any])]()
+      var p1 = this.productIterator
+      var p2 = otherPlan.productIterator
+      while (p1.hasNext && p2.hasNext) {
+        val continue =
+          (p1.next, p2.next) match {
+            case (lp1:LogicalPlan, lp2:LogicalPlan) =>
+              stack.push((p1, p2))
+              p1 = lp1.productIterator
+              p2 = lp2.productIterator
+              true
+            case (_:LogicalPlan, _) => false
+            case (_, _:LogicalPlan) => false
+            case (a1, a2) => a1 == a2
+          }
+
+        if (!continue) return false
+        while (!p1.hasNext && !p2.hasNext && stack.nonEmpty) {
+          val (p1New, p2New) = stack.pop
+          p1 = p1New
+          p2 = p2New
+        }
+      }
+      p1.isEmpty && p2.isEmpty
+    }
+  }
 
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
