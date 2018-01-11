@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Apply, Argument, LogicalPlan, SingleRow}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   test("leafs") {
@@ -71,7 +72,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
       Unary(Leaf("right"), "right"), "branch2")
   }
 
-  case class Binary(left: LogicalPlan, right: LogicalPlan, value: Any) extends LogicalPlan {
+  case class Binary(left: LogicalPlan, right: LogicalPlan, value: Any) extends LogicalPlan(new SequentialIdGen) {
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
@@ -84,7 +85,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
     override def rhs: Option[LogicalPlan] = Some(right)
   }
 
-  case class Unary(child: LogicalPlan, value: Any) extends LogicalPlan {
+  case class Unary(child: LogicalPlan, value: Any) extends LogicalPlan(new SequentialIdGen) {
 
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
@@ -98,7 +99,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
     override def lhs: Option[LogicalPlan] = Some(child)
   }
 
-  case class Leaf(value: Any) extends LogicalPlan {
+  case class Leaf(value: Any) extends LogicalPlan(new SequentialIdGen) {
 
     override def lhs: Option[LogicalPlan] = None
 
