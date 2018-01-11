@@ -38,19 +38,19 @@ import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-public class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
 {
     final PageCache pageCache;
-    protected final File storeFile;
-    protected final Layout<KEY,VALUE> layout;
-    protected final GBPTreeFileUtil gbpTreeFileUtil;
-    protected final IndexDescriptor descriptor;
+    final File storeFile;
+    final Layout<KEY,VALUE> layout;
+    final GBPTreeFileUtil gbpTreeFileUtil;
+    final IndexDescriptor descriptor;
     private final long indexId;
     private final SchemaIndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;
 
-    public NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+    NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
             SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         this.pageCache = pageCache;
@@ -62,7 +62,7 @@ public class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends Native
         this.monitor = monitor;
     }
 
-    public void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
+    void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
             throws IOException
     {
         ensureDirectoryExist();
@@ -92,12 +92,12 @@ public class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends Native
         gbpTreeFileUtil.mkdirs( storeFile.getParentFile() );
     }
 
-    public void closeTree() throws IOException
+    void closeTree() throws IOException
     {
         tree = closeIfPresent( tree );
     }
 
-    public <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
+    <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
     {
         if ( closeable != null )
         {
@@ -106,7 +106,7 @@ public class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends Native
         return null;
     }
 
-    public void assertOpen()
+    void assertOpen()
     {
         if ( tree == null )
         {

@@ -33,12 +33,12 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 /**
  * {@link NativeSchemaIndexPopulator} which can enforces unique values.
  */
-public class NativeUniqueSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+class NativeUniqueSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndexPopulator<KEY,VALUE>
 {
     private final UniqueIndexSampler sampler;
 
-    public NativeUniqueSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+    NativeUniqueSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
             SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );

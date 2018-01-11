@@ -27,11 +27,11 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * Writes index state in the {@link GBPTree} header.
  */
-public class NativeSchemaIndexHeaderWriter implements Consumer<PageCursor>
+class NativeSchemaIndexHeaderWriter implements Consumer<PageCursor>
 {
     private final byte state;
 
-    public NativeSchemaIndexHeaderWriter( byte state )
+    NativeSchemaIndexHeaderWriter( byte state )
     {
         this.state = state;
     }

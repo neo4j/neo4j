@@ -26,10 +26,10 @@ import org.neo4j.index.internal.gbptree.Header;
 
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 
-public class NativeSchemaIndexHeaderReader implements Header.Reader
+class NativeSchemaIndexHeaderReader implements Header.Reader
 {
-    public byte state;
-    public String failureMessage;
+    byte state;
+    String failureMessage;
 
     @Override
     public void read( ByteBuffer headerData )

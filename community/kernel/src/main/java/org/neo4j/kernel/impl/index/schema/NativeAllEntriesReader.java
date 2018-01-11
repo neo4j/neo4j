@@ -36,7 +36,7 @@ public class NativeAllEntriesReader<KEY extends NativeSchemaKey,VALUE extends Na
     private final Layout<KEY,VALUE> layout;
     private RawCursor<Hit<KEY,VALUE>,IOException> seeker;
 
-    public NativeAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
+    NativeAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
     {
         this.tree = tree;
         this.layout = layout;

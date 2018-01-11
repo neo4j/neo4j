@@ -48,7 +48,7 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
         extends NativeSchemaIndex<KEY,VALUE> implements IndexAccessor
 {
     private final NativeSchemaIndexUpdater<KEY,VALUE> singleUpdater;
-    protected final IndexSamplingConfig samplingConfig;
+    final IndexSamplingConfig samplingConfig;
 
     NativeSchemaIndexAccessor(
             PageCache pageCache,
@@ -107,6 +107,7 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
         closeTree();
     }
 
+    @Override
     public abstract IndexReader newReader();
 
     @Override

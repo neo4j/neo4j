@@ -30,13 +30,13 @@ import org.neo4j.values.storable.Value;
  * of layouts without changing the entire stack of arguments. In the end it may just be that this class
  * will be deleted, but for now it sticks around.
  */
-public class NativeSchemaValue
+class NativeSchemaValue
 {
-    public static final int SIZE = 0;
+    static final int SIZE = 0;
 
-    public static final NativeSchemaValue INSTANCE = new NativeSchemaValue();
+    static final NativeSchemaValue INSTANCE = new NativeSchemaValue();
 
-    public void from( Value... values )
+    void from( Value... values )
     {
         // not needed a.t.m.
     }

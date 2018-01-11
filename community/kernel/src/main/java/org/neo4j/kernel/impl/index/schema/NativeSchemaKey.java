@@ -27,7 +27,7 @@ import org.neo4j.values.storable.Value;
  * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
  * Note that it says nothing about how keys are compared, serialized, read, written, etc. That is the job of Layout.
  */
-public interface NativeSchemaKey
+interface NativeSchemaKey
 {
     /**
      * Marks that comparisons with this key requires also comparing entityId, this allows functionality

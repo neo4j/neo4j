@@ -55,9 +55,9 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndex<KEY,VALUE> implements IndexPopulator
 {
-    public static final byte BYTE_FAILED = 0;
-    public static final byte BYTE_ONLINE = 1;
-    public static final byte BYTE_POPULATING = 2;
+    static final byte BYTE_FAILED = 0;
+    static final byte BYTE_ONLINE = 1;
+    static final byte BYTE_POPULATING = 2;
 
     private final KEY treeKey;
     private final VALUE treeValue;

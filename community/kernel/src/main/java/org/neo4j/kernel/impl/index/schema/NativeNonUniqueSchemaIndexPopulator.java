@@ -37,14 +37,14 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 /**
  * {@link NativeSchemaIndexPopulator} which can accept duplicate values (for different entity ids).
  */
-public class NativeNonUniqueSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+class NativeNonUniqueSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndexPopulator<KEY,VALUE>
 {
     private final IndexSamplingConfig samplingConfig;
     private boolean updateSampling;
     private NonUniqueIndexSampler sampler;
 
-    public NativeNonUniqueSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+    NativeNonUniqueSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig, SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );

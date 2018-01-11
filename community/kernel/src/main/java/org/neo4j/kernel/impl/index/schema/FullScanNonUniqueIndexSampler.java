@@ -37,14 +37,14 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * @param <KEY> type of keys in tree.
  * @param <VALUE> type of values in tree.
  */
-public class FullScanNonUniqueIndexSampler<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+class FullScanNonUniqueIndexSampler<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends NonUniqueIndexSampler.Adapter
 {
     private final GBPTree<KEY,VALUE> gbpTree;
     private final Layout<KEY,VALUE> layout;
     private final IndexSamplingConfig samplingConfig;
 
-    public FullScanNonUniqueIndexSampler( GBPTree<KEY,VALUE> gbpTree, Layout<KEY,VALUE> layout,
+    FullScanNonUniqueIndexSampler( GBPTree<KEY,VALUE> gbpTree, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig )
     {
         this.gbpTree = gbpTree;

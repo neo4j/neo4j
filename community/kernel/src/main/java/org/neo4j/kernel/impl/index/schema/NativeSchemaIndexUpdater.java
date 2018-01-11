@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.values.storable.ValueTuple;
 
-public class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         implements IndexUpdater
 {
     private final KEY treeKey;
@@ -38,14 +38,14 @@ public class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends
     private boolean closed = true;
     private boolean manageClosingOfWriter;
 
-    public NativeSchemaIndexUpdater( KEY treeKey, VALUE treeValue )
+    NativeSchemaIndexUpdater( KEY treeKey, VALUE treeValue )
     {
         this.treeKey = treeKey;
         this.treeValue = treeValue;
         this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
     }
 
-    public NativeSchemaIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer, boolean manageClosingOfWriter )
+    NativeSchemaIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer, boolean manageClosingOfWriter )
     {
         if ( !closed )
         {
@@ -83,7 +83,7 @@ public class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends
         }
     }
 
-    public static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processUpdate( KEY treeKey, VALUE treeValue,
+    static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processUpdate( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
@@ -127,7 +127,7 @@ public class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends
         assertNoConflict( update, conflictDetectingValueMerger );
     }
 
-    public static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processAdd( KEY treeKey, VALUE treeValue,
+    static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processAdd( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException

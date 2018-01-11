@@ -40,15 +40,15 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
-public abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         implements IndexReader
 {
-    protected final GBPTree<KEY,VALUE> tree;
-    protected final Layout<KEY,VALUE> layout;
-    protected final IndexSamplingConfig samplingConfig;
+    private final GBPTree<KEY,VALUE> tree;
+    private final Layout<KEY,VALUE> layout;
+    private final IndexSamplingConfig samplingConfig;
 
     private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
-    protected final IndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
 
     NativeSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig,
