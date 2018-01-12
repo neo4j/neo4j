@@ -32,8 +32,6 @@ import org.apache.lucene.search.TopDocs;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
@@ -60,14 +58,14 @@ class SimpleFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( Collection<String> terms, boolean matchAll )
+    public ScoreEntityIterator query( Collection<String> terms, boolean matchAll )
     {
         String query = terms.stream().map( QueryParser::escape ).collect( joining( " " ) );
         return innerQuery( query, matchAll );
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
+    public ScoreEntityIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
     {
         String query = terms.stream().map( QueryParser::escape ).collect( joining( "~ ", "", "~" ) );
         return innerQuery( query, matchAll );
@@ -98,7 +96,7 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         return new FulltextIndexConfiguration( indexSearcher.doc( docs.scoreDocs[0].doc ) );
     }
 
-    private PrimitiveLongIterator innerQuery( String queryString, boolean matchAll )
+    private ScoreEntityIterator innerQuery( String queryString, boolean matchAll )
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
         if ( matchAll )
@@ -117,18 +115,18 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         catch ( ParseException e )
         {
             assert false;
-            return PrimitiveLongCollections.emptyIterator();
+            return ScoreEntityIterator.emptyIterator();
         }
         return indexQuery( query );
     }
 
-    private PrimitiveLongIterator indexQuery( Query query )
+    private ScoreEntityIterator indexQuery( Query query )
     {
         try
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             getIndexSearcher().search( query, docValuesCollector );
-            return docValuesCollector.getSortedValuesIterator( FIELD_ENTITY_ID, Sort.RELEVANCE );
+            return new ScoreEntityIterator( docValuesCollector.getSortedValuesIterator( FIELD_ENTITY_ID, Sort.RELEVANCE ) );
         }
         catch ( IOException e )
         {

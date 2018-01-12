@@ -30,6 +30,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.util.Date;
+import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
@@ -53,6 +54,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -69,6 +71,7 @@ public class BloomIT
     private static final String RELS = "CALL bloom.searchRelationships([%s])";
     private static final String RELS_ADVANCED = "CALL bloom.searchRelationships([%s], %b, %b)";
     private static final String ENTITYID = "entityid";
+    private static final String SCORE = "score";
     private static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
     private static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
     private static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
@@ -196,6 +199,31 @@ public class BloomIT
         assertFalse( result.hasNext() );
         result = db.execute( String.format( RELS_ADVANCED, "\"relate\", \"sometimes\"", false, true ) );
         assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void exactMatchShouldScoreMuchBetterThatAlmostNotMatching() throws Exception
+    {
+        db = getDb();
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            node1.setProperty( "prop", "This is a integration test that involves scoring and thus needs a longer sentence." );
+            Node node2 = db.createNode();
+            node2.setProperty( "prop", "tase" );
+            transaction.success();
+        }
+
+        Result result = db.execute( String.format( NODES, "\"integration\", \"test\", \"involves\", \"scoring\", \"needs\", \"sentence\"" ) );
+        assertTrue( result.hasNext() );
+        Map<String,Object> firstResult = result.next();
+        assertTrue( result.hasNext() );
+        Map<String,Object> secondResult = result.next();
+        assertFalse( result.hasNext() );
+        assertEquals( 0L, firstResult.get( ENTITYID ) );
+        assertEquals( 1L, secondResult.get( ENTITYID ) );
+        assertThat( (double) firstResult.get( SCORE ), greaterThan( (double) secondResult.get( SCORE ) * 10 ) );
     }
 
     @Test

@@ -23,13 +23,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
+import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -50,6 +53,7 @@ public class BloomProcedures
 {
     @Context
     public FulltextProvider provider;
+    public static final Function<Pair<Long,Float>,EntityOutput> QUERY_RESULT_MAPPER = result -> new EntityOutput( result.first(), result.other() );
 
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "bloom.awaitPopulation", mode = READ )
@@ -123,26 +127,27 @@ public class BloomProcedures
 
     private Stream<EntityOutput> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader, boolean fuzzy, boolean matchAll )
     {
-        PrimitiveLongIterator primitiveLongIterator;
+        ScoreEntityIterator resultIterator;
         if ( fuzzy )
         {
-            primitiveLongIterator = indexReader.fuzzyQuery( terms, matchAll );
+            resultIterator = indexReader.fuzzyQuery( terms, matchAll );
         }
         else
         {
-            primitiveLongIterator = indexReader.query( terms, matchAll );
+            resultIterator = indexReader.query( terms, matchAll );
         }
-        Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, primitiveLongIterator );
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
+        return resultIterator.stream().map( QUERY_RESULT_MAPPER );
     }
 
     public static class EntityOutput
     {
         public final long entityid;
+        public final double score;
 
-        public EntityOutput( long entityid )
+        EntityOutput( long entityid, float score )
         {
             this.entityid = entityid;
+            this.score = score;
         }
     }
 
@@ -150,7 +155,7 @@ public class BloomProcedures
     {
         public final String propertyKey;
 
-        public PropertyOutput( String propertykey )
+        PropertyOutput( String propertykey )
         {
             this.propertyKey = propertykey;
         }
@@ -160,7 +165,7 @@ public class BloomProcedures
     {
         public final String state;
 
-        public StatusOutput( InternalIndexState internalIndexState )
+        StatusOutput( InternalIndexState internalIndexState )
         {
             switch ( internalIndexState )
             {
