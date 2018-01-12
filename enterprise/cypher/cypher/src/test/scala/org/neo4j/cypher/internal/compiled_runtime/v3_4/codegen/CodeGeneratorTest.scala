@@ -48,7 +48,7 @@ import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy, RelationshipProxy}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.time.Clocks
 import org.neo4j.values.AnyValue
@@ -1625,14 +1625,14 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     16L -> RelationshipData(hNode, iNode, 16L, 3),
     17L -> RelationshipData(iNode, hNode, 17L, 3))
 
-  val nodeManager = mock[NodeManager]
-  when(nodeManager.newNodeProxyById(anyLong())).thenAnswer(new Answer[Node]() {
+  val proxySpi = mock[EmbeddedProxySPI]
+  when(proxySpi.newNodeProxy(anyLong())).thenAnswer(new Answer[Node]() {
     override def answer(invocationOnMock: InvocationOnMock): NodeProxy = {
       val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
       allNodes(id)
     }
   })
-  when(nodeManager.newRelationshipProxyById(anyLong())).thenAnswer(new Answer[Relationship]() {
+  when(proxySpi.newRelationshipProxy(anyLong())).thenAnswer(new Answer[Relationship]() {
     override def answer(invocationOnMock: InvocationOnMock): RelationshipProxy = {
       val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
       relMap(id).relationship
@@ -1704,7 +1704,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   when(transactionalContext.dataRead).thenAnswer(new Answer[Read] {
     override def answer(invocation: InvocationOnMock): Read = read
   })
-  when(queryContext.entityAccessor).thenReturn(nodeManager)
+  when(queryContext.entityAccessor).thenReturn(proxySpi)
   when(ro.labelGetForName(anyString())).thenAnswer(new Answer[Int] {
     override def answer(invocationOnMock: InvocationOnMock): Int = {
       val label = invocationOnMock.getArguments.apply(0).asInstanceOf[String]

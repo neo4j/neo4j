@@ -29,13 +29,13 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 public class RelationshipConversion implements RelationshipVisitor<RuntimeException>, ResourceIterator<Relationship>
 {
-    private final NodeProxy.NodeActions actions;
+    private final EmbeddedProxySPI actions;
     RelationshipIterator iterator;
     Statement statement;
     private Relationship next;
     private boolean closed;
 
-    public RelationshipConversion( NodeProxy.NodeActions actions )
+    public RelationshipConversion( EmbeddedProxySPI actions )
     {
         this.actions = actions;
     }

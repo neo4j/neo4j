@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
@@ -51,11 +51,11 @@ import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 class ParameterConverter implements AnyValueWriter<RuntimeException>
 {
     private final Deque<Writer> stack = new ArrayDeque<>();
-    private final NodeManager nodeManager;
+    private final EmbeddedProxySPI proxySpi;
 
-    ParameterConverter( NodeManager manager )
+    ParameterConverter( EmbeddedProxySPI proxySpi )
     {
-        this.nodeManager = manager;
+        this.proxySpi = proxySpi;
         stack.push( new ObjectWriter() );
     }
 
@@ -134,12 +134,12 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
         Node[] nodeProxies = new Node[nodes.length];
         for ( int i = 0; i < nodes.length; i++ )
         {
-            nodeProxies[i] = nodeManager.newNodeProxyById( nodes[i].id() );
+            nodeProxies[i] = proxySpi.newNodeProxy( nodes[i].id() );
         }
         Relationship[] relationship = new Relationship[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
         {
-            relationship[i] = nodeManager.newRelationshipProxyById( relationships[i].id() );
+            relationship[i] = proxySpi.newRelationshipProxy( relationships[i].id() );
         }
         writeValue( new Path()
         {

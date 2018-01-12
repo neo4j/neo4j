@@ -45,7 +45,7 @@ import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQu
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read}
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
@@ -203,7 +203,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     Fields(
       closer = clazz.field(typeRef[TaskCloser], "closer"),
       ro = clazz.field(typeRef[ReadOperations], "ro"),
-      entityAccessor = clazz.field(typeRef[NodeManager], "nodeManager"),
+      entityAccessor = clazz.field(typeRef[EmbeddedProxySPI], "proxySpi"),
       executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
       description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
       tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),

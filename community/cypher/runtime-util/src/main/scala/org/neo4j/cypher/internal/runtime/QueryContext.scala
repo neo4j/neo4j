@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
@@ -54,7 +54,7 @@ trait QueryContext extends TokenContext {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
 
-  def entityAccessor: NodeManager
+  def entityAccessor: EmbeddedProxySPI
 
   def transactionalContext: QueryTransactionalContext
 

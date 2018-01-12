@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy, RelationshipProxy}
 import org.neo4j.values.storable.{Value, Values}
 
 object Methods {
@@ -88,8 +88,8 @@ object Methods {
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
   val fetchNextRelationship = method[RelationshipIterator, Long]("next")
-  val newNodeProxyById = method[NodeManager, NodeProxy]("newNodeProxyById", typeRef[Long])
-  val newRelationshipProxyById = method[NodeManager, RelationshipProxy]("newRelationshipProxyById", typeRef[Long])
+  val newNodeProxyById = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])
+  val newRelationshipProxyById = method[EmbeddedProxySPI, RelationshipProxy]("newRelationshipProxy", typeRef[Long])
   val nodeId = method[NodeIdWrapperImpl, Long]("id")
   val relId = method[RelationshipIdWrapperImpl, Long]("id")
   val set = method[ResultRowImpl, Unit]("set", typeRef[String], typeRef[Object])

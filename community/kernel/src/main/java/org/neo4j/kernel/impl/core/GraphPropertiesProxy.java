@@ -44,18 +44,9 @@ import static java.lang.String.format;
 
 public class GraphPropertiesProxy implements GraphProperties
 {
-    private final GraphPropertiesActions actions;
+    private final EmbeddedProxySPI actions;
 
-    public interface GraphPropertiesActions
-    {
-        Statement statement();
-
-        GraphDatabaseService getGraphDatabaseService();
-
-        void failTransaction();
-    }
-
-    public GraphPropertiesProxy( GraphPropertiesActions actions )
+    public GraphPropertiesProxy( EmbeddedProxySPI actions )
     {
         this.actions = actions;
     }
@@ -63,7 +54,7 @@ public class GraphPropertiesProxy implements GraphProperties
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
-        return actions.getGraphDatabaseService();
+        return actions.getGraphDatabase();
     }
 
     @Override
@@ -244,12 +235,12 @@ public class GraphPropertiesProxy implements GraphProperties
         // Yeah, this is breaking transitive equals, but should be OK anyway.
         // Also, we're checking == (not .equals) on GDS since that seems to be what the tests are asserting
         return o instanceof GraphPropertiesProxy &&
-                actions.getGraphDatabaseService() == ((GraphPropertiesProxy)o).actions.getGraphDatabaseService();
+                actions.getGraphDatabase() == ((GraphPropertiesProxy)o).actions.getGraphDatabase();
     }
 
     @Override
     public int hashCode()
     {
-        return actions.getGraphDatabaseService().hashCode();
+        return actions.getGraphDatabase().hashCode();
     }
 }
