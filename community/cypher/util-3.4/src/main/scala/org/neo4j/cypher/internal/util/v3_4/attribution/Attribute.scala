@@ -101,3 +101,15 @@ trait Attribute[T] {
       array += new Unchangeable
   }
 }
+
+class Attributes(idGen: IdGen, private val attributes: Attribute[_]*) {
+  def copy(from: Id): IdGen = new IdGen {
+    override def id(): Id = {
+      val to = idGen.id()
+      for (a <- attributes) {
+        a.copy(from, to)
+      }
+      to
+    }
+  }
+}
