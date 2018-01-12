@@ -22,14 +22,13 @@ package org.neo4j.server.rest;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -50,10 +49,11 @@ import static org.junit.Assert.assertTrue;
 public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
 {
     private URI nodeUri;
+    private GraphDbHelper helper;
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
@@ -61,15 +61,14 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
     @Before
     public void cleanTheDatabaseAndInitialiseTheNodeUri() throws Exception
     {
-        nodeUri = new URI( functionalTestHelper.nodeUri() + "/"
-                + new GraphDbHelper( server().getDatabase() ).createNode() );
+        helper = new GraphDbHelper( server().getDatabase() );
+        nodeUri = new URI( functionalTestHelper.nodeUri() + "/" + helper.createNode() );
     }
 
     @Test
     public void shouldParameteriseUrisInNodeRepresentationWithHostHeaderValue() throws Exception
     {
-        HttpClient httpclient = new DefaultHttpClient();
-        try
+        try ( CloseableHttpClient httpclient = HttpClientBuilder.create().build() )
         {
             HttpGet httpget = new HttpGet( nodeUri );
 
@@ -83,17 +82,12 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
             assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/node/" ) );
 
         }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
-        }
     }
 
     @Test
     public void shouldParameteriseUrisInNodeRepresentationWithoutHostHeaderUsingRequestUri() throws Exception
     {
-        HttpClient httpclient = new DefaultHttpClient();
-        try
+        try ( CloseableHttpClient httpclient = HttpClientBuilder.create().build() )
         {
             HttpGet httpget = new HttpGet( nodeUri );
 
@@ -104,10 +98,6 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
             String entityBody = IOUtils.toString( entity.getContent(), StandardCharsets.UTF_8 );
 
             assertThat( entityBody, containsString( nodeUri.toString() ) );
-        }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
         }
     }
 
@@ -171,12 +161,13 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
     {
-        //We need to add something to the nodeUri that works also
-        //when the nodeUri points to node with id 0, hence just adding
-        //a bunch of zeros will not always work since
+        long nonExistentNode = helper.createNode();
+        helper.deleteNode( nonExistentNode );
+        URI nonExistentNodeUri = new URI( functionalTestHelper.nodeUri() + "/" + nonExistentNode );
+
         gen.get()
                 .expectedStatus( 404 )
-                .get( nodeUri + "123456" );
+                .get( nonExistentNodeUri.toString() );
     }
 
     private JaxRsResponse retrieveNodeFromService( final String uri )
