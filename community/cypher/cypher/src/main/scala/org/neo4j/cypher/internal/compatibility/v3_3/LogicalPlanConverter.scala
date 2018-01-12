@@ -48,6 +48,7 @@ object LogicalPlanConverter {
 
   type MutableExpressionMapping3To4 = mutable.Map[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4]
 
+  //noinspection ZeroIndexToHead
   private class LogicalPlanRewriter(val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4],
                                     val isImportant: ExpressionV3_3 => Boolean = _ => true)
     extends RewriterWithArgs {
@@ -74,6 +75,17 @@ object LogicalPlanConverter {
             targetId = children(4).asInstanceOf[String])(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, procedureOrSchemaIdGen, classOf[IdGen])
+        case (plan: plansV3_3.FullPruningVarExpand, children: Seq[AnyRef]) => // Remove when we update to 3.3.2
+          plansV3_4.PruningVarExpand(
+            children(0).asInstanceOf[LogicalPlanV3_4],
+            plan.from.name,
+            children(2).asInstanceOf[expressionsV3_4.SemanticDirection],
+            children(3).asInstanceOf[Seq[expressionsV3_4.RelTypeName]],
+            plan.to.name,
+            plan.minLength,
+            plan.maxLength,
+            children.last.asInstanceOf[Seq[(expressionsV3_4.LogicalVariable,expressionsV3_4.Expression)]]
+          )(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery], SameId(Id(plan.assignedId.underlying)), classOf[IdGen])
 
