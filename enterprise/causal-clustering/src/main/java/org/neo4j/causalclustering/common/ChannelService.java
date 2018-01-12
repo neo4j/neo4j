@@ -22,6 +22,9 @@ package org.neo4j.causalclustering.common;
 import io.netty.bootstrap.AbstractBootstrap;
 import io.netty.channel.Channel;
 
+/*
+Needs to be bootstrapped before starting
+*/
 public interface ChannelService<T extends AbstractBootstrap, C extends Channel>
 {
     void bootstrap( EventLoopContext<C>  eventLoopContext );

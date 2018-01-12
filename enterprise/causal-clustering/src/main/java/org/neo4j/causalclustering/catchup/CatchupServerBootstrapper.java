@@ -51,6 +51,8 @@ import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.causalclustering.common.EventLoopContext;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.server.ServerBindToChannel;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequest;

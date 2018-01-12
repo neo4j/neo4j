@@ -19,6 +19,9 @@
  */
 package org.neo4j.backup.impl;
 
+import io.netty.channel.socket.nio.NioSocketChannel;
+import sun.plugin.viewer.LifeCycleManager;
+
 import java.io.OutputStream;
 import java.time.Clock;
 import java.util.function.Supplier;
@@ -28,13 +31,17 @@ import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.client.NioEventLoopClientContextSupplier;
 import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -99,7 +106,10 @@ class BackupSupportingClassesFactory
                 txPullClient,
                 transactionLogCatchUpFactory, config, monitors );
 
-        return backupDelegator( remoteStore, catchUpClient, storeCopyClient );
+        NettyApplication<NioSocketChannel> catchupClientLifeCycle =
+                new NettyApplication<>( catchUpClient, new NioEventLoopClientContextSupplier( new NamedThreadFactory( "catchup-client" ) ) );
+
+        return backupDelegator( remoteStore, catchupClientLifeCycle, storeCopyClient );
     }
 
     protected PipelineHandlerAppender createPipelineHandlerAppender( Config config )
@@ -109,9 +119,9 @@ class BackupSupportingClassesFactory
     }
 
     private static BackupDelegator backupDelegator(
-            RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient )
+            RemoteStore remoteStore, Lifecycle lifecycle, StoreCopyClient storeCopyClient )
     {
-        return new BackupDelegator( remoteStore, catchUpClient, storeCopyClient );
+        return new BackupDelegator( remoteStore, lifecycle, storeCopyClient );
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystemAbstraction, Config config )

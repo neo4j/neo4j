@@ -17,35 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.common.server;
+package org.neo4j.causalclustering.common.client;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.common.EventLoopContext;
 
-public class NioEventLoopContextSupplier implements Supplier<EventLoopContext<NioServerSocketChannel>>
+public class NioEventLoopClientContextSupplier implements Supplier<EventLoopContext<NioSocketChannel>>
 {
     private final ThreadFactory threadFactory;
     private final int threads;
 
-    public NioEventLoopContextSupplier( ThreadFactory threadFactory, int threads )
+    public NioEventLoopClientContextSupplier( ThreadFactory threadFactory, int threads )
     {
         this.threadFactory = threadFactory;
         this.threads = threads;
     }
 
-    public NioEventLoopContextSupplier( ThreadFactory threadFactory )
+    public NioEventLoopClientContextSupplier( ThreadFactory threadFactory )
     {
         this( threadFactory, 0 );
     }
 
     @Override
-    public EventLoopContext<NioServerSocketChannel> get()
+    public EventLoopContext<NioSocketChannel> get()
     {
-        return new EventLoopContext<>( new NioEventLoopGroup( threads, threadFactory ), NioServerSocketChannel.class );
+        return new EventLoopContext<>( new NioEventLoopGroup( threads, threadFactory ), NioSocketChannel.class );
     }
 }

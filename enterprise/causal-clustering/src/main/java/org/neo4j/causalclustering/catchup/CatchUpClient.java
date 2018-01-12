@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.common.ChannelService;
 import org.neo4j.causalclustering.common.EventLoopContext;
 import org.neo4j.causalclustering.common.NettyApplication;
 import org.neo4j.causalclustering.common.client.ClientConnector;
@@ -46,7 +47,7 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 
-public class CatchUpClient
+public class CatchUpClient implements ChannelService<Bootstrap, NioSocketChannel>
 {
     private final Log log;
     private final Clock clock;
@@ -55,7 +56,6 @@ public class CatchUpClient
     private final ClientConnector<NioSocketChannel> clientConnector;
 
     private final CatchupClientBootstrapper catchupClientBootstrapper;
-    private final NettyApplication<NioSocketChannel> nettyApplication;
 
     public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors,
             PipelineHandlerAppender pipelineAppender )
@@ -65,13 +65,6 @@ public class CatchUpClient
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
-        nettyApplication = new NettyApplication<>( clientConnector, this::createExecutorContext );
-    }
-
-    private EventLoopContext<NioSocketChannel> createExecutorContext()
-    {
-        return new EventLoopContext<>( new NioEventLoopGroup( 0, new NamedThreadFactory( "catchup-client" ) ),
-                NioSocketChannel.class );
     }
 
     public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request,
@@ -103,9 +96,22 @@ public class CatchUpClient
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }
 
-    public Lifecycle getLifecycle()
+    @Override
+    public void bootstrap( EventLoopContext<NioSocketChannel> eventLoopContext )
     {
-        return nettyApplication;
+        clientConnector.bootstrap( eventLoopContext );
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        clientConnector.start();
+    }
+
+    @Override
+    public void closeChannels() throws Throwable
+    {
+        clientConnector.closeChannels();
     }
 
     private class CatchUpChannel implements CatchUpChannelPool.Channel

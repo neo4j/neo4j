@@ -38,7 +38,10 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.common.server.NioEventLoopContextSupplier;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.client.NioEventLoopClientContextSupplier;
+import org.neo4j.causalclustering.common.server.NioEventLoopServerContextSupplier;
+import org.neo4j.causalclustering.common.server.ServerBindToChannel;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.IdentityModule;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
@@ -186,8 +189,7 @@ public class CoreServerModule
             LocalDatabase localDatabase,
             PipelineHandlerAppender pipelineAppender, FileSystemAbstraction fileSystem, LogProvider userLogProvider )
     {
-        NioEventLoopContextSupplier catchupServerExecutor =
-                new NioEventLoopContextSupplier( new NamedThreadFactory( "catchupServer" ) );
+        NioEventLoopServerContextSupplier catchupServerExecutor = new NioEventLoopServerContextSupplier( new NamedThreadFactory( "catchupServer" ) );
         CatchupServerBootstrapper<NioServerSocketChannel> catchupServerBootstrapper = new CatchupServerBootstrapper<>(
                 localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
@@ -212,7 +214,7 @@ public class CoreServerModule
         CatchUpClient catchUpClient =
                 new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors,
                         pipelineAppender );
-        platformModule.life.add( catchUpClient.getLifecycle() );
+        platformModule.life.add( new NettyApplication<>( catchUpClient, new NioEventLoopClientContextSupplier( new NamedThreadFactory( "catchup-client" ) ) ) );
 
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, platformModule.fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),

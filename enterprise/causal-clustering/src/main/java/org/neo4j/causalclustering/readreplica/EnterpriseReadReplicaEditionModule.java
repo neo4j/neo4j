@@ -44,7 +44,9 @@ import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.common.server.NioEventLoopContextSupplier;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.client.NioEventLoopClientContextSupplier;
+import org.neo4j.causalclustering.common.server.NioEventLoopServerContextSupplier;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
@@ -208,7 +210,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, handlerAppender );
-        life.add( catchUpClient.getLifecycle() );
+        life.add( new NettyApplication<>( catchUpClient, new NioEventLoopClientContextSupplier( new NamedThreadFactory( "catchup-client" ) ) ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -276,8 +278,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, upstreamDatabaseStrategySelector, retryStrategy, logProvider,
                 platformModule.logging.getUserLogProvider(), storeCopyProcess, topologyService ) );
 
-        NioEventLoopContextSupplier catchupServerExecutor =
-                new NioEventLoopContextSupplier( new NamedThreadFactory( "catchupServer" ) );
+        NioEventLoopServerContextSupplier catchupServerExecutor = new NioEventLoopServerContextSupplier( new NamedThreadFactory( "catchupServer" ) );
         CatchupServerBootstrapper<NioServerSocketChannel> catchupServerBootstrapper = new CatchupServerBootstrapper<>(
                 localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),

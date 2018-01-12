@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.core;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.common.server.NioEventLoopContextSupplier;
+import org.neo4j.causalclustering.common.server.NioEventLoopServerContextSupplier;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
@@ -75,12 +75,11 @@ public class RaftServerModule
     private void createRaftServer( CoreServerModule coreServerModule,
             LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> messageHandlerChain )
     {
-        NioEventLoopContextSupplier nioEventLoopContextSupplier = new NioEventLoopContextSupplier( new
+        NioEventLoopServerContextSupplier nioEventLoopServerContextSupplier = new NioEventLoopServerContextSupplier( new
                 NamedThreadFactory( "raft-server" ), 0 );
         RaftServer raftServer =
                 new RaftServer<>( new CoreReplicatedContentMarshal(), pipelineHandlerAppender, platformModule.config,
-                        logProvider, platformModule.logging.getUserLogProvider(), monitors, platformModule.clock,
-                        nioEventLoopContextSupplier );
+                        logProvider, platformModule.logging.getUserLogProvider(), monitors, platformModule.clock, nioEventLoopServerContextSupplier );
 
         LoggingInbound<ReceivedInstantClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
                 messageLogger, identityModule.myself() );

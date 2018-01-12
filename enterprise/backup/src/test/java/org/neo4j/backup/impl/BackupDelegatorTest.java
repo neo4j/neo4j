@@ -91,6 +91,7 @@ public class BackupDelegatorTest
     public void stopDelegatesToCatchUpClient() throws Throwable
     {
         // when
+        subject.start();
         subject.stop();
 
         // then

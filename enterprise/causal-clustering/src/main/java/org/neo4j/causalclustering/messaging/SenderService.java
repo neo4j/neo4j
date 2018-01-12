@@ -19,29 +19,28 @@
  */
 package org.neo4j.causalclustering.messaging;
 
-import java.util.Iterator;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import java.util.Iterator;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.neo4j.causalclustering.common.ChannelService;
+import org.neo4j.causalclustering.common.EventLoopContext;
 import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
-import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
-
-public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
+public class SenderService implements Outbound<AdvertisedSocketAddress,Message>, ChannelService<Bootstrap,NioSocketChannel>
 {
     private NonBlockingChannels nonBlockingChannels;
 
@@ -53,6 +52,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private JobScheduler.JobHandle jobHandle;
     private boolean senderServiceRunning;
     private Bootstrap bootstrap;
+    private Promise<Void> defaultPromise;
     private NioEventLoopGroup eventLoopGroup;
 
     public SenderService( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, Monitors monitors )
@@ -95,7 +95,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( nonBlockingChannel == null )
         {
-            nonBlockingChannel = new NonBlockingChannel( bootstrap, eventLoopGroup.next(), to, log );
+            nonBlockingChannel = new NonBlockingChannel( bootstrap, to, log );
             nonBlockingChannel.start();
             NonBlockingChannel existingNonBlockingChannel = nonBlockingChannels.putIfAbsent( to, nonBlockingChannel );
 
@@ -115,18 +115,12 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     }
 
     @Override
-    public synchronized void start()
+    public void bootstrap( EventLoopContext<NioSocketChannel> eventLoopContext )
     {
         serviceLock.writeLock().lock();
         try
         {
-            eventLoopGroup = new NioEventLoopGroup( 0, new NamedThreadFactory( "sender-service" ) );
-            bootstrap = new Bootstrap()
-                    .group( eventLoopGroup )
-                    .channel( NioSocketChannel.class )
-                    .handler( channelInitializer );
-
-            senderServiceRunning = true;
+            bootstrap = new Bootstrap().group( eventLoopContext.eventExecutors() ).channel( eventLoopContext.channelClass() ).handler( channelInitializer );
         }
         finally
         {
@@ -135,7 +129,13 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     }
 
     @Override
-    public synchronized void stop()
+    public synchronized void start()
+    {
+        senderServiceRunning = true;
+    }
+
+    @Override
+    public void closeChannels() throws Throwable
     {
         serviceLock.writeLock().lock();
         try
@@ -154,15 +154,6 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 NonBlockingChannel timestampedChannel = itr.next();
                 timestampedChannel.dispose();
                 itr.remove();
-            }
-
-            try
-            {
-                eventLoopGroup.shutdownGracefully( 0, 0, MICROSECONDS ).sync();
-            }
-            catch ( InterruptedException e )
-            {
-                log.warn( "Interrupted while stopping sender service." );
             }
         }
         finally

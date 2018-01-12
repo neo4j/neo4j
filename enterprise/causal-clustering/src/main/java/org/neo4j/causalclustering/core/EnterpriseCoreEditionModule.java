@@ -30,6 +30,8 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.client.NioEventLoopClientContextSupplier;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
@@ -67,6 +69,7 @@ import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -220,7 +223,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final SenderService raftSender = new SenderService(
                 new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors, pipelineHandlerAppender ),
                 logProvider, platformModule.monitors );
-        life.add( raftSender );
+
+        life.add( new NettyApplication<>( raftSender, new NioEventLoopClientContextSupplier( new NamedThreadFactory( "sender-service" ) ) ) );
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
 
