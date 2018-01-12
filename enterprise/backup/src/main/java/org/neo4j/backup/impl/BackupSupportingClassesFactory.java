@@ -20,7 +20,6 @@
 package org.neo4j.backup.impl;
 
 import io.netty.channel.socket.nio.NioSocketChannel;
-import sun.plugin.viewer.LifeCycleManager;
 
 import java.io.OutputStream;
 import java.time.Clock;
