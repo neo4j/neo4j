@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.gis.spatial.index.Envelope;
-import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -35,7 +32,6 @@ import org.neo4j.values.storable.Values;
 class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue>
 {
     private CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    private SpaceFillingCurve curve = new HilbertSpaceFillingCurve2D( new Envelope( -180, 180, -90, 90 ) );
 
     SpatialLayoutTestUtil()
     {
@@ -45,7 +41,7 @@ class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,NativeSchema
     @Override
     Layout<SpatialSchemaKey,NativeSchemaValue> createLayout()
     {
-        return new SpatialLayoutNonUnique( crs, curve );
+        return new SpatialLayoutNonUnique( crs );
     }
 
     @Override
@@ -76,11 +72,6 @@ class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,NativeSchema
     @Override
     int compareIndexedPropertyValue( SpatialSchemaKey key1, SpatialSchemaKey key2 )
     {
-        int typeCompare = Byte.compare( key1.type, key2.type );
-        if ( typeCompare == 0 )
-        {
-            return Long.compare( key1.rawValueBits, key2.rawValueBits );
-        }
-        return typeCompare;
+        return Long.compare( key1.rawValueBits, key2.rawValueBits );
     }
 }

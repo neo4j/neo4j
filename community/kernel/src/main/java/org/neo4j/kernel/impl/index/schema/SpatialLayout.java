@@ -45,7 +45,6 @@ public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,Nati
     public SpatialSchemaKey copyKey( SpatialSchemaKey key,
             SpatialSchemaKey into )
     {
-        into.type = key.type;
         into.rawValueBits = key.rawValueBits;
         into.setEntityId( key.getEntityId() );
         into.setEntityIdIsSpecialTieBreaker( key.getEntityIdIsSpecialTieBreaker() );
@@ -74,7 +73,6 @@ public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,Nati
     @Override
     public void writeKey( PageCursor cursor, SpatialSchemaKey key )
     {
-        cursor.putByte( key.type );
         cursor.putLong( key.rawValueBits );
         cursor.putLong( key.getEntityId() );
     }
@@ -87,7 +85,6 @@ public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,Nati
     @Override
     public void readKey( PageCursor cursor, SpatialSchemaKey into )
     {
-        into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
         into.setEntityId( cursor.getLong() );
     }
