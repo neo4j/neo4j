@@ -780,6 +780,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
                 {
                     return false;
                 }
+                // TODO fails for spatial because the asValue is not returning the actual value
                 return filter.acceptsValue( values[0] ) && iter.acceptNode( reference, values );
             }
 

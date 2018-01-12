@@ -262,6 +262,7 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
+            // TODO Handle pointvalue here?
             return exactValue.equals( value );
         }
 
