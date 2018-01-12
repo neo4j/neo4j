@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Relationship
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with CypherComparisonSupport {
@@ -61,10 +61,9 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  // TODO: Change this setting when slotted supports the queries
-  private val supportMerge = Configs.CommunityInterpreted - Configs.Cost2_3
+  private val supportMerge = Configs.Interpreted - Configs.Cost2_3
   // TODO: Change this setting when the bugfix #10771 merged to earlier 3.x versions is included as a dependency
-  private val doNotYetHaveBugFix = Configs.Cost3_1 + Configs.Cost3_2
+  private val doNotYetHaveBugFix = Configs.Cost3_1 + TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
 
   test("Merging with self loop and relationship uniqueness") {
     graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
