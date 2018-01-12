@@ -47,9 +47,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result.toString should equal(
       """Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
+        |  LHS -> Expand(a, OUTGOING, List(), b, r1, ExpandAll) {
         |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |      LHS -> AllNodesScan(IdName(a), Set()) {}
+        |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
         |}""".stripMargin)
@@ -60,9 +60,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result.toString should equal(
       """Selection(MutableList(In(Property(Variable(r1),PropertyKeyName(prop)),ListLiteral(List(SignedDecimalIntegerLiteral(42)))))) {
-        |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
+        |  LHS -> Expand(a, OUTGOING, List(), b, r1, ExpandAll) {
         |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |      LHS -> AllNodesScan(IdName(a), Set()) {}
+        |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
         |}""".stripMargin)
@@ -72,9 +72,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b")._2
 
     result.toString should equal(
-      """Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r), ExpandAll) {
+      """Expand(a, OUTGOING, List(), b, r, ExpandAll) {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> AllNodesScan(IdName(a), Set()) {}
+        |    LHS -> AllNodesScan(a, Set()) {}
         |  }
         |}""".stripMargin)
   }
@@ -85,12 +85,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.toString should equal(
       """Apply() {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    LHS -> Expand(a, OUTGOING, List(), b, r, ExpandAll) {
+        |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(u), false, IdName(v), false, None, true, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(r))) {}
+        |  RHS -> ProjectEndpoints(r, u, false, v, false, None, true, SimplePatternLength) {
+        |    LHS -> Argument(Set(r)) {}
         |  }
         |}""".stripMargin)
   }
@@ -101,12 +101,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.toString should equal(
       """Apply() {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    LHS -> Expand(a, OUTGOING, List(), b, r, ExpandAll) {
+        |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
+        |  RHS -> ProjectEndpoints(r, a, true, b2, false, None, true, SimplePatternLength) {
+        |    LHS -> Argument(Set(a, r)) {}
         |  }
         |}""".stripMargin)
   }
@@ -117,12 +117,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.toString should equal(
       """Apply() {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    LHS -> Expand(a, OUTGOING, List(), b, r, ExpandAll) {
+        |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b), true, None, true, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(a), IdName(b), IdName(r))) {}
+        |  RHS -> ProjectEndpoints(r, a, true, b, true, None, true, SimplePatternLength) {
+        |    LHS -> Argument(Set(a, b, r)) {}
         |  }
         |}""".stripMargin)
   }
@@ -133,12 +133,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.toString should equal(
       """Apply() {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    LHS -> Expand(a, OUTGOING, List(), b, r, ExpandAll) {
+        |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
+        |  RHS -> ProjectEndpoints(r, a, true, b2, false, None, true, SimplePatternLength) {
+        |    LHS -> Argument(Set(a, r)) {}
         |  }
         |}""".stripMargin)
   }
@@ -149,12 +149,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.toString should equal(
       """Apply() {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    LHS -> Expand(a, OUTGOING, List(), b, r, ExpandAll) {
+        |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, false, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
+        |  RHS -> ProjectEndpoints(r, a, true, b2, false, None, false, SimplePatternLength) {
+        |    LHS -> Argument(Set(a, r)) {}
         |  }
         |}""".stripMargin)
   }
@@ -165,12 +165,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.toString should equal(
       """Apply() {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> VarExpand(IdName(b), INCOMING, OUTGOING, List(), IdName(a), IdName(r), VarPatternLength(1,None), ExpandAll, IdName(r_NODES), IdName(r_RELS), True(), True(), Vector()) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    LHS -> VarExpand(a, OUTGOING, OUTGOING, List(), b, r, VarPatternLength(1,None), ExpandAll, r_NODES, r_RELS, True(), True(), Vector()) {
+        |      LHS -> AllNodesScan(a, Set()) {}
         |    }
         |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, VarPatternLength(1,None)) {
-        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
+        |  RHS -> ProjectEndpoints(r, a, true, b2, false, None, true, VarPatternLength(1,None)) {
+        |    LHS -> Argument(Set(a, r)) {}
         |  }
         |}""".stripMargin)
   }

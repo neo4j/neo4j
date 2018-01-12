@@ -57,10 +57,10 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlan = CartesianProduct(
-        planC,
+        planB,
         CartesianProduct(
-          planB,
-          planA
+          planA,
+          planC
         )(solved)
       )(solved))
   }
@@ -111,8 +111,8 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlan =
         Selection(Seq(eq3),
-          ValueHashJoin(planA,
-            ValueHashJoin(planB, planC, eq2)(solved), eq1.switchSides)(solved))(solved))
+          ValueHashJoin(planC,
+            ValueHashJoin(planB, planA, eq1)(solved), eq2.switchSides)(solved))(solved))
   }
 
   private def testThis(graph: QueryGraph, input: Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {

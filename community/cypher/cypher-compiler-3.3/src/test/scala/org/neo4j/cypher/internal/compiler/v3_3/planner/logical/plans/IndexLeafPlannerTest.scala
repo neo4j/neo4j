@@ -254,9 +254,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         AssertSameNode(`idName`,
           AssertSameNode(`idName`,
             AssertSameNode(`idName`,
-              NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _),
               NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _)),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _)),
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _)),
           NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
       }
     }

@@ -121,10 +121,10 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       lines.append(Line(line, details(plan), plan.variables, level.connector))
       plan.children match {
         case NoChildren =>
-        case SingleChild(inner) => stack.push((inner, level.child))
+        case SingleChild(inner) => stack.push((compactPlan(inner), level.child))
         case TwoChildren(lhs, rhs) =>
-          stack.push((rhs, level.fork))
-          stack.push((lhs, level.child))
+          stack.push((compactPlan(lhs), level.child))
+          stack.push((compactPlan(rhs), level.fork))
       }
     }
     lines

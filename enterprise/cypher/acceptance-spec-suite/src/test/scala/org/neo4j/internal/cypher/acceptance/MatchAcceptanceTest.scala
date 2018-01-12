@@ -399,7 +399,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Not TCK material -- indexes
 
-  test("should handle queries that cant be index solved because expressions lack dependencies") {
+  test("should handle queries that cant be index seek solved because expressions lack dependencies") {
     // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
     val b = createLabeledNode(Map("property" -> 42), "Label")
@@ -411,7 +411,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     graph.createIndex("Label", "property")
 
     // when
-    val result = executeWith(Configs.All, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
+    val result = executeWith(Configs.Interpreted, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
 
     // then does not throw exceptions
     result.toList should equal(List(Map("a" -> a, "b" -> b)))

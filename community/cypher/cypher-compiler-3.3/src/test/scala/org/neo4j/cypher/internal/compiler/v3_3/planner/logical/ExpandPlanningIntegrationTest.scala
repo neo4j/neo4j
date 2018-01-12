@@ -32,8 +32,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   test("Should build plans containing expand for single relationship pattern") {
     planFor("MATCH (a)-[r]->(b) RETURN r")._2 should equal(
         Expand(
-          AllNodesScan("b", Set.empty)(solved),
-          "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
+          AllNodesScan("a", Set.empty)(solved),
+          "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
         )(solved)
     )
   }
@@ -83,8 +83,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Selection(Seq(Not(Equals(Variable("r1")_,Variable("r2")_)_)_),
         Expand(
           Expand(
-            AllNodesScan("b",Set.empty)(solved),
-           "b", SemanticDirection.INCOMING, Seq.empty, "a", "r2",ExpandAll)(solved),
+            AllNodesScan("a",Set.empty)(solved),
+           "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r2",ExpandAll)(solved),
           "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandInto)(solved)
         )(solved)
     )
