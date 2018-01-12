@@ -75,6 +75,14 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     assert(result === expected)
   }
 
+  test("merge (a)-[:R]->() return a") {
+    val original = parser.parse("merge (a)-[:R]->() return a")
+    val expected = parser.parse("merge (a)-[`  UNNAMED10`:R]->(`  UNNAMED17`) return a")
+
+    val result = original.rewrite(nameUpdatingClauses)
+    assert(result === expected)
+  }
+
   test("does not touch parameters") {
     val original = parser.parse("MATCH (n)-[r:Foo]->({p}) RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20` {p}) RETURN n")
