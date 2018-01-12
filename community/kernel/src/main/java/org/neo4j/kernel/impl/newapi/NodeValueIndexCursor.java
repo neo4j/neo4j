@@ -75,6 +75,11 @@ class NodeValueIndexCursor extends IndexCursor
             numericRangeQuery( descriptor, (IndexQuery.NumberRangePredicate) query[0] );
             break;
 
+        case rangeGeometric:
+            assert query.length == 1;
+            geometricRangeQuery( descriptor, (IndexQuery.GeometryRangePredicate) query[0] );
+        break;
+
         case rangeString:
             assert query.length == 1;
             stringRangeQuery( descriptor, (IndexQuery.StringRangePredicate) query[0] );
@@ -227,6 +232,15 @@ class NodeValueIndexCursor extends IndexCursor
             changes = read.txState().indexUpdatesForRangeSeekByNumber(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
+            added = changes.augment( emptyIterator() );
+        }
+    }
+
+    private void geometricRangeQuery( IndexDescriptor descriptor, IndexQuery.GeometryRangePredicate predicate )
+    {
+        if ( read.hasTxStateWithChanges() )
+        {
+            changes = read.txState().indexUpdatesForRangeSeekByGeometry( descriptor, predicate );
             added = changes.augment( emptyIterator() );
         }
     }
