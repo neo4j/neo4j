@@ -230,10 +230,10 @@ public class EncodingIdMapper implements IdMapper
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
                     processorsForParallelWork, progress, comparator ).run();
 
-            numberOfCollisions = detectAndMarkCollisions( progress );
-            if ( numberOfCollisions > 0 )
+            int pessimisticNumberOfCollisions = detectAndMarkCollisions( progress );
+            if ( pessimisticNumberOfCollisions > 0 )
             {
-                buildCollisionInfo( inputIdLookup, collector, progress );
+                buildCollisionInfo( inputIdLookup, pessimisticNumberOfCollisions, collector, progress );
             }
         }
         catch ( InterruptedException e )
@@ -408,6 +408,10 @@ public class EncodingIdMapper implements IdMapper
      * - accidental: there are two different input values coerced into the same encoded value
      *   in the same id space
      *     ==> original input values needs to be kept
+     *
+     * @return rough number of collisions. The number can be slightly more than it actually is due to benign
+     * races between detector workers. This is not a problem though, this value serves as a pessimistic value
+     * for allocating arrays to hold collision data to later sort and use to discover duplicates.
      */
     private int detectAndMarkCollisions( ProgressListener progress )
     {
@@ -467,19 +471,21 @@ public class EncodingIdMapper implements IdMapper
         return true;
     }
 
-    private void buildCollisionInfo( LongFunction<Object> inputIdLookup, Collector collector, ProgressListener progress )
+    private void buildCollisionInfo( LongFunction<Object> inputIdLookup, int pessimisticNumberOfCollisions,
+            Collector collector, ProgressListener progress )
             throws InterruptedException
     {
-        progress.started( "RESOLVE (" + numberOfCollisions + " collisions)" );
+        progress.started( "RESOLVE (~" + pessimisticNumberOfCollisions + " collisions)" );
         Radix radix = radixFactory.newInstance();
-        collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, ID_NOT_FOUND );
-        collisionTrackerCache = trackerFactory.create( cacheFactory, numberOfCollisions );
+        collisionSourceDataCache = cacheFactory.newLongArray( pessimisticNumberOfCollisions, ID_NOT_FOUND );
+        collisionTrackerCache = trackerFactory.create( cacheFactory, pessimisticNumberOfCollisions );
         for ( long nodeId = 0; nodeId <= highestSetIndex; nodeId++ )
         {
             long eId = dataCache.get( nodeId );
             if ( isCollision( eId ) )
             {
                 // Store this collision input id for matching later in get()
+                numberOfCollisions++;
                 Object id = inputIdLookup.apply( nodeId );
                 long eIdFromInputId = encode( id );
                 long eIdWithoutCollisionBit = clearCollision( eId );
