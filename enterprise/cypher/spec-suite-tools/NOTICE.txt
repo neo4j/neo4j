@@ -27,12 +27,11 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons IO
   Apache Commons Lang
-  Apache XML Graphics Commons
   Caffeine cache
   casbah-commons
   casbah-core
   casbah-query
-  Cucumber-JVM Repackaged Dependencies
+  Gherkin Repackaged Dependencies
   Joda convert
   Joda-Time
   json4s-ast
@@ -44,7 +43,6 @@ Apache Software License, Version 2.0
   MongoDB Java Driver
   Netty/All-in-One
   nscala-time
-  openCypher Grammar Developer Tools
   openCypher TCK Developer Tools
   org.apache.xmlgraphics:batik-awt-util
   org.apache.xmlgraphics:batik-constants
@@ -60,8 +58,6 @@ BSD - Scala License
   Scala Library
 
 BSD License
-  ANTLR 4 Tool
-  Cucumber-JVM Repackaged Dependencies
   ParaNamer Core
   Scala Compiler
   scala-parser-combinators
@@ -72,22 +68,7 @@ Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
-GNU Lesser General Public License, Version 2.1
-  JCommon
-  JFreeChart
-
 MIT License
-  Cucumber-HTML
-  Cucumber-JVM: Core
-  Cucumber-JVM: JUnit
-  Cucumber-JVM: Scala (2.11)
   Gherkin
   SLF4J API Module
-
-Dependencies with multiple licenses
------------------------------------
-
-Cucumber-JVM Repackaged Dependencies
-  Apache Software License, Version 2.0
-  BSD License
 
