@@ -32,8 +32,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupServer;
-import org.neo4j.causalclustering.catchup.CatchupServerBootstrapper;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
+import org.neo4j.causalclustering.catchup.storecopy.CatchupServerApplication;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -279,23 +279,16 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 platformModule.logging.getUserLogProvider(), storeCopyProcess, topologyService ) );
 
         NioEventLoopServerContextSupplier catchupServerExecutor = new NioEventLoopServerContextSupplier( new NamedThreadFactory( "catchupServer" ) );
-        CatchupServerBootstrapper<NioServerSocketChannel> catchupServerBootstrapper = new CatchupServerBootstrapper<>(
-                localDatabase::storeId,
+
+        CatchupServer<NioServerSocketChannel> catchupServer = new CatchupServer<>( localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
-                localDatabase::dataSource, localDatabase::isAvailable,
-                null, platformModule.monitors,
-                new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                platformModule.storeCopyCheckPointMutex, handlerAppender, logProvider );
+                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable, null,
+                platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
+                platformModule.storeCopyCheckPointMutex, handlerAppender, logProvider,
+                config, userLogProvider );
 
-        CatchupServer<NioServerSocketChannel> catchupServer = new CatchupServer<>(
-                config,
-                logProvider,
-                userLogProvider,
-                catchupServerBootstrapper,
-                catchupServerExecutor );
-
-        servicesToStopOnStoreCopy.add( catchupServer );
+        CatchupServerApplication<NioServerSocketChannel> catchupServerApplication = new CatchupServerApplication<>( catchupServer, catchupServerExecutor );
+        servicesToStopOnStoreCopy.add( catchupServerApplication );
 
         dependencies.satisfyDependency( createSessionTracker() );
 

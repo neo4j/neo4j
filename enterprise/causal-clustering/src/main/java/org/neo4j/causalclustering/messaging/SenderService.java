@@ -21,11 +21,9 @@ package org.neo4j.causalclustering.messaging;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 
 import java.util.Iterator;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -52,8 +50,6 @@ public class SenderService implements Outbound<AdvertisedSocketAddress,Message>,
     private JobScheduler.JobHandle jobHandle;
     private boolean senderServiceRunning;
     private Bootstrap bootstrap;
-    private Promise<Void> defaultPromise;
-    private NioEventLoopGroup eventLoopGroup;
 
     public SenderService( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, Monitors monitors )
     {

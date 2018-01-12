@@ -32,12 +32,11 @@ import io.netty.handler.codec.LengthFieldPrepender;
 
 import java.time.Clock;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
+import org.neo4j.causalclustering.common.ChannelService;
 import org.neo4j.causalclustering.common.EventLoopContext;
-import org.neo4j.causalclustering.common.NettyApplication;
 import org.neo4j.causalclustering.common.server.ServerBindToChannel;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
@@ -51,45 +50,52 @@ import org.neo4j.causalclustering.messaging.marshalling.RaftMessageDecoder;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class RaftServer<C extends ServerChannel>
-        implements Inbound<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+public class RaftServer<C extends ServerChannel> implements Inbound<RaftMessages.ReceivedInstantClusterIdAwareMessage>, ChannelService<ServerBootstrap,C>
 {
     private static final Setting<ListenSocketAddress> setting = CausalClusteringSettings.raft_listen_address;
-    private final NettyApplication<C> nettyApplication;
     private final Log log;
 
     private MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> messageHandler;
+    private final ServerBindToChannel<C> bindToChannel;
 
-    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, PipelineHandlerAppender pipelineAppender,
-            Config config, LogProvider logProvider, LogProvider userLogProvider, Monitors monitors, Clock clock,
-            Supplier<EventLoopContext<C>> eventLoopContext )
+    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, PipelineHandlerAppender pipelineAppender, Config config, LogProvider logProvider,
+            LogProvider userLogProvider, Monitors monitors, Clock clock )
     {
         this.log = logProvider.getLog( getClass() );
         RaftServerBootstrapper raftServerBootstrapper =
                 new RaftServerBootstrapper( marshal, pipelineAppender, logProvider, log,
                         monitors, clock );
-        this.nettyApplication = new NettyApplication<>(
-                new ServerBindToChannel<>( () -> config.get( setting ).socketAddress(), logProvider, userLogProvider,
-                        raftServerBootstrapper ), eventLoopContext );
-
-    }
-
-    public Lifecycle getLifecycle()
-    {
-        return nettyApplication;
+        bindToChannel = new ServerBindToChannel<>( () -> config.get( setting ).socketAddress(), logProvider, userLogProvider, raftServerBootstrapper );
     }
 
     @Override
     public void registerHandler( Inbound.MessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler )
     {
         this.messageHandler = handler;
+    }
+
+    @Override
+    public void bootstrap( EventLoopContext eventLoopContext )
+    {
+        bindToChannel.bootstrap( eventLoopContext );
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        bindToChannel.start();
+    }
+
+    @Override
+    public void closeChannels() throws Throwable
+    {
+        bindToChannel.closeChannels();
     }
 
     private class RaftMessageHandler

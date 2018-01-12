@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.catchup;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
@@ -33,13 +32,10 @@ import java.util.function.Function;
 
 import org.neo4j.causalclustering.common.ChannelService;
 import org.neo4j.causalclustering.common.EventLoopContext;
-import org.neo4j.causalclustering.common.NettyApplication;
 import org.neo4j.causalclustering.common.client.ClientConnector;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

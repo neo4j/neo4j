@@ -19,9 +19,12 @@
  */
 package org.neo4j.causalclustering.core;
 
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.common.NettyApplication;
 import org.neo4j.causalclustering.common.server.NioEventLoopServerContextSupplier;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
@@ -77,15 +80,16 @@ public class RaftServerModule
     {
         NioEventLoopServerContextSupplier nioEventLoopServerContextSupplier = new NioEventLoopServerContextSupplier( new
                 NamedThreadFactory( "raft-server" ), 0 );
-        RaftServer raftServer =
+        RaftServer<NioServerSocketChannel> raftServer =
                 new RaftServer<>( new CoreReplicatedContentMarshal(), pipelineHandlerAppender, platformModule.config,
-                        logProvider, platformModule.logging.getUserLogProvider(), monitors, platformModule.clock, nioEventLoopServerContextSupplier );
+                        logProvider, platformModule.logging.getUserLogProvider(), monitors, platformModule.clock );
 
         LoggingInbound<ReceivedInstantClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
                 messageLogger, identityModule.myself() );
         loggingRaftInbound.registerHandler( messageHandlerChain );
 
-        platformModule.life.add( raftServer.getLifecycle() ); // must start before core state so that it can trigger snapshot downloads when necessary
+        // must start before core state so that it can trigger snapshot downloads when necessary
+        platformModule.life.add( new NettyApplication<>( raftServer, nioEventLoopServerContextSupplier ));
         platformModule.life.add( coreServerModule.createCoreLife( messageHandlerChain ) );
         platformModule.life.add( coreServerModule.getCatchupServerLifeCycle() );
         platformModule.life.add( coreServerModule.downloadService() );

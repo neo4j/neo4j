@@ -56,10 +56,9 @@ public class ClientConnector<C extends Channel> implements ChannelService<Bootst
         return connect( bootstrap, socketAddress );
     }
 
-    public synchronized Channel connect( InetSocketAddress socketAddress,
-            Function<Bootstrap,Bootstrap> additionalConfig )
+    public synchronized Channel connect( InetSocketAddress socketAddress, Function<Bootstrap,Bootstrap> augmentedConfig )
     {
-        return connect( additionalConfig.apply( bootstrap.clone() ), socketAddress );
+        return connect( augmentedConfig.apply( bootstrap.clone() ), socketAddress );
     }
 
     private Channel connect( Bootstrap bootstrap, InetSocketAddress socketAddress )

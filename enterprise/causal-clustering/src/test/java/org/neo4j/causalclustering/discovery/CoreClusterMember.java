@@ -27,6 +27,7 @@ import java.util.SortedMap;
 import java.util.function.IntFunction;
 
 import org.neo4j.causalclustering.catchup.CatchupServer;
+import org.neo4j.causalclustering.catchup.storecopy.CatchupServerApplication;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
@@ -260,7 +261,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 
     public void stopCatchupServer() throws Throwable
     {
-        database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
+        database.getDependencyResolver().resolveDependency( CatchupServerApplication.class).stop();
     }
 
     int discoveryPort()

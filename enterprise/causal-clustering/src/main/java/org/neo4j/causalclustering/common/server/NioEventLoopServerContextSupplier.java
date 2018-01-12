@@ -34,6 +34,7 @@ public class NioEventLoopServerContextSupplier implements Supplier<EventLoopCont
 
     public NioEventLoopServerContextSupplier( ThreadFactory threadFactory, int threads )
     {
+        assert threadFactory != null;
         this.threadFactory = threadFactory;
         this.threads = threads;
     }
