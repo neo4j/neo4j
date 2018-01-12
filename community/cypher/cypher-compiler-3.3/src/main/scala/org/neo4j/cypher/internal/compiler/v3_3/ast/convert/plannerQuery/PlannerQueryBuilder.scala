@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3._
 
+import scala.collection.mutable
+
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[String] = Seq.empty)
   extends ListSupport {
 
@@ -57,16 +59,20 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
 
-  def allSeenPatternNodes: Set[String] = {
+  def allSeenPatternNodes: collection.Set[String] = {
+    val nodes = mutable.Set[String]()
+
     val allPlannerQueries = q.allPlannerQueries
-    val previousPatternNodes = if (allPlannerQueries.length > 1) {
+    if (allPlannerQueries.length > 1) {
       val current = allPlannerQueries(allPlannerQueries.length - 2)
       val projectedNodes = current.horizon.exposedSymbols(current.queryGraph.allCoveredIds).collect {
         case id@n if semanticTable.containsNode(n) => id
       }
-      projectedNodes ++ current.queryGraph.allPatternNodes
-    } else Set.empty
-    previousPatternNodes ++ q.lastQueryGraph.allPatternNodes
+      projectedNodes.foreach(nodes.add)
+      current.queryGraph.collectAllPatternNodes(nodes.add)
+    }
+    q.lastQueryGraph.collectAllPatternNodes(nodes.add)
+    nodes
   }
 
   def readOnly: Boolean = q.queryGraph.readOnly

@@ -133,12 +133,19 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   /*
   Includes not only pattern nodes in the read part of the query graph, but also pattern nodes from CREATE and MERGE
    */
-  def allPatternNodes: Set[String] =
-    patternNodes ++
-      optionalMatches.flatMap(_.allPatternNodes) ++
-      createNodePatterns.map(_.nodeName) ++
-      mergeNodePatterns.map(_.createNodePattern.nodeName) ++
-      mergeRelationshipPatterns.flatMap(_.createNodePatterns.map(_.nodeName))
+  def allPatternNodes: collection.Set[String] = {
+    val nodes = mutable.Set[String]()
+    collectAllPatternNodes(nodes.add)
+    nodes
+  }
+
+  def collectAllPatternNodes(f: (String) => Unit): Unit = {
+    patternNodes.foreach(f)
+    optionalMatches.foreach(m => m.allPatternNodes.foreach(f))
+    createNodePatterns.foreach(p => f(p.nodeName))
+    mergeNodePatterns.foreach(p => f(p.createNodePattern.nodeName))
+    mergeRelationshipPatterns.foreach(p => p.createNodePatterns.foreach(pp => f(pp.nodeName)))
+  }
 
   def allPatternRelationshipsRead: Set[PatternRelationship] =
     patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationshipsRead)
