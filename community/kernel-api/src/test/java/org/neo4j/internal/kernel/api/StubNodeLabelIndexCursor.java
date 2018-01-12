@@ -24,7 +24,7 @@ import java.util.Map;
 public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
 {
     private int offset = -1;
-    private final Map<Integer, long[]> lookup;
+    private final Map<Integer,long[]> lookup;
     private int label;
 
     public StubNodeLabelIndexCursor( Map<Integer,long[]> lookup )
@@ -32,12 +32,11 @@ public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
         this.lookup = lookup;
     }
 
-    void initalize(int label)
+    void initalize( int label )
     {
         this.label = label;
         this.offset = -1;
     }
-
 
     @Override
     public void node( NodeCursor cursor )
@@ -62,7 +61,6 @@ public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
     {
         return null;
     }
-
 
     @Override
     public boolean next()

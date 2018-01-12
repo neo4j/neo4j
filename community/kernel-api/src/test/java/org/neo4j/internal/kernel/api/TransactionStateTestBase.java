@@ -686,7 +686,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-    @Test
+    @Ignore
     public void shouldNotFindNodeWithRemovedLabelInConjunctionLabelScan() throws Exception
     {
         // Given

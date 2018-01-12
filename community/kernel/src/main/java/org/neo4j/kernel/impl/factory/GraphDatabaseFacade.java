@@ -723,7 +723,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         ktx.dataRead().nodeLabelScan( labelId, cursor );
         return new PrefetchingResourceIterator<Node>()
         {
-            private boolean closed = false;
+            private boolean closed;
             @Override
             protected Node fetchNextOrNull()
             {
