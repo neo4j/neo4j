@@ -55,7 +55,6 @@ abstract class LogicalPlan(idGen: IdGen)
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
-  val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   val id = idGen.id()
 
@@ -99,9 +98,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): LogicalPlan = {
     val arguments = this.children.toList :+ newSolved :+ SameId(this.id)
     try {
-      val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
-      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-      resultingPlan
+      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor")
@@ -111,9 +108,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def copyPlan(): LogicalPlan = {
     try {
       val arguments = this.children.toList :+ solved :+ SameId(this.id)
-      val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
-      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-      resultingPlan
+      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor and the IdGen in yet another", e)
@@ -123,9 +118,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
     try {
       val arguments = this.children.toList :+ solved :+ idGen
-      val resultingPlan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
-      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-      resultingPlan
+      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the PlannerQuery in a separate constructor and the IdGen in yet another", e)
@@ -154,7 +147,6 @@ abstract class LogicalPlan(idGen: IdGen)
           constructor.invoke(this, args :+ this.solved :+ SameId(this.id): _*).asInstanceOf[this.type]
         else
           constructor.invoke(this, args: _*).asInstanceOf[this.type]
-      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
       resultingPlan
     }
 
@@ -176,7 +168,7 @@ abstract class LogicalPlan(idGen: IdGen)
           val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
           val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
           val prodPrefix = plan.productPrefix
-          sb.append(indent(level, s"""$prefix${prodPrefix}[txl=${plan.readTransactionLayer}]($nonChildFields) {""".stripMargin))
+          sb.append(indent(level, s"""$prefix${prodPrefix}($nonChildFields) {""".stripMargin))
 
           (plan.lhs, plan.rhs) match {
             case (None, None) =>

@@ -32,21 +32,15 @@ case class Argument(argumentIds: Set[IdName] = Set.empty)(val solved: PlannerQue
   def availableSymbols: Set[IdName] = argumentIds
 
   override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): Argument = {
-    val resultingPlan = copy(argumentIds)(newSolved)(SameId(this.id))
-    resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-    resultingPlan
+    copy(argumentIds)(newSolved)(SameId(this.id))
   }
 
   override def copyPlan(): LogicalPlan = {
-    val resultingPlan = this.copy(argumentIds)(solved)(SameId(this.id)).asInstanceOf[this.type]
-    resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-    resultingPlan
+    this.copy(argumentIds)(solved)(SameId(this.id)).asInstanceOf[this.type]
   }
 
   override def dup(children: Seq[AnyRef]) = children.size match {
     case 1 =>
-      val resultingPlan = copy(children.head.asInstanceOf[Set[IdName]])(solved)(SameId(this.id)).asInstanceOf[this.type]
-      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-      resultingPlan
+      copy(children.head.asInstanceOf[Set[IdName]])(solved)(SameId(this.id)).asInstanceOf[this.type]
   }
 }

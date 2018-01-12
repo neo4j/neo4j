@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import java.lang.reflect.Constructor
 
 import org.neo4j.cypher.internal.compatibility.v3_3.SemanticTableConverter.ExpressionMapping3To4
+import org.neo4j.cypher.internal.compiler.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
@@ -48,7 +49,8 @@ object LogicalPlanConverter {
 
   type MutableExpressionMapping3To4 = mutable.Map[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4]
 
-  private class LogicalPlanRewriter(val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4],
+  private class LogicalPlanRewriter(readTxLayerAttribute: TransactionLayers,
+                                    val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4],
                                     val isImportant: ExpressionV3_3 => Boolean = _ => true)
     extends RewriterWithArgs {
 
@@ -127,7 +129,7 @@ object LogicalPlanConverter {
         case (_: frontendV3_3.ExhaustiveShortestPathForbiddenException, _) => new utilV3_4.ExhaustiveShortestPathForbiddenException
 
         case (spp: irV3_3.ShortestPathPattern, children: Seq[AnyRef]) =>
-          val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, isImportant)
+          val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, readTxLayerAttribute, isImportant)
           irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[IdNameV3_4]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
         case (astV3_3.NilPathStep, _) => expressionsV3_4.NilPathStep
         case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
@@ -158,7 +160,7 @@ object LogicalPlanConverter {
           try {
             val plan3_4 = rewritten.asInstanceOf[LogicalPlanV3_4]
             // 3.3 does not know about transaction layers, it plans Eagers instead.
-            plan3_4.readTransactionLayer.value = 0
+            readTxLayerAttribute.set(plan3_4.id, 0)
           } catch {
             case (e: frontendV3_3.InternalException) =>
             // ProcedureOrSchema plans have no assigned IDs. That's ok.
@@ -172,20 +174,22 @@ object LogicalPlanConverter {
   }
 
   def convertLogicalPlan[T <: LogicalPlanV3_4](logicalPlan: LogicalPlanV3_3,
+                                               readTxLayerAttribute: TransactionLayers,
                                                isImportant: ExpressionV3_3 => Boolean = _ => true): (LogicalPlanV3_4, ExpressionMapping3To4) = {
-    val rewriter = new LogicalPlanRewriter(isImportant = isImportant)
+    val rewriter = new LogicalPlanRewriter(readTxLayerAttribute, isImportant = isImportant)
     val planV3_4 = new RewritableAny[LogicalPlanV3_3](logicalPlan).rewrite(rewriter, Seq.empty).asInstanceOf[T]
     (planV3_4, rewriter.expressionMap.toMap)
   }
 
-  private[v3_3] def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3): T = {
-    new RewritableAny[ExpressionV3_3](expression).rewrite(new LogicalPlanRewriter, Seq.empty).asInstanceOf[T]
+  private[v3_3] def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3, readTxLayerAttribute: TransactionLayers): T = {
+    new RewritableAny[ExpressionV3_3](expression).rewrite(new LogicalPlanRewriter(readTxLayerAttribute), Seq.empty).asInstanceOf[T]
   }
 
   private def convertASTNode[T <: utilV3_4.ASTNode](ast: astV3_3.ASTNode,
                                                     expressionMap: MutableExpressionMapping3To4,
+                                                    readTxLayerAttribute: TransactionLayers,
                                                     isImportant: ExpressionV3_3 => Boolean): T = {
-    new RewritableAny[astV3_3.ASTNode](ast).rewrite(new LogicalPlanRewriter(expressionMap, isImportant), Seq.empty).asInstanceOf[T]
+    new RewritableAny[astV3_3.ASTNode](ast).rewrite(new LogicalPlanRewriter(readTxLayerAttribute, expressionMap, isImportant), Seq.empty).asInstanceOf[T]
   }
 
   private val constructors = new ThreadLocal[MutableHashMap[(String, String, String), Constructor[_]]]() {

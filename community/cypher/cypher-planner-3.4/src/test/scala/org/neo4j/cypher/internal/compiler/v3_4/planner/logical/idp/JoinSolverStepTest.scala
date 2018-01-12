@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v3_4.PlanningAttributes.TransactionLayers
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.CardinalityModel
@@ -36,7 +37,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
-  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, idGen),
+  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, new TransactionLayers, idGen),
     mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
   case class TestPlan(availableSymbols: Set[IdName] = Set.empty, solved: PlannerQuery with CardinalityEstimation = PlannerQuery.empty)

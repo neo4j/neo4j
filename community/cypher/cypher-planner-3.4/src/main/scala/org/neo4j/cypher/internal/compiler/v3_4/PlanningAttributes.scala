@@ -17,15 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases
+package org.neo4j.cypher.internal.compiler.v3_4
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attribute
 
-import scala.util.{Failure, Try}
-
-class CompilationState(ls: LogicalPlanState,
-                           val maybeExecutionPlan: Try[ExecutionPlan] = Failure(new UnsupportedOperationException))
-  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.transactionLayers, ls.maybeStatement, ls.maybeSemantics,
-                           ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan,
-                           ls.maybePeriodicCommit, ls.accumulatedConditions)
+object PlanningAttributes {
+  class TransactionLayers extends Attribute[Int]
+}
