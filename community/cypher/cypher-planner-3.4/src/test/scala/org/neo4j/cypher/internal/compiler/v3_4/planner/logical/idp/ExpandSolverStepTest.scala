@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, ExpandIn
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
   self =>
-  private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
 
   implicit def converter(s: Symbol): String = s.toString()
 
@@ -63,7 +62,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry = IdRegistry[PatternRelationship]
 
     new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
-      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b")
+      val plan1 = fakeLogicalPlanFor("a", "r1", "b")
       solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
       table.put(register(pattern1), plan1)
 
@@ -77,7 +76,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry = IdRegistry[PatternRelationship]
 
     new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
-      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b")
+      val plan1 = fakeLogicalPlanFor("a", "r1", "b")
       solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
       table.put(register(pattern1), plan1)
 
@@ -93,7 +92,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
     new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
-      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b")
+      val plan1 = fakeLogicalPlanFor("a", "r1", "b")
       solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
       table.put(register(pattern1), plan1)
 
@@ -108,7 +107,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry = IdRegistry[PatternRelationship]
 
     new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
-      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b", "c", "r2", "d")
+      val plan1 = fakeLogicalPlanFor("a", "r1", "b", "c", "r2", "d")
       solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd)))
       table.put(register(pattern1, pattern2), plan1)
 

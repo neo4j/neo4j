@@ -53,10 +53,9 @@ import org.scalatest.matchers.{BeMatcher, MatchResult}
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
-  implicit val idGen = new SequentialIdGen()
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
@@ -198,9 +197,23 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       )
       f(config, ctx, solveds, cardinalities)
     }
-  }
 
-  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.toSet)
+
+    def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new FakeSolveds, new FakeCardinalities, idGen)
+      val ctx = LogicalPlanningContext(
+        planContext = planContext,
+        logicalPlanProducer = logicalPlanProducer,
+        metrics = metrics,
+        semanticTable = semanticTable,
+        strategy = queryGraphSolver,
+        input = QueryGraphSolverInput.empty,
+        notificationLogger = devNullLogger
+      )
+      f(config, ctx)
+    }
+  }
 
   def set[T](plan: LogicalPlan, attribute: Attribute[T], t: T): LogicalPlan = {
     attribute.set(plan.id, t)
@@ -211,6 +224,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     cardinalities.set(plan.id, c)
     plan
   }
+
+  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.toSet)
 
   def fakeLogicalPlanFor(solveds: Solveds, cardinalities: Cardinalities, id: String*): FakePlan = {
     val res = FakePlan(id.toSet)

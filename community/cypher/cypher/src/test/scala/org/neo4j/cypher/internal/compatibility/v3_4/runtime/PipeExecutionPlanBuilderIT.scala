@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
@@ -45,11 +44,11 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 import scala.collection.mutable
 
-class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val conf = new given
-  implicit val planContext: PlanContext = conf.planContext
-  implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
+  val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
+  val planContext: PlanContext = newMockedPlanContext
+
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val converters = new ExpressionConverters(CommunityExpressionConverter)
 
@@ -59,13 +58,12 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   private def build(logicalPlan: LogicalPlan): PipeInfo = {
-    planBuilder.build(None, logicalPlan)
+    planBuilder.build(None, logicalPlan)(pipeBuildContext, planContext)
   }
 
   test("projection only query") {
-    val cardinalities = new Cardinalities
     val logicalPlan = Projection(
-      setC(Argument(), cardinalities, 1.0), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))
+      Argument(), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -235,6 +233,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val semanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
 
     when(context.semanticTable).thenReturn(semanticTable)
+    when(context.readOnlies).thenReturn(new FakeReadOnlies)
 
     context
   }

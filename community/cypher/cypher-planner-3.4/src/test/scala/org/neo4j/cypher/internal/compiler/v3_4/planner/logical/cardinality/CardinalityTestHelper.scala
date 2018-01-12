@@ -233,7 +233,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
     }
 
     def createQueryGraph(semanticTable: SemanticTable): (QueryGraph, SemanticTable) = {
-      val (plannerQuery, rewrittenTable) = producePlannerQueryForPattern(query, new Solveds, new Cardinalities)
+      val (plannerQuery, rewrittenTable) = producePlannerQueryForPattern(query)
       (plannerQuery.lastQueryGraph.withArgumentIds(queryGraphArgumentIds), semanticTable.transplantResolutionOnto(rewrittenTable))
     }
   }

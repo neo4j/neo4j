@@ -109,5 +109,5 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(cleanUpEager(new Solveds, Attributes(idGen))))(p)
+    fixedPoint((p: LogicalPlan) => p.endoRewrite(cleanUpEager(new FakeSolveds, Attributes(idGen))))(p)
 }

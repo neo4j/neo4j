@@ -325,8 +325,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("Expand contains information about its relations") {
     val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)
-    // TODO attach Cardinalities to all plans
     val cardinalities = new Cardinalities
+    cardinalities.set(expandPlan.id, 1.0)
+    cardinalities.set(argument.id, 1.0)
     val description = LogicalPlan2PlanDescription(true, cardinalities)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(

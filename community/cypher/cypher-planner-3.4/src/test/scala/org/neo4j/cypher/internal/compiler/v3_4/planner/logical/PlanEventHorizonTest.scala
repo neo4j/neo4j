@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
-import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, RegularPlannerQuery, RegularQueryProjection}
+import org.neo4j.cypher.internal.ir.v3_4.{RegularPlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -31,15 +31,13 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should do projection if necessary") {
     // Given
-    new given().withLogicalPlanningContext { (cfg, context, solveds, cardinalities) =>
+    new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal)))
       val inputPlan = Argument()
-      solveds.set(inputPlan.id, PlannerQuery.empty)
-      cardinalities.set(inputPlan.id, 0.0)
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, context, solveds, cardinalities)
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new FakeSolveds, new FakeCardinalities)
 
       // Then
       producedPlan should equal(Projection(inputPlan, Map("a" -> literal)))
@@ -48,7 +46,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should plan procedure calls") {
     // Given
-    new given().withLogicalPlanningContext { (cfg, context, solveds, cardinalities) =>
+    new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
       val ns = Namespace(List("my", "proc"))(pos)
     val name = ProcedureName("foo")(pos)
     val qualifiedName = QualifiedName(ns.parts, name.name)
@@ -58,14 +56,11 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
 
       val call =  ResolvedCall(signature, Seq.empty, callResults)(pos)
-
       val pq = RegularPlannerQuery(horizon = ProcedureCallProjection(call))
       val inputPlan = Argument()
-      solveds.set(inputPlan.id, PlannerQuery.empty)
-      cardinalities.set(inputPlan.id, 0.0)
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, context, solveds, cardinalities)
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new FakeSolveds, new FakeCardinalities)
 
       // Then
       producedPlan should equal(ProcedureCall(inputPlan, call))

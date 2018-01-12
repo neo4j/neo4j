@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{LogicalPlanProducer, pickBestPlanUsingHintsAndCost}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UsingIndexHint
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Cost
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, PropertyKeyName}
@@ -43,13 +43,10 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
   val hint3: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("income")_))_
 
   test("picks the right plan by cost, no matter the cardinality") {
-    val solveds = new Solveds
-    val cardinalities = new Cardinalities
+    val a = fakeLogicalPlanFor("a")
+    val b = fakeLogicalPlanFor("b")
 
-    val a = fakeLogicalPlanFor(solveds, cardinalities, "a")
-    val b = fakeLogicalPlanFor(solveds, cardinalities, "b")
-
-    assertTopPlan(winner = b, solveds, cardinalities, a, b)(new given {
+    assertTopPlan(winner = b, new FakeSolveds, new FakeCardinalities, a, b)(new given {
       cost = {
         case (p, _, _) if p == a => Cost(100)
         case (p, _, _) if p == b => Cost(50)
@@ -58,11 +55,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
   }
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
-    val solveds = new Solveds
-    val cardinalities = new Cardinalities
-
-    val ab = fakeLogicalPlanFor(solveds, cardinalities, "a", "b")
-    val b = fakeLogicalPlanFor(solveds, cardinalities, "b")
+    val ab = fakeLogicalPlanFor("a", "b")
+    val b = fakeLogicalPlanFor("b")
 
     val GIVEN = new given {
       cost = {
@@ -71,68 +65,57 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       }
     }
 
-    assertTopPlan(winner = b, solveds, cardinalities, ab, b)(GIVEN)
+    assertTopPlan(winner = b, new FakeSolveds, new FakeCardinalities, ab, b)(GIVEN)
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
-    val solveds = new Solveds
-    val cardinalities = new Cardinalities
+    val ab = fakeLogicalPlanFor("a", "b")
+    val c = fakeLogicalPlanFor("c")
 
-    val ab = fakeLogicalPlanFor(solveds, cardinalities, "a", "b")
-    val c = fakeLogicalPlanFor(solveds, cardinalities, "c")
-
-    assertTopPlan(winner = ab, solveds, cardinalities, ab, c)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = ab, new FakeSolveds, new FakeCardinalities, ab, c)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solves a hint over plan that solves no hint") {
     val solveds = new Solveds
-    val cardinalities = new Cardinalities
-
-    val a = fakeLogicalPlanFor(solveds, cardinalities, "a")
+    val a = fakeLogicalPlanFor("a")
     solveds.set(a.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Some(hint1))))
-    val b = fakeLogicalPlanFor(solveds, cardinalities, "a")
+    val b = fakeLogicalPlanFor("a")
+    solveds.set(b.id, PlannerQuery.empty)
 
-    assertTopPlan(winner = a, solveds, cardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = a, solveds, new FakeCardinalities, a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints") {
     val solveds = new Solveds
-    val cardinalities = new Cardinalities
-
     val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
-    val a = fakeLogicalPlanFor(solveds, cardinalities, "a")
+    val a = fakeLogicalPlanFor("a")
     solveds.set(a.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Some(hint1))))
     val g: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Seq(hint1, hint2)))
-    val b = fakeLogicalPlanFor(solveds, cardinalities, "a")
+    val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
 
-    assertTopPlan(winner = b, solveds, cardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = b, solveds, new FakeCardinalities, a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints in tails") {
     val solveds = new Solveds
-    val cardinalities = new Cardinalities
-
     val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
-    val a = fakeLogicalPlanFor(solveds, cardinalities, "a")
+    val a = fakeLogicalPlanFor("a")
     solveds.set(a.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Some(hint1))))
     val g: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
-    val b = fakeLogicalPlanFor(solveds, cardinalities, "a")
+    val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2)))))
 
-    assertTopPlan(winner = b, solveds, cardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = b, solveds, new FakeCardinalities, a, b)(GIVEN_FIXED_COST)
   }
 
-  private def assertTopPlan(winner: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities, candidates: LogicalPlan*)(GIVEN: given) {
+  private def assertTopPlan(winner: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities, candidates: LogicalPlan*)(GIVEN: given)= {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.graphStatistics, GIVEN.expressionEvaluator)
     val context = LogicalPlanningContext(null, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, solveds, cardinalities, idGen), metrics, null, null, notificationLogger = devNullLogger)
-    pickBestPlanUsingHintsAndCost(context, solveds, cardinalities)(candidates) should equal(Some(winner))
-    pickBestPlanUsingHintsAndCost(context, solveds, cardinalities)(candidates.reverse) should equal(Some(winner))
+    pickBestPlanUsingHintsAndCost(context, solveds, cardinalities)(candidates).get shouldBe theSameInstanceAs(winner)
+    pickBestPlanUsingHintsAndCost(context, solveds, cardinalities)(candidates.reverse).get shouldBe theSameInstanceAs(winner)
   }
-
-  private implicit def lift(f: PlannerQuery => PlannerQuery): PlannerQuery with CardinalityEstimation => PlannerQuery with CardinalityEstimation =
-    (solved: PlannerQuery with CardinalityEstimation) => CardinalityEstimation.lift(f(solved), solved.estimatedCardinality)
 }
 
 

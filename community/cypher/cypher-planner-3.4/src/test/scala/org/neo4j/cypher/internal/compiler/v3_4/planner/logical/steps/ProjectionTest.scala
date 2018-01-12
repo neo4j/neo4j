@@ -89,7 +89,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ids = projectionsMap.keySet
 
     val plan =
-      newMockedLogicalPlanWithSolved(solveds, idNames = ids, solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)))
+      newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames = ids, solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)))
 
     (context, plan, solveds, cardinalities)
   }

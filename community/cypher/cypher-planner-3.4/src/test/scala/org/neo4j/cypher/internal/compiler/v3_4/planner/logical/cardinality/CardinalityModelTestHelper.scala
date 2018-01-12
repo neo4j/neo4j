@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
@@ -38,6 +37,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
   implicit class RichTestUnit(testUnit: CardinalityTestHelper#TestUnit) {
     def shouldHaveQueryGraphCardinality(number: Double) {
+      // used to handle double rounding errors in assertion
       import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.CardinalitySupport.Eq
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
@@ -50,13 +50,14 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
     }
 
     def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
+      // used to handle double rounding errors in assertion
       import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.CardinalitySupport.Eq
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
       val graphCardinalityModel = createCardinalityModel(statistics)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
-      val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query, new Solveds, new Cardinalities)
+      val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
       cardinalityModelUnderTest(plannerQuery, QueryGraphSolverInput.empty, semanticTable) should equal(Cardinality(number))
     }
   }

@@ -24,7 +24,7 @@ import java.lang.reflect.Method
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, Rewritable, Unchangeable}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable._
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, Strictness}
+import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SameId}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
