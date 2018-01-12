@@ -708,12 +708,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
     {
+        Statement statement = spi.currentStatement();
         KernelTransaction ktx = spi.currentTransaction();
         assertTransactionOpen( ktx );
 
         int labelId = ktx.tokenRead().labelGetForName( myLabel.name() );
         if ( labelId == NO_SUCH_LABEL )
         {
+            statement.close();
             return ResourceIterator.empty();
         }
 
@@ -721,6 +723,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         ktx.dataRead().nodeLabelScan( labelId, cursor );
         return new PrefetchingResourceIterator<Node>()
         {
+            private boolean closed = false;
             @Override
             protected Node fetchNextOrNull()
             {
@@ -738,7 +741,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             @Override
             public void close()
             {
-                cursor.close();
+                if ( !closed )
+                {
+                    statement.close();
+                    cursor.close();
+                    closed = true;
+                }
             }
         };
     }
