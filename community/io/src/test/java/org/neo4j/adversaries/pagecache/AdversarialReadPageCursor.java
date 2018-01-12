@@ -174,7 +174,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
     private AdversarialReadPageCursor linkedCursor;
     private final State state;
 
-    public AdversarialReadPageCursor( PageCursor delegate, Adversary adversary )
+    AdversarialReadPageCursor( PageCursor delegate, Adversary adversary )
     {
         super( delegate );
         this.state = new State( Objects.requireNonNull( adversary ) );
