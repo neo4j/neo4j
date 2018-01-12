@@ -31,8 +31,6 @@ case class ProduceResult(source: LogicalPlan, columns: Seq[String])(implicit idG
   val lhs = Some(source)
   def rhs = None
 
-  def solved: PlannerQuery with CardinalityEstimation = source.solved
-
   val availableSymbols: Set[String] = source.availableSymbols
 
   def strictness: StrictnessMode = source.strictness

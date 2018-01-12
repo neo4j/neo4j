@@ -31,19 +31,19 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val setup = new given {
       knownLabels = Set("A", "B")
     }
-    implicit val (_, logicalPlan, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a")
+    implicit val (_, logicalPlan, _ , _, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
       Union(
         Projection(
-          NodeByLabelScan("  a@7", lblName("A"), Set.empty)(solved),
+          NodeByLabelScan("  a@7", lblName("A"), Set.empty),
           Map("a" -> Variable("  a@7") _)
-        )(solved),
+        ),
         Projection(
-          NodeByLabelScan("  a@43", lblName("B"), Set.empty)(solved),
+          NodeByLabelScan("  a@43", lblName("B"), Set.empty),
           Map("a" -> Variable("  a@43") _)
-        )(solved)
-      )(solved)
+        )
+      )
     )
   }
 
@@ -52,22 +52,22 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val setup = new given {
       knownLabels = Set("A", "B")
     }
-    implicit val (_, logicalPlan, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
+    implicit val (_, logicalPlan, _, _, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
       Distinct(
         source = Union(
           Projection(
-            NodeByLabelScan("  a@7", lblName("A"), Set.empty)(solved),
+            NodeByLabelScan("  a@7", lblName("A"), Set.empty),
             Map("a" -> Variable("  a@7") _)
-          )(solved),
+          ),
           Projection(
-            NodeByLabelScan("  a@39", lblName("B"), Set.empty)(solved),
+            NodeByLabelScan("  a@39", lblName("B"), Set.empty),
             Map("a" -> Variable("  a@39") _)
-          )(solved)
-        )(solved),
+          )
+        ),
         groupingExpressions = Map("a" -> varFor("a"))
-      )(solved)
+      )
     )
   }
 }

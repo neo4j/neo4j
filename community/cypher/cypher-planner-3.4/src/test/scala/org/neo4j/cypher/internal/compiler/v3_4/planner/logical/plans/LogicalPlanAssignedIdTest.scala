@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("ids are different between plans") {
-    val sr1 = Argument()(solved)
-    val sr2 = Argument()(solved)
-    val apply = Apply(sr1, sr2)(solved)
+    val sr1 = Argument()
+    val sr2 = Argument()
+    val apply = Apply(sr1, sr2)
 
     sr1.id shouldNot equal(sr2.id)
   }

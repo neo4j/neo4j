@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /**
@@ -78,10 +79,10 @@ case class AdaptiveSolverStep(qg: QueryGraph, predicate: (QueryGraph, Goal) => B
   private val join = joinSolverStep(qg)
   private val expand = expandSolverStep(qg)
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext, solveds: Solveds): Iterator[LogicalPlan] = {
     if (!registry.compacted() && predicate(qg, goal))
-      expand(registry, goal, table, context)
+      expand(registry, goal, table, context, solveds)
     else
-      expand(registry, goal, table, context) ++ join(registry, goal, table, context)
+      expand(registry, goal, table, context, solveds) ++ join(registry, goal, table, context, solveds)
   }
 }

@@ -54,7 +54,8 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
-      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable(), from.plannerName)
+      // TODO map solved to readOnly and create a new attribute that is passed doen here instead
+      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable(), from.plannerName, from.solveds, from.cardinalities)
       val executionPlan: ExecutionPlan =
         new CompiledExecutionPlan(compiled,
                                   context.createFingerprintReference(compiled.fingerprint),

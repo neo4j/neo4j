@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateSelector, LogicalPlanningContext}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => CandidateSelector) {
+object pickBestPlanUsingHintsAndCost extends ((LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector) {
   val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
   private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
-  override def apply(context: LogicalPlanningContext): CandidateSelector = new CandidateSelector {
+  override def apply(context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): CandidateSelector = new CandidateSelector {
     override def apply[X](projector: (X) => LogicalPlan, input: Iterable[X]): Option[X] = {
       val inputOrdering = new Ordering[X] {
-        override def compare(x: X, y: X): Int = baseOrdering.compare(score(projector, x, context), score(projector, y, context))
+        override def compare(x: X, y: X): Int = baseOrdering.compare(score(projector, x, context, solveds, cardinalities), score(projector, y, context, solveds, cardinalities))
       }
 
       if (VERBOSE) {
@@ -43,9 +44,9 @@ object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => Candidat
             println("=-" * 10)
             println(s"* Plan #${plan.debugId}")
             println(s"\t$planText")
-            println(s"\t\t${costs(plan, context.input)}")
-            println(s"\t\t${plan.solved.estimatedCardinality}")
-            println(s"\t\tHints(${plan.solved.numHints})")
+            println(s"\t\t${costs(plan, context.input, cardinalities)}")
+            println(s"\t\t${cardinalities.get(plan.id)}")
+            println(s"\t\tHints(${solveds.get(plan.id).numHints})")
             println(s"\t\tlhs: ${plan.lhs}")
           }
 
@@ -54,9 +55,9 @@ object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => Candidat
           println("- Best is:")
           println(s"Plan #${best.debugId}")
           println(s"\t${best.toString}")
-          println(s"\t\t${costs(best, context.input)}")
-          println(s"\t\t${best.solved.estimatedCardinality}")
-          println(s"\t\tHints(${best.solved.numHints})")
+          println(s"\t\t${costs(best, context.input, cardinalities)}")
+          println(s"\t\t${cardinalities.get(best.id)}")
+          println(s"\t\tHints(${solveds.get(best.id).numHints})")
           println(s"\t\tlhs: ${best.lhs}")
           println("!¡" * 10)
           println()
@@ -67,9 +68,9 @@ object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => Candidat
     }
   }
 
-  private def score[X](projector: (X) => LogicalPlan, input: X, context: LogicalPlanningContext) = {
+  private def score[X](projector: (X) => LogicalPlan, input: X, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
     val costs = context.cost
     val plan = projector(input)
-    (-plan.solved.numHints, costs(plan, context.input).gummyBears, -plan.availableSymbols.size)
+    (-solveds.get(plan.id).numHints, costs(plan, context.input, cardinalities).gummyBears, -plan.availableSymbols.size)
   }
 }

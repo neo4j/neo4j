@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphProducer, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
 import org.neo4j.cypher.internal.ir.v3_4.AggregatingQueryProjection
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName, Variable}
@@ -34,128 +34,144 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {
 
   test("should ignore tail") {
-    val pq = producePlannerQuery("MATCH (n)", "n")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val pq = producePlannerQuery("MATCH (n)", "n", solveds, cardinalities)
 
-    countStorePlanner(pq.withTail(null), context) should beCountPlanFor("n")
+    countStorePlanner(pq.withTail(null), context, solveds, cardinalities) should beCountPlanFor("n")
   }
 
   test("should plan a count for node count no labels") {
-    val plannerQuery = producePlannerQuery("MATCH (n)", "n")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (n)", "n", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("n")
   }
 
   test("should plan a count for cartesian node count no labels") {
-    val plannerQuery = producePlannerQuery("MATCH (n), (m)", "n")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (n), (m)", "n", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("n")
   }
 
   test("should not plan a count for node count when there is a predicate on the node") {
     // When
-    val plannerQuery = producePlannerQuery("MATCH (n) WHERE n.prop", "n")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (n) WHERE n.prop", "n", solveds, cardinalities)
     // Then
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
   test("should not plan a count for node count when there is a predicate on something else") {
     // When
-    val plannerQuery = producePlannerQuery("MATCH (n) WHERE 1 = 2", "n")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (n) WHERE 1 = 2", "n", solveds, cardinalities)
     // Then
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
   test("should not plan a count for relationship count when there is a predicate on the relationship") {
     // When
-    val plannerQuery = producePlannerQuery("MATCH ()-[r]-() WHERE r.prop", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()-[r]-() WHERE r.prop", "r", solveds, cardinalities)
     // Then
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
   test("should not plan a count for relationship count when there is a predicate on something else") {
     // When
-    val plannerQuery = producePlannerQuery("MATCH ()-[r]-() WHERE 1 = 2", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()-[r]-() WHERE 1 = 2", "r", solveds, cardinalities)
     // Then
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
   test("should plan a count for node count with a label") {
-    val plannerQuery = producePlannerQuery("MATCH (n:Label)", "n")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (n:Label)", "n", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("n")
   }
 
   test("should not plan a count for node count with more than one label") {
-    val plannerQuery = producePlannerQuery("MATCH (n:Label1:Label2)", "n")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (n:Label1:Label2)", "n", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
   test("should plan a count for rel count with no direction") {
-    val plannerQuery = producePlannerQuery("MATCH ()-[r]-()", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()-[r]-()", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
   test("should plan a count for rel count with no type") {
-    val plannerQuery = producePlannerQuery("MATCH ()-[r]->()", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()-[r]->()", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("r")
   }
 
   test("should plan a count for rel count with lhs label and no type") {
-    val plannerQuery = producePlannerQuery("MATCH (:Label1)-[r]->()", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (:Label1)-[r]->()", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("r")
   }
 
   test("should plan a count for node count with rhs label and no type") {
-    val plannerQuery = producePlannerQuery("MATCH ()<-[r]-(:Label1)", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()<-[r]-(:Label1)", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("r")
   }
 
   test("should not plan a count for rel count with both ended labels") {
-    val plannerQuery = producePlannerQuery("MATCH (:Label1)<-[r]-(:Label2)", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (:Label1)<-[r]-(:Label2)", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
   test("should not plan a count for rel count with type but no direction") {
-    val plannerQuery = producePlannerQuery("MATCH ()-[r:X]-()", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()-[r:X]-()", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
   test("should plan a count for rel count with rel type") {
-    val plannerQuery = producePlannerQuery("MATCH ()-[r:X]->()", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()-[r:X]->()", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("r")
   }
 
   test("should plan a count for rel count with lhs label and rel type") {
-    val plannerQuery = producePlannerQuery("MATCH (:Label1)-[r:X]->()", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (:Label1)-[r:X]->()", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("r")
   }
 
   test("should plan a count for node count with rhs label and rel type") {
-    val plannerQuery = producePlannerQuery("MATCH ()<-[r:X]-(:Label1)", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()<-[r:X]-(:Label1)", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should beCountPlanFor("r")
   }
 
   test("should not plan a count for rel count with both ended labels and rel type") {
-    val plannerQuery = producePlannerQuery("MATCH (:Label1)<-[r:X]-(:Label2)", "r")
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (:Label1)<-[r:X]-(:Label2)", "r", solveds, cardinalities)
 
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context, solveds, cardinalities) should notBeCountPlan
   }
 
-  val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel], 0, idGen),
-    mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
-
-  def producePlannerQuery(query: String, variable: String) = {
-    val (pq, _) = producePlannerQueryForPattern(query)
+  private def producePlannerQuery(query: String, variable: String, solveds: Solveds, cardinalities: Cardinalities) : PlannerQuery = {
+    val (pq, _) = producePlannerQueryForPattern(query, solveds, cardinalities)
     pq.withHorizon(AggregatingQueryProjection(
       aggregationExpressions = Map(s"count($variable)" -> FunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
   }

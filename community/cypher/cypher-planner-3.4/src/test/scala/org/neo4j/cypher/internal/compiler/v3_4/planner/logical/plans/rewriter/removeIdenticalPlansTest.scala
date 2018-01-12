@@ -28,8 +28,8 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
   val noAttributes = new Attributes(idGen)
 
   test("should not contain copies") {
-    val scan = AllNodesScan("a", Set.empty)(solved)
-    val join = NodeHashJoin(Set("a"), scan, scan)(solved)
+    val scan = AllNodesScan("a", Set.empty)
+    val join = NodeHashJoin(Set("a"), scan, scan)
 
     val rewritten = join.endoRewrite(removeIdenticalPlans(noAttributes))
 
@@ -39,9 +39,9 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("should not rewrite when not needed") {
-    val scan1 = AllNodesScan("a", Set.empty)(solved)
-    val scan2 = AllNodesScan("a", Set.empty)(solved)
-    val join = NodeHashJoin(Set("a"), scan1, scan2)(solved)
+    val scan1 = AllNodesScan("a", Set.empty)
+    val scan2 = AllNodesScan("a", Set.empty)
+    val join = NodeHashJoin(Set("a"), scan1, scan2)
 
     val rewritten = join.endoRewrite(removeIdenticalPlans(noAttributes))
 

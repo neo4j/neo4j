@@ -108,10 +108,10 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       tx.close()
 
       val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-      val lhs = AllNodesScan("a", Set.empty)(solved)
-      val rhs = AllNodesScan("a", Set.empty)(solved)
-      val join = NodeHashJoin(Set("a"), lhs, rhs)(solved)
-      val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
+      val lhs = AllNodesScan("a", Set.empty)
+      val rhs = AllNodesScan("a", Set.empty)
+      val join = NodeHashJoin(Set("a"), lhs, rhs)
+      val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))
       val plan = plans.ProduceResult(projection, List("foo"))
 
       // when

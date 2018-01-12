@@ -26,9 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 /**
   * For each input row, delete the node specified by 'expression' and all its relationships from the graph.
   */
-case class DetachDeleteNode(source: LogicalPlan, expression: Expression)
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+case class DetachDeleteNode(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

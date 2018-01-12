@@ -32,29 +32,19 @@ import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, ExpandInto, LogicalPlan}
 
-class ExpandSolverStepTest extends CypherFunSuite  with AstConstructionTestSupport {
+
+class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
+
   self =>
   private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
-  implicit val idGen = new SequentialIdGen()
 
   implicit def converter(s: Symbol): String = s.toString()
-
-
-  case class TestPlan(availableSymbols: Set[String] = Set.empty) extends LogicalPlan(new SequentialIdGen) {
-
-    override def lhs: Option[LogicalPlan] = None
-
-    override def rhs: Option[LogicalPlan] = None
-
-    override def solved: PlannerQuery with CardinalityEstimation = self.solved
-
-    override def strictness: StrictnessMode = ???
-  }
-
-  private val plan1 = TestPlan()
-
 
   private val pattern1 = PatternRelationship('r1, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val pattern2 = PatternRelationship('r2, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -62,64 +52,73 @@ class ExpandSolverStepTest extends CypherFunSuite  with AstConstructionTestSuppo
   private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
 
-  private val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel], LogicalPlan.LOWEST_TX_LAYER, idGen),
-    mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
-
   test("does not expand based on empty table") {
     implicit val registry = IdRegistry[PatternRelationship]
-
-    expandSolverStep(qg)(registry, register(pattern1, pattern2), table, context) should be(empty)
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      expandSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx, solveds) should be(empty)
+    }
   }
 
   test("expands if an unsolved pattern relationship overlaps once with a single solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
 
-    val plan = TestPlan(Set[String]('a, 'r1, 'b))
-    table.put(register(pattern1), plan)
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
+      table.put(register(pattern1), plan1)
 
-    expandSolverStep(qg)(registry, register(pattern1, pattern2), table, context).toSet should equal(Set(
-      Expand(plan, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
-    ))
+      expandSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx, solveds).toSet should equal(Set(
+        Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)
+      ))
+    }
   }
 
   test("expands if an unsolved pattern relationships overlaps twice with a single solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
 
-    val plan = TestPlan(Set[String]('a, 'r1, 'b))
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
+      table.put(register(pattern1), plan1)
 
-    table.put(register(pattern1), plan)
+      val patternX = PatternRelationship('r2, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    val patternX = PatternRelationship('r2, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-
-    expandSolverStep(qg)(registry, register(pattern1, patternX), table, context).toSet should equal(Set(
-      Expand(plan, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
-      Expand(plan, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
-    ))
+      expandSolverStep(qg)(registry, register(pattern1, patternX), table, ctx, solveds).toSet should equal(Set(
+        Expand(plan1, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto),
+        Expand(plan1, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)
+      ))
+    }
   }
 
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
+      table.put(register(pattern1), plan1)
 
-    when(plan1.availableSymbols).thenReturn(Set[String]('a, 'r1, 'b))
-    table.put(register(pattern1), plan1)
+      val patternX = PatternRelationship('r2, ('x, 'y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    val patternX = PatternRelationship('r2, ('x, 'y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      expandSolverStep(qg)(registry, register(pattern1, patternX), table, ctx, solveds).toSet should be(empty)
+    }
 
-    expandSolverStep(qg)(registry, register(pattern1, patternX), table, context).toSet should be(empty)
   }
 
   test("expands if an unsolved pattern relationship overlaps with multiple solved plans") {
     implicit val registry = IdRegistry[PatternRelationship]
-    val plan = TestPlan(Set[String]('a, 'r1, 'b, 'c, 'r2, 'd))
 
-    table.put(register(pattern1, pattern2), plan)
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b", "c", "r2", "d")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd)))
+      table.put(register(pattern1, pattern2), plan1)
 
-    val pattern3 = PatternRelationship('r3, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      val pattern3 = PatternRelationship('r3, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table, context).toSet should equal(Set(
-      Expand(plan, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
-      Expand(plan, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
-    ))
+      expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table, ctx, solveds).toSet should equal(Set(
+        Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto),
+        Expand(plan1, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)
+      ))
+    }
   }
 
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)

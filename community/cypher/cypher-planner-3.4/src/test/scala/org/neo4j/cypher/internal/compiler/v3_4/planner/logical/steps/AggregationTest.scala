@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Aggregation, LogicalPlan, Projection}
-import org.neo4j.cypher.internal.ir.v3_4.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.v3_4.{AggregatingQueryProjection, PlannerQuery}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -41,14 +42,13 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap
     )
 
-    val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
+    val startPlan = newMockedLogicalPlan(solveds, cardinalities)
 
-    val startPlan = newMockedLogicalPlan()
-
-    aggregation(startPlan, projection, context) should equal(
-      Aggregation(startPlan, Map(), aggregatingMap)(solved)
+    aggregation(startPlan, projection, context, solveds, cardinalities) should equal(
+      Aggregation(startPlan, Map(), aggregatingMap)
     )
   }
 
@@ -59,15 +59,15 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap2
     )
 
-    val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
-    val startPlan = newMockedLogicalPlan()
+    val startPlan = newMockedLogicalPlan(solveds, cardinalities)
 
-    aggregation(startPlan, projectionPlan, context) should equal(
+    aggregation(startPlan, projectionPlan, context, solveds, cardinalities) should equal(
       Aggregation(
-       startPlan, groupingMap, aggregatingMap2)(solved)
+       startPlan, groupingMap, aggregatingMap2)
     )
   }
 
@@ -80,19 +80,21 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap
     )
 
-    val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
-    val startPlan = newMockedLogicalPlan()
+    val startPlan = newMockedLogicalPlan(solveds, cardinalities)
 
-    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)(solved)
+    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)
+    solveds.set(projectionPlan.id, PlannerQuery.empty)
+    cardinalities.set(projectionPlan.id, 0.0)
 
     // When
-    val result = aggregation(projectionPlan, projection, context)
+    val result = aggregation(projectionPlan, projection, context, solveds, cardinalities)
     // Then
     result should equal(
-      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)(solved)
+      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
     )
   }
 }

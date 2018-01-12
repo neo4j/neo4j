@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -34,7 +33,7 @@ case class DirectedRelationshipByIdSeek(idName: String,
                                         relIds: SeekableArgs,
                                         startNode: String,
                                         endNode: String,
-                                        argumentIds: Set[String])(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                        argumentIds: Set[String])(implicit idGen: IdGen)
   extends LogicalLeafPlan(idGen) {
 
   val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)

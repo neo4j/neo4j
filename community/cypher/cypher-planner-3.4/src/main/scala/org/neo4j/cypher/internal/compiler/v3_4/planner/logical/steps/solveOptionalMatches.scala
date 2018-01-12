@@ -20,27 +20,28 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object solveOptionalMatches {
-  type OptionalSolver = ((QueryGraph, LogicalPlan, LogicalPlanningContext) => Option[LogicalPlan])
+  type OptionalSolver = ((QueryGraph, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => Option[LogicalPlan])
 }
 
 case object applyOptional extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, context: LogicalPlanningContext) = {
-    val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs)
-    val inner = context.strategy.plan(optionalQg, innerContext)
+  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
+    val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs, solveds, cardinalities)
+    val inner = context.strategy.plan(optionalQg, innerContext, solveds, cardinalities)
     val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
     Some(context.logicalPlanProducer.planApply(lhs, rhs, context))
   }
 }
 
 case object outerHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, context: LogicalPlanningContext) = {
+  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
     val joinNodes = optionalQg.argumentIds
-    val rhs = context.strategy.plan(optionalQg.withoutArguments(), context)
+    val rhs = context.strategy.plan(optionalQg.withoutArguments(), context, solveds, cardinalities)
 
     if (joinNodes.nonEmpty &&
       joinNodes.forall(lhs.availableSymbols) &&

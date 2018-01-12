@@ -27,42 +27,42 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite Apply/Optional/Expand to OptionalExpand when lhs of expand is single row") {
-    val argument: LogicalPlan = Argument(Set("a"))(solved)
+    val argument: LogicalPlan = Argument(Set("a"))
     val rhs:LogicalPlan =
       Optional(
         Expand(argument, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
-        )(solved))(solved)
+        ))
     val lhs = newMockedLogicalPlan("a")
-    val input = Apply(lhs, rhs)(solved)
+    val input = Apply(lhs, rhs)
 
     input.endoRewrite(unnestOptional) should equal(
-      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll, Seq.empty)(solved))
+      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll, Seq.empty))
   }
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
-    val argument: LogicalPlan = Argument(Set("a"))(solved)
-    val expand = VarExpand(argument, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, "tempNode", "tempEdge", TRUE, TRUE, Seq.empty)(solved)
+    val argument: LogicalPlan = Argument(Set("a"))
+    val expand = VarExpand(argument, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, "tempNode", "tempEdge", TRUE, TRUE, Seq.empty)
     val predicate: Equals = Equals(Property(varFor("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val selection = Selection(Seq(predicate), expand)(solved)
-    val rhs: LogicalPlan = Optional(selection)(solved)
+    val selection = Selection(Seq(predicate), expand)
+    val rhs: LogicalPlan = Optional(selection)
     val lhs = newMockedLogicalPlan("a")
-    val input = Apply(lhs, rhs)(solved)
+    val input = Apply(lhs, rhs)
 
     input.endoRewrite(unnestOptional) should equal(input)
   }
 
   test("should not rewrite plans containing merges") {
-    val argument: LogicalPlan = Argument(Set("a"))(solved)
+    val argument: LogicalPlan = Argument(Set("a"))
     val rhs:LogicalPlan =
       Optional(
         Expand(argument, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
-        )(solved))(solved)
+        ))
     val lhs = newMockedLogicalPlan("a")
-    val apply = Apply(lhs, rhs)(solved)
-    val mergeRel = MergeCreateRelationship(Argument()(solved), "r", "a", RelTypeName("T")(pos), "b",
-                                           None)(solved)
+    val apply = Apply(lhs, rhs)
+    val mergeRel = MergeCreateRelationship(Argument(), "r", "a", RelTypeName("T")(pos), "b",
+                                           None)
 
-    val input = AntiConditionalApply(apply, mergeRel, Seq.empty)(solved)
+    val input = AntiConditionalApply(apply, mergeRel, Seq.empty)
 
     input.endoRewrite(unnestOptional) should equal(input)
   }

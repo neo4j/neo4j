@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_4.{UpdateStrategy, defaultUpdateStrategy}
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
@@ -75,13 +76,13 @@ object QueryPlannerConfiguration {
 case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
                                      applySelections: PlanTransformer[QueryGraph],
                                      optionalSolvers: Seq[OptionalSolver],
-                                     pickBestCandidate: LogicalPlanningContext => CandidateSelector,
+                                     pickBestCandidate: (LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector,
                                      updateStrategy: UpdateStrategy) {
 
-  def toKit(context: LogicalPlanningContext): QueryPlannerKit =
+  def toKit(context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): QueryPlannerKit =
     QueryPlannerKit(
-      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, context),
-      pickBest = pickBestCandidate(context)
+      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, context, solveds, cardinalities),
+      pickBest = pickBestCandidate(context, solveds, cardinalities)
     )
 
   def withLeafPlanners(leafPlanners: LeafPlannerIterable) = copy(leafPlanners = leafPlanners)

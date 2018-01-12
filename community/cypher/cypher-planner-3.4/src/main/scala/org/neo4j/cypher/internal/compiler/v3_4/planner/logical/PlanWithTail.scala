@@ -20,35 +20,38 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attributes
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
 which in most cases is then rewritten away by LogicalPlan rewriting.
 */
-case class PlanWithTail(planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPlanningContext) => LogicalPlan) = PlanEventHorizon,
-                        planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
-                        planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext) => (LogicalPlan, LogicalPlanningContext)) = PlanUpdates)
-  extends ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext) => LogicalPlan) {
+case class PlanWithTail(planEventHorizon: ((PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan) = PlanEventHorizon,
+                        planPart: (PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan = planPart,
+                        planUpdates: ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext)) = PlanUpdates)
+  extends ((LogicalPlan, Option[PlannerQuery], LogicalPlanningContext, Solveds, Cardinalities, Attributes) => LogicalPlan) {
 
-  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext,
+                     solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes): LogicalPlan = {
     remaining match {
       case Some(plannerQuery) =>
-        val lhsContext = context.withUpdatedCardinalityInformation(lhs)
-        val partPlan = planPart(plannerQuery, lhsContext)
+        val lhsContext = context.withUpdatedCardinalityInformation(lhs, solveds, cardinalities)
+        val partPlan = planPart(plannerQuery, lhsContext, solveds, cardinalities)
         val firstPlannerQuery = false
-        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext)
+        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext, solveds, cardinalities)
 
         val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 
-        val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
-        val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)
-        val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
+        val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan, solveds, cardinalities)
+        val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext, solveds, cardinalities)
+        val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan, solveds, cardinalities)
 
-        this.apply(projectedPlan, plannerQuery.tail, projectedContext)
+        this.apply(projectedPlan, plannerQuery.tail, projectedContext, solveds, cardinalities, otherAttributes)
 
       case None =>
-        lhs.endoRewrite(Eagerness.unnestEager)
+        lhs.endoRewrite(Eagerness.unnestEager(solveds, otherAttributes.withAlso(cardinalities)))
     }
   }
 }

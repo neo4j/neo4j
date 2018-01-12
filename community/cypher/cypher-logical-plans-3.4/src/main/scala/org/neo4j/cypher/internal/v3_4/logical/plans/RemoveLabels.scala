@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
@@ -27,9 +27,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.LabelName
   * For each source row, the labels in 'labelNamed' are removed from the node 'idName'.
   * The source row is produced.
   */
-case class RemoveLabels(source: LogicalPlan, idName: String, labelNames: Seq[LabelName])
-                       (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+case class RemoveLabels(source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

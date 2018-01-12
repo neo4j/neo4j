@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -28,8 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * element, containing the source row and the element assigned to 'variable'. If 'expression' does not evaluate to a
   * list, produce nothing.
   */
-case class UnwindCollection(source: LogicalPlan, variable: String, expression: Expression)
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+case class UnwindCollection(source: LogicalPlan, variable: String, expression: Expression)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(source)
   def rhs = None

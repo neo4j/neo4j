@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
@@ -72,12 +73,12 @@ class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport 
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val input = LogicalPlanState(null, null, null, Some(original))
+    val input = LogicalPlanState(null, null, null, new Solveds, new Cardinalities, Some(original))
     //We use CNFNormalizer to get it to the canonical form without duplicates
     val result = (transitiveClosure andThen  CNFNormalizer).transform(input, ContextHelper.create())
 
     //We must also use CNFNormalizer on the expected to get the AND -> ANDS rewrite
-    val expectedInput = LogicalPlanState(null, null, null, Some(expected))
+    val expectedInput = LogicalPlanState(null, null, null, new Solveds, new Cardinalities, Some(expected))
     val expectedResult = CNFNormalizer.transform(expectedInput, ContextHelper.create())
     result.statement() should equal(expectedResult.statement())
   }

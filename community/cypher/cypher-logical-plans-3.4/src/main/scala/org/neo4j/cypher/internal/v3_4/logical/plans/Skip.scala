@@ -26,8 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 /*
  * Produce source rows except the first 'count' rows, which are ignored.
  */
-case class Skip(source: LogicalPlan, count: Expression)
-               (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class Skip(source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(source)
   val rhs = None
 

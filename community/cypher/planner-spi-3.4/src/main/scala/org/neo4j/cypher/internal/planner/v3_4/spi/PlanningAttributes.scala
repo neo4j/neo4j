@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.v3_4.logical.plans
+package org.neo4j.cypher.internal.planner.v3_4.spi
 
-import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
+import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
+import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attribute
 
-/**
-  * For each nodeId in 'nodeIds', fetch the corresponding node. Produce one row with the contents of argument and
-  * the node (assigned to 'idName').
-  */
-case class NodeByIdSeek(idName: String, nodeIds: SeekableArgs, argumentIds: Set[String])(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
-
-  override val availableSymbols: Set[String] = argumentIds + idName
+object PlanningAttributes {
+  class Solveds extends Attribute[PlannerQuery]
+  class Cardinalities extends Attribute[Cardinality]
 }

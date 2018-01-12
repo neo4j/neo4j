@@ -36,14 +36,14 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val queryGraph = QueryGraph(patternNodes = Set("n"))
 
     implicit val planContext = newMockedPlanContext
-    val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = planContext,
       metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator]))
 
     // when
-    val resultPlans = allNodesLeafPlanner(queryGraph, context)
+    val resultPlans = allNodesLeafPlanner(queryGraph, context, solveds, cardinalities)
 
     // then
-    resultPlans should equal(Seq(AllNodesScan("n", Set.empty)(solved)))
+    resultPlans should equal(Seq(AllNodesScan("n", Set.empty)))
   }
 }

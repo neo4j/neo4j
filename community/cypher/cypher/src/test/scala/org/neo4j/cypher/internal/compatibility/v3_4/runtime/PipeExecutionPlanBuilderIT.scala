@@ -26,9 +26,11 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.PipeIn
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
@@ -43,27 +45,27 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 import scala.collection.mutable
 
-class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
+class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  implicit val planContext: PlanContext = newMockedPlanContext
-  implicit val LogicalPlanningContext = newMockedLogicalPlanningContext(planContext)
+  val conf = new given
+  implicit val planContext: PlanContext = conf.planContext
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val converters = new ExpressionConverters(CommunityExpressionConverter)
 
   private val planBuilder = {
     val converters = new ExpressionConverters(CommunityExpressionConverter)
-    new PipeExecutionPlanBuilder(Clock.systemUTC(), monitors, expressionConverters = converters, pipeBuilderFactory = CommunityPipeBuilderFactory)
+    new PipeExecutionPlanBuilder(Clock.systemUTC(), mock[Monitors], expressionConverters = converters, pipeBuilderFactory = CommunityPipeBuilderFactory)
   }
 
-  private def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
-    val logicalPlan = f(solved)
+  private def build(logicalPlan: LogicalPlan): PipeInfo = {
     planBuilder.build(None, logicalPlan)
   }
 
   test("projection only query") {
+    val cardinalities = new Cardinalities
     val logicalPlan = Projection(
-      Argument()(solvedWithEstimation(1.0)), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))_
+      setC(Argument(), cardinalities, 1.0), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -72,7 +74,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple pattern query") {
-    val logicalPlan = AllNodesScan("n", Set.empty)_
+    val logicalPlan = AllNodesScan("n", Set.empty)
     val pipeInfo: PipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -81,7 +83,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan("n", lblName("Foo"), Set.empty)_
+    val logicalPlan = NodeByLabelScan("n", lblName("Foo"), Set.empty)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -91,7 +93,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
   test("simple node by id seek query") {
     val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
-    val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astLiteral), Set.empty)_
+    val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astLiteral), Set.empty)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -103,7 +105,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val astCollection: ListLiteral = ListLiteral(
       Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
     )_
-    val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astCollection), Set.empty)_
+    val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astCollection), Set.empty)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -115,7 +117,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astLiteral), fromNode, toNode, Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astLiteral), fromNode, toNode, Set.empty)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -129,7 +131,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -143,7 +145,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = UndirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)_
+    val logicalPlan = UndirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -152,23 +154,23 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple cartesian product") {
-    val lhs = AllNodesScan("n", Set.empty)(solved)
-    val rhs = AllNodesScan("m", Set.empty)(solved)
-    val logicalPlan = CartesianProduct(lhs, rhs)_
+    val lhs = AllNodesScan("n", Set.empty)
+    val rhs = AllNodesScan("m", Set.empty)
+    val logicalPlan = CartesianProduct(lhs, rhs)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(CartesianProductPipe(AllNodesScanPipe("n")(), AllNodesScanPipe("m")())())
   }
 
   test("simple expand") {
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(_: PlannerQuery with CardinalityEstimation)(idGen)
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(idGen)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)())
   }
 
   test("simple expand into existing variable MATCH a-[r]->a ") {
-    val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(_: PlannerQuery with CardinalityEstimation)(idGen)
+    val logicalPlan = Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
     val pipeInfo = build(logicalPlan)
 
     val inner: Pipe = ExpandIntoPipe( AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty)()
@@ -177,7 +179,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("optional expand into existing variable MATCH a OPTIONAL MATCH a-[r]->a ") {
-    val logicalPlan = OptionalExpand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(_: PlannerQuery with CardinalityEstimation)(idGen)
+    val logicalPlan = OptionalExpand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)(idGen)
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(
@@ -188,9 +190,9 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val logicalPlan =
       NodeHashJoin(
         Set("b"),
-        Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(solved),
-        Expand(AllNodesScan("c", Set.empty)(solved), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")(solved)
-      )_
+        Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.INCOMING, Seq(), "b", "r1"),
+        Expand(AllNodesScan("c", Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+      )
     val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(NodeHashJoinPipe(
@@ -204,10 +206,10 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     // GIVEN
     val token = 42
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(token))
-    val allNodesScan = AllNodesScan("n", Set.empty)(solved)
+    val allNodesScan = AllNodesScan("n", Set.empty)
     val expressions = Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))
-    val projection = Projection(allNodesScan, expressions)(solved)
-    val aggregation = Aggregation(projection, expressions, Map.empty) _
+    val projection = Projection(allNodesScan, expressions)
+    val aggregation = Aggregation(projection, expressions, Map.empty)
 
     // WHEN
     val pipe = build(aggregation).pipe

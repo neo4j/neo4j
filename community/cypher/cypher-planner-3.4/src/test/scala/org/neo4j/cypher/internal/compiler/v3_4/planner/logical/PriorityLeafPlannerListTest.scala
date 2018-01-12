@@ -23,27 +23,28 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, verifyZeroInteractions, when}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.Argument
 
 class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   private val queryGraph = QueryGraph.empty
-  private val candidates = Seq(Seq(Argument()(solved)))
+  private val candidates = Seq(Seq(Argument()))
   private val context = mock[LogicalPlanningContext]
 
   test("should use the priority list if that contains result") {
     // GIVEN
     val priority = mock[LeafPlannerIterable]
     val fallback = mock[LeafPlannerIterable]
-    when(priority.candidates(any(), any(), any())).thenReturn(candidates)
+    when(priority.candidates(any(), any(), any(), any(), any())).thenReturn(candidates)
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, context = context)
+    val result = list.candidates(queryGraph, context = context, solveds = new Solveds, cardinalities = new Cardinalities)
 
     // THEN
     result should equal(candidates)
-    verify(priority).candidates(any(), any(), any())
+    verify(priority).candidates(any(), any(), any(), any(), any())
     verifyZeroInteractions(fallback)
   }
 
@@ -51,16 +52,16 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     // GIVEN
     val priority = mock[LeafPlannerIterable]
     val fallback = mock[LeafPlannerIterable]
-    when(priority.candidates(any(), any(), any())).thenReturn(Seq.empty)
-    when(fallback.candidates(any(), any(), any())).thenReturn(candidates)
+    when(priority.candidates(any(), any(), any(), any(), any())).thenReturn(Seq.empty)
+    when(fallback.candidates(any(), any(), any(), any(), any())).thenReturn(candidates)
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, context = context)
+    val result = list.candidates(queryGraph, context = context, solveds = new Solveds, cardinalities = new Cardinalities)
 
     // THEN
     result should equal(candidates)
-    verify(priority).candidates(any(), any(), any())
-    verify(fallback).candidates(any(), any(), any())
+    verify(priority).candidates(any(), any(), any(), any(), any())
+    verify(fallback).candidates(any(), any(), any(), any(), any())
   }
 }

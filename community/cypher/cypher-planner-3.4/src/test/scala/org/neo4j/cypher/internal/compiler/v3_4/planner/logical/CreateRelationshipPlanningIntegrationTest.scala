@@ -31,10 +31,10 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CreateNode(
-            CreateNode(Argument()(solved), "a", Seq.empty, None)(solved),
-            "b", Seq.empty, None)(solved),
-          "r", "a", relType("R"), "b", None)(solved)
-      )(solved)
+            CreateNode(Argument(), "a", Seq.empty, None),
+            "b", Seq.empty, None),
+          "r", "a", relType("R"), "b", None)
+      )
     )
   }
 
@@ -47,14 +47,14 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
               CreateNode(
                 CreateNode(
                   CreateNode(
-                    CreateNode(Argument()(solved),"a",Seq.empty,None)(solved),
-                    "b",Seq.empty,None)(solved),
-                  "c",Seq.empty,None)(solved),
-                "d",Seq.empty,None)(solved),
-              "r1","a",relType("R1"),"b",None)(solved),
-            "r2","c",relType("R2"),"b",None)(solved),
-          "r3","c",relType("R3"),"d",None)(solved)
-      )(solved)
+                    CreateNode(Argument(),"a",Seq.empty,None),
+                    "b",Seq.empty,None),
+                  "c",Seq.empty,None),
+                "d",Seq.empty,None),
+              "r1","a",relType("R1"),"b",None),
+            "r2","c",relType("R2"),"b",None),
+          "r3","c",relType("R3"),"d",None)
+      )
     )
   }
 
@@ -65,12 +65,12 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
           CreateRelationship(
             CreateNode(
               CreateNode(
-                CreateNode(Argument()(solved),"a",Seq.empty,None)(solved),
-                "b",Seq.empty,None)(solved),
-              "c",Seq.empty,None)(solved),
-            "r1","b",relType("R1"),"a",None)(solved),
-          "r2","c",relType("R2"),"b",None)(solved)
-      )(solved)
+                CreateNode(Argument(),"a",Seq.empty,None),
+                "b",Seq.empty,None),
+              "c",Seq.empty,None),
+            "r1","b",relType("R1"),"a",None),
+          "r2","c",relType("R2"),"b",None)
+      )
     )
   }
 
@@ -79,10 +79,10 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CreateNode(
-            AllNodesScan("n", Set())(solved),
-            "b", Seq.empty, None)(solved),
-          "r", "n", RelTypeName("T")(pos), "b", None)(solved)
-      )(solved)
+            AllNodesScan("n", Set()),
+            "b", Seq.empty, None),
+          "r", "n", RelTypeName("T")(pos), "b", None)
+      )
     )
   }
 
@@ -91,11 +91,11 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CartesianProduct(
-            AllNodesScan("n", Set())(solved),
-            AllNodesScan("m", Set())(solved)
-          )(solved),
-          "r", "n", RelTypeName("T")(pos), "m", None)(solved)
-      )(solved)
+            AllNodesScan("n", Set()),
+            AllNodesScan("m", Set())
+          ),
+          "r", "n", RelTypeName("T")(pos), "m", None)
+      )
     )
   }
 
@@ -105,11 +105,11 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
         CreateRelationship(
           Projection(
             CartesianProduct(
-              AllNodesScan("n", Set())(solved),
-              AllNodesScan("m", Set())(solved)
-            )(solved), Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos)))(solved),
-          "r", "a", RelTypeName("T")(pos), "b", None)(solved)
-      )(solved)
+              AllNodesScan("n", Set()),
+              AllNodesScan("m", Set())
+            ), Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos))),
+          "r", "a", RelTypeName("T")(pos), "b", None)
+      )
     )
   }
 
@@ -119,11 +119,11 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
         CreateRelationship(
           CreateNode(
             Projection(
-              AllNodesScan("n", Set())(solved),
-              Map("a" -> Variable("n")(pos)))(solved),
-            "b", Seq.empty, None)(solved),
-          "r", "a", RelTypeName("T")(pos), "b", None)(solved)
-      )(solved)
+              AllNodesScan("n", Set()),
+              Map("a" -> Variable("n")(pos))),
+            "b", Seq.empty, None),
+          "r", "a", RelTypeName("T")(pos), "b", None)
+      )
     )
   }
 

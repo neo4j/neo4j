@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 /*
  * Produce zero rows without even using source.
  */
-case class DropResult(source: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+case class DropResult(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

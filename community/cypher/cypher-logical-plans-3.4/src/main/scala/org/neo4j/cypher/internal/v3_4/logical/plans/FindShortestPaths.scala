@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 case class FindShortestPaths(source: LogicalPlan, shortestPath: ShortestPathPattern,
                              predicates: Seq[Expression] = Seq.empty,
                              withFallBack: Boolean = false, disallowSameNode: Boolean = true)
-                            (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                            (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(source)

@@ -36,8 +36,7 @@ case class SetRelationshipPropertiesFromMap(
                                              idName: String,
                                              expression: Expression,
                                              removeOtherProps: Boolean
-                                           )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+                                           )(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

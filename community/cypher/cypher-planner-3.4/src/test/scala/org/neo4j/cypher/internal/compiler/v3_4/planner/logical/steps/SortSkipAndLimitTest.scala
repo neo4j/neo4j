@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast.AscSortItem
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{AscSortItem, SortItem}
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.util.v3_4.Cardinality
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -40,102 +40,87 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should add skip if query graph contains skip") {
     // given
-    implicit val (query, context, startPlan) = queryGraphWith(
-      skip = Some(x)
-    )
+    implicit val (query, context, startPlan, solveds, cardinalities) = queryGraphWith(skip = Some(x))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)
+    val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
 
     // then
-    result should equal(Skip(startPlan, x)(solved))
-    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(skip = Some(x))))
+    result should equal(Skip(startPlan, x))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(skip = Some(x))))
   }
 
   test("should add limit if query graph contains limit") {
     // given
-    implicit val (query, context, startPlan) = queryGraphWith(
-      limit = Some(x)
-    )
+    implicit val (query, context, startPlan, solveds, cardinalities) = queryGraphWith(limit = Some(x))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)
+    val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
 
     // then
-    result should equal(Limit(startPlan, x, DoNotIncludeTies)(solved))
-    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x))))
+    result should equal(Limit(startPlan, x, DoNotIncludeTies))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x))))
   }
 
   test("should add skip first and then limit if the query graph contains both") {
     // given
-    implicit val (query, context, startPlan) = queryGraphWith(
-      limit = Some(x),
-      skip = Some(y)
-    )
+    implicit val (query, context, startPlan, solveds, cardinalities) = queryGraphWith(skip = Some(y), limit = Some(x))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)
+    val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
 
     // then
-    result should equal(Limit(Skip(startPlan, y)(solved), x, DoNotIncludeTies)(solved))
-    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x), skip = Some(y))))
+    result should equal(Limit(Skip(startPlan, y), x, DoNotIncludeTies))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x), skip = Some(y))))
   }
 
   test("should add sort if query graph contains sort items") {
     // given
-    implicit val (query, context, startPlan) = queryGraphWith(
-      sortItems = Seq(variableSortItem)
-    )
+    implicit val (query, context, startPlan, solveds, cardinalities) = queryGraphWith(sortItems = Seq(variableSortItem))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)
+    val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
 
     // then
-    result should equal(Sort(startPlan, Seq(columnOrder))(solved))
+    result should equal(Sort(startPlan, Seq(columnOrder)))
 
-    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
   }
 
   test("should add the correct plans when query uses both ORDER BY, SKIP and LIMIT") {
     // given
-    implicit val (query, context, startPlan: LogicalPlan) = queryGraphWith(
-      sortItems = Seq(variableSortItem),
-      limit = Some(x),
-      skip = Some(y)
-    )
+    implicit val (query, context, startPlan, solveds, cardinalities) = queryGraphWith(skip = Some(y), limit = Some(x), sortItems = Seq(variableSortItem))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, context)
+    val result = sortSkipAndLimit(startPlan, query, context, solveds, cardinalities)
 
     // then
-    val sorted = Sort(startPlan, Seq(columnOrder))(solved)
-    val skipped = Skip(sorted, y)(solved)
-    val limited = Limit(skipped, x, DoNotIncludeTies)(solved)
+    val sorted = Sort(startPlan, Seq(columnOrder))
+    val skipped = Skip(sorted, y)
+    val limited = Limit(skipped, x, DoNotIncludeTies)
 
     result should equal(limited)
   }
 
   private def queryGraphWith(skip: Option[Expression] = None,
                              limit: Option[Expression] = None,
-                             sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos))): (PlannerQuery, LogicalPlanningContext, LogicalPlan) = {
+                             sortItems: Seq[SortItem] = Seq.empty,
+                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos))) = {
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext
+    )
     val projection = RegularQueryProjection(
-      projections = projectionsMap,
-      shuffle = QueryShuffle(sortItems, skip, limit)
+    projections = projectionsMap,
+    shuffle = QueryShuffle(sortItems, skip, limit)
     )
 
     val qg = QueryGraph(patternNodes = Set("n"))
     val query = RegularPlannerQuery(queryGraph = qg, horizon = projection)
 
-    val context = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext
-    )
 
-    val plan =
-      newMockedLogicalPlanWithSolved(Set("n"),
-        CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n")), Cardinality(0))
-      )
+    val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"))
+    val plan = newMockedLogicalPlanWithSolved(idNames = Set("n"), solveds = solveds, solved = solved)
 
-    (query, context, plan)
+    (query, context, plan, solveds, cardinalities)
   }
 }

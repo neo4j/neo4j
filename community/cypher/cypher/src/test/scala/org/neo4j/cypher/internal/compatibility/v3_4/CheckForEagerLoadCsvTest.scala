@@ -34,14 +34,14 @@ class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSu
     val plan =
       Eager(
         LoadCSV(
-          AllNodesScan("a", Set.empty)(solved),
+          AllNodesScan("a", Set.empty),
           url,
           "foo",
           NoHeaders,
           None,
           legacyCsvQuoteEscaping = false
-        )(solved)
-      )(solved)
+        )
+      )
 
     checkForEagerLoadCsv(plan) should equal(Some(EagerLoadCsvNotification))
   }
@@ -50,14 +50,14 @@ class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSu
     val plan =
       LoadCSV(
         Eager(
-          AllNodesScan("a", Set.empty)(solved)
-        )(solved),
+          AllNodesScan("a", Set.empty)
+        ),
         url,
         "foo",
         NoHeaders,
         None,
         legacyCsvQuoteEscaping = false
-      )(solved)
+      )
 
     checkForEagerLoadCsv(plan) should equal(None)
   }

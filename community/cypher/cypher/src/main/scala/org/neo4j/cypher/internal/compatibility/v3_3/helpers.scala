@@ -23,6 +23,7 @@ import org.neo4j.cypher.CypherVersion.v3_3
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
 import org.neo4j.cypher.internal.compiler.{v3_4 => compilerV3_4}
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3
 import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast => astV3_4, notification => nfV3_4}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
-import org.neo4j.cypher.internal.frontend.v3_4.{phases => phasesV3_4}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, PlannerNameWithVersion, ProcedurePlannerName}
@@ -153,13 +153,17 @@ object helpers {
 
     def isImportant(expression: ExpressionV3_3) : Boolean = logicalPlan.maybeSemanticTable.exists(_.seen(expression))
 
-    val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, isImportant)
+    val solveds = new Solveds
+    val cardinalities = new Cardinalities
+    val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, solveds, cardinalities, isImportant)
 
     val statement3_3 = logicalPlan.maybeStatement.get
 
     LogicalPlanState(logicalPlan.queryText,
       startPosition,
       plannerName,
+      solveds,
+      cardinalities,
       Some(as3_4(statement3_3)),
       None,
       logicalPlan.maybeExtractedParams,

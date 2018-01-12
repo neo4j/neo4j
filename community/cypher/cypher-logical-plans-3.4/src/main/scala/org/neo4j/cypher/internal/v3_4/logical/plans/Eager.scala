@@ -25,9 +25,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 /**
   * Consumes and buffers all source rows, and then produces them.
   */
-case class Eager(source: LogicalPlan)
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class Eager(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   override val availableSymbols: Set[String] = source.availableSymbols
 

@@ -22,23 +22,24 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class UseTopTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   private val leaf = newMockedLogicalPlan()
   private val sortDescription = Seq(Ascending("x"))
-  private val sort = Sort(leaf, sortDescription)(solved)
+  private val sort = Sort(leaf, sortDescription)
   private val lit10 = literalInt(10)
 
   test("should use Top when possible") {
-    val limit = Limit(sort, lit10, DoNotIncludeTies)(solved)
+    val limit = Limit(sort, lit10, DoNotIncludeTies)
 
-    rewrite(limit) should equal(Top(leaf, sortDescription, lit10)(solved))
+    rewrite(limit) should equal(Top(leaf, sortDescription, lit10))
   }
 
   test("should not use Top when including ties") {
-    val original = Limit(sort, lit10, IncludeTies)(solved)
+    val original = Limit(sort, lit10, IncludeTies)
 
     rewrite(original) should equal(original)
   }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.inSequence
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
@@ -38,7 +39,7 @@ trait QueryGraphProducer extends MockitoSugar {
 
   import org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery.StatementConverters._
 
-  def producePlannerQueryForPattern(query: String): (PlannerQuery, SemanticTable) = {
+  def producePlannerQueryForPattern(query: String, solveds: Solveds, cardinalities: Cardinalities): (PlannerQuery, SemanticTable) = {
     val q = query + " RETURN 1 AS Result"
     val ast = parser.parse(q)
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
@@ -48,15 +49,10 @@ trait QueryGraphProducer extends MockitoSugar {
     onError(errors)
 
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
-    val state = LogicalPlanState(query, None, IDPPlannerName, Some(firstRewriteStep), Some(semanticState))
-    val context = ContextHelper.create()
+    val state = LogicalPlanState(query, None, IDPPlannerName, solveds, cardinalities, Some(firstRewriteStep), Some(semanticState))
+    val context = ContextHelper.create(logicalPlanIdGen = idGen)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
     (toUnionQuery(output.statement().asInstanceOf[Query], output.semanticTable()).queries.head, output.semanticTable())
-  }
-
-  def produceQueryGraphForPattern(query: String): (QueryGraph, SemanticTable) = {
-    val (plannerQuery, table) = producePlannerQueryForPattern(query)
-    (plannerQuery.lastQueryGraph, table)
   }
 }

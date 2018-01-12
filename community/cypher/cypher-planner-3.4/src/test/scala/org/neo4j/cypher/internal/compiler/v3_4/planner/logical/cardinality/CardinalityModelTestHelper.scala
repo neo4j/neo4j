@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
@@ -55,7 +56,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
       val graphCardinalityModel = createCardinalityModel(statistics)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
-      val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
+      val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query, new Solveds, new Cardinalities)
       cardinalityModelUnderTest(plannerQuery, QueryGraphSolverInput.empty, semanticTable) should equal(Cardinality(number))
     }
   }

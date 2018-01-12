@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.runtime.planDescription
 
 import java.util.Locale
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
+import org.neo4j.cypher.internal.util.v3_4.DummyPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll}
 import org.neo4j.cypher.internal.v3_4.logical.plans
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll}
 import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
@@ -220,8 +220,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |""".stripMargin)
   }
 
-  private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-  private val argument = plans.Argument()(solved)
+  private val argument = plans.Argument()
 
   test("single node is represented nicely") {
     val arguments = Seq(
@@ -325,8 +324,10 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("Expand contains information about its relations") {
-    val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)(solved)
-    val description = LogicalPlan2PlanDescription(true)
+    val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)
+    // TODO attach Cardinalities to all plans
+    val cardinalities = new Cardinalities
+    val description = LogicalPlan2PlanDescription(true, cardinalities)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
       """+--------------+----------------+-----------+---------------------+
