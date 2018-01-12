@@ -37,7 +37,6 @@ import static java.lang.String.format;
 class SpatialSchemaKey implements NativeSchemaKey
 {
     static final int SIZE =
-            Byte.BYTES + /* type of value */
             Long.BYTES + /* raw value bits */
 
             // TODO this could use 6 bytes instead and have the highest 2 bits stored in the type byte
@@ -46,7 +45,6 @@ class SpatialSchemaKey implements NativeSchemaKey
     private long entityId;
     private boolean entityIdIsSpecialTieBreaker;
 
-    byte type;
     long rawValueBits;
     CoordinateReferenceSystem crs;
 
@@ -96,8 +94,11 @@ class SpatialSchemaKey implements NativeSchemaKey
     @Override
     public NumberValue asValue()
     {
-        // throw new UnsupportedOperationException( "Cannot extract value from spatial index" );
-        return (NumberValue) Values.of( Double.longBitsToDouble( rawValueBits ) );
+        // This is used in the index sampler to estimate value diversity. Since the spatial index does not store values
+        // the uniqueness of the space filling cuve number is the best estimate. This can become a bad estimate for
+        // indexes with badly defined Envelopes for the space filling curves, such that many points exist within the
+        // same tile.
+        return (NumberValue) Values.of( rawValueBits );
     }
 
     @Override
@@ -125,7 +126,9 @@ class SpatialSchemaKey implements NativeSchemaKey
     // TODO this is incorrect! only adding to handle rebase
     int compareValueTo( SpatialSchemaKey other )
     {
-        return RawBits.compare( rawValueBits, type, other.rawValueBits, other.type );
+        double lhsDouble = Double.longBitsToDouble( rawValueBits );
+        double rhsDouble = Double.longBitsToDouble( other.rawValueBits );
+        return Double.compare( lhsDouble, rhsDouble );
     }
 
     private PointValue assertValidValue( Value... values )
@@ -158,14 +161,12 @@ class SpatialSchemaKey implements NativeSchemaKey
      */
     private void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
-        //TODO: Support 2D to 1D mapper like space filling curves
-        type = (byte)coordinate.length;
-        rawValueBits = Double.doubleToLongBits( coordinate[0] );
+        rawValueBits = Double.doubleToRawLongBits( coordinate[0] + coordinate[1] );
     }
 
     @Override
     public String toString()
     {
-        return format( "type=%d,rawValue=%d,value=%s,entityId=%d", type, rawValueBits, "unknown", entityId );
+        return format( "rawValue=%d,value=%s,entityId=%d", rawValueBits, "unknown", entityId );
     }
 }
