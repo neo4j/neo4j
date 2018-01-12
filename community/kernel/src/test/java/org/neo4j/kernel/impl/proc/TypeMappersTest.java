@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
+import org.neo4j.kernel.impl.proc.TypeMappers.TypeChecker;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -141,20 +141,20 @@ public class TypeMappersTest
     public void shouldDetectCorrectType() throws Throwable
     {
         // When
-        NeoValueConverter mapper = new TypeMappers().converterFor( javaClass );
+        Neo4jTypes.AnyType type = new TypeMappers().toNeo4jType( javaClass );
 
         // Then
-        assertEquals( neoType, mapper.type() );
+        assertEquals( neoType, type );
     }
 
     @Test
     public void shouldMapCorrectly() throws Throwable
     {
         // Given
-        NeoValueConverter mapper = new TypeMappers().converterFor( javaClass );
+        TypeChecker mapper = new TypeMappers().checkerFor( javaClass );
 
         // When
-        Object converted = mapper.toNeoValue( javaValue );
+        Object converted = mapper.typeCheck( javaValue );
 
         // Then
         Assert.assertEquals( expectedNeoValue, converted );

@@ -24,12 +24,12 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 
-public class Neo4jValue
+public class DefaultParameterValue
 {
     private final Object value;
     private final Neo4jTypes.AnyType type;
 
-    public Neo4jValue( Object value, Neo4jTypes.AnyType type )
+    public DefaultParameterValue( Object value, Neo4jTypes.AnyType type )
     {
         this.value = value;
         this.type = type;
@@ -45,40 +45,45 @@ public class Neo4jValue
         return type;
     }
 
-    public static Neo4jValue ntString( String value )
+    public static DefaultParameterValue ntString( String value )
     {
-        return new Neo4jValue( value, Neo4jTypes.NTString );
+        return new DefaultParameterValue( value, Neo4jTypes.NTString );
     }
 
-    public static Neo4jValue ntInteger( long value )
+    static DefaultParameterValue ntInteger( long value )
     {
-        return new Neo4jValue( value, Neo4jTypes.NTInteger );
+        return new DefaultParameterValue( value, Neo4jTypes.NTInteger );
     }
 
-    public static Neo4jValue ntFloat( double value )
+    static DefaultParameterValue ntFloat( double value )
     {
-        return new Neo4jValue( value, Neo4jTypes.NTFloat );
+        return new DefaultParameterValue( value, Neo4jTypes.NTFloat );
     }
 
-    public static Neo4jValue ntBoolean( boolean value )
+    static DefaultParameterValue ntBoolean( boolean value )
     {
-        return new Neo4jValue( value, Neo4jTypes.NTBoolean );
+        return new DefaultParameterValue( value, Neo4jTypes.NTBoolean );
     }
 
-    public static Neo4jValue ntMap( Map<String,Object> value )
+    static DefaultParameterValue ntMap( Map<String,Object> value )
     {
-        return new Neo4jValue( value, Neo4jTypes.NTMap );
+        return new DefaultParameterValue( value, Neo4jTypes.NTMap );
     }
 
-    public static Neo4jValue ntList( List<?> value, Neo4jTypes.AnyType inner )
+    static DefaultParameterValue ntList( List<?> value, Neo4jTypes.AnyType inner )
     {
-        return new Neo4jValue( value, Neo4jTypes.NTList( inner ) );
+        return new DefaultParameterValue( value, Neo4jTypes.NTList( inner ) );
+    }
+
+    static DefaultParameterValue nullValue( Neo4jTypes.AnyType type )
+    {
+        return new DefaultParameterValue( null, type );
     }
 
     @Override
     public String toString()
     {
-        return "Neo4jValue{" +
+        return "DefaultParameterValue{" +
                "value=" + value +
                ", type=" + type +
                '}';
@@ -96,14 +101,13 @@ public class Neo4jValue
             return false;
         }
 
-        Neo4jValue that = (Neo4jValue) o;
+        DefaultParameterValue that = (DefaultParameterValue) o;
 
         if ( value != null ? !value.equals( that.value ) : that.value != null )
         {
             return false;
         }
         return type.equals( that.type );
-
     }
 
     @Override

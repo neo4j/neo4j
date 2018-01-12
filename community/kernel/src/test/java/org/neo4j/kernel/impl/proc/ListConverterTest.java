@@ -43,7 +43,7 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
-import static org.neo4j.kernel.impl.proc.Neo4jValue.ntList;
+import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntList;
 
 public class ListConverterTest
 {
@@ -59,7 +59,7 @@ public class ListConverterTest
         String listString = "null";
 
         // When
-        Neo4jValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply( listString );
 
         // Then
         assertThat( converted, equalTo( ntList( null, NTString ) ) );
@@ -73,7 +73,7 @@ public class ListConverterTest
         String listString = "[]";
 
         // When
-        Neo4jValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply( listString );
 
         // Then
         assertThat( converted, equalTo( ntList( emptyList(), NTString ) ) );
@@ -87,7 +87,7 @@ public class ListConverterTest
         String listString = " [  ]   ";
 
         // When
-        Neo4jValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply( listString );
 
         // Then
         assertThat( converted, equalTo( ntList( emptyList(), NTString ) ) );
@@ -101,7 +101,7 @@ public class ListConverterTest
         String listString = "['foo', 'bar']";
 
         // When
-        Neo4jValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply( listString );
 
         // Then
         assertThat( converted, equalTo( ntList( asList( "foo", "bar" ), NTString ) ) );
@@ -115,7 +115,7 @@ public class ListConverterTest
         String listString = "[\"foo\", \"bar\"]";
 
         // When
-        Neo4jValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply( listString );
 
         // Then
         assertThat( converted, equalTo( ntList( asList( "foo", "bar" ), NTString ) ) );
@@ -129,7 +129,7 @@ public class ListConverterTest
         String listString = "[1337, 42]";
 
         // When
-        Neo4jValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply( listString );
 
         // Then
         assertThat( converted, equalTo( ntList( asList( 1337L, 42L ), NTInteger ) ) );
@@ -143,7 +143,7 @@ public class ListConverterTest
         String listSting = "[2.718281828, 3.14]";
 
         // When
-        Neo4jValue converted = converter.apply( listSting );
+        DefaultParameterValue converted = converter.apply( listSting );
 
         // Then
         assertThat( converted, equalTo( ntList( asList( 2.718281828, 3.14 ), NTFloat ) ) );
@@ -157,7 +157,7 @@ public class ListConverterTest
         String listString = "[null]";
 
         // When
-        Neo4jValue converted = converter.apply( listString );
+        DefaultParameterValue converted = converter.apply( listString );
 
         // Then
         assertThat( converted, equalTo( ntList( singletonList( null ), NTFloat ) ) );
@@ -171,7 +171,7 @@ public class ListConverterTest
         String mapString = "[false, true]";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         assertThat( converted, equalTo( ntList( asList( false, true ), NTBoolean ) ) );
@@ -188,7 +188,7 @@ public class ListConverterTest
         String mapString = "[42, [42, 1337]]";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         List<Object> list = (List<Object>) converted.value();
@@ -219,7 +219,7 @@ public class ListConverterTest
         String listString = "[1337, 'forty-two']";
 
         // When
-        Neo4jValue value = converter.apply( listString );
+        DefaultParameterValue value = converter.apply( listString );
 
         // Then
         assertThat( value, equalTo( ntList( asList( 1337L, "forty-two" ), NTAny ) ) );
@@ -234,7 +234,7 @@ public class ListConverterTest
         String mapString = "[{k1: 42}, {k1: 1337}]";
 
         // When
-        Neo4jValue converted = converter.apply( mapString );
+        DefaultParameterValue converted = converter.apply( mapString );
 
         // Then
         List<Object> list = (List<Object>) converted.value();

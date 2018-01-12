@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
+import org.neo4j.kernel.impl.proc.TypeMappers.DefaultValueConverter;
 import org.neo4j.procedure.Name;
 
 import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
@@ -54,8 +54,7 @@ public class MethodSignatureCompiler
         List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>( types.length );
         for ( Type type : types )
         {
-            NeoValueConverter valueConverter = typeMappers.converterFor( type );
-            neoTypes.add( valueConverter.type() );
+            neoTypes.add( typeMappers.toNeo4jType( type ) );
         }
 
         return neoTypes;
@@ -92,8 +91,8 @@ public class MethodSignatureCompiler
 
             try
             {
-                NeoValueConverter valueConverter = typeMappers.converterFor( type );
-                Optional<Neo4jValue> defaultValue = valueConverter.defaultValue( parameter );
+                DefaultValueConverter valueConverter = typeMappers.converterFor( type );
+                Optional<DefaultParameterValue> defaultValue = valueConverter.defaultValue( parameter );
                 //it is not allowed to have holes in default values
                 if ( seenDefault && !defaultValue.isPresent() )
                 {

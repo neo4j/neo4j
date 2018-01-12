@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
-import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
+import org.neo4j.kernel.impl.proc.TypeMappers.DefaultValueConverter;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
@@ -249,11 +249,11 @@ public class DataSourceModule
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
-        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
-        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
-        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
-        procedures.registerType( Geometry.class, new SimpleConverter( NTGeometry, Geometry.class ) );
-        procedures.registerType( Point.class, new SimpleConverter( NTPoint, Point.class ) );
+        procedures.registerType( Node.class, NTNode );
+        procedures.registerType( Relationship.class, NTRelationship );
+        procedures.registerType( Path.class, NTPath );
+        procedures.registerType( Geometry.class, NTGeometry );
+        procedures.registerType( Point.class, NTPoint );
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );

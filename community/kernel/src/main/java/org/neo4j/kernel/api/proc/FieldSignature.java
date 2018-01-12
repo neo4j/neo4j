@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.proc;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.neo4j.kernel.impl.proc.Neo4jValue;
+import org.neo4j.kernel.impl.proc.DefaultParameterValue;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,7 +34,7 @@ public class FieldSignature
         return new FieldSignature( name, type, null, false );
     }
 
-    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, Neo4jValue defaultValue )
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue )
     {
         return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false );
     }
@@ -51,10 +51,10 @@ public class FieldSignature
 
     private final String name;
     private final Neo4jTypes.AnyType type;
-    private final Neo4jValue defaultValue;
+    private final DefaultParameterValue defaultValue;
     private final boolean deprecated;
 
-    private FieldSignature( String name, Neo4jTypes.AnyType type, Neo4jValue defaultValue, boolean deprecated )
+    private FieldSignature( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue, boolean deprecated )
     {
         this.name = requireNonNull( name, "name" );
         this.type = requireNonNull( type, "type" );
@@ -81,7 +81,7 @@ public class FieldSignature
         return type;
     }
 
-    public Optional<Neo4jValue> defaultValue()
+    public Optional<DefaultParameterValue> defaultValue()
     {
         return Optional.ofNullable( defaultValue );
     }

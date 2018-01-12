@@ -471,9 +471,9 @@ public class BuiltInProceduresTest
         procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
         procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
-        procs.registerType( Node.class, new TypeMappers.SimpleConverter( NTNode, Node.class ) );
-        procs.registerType( Relationship.class, new TypeMappers.SimpleConverter( NTRelationship, Relationship.class ) );
-        procs.registerType( Path.class, new TypeMappers.SimpleConverter( NTPath, Path.class ) );
+        procs.registerType( Node.class, NTNode );
+        procs.registerType( Relationship.class, NTRelationship );
+        procs.registerType( Path.class, NTPath );
 
         new SpecialBuiltInProcedures( "1.3.37", Edition.enterprise.toString() ).accept( procs );
         procs.registerProcedure( BuiltInProcedures.class );

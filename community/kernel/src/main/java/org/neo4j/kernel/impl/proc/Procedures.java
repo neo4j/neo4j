@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
@@ -213,13 +214,16 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
-     * Registers a type and how to convert it to a Neo4jType
-     * @param javaClass the class of the native type
-     * @param toNeo the conversion to Neo4jTypes
+     * Registers a type and its mapping to Neo4jTypes
+     *
+     * @param javaClass
+     *         the class of the native type
+     * @param type
+     *         the mapping to Neo4jTypes
      */
-    public void registerType( Class<?> javaClass, TypeMappers.NeoValueConverter toNeo )
+    public void registerType( Class<?> javaClass, Neo4jTypes.AnyType type )
     {
-        typeMappers.registerType( javaClass, toNeo );
+        typeMappers.registerType( javaClass, new TypeMappers.DefaultValueConverter( type, javaClass ) );
     }
 
     /**
