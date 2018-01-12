@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static java.util.Collections.emptySet;
 import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
 import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 
@@ -73,7 +74,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.highMark = read.nodeHighMark();
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = null;
+        this.addedNodes = emptySet();
     }
 
     void single( long reference, Read read )
@@ -91,7 +92,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.highMark = NO_ID;
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = null;
+        this.addedNodes = emptySet();
     }
 
     @Override
@@ -188,7 +189,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         TransactionState txs = hasChanges ? read.txState() : null;
         do
         {
-            if ( hasChanges && addedNodes.contains( next ) )
+            if ( hasChanges && containsNode( txs ) )
             {
                 setId( next++ );
                 setInUse( true );
@@ -233,6 +234,11 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         return true;
     }
 
+    private boolean containsNode( TransactionState txs )
+    {
+        return isSingle() ? txs.nodeIsAddedInThisTx( next ) : addedNodes.contains( next );
+    }
+
     @Override
     public boolean shouldRetry()
     {
@@ -255,7 +261,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             labelCursor = null;
         }
         hasChanges = HasChanges.MAYBE;
-        addedNodes = null;
+        addedNodes = emptySet();
         reset();
     }
 
@@ -277,7 +283,10 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             boolean changes = read.hasTxStateWithChanges();
             if ( changes )
             {
-                addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
+                if ( !isSingle() )
+                {
+                    addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
+                }
                 hasChanges = HasChanges.YES;
             }
             else
