@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,44 +25,40 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.pagecache.CursorException;
-import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Wraps a byte array and present it as a PageCursor.
  * <p>
- * This class is bridging something which would otherwise make {@link InternalTreeLogic} code slightly more
- * complicated. Currently when splitting nodes keys/values/children are read into temporary arrays
- * and manipulating that data by standard means (which are designed to work on {@link PageCursor}
- * can stay the same if wrapping the byte array as such. If splitting code later changes to not
- * do this temporary copy then this class won't be needed anymore.
- * <p>
  * All the accessor methods (getXXX, putXXX) are implemented and delegates calls to its internal {@link ByteBuffer}.
  * {@link #setOffset(int)}, {@link #getOffset()} and {@link #rewind()} positions the internal {@link ByteBuffer}.
- * {@link #shouldRetry()} always returns {@code false}. No other methods should be used and will throw
- * {@link UnsupportedOperationException}.
+ * {@link #shouldRetry()} always returns {@code false}.
  */
-class ByteArrayPageCursor extends PageCursor
+public class ByteArrayPageCursor extends PageCursor
 {
     private final ByteBuffer buffer;
     private CursorException cursorException;
 
-    static PageCursor wrap( byte[] array, int offset, int length )
+    public static PageCursor wrap( byte[] array, int offset, int length )
     {
         return new ByteArrayPageCursor( array, offset, length );
     }
 
-    static PageCursor wrap( byte[] array )
+    public static PageCursor wrap( byte[] array )
     {
         return wrap( array, 0, array.length );
     }
 
-    static PageCursor wrap( int length )
+    public static PageCursor wrap( int length )
     {
         return wrap( new byte[length] );
     }
 
-    private ByteArrayPageCursor( byte[] array, int offset, int length )
+    public ByteArrayPageCursor( byte[] array )
+    {
+        this( array, 0, array.length );
+    }
+
+    public ByteArrayPageCursor( byte[] array, int offset, int length )
     {
         this.buffer = ByteBuffer.wrap( array, offset, length );
     }
@@ -232,7 +228,7 @@ class ByteArrayPageCursor extends PageCursor
     @Override
     public boolean next( long pageId ) throws IOException
     {
-        throw new UnsupportedOperationException();
+        return pageId == 0;
     }
 
     @Override
