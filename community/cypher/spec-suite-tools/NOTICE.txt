@@ -27,30 +27,34 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Batik AWT utilities
-  Batik Java2D SVG generator
-  Batik utility library
+  Apache XML Graphics Commons
   Caffeine cache
   casbah-commons
   casbah-core
   casbah-query
+  Commons IO
   Cucumber-JVM Repackaged Dependencies
   Joda convert
   Joda-Time
   json4s-ast
   json4s-core
   json4s-native
+  Logging
   Lucene Core
   Lucene Memory
   MongoDB Java Driver
   nscala-time
   openCypher Grammar Developer Tools
   openCypher TCK Developer Tools
+  org.apache.xmlgraphics:batik-awt-util
+  org.apache.xmlgraphics:batik-constants
+  org.apache.xmlgraphics:batik-i18n
+  org.apache.xmlgraphics:batik-svggen
+  org.apache.xmlgraphics:batik-util
   parboiled-core
   parboiled-scala
   salat-core
   salat-util
-  XML Commons External Components XML APIs
 
 BSD - Scala License
   Scala Library
