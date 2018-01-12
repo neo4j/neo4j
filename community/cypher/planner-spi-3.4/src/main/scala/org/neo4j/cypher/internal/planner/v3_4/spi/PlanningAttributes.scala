@@ -26,4 +26,5 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Attribute
 object PlanningAttributes {
   class Solveds extends Attribute[PlannerQuery]
   class Cardinalities extends Attribute[Cardinality]
+  class ReadOnlies extends Attribute[Boolean]
 }

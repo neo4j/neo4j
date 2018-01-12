@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
@@ -45,19 +45,20 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
   override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
-    val solveds = from.solveds
+    val readOnlies = new ReadOnlies
+    from.solveds.mapTo(readOnlies, _.readOnly)
     val cardinalities = from.cardinalities
     val logicalPlan = from.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
       expressionConverters = converters, pipeBuilderFactory = CommunityPipeBuilderFactory)
-    val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName, solveds, cardinalities)
+    val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName, readOnlies, cardinalities)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = from.statement().returnColumns
     val resultBuilderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
     val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory,
-                                        context.notificationLogger, InterpretedRuntimeName, solveds, cardinalities)
+                                        context.notificationLogger, InterpretedRuntimeName, readOnlies, cardinalities)
 
     val execPlan: ExecutionPlan = new InterpretedExecutionPlan(func,
       logicalPlan,
@@ -74,7 +75,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
                                resultBuilderFactory: ExecutionResultBuilderFactory,
                                notificationLogger: InternalNotificationLogger,
                                runtimeName: RuntimeName,
-                               solveds: Solveds,
+                               readOnlies: ReadOnlies,
                                cardinalities: Cardinalities):
   (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult =
     (queryContext: QueryContext, planType: ExecutionMode, params: MapValue) => {
@@ -94,7 +95,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(queryId, planType, params, notificationLogger, runtimeName, solveds, cardinalities)
+      builder.build(queryId, planType, params, notificationLogger, runtimeName, readOnlies, cardinalities)
     }
 
   /**

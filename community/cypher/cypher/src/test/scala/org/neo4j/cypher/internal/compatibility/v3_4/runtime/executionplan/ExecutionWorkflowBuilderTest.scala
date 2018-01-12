@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{EagerResultIterator
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
@@ -43,9 +43,9 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
   test("produces eager results for updating queries") {
     // GIVEN
-    val solveds = new Solveds
+    val readOnlies = new ReadOnlies
     val cardinalities = new Cardinalities
-    solveds.set(logicalPlan.id, PlannerQuery.empty)
+    readOnlies.set(logicalPlan.id, true)
     cardinalities.set(logicalPlan.id, 0.0)
 
     val pipe = mock[Pipe]
@@ -62,16 +62,16 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, solveds, cardinalities)
+    val result = builder.build("42", NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnlies, cardinalities)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
 
   test("produces lazy results for non-updating queries") {
     // GIVEN
-    val solveds = new Solveds
+    val readOnlies = new ReadOnlies
     val cardinalities = new Cardinalities
-    solveds.set(logicalPlan.id, PlannerQuery.empty)
+    readOnlies.set(logicalPlan.id, true)
     cardinalities.set(logicalPlan.id, 0.0)
 
     val pipe = mock[Pipe]
@@ -85,16 +85,16 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, solveds, cardinalities)
+    val result = builder.build("42", NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnlies, cardinalities)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
 
   test("produces explain results for EXPLAIN queries") {
     // GIVEN
-    val solveds = new Solveds
+    val readOnlies = new ReadOnlies
     val cardinalities = new Cardinalities
-    solveds.set(logicalPlan.id, PlannerQuery.empty)
+    readOnlies.set(logicalPlan.id, true)
     cardinalities.set(logicalPlan.id, 0.0)
 
     val pipe = mock[Pipe]
@@ -110,7 +110,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", ExplainMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, solveds, cardinalities)
+    val result = builder.build("42", ExplainMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnlies, cardinalities)
     result shouldBe a [ExplainExecutionResult]
   }
 }

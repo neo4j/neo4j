@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{By
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode, QueryContext}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
@@ -1561,7 +1561,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   private def param(values: (String,AnyRef)*): MapValue = ValueUtils.asMapValue(values.toMap.asJava)
 
   private def compile(plan: LogicalPlan) = {
-    generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default, new Solveds, new Cardinalities)
+    generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default, new ReadOnlies, new Cardinalities)
   }
 
   private def compileAndExecute(plan: LogicalPlan, params: MapValue = EMPTY_MAP, taskCloser: TaskCloser = new TaskCloser) = {

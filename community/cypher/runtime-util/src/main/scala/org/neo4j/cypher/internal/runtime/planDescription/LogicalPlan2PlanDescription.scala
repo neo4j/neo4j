@@ -20,20 +20,20 @@
 package org.neo4j.cypher.internal.runtime.planDescription
 
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, Solveds, Cardinalities) => InternalPlanDescription) {
+object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, ReadOnlies, Cardinalities) => InternalPlanDescription) {
 
   override def apply(input: LogicalPlan,
                      plannerName: PlannerName,
-                     solveds: Solveds,
+                     readOnlies: ReadOnlies,
                      cardinalities: Cardinalities): InternalPlanDescription = {
-    val readOnly = solveds.get(input.id).readOnly
+    val readOnly = readOnlies.get(input.id)
     new LogicalPlan2PlanDescription(readOnly, cardinalities).create(input)
       .addArgument(Version("CYPHER 3.4"))
       .addArgument(RuntimeVersion("3.4"))

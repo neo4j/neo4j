@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 import org.neo4j.cypher.internal.util.v3_4.CypherException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.RuntimeName
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.values.virtual.MapValue
@@ -37,7 +37,7 @@ trait ExecutionResultBuilder {
             params: MapValue,
             notificationLogger: InternalNotificationLogger,
             runtimeName: RuntimeName,
-            solveds: Solveds,
+            readOnlies: ReadOnlies,
             cardinalities: Cardinalities): InternalExecutionResult
 }
 

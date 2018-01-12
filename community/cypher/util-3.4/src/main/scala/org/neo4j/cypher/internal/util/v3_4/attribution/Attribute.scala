@@ -89,6 +89,17 @@ trait Attribute[T] {
       set(to, get(from))
   }
 
+  def mapTo[U](otherAttribute: Attribute[U], f: T => U): Unit = {
+    var i = 0
+    while(i < array.size) {
+      val id = Id(i)
+      if(isDefinedAt(id)) {
+        otherAttribute.set(id, f(this.get(id)))
+      }
+      i = i + 1
+    }
+  }
+
   override def toString(): String = {
     val sb = new StringBuilder
     sb ++= this.getClass.getSimpleName + "\n"

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.InternalWrapping._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, ExecutionContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
@@ -69,13 +69,13 @@ abstract class BaseExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                        params: MapValue,
                        notificationLogger: InternalNotificationLogger,
                        runtimeName: RuntimeName,
-                       solveds: Solveds,
+                       readOnlies: ReadOnlies,
                        cardinalities: Cardinalities): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       val state = createQueryState(params, queryId)
       try {
-        createResults(state, planType, notificationLogger, runtimeName, solveds, cardinalities)
+        createResults(state, planType, notificationLogger, runtimeName, readOnlies, cardinalities)
       }
       catch {
         case e: CypherException =>
@@ -90,11 +90,11 @@ abstract class BaseExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     private def createResults(state: QueryState, planType: ExecutionMode,
                               notificationLogger: InternalNotificationLogger,
                               runtimeName: RuntimeName,
-                              solveds: Solveds,
+                              readOnlies: ReadOnlies,
                               cardinalities: Cardinalities): InternalExecutionResult = {
       val queryType: InternalQueryType = getQueryType
       val planDescription =
-        () => LogicalPlan2PlanDescription(logicalPlan, pipeInfo.plannerUsed, solveds, cardinalities)
+        () => LogicalPlan2PlanDescription(logicalPlan, pipeInfo.plannerUsed, readOnlies, cardinalities)
           .addArgument(Runtime(runtimeName.toTextOutput))
           .addArgument(RuntimeImpl(runtimeName.name))
       if (planType == ExplainMode) {
