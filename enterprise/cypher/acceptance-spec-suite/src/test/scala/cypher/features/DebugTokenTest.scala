@@ -19,12 +19,11 @@
  */
 package cypher.features
 
-import org.junit.Test
+import org.scalatest.FunSuite
 
-class DebugTokenTest {
+class DebugTokenTest extends FunSuite {
 
-  @Test
-  def checkThatDebugTokensAreEmpty(): Unit ={
+  test("check that debug tokens are empty") {
     val t = new AcceptanceTest
     assert(t.scenarioToRun.equals(""), "scenarioToRun is only for debugging and should not be committed")
     assert(t.featureToRun.equals(""), "featureToRun is only for debugging and should not be committed")
