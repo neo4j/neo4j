@@ -45,7 +45,7 @@
   </licenses>
 
   <properties>
-    <opencypher.version>1.0-SNAPSHOT</opencypher.version>
+    <opencypher.version>1.0.0-M08</opencypher.version>
   </properties>
   
   <build>
