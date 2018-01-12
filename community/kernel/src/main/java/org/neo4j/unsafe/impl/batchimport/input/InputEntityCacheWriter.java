@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 
 import static java.lang.Integer.max;
-
 import static org.neo4j.helpers.Numbers.safeCastLongToShort;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
@@ -204,12 +203,12 @@ abstract class InputEntityCacheWriter implements InputCacher
         {
             if ( hasPropertyId )
             {
-                buffer( 10 ).putShort( HAS_FIRST_PROPERTY_ID ).putLong( propertyId );
+                buffer( Short.BYTES + Long.BYTES ).putShort( HAS_FIRST_PROPERTY_ID ).putLong( propertyId );
             }
             else
             {
                 Object[] properties = properties();
-                buffer( 2 ).putShort( safeCastLongToShort( properties.length / 2 ) );
+                buffer( Short.BYTES ).putShort( safeCastLongToShort( properties.length / 2 ) );
                 for ( int i = 0; i < properties.length; i++ )
                 {
                     Object key = properties[i++];
@@ -242,11 +241,11 @@ abstract class InputEntityCacheWriter implements InputCacher
             group = group != null ? group : Group.GLOBAL;
             if ( group.id() == previousGroupIds[slot] )
             {
-                buffer( 1 ).put( SAME_GROUP );
+                buffer( Byte.BYTES ).put( SAME_GROUP );
             }
             else
             {
-                buffer( 5 ).put( NEW_GROUP ).putInt( previousGroupIds[slot] = group.id() );
+                buffer( Byte.BYTES + Integer.BYTES ).put( NEW_GROUP ).putInt( previousGroupIds[slot] = group.id() );
                 writeToken( GROUP_TOKEN, group.name() );
             }
         }
@@ -255,7 +254,7 @@ abstract class InputEntityCacheWriter implements InputCacher
         {
             ValueType type = ValueType.typeOf( value );
             int length = type.length( value );
-            buffer( 1 + length ).put( type.id() );
+            buffer( Byte.BYTES + length ).put( type.id() );
             type.write( value, bufferAsChannel );
         }
 
@@ -264,13 +263,13 @@ abstract class InputEntityCacheWriter implements InputCacher
             if ( key instanceof String )
             {
                 int id = getOrCreateToken( type, (String) key );
-                buffer( 4 ).putInt( id );
+                buffer( Integer.BYTES ).putInt( id );
             }
             else if ( key instanceof Integer )
             {
                 // Here we signal that we have a real token id, not to be confused by the local and contrived
                 // token ids we generate in here. Following this -1 is the real token id.
-                buffer( 8 ).putInt( (short) -1 ).putInt( (Integer) key );
+                buffer( Integer.BYTES + Integer.BYTES ).putInt( (short) -1 ).putInt( (Integer) key );
             }
             else
             {
@@ -289,7 +288,7 @@ abstract class InputEntityCacheWriter implements InputCacher
 
         private void flushChunk() throws IOException
         {
-            buffer( 2 ).putShort( END_OF_ENTITIES );
+            buffer( Short.BYTES ).putShort( END_OF_ENTITIES );
             buffer.flip();
             writeChunk( buffer );
             buffer.clear();

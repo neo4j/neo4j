@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -72,6 +73,7 @@ public class InputRelationshipCacheWriter extends InputEntityCacheWriter
             // type
             if ( hasIntType )
             {
+                ByteBuffer buffer = buffer( Byte.BYTES + Integer.BYTES );
                 buffer.put( HAS_TYPE_ID );
                 buffer.putInt( intType );
             }
@@ -79,11 +81,11 @@ public class InputRelationshipCacheWriter extends InputEntityCacheWriter
             {
                 if ( previousType != null && stringType.equals( previousType ) )
                 {
-                    buffer.put( SAME_TYPE );
+                    buffer( Byte.BYTES ).put( SAME_TYPE );
                 }
                 else
                 {
-                    buffer.put( NEW_TYPE );
+                    buffer( Byte.BYTES ).put( NEW_TYPE );
                     writeToken( RELATIONSHIP_TYPE_TOKEN, previousType = stringType );
                 }
             }

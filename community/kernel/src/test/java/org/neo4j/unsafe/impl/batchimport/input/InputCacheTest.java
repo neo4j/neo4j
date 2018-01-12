@@ -42,10 +42,8 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.lang.Math.abs;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 public class InputCacheTest
@@ -54,7 +52,7 @@ public class InputCacheTest
     private static final int countPerThread = 10_000;
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final TestDirectory dir = TestDirectory.testDirectory();
-    private final RandomRule randomRule = new RandomRule();
+    private final RandomRule randomRule = new RandomRule().withSeedForAllTests( 1515752471383L );
     private final int threads = Runtime.getRuntime().availableProcessors();
     private final ExecutorService executor = Executors.newFixedThreadPool( threads );
     private final List<Future<?>> futures = new ArrayList<>();

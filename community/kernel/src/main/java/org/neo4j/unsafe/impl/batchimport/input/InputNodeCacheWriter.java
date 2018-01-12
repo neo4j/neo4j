@@ -72,14 +72,14 @@ public class InputNodeCacheWriter extends InputEntityCacheWriter
             // labels
             if ( hasLabelField )
             {   // label field
-                buffer( 1 + 8 ).put( HAS_LABEL_FIELD ).putLong( labelField );
+                buffer( Byte.BYTES + Long.BYTES ).put( HAS_LABEL_FIELD ).putLong( labelField );
             }
             else
             {   // diff from previous node
                 String[] labels = labels();
                 writeLabelDiff( LABEL_REMOVAL, previousLabels, labels );
                 writeLabelDiff( LABEL_ADDITION, labels, previousLabels );
-                buffer( 1 ).put( END_OF_LABEL_CHANGES );
+                buffer( Byte.BYTES ).put( END_OF_LABEL_CHANGES );
                 previousLabels = labels;
             }
         }
@@ -97,7 +97,7 @@ public class InputNodeCacheWriter extends InputEntityCacheWriter
             {
                 if ( !contains( with, value ) )
                 {
-                    buffer( 1 ).put( mode );
+                    buffer( Byte.BYTES ).put( mode );
                     writeToken( LABEL_TOKEN, value );
                 }
             }
