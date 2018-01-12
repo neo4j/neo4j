@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir.v3_3
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.ir.v3_3.helpers.ExpressionConverters._
 
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{GenTraversableOnce, mutable}
 import scala.runtime.ScalaRunTime
 
@@ -33,7 +34,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
                       optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
                       hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
-                      mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
+                      mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty)
   extends UpdateGraph {
 
   def smallestGraphIncluding(mustInclude: Set[String]): Set[String] = {
@@ -197,7 +198,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
       case p: MergeRelationshipPattern => p.copy(matchGraph = matchGraph)
     }.get
 
-    copy(argumentIds = matchGraph.argumentIds, mutatingPatterns = Seq(newMutatingPattern))
+    copy(argumentIds = matchGraph.argumentIds, mutatingPatterns = IndexedSeq(newMutatingPattern))
   }
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
@@ -389,8 +390,20 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
 
   def writeOnly: Boolean = !containsReads && containsUpdates
 
-  def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
-    copy(mutatingPatterns = mutatingPatterns ++ patterns)
+  def addMutatingPatterns(pattern: MutatingPattern): QueryGraph = {
+    val copyPatterns = new mutable.ArrayBuffer[MutatingPattern](mutatingPatterns.size + 1)
+    copyPatterns.appendAll(mutatingPatterns)
+    copyPatterns.append(pattern)
+
+    copy(mutatingPatterns = copyPatterns)
+  }
+
+  def addMutatingPatterns(patterns: Seq[MutatingPattern]): QueryGraph = {
+    val copyPatterns = new ArrayBuffer[MutatingPattern](patterns.size)
+    copyPatterns.appendAll(mutatingPatterns)
+    copyPatterns.appendAll(patterns)
+    copy(mutatingPatterns = copyPatterns)
+  }
 
   /**
     * We have to do this special treatment of QG to avoid problems when checking that the produced plan actually
