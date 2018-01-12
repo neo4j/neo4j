@@ -322,6 +322,8 @@ object ClauseConverters {
 
         val pos = pattern.position
 
+        val selections = asSelections(clause.where)
+
         val hasLabels = nodes.flatMap(n =>
           n.labels.map(l => HasLabels(Variable(n.nodeName.name)(pos), Seq(l))(pos))
         )
@@ -335,7 +337,7 @@ object ClauseConverters {
           patternNodes = nodes.map(_.nodeName).toSet,
           patternRelationships = rels.map(r => PatternRelationship(r.relName, (r.leftNode, r.rightNode),
             r.direction, Seq(r.relType), SimplePatternLength)).toSet,
-          selections = Selections.from(hasLabels ++ hasProps),
+          selections = selections ++ Selections.from(hasLabels ++ hasProps),
           argumentIds = builder.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.nodeName)
         )
 

@@ -35,7 +35,7 @@ case object nameUpdatingClauses extends Rewriter {
       val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       create.copy(pattern = rewrittenPattern)(create.position)
 
-    case merge@Merge(pattern, _) =>
+    case merge@Merge(pattern, _, _) =>
       val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       merge.copy(pattern = rewrittenPattern)(merge.position)
   }

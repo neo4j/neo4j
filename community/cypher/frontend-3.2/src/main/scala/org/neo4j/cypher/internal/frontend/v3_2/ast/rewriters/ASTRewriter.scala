@@ -44,6 +44,7 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, literalE
       foldConstants,
       ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
+      nameUpdatingClauses,
       enableCondition(noUnnamedPatternElementsInMatch),
       normalizeMatchPredicates,
       normalizeNotEquals,

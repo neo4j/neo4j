@@ -29,22 +29,34 @@ case object addUniquenessPredicates extends Rewriter {
   private val rewriter = Rewriter.lift {
     case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
-
       if (uniqueRels.size < 2) {
         m
       } else {
-        val maybePredicate: Option[Expression] = createPredicateFor(uniqueRels, m.position)
-        val newWhere: Option[Where] = (where, maybePredicate) match {
-          case (Some(oldWhere), Some(newPredicate)) =>
-            Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(m.position))(m.position))
-
-          case (None, Some(newPredicate)) =>
-            Some(Where(expression = newPredicate)(m.position))
-
-          case (oldWhere, None) => oldWhere
-        }
+        val newWhere = addPredicate(m, uniqueRels, where)
         m.copy(where = newWhere)(m.position)
       }
+    case m@Merge(pattern: Pattern, _, where: Option[Where]) =>
+      val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
+      if (uniqueRels.size < 2) {
+        m
+      } else {
+        val newWhere = addPredicate(m, uniqueRels, where)
+        m.copy(where = newWhere)(m.position)
+      }
+  }
+
+  private def addPredicate(clause: Clause, uniqueRels:  Seq[UniqueRel], where: Option[Where]): Option[Where] = {
+    val maybePredicate: Option[Expression] = createPredicateFor(uniqueRels, clause.position)
+    val newWhere: Option[Where] = (where, maybePredicate) match {
+      case (Some(oldWhere), Some(newPredicate)) =>
+        Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(clause.position))(clause.position))
+
+      case (None, Some(newPredicate)) =>
+        Some(Where(expression = newPredicate)(clause.position))
+
+      case (oldWhere, None) => oldWhere
+    }
+    newWhere
   }
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
