@@ -94,8 +94,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan("b", Set())(solved),
-          "b", INCOMING, List(), "a", "r", ExpandAll
+          AllNodesScan("a", Set())(solved),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
@@ -113,8 +113,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan("b", Set())(solved),
-          "b", INCOMING, List(), "a", "r", ExpandAll
+          AllNodesScan("a", Set())(solved),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
@@ -132,8 +132,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan("b", Set())(solved),
-          "b", INCOMING, List(), "a", "r", ExpandAll
+          AllNodesScan("a", Set())(solved),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
@@ -151,8 +151,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan("b", Set())(solved),
-          "b", INCOMING, List(), "a", "r", ExpandAll
+          AllNodesScan("a", Set())(solved),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
@@ -170,8 +170,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan("b", Set())(solved),
-          "b", INCOMING, List(), "a", "r", ExpandAll
+          AllNodesScan("a", Set())(solved),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
@@ -189,8 +189,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         VarExpand(
-          AllNodesScan("b", Set())(solved),
-          "b", INCOMING, OUTGOING, List(), "a", "r", VarPatternLength(1, None), ExpandAll, "r_NODES", "r_RELS", True()(pos), True()(pos), Seq()
+          AllNodesScan("a", Set())(solved),
+          "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll, "r_NODES", "r_RELS", True()(pos), True()(pos), Seq()
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
