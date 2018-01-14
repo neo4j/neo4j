@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, RelTypeName}
 import org.neo4j.cypher.internal.ir.v3_3.{Selections, _}
 
 trait Pattern2Selectivity {
-  def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
+  def apply(pattern: PatternRelationship, labels: Map[String, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
 }
 
 object PatternSelectivityCalculator {
@@ -37,7 +37,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
 
   import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.assumeIndependence.PatternSelectivityCalculator._
 
-  def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])
+  def apply(pattern: PatternRelationship, labels: Map[String, Set[LabelName]])
            (implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
     val nbrOfNodesInGraph = stats.nodesAllCardinality()
     val (lhs, rhs) = pattern.nodes

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery, StrictnessMode}
 
 case class DetachDeleteNode(source: LogicalPlan, expression: Expression)
                            (val solved: PlannerQuery with CardinalityEstimation)
@@ -28,7 +28,7 @@ case class DetachDeleteNode(source: LogicalPlan, expression: Expression)
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
 

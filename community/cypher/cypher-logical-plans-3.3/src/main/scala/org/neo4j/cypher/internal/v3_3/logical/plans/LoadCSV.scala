@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.ir.v3_3._
 
 case class LoadCSV(source: LogicalPlan,
                    url: Expression,
-                   variableName: IdName,
+                   variableName: String,
                    format: CSVFormat,
                    fieldTerminator: Option[String],
                    legacyCsvQuoteEscaping: Boolean)
                   (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
 
-  override def availableSymbols = source.availableSymbols + variableName
+  override val availableSymbols = source.availableSymbols + variableName
 
   override def lhs = Some(source)
 

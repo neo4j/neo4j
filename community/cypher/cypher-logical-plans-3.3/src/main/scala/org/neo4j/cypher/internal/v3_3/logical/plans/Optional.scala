@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
-case class Optional(inputPlan: LogicalPlan, protectedSymbols: Set[IdName] = Set.empty)
+case class Optional(inputPlan: LogicalPlan, protectedSymbols: Set[String] = Set.empty)
                    (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(inputPlan)
   val rhs = None
 
-  def availableSymbols = inputPlan.availableSymbols
+  val availableSymbols = inputPlan.availableSymbols
 }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
-case class LockNodes(source: LogicalPlan, nodesToLock: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+case class LockNodes(source: LogicalPlan, nodesToLock: Set[String])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(source)
 
   override def rhs: Option[LogicalPlan] = None
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols
 }

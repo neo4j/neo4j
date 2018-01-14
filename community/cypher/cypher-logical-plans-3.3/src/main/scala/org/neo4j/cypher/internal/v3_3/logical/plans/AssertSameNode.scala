@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
-case class AssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
+case class AssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols + node
+  val availableSymbols = left.availableSymbols ++ right.availableSymbols + node
 }

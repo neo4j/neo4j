@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, FunctionInvocation, FunctionName, Variable}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{AggregatingQueryProjection, IdName}
+import org.neo4j.cypher.internal.ir.v3_3.AggregatingQueryProjection
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -167,9 +167,9 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       } else {
         MatchResult(
           plan match {
-            case Some(NodeCountFromCountStore(IdName(countId), _, _)) if countId == s"count($variable)" =>
+            case Some(NodeCountFromCountStore(countId, _, _)) if countId == s"count($variable)" =>
               true
-            case Some(RelationshipCountFromCountStore(IdName(countId), _, _, _, _)) if countId == s"count($variable)" =>
+            case Some(RelationshipCountFromCountStore(countId, _, _, _, _)) if countId == s"count($variable)" =>
               true
             case _ =>
               false

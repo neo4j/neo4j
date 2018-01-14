@@ -72,7 +72,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple pattern query") {
-    val logicalPlan = AllNodesScan(IdName("n"), Set.empty)_
+    val logicalPlan = AllNodesScan("n", Set.empty)_
     val pipeInfo: PipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -81,7 +81,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan(IdName("n"), lblName("Foo"), Set.empty)_
+    val logicalPlan = NodeByLabelScan("n", lblName("Foo"), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -91,7 +91,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
   test("simple node by id seek query") {
     val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
-    val logicalPlan = NodeByIdSeek(IdName("n"), ManySeekableArgs(astLiteral), Set.empty)_
+    val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astLiteral), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -103,7 +103,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val astCollection: ListLiteral = ListLiteral(
       Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
     )_
-    val logicalPlan = NodeByIdSeek(IdName("n"), ManySeekableArgs(astCollection), Set.empty)_
+    val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astCollection), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -115,7 +115,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(astLiteral), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astLiteral), fromNode, toNode, Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -129,7 +129,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -143,7 +143,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = UndirectedRelationshipByIdSeek("r", ManySeekableArgs(astCollection), fromNode, toNode, Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -152,8 +152,8 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple cartesian product") {
-    val lhs = AllNodesScan(IdName("n"), Set.empty)(solved)
-    val rhs = AllNodesScan(IdName("m"), Set.empty)(solved)
+    val lhs = AllNodesScan("n", Set.empty)(solved)
+    val rhs = AllNodesScan("m", Set.empty)(solved)
     val logicalPlan = CartesianProduct(lhs, rhs)_
     val pipeInfo = build(logicalPlan)
 
@@ -189,7 +189,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   test("simple hash join") {
     val logicalPlan =
       NodeHashJoin(
-        Set(IdName("b")),
+        Set("b"),
         Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "b", "r1")(solved),
         Expand(AllNodesScan("c", Set.empty)(solved), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")(solved)
       )_

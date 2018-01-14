@@ -83,7 +83,7 @@ case object pruningVarExpander extends Rewriter {
   // When the distinct horizon needs the path that includes the var length relationship,
   // we can't use DistinctVarExpand - we need all the paths
   def distinctNeedsRelsFromExpand(inDistinctLand: Option[Set[String]], expand: VarExpand): Boolean = {
-    inDistinctLand.forall(vars => vars(expand.relName.name))
+    inDistinctLand.forall(vars => vars(expand.relName))
   }
 
   private def isDistinct(e: Expression) = e match {

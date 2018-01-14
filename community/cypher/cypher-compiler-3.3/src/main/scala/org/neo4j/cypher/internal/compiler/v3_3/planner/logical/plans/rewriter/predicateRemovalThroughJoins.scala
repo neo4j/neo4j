@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, QueryGraph}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{NodeHashJoin, Selection}
 
 
@@ -50,6 +50,6 @@ case object predicateRemovalThroughJoins extends Rewriter {
       }
   })
 
-  private def predicatesDependingOnTheJoinIds(qg: QueryGraph, nodeIds: Set[IdName]): Set[Expression] =
+  private def predicatesDependingOnTheJoinIds(qg: QueryGraph, nodeIds: Set[String]): Set[Expression] =
     qg.selections.predicates.filter(p => (p.dependencies intersect nodeIds) == nodeIds).map(_.expr)
 }

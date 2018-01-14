@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.SymbolicNameWithId
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 sealed trait TokenSpec[+ID <: NameId] {
   def id: Option[ID]
@@ -30,8 +29,8 @@ sealed trait TokenSpec[+ID <: NameId] {
 }
 
 object TokenSpec {
-  type LabelSpecs = Map[IdName, Set[TokenSpec[LabelId]]]
-  type RelTypeSpecs = Map[IdName, Set[TokenSpec[RelTypeId]]]
+  type LabelSpecs = Map[String, Set[TokenSpec[LabelId]]]
+  type RelTypeSpecs = Map[String, Set[TokenSpec[RelTypeId]]]
 
   def mapFrom[T <: SymbolicNameWithId[ID], ID <: NameId](input: Set[T])(implicit semanticTable: SemanticTable): Set[TokenSpec[ID]] =
     if (input.isEmpty)

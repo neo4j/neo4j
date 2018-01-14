@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
 /*
 Triadic selection is used to solve a common query pattern:
@@ -59,7 +59,7 @@ With a plan that looks like:
  */
 case class TriadicSelection(positivePredicate: Boolean /*false means NOT(pattern)*/ ,
                             left: LogicalPlan /*produces rows with 'source' and 'seen'*/ ,
-                            sourceId: IdName, seenId: IdName, targetId: IdName,
+                            sourceId: String, seenId: String, targetId: String,
                             right: LogicalPlan /*given rows with 'source' and 'seen', produces rows with 'target'*/)
                            (val solved: PlannerQuery with CardinalityEstimation)
 extends LogicalPlan with LazyLogicalPlan {
@@ -67,5 +67,5 @@ extends LogicalPlan with LazyLogicalPlan {
 
   override def rhs: Option[LogicalPlan] = Some(right)
 
-  override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

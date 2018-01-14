@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast => parserAst}
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 import scala.collection.mutable
@@ -118,7 +117,7 @@ object SlotAllocation {
 
       case leaf: NodeLogicalLeafPlan =>
         val pipeline = argument.getOrElse(PipelineInformation.empty)
-        pipeline.newLong(leaf.idName.name, nullable, CTNode)
+        pipeline.newLong(leaf.idName, nullable, CTNode)
         pipeline
 
       case SingleRow() =>
@@ -145,13 +144,13 @@ object SlotAllocation {
         }
         outgoing
 
-      case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
+      case Expand(_, _, _, _, to, relName, ExpandAll) =>
         val newPipeline = incomingPipeline.seedClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline.newLong(to, nullable, CTNode)
         newPipeline
 
-      case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
+      case Expand(_, _, _, _, _, relName, ExpandInto) =>
         val newPipeline = incomingPipeline.seedClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline
@@ -177,28 +176,28 @@ object SlotAllocation {
         }
         incomingPipeline
 
-      case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
+      case OptionalExpand(_, _, _, _, to, rel, ExpandAll, _) =>
         val newPipeline = incomingPipeline.seedClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline.newLong(to, nullable = true, CTNode)
         newPipeline
 
-      case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
+      case OptionalExpand(_, _, _, _, _, rel, ExpandInto, _) =>
         val newPipeline = incomingPipeline.seedClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline
 
       case VarExpand(lhs: LogicalPlan,
-                       IdName(from),
+                       from,
                        dir,
                        projectedDir,
                        types,
-                       IdName(to),
-                       IdName(edge),
+                       to,
+                       edge,
                        length,
                        ExpandAll,
-                       IdName(tempNode),
-                       IdName(tempEdge),
+                       tempNode,
+                       tempEdge,
                        _,
                        _,
                        _) =>
@@ -213,26 +212,26 @@ object SlotAllocation {
         newPipeline.newReference(edge, nullable, CTList(CTRelationship))
         newPipeline
 
-      case CreateNode(_, IdName(name), _, _) =>
+      case CreateNode(_, name, _, _) =>
         incomingPipeline.newLong(name, nullable = false, CTNode)
         incomingPipeline
 
-      case MergeCreateNode(_, IdName(name), _, _) =>
+      case MergeCreateNode(_, name, _, _) =>
         // The variable name should already have been allocated by the NodeLeafPlan
         incomingPipeline
 
-      case CreateRelationship(_, IdName(name), startNode, typ, endNode, props) =>
+      case CreateRelationship(_, name, startNode, typ, endNode, props) =>
         incomingPipeline.newLong(name, nullable = false, CTRelationship)
         incomingPipeline
 
-      case MergeCreateRelationship(_, IdName(name), startNode, typ, endNode, props) =>
+      case MergeCreateRelationship(_, name, startNode, typ, endNode, props) =>
         incomingPipeline.newLong(name, nullable = false, CTRelationship)
         incomingPipeline
 
       case EmptyResult(_) =>
         incomingPipeline
 
-      case UnwindCollection(_, IdName(variable), expression) =>
+      case UnwindCollection(_, variable, expression) =>
         val newPipeline = incomingPipeline.seedClone()
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline

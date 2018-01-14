@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.helpers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 class CachedFunctionTest extends CypherFunSuite {
   test("does not re-calculate stuff") {
@@ -30,8 +30,8 @@ class CachedFunctionTest extends CypherFunSuite {
 
     val cachedF = CachedFunction(f)
 
-    val qg1 = QueryGraph(patternNodes = Set(IdName("a")))
-    val qg2 = QueryGraph(patternNodes = Set(IdName("a")))
+    val qg1 = QueryGraph(patternNodes = Set("a"))
+    val qg2 = QueryGraph(patternNodes = Set("a"))
 
     cachedF(qg1)
     cachedF(qg2)

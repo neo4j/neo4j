@@ -29,7 +29,7 @@ case class SetProperty(source: LogicalPlan, entity: Expression, propertyKey: Pro
 
   override def rhs = None
 
-  override def availableSymbols = source.availableSymbols
+  override val availableSymbols = source.availableSymbols
 
   override def strictness = source.strictness
 }

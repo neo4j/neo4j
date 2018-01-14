@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery, StrictnessMode}
 
-case class SetNodePropertiesFromMap(source: LogicalPlan, idName: IdName, expression: Expression, removeOtherProps: Boolean)
+case class SetNodePropertiesFromMap(source: LogicalPlan, idName: String, expression: Expression, removeOtherProps: Boolean)
                     (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + idName
+  override val availableSymbols: Set[String] = source.availableSymbols + idName
 
   override def rhs: Option[LogicalPlan] = None
 

@@ -21,16 +21,16 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, QueryGraph, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.{PatternRelationship, QueryGraph, SimplePatternLength}
 
 class QueryGraphTest extends CypherFunSuite {
-  val x = IdName("x")
-  val n = IdName("n")
-  val m = IdName("m")
-  val c = IdName("c")
-  val r1 = IdName("r1")
-  val r2 = IdName("r2")
-  val r3 = IdName("r3")
+  val x = "x"
+  val n = "n"
+  val m = "m"
+  val c = "c"
+  val r1 = "r1"
+  val r2 = "r2"
+  val r3 = "r3"
 
   test("returns no pattern relationships when the query graph doesn't contain any") {
     val rels: Set[PatternRelationship] = Set.empty

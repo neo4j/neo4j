@@ -27,5 +27,5 @@ case class Skip(left: LogicalPlan, count: Expression)
   val lhs = Some(left)
   val rhs = None
 
-  def availableSymbols = left.availableSymbols
+  val availableSymbols = left.availableSymbols
 }

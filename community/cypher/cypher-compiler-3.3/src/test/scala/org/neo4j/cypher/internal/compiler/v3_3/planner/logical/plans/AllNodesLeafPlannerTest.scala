@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluat
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_3.ast.PatternExpression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 import org.neo4j.cypher.internal.v3_3.logical.plans.AllNodesScan
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -33,7 +33,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("simple all nodes scan") {
     // given
-    val queryGraph = QueryGraph(patternNodes = Set(IdName("n")))
+    val queryGraph = QueryGraph(patternNodes = Set("n"))
 
     implicit val planContext = newMockedPlanContext
     implicit val context = newMockedLogicalPlanningContext(
@@ -44,6 +44,6 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val resultPlans = allNodesLeafPlanner(queryGraph)
 
     // then
-    resultPlans should equal(Seq(AllNodesScan(IdName("n"), Set.empty)(solved)))
+    resultPlans should equal(Seq(AllNodesScan("n", Set.empty)(solved)))
   }
 }

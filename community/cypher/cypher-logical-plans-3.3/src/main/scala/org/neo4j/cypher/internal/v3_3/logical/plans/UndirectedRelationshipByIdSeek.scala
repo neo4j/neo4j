@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
-case class UndirectedRelationshipByIdSeek(idName: IdName,
+case class UndirectedRelationshipByIdSeek(idName: String,
                                           relIds: SeekableArgs,
-                                          leftNode: IdName,
-                                          rightNode: IdName,
-                                          argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+                                          leftNode: String,
+                                          rightNode: String,
+                                          argumentIds: Set[String])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
+  val availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
 }

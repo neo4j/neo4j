@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
 case class Aggregation(left: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
@@ -33,7 +33,7 @@ case class Aggregation(left: LogicalPlan,
 
   def rhs = None
 
-  val groupingKeys = groupingExpressions.keySet.map(IdName(_))
+  val groupingKeys = groupingExpressions.keySet
 
-  val availableSymbols = groupingKeys ++ aggregationExpression.keySet.map(IdName(_))
+  val availableSymbols = groupingKeys ++ aggregationExpression.keySet
 }

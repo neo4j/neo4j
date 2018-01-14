@@ -30,7 +30,7 @@ abstract class ProceduralLogicalPlan extends LogicalPlan {
 
   override def solved: PlannerQuery with CardinalityEstimation = CardinalityEstimation.lift(PlannerQuery.empty, 1.0)
 
-  override def availableSymbols: Set[IdName] = Set.empty
+  override val availableSymbols: Set[String] = Set.empty
 
   override def strictness: StrictnessMode = LazyMode
 
@@ -41,10 +41,10 @@ case class StandAloneProcedureCall(signature: ProcedureSignature,
                                    types: Seq[(String, CypherType)],
                                    callResultIndices: Seq[(Int, String)]) extends ProceduralLogicalPlan
 
-case class CreateNodeKeyConstraint(node: IdName, label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
+case class CreateNodeKeyConstraint(node: String, label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
 
-case class CreateUniquePropertyConstraint(node: IdName, label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
+case class CreateUniquePropertyConstraint(node: String, label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
 case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
 
 case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property) extends ProceduralLogicalPlan

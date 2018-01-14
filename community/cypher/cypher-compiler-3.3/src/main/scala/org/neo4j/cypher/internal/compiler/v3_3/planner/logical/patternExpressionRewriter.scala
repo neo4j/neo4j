@@ -24,13 +24,12 @@ import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.frontend.v3_3.{IdentityMap, Rewriter, ast, topDown}
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 /*
 Rewrite pattern expressions and pattern comprehensions to nested plan expressions by planning them using the given context.
 This is only done for expressions that have not already been unnested
  */
-case class patternExpressionRewriter(planArguments: Set[IdName], context: LogicalPlanningContext) extends Rewriter {
+case class patternExpressionRewriter(planArguments: Set[String], context: LogicalPlanningContext) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = that match {
     case expression: Expression =>
@@ -47,12 +46,12 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
 
   private def computeScopeMap(expression: Expression) = {
     val exprScopes = expression.inputs.map {
-      case (k, v) => k -> v.map(IdName.fromVariable)
+      case (k, v) => k -> v.map(_.name)
     }
     IdentityMap(exprScopes: _*)
   }
 
-  private def computeReplacements(scopeMap: IdentityMap[Expression, Set[IdName]], that: AnyRef): IdentityMap[AnyRef, AnyRef] = {
+  private def computeReplacements(scopeMap: IdentityMap[Expression, Set[String]], that: AnyRef): IdentityMap[AnyRef, AnyRef] = {
     that.treeFold(IdentityMap.empty[AnyRef, AnyRef]) {
 
       // replace pattern expressions with their plan and also register

@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTInteger, CTList, CTNode}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{ProcedureCall, Projection, ResolvedCall, SingleRow}
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 
-class PlanEventHorizonTest extends CypherFunSuite {
+class PlanEventHorizonTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val pos = DummyPosition(1)
   implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel]),
     mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
 
@@ -50,8 +50,16 @@ class PlanEventHorizonTest extends CypherFunSuite {
 
   test("should plan procedure calls") {
     // Given
-    val literal = SignedDecimalIntegerLiteral("42")(pos)
-    val call = mock[ResolvedCall]
+    val ns = Namespace(List("my", "proc"))(pos)
+    val name = ProcedureName("foo")(pos)
+    val qualifiedName = QualifiedName(ns.parts, name.name)
+    val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
+    val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
+    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty))
+    val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
+
+    val call =  ResolvedCall(signature, Seq.empty, callResults)(pos)
+
     val pq = RegularPlannerQuery(horizon = ProcedureCallProjection(call))
     val inputPlan = SingleRow()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))
 

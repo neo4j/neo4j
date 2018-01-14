@@ -72,8 +72,7 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
 
   private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)
                                          (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val columns = unionQuery.returns.map(_.name)
-    ProduceResult(columns, in)
+    ProduceResult(unionQuery.returns, in)
   }
 
   private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext) = {

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, IdName, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, StrictnessMode}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 case class LogicalPlanningContext(planContext: PlanContext,
@@ -63,15 +63,15 @@ case class LogicalPlanningContext(planContext: PlanContext,
 }
 
 object NodeIdName {
-  def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[IdName] = v match {
-    case variable@Variable(name) if context.semanticTable.isNode(variable) => Some(IdName(variable.name))
+  def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[String] = v match {
+    case variable@Variable(name) if context.semanticTable.isNode(variable) => Some(variable.name)
     case _ => None
   }
 }
 
 object RelationshipIdName {
-  def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[IdName] = v match {
-    case variable@Variable(name) if context.semanticTable.isRelationship(variable) => Some(IdName(variable.name))
+  def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[String] = v match {
+    case variable@Variable(name) if context.semanticTable.isRelationship(variable) => Some(variable.name)
     case _ => None
   }
 }

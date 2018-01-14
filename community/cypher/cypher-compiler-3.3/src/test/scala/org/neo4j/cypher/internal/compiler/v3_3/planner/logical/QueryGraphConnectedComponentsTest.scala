@@ -31,19 +31,19 @@ class QueryGraphConnectedComponentsTest
   private val labelA = LabelName("A")(pos)
   private val prop = varFor("prop")
   private val propKeyName = PropertyKeyName(prop.name)(pos)
-  private val A = IdName("a")
-  private val B = IdName("b")
-  private val C = IdName("c")
-  private val D = IdName("d")
-  private val X = IdName("x")
-  private val Y = IdName("y")
-  private val A_to_B = PatternRelationship(IdName("r1"), (A, B), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val B_to_A = PatternRelationship(IdName("r3"), (B, A), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val C_to_X = PatternRelationship(IdName("r7"), (C, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val B_to_X = PatternRelationship(IdName("r12"), (B, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val D_to_Y = PatternRelationship(IdName("r12"), (D, Y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val identA = varFor(A.name)
-  private val identB = varFor(B.name)
+  private val A = "a"
+  private val B = "b"
+  private val C = "c"
+  private val D = "d"
+  private val X = "x"
+  private val Y = "y"
+  private val A_to_B = PatternRelationship("r1", (A, B), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val B_to_A = PatternRelationship("r3", (B, A), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val C_to_X = PatternRelationship("r7", (C, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val B_to_X = PatternRelationship("r12", (B, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val D_to_Y = PatternRelationship("r12", (D, Y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val identA = varFor(A)
+  private val identB = varFor(B)
 
   test("empty query graph returns no connected querygraphs") {
     QueryGraph().connectedComponents shouldBe empty
@@ -148,7 +148,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected relationships with each predicate on one of the relationships") {
-    val propA = Property(varFor(A_to_B.name.name), propKeyName)(pos)
+    val propA = Property(varFor(A_to_B.name), propKeyName)(pos)
     val predicate = Equals(propA, StringLiteral("something")(pos))(pos)
 
     val graph = QueryGraph(
@@ -173,7 +173,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected pattern nodes with one shortest path between them") {
-    val shortestPath: ShortestPathPattern = ShortestPathPattern(Some(IdName("r")), A_to_B, single = true)(null)
+    val shortestPath: ShortestPathPattern = ShortestPathPattern(Some("r"), A_to_B, single = true)(null)
 
     val graph = QueryGraph(patternNodes = Set(A, B), shortestPathPatterns = Set(shortestPath))
 
@@ -184,7 +184,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("a connected pattern that has a shortest path in it") {
-    val shortestPath: ShortestPathPattern = ShortestPathPattern(Some(IdName("r")), A_to_B, single = true)(null)
+    val shortestPath: ShortestPathPattern = ShortestPathPattern(Some("r"), A_to_B, single = true)(null)
 
     val graph = QueryGraph(
       patternNodes = Set(A, B),
@@ -245,7 +245,7 @@ class QueryGraphConnectedComponentsTest
       argumentIds = Set(X),
       patternNodes = Set(A, B),
       patternRelationships = Set(A_to_B),
-      selections = Selections.from(Equals(Variable(A_to_B.name.name)(pos), Variable(X.name.name)(pos))(pos))
+      selections = Selections.from(Equals(Variable(A_to_B.name)(pos), Variable(X)(pos))(pos))
     )
 
     val components = graph.connectedComponents

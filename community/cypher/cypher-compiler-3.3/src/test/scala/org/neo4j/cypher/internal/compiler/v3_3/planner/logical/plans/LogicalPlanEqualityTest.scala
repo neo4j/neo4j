@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Apply, Argument, LogicalPlan, SingleRow}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   test("leafs") {
@@ -75,7 +75,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[IdName] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
 
@@ -89,7 +89,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[IdName] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
 
@@ -106,7 +106,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[IdName] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
   }

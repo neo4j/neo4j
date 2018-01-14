@@ -48,7 +48,7 @@ import org.scalatest.matchers.{BeMatcher, MatchResult}
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
   self: CypherFunSuite =>
 
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
@@ -196,7 +196,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
   }
 
-  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(solved)
+  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.toSet)(solved)
 
   def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) =
     new given().getLogicalPlanFor(queryString)

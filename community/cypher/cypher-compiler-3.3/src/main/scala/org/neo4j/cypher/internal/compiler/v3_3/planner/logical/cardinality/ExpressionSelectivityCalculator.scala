@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics._
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, IdName, Selections, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Selections, Selectivity}
 
 trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
@@ -135,7 +135,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       selections: Selections,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(IdName(variable))
+    val labels = selections.labelsOnNode(variable)
     val indexSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (labelName.id, propertyKey.id) match {
@@ -208,7 +208,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       selections: Selections,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(IdName(variable))
+    val labels = selections.labelsOnNode(variable)
     val indexPropertyExistsSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (labelName.id, propertyKey.id) match {

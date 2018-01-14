@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 object projection {
@@ -34,9 +33,7 @@ object projection {
 
     val ids = plan.availableSymbols
 
-    val projectAllCoveredIds: Set[(String, Expression)] = ids.map {
-      case IdName(id) => id -> ast.Variable(id)(null)
-    }
+    val projectAllCoveredIds: Set[(String, Expression)] = ids.map(id => id -> ast.Variable(id)(null))
     val projections: Set[(String, Expression)] = projectionsMap.toIndexedSeq.toSet
 
     if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds) {

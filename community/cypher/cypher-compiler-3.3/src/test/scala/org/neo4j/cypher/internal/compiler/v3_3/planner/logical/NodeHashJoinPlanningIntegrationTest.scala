@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.RegularPlannerQuery
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -46,13 +46,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       Selection(
         Seq(Not(Equals(Variable("r1")_, Variable("r2")_)_)_),
         NodeHashJoin(
-          Set(IdName("b")),
+          Set("b"),
           Expand(
-            NodeByLabelScan(IdName("a"), lblName("X"), Set.empty)(solved),
-            IdName("a"), SemanticDirection.INCOMING, Seq.empty, IdName("b"), IdName("r1"))(solved),
+            NodeByLabelScan("a", lblName("X"), Set.empty)(solved),
+            "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1")(solved),
           Expand(
-            NodeByLabelScan(IdName("c"), lblName("X"), Set.empty)(solved),
-            IdName("c"), SemanticDirection.INCOMING, Seq.empty, IdName("b"), IdName("r2"))(solved)
+            NodeByLabelScan("c", lblName("X"), Set.empty)(solved),
+            "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2")(solved)
         )(solved)
       )(solved)
 
@@ -83,13 +83,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Equals(Property(Variable("a") _, PropertyKeyName("prop") _) _, Property(Variable("c") _, PropertyKeyName("prop") _) _) _
         ),
         NodeHashJoin(
-          Set(IdName("b")),
+          Set("b"),
           Expand(
-            NodeByLabelScan(IdName("a"), lblName("A"), Set.empty)(solved),
-            IdName("a"), SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), IdName("b"), IdName("r1"), ExpandAll)(solved),
+            NodeByLabelScan("a", lblName("A"), Set.empty)(solved),
+            "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "b", "r1", ExpandAll)(solved),
           Expand(
-            NodeByLabelScan(IdName("c"), lblName("C"), Set.empty)(solved),
-            IdName("c"), SemanticDirection.INCOMING, Seq(RelTypeName("X") _), IdName("b"), IdName("r2"), ExpandAll)(solved)
+            NodeByLabelScan("c", lblName("C"), Set.empty)(solved),
+            "c", SemanticDirection.INCOMING, Seq(RelTypeName("X") _), "b", "r2", ExpandAll)(solved)
         )(solved)
       )(solved)
 

@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
-case class NodeUniqueIndexSeek(idName: IdName,
+case class NodeUniqueIndexSeek(idName: String,
                                label: LabelToken,
                                propertyKeys: Seq[PropertyKeyToken],
                                valueExpr: QueryExpression[Expression],
-                               argumentIds: Set[IdName])
+                               argumentIds: Set[String])
                               (val solved: PlannerQuery with CardinalityEstimation) extends IndexLeafPlan {
-  def availableSymbols = argumentIds + idName
+  val availableSymbols = argumentIds + idName
 }

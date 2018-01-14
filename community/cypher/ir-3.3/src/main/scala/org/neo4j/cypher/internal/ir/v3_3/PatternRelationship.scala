@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.ir.v3_3
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
 
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: SemanticDirection,
+final case class PatternRelationship(name: String, nodes: (String, String), dir: SemanticDirection,
                                      types: Seq[RelTypeName], length: PatternLength) {
 
-  def directionRelativeTo(node: IdName): SemanticDirection = if (node == left) dir else dir.reversed
+  def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
-  def otherSide(node: IdName) = if (node == left) right else left
+  def otherSide(node: String) = if (node == left) right else left
 
-  def coveredIds: Set[IdName] = Set(name, left, right)
+  def coveredIds: Set[String] = Set(name, left, right)
 
   def left = nodes._1
 

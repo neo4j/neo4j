@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, IdName, PlannerQuery, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, PlannerQuery, RegularPlannerQuery}
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -32,8 +32,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   test("Should build plans containing expand for single relationship pattern") {
     planFor("MATCH (a)-[r]->(b) RETURN r")._2 should equal(
         Expand(
-          AllNodesScan("b", Set.empty)(solved),
-          "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
+          AllNodesScan("a", Set.empty)(solved),
+          "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
         )(solved)
     )
   }
@@ -42,10 +42,10 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
     (new given {
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("d")) => 4000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("d") => 4000.0
         case _ => 100.0
       }
     } getLogicalPlanFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2")._2 should beLike {
@@ -53,9 +53,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         Selection(_,
           CartesianProduct(
             Expand(
-              AllNodesScan(IdName("c"), _), _, _, _, _, _, _),
+              AllNodesScan("c", _), _, _, _, _, _, _),
             Expand(
-              AllNodesScan(IdName("a"), _), _, _, _, _, _, _)
+              AllNodesScan("a", _), _, _, _, _, _, _)
           )
         ) => ()
     }
@@ -83,9 +83,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Selection(Seq(Not(Equals(Variable("r1")_,Variable("r2")_)_)_),
         Expand(
           Expand(
-            AllNodesScan(IdName("b"),Set.empty)(solved),
-            IdName("b"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r2"),ExpandAll)(solved),
-          IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandInto)(solved)
+            AllNodesScan("a",Set.empty)(solved),
+           "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r2",ExpandAll)(solved),
+          "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandInto)(solved)
         )(solved)
     )
   }

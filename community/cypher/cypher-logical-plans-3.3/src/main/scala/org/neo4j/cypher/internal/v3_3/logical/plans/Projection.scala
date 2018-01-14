@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
 case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
                      (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
-  val availableSymbols = left.availableSymbols ++ expressions.keySet.map(IdName(_))
+  val availableSymbols = left.availableSymbols ++ expressions.keySet
 }

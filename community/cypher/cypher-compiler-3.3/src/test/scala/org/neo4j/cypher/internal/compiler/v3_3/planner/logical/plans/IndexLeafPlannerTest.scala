@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{indexSeekLeafPlanner, mergeUniqueIndexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, QueryGraph, Selections}
+import org.neo4j.cypher.internal.ir.v3_3.{Predicate, QueryGraph, Selections}
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
-  val idName = IdName("n")
+  val idName = "n"
   val hasLabels: Expression = hasLabels("n", "Awesome")
   val property1: Expression = prop("n", "prop")
   val lit42: Expression = literalInt(42)
@@ -86,7 +86,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
       val x = varFor("x")
-      qg = queryGraph(In(property1, ListLiteral(Seq(x)) _) _, hasLabels).addArgumentIds(Seq(IdName("x")))
+      qg = queryGraph(In(property1, ListLiteral(Seq(x)) _) _, hasLabels).addArgumentIds(Seq("x"))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -254,9 +254,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         AssertSameNode(`idName`,
           AssertSameNode(`idName`,
             AssertSameNode(`idName`,
-              NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _),
               NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _)),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _)),
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _)),
           NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
       }
     }

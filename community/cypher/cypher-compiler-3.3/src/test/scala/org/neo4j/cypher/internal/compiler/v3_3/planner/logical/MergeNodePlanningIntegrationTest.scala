@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  private val aId = IdName("a")
-  private val bId = IdName("b")
+  private val aId = "a"
+  private val bId = "b"
 
   test("should plan single merge node") {
     val allNodesScan = AllNodesScan(aId, Set.empty)(solved)

@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.ir.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 
-case class Predicate(dependencies: Set[IdName], expr: Expression) {
+case class Predicate(dependencies: Set[String], expr: Expression) {
 
-  def hasDependenciesMet(symbols: Set[IdName]): Boolean =
+  def hasDependenciesMet(symbols: Set[String]): Boolean =
     (dependencies -- symbols).isEmpty
 
-  def hasDependenciesMetForRequiredSymbol(symbols: Set[IdName], required: IdName): Boolean =
+  def hasDependenciesMetForRequiredSymbol(symbols: Set[String], required: String): Boolean =
     dependencies.contains(required) && hasDependenciesMet(symbols)
 }
 
