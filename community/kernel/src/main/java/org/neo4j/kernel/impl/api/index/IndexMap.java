@@ -31,6 +31,9 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 
 /**
@@ -41,7 +44,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
  */
 public final class IndexMap implements Cloneable
 {
-    private final Map<Long, IndexProxy> indexesById;
+    private final PrimitiveLongObjectMap<IndexProxy> indexesById;
     private final Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor;
     private final Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor;
     private final PrimitiveIntObjectMap<Set<LabelSchemaDescriptor>> descriptorsByLabel;
@@ -49,16 +52,16 @@ public final class IndexMap implements Cloneable
 
     public IndexMap()
     {
-        this( new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( Primitive.longObjectMap(), new HashMap<>(), new HashMap<>() );
     }
 
-    IndexMap( Map<Long,IndexProxy> indexesById )
+    IndexMap( PrimitiveLongObjectMap<IndexProxy> indexesById )
     {
         this( indexesById, indexesByDescriptor( indexesById ), indexIdsByDescriptor( indexesById ) );
     }
 
     private IndexMap(
-            Map<Long, IndexProxy> indexesById,
+            PrimitiveLongObjectMap<IndexProxy> indexesById,
             Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor,
             Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor )
     {
@@ -119,10 +122,11 @@ public final class IndexMap implements Cloneable
 
     public void forEachIndexProxy( BiConsumer<Long, IndexProxy> consumer )
     {
-        for ( Map.Entry<Long, IndexProxy> entry : indexesById.entrySet() )
+        indexesById.visitEntries( ( key, indexProxy ) ->
         {
-            consumer.accept( entry.getKey(), entry.getValue() );
-        }
+            consumer.accept( key, indexProxy);
+            return false;
+        } );
     }
 
     public Iterable<IndexProxy> getAllIndexProxies()
@@ -163,7 +167,7 @@ public final class IndexMap implements Cloneable
     @Override
     public IndexMap clone()
     {
-        return new IndexMap( cloneMap( indexesById ), cloneMap( indexesByDescriptor ),
+        return new IndexMap( clonePrimitiveMap( indexesById ), cloneMap( indexesByDescriptor ),
                 cloneMap( indexIdsByDescriptor ) );
     }
 
@@ -172,9 +176,9 @@ public final class IndexMap implements Cloneable
         return indexesByDescriptor.keySet().iterator();
     }
 
-    public Iterator<Long> indexIds()
+    public PrimitiveLongIterator indexIds()
     {
-        return indexesById.keySet().iterator();
+        return indexesById.iterator();
     }
 
     public int size()
@@ -189,6 +193,11 @@ public final class IndexMap implements Cloneable
         Map<K, V> shallowCopy = new HashMap<>( map.size() );
         shallowCopy.putAll( map );
         return shallowCopy;
+    }
+
+    private PrimitiveLongObjectMap<IndexProxy> clonePrimitiveMap( PrimitiveLongObjectMap<IndexProxy> indexesById )
+    {
+        return PrimitiveLongCollections.copy( indexesById );
     }
 
     private void addDescriptorToLookups( LabelSchemaDescriptor schema )
@@ -228,7 +237,7 @@ public final class IndexMap implements Cloneable
         }
     }
 
-    private static Map<LabelSchemaDescriptor, IndexProxy> indexesByDescriptor( Map<Long,IndexProxy> indexesById )
+    private static Map<LabelSchemaDescriptor, IndexProxy> indexesByDescriptor( PrimitiveLongObjectMap<IndexProxy> indexesById )
     {
         Map<LabelSchemaDescriptor, IndexProxy> map = new HashMap<>();
         for ( IndexProxy proxy : indexesById.values() )
@@ -238,13 +247,14 @@ public final class IndexMap implements Cloneable
         return map;
     }
 
-    private static Map<LabelSchemaDescriptor, Long> indexIdsByDescriptor( Map<Long,IndexProxy> indexesById )
+    private static Map<LabelSchemaDescriptor, Long> indexIdsByDescriptor( PrimitiveLongObjectMap<IndexProxy> indexesById )
     {
         Map<LabelSchemaDescriptor, Long> map = new HashMap<>();
-        for ( Map.Entry<Long,IndexProxy> entry : indexesById.entrySet() )
+        indexesById.visitEntries( ( key, indexProxy ) ->
         {
-            map.put( entry.getValue().schema(), entry.getKey() );
-        }
+            map.put( indexProxy.schema(), key );
+            return false;
+        } );
         return map;
     }
 

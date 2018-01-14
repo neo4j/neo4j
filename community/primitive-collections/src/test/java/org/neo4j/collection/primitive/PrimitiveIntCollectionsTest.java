@@ -30,6 +30,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -577,6 +578,21 @@ public class PrimitiveIntCollectionsTest
 
         // THEN
         assertArrayEquals( new int[] {1, 6, 2, 5}, deduped );
+    }
+
+    @Test
+    public void copyMap()
+    {
+        PrimitiveIntObjectMap<Object> originalMap = Primitive.intObjectMap();
+        originalMap.put( 1, "a" );
+        originalMap.put( 2, "b" );
+        originalMap.put( 3, "c" );
+        PrimitiveIntObjectMap<Object> copyMap = PrimitiveIntCollections.copy( originalMap );
+        assertNotSame( originalMap, copyMap );
+        assertEquals( 3, copyMap.size() );
+        assertEquals( "a", copyMap.get( 1 ) );
+        assertEquals( "b", copyMap.get( 2 ) );
+        assertEquals( "c", copyMap.get( 3 ) );
     }
 
     private void assertNoMoreItems( PrimitiveIntIterator iterator )
