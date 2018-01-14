@@ -43,7 +43,7 @@ import static org.neo4j.test.server.ha.EnterpriseServerHelper.createNonPersisten
 
 public class StandaloneHaInfoFunctionalTest
 {
-    private static EnterpriseNeoServer server;
+    private static OpenEnterpriseNeoServer server;
 
     @Rule
     public final TestDirectory target = TestDirectory.testDirectory();

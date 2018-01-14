@@ -23,17 +23,17 @@ import org.neo4j.server.BlockingBootstrapper;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.ServerBootstrapper;
 
-public class EnterpriseEntryPoint
+public class OpenEnterpriseEntryPoint
 {
     private static Bootstrapper bootstrapper;
 
-    private EnterpriseEntryPoint()
+    private OpenEnterpriseEntryPoint()
     {
     }
 
     public static void main( String[] args )
     {
-        int status = ServerBootstrapper.start( new EnterpriseBootstrapper(), args );
+        int status = ServerBootstrapper.start( new OpenEnterpriseBootstrapper(), args );
         if ( status != 0 )
         {
             System.exit( status );
@@ -42,7 +42,7 @@ public class EnterpriseEntryPoint
 
     public static void start( String[] args )
     {
-        bootstrapper = new BlockingBootstrapper( new EnterpriseBootstrapper() );
+        bootstrapper = new BlockingBootstrapper( new OpenEnterpriseBootstrapper() );
         System.exit( ServerBootstrapper.start( bootstrapper, args ) );
     }
 
