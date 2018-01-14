@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.notification.LargeLabelWithLoadCsvNotification
-import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, IdName}
+import org.neo4j.cypher.internal.ir.v3_4.HasHeaders
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
@@ -60,7 +60,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
       LoadCSV(
         Argument()(solved),
         url,
-        IdName("foo"),
+        "foo",
         HasHeaders,
         None,
         legacyCsvQuoteEscaping = false
@@ -79,7 +79,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
       LoadCSV(
         Argument()(solved),
         url,
-        IdName("foo"),
+        "foo",
         HasHeaders,
         None,
         legacyCsvQuoteEscaping = false
@@ -97,7 +97,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
   test("should not notify when doing large label scan on top of LoadCSV") {
     val start = NodeByLabelScan("bar", LabelName(labelOverThreshold)(pos), Set.empty)(solved)
     val plan =
-      LoadCSV(start, url, IdName("foo"), HasHeaders, None, legacyCsvQuoteEscaping = false)(solved)
+      LoadCSV(start, url, "foo", HasHeaders, None, legacyCsvQuoteEscaping = false)(solved)
 
     checker(plan) should equal(None)
   }

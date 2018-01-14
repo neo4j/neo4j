@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateGenerator, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
@@ -72,7 +72,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     if (exp1.mode == ExpandAll && exp1.to == exp2.from &&
       matchingLabels(positivePredicate, exp1.to, exp2.to, qg) &&
       leftPredicatesAcceptable(exp1.to, leftPredicates) &&
-      matchingRelationshipPattern(patternExpression, exp1.from.name, exp2.to.name, exp1.types, exp1.dir)) {
+      matchingRelationshipPattern(patternExpression, exp1.from, exp2.to, exp1.types, exp1.dir)) {
 
       val left = if (leftPredicates.nonEmpty)
         context.logicalPlanProducer.planSelection(exp1, leftPredicates, leftPredicates, context)
@@ -91,12 +91,12 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
     else
       Seq.empty
 
-  private def leftPredicatesAcceptable(leftId: IdName, leftPredicates: Seq[Expression]) = leftPredicates.forall {
-    case HasLabels(Variable(id),List(_)) if id == leftId.name => true
+  private def leftPredicatesAcceptable(leftId: String, leftPredicates: Seq[Expression]) = leftPredicates.forall {
+    case HasLabels(Variable(id),List(_)) if id == leftId => true
     case a => false
   }
 
-  private def matchingLabels(positivePredicate: Boolean, node1: IdName, node2: IdName, qg: QueryGraph): Boolean = {
+  private def matchingLabels(positivePredicate: Boolean, node1: String, node2: String, qg: QueryGraph): Boolean = {
     val labels1 = qg.selections.labelsOnNode(node1)
     val labels2 = qg.selections.labelsOnNode(node2)
     if (positivePredicate)

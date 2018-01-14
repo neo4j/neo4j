@@ -54,7 +54,7 @@ object ClauseConverters {
   private def addLoadCSVToLogicalPlanInput(acc: PlannerQueryBuilder, clause: LoadCSV): PlannerQueryBuilder =
     acc.withHorizon(
       LoadCSVProjection(
-        variable = IdName.fromVariable(clause.variable),
+        variable = clause.variable.name,
         url = clause.urlString,
         format = if (clause.withHeaders) HasHeaders else NoHeaders,
         clause.fieldTerminator)
@@ -100,7 +100,7 @@ object ClauseConverters {
       val projection = asQueryProjection(distinct, items).
         withShuffle(shuffle)
       val returns = items.collect {
-        case AliasedReturnItem(_, variable) => IdName.fromVariable(variable)
+        case AliasedReturnItem(_, variable) => variable.name
       }
       acc.
         withHorizon(projection).
@@ -121,7 +121,7 @@ object ClauseConverters {
       //CREATE (n :L1:L2 {prop: 42})
       case (acc, EveryPath(NodePattern(Some(id), labels, props))) =>
         acc
-          .amendQueryGraph(_.addMutatingPatterns(CreateNodePattern(IdName.fromVariable(id), labels, props)))
+          .amendQueryGraph(_.addMutatingPatterns(CreateNodePattern(id.name, labels, props)))
 
       //CREATE (n)-[r: R]->(m)
       case (acc, EveryPath(pattern: RelationshipChain)) =>
@@ -140,7 +140,7 @@ object ClauseConverters {
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node `${c.nodeName.name}` with labels or properties here. The variable is already declared in this context")
+              s"Can't create node `${c.nodeName}` with labels or properties here. The variable is already declared in this context")
         }
 
         acc
@@ -150,13 +150,13 @@ object ClauseConverters {
     }
 
   private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
-    val seen = mutable.Set.empty[IdName]
+    val seen = mutable.Set.empty[String]
     val result = mutable.ListBuffer.empty[CreateNodePattern]
     nodePatterns.foreach { pattern =>
       if (!seen(pattern.nodeName)) result.append(pattern)
       else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
         //reused patterns must be pure variable
-        throw new SyntaxException(s"Can't create node `${pattern.nodeName.name}` with labels or properties here. The variable is already declared in this context")
+        throw new SyntaxException(s"Can't create node `${pattern.nodeName}` with labels or properties here. The variable is already declared in this context")
       }
       seen.add(pattern.nodeName)
     }
@@ -167,12 +167,12 @@ object ClauseConverters {
     case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
     //CREATE ()
     case NodePattern(Some(variable), labels, props) =>
-      (Vector(CreateNodePattern(IdName.fromVariable(variable), labels, props)), Vector.empty)
+      (Vector(CreateNodePattern(variable.name, labels, props)), Vector.empty)
 
     //CREATE ()-[:R]->()
     case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
-      val leftIdName = IdName.fromVariable(leftNode.variable.get)
-      val rightIdName = IdName.fromVariable(rightNode.variable.get)
+      val leftIdName = leftNode.variable.get.name
+      val rightIdName = rightNode.variable.get.name
 
 
       //Semantic checking enforces types.size == 1
@@ -182,18 +182,18 @@ object ClauseConverters {
       (Vector(
         CreateNodePattern(leftIdName, leftNode.labels, leftNode.properties),
         CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
-      ), Vector(CreateRelationshipPattern(IdName.fromVariable(rel.variable.get),
+      ), Vector(CreateRelationshipPattern(rel.variable.get.name,
         leftIdName, relType, rightIdName, rel.properties, rel.direction)))
 
     //CREATE ()->[:R]->()-[:R]->...->()
     case RelationshipChain(left, rel, rightNode) =>
       val (nodes, rels) = allCreatePatterns(left)
-      val rightIdName = IdName.fromVariable(rightNode.variable.get)
+      val rightIdName = rightNode.variable.get.name
 
       (nodes :+
         CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
         , rels :+
-        CreateRelationshipPattern(IdName.fromVariable(rel.variable.get), nodes.last.nodeName, rel.types.head,
+        CreateRelationshipPattern(rel.variable.get.name, nodes.last.nodeName, rel.types.head,
           rightIdName, rel.properties, rel.direction))
   }
 
@@ -251,28 +251,28 @@ object ClauseConverters {
   }.toIndexedSeq
 
   private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {
-    case SetLabelItem(id, labels) => SetLabelPattern(IdName.fromVariable(id), labels)
+    case SetLabelItem(id, labels) => SetLabelPattern(id.name, labels)
 
     case SetPropertyItem(Property(node: Variable, propertyKey), expr) if semanticTable.isNode(node) =>
-      SetNodePropertyPattern(IdName.fromVariable(node), propertyKey, expr)
+      SetNodePropertyPattern(node.name, propertyKey, expr)
 
     case SetPropertyItem(Property(rel: Variable, propertyKey), expr) if semanticTable.isRelationship(rel) =>
-      SetRelationshipPropertyPattern(IdName.fromVariable(rel), propertyKey, expr)
+      SetRelationshipPropertyPattern(rel.name, propertyKey, expr)
 
     case SetPropertyItem(Property(entityExpr, propertyKey), expr) =>
       SetPropertyPattern(entityExpr, propertyKey, expr)
 
     case SetExactPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
-      SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = true)
+      SetNodePropertiesFromMapPattern(node.name, expression, removeOtherProps = true)
 
     case SetExactPropertiesFromMapItem(rel, expression) if semanticTable.isRelationship(rel) =>
-      SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = true)
+      SetRelationshipPropertiesFromMapPattern(rel.name, expression, removeOtherProps = true)
 
     case SetIncludingPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
-      SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = false)
+      SetNodePropertiesFromMapPattern(node.name, expression, removeOtherProps = false)
 
     case SetIncludingPropertiesFromMapItem(rel, expression) if semanticTable.isRelationship(rel) =>
-      SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = false)
+      SetRelationshipPropertiesFromMapPattern(rel.name, expression, removeOtherProps = false)
   }
 
   private def addMergeToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Merge): PlannerQueryBuilder = {
@@ -290,10 +290,10 @@ object ClauseConverters {
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
-        val createNodePattern = CreateNodePattern(IdName.fromVariable(id), labels, props)
+        val createNodePattern = CreateNodePattern(id.name, labels, props)
 
         val matchGraph = QueryGraph(
-          patternNodes = Set(IdName.fromVariable(id)),
+          patternNodes = Set(id.name),
           selections = Selections.from(labelPredicates ++ propertyPredicates),
           argumentIds = currentlyAvailableVariables
         )
@@ -323,7 +323,7 @@ object ClauseConverters {
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node `${c.nodeName.name}` with labels or properties here. The variable is already declared in this context")
+              s"Can't create node `${c.nodeName}` with labels or properties here. The variable is already declared in this context")
         }
 
         val pos = pattern.position
@@ -331,13 +331,13 @@ object ClauseConverters {
         val selections = asSelections(clause.where)
 
         val hasLabels = nodes.flatMap(n =>
-          n.labels.map(l => HasLabels(Variable(n.nodeName.name)(pos), Seq(l))(pos))
+          n.labels.map(l => HasLabels(Variable(n.nodeName)(pos), Seq(l))(pos))
         )
 
         val hasProps = nodes.flatMap(n =>
-          toPropertySelection(Variable(n.nodeName.name)(pos), toPropertyMap(n.properties))
+          toPropertySelection(Variable(n.nodeName)(pos), toPropertyMap(n.properties))
         ) ++ rels.flatMap(n =>
-          toPropertySelection(Variable(n.relName.name)(pos), toPropertyMap(n.properties)))
+          toPropertySelection(Variable(n.relName)(pos), toPropertyMap(n.properties)))
 
         val matchGraph = QueryGraph(
           patternNodes = nodes.map(_.nodeName).toSet,
@@ -412,7 +412,7 @@ object ClauseConverters {
     builder.
       withHorizon(
         UnwindProjection(
-          variable = IdName(clause.variable.name),
+          variable = clause.variable.name,
           exp = clause.expression)
       ).
       withTail(PlannerQuery.empty)
@@ -426,18 +426,18 @@ object ClauseConverters {
   private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach): PlannerQueryBuilder = {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables
 
-    val setOfNodeVariables =
+    val setOfNodeVariables: Set[String] =
       if (builder.semanticTable.isNode(clause.variable.name))
-        Set(IdName.fromVariable(clause.variable))
+        Set(clause.variable.name)
       else Set.empty
 
-    val foreachVariable = IdName.fromVariable(clause.variable)
+    val foreachVariable = clause.variable
     val projectionToInnerUpdates = asQueryProjection(distinct = false, QueryProjection
-      .forIds(currentlyAvailableVariables + foreachVariable))
+      .forIds(currentlyAvailableVariables + foreachVariable.name))
 
     val innerBuilder = new PlannerQueryBuilder(PlannerQuery.empty, builder.semanticTable)
       .amendQueryGraph(_.addPatternNodes((builder.allSeenPatternNodes ++ setOfNodeVariables).toIndexedSeq:_*)
-                        .addArgumentIds(foreachVariable +: currentlyAvailableVariables.toIndexedSeq))
+                        .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(projectionToInnerUpdates)
 
     val innerPlannerQuery = clause.updates.foldLeft(innerBuilder) {
@@ -445,7 +445,7 @@ object ClauseConverters {
     }.build()
 
     val foreachPattern = ForeachPattern(
-      variable = IdName(clause.variable.name),
+      variable = clause.variable.name,
       expression = clause.expression,
       innerUpdates = innerPlannerQuery)
 
@@ -467,18 +467,18 @@ object ClauseConverters {
     clause.items.foldLeft(acc) {
       // REMOVE n:Foo
       case (builder, RemoveLabelItem(variable, labelNames)) =>
-        builder.amendQueryGraph(_.addMutatingPatterns(RemoveLabelPattern(IdName.fromVariable(variable), labelNames)))
+        builder.amendQueryGraph(_.addMutatingPatterns(RemoveLabelPattern(variable.name, labelNames)))
 
       // REMOVE n.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) if acc.semanticTable.isNode(variable) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
-          SetNodePropertyPattern(IdName.fromVariable(variable), propertyKey, Null()(propertyKey.position))
+          SetNodePropertyPattern(variable.name,propertyKey, Null()(propertyKey.position))
         ))
 
       // REMOVE rel.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) if acc.semanticTable.isRelationship(variable) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
-          SetRelationshipPropertyPattern(IdName.fromVariable(variable), propertyKey, Null()(propertyKey.position))
+          SetRelationshipPropertyPattern(variable.name, propertyKey, Null()(propertyKey.position))
         ))
 
       // REMOVE rel.prop when unknown whether node or rel

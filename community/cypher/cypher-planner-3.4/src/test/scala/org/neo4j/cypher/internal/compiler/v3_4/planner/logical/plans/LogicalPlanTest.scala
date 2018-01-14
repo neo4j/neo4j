@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{FakePlan, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Apply, Argument}
 
@@ -29,7 +29,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   test("updating the planner query works well") {
     val initialPlan = FakePlan()(solved)
 
-    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes("a")), 0.0)
 
     val newPlan = initialPlan.updateSolved(updatedPlannerQuery)
 
@@ -37,13 +37,13 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   }
 
   test("single row returns itself as the leafs") {
-    val argument = Argument(Set(IdName("a")))(solved)
+    val argument = Argument(Set("a"))(solved)
 
     argument.leaves should equal(Seq(argument))
   }
 
   test("apply with two arguments should return them both") {
-    val argument1 = Argument(Set(IdName("a")))(solved)
+    val argument1 = Argument(Set("a"))(solved)
     val argument2 = Argument()(solved)
     val apply = Apply(argument1, argument2)(solved)
 
@@ -51,9 +51,9 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   }
 
   test("apply pyramid should work multiple levels deep") {
-    val argument1 = Argument(Set(IdName("a")))(solved)
+    val argument1 = Argument(Set("a"))(solved)
     val argument2 = Argument()(solved)
-    val argument3 = Argument(Set(IdName("b")))(solved)
+    val argument3 = Argument(Set("b"))(solved)
     val argument4 = Argument()(solved)
     val apply1 = Apply(argument1, argument2)(solved)
     val apply2 = Apply(argument3, argument4)(solved)
@@ -63,8 +63,8 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   }
 
   test("calling updateSolved on argument should work") {
-    val argument = Argument(Set(IdName("a")))(solved)
-    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val argument = Argument(Set("a"))(solved)
+    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes("a")), 0.0)
     val newPlan = argument.updateSolved(updatedPlannerQuery)
     newPlan.solved should equal(updatedPlannerQuery)
   }

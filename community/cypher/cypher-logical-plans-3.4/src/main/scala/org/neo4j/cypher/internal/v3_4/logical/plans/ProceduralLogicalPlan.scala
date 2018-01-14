@@ -31,7 +31,7 @@ abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def solved: PlannerQuery with CardinalityEstimation = CardinalityEstimation.lift(PlannerQuery.empty, 1.0)
 
-  override def availableSymbols: Set[IdName] = Set.empty
+  override val availableSymbols: Set[String] = Set.empty
 
   override def strictness: StrictnessMode = LazyMode
 
@@ -42,10 +42,10 @@ case class StandAloneProcedureCall(signature: ProcedureSignature,
                                    types: Seq[(String, CypherType)],
                                    callResultIndices: Seq[(Int, String)])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateNodeKeyConstraint(node: IdName, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class CreateNodeKeyConstraint(node: String, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
-case class CreateUniquePropertyConstraint(node: IdName, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+case class CreateUniquePropertyConstraint(node: String, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
 case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property)(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)

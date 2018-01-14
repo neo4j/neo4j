@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -415,7 +414,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IN [42] RETURN n")._2 should beLike {
       case NodeIndexSeek(
-              IdName("n"),
+              "n",
               LabelToken("Awesome", _),
               Seq(PropertyKeyToken("prop", _)),
               SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _) => ()
@@ -583,8 +582,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
     val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
     val labelToken = LabelToken("Awesome", LabelId(0))
-    val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
-    val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
+    val seek1: NodeIndexSeek = NodeIndexSeek("n", labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
+    val seek2: NodeIndexSeek = NodeIndexSeek("n", labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
     val union: Union = Union(seek2, seek1)(solved)
     val distinct = Distinct(union, Map("n" -> varFor("n")))(solved)
 
@@ -643,7 +642,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Aggregation(
         Apply(
           Projection(Argument()(solved),Map("arr" -> ListLiteral(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
-          NodeByIdSeek(IdName("n"), ManySeekableArgs(Variable("arr")_),Set(IdName("arr")))(solved)
+          NodeByIdSeek("n", ManySeekableArgs(Variable("arr")_),Set("arr"))(solved)
         )(solved),
         Map(), Map("count(*)" -> CountStar()_)
       )(solved)
@@ -681,8 +680,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
     val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
     val labelToken = LabelToken("Awesome", LabelId(0))
-    val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
-    val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
+    val seek1: NodeIndexSeek = NodeIndexSeek("n", labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
+    val seek2: NodeIndexSeek = NodeIndexSeek("n", labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
     val union: Union = Union(seek2, seek1)(solved)
     val distinct = Distinct(union, Map("n" -> varFor("n")))(solved)
 
@@ -698,10 +697,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       case Distinct(
         Union(
           NodeByLabelScan(
-            IdName("n"),
+            "n",
             LabelName("X"), _),
           NodeByLabelScan(
-            IdName("n"),
+            "n",
             LabelName("Y"), _)),
       _)
       => ()
@@ -719,8 +718,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
     val labelToken = LabelToken("Awesome", LabelId(0))
     val prop1Predicate = GreaterThanOrEqual(prop("n", "prop1"), literalInt(42))(pos)
-    val seek1 = Selection(Seq(prop1Predicate), NodeIndexScan(IdName("n"), labelToken, prop1, Set.empty)(solved))(solved)
-    val seek2 = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
+    val seek1 = Selection(Seq(prop1Predicate), NodeIndexScan("n", labelToken, prop1, Set.empty)(solved))(solved)
+    val seek2 = NodeIndexSeek("n", labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
     val union = Union(seek1, seek2)(solved)
     val distinct = Distinct(union, Map("n" -> varFor("n")))(solved)
 
@@ -732,7 +731,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexSeekCost
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE a.name = b.prop AND b.prop = 42 RETURN b")._2 should beLike {
-      case Selection(_, Expand(NodeIndexSeek(IdName("a"), _, _, _, _), _, _, _, _, _, _)) => ()
+      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _), _, _, _, _, _, _)) => ()
     }
   }
 
@@ -741,7 +740,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexSeekCost
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE b.prop = a.name AND b.prop = 42 RETURN b")._2 should beLike {
-      case Selection(_, Expand(NodeIndexSeek(IdName("a"), _, _, _, _), _, _, _, _, _, _)) => ()
+      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _), _, _, _, _, _, _)) => ()
     }
   }
 }

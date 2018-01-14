@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ResolvedCall}
@@ -52,7 +51,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case CreateNodeKeyConstraint(node, label, props) =>
-        Some(plans.CreateNodeKeyConstraint(IdName.fromVariable(node), label, props))
+        Some(plans.CreateNodeKeyConstraint(node.name, label, props))
 
 
       // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
@@ -62,7 +61,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, props) =>
-        Some(plans.CreateUniquePropertyConstraint(IdName.fromVariable(node), label, props))
+        Some(plans.CreateUniquePropertyConstraint(node.name, label, props))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE

@@ -22,18 +22,15 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  private val x = IdName("x")
-  private val y = IdName("y")
-  private val z = IdName("z")
-  private val LABEL = LabelName("label")(pos)
-  private val r = IdName("r")
+  private val x = "x"
+  private val z = "z"
+  private val r = "r"
   private val semanticTable = SemanticTable()
 
   test("zero size argument for single all nodes scan") {
@@ -243,10 +240,10 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
   private def pipe(source:LogicalPlan, nLongs:Int, nRefs:Int) = {
     var curr = source
     for ( i <- 0 until nLongs ) {
-      curr = CreateNode(curr, IdName("long"+i), Nil, None)(solved)
+      curr = CreateNode(curr, "long"+i, Nil, None)(solved)
     }
     for ( i <- 0 until nRefs ) {
-      curr = UnwindCollection(curr, IdName("ref"+i), listOf(literalInt(1)))(solved)
+      curr = UnwindCollection(curr, "ref"+i, listOf(literalInt(1)))(solved)
     }
     curr
   }

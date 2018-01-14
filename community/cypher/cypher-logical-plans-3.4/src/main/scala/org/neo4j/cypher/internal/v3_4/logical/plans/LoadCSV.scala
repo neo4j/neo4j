@@ -32,13 +32,13 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   */
 case class LoadCSV(source: LogicalPlan,
                    url: Expression,
-                   variableName: IdName,
+                   variableName: String,
                    format: CSVFormat,
                    fieldTerminator: Option[String],
                    legacyCsvQuoteEscaping: Boolean)
                   (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + variableName
+  override val availableSymbols: Set[String] = source.availableSymbols + variableName
 
   override def lhs = Some(source)
 

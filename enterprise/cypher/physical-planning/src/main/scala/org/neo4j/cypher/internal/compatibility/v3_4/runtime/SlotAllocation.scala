@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttr
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.frontend.v3_4.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, IdName, NoHeaders, ShortestPathPattern}
+import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, NoHeaders, ShortestPathPattern}
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -236,7 +236,7 @@ object SlotAllocation {
     lp match {
       case leaf: NodeLogicalLeafPlan =>
         val result = argument
-        result.newLong(leaf.idName.name, nullable, CTNode)
+        result.newLong(leaf.idName, nullable, CTNode)
         result
 
       case _:Argument =>
@@ -244,26 +244,26 @@ object SlotAllocation {
 
       case leaf: DirectedRelationshipByIdSeek =>
         val result = argument
-        result.newLong(leaf.idName.name, nullable, CTRelationship)
-        result.newLong(leaf.startNode.name, nullable, CTNode)
-        result.newLong(leaf.endNode.name, nullable, CTNode)
+        result.newLong(leaf.idName, nullable, CTRelationship)
+        result.newLong(leaf.startNode, nullable, CTNode)
+        result.newLong(leaf.endNode, nullable, CTNode)
         result
 
       case leaf: UndirectedRelationshipByIdSeek =>
         val result = argument
-        result.newLong(leaf.idName.name, nullable, CTRelationship)
-        result.newLong(leaf.leftNode.name, nullable, CTNode)
-        result.newLong(leaf.rightNode.name, nullable, CTNode)
+        result.newLong(leaf.idName, nullable, CTRelationship)
+        result.newLong(leaf.leftNode, nullable, CTNode)
+        result.newLong(leaf.rightNode, nullable, CTNode)
         result
 
       case leaf: NodeCountFromCountStore =>
         val result = argument
-        result.newReference(leaf.idName.name, false, CTInteger)
+        result.newReference(leaf.idName, false, CTInteger)
         result
 
       case leaf: RelationshipCountFromCountStore =>
         val result = argument
-        result.newReference(leaf.idName.name, false, CTInteger)
+        result.newReference(leaf.idName, false, CTInteger)
         result
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
@@ -299,14 +299,14 @@ object SlotAllocation {
         }
         result
 
-      case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
+      case Expand(_, _, _, _, to, relName, ExpandAll) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newLong(relName, nullable, CTRelationship)
         result.newLong(to, nullable, CTNode)
         result
 
-      case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
+      case Expand(_, _, _, _, _, relName, ExpandInto) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newLong(relName, nullable, CTRelationship)
@@ -338,7 +338,7 @@ object SlotAllocation {
         }
         source
 
-      case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
+      case OptionalExpand(_, _, _, _, to, rel, ExpandAll, _) =>
         // Note that OptionExpand only is optional on the expand and not on incoming rows, so
         // we do not need to record the argument here.
         // A new pipeline is not strictly needed here unless we have batching/vectorization
@@ -347,7 +347,7 @@ object SlotAllocation {
         result.newLong(to, nullable = true, CTNode)
         result
 
-      case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
+      case OptionalExpand(_, _, _, _, _, rel, ExpandInto, _) =>
         // Note that OptionExpand only is optional on the expand and not on incoming rows, so
         // we do not need to record the argument here.
         // A new pipeline is not strictly needed here unless we have batching/vectorization
@@ -356,16 +356,16 @@ object SlotAllocation {
         result
 
       case VarExpand(_,
-                       IdName(from),
+                       from,
                        _,
                        _,
                        _,
-                       IdName(to),
-                       IdName(edge),
+                       to,
+                       edge,
                        _,
                        expansionMode,
-                       IdName(tempNode),
-                       IdName(tempEdge),
+                       tempNode,
+                       tempEdge,
                        _,
                        _,
                        _) =>
@@ -386,18 +386,18 @@ object SlotAllocation {
       case PruningVarExpand(_, from, _, _, to, _, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
-        result.newLong(from.name, nullable, CTNode)
-        result.newLong(to.name, nullable, CTNode)
+        result.newLong(from, nullable, CTNode)
+        result.newLong(to, nullable, CTNode)
         result
 
       case FullPruningVarExpand(_, from, _, _, to, _, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
-        result.newLong(from.name, nullable, CTNode)
-        result.newLong(to.name, nullable, CTNode)
+        result.newLong(from, nullable, CTNode)
+        result.newLong(to, nullable, CTNode)
         result
 
-      case CreateNode(_, IdName(name), _, _) =>
+      case CreateNode(_, name, _, _) =>
         source.newLong(name, nullable = false, CTNode)
         source
 
@@ -405,11 +405,11 @@ object SlotAllocation {
         // The variable name should already have been allocated by the NodeLeafPlan
         source
 
-      case CreateRelationship(_, IdName(name), _, _, _, _) =>
+      case CreateRelationship(_, name, _, _, _, _) =>
         source.newLong(name, nullable = false, CTRelationship)
         source
 
-      case MergeCreateRelationship(_, IdName(name), _, _, _, _) =>
+      case MergeCreateRelationship(_, name, _, _, _, _) =>
         source.newLong(name, nullable = false, CTRelationship)
         source
 
@@ -419,7 +419,7 @@ object SlotAllocation {
       case DropResult(_) =>
         source
 
-      case UnwindCollection(_, IdName(variable), _) =>
+      case UnwindCollection(_, variable, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newReference(variable, nullable = true, CTAny)
@@ -451,17 +451,17 @@ object SlotAllocation {
 
       case ProjectEndpoints(_, _, start, startInScope, end, endInScope, _, _, _) =>
         if (!startInScope)
-          source.newLong(start.name, nullable, CTNode)
+          source.newLong(start, nullable, CTNode)
         if (!endInScope)
-          source.newLong(end.name, nullable, CTNode)
+          source.newLong(end, nullable, CTNode)
         source
 
       case LoadCSV(_, _, variableName, NoHeaders, _, _) =>
-        source.newReference(variableName.name, nullable, CTList(CTAny))
+        source.newReference(variableName, nullable, CTList(CTAny))
         source
 
       case LoadCSV(_, _, variableName, HasHeaders, _, _) =>
-        source.newReference(variableName.name, nullable, CTMap)
+        source.newReference(variableName, nullable, CTMap)
         source
 
       case ProcedureCall(_, ResolvedCall(_, _, callResults, _, _)) =>
@@ -513,19 +513,19 @@ object SlotAllocation {
            _: ConditionalApply =>
         rhs
 
-      case LetSemiApply(_, _, IdName(name)) =>
+      case LetSemiApply(_, _, name) =>
         lhs.newReference(name, false, CTBoolean)
         lhs
 
-      case LetAntiSemiApply(_, _, IdName(name)) =>
+      case LetAntiSemiApply(_, _, name) =>
         lhs.newReference(name, false, CTBoolean)
         lhs
 
-      case LetSelectOrSemiApply(_, _, IdName(name), _) =>
+      case LetSelectOrSemiApply(_, _, name, _) =>
         lhs.newReference(name, false, CTBoolean)
         lhs
 
-      case LetSelectOrAntiSemiApply(_, _, IdName(name), _) =>
+      case LetSelectOrAntiSemiApply(_, _, name, _) =>
         lhs.newReference(name, false, CTBoolean)
         lhs
 
@@ -544,10 +544,9 @@ object SlotAllocation {
       case NodeHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val nodeKeys = nodes.map(_.name)
         val result = lhs.copy()
         rhs.foreachSlotOrdered {
-          case (k, slot) if !nodeKeys(k) =>
+          case (k, slot) if !nodes(k) =>
             result.add(k, slot)
             // If the column is one of the join columns there is no need to add it again
 
@@ -570,10 +569,9 @@ object SlotAllocation {
       case OuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val nodeKeys = nodes.map(_.name)
         val result = lhs.copy()
         rhs.foreachSlotOrdered {
-          case (k, slot) if !nodeKeys(k) =>
+          case (k, slot) if !nodes(k) =>
             result.add(k, slot)
           // If the column is one of the join columns there is no need to add it again
 
@@ -582,7 +580,7 @@ object SlotAllocation {
         result
 
       case RollUpApply(_, _, collectionName, _, _) =>
-        lhs.newReference(collectionName.name, nullable, CTList(CTAny))
+        lhs.newReference(collectionName, nullable, CTList(CTAny))
         lhs
 
       case _: ForeachApply =>
@@ -676,7 +674,7 @@ object SlotAllocation {
   private def allocateShortestPathPattern(shortestPathPattern: ShortestPathPattern,
                                           slots: SlotConfiguration,
                                           nullable: Boolean) = {
-    val maybePathName = shortestPathPattern.name.map(_.name)
+    val maybePathName = shortestPathPattern.name
     val part = shortestPathPattern.expr
     val pathName = maybePathName.getOrElse(UnNamedNameGenerator.name(part.position))
     val rel = part.element match {

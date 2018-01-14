@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, StrictnessMode}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelName}
 
@@ -30,13 +30,13 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelName}
   * This is a special version of CreateNode, which is used in a merge plan after checking that no node with the same
   * labels and properties exist.
   */
-case class MergeCreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LabelName], properties: Option[Expression])
+case class MergeCreateNode(source: LogicalPlan, idName: String, labels: Seq[LabelName], properties: Option[Expression])
                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = {
+  override val availableSymbols: Set[String] = {
     source.availableSymbols + idName
   }
 

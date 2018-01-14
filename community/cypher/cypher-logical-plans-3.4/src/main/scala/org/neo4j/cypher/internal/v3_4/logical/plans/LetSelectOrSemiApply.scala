@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *   }
   * }
   */
-case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
+case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)
                                (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)(idGen)
 
@@ -57,15 +57,15 @@ case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: I
   *   }
   * }
   */
-case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
+case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)
                                    (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)(idGen)
 
-abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression,
+abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression,
                                             solved: PlannerQuery with CardinalityEstimation)(idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + idName
+  override val availableSymbols: Set[String] = left.availableSymbols + idName
 }

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
-import org.neo4j.cypher.internal.ir.v3_4.{IdName => IdNameV3_4}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, NonEmptyList, symbols => symbolsV3_4}
@@ -250,7 +249,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
     a3_3.assignIds()
     val id3_3 = a3_3.assignedId
-    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(solved3_4)
+    val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)(solved3_4)
 
     val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[plansV3_4.AllNodesScan](a3_3)._1
     rewrittenPlan should be(a3_4)
@@ -266,7 +265,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val ans_id = a3_3.assignedId
     val ag_id = ag3_3.assignedId
 
-    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(solved3_4)
+    val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)(solved3_4)
     val i3_4a = expressionsV3_4.SignedDecimalIntegerLiteral("2")(pos3_4)
     val i3_4b = expressionsV3_4.SignedDecimalIntegerLiteral("5")(pos3_4)
     val ag3_4 = plansV3_4.Aggregation(a3_4, Map("a" -> i3_4a), Map("b" -> i3_4b))(solved3_4)
@@ -299,7 +298,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val e3_3 = plansV3_3.ErrorPlan(a3_3, new frontendV3_3.ExhaustiveShortestPathForbiddenException)(solved3_3)
     e3_3.assignIds()
 
-    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(solved3_4)
+    val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)(solved3_4)
 
     val rewrittenPlan = LogicalPlanConverter.convertLogicalPlan[ErrorPlan](e3_3)._1
     rewrittenPlan shouldBe an[plansV3_4.ErrorPlan]
@@ -317,8 +316,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     n3_3.assignIds()
 
     val var3_4 = expressionsV3_4.Variable("n")(pos3_4)
-    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(solved3_4)
-    val n3_4 = plansV3_4.NodeIndexSeek(IdNameV3_4("a"),
+    val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)(solved3_4)
+    val n3_4 = plansV3_4.NodeIndexSeek("a",
       expressionsV3_4.LabelToken("b", utilV3_4.LabelId(2)),
       Seq(expressionsV3_4.PropertyKeyToken("c", utilV3_4.PropertyKeyId(3))),
       plansV3_4.ScanQueryExpression(var3_4), Set.empty)(solved3_4)
@@ -337,7 +336,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     pc3_3.assignIds()
 
     val var3_4 = expressionsV3_4.Variable("n")(pos3_4)
-    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(solved3_4)
+    val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)(solved3_4)
     val inputv3_4 = plansV3_4.FieldSignature("d", symbolsV3_4.CTString, Some(plansV3_4.CypherValue("e", symbolsV3_4.CTString)))
     val sigv3_4 = plansV3_4.ProcedureSignature(plansV3_4.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv3_4), None, None, plansV3_4.ProcedureReadWriteAccess(Array("foo", "bar")))
     val pres3_4 = astV3_4.ProcedureResultItem(Some(expressionsV3_4.ProcedureOutput("f")(pos3_4)), var3_4)(pos3_4)
@@ -353,8 +352,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val s3_3 = plansV3_3.Sort(a3_3, Seq(plansV3_3.Ascending(IdNameV3_3("n"))))(solved3_3)
     s3_3.assignIds()
 
-    val a3_4 = plansV3_4.AllNodesScan(IdNameV3_4("n"), Set.empty)(solved3_4)
-    val s3_4 = plansV3_4.Sort(a3_4, Seq(plansV3_4.Ascending(IdNameV3_4("n"))))(solved3_4)
+    val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)(solved3_4)
+    val s3_4 = plansV3_4.Sort(a3_4, Seq(plansV3_4.Ascending("n")))(solved3_4)
 
     val plan = LogicalPlanConverter.convertLogicalPlan[ProcedureCall](s3_3)._1
     plan should be(s3_4)

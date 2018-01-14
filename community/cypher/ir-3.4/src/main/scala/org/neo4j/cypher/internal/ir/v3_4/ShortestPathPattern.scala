@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.ir.v3_4
 
 import org.neo4j.cypher.internal.v3_4.expressions.ShortestPaths
 
-final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)
+final case class ShortestPathPattern(name: Option[String], rel: PatternRelationship, single: Boolean)
                                     (val expr: ShortestPaths) {
 
-  def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
+  def isFindableFrom(symbols: Set[String]) = symbols.contains(rel.left) && symbols.contains(rel.right)
 
-  def availableSymbols: Set[IdName] = name.toSet ++ rel.coveredIds
+  def availableSymbols: Set[String] = name.toSet ++ rel.coveredIds
 }
 
 object ShortestPathPattern {

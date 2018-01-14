@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -49,7 +49,7 @@ object Eagerness {
   }
 
   @tailrec
-  private def headConflicts(head: PlannerQuery, tail: PlannerQuery, unstableLeaves: Seq[IdName]): Boolean = {
+  private def headConflicts(head: PlannerQuery, tail: PlannerQuery, unstableLeaves: Seq[String]): Boolean = {
     val mergeReadWrite = head == tail && head.queryGraph.containsMergeRecursive
     val conflict = if (tail.queryGraph.readOnly || mergeReadWrite) false
     else {
@@ -185,15 +185,15 @@ object Eagerness {
     deletedRelationshipsOverlap(deleted, to, context) || deletedNodesOverlap(deleted, to, context)
   }
 
-  private def deletedRelationshipsOverlap(deleted: Set[IdName], to: QueryGraph, context: LogicalPlanningContext): Boolean = {
+  private def deletedRelationshipsOverlap(deleted: Set[String], to: QueryGraph, context: LogicalPlanningContext): Boolean = {
     val relsToRead = to.allPatternRelationshipsRead
-    val relsDeleted = deleted.filter(id => context.semanticTable.isRelationship(id.name))
+    val relsDeleted = deleted.filter(id => context.semanticTable.isRelationship(id))
     relsToRead.nonEmpty && relsDeleted.nonEmpty
   }
 
-  private def deletedNodesOverlap(deleted: Set[IdName], to: QueryGraph, context: LogicalPlanningContext): Boolean = {
+  private def deletedNodesOverlap(deleted: Set[String], to: QueryGraph, context: LogicalPlanningContext): Boolean = {
     val nodesToRead = to.allPatternNodesRead
-    val nodesDeleted = deleted.filter(id => context.semanticTable.isNode(id.name))
+    val nodesDeleted = deleted.filter(id => context.semanticTable.isNode(id))
     nodesToRead.nonEmpty && nodesDeleted.nonEmpty
   }
 
@@ -229,7 +229,7 @@ object Eagerness {
    * with the labels or properties updated in this query. This may cause the read to affected
    * by the writes.
    */
-  private def nodeOverlap(currentNode: IdName, headQueryGraph: QueryGraph, tail: PlannerQuery): Boolean = {
+  private def nodeOverlap(currentNode: String, headQueryGraph: QueryGraph, tail: PlannerQuery): Boolean = {
     val labelsOnCurrentNode = headQueryGraph.allKnownLabelsOnNode(currentNode)
     val propertiesOnCurrentNode = headQueryGraph.allKnownPropertiesOnIdentifier(currentNode).map(_.propertyKey)
     val labelsToCreate = tail.queryGraph.createLabels

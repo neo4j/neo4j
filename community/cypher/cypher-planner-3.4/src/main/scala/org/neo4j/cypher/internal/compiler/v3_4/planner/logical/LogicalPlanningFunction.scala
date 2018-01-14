@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 // TODO: Return Iterator
@@ -34,10 +34,10 @@ trait LeafPlanner extends ((QueryGraph, LogicalPlanningContext) => Seq[LogicalPl
 
 object LeafPlansForVariable {
   def maybeLeafPlans(id: String, plans: Set[LogicalPlan]): Option[LeafPlansForVariable] =
-    if (plans.isEmpty) None else Some(LeafPlansForVariable(IdName(id), plans))
+    if (plans.isEmpty) None else Some(LeafPlansForVariable(id, plans))
 }
 
-case class LeafPlansForVariable(id: IdName, plans: Set[LogicalPlan]) {
+case class LeafPlansForVariable(id: String, plans: Set[LogicalPlan]) {
   assert(plans.nonEmpty)
 }
 

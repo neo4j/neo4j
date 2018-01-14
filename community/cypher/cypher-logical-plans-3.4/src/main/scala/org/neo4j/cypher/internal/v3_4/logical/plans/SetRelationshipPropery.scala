@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, StrictnessMode}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, PropertyKeyName}
 
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, PropertyKeyName}
   */
 case class SetRelationshipPropery(
                                    source: LogicalPlan,
-                                   idName: IdName,
+                                   idName: String,
                                    propertyKey: PropertyKeyName,
                                    expression: Expression
                                  )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
@@ -40,7 +40,7 @@ case class SetRelationshipPropery(
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + idName
+  override val availableSymbols: Set[String] = source.availableSymbols + idName
 
   override def rhs: Option[LogicalPlan] = None
 

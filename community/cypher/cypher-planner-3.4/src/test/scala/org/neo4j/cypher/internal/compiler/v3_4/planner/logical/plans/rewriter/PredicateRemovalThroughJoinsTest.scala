@@ -36,20 +36,20 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     // Given
     val lhsSelection = selectionOp("a", aHasLabel)
     val rhsSelection = Selection(Seq(aHasLabel), rhsLeaf)(solved)
-    val join = NodeHashJoin(Set(IdName("a")), lhsSelection, rhsSelection)(solved)
+    val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)(solved)
 
     // When
     val result = join.endoRewrite(predicateRemovalThroughJoins)
 
     // Then the Selection operator is removed from the RHS
-    result should equal(NodeHashJoin(Set(IdName("a")), lhsSelection, rhsLeaf)(solved))
+    result should equal(NodeHashJoin(Set("a"), lhsSelection, rhsLeaf)(solved))
   }
 
   test("multiple predicates on both sides - only one is common on both sides and is removed") {
     // Given
     val lhsSelection = selectionOp("a", aHasLabel, pred1)
     val rhsSelection = Selection(Seq(aHasLabel, pred2), rhsLeaf)(solved)
-    val join = NodeHashJoin(Set(IdName("a")), lhsSelection, rhsSelection)(solved)
+    val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)(solved)
 
     // When rewritten
     val result = join.endoRewrite(predicateRemovalThroughJoins)
@@ -58,14 +58,14 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val newRhsSelection = Selection(Seq(pred2), rhsLeaf)(solved)
 
     result should equal(
-      NodeHashJoin(Set(IdName("a")), lhsSelection, newRhsSelection)(solved))
+      NodeHashJoin(Set("a"), lhsSelection, newRhsSelection)(solved))
   }
 
   test("same predicate on both sides, but not depending on the join ids - nothing should be removed") {
     // Given
     val lhsSelection = selectionOp("a", pred1)
     val rhsSelection = Selection(Seq(pred1), rhsLeaf)(solved)
-    val originalJoin = NodeHashJoin(Set(IdName("a")), lhsSelection, rhsSelection)(solved)
+    val originalJoin = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)(solved)
 
     // When rewritten
     val result = originalJoin.endoRewrite(predicateRemovalThroughJoins)

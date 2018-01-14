@@ -67,18 +67,18 @@ trait UpdateGraph {
   /*
    * Finds all identifiers being deleted.
    */
-  def identifiersToDelete: Set[IdName] = (deleteExpressions flatMap {
+  def identifiersToDelete: Set[String] = (deleteExpressions flatMap {
     // DELETE n
-    case DeleteExpression(identifier: Variable, _) => Seq(IdName.fromVariable(identifier))
+    case DeleteExpression(identifier: Variable, _) => Seq(identifier.name)
     // DELETE (n)-[r]-()
-    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(x => IdName.fromVariable(x.asInstanceOf[Variable]))
+    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(_.asInstanceOf[Variable].name)
     // DELETE expr
     case DeleteExpression(expr, _) => Seq(findVariableInNestedStructure(expr))
   }).toSet
 
   @tailrec
-  private def findVariableInNestedStructure(e: Expression): IdName = e match {
-    case v: Variable => IdName.fromVariable(v)
+  private def findVariableInNestedStructure(e: Expression): String = e match {
+    case v: Variable => v.name
     // DELETE coll[i]
     case ContainerIndex(expr, _) => findVariableInNestedStructure(expr)
     // DELETE map.key
@@ -108,7 +108,7 @@ trait UpdateGraph {
   /*
    * finds all label names being removed on given node, REMOVE a:L
    */
-  def labelsToRemoveFromOtherNodes(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
+  def labelsToRemoveFromOtherNodes(idName: String): Set[LabelName] = removeLabelPatterns.collect {
     case RemoveLabelPattern(n, labels) if n != idName => labels
   }.flatten.toSet
 
@@ -194,7 +194,7 @@ trait UpdateGraph {
       propsToRead.isEmpty || propsToRead.exists(propsToWrite.overlaps)
     }
 
-    val nodesRead: Set[IdName] = qg.allPatternNodesRead.filterNot(qg.argumentIds)
+    val nodesRead: Set[String] = qg.allPatternNodesRead.filterNot(qg.argumentIds)
 
     createsNodes && nodesRead.exists(p => {
       val readProps = qg.allKnownPropertiesOnIdentifier(p).map(_.propertyKey)

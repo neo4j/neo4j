@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_4.{SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -49,10 +49,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Limit(
       Expand(
         Limit(
-          AllNodesScan(IdName("a"), Set())(solved),
+          AllNodesScan("a", Set())(solved),
           SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
         )(solved),
-        IdName("a"), OUTGOING, List(), IdName("b"), IdName("r1"), ExpandAll
+        "a", OUTGOING, List(), "b", "r1", ExpandAll
       )(solved),
       SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
     )(solved)
@@ -66,10 +66,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Seq(In(Property(Variable("r1")(pos), PropertyKeyName("prop")(pos))(pos), ListLiteral(List(SignedDecimalIntegerLiteral("42")(pos)))(pos))(pos)),
       Expand(
         Limit(
-          AllNodesScan(IdName("a"), Set())(solved),
+          AllNodesScan("a", Set())(solved),
           SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
         )(solved),
-        IdName("a"), OUTGOING, List(), IdName("b"), IdName("r1"), ExpandAll
+        "a", OUTGOING, List(), "b", "r1", ExpandAll
       )(solved)
     )(solved)
 
@@ -80,10 +80,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b")._2
     val expected = Expand(
       Limit(
-        AllNodesScan(IdName("a"), Set())(solved),
+        AllNodesScan("a", Set())(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
-      IdName("a"), OUTGOING, List(), IdName("b"), IdName("r"), ExpandAll
+      "a", OUTGOING, List(), "b", "r", ExpandAll
     )(solved)
 
     result should equal(expected)
@@ -94,14 +94,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan(IdName("b"), Set())(solved),
-          IdName("b"), INCOMING, List(), IdName("a"), IdName("r"), ExpandAll
+          AllNodesScan("b", Set())(solved),
+          "b", INCOMING, List(), "a", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
       ProjectEndpoints(
-        Argument(Set(IdName("r")))(solved),
-        IdName("r"), IdName("u"), startInScope = false, IdName("v"), endInScope = false, None, directed = true, SimplePatternLength
+        Argument(Set("r"))(solved),
+        "r", "u", startInScope = false, "v", endInScope = false, None, directed = true, SimplePatternLength
       )(solved)
     )(solved)
 
@@ -113,14 +113,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan(IdName("b"), Set())(solved),
-          IdName("b"), INCOMING, List(), IdName("a"), IdName("r"), ExpandAll
+          AllNodesScan("b", Set())(solved),
+          "b", INCOMING, List(), "a", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
       ProjectEndpoints(
-        Argument(Set(IdName("a"), IdName("r")))(solved),
-        IdName("r"), IdName("a"), startInScope = true, IdName("b2"), endInScope = false, None, directed = true, SimplePatternLength
+        Argument(Set("a", "r"))(solved),
+        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, SimplePatternLength
       )(solved)
     )(solved)
 
@@ -132,14 +132,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan(IdName("b"), Set())(solved),
-          IdName("b"), INCOMING, List(), IdName("a"), IdName("r"), ExpandAll
+          AllNodesScan("b", Set())(solved),
+          "b", INCOMING, List(), "a", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
       ProjectEndpoints(
-        Argument(Set(IdName("a"), IdName("b"), IdName("r")))(solved),
-        IdName("r"), IdName("a"), startInScope = true, IdName("b"), endInScope = true, None, directed = true, SimplePatternLength
+        Argument(Set("a", "b", "r"))(solved),
+        "r", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength
       )(solved)
     )(solved)
 
@@ -151,14 +151,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan(IdName("b"), Set())(solved),
-          IdName("b"), INCOMING, List(), IdName("a"), IdName("r"), ExpandAll
+          AllNodesScan("b", Set())(solved),
+          "b", INCOMING, List(), "a", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
       ProjectEndpoints(
-        Argument(Set(IdName("a"), IdName("r")))(solved),
-        IdName("r"), IdName("a"), startInScope = true, IdName("b2"), endInScope = false, None, directed = true, SimplePatternLength
+        Argument(Set("a", "r"))(solved),
+        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, SimplePatternLength
       )(solved)
     )(solved)
 
@@ -170,14 +170,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         Expand(
-          AllNodesScan(IdName("b"), Set())(solved),
-          IdName("b"), INCOMING, List(), IdName("a"), IdName("r"), ExpandAll
+          AllNodesScan("b", Set())(solved),
+          "b", INCOMING, List(), "a", "r", ExpandAll
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
       ProjectEndpoints(
-        Argument(Set(IdName("a"), IdName("r")))(solved),
-        IdName("r"), IdName("a"), startInScope = true, IdName("b2"), endInScope = false, None, directed = false, SimplePatternLength
+        Argument(Set("a", "r"))(solved),
+        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = false, SimplePatternLength
       )(solved)
     )(solved)
 
@@ -189,14 +189,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Apply(
       Limit(
         VarExpand(
-          AllNodesScan(IdName("b"), Set())(solved),
-          IdName("b"), INCOMING, OUTGOING, List(), IdName("a"), IdName("r"), VarPatternLength(1, None), ExpandAll, IdName("r_NODES"), IdName("r_RELS"), True()(pos), True()(pos), Seq()
+          AllNodesScan("b", Set())(solved),
+          "b", INCOMING, OUTGOING, List(), "a", "r", VarPatternLength(1, None), ExpandAll, "r_NODES", "r_RELS", True()(pos), True()(pos), Seq()
         )(solved),
         SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
       )(solved),
       ProjectEndpoints(
-        Argument(Set(IdName("a"), IdName("r")))(solved),
-        IdName("r"), IdName("a"), startInScope = true, IdName("b2"), endInScope = false, None, directed = true, VarPatternLength(1, None)
+        Argument(Set("a", "r"))(solved),
+        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, VarPatternLength(1, None)
       )(solved)
     )(solved)
 

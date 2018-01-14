@@ -24,7 +24,7 @@ import java.lang.reflect.Method
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, Rewritable, Unchangeable}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable._
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SameId}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
@@ -54,7 +54,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery with CardinalityEstimation
-  def availableSymbols: Set[IdName]
+  val availableSymbols: Set[String]
   val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   val id = idGen.id()
@@ -197,7 +197,7 @@ abstract class LogicalPlan(idGen: IdGen)
     sb.toString()
   }
 
-  def satisfiesExpressionDependencies(e: Expression) = e.dependencies.map(IdName.fromVariable).forall(availableSymbols.contains)
+  def satisfiesExpressionDependencies(e: Expression) = e.dependencies.map(_.name).forall(availableSymbols.contains)
 
   def debugId: String = f"0x${hashCode()}%08x"
 
@@ -207,11 +207,11 @@ abstract class LogicalPlan(idGen: IdGen)
     import org.neo4j.cypher.internal.util.v3_4.Foldable._
     this.fold(Seq.empty[IndexUsage]) {
       case NodeIndexSeek(idName, label, propertyKeys, _, _) =>
-        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.nameId.id, label.name, propertyKeys.map(_.name))
+        (acc) => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, propertyKeys.map(_.name))
       case NodeUniqueIndexSeek(idName, label, propertyKeys, _, _) =>
-        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.nameId.id, label.name, propertyKeys.map(_.name))
+        (acc) => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, propertyKeys.map(_.name))
       case NodeIndexScan(idName, label, propertyKey, _) =>
-        (acc) => acc :+ SchemaIndexScanUsage(idName.name, label.nameId.id, label.name, propertyKey.name)
+        (acc) => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, propertyKey.name)
       }
   }
 }
@@ -219,11 +219,11 @@ abstract class LogicalPlan(idGen: IdGen)
 abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   final val lhs = None
   final val rhs = None
-  def argumentIds: Set[IdName]
+  def argumentIds: Set[String]
 }
 
 abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
-  def idName: IdName
+  def idName: String
 }
 
 abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {

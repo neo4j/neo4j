@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
@@ -47,8 +47,9 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 import scala.collection.mutable
 
-trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport {
   self: CypherFunSuite =>
+  implicit val idGen = new SequentialIdGen()
 
   val monitors = mock[Monitors]
   val parser = new CypherParser
@@ -59,7 +60,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
-  def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
+  def newPatternRelationship(start: String, end: String, rel: String, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
     PatternRelationship(rel, (start, end), dir, types, length)
   }
 
@@ -132,25 +133,25 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedLogicalPlanWithProjections(ids: String*): LogicalPlan = {
     val projections = RegularQueryProjection(projections = ids.map((id) => id -> varFor(id)).toMap)
-    FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(RegularPlannerQuery(
+    FakePlan(ids.toSet)(CardinalityEstimation.lift(RegularPlannerQuery(
         horizon = projections,
-        queryGraph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
+        queryGraph = QueryGraph.empty.addPatternNodes(ids: _*)
       ), Cardinality(0))
     )
   }
 
-  def newMockedLogicalPlan(idNames: Set[IdName], cardinality: Cardinality = Cardinality(1), hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
+  def newMockedLogicalPlan(idNames: Set[String], cardinality: Cardinality = Cardinality(1), hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints)
     FakePlan(idNames)(CardinalityEstimation.lift(RegularPlannerQuery(qg), cardinality))
   }
 
   def newMockedLogicalPlan(ids: String*): LogicalPlan =
-    newMockedLogicalPlan(ids.map(IdName(_)).toSet)
+    newMockedLogicalPlan(ids.toSet)
 
-  def newMockedLogicalPlanWithSolved(ids: Set[IdName], solved: PlannerQuery with CardinalityEstimation): LogicalPlan =
+  def newMockedLogicalPlanWithSolved(ids: Set[String], solved: PlannerQuery with CardinalityEstimation): LogicalPlan =
     FakePlan(ids)(solved)
 
-  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty): LogicalPlan = {
+  def newMockedLogicalPlanWithPatterns(ids: Set[String], patterns: Seq[PatternRelationship] = Seq.empty): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRelationships(patterns)
     FakePlan(ids)(CardinalityEstimation.lift(RegularPlannerQuery(qg), Cardinality(0)))
   }
@@ -223,7 +224,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 }
 
-case class FakePlan(availableSymbols: Set[IdName] = Set.empty)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+case class FakePlan(availableSymbols: Set[String] = Set.empty)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   def rhs = None
   def lhs = None

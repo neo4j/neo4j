@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *   produce leftRow
   * }
   */
-case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
+case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)
                        (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends AbstractLetSemiApply(left, right, idName, solved)(idGen)
 
@@ -46,15 +46,15 @@ case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
   *   produce leftRow
   * }
   */
-case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
+case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)
                            (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends AbstractLetSemiApply(left, right, idName, solved)(idGen)
 
 abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan,
-                                    idName: IdName, solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                    idName: String, solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + idName
+  override val availableSymbols: Set[String] = left.availableSymbols + idName
 }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.planDescription
 
 import java.util.Locale
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
@@ -325,7 +325,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("Expand contains information about its relations") {
-    val expandPlan = Expand(argument, IdName("from"), SemanticDirection.INCOMING, Seq.empty, IdName("to"), IdName("rel"), ExpandAll)(solved)
+    val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)(solved)
     val description = LogicalPlan2PlanDescription(true)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(

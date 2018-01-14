@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -33,5 +33,5 @@ case class Projection(source: LogicalPlan, expressions: Map[String, Expression])
   val lhs = Some(source)
   val rhs = None
 
-  val availableSymbols: Set[IdName] = source.availableSymbols ++ expressions.keySet.map(IdName(_))
+  val availableSymbols: Set[String] = source.availableSymbols ++ expressions.keySet
 }

@@ -61,13 +61,13 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val planningContext = mockLogicalPlanningContext(semanticTable)
 
     val inputPlan = mock[LogicalPlan]
-    when(inputPlan.availableSymbols).thenReturn(columns.map(IdName.apply).toSet)
+    when(inputPlan.availableSymbols).thenReturn(columns.toSet)
 
     val queryPlanner = QueryPlanner(planSingleQuery = new FakePlanner(inputPlan))
 
     val pq = RegularPlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> varFor(c)).toMap))
 
-    val union = UnionQuery(Seq(pq), distinct = false, columns.map(IdName.apply), periodicCommit = None)
+    val union = UnionQuery(Seq(pq), distinct = false, columns, periodicCommit = None)
 
     val (_, result) = queryPlanner.plan(union, planningContext)
 

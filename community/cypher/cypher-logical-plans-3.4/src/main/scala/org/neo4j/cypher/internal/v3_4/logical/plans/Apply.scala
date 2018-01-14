@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -38,5 +38,5 @@ case class Apply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery
   val lhs = Some(left)
   val rhs = Some(right)
 
-  lazy val availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

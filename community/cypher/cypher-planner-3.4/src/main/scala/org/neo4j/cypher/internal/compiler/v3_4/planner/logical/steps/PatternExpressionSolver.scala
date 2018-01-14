@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.util.v3_4.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.functions.Exists
@@ -117,7 +117,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
 }
 
 object PatternExpressionSolver {
-  def solvePatternExpressions(availableSymbols: Set[IdName], context: LogicalPlanningContext,
+  def solvePatternExpressions(availableSymbols: Set[String], context: LogicalPlanningContext,
                               pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
@@ -125,8 +125,8 @@ object PatternExpressionSolver {
 
       val dependencies = namedExpr.
         dependencies.
-        map(IdName.fromVariable).
-        filter(id => UnNamedNameGenerator.isNamed(id.name))
+        map(_.name).
+        filter(id => UnNamedNameGenerator.isNamed(id))
 
       val qgArguments = source.availableSymbols intersect dependencies
       namedExpr.asQueryGraph.withArgumentIds(qgArguments)
@@ -153,7 +153,7 @@ object PatternExpressionSolver {
       lastDitch = patternExpressionRewriter(availableSymbols, context))
   }
 
-  def solvePatternComprehensions(availableSymbols: Set[IdName], context: LogicalPlanningContext,
+  def solvePatternComprehensions(availableSymbols: Set[String], context: LogicalPlanningContext,
                                  pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
@@ -192,7 +192,7 @@ case class ListSubQueryExpressionSolver[T <: Expression](
 
     val key = maybeKey.getOrElse(FreshIdNameGenerator.name(expr.position.bumped()))
     val subQueryPlan = planSubQuery(source, expr, context)
-    val producedPlan = context.logicalPlanProducer.planRollup(source, subQueryPlan.innerPlan, IdName(key),
+    val producedPlan = context.logicalPlanProducer.planRollup(source, subQueryPlan.innerPlan, key,
       subQueryPlan.variableToCollect, subQueryPlan.nullableIdentifiers, context)
 
     (producedPlan, Variable(key)(expr.position))
@@ -215,8 +215,8 @@ case class ListSubQueryExpressionSolver[T <: Expression](
     }
   }
 
-  case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan, nullableIdentifiers: Set[IdName]) {
-    def variableToCollect = IdName(columnName)
+  case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan, nullableIdentifiers: Set[String]) {
+    def variableToCollect = columnName
   }
 
   private def planSubQuery(source: LogicalPlan, expr: T, context: LogicalPlanningContext): PlannedSubQuery = {

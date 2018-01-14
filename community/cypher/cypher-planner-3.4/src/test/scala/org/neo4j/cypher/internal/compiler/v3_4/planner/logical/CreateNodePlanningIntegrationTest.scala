@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{MapExpression, PropertyKeyName, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -30,7 +29,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan single create") {
     planFor("CREATE (a)")._2 should equal(
       EmptyResult(
-        CreateNode(Argument()(solved), IdName("a"), Seq.empty, None)(solved))(solved)
+        CreateNode(Argument()(solved), "a", Seq.empty, None)(solved))(solved)
     )
   }
 
@@ -39,9 +38,9 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       EmptyResult(
         CreateNode(
           CreateNode(
-            CreateNode(Argument()(solved), IdName("a"), Seq.empty, None)(solved),
-            IdName("b"), Seq.empty, None)(solved),
-          IdName("c"), Seq.empty, None)(solved))
+            CreateNode(Argument()(solved), "a", Seq.empty, None)(solved),
+            "b", Seq.empty, None)(solved),
+          "c", Seq.empty, None)(solved))
         (solved)
     )
   }
@@ -51,23 +50,23 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       EmptyResult(
         CreateNode(
           CreateNode(
-            CreateNode(Argument()(solved), IdName("a"), Seq.empty, None)(solved),
-            IdName("b"), Seq.empty, None)(solved),
-          IdName("c"), Seq.empty, None)(solved))
+            CreateNode(Argument()(solved), "a", Seq.empty, None)(solved),
+            "b", Seq.empty, None)(solved),
+          "c", Seq.empty, None)(solved))
         (solved)
     )
   }
 
   test("should plan single create with return") {
     planFor("CREATE (a) return a")._2 should equal(
-        CreateNode(Argument()(solved), IdName("a"), Seq.empty, None)(solved)
+        CreateNode(Argument()(solved), "a", Seq.empty, None)(solved)
     )
   }
 
   test("should plan create with labels") {
     planFor("CREATE (a:A:B)")._2 should equal(
       EmptyResult(
-        CreateNode(Argument()(solved), IdName("a"), Seq(lblName("A"), lblName("B")), None)(solved))(solved)
+        CreateNode(Argument()(solved), "a", Seq(lblName("A"), lblName("B")), None)(solved))(solved)
     )
   }
 
@@ -75,7 +74,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
 
     planFor("CREATE (a {prop: 42})")._2 should equal(
       EmptyResult(
-        CreateNode(Argument()(solved), IdName("a"), Seq.empty,
+        CreateNode(Argument()(solved), "a", Seq.empty,
           Some(
             MapExpression(Seq((PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))))(pos)
           )
@@ -87,7 +86,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan match and create") {
     planFor("MATCH (a) CREATE (b)")._2 should equal(
       EmptyResult(
-          CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("b"), Seq.empty, None)(solved)
+          CreateNode(AllNodesScan("a", Set.empty)(solved), "b", Seq.empty, None)(solved)
       )(solved)
     )
   }
@@ -100,13 +99,13 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
             Apply(
               Eager(
                 CreateNode(
-                  AllNodesScan(IdName("a"), Set.empty)(solved),
-                  IdName("b"), Seq.empty, None)(solved)
+                  AllNodesScan("a", Set.empty)(solved),
+                  "b", Seq.empty, None)(solved)
               )(solved),
-              AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved)
+              AllNodesScan("c", Set("a", "b"))(solved)
             )(solved)
           )(solved),
-          IdName("d"), Seq.empty, None)(solved))(solved)
+          "d", Seq.empty, None)(solved))(solved)
     )
   }
 }

@@ -432,7 +432,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       test("should show expand with types in a simple form") {
         val result = profileWithExecute(Configs.All + Configs.Morsel, "match (n)-[r:T]->() return *")
 
-        result.executionPlanDescription().toString should include("(n)-[r:T]->()")
+        result.executionPlanDescription().toString should include("()<-[r:T]-(n)")
       }
 
       test("should report correct dbhits and rows for label scan") {

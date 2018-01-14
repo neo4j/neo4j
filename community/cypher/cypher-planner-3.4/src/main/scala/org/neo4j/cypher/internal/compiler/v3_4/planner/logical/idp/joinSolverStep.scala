@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.joinSolverStep._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object joinSolverStep {
@@ -32,7 +32,10 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
 
   import LogicalPlanningSupport._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship],
+                     goal: Goal,
+                     table: IDPCache[LogicalPlan],
+                     context: LogicalPlanningContext): Iterator[LogicalPlan] = {
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
@@ -72,13 +75,13 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
     builder.result().iterator
   }
 
-  private def computeOverlappingNodes(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[IdName]): Set[IdName] = {
+  private def computeOverlappingNodes(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[String]): Set[String] = {
     val leftNodes = nodes(lhs)
     val rightNodes = nodes(rhs)
     (leftNodes intersect rightNodes) -- arguments
   }
 
-  private def computeOverlappingSymbols(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[IdName]): Set[IdName] = {
+  private def computeOverlappingSymbols(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[String]): Set[String] = {
     val leftSymbols = lhs.availableSymbols
     val rightSymbols = rhs.availableSymbols
     (leftSymbols intersect rightSymbols) -- arguments
@@ -87,7 +90,7 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
   private def nodes(plan: LogicalPlan) =
     plan.solved.queryGraph.patternNodes
 
-  private def show(goal: Goal, symbols: Set[IdName]) =
+  private def show(goal: Goal, symbols: Set[String]) =
     s"${showIds(goal.toSet)}: ${showNames(symbols)}"
 
   private def goalSymbols(goal: Goal, registry: IdRegistry[PatternRelationship]) =
@@ -96,6 +99,6 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
   private def showIds(ids: Set[Int]) =
     ids.toIndexedSeq.sorted.mkString("{", ", ", "}")
 
-  private def showNames(ids: Set[IdName]) =
-    ids.map(_.name).toIndexedSeq.sorted.mkString("[", ", ", "]")
+  private def showNames(ids: Set[String]) =
+    ids.toIndexedSeq.sorted.mkString("[", ", ", "]")
 }

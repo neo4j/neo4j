@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.RefSlot
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
@@ -44,7 +43,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
     val slots = slotConfigurations(plan.id)
 
     val thisOp = plan match {
-      case plans.AllNodesScan(IdName(column), _) =>
+      case plans.AllNodesScan(column, _) =>
         new AllNodeScanOperator(
           slots.numberOfLongs,
           slots.numberOfReferences,
@@ -69,7 +68,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           val predicate = predicates.map(converters.toCommandPredicate).reduce(_ andWith _)
           new FilterOperator(slots, predicate)
 
-        case plans.Expand(lhs, IdName(fromName), dir, types, IdName(to), IdName(relName), ExpandAll) =>
+        case plans.Expand(lhs, fromName, dir, types, to, relName, ExpandAll) =>
           val fromOffset = slots.getLongOffsetFor(fromName)
           val relOffset = slots.getLongOffsetFor(relName)
           val toOffset = slots.getLongOffsetFor(to)
@@ -90,7 +89,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           new MergeSortOperator(ordering, slots)
 
         case plans.UnwindCollection(src, variable, collection) =>
-          val offset = slots.get(variable.name) match {
+          val offset = slots.get(variable) match {
             case Some(RefSlot(idx, _, _)) => idx
             case _ =>
               throw new InternalException("Weird slot found for UNWIND")

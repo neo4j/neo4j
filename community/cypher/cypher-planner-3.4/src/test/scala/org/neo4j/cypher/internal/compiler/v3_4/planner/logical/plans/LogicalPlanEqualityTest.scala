@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, StrictnessMode}
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
@@ -76,7 +76,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[IdName] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
 
@@ -90,7 +90,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[IdName] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
 
@@ -107,7 +107,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override def solved: PlannerQuery with CardinalityEstimation = ???
 
-    override def availableSymbols: Set[IdName] = ???
+    override val availableSymbols: Set[String] = Set.empty
 
     override def strictness: StrictnessMode = ???
   }

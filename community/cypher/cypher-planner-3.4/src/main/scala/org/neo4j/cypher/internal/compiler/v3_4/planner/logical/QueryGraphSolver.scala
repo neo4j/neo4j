@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan
-  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression,context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
-  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
+  def planPatternExpression(planArguments: Set[String], expr: PatternExpression,context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
 }
 
 trait PatternExpressionSolving {
@@ -37,8 +37,8 @@ trait PatternExpressionSolving {
 
   import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 
-  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression, context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
-    val dependencies = expr.dependencies.map(IdName.fromVariable)
+  def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
+    val dependencies = expr.dependencies.map(_.name)
     val qgArguments = planArguments intersect dependencies
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
     val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
@@ -46,7 +46,7 @@ trait PatternExpressionSolving {
     (plan, namedExpr)
   }
 
-  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
+  def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
     val asQueryGraph = expr.asQueryGraph
     val qgArguments = planArguments intersect asQueryGraph.idsWithoutOptionalMatchesOrUpdates
     val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * rows has the relationship start node as 'leftNode' and the end node as 'rightNode', while the other produced
   * row has the end node as 'leftNode' = endNode and the start node as 'rightNode'.
   */
-case class UndirectedRelationshipByIdSeek(idName: IdName,
+case class UndirectedRelationshipByIdSeek(idName: String,
                                           relIds: SeekableArgs,
-                                          leftNode: IdName,
-                                          rightNode: IdName,
-                                          argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                          leftNode: String,
+                                          rightNode: String,
+                                          argumentIds: Set[String])(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends LogicalLeafPlan(idGen) {
 
-  def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 }

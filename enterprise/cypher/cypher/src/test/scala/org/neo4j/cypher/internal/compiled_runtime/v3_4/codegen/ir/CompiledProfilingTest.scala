@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.Var
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.{AcceptVisitor, ScanAllNodes, WhileLoop}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Provider
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_4.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
@@ -108,9 +108,9 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       tx.close()
 
       val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-      val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
-      val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
-      val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
+      val lhs = AllNodesScan("a", Set.empty)(solved)
+      val rhs = AllNodesScan("a", Set.empty)(solved)
+      val join = NodeHashJoin(Set("a"), lhs, rhs)(solved)
       val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
       val plan = plans.ProduceResult(projection, List("foo"))
 

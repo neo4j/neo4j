@@ -55,7 +55,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     relate(node2, node1)
     val result = executeWith(Configs.All, "MATCH (a)--() RETURN DISTINCT a")
 
-    result.toList should equal(List(Map("a" -> node1), Map("a" -> node2)))
+    result.toSet should equal(Set(Map("a" -> node1), Map("a" -> node2)))
   }
 
   test("distinct aggregation on array property") {

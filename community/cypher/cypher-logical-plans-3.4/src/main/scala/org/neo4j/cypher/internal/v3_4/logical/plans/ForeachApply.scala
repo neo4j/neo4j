@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -42,5 +42,5 @@ case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String,
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
+  override val availableSymbols: Set[String] = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
 }

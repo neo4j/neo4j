@@ -34,7 +34,7 @@ class CartesianProductsOrValueJoinsTest
   val planC = allNodesScan("c")
 
   private def allNodesScan(n: String): LogicalPlan = {
-    val solved = CardinalityEstimation.lift(RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set(IdName(n)))), Cardinality(0))
+    val solved = CardinalityEstimation.lift(RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n))), Cardinality(0))
     AllNodesScan(n, Set.empty)(solved)
   }
 
@@ -59,10 +59,10 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlan = CartesianProduct(
-        planC,
+        planB,
         CartesianProduct(
-          planB,
-          planA
+          planA,
+          planC
         )(solved)
       )(solved))
   }
@@ -113,17 +113,17 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlan =
         Selection(Seq(eq3),
-          ValueHashJoin(planA,
-            ValueHashJoin(planB, planC, eq2)(solved), eq1.switchSides)(solved))(solved))
+          ValueHashJoin(planC,
+            ValueHashJoin(planB, planA, eq1)(solved), eq2.switchSides)(solved))(solved))
   }
 
   private def testThis(graph: QueryGraph, input: Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
     new given {
       qg = graph
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
         case _ => 100.0
       }
     }.withLogicalPlanningContext { (cfg, ctx) =>

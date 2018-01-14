@@ -32,6 +32,10 @@ import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
 /**
   * Abstract description of an execution plan
   */
@@ -57,13 +61,22 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   def addArgument(arg: Argument): InternalPlanDescription
 
   def flatten: Seq[InternalPlanDescription] = {
-    def flattenAcc(acc: Seq[InternalPlanDescription], plan: InternalPlanDescription): Seq[InternalPlanDescription] = {
-      plan.children.toIndexedSeq.foldLeft(acc :+ plan) {
-        case (acc1, plan1) => flattenAcc(acc1, plan1)
+      val flatten = new ArrayBuffer[InternalPlanDescription]
+      val stack = new mutable.Stack[InternalPlanDescription]()
+      stack.push(self)
+      while (stack.nonEmpty) {
+        val plan = stack.pop()
+        flatten.append(plan)
+        plan.children match {
+          case NoChildren =>
+          case SingleChild(child) =>
+            stack.push(child)
+          case TwoChildren(l, r) =>
+            stack.push(r)
+            stack.push(l)
+        }
       }
-    }
-
-    flattenAcc(Seq.empty, this)
+      flatten
   }
 
   def orderedVariables: Seq[String] = variables.toIndexedSeq.sorted

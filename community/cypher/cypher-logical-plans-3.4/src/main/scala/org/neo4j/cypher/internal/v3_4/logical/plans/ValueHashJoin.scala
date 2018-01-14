@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.Equals
 
@@ -32,5 +32,5 @@ case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)
   override val lhs = Some(left)
   override val rhs = Some(right)
 
-  override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

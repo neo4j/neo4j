@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
 
 /**
   * This operator does a full scan of an index, producing one row per entry.
   */
-case class NodeIndexScan(idName: IdName,
+case class NodeIndexScan(idName: String,
                          label: LabelToken,
                          propertyKey: PropertyKeyToken,
-                         argumentIds: Set[IdName])
+                         argumentIds: Set[String])
                         (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends NodeLogicalLeafPlan(idGen) {
 
-  def availableSymbols: Set[IdName] = argumentIds + idName
+  override val availableSymbols: Set[String] = argumentIds + idName
 }

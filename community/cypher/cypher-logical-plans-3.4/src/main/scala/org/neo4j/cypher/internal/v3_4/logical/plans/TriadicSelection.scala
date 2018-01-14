@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -62,12 +62,12 @@ case class TriadicSelection(
                              left: LogicalPlan,
                              right: LogicalPlan,
                              positivePredicate: Boolean,
-                             sourceId: IdName, seenId: IdName, targetId: IdName
+                             sourceId: String, seenId: String, targetId: String
                            )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
 extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(left)
   override def rhs: Option[LogicalPlan] = Some(right)
 
-  override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

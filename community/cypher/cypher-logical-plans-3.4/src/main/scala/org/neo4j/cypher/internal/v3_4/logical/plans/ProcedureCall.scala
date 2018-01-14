@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -35,6 +35,6 @@ case class ProcedureCall(source: LogicalPlan, call: ResolvedCall)
   override val lhs = Some(source)
   override def rhs = None
 
-  override def availableSymbols: Set[IdName] =
-    source.availableSymbols ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
+  override val availableSymbols: Set[String] =
+    source.availableSymbols ++ call.callResults.map { result => result.variable.name }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, StrictnessMode}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName}
 
@@ -27,14 +27,14 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName}
   * For each input row, create a new relationship with the provided type and properties,
   * and assign it to the variable 'idName'.
   */
-case class CreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: RelTypeName, endNode: IdName,
+case class CreateRelationship(source: LogicalPlan, idName: String, startNode: String, typ: RelTypeName, endNode: String,
                               properties: Option[Expression])
                            (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + idName + startNode + endNode
+  override val availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
 
   override def rhs: Option[LogicalPlan] = None
 

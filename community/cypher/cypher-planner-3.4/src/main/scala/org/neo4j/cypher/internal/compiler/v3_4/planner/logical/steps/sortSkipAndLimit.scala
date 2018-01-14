@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AscSortItem, DescSortItem, SortItem}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryProjection}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
@@ -49,8 +49,8 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
   }
 
   private def columnOrder(in: SortItem): ColumnOrder = in match {
-    case AscSortItem(Variable(key)) => Ascending(IdName(key))
-    case DescSortItem(Variable(key)) => Descending(IdName(key))
+    case AscSortItem(Variable(key)) => Ascending(key)
+    case DescSortItem(Variable(key)) => Descending(key)
     case _ => throw new InternalException("Sort items expected to only use single variable expression")
   }
 

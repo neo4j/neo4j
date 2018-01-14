@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.expandSolverS
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{applyOptional, leafPlanOptions, outerHashJoin}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.RelationshipStartItem
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /**
@@ -135,7 +135,7 @@ object SingleComponentPlanner {
 
   def planSinglePatternCartesian(qg: QueryGraph,
                                  pattern: PatternRelationship,
-                                 start: IdName,
+                                 start: String,
                                  maybeStartPlan: Option[LogicalPlan],
                                  maybeEndPlan: Option[LogicalPlan],
                                  context: LogicalPlanningContext): Option[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
@@ -148,8 +148,8 @@ object SingleComponentPlanner {
   If there are hints and the query graph is small, joins have to be constructed as an alternative here, otherwise the hints might not be able to be fulfilled.
   Creating joins if the query graph is larger will lead to too many joins.
    */
-  def planSinglePatternJoins(qg: QueryGraph, leftExpand: Option[LogicalPlan], rightExpand: Option[LogicalPlan], startJoinNodes: Set[IdName],
-                             endJoinNodes: Set[IdName], maybeStartPlan: Option[LogicalPlan], maybeEndPlan: Option[LogicalPlan], context: LogicalPlanningContext): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
+  def planSinglePatternJoins(qg: QueryGraph, leftExpand: Option[LogicalPlan], rightExpand: Option[LogicalPlan], startJoinNodes: Set[String],
+                             endJoinNodes: Set[String], maybeStartPlan: Option[LogicalPlan], maybeEndPlan: Option[LogicalPlan], context: LogicalPlanningContext): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
     case (Some(startPlan), Some(endPlan)) if qg.hints.nonEmpty && qg.size == 1 =>
       val startJoinHints = qg.joinHints.filter(_.coveredBy(startJoinNodes))
       val endJoinHints = qg.joinHints.filter(_.coveredBy(endJoinNodes))

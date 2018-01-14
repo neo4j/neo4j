@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v3_4.functions
 
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val idName = IdName("n")
+  val idName = "n"
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
   val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
 

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.SortItem
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, One, ZeroOneOrMany, symbols}
@@ -154,7 +153,7 @@ object LogicalPlanConverter {
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
-      context.addVariable(allNodesScan.idName.name, variable)
+      context.addVariable(allNodesScan.idName, variable)
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
       (methodHandle, WhileLoop(variable, ScanAllNodes(opName), actions) :: tl)
@@ -167,7 +166,7 @@ object LogicalPlanConverter {
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val nodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
       val labelVar = context.namer.newVarName()
-      context.addVariable(nodeByLabelScan.idName.name, nodeVar)
+      context.addVariable(nodeByLabelScan.idName, nodeVar)
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
       (methodHandle, WhileLoop(nodeVar, ScanForLabel(opName, nodeByLabelScan.label.name, labelVar), actions) :: tl)
@@ -231,7 +230,7 @@ object LogicalPlanConverter {
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val nodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
-      context.addVariable(seek.idName.name, nodeVar)
+      context.addVariable(seek.idName, nodeVar)
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
       val seekOperation = seek.nodeIds match {
@@ -266,7 +265,7 @@ object LogicalPlanConverter {
       WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
                                    descriptorVar, expression), actions)
 
-    sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName.name, indexSeek.valueExpr, indexSeek)
+    sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName, indexSeek.valueExpr, indexSeek)
   }
 
   private def nodeUniqueIndexSeekAsCodeGen(indexSeek: plans.NodeUniqueIndexSeek) = {
@@ -275,7 +274,7 @@ object LogicalPlanConverter {
       WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
                                    descriptorVar, expression), actions)
 
-    sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName.name, indexSeek.valueExpr, indexSeek)
+    sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName, indexSeek.valueExpr, indexSeek)
   }
 
   private def nodeHashJoinAsCodeGenPlan(nodeHashJoin: plans.NodeHashJoin) = new CodeGenPlan {
@@ -295,11 +294,11 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       if (child.logicalPlan eq logicalPlan.lhs.get) {
-        val joinNodes = nodeHashJoin.nodes.map(n => context.getVariable(n.name))
+        val joinNodes = nodeHashJoin.nodes.map(n => context.getVariable(n))
         val probeTableName = context.namer.newVarName()
 
-        val lhsSymbols = nodeHashJoin.left.availableSymbols.map(_.name)
-        val nodeNames = nodeHashJoin.nodes.map(_.name)
+        val lhsSymbols = nodeHashJoin.left.availableSymbols
+        val nodeNames = nodeHashJoin.nodes
         val notNodeSymbols = lhsSymbols intersect context.variableQueryVariables() diff nodeNames
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
@@ -315,7 +314,7 @@ object LogicalPlanConverter {
       }
       else if (child.logicalPlan eq logicalPlan.rhs.get) {
 
-        val joinNodes = nodeHashJoin.nodes.map(n => context.getVariable(n.name))
+        val joinNodes = nodeHashJoin.nodes.map(n => context.getVariable(n))
         val joinData = context.getProbeTable(this)
         joinData.vars foreach { case (_, symbol) => context.addVariable(symbol.variable, symbol.outgoing) }
 
@@ -343,10 +342,10 @@ object LogicalPlanConverter {
     private def expandAllConsume(context: CodeGenContext,
                                  child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
       val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel)
-      val fromNodeVar = context.getVariable(expand.from.name)
+      val fromNodeVar = context.getVariable(expand.from)
       val toNodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
-      context.addVariable(expand.relName.name, relVar)
-      context.addVariable(expand.to.name, toNodeVar)
+      context.addVariable(expand.relName, relVar)
+      context.addVariable(expand.to, toNodeVar)
 
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
@@ -360,9 +359,9 @@ object LogicalPlanConverter {
     private def expandIntoConsume(context: CodeGenContext,
                                   child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
       val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel)
-      context.addVariable(expand.relName.name, relVar)
-      val fromNodeVar = context.getVariable(expand.from.name)
-      val toNodeVar = context.getVariable(expand.to.name)
+      context.addVariable(expand.relName, relVar)
+      val fromNodeVar = context.getVariable(expand.from)
+      val toNodeVar = context.getVariable(expand.to)
 
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
@@ -526,11 +525,11 @@ object LogicalPlanConverter {
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
-      context.addVariable(nodeCount.idName.name, variable)
+      context.addVariable(nodeCount.idName, variable)
 
       // Only the node count variable is projected from now on
       context.retainProjectedVariables(Set.empty)
-      context.addProjectedVariable(nodeCount.idName.name, variable)
+      context.addProjectedVariable(nodeCount.idName, variable)
 
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
@@ -545,11 +544,11 @@ object LogicalPlanConverter {
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
-      context.addVariable(relCount.idName.name, variable)
+      context.addVariable(relCount.idName, variable)
 
       // Only the relationship count variable is projected from now on
       context.retainProjectedVariables(Set.empty)
-      context.addProjectedVariable(relCount.idName.name, variable)
+      context.addProjectedVariable(relCount.idName, variable)
 
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
@@ -590,9 +589,9 @@ object LogicalPlanConverter {
 
       val variableName = context.namer.newVarName()
       val variable = Variable(variableName, elementCodeGenType, nullable = elementCodeGenType.canBeNullable)
-      context.addVariable(unwind.variable.name, variable)
+      context.addVariable(unwind.variable, variable)
       // Unwind is a kind of projection that only adds one exposed variable, and keeps everything exposed that was already projected
-      context.addProjectedVariable(unwind.variable.name, variable)
+      context.addProjectedVariable(unwind.variable, variable)
 
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
 
@@ -665,8 +664,8 @@ object LogicalPlanConverter {
     val variablesToKeep = context.getProjectedVariables // TODO: Intersect/replace with usedVariables(innerBlock)
 
     val sortItems = inputSortItems.map {
-      case plans.Ascending(IdName(name)) => spi.SortItem(name, spi.Ascending)
-      case plans.Descending(IdName(name)) => spi.SortItem(name, spi.Descending)
+      case plans.Ascending(name) => spi.SortItem(name, spi.Ascending)
+      case plans.Descending(name) => spi.SortItem(name, spi.Descending)
     }
     val additionalSortVariables = sortItems.collect {
       case spi.SortItem(name, _) if !variablesToKeep.isDefinedAt(name) => (name, context.getVariable(name))

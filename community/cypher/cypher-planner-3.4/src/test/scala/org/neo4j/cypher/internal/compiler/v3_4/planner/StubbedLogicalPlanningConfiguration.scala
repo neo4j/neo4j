@@ -82,7 +82,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   private def computeOptionCardinality(queryGraph: QueryGraph, semanticTable: SemanticTable,
                                        labelIdCardinality: Map[LabelId, Cardinality]) = {
-    val labelMap: Map[IdName, Set[HasLabels]] = queryGraph.selections.labelPredicates
+    val labelMap: Map[String, Set[HasLabels]] = queryGraph.selections.labelPredicates
     val labels = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)
     val results = labels.collect {
       case label if semanticTable.id(label).isDefined &&

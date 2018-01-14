@@ -93,7 +93,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     c * (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }
 
-  private def calculateSelectivity(qg: QueryGraph, labels: Map[IdName, Set[LabelName]])
+  private def calculateSelectivity(qg: QueryGraph, labels: Map[String, Set[LabelName]])
                                   (implicit semanticTable: SemanticTable): (Selectivity, Int) = {
     implicit val selections = qg.selections
 

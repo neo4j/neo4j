@@ -249,13 +249,13 @@ assert_that(
       |RETURN DISTINCT a AS a""".stripMargin).
     is_not_rewritten()
 
-  val x = IdName("x")
-  val n = IdName("n")
-  val m = IdName("m")
-  val c = IdName("c")
-  val r1 = IdName("r1")
-  val r2 = IdName("r2")
-  val r3 = IdName("r3")
+  val x = "x"
+  val n = "n"
+  val m = "m"
+  val c = "c"
+  val r1 = "r1"
+  val r2 = "r2"
+  val r3 = "r3"
 
 
   test("finds shortest path starting from a single element with a single node in the QG") {

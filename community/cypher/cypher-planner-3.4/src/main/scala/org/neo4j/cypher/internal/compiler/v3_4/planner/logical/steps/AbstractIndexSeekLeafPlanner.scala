@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanFromExpr
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.IndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -34,12 +34,12 @@ import org.neo4j.cypher.internal.v3_4.expressions._
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpressions {
 
   // Abstract methods ***********
-  protected def constructPlan(idName: IdName,
+  protected def constructPlan(idName: String,
                               label: LabelToken,
                               propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
-                              argumentIds: Set[IdName],
+                              argumentIds: Set[String],
                               context: LogicalPlanningContext): Seq[Expression] => LogicalPlan
 
   protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor]
@@ -47,16 +47,18 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   protected def findIndexesFor(label: String, properties: Seq[String], context: LogicalPlanningContext): Option[IndexDescriptor]
 
 
-  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph, context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
-    implicit val labelPredicateMap: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
+  override def producePlanFor(predicates: Set[Expression],
+                              qg: QueryGraph,
+                              context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+    implicit val labelPredicateMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
     if (labelPredicateMap.isEmpty)
       Set.empty
     else {
-      val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n.name)(null))
+      val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
       val plannables: Set[IndexPlannableExpression] = predicates.collect(
         indexPlannableExpression(qg.argumentIds, arguments, qg.hints))
       val result = plannables.map(_.name).flatMap { name =>
-        val idName = IdName(name)
+        val idName = name
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
         val nodePlannables = plannables.filter(p => p.name == name)
         maybeLeafPlans(name, producePlansForSpecificVariable(idName, nodePlannables, labelPredicates, qg.hints, qg.argumentIds, context))
@@ -91,9 +93,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       case _ => None
     }.toSet
 
-  private def producePlansForSpecificVariable(idName: IdName, nodePlannables: Set[IndexPlannableExpression],
+  private def producePlansForSpecificVariable(idName: String, nodePlannables: Set[IndexPlannableExpression],
                                               labelPredicates: Set[HasLabels],
-                                              hints: Set[Hint], argumentIds: Set[IdName],
+                                              hints: Set[Hint], argumentIds: Set[String],
                                               context: LogicalPlanningContext): Set[LogicalPlan] = {
     implicit val semanticTable: SemanticTable = context.semanticTable
     for (labelPredicate <- labelPredicates;
@@ -105,9 +107,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, plannables, context, semanticTable)
   }
 
-  private def createLogicalPlan(idName: IdName,
+  private def createLogicalPlan(idName: String,
                   hints: Set[Hint],
-                  argumentIds: Set[IdName],
+                  argumentIds: Set[String],
                   labelPredicate: HasLabels,
                   labelName: LabelName,
                   labelId: LabelId,
@@ -115,7 +117,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                   context: LogicalPlanningContext,
                   semanticTable: SemanticTable ): LogicalPlan = {
     val hint = {
-      val name = idName.name
+      val name = idName
       val propertyNames = plannables.map(_.propertyKeyName.name)
       hints.collectFirst {
         case hint@UsingIndexHint(Variable(`name`), `labelName`, properties)
@@ -140,9 +142,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       CompositeQueryExpression(plannables.map(_.queryExpression))
     }
 
-  private def indexPlannableExpression(argumentIds: Set[IdName],
+  private def indexPlannableExpression(argumentIds: Set[String],
                                        arguments: Set[LogicalVariable],
-                                       hints: Set[Hint])(implicit labelPredicateMap: Map[IdName, Set[HasLabels]]):
+                                       hints: Set[Hint])(implicit labelPredicateMap: Map[String, Set[HasLabels]]):
   PartialFunction[Expression, IndexPlannableExpression] = {
     // n.prop IN [ ... ]
     case predicate@AsPropertySeekable(seekable: PropertySeekable)
@@ -197,6 +199,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   case class IndexPlannableExpression(name: String, propertyKeyName: PropertyKeyName,
                                       propertyPredicate: Expression, queryExpression: QueryExpression[Expression],
-                                      hints: Set[Hint], argumentIds: Set[IdName])
-                                     (implicit labelPredicateMap: Map[IdName, Set[HasLabels]])
+                                      hints: Set[Hint], argumentIds: Set[String])
+                                     (implicit labelPredicateMap: Map[String, Set[HasLabels]])
 }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, Predicate, Selections}
+import org.neo4j.cypher.internal.ir.v3_4.{Predicate, Selections}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
@@ -67,8 +67,8 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     ))
 
     selections.labelPredicates should equal(Map(
-      IdName("a") -> Set(aIsPerson),
-      IdName("b") -> Set(bIsAnimal)
+      "a" -> Set(aIsPerson),
+      "b" -> Set(bIsAnimal)
     ))
   }
 
@@ -176,7 +176,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     result should be(Set(pred2))
   }
 
-  private def idNames(names: String*) = names.map(IdName(_)).toSet
+  private def idNames(names: String*) = names.toSet
 
   private def compareBothSides(left: String, right: String) =
     Equals(prop(left, "prop1"), prop(right, "prop1"))(pos)

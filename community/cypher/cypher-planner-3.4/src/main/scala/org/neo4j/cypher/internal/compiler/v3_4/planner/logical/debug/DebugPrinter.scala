@@ -59,7 +59,7 @@ object DebugPrinter extends Phase[CompilerContext, LogicalPlanState, LogicalPlan
     val solved = CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty), 0.0)
     val stringValues = string.split("\n").map(s => StringLiteral(s)(pos))
     val expression = ListLiteral(stringValues.toSeq)(pos)
-    val unwind = UnwindCollection(Argument(Set.empty)(solved), IdName("col"), expression)(solved)
+    val unwind = UnwindCollection(Argument(Set.empty)(solved), "col", expression)(solved)
     val logicalPlan = ProduceResult(unwind, Seq("col"))
 
     val variable = Variable("col")(pos)

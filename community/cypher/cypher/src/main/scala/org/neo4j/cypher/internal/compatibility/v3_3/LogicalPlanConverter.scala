@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
-import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, IdName => IdNameV3_4}
+import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
@@ -59,7 +59,7 @@ object LogicalPlanConverter {
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
       val rewritten = RewriterWithArgs.lift {
         case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
-          plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
+          plansV3_4.Argument(children.head.asInstanceOf[Set[String]])(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.SingleRow, _) =>
           plansV3_4.Argument()(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
@@ -69,9 +69,9 @@ object LogicalPlanConverter {
           plansV3_4.TriadicSelection(left = children(1).asInstanceOf[LogicalPlanV3_4],
             right = children(5).asInstanceOf[LogicalPlanV3_4],
             positivePredicate = children(0).asInstanceOf[Boolean],
-            sourceId = children(2).asInstanceOf[IdNameV3_4],
-            seenId = children(3).asInstanceOf[IdNameV3_4],
-            targetId = children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
+            sourceId = children(2).asInstanceOf[String],
+            seenId = children(3).asInstanceOf[String],
+            targetId = children(4).asInstanceOf[String])(new PlannerQueryWrapper(plan.solved))(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, procedureOrSchemaIdGen, classOf[IdGen])
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
@@ -92,7 +92,7 @@ object LogicalPlanConverter {
           convertVersion("v3_3", "v3_4", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
         case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
           convertVersion("frontend.v3_3.ast", "v3_4.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
-        case (IdNameV3_3(name), _) => IdNameV3_4(name)
+        case (IdNameV3_3(name), _) => name
 
         case (symbolsV3_3.CTAny, _) => symbolsV3_4.CTAny
         case (symbolsV3_3.CTBoolean, _) => symbolsV3_4.CTBoolean
@@ -128,7 +128,7 @@ object LogicalPlanConverter {
 
         case (spp: irV3_3.ShortestPathPattern, children: Seq[AnyRef]) =>
           val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, isImportant)
-          irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[IdNameV3_4]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
+          irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[String]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
         case (astV3_3.NilPathStep, _) => expressionsV3_4.NilPathStep
         case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
           convertVersion("frontend.v3_3.ast", "v3_4.expressions", item, children)

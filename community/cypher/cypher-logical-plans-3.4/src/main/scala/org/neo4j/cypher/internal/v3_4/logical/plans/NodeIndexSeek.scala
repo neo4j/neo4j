@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelToken, PropertyKeyToken}
 
 /**
   * For every node with the given label and property values, produces one row with that node.
   */
-case class NodeIndexSeek(idName: IdName,
+case class NodeIndexSeek(idName: String,
                          label: LabelToken,
                          propertyKeys: Seq[PropertyKeyToken],
                          valueExpr: QueryExpression[Expression],
-                         argumentIds: Set[IdName])
+                         argumentIds: Set[String])
                         (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends IndexLeafPlan(idGen) {
 
-  def availableSymbols: Set[IdName] = argumentIds + idName
+  override val availableSymbols: Set[String] = argumentIds + idName
 }

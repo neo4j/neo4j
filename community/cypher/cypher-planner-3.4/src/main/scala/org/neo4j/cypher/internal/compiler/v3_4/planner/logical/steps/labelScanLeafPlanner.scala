@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UsingScanHint
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, HasLabels, Variable}
 
 object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
@@ -29,14 +29,14 @@ object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   override def producePlanFor(e: Expression, qg: QueryGraph, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     e match {
       case labelPredicate@HasLabels(v@Variable(varName), labels) =>
-        val id = IdName(varName)
+        val id = varName
         if (qg.patternNodes(id) && !qg.argumentIds(id)) {
           val labelName = labels.head
           val hint = qg.hints.collectFirst {
             case hint@UsingScanHint(Variable(`varName`), `labelName`) => hint
           }
           val plan = context.logicalPlanProducer.planNodeByLabelScan(id, labelName, Seq(labelPredicate), hint, qg.argumentIds, context)
-          Some(LeafPlansForVariable(IdName(varName), Set(plan)))
+          Some(LeafPlansForVariable(varName, Set(plan)))
         } else
           None
       case _ =>

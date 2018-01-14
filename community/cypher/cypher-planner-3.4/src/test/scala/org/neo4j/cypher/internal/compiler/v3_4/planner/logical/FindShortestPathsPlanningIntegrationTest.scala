@@ -77,16 +77,16 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
         Selection(
           Seq(Not(Equals(Variable("r1") _, Variable("r2") _) _) _),
           NodeHashJoin(
-            Set(IdName("b")),
+            Set("b"),
             Expand(
-              NodeByLabelScan(IdName("a"), lblName("X"), Set.empty)(solved),
-              IdName("a"), SemanticDirection.INCOMING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved),
+              NodeByLabelScan("a", lblName("X"), Set.empty)(solved),
+              "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1", ExpandAll)(solved),
             Expand(
-              NodeByLabelScan(IdName("c"), lblName("X"), Set.empty)(solved),
-              IdName("c"), SemanticDirection.INCOMING, Seq.empty, IdName("b"), IdName("r2"), ExpandAll)(solved)
+              NodeByLabelScan("c", lblName("X"), Set.empty)(solved),
+              "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2", ExpandAll)(solved)
           )(solved)
         )(solved),
-        ShortestPathPattern(Some(IdName("p")), PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))(solved)
+        ShortestPathPattern(Some("p"), PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))(solved)
 
     result should equal(expected)
   }

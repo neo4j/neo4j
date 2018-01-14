@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -36,15 +36,15 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   */
 case class RollUpApply(left: LogicalPlan,
                        right: LogicalPlan,
-                       collectionName: IdName,
-                       variableToCollect: IdName,
-                       nullableVariables: Set[IdName]
+                       collectionName: String,
+                       variableToCollect: String,
+                       nullableVariables: Set[String]
                       )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override def lhs = Some(left)
 
-  override def availableSymbols: Set[IdName] = left.availableSymbols + collectionName
+  override val availableSymbols: Set[String] = left.availableSymbols + collectionName
 
   override def rhs = Some(right)
 }

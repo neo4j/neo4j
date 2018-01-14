@@ -76,7 +76,7 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext)
   private def createProduceResultOperator(in: LogicalPlan,
                                           unionQuery: UnionQuery,
                                           context: LogicalPlanningContext): LogicalPlan =
-  context.logicalPlanProducer.planProduceResult(in, unionQuery.returns.map(_.name))
+  context.logicalPlanProducer.planProduceResult(in, unionQuery.returns)
 
   private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean, context: LogicalPlanningContext) = {
     val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p, context))
