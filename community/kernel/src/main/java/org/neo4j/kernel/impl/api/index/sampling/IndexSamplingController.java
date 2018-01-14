@@ -44,7 +44,7 @@ public class IndexSamplingController
     private final JobScheduler scheduler;
     private final RecoveryCondition indexRecoveryCondition;
     private final boolean backgroundSampling;
-    private final Lock samplingLock = new ReentrantLock( true );
+    private final Lock samplingLock = new ReentrantLock();
 
     private JobHandle backgroundSamplingHandle;
 
