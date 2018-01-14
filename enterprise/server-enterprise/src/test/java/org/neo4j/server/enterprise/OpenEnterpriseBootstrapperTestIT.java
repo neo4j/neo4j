@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.io.File;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -54,7 +54,7 @@ import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.certifica
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
+public class OpenEnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
 {
     private final TemporaryFolder folder = new TemporaryFolder();
     private final CleanupRule cleanupRule = new CleanupRule();
@@ -65,7 +65,7 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
     @Override
     protected ServerBootstrapper newBootstrapper()
     {
-        return new EnterpriseBootstrapper();
+        return new OpenEnterpriseBootstrapper();
     }
 
     @Test
@@ -166,7 +166,7 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
         assertTrue( "Debug logging enabled by setting value.", userLogProvider.getLog( getClass() ).isDebugEnabled() );
     }
 
-    private class UncoveredEnterpriseBootstrapper extends EnterpriseBootstrapper
+    private class UncoveredEnterpriseBootstrapper extends OpenEnterpriseBootstrapper
     {
         private LogProvider userLogProvider;
 

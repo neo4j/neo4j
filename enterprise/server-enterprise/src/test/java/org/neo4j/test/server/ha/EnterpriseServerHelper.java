@@ -22,7 +22,7 @@ package org.neo4j.test.server.ha;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.server.enterprise.EnterpriseNeoServer;
+import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
 public class EnterpriseServerHelper
@@ -31,12 +31,12 @@ public class EnterpriseServerHelper
     {
     }
 
-    public static EnterpriseNeoServer createNonPersistentServer( File databaseDir ) throws IOException
+    public static OpenEnterpriseNeoServer createNonPersistentServer( File databaseDir ) throws IOException
     {
         return createServer( databaseDir, false );
     }
 
-    private static EnterpriseNeoServer createServer( File databaseDir, boolean persistent ) throws IOException
+    private static OpenEnterpriseNeoServer createServer( File databaseDir, boolean persistent ) throws IOException
     {
         EnterpriseServerBuilder builder = EnterpriseServerBuilder.serverOnRandomPorts().usingDataDir( databaseDir.getAbsolutePath() );
         if ( persistent )
@@ -44,7 +44,7 @@ public class EnterpriseServerHelper
             builder = (EnterpriseServerBuilder) builder.persistent();
         }
         builder.withDefaultDatabaseTuning();
-        EnterpriseNeoServer server = builder.build();
+        OpenEnterpriseNeoServer server = builder.build();
         server.start();
         return server;
     }

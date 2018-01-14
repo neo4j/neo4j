@@ -32,13 +32,13 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 
-public class EnterpriseBootstrapper extends CommunityBootstrapper
+public class OpenEnterpriseBootstrapper extends CommunityBootstrapper
 {
     @Override
     protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies,
             LogProvider userLogProvider )
     {
-        return new EnterpriseNeoServer( configurator, dependencies, userLogProvider );
+        return new OpenEnterpriseNeoServer( configurator, dependencies, userLogProvider );
     }
 
     @Override

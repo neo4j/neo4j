@@ -32,7 +32,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.enterprise.EnterpriseNeoServer;
+import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.web.DatabaseActions;
 
@@ -66,9 +66,9 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    public EnterpriseNeoServer build() throws IOException
+    public OpenEnterpriseNeoServer build() throws IOException
     {
-        return (EnterpriseNeoServer) super.build();
+        return (OpenEnterpriseNeoServer) super.build();
     }
 
     @Override
@@ -85,7 +85,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         return new TestEnterpriseNeoServer( config, configFile, dependencies, logProvider );
     }
 
-    private class TestEnterpriseNeoServer extends EnterpriseNeoServer
+    private class TestEnterpriseNeoServer extends OpenEnterpriseNeoServer
     {
         private final File configFile;
 

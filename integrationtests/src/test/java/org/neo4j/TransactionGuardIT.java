@@ -19,10 +19,6 @@
  */
 package org.neo4j;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -37,6 +33,10 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.driver.v1.Driver;
@@ -77,7 +77,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.LifecycleManagingDatabase;
-import org.neo4j.server.enterprise.EnterpriseNeoServer;
+import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.shell.InterruptSignalHandler;
@@ -116,7 +116,7 @@ public class TransactionGuardIT
     private static final FakeClock fakeClock = Clocks.fakeClock();
     private static GraphDatabaseAPI databaseWithTimeout;
     private static GraphDatabaseAPI databaseWithoutTimeout;
-    private static EnterpriseNeoServer neoServer;
+    private static OpenEnterpriseNeoServer neoServer;
     private static int boltPortDatabaseWithTimeout;
     private static final String DEFAULT_TIMEOUT = "2s";
     private static final KernelTransactionTimeoutMonitorSupplier monitorSupplier = new
@@ -312,7 +312,7 @@ public class TransactionGuardIT
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
-        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        OpenEnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         String transactionEndPoint = HTTP.POST( transactionUri( neoServer ) ).location();
 
         fakeClock.forward( 3, TimeUnit.SECONDS );
@@ -336,7 +336,7 @@ public class TransactionGuardIT
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
-        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        OpenEnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         long customTimeout = TimeUnit.SECONDS.toMillis( 10 );
         HTTP.Response beginResponse = HTTP
                 .withHeaders( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER, String.valueOf( customTimeout ) )
@@ -372,7 +372,7 @@ public class TransactionGuardIT
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
-        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        OpenEnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
@@ -404,7 +404,7 @@ public class TransactionGuardIT
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         monitorSupplier.setTransactionTimeoutMonitor( timeoutMonitor );
-        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        OpenEnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
@@ -516,7 +516,7 @@ public class TransactionGuardIT
                 .toConfig();
     }
 
-    private EnterpriseNeoServer startNeoServer( GraphDatabaseFacade database ) throws IOException
+    private OpenEnterpriseNeoServer startNeoServer( GraphDatabaseFacade database ) throws IOException
     {
         if ( neoServer == null )
         {
@@ -552,7 +552,7 @@ public class TransactionGuardIT
         return MapUtil.genericMap();
     }
 
-    private String transactionUri( EnterpriseNeoServer neoServer )
+    private String transactionUri( OpenEnterpriseNeoServer neoServer )
     {
         return neoServer.baseUri().toString() + "db/data/transaction";
     }
@@ -675,7 +675,7 @@ public class TransactionGuardIT
             return new GuardTestServer( config, dependencies, NullLogProvider.getInstance() );
         }
 
-        private class GuardTestServer extends EnterpriseNeoServer
+        private class GuardTestServer extends OpenEnterpriseNeoServer
         {
             GuardTestServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
             {
