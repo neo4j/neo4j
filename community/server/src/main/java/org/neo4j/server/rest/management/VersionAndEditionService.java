@@ -76,7 +76,7 @@ public class VersionAndEditionService implements AdvertisableService
     {
         String serverClassName = neoServer.getClass().getName().toLowerCase();
 
-        if ( serverClassName.contains( "openenterpriseneoserver" ) || serverClassName.contains( "commercialneoserver" ) )
+        if ( serverClassName.contains( "enterpriseneoserver" ) || serverClassName.contains( "commercialneoserver" ) )
         {
             return "enterprise";
         }
