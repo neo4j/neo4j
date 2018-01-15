@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -156,7 +155,7 @@ public class LuceneFulltextTestSupport
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
         while ( result.hasNext() )
         {
-            long next = result.next().first();
+            long next = result.next().entityId();
             assertTrue( String.format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ), set.remove( next ) );
         }
         assertTrue( "Number of results differ from expected", set.isEmpty() );
@@ -168,9 +167,9 @@ public class LuceneFulltextTestSupport
         float score = Float.MAX_VALUE;
         while ( result.hasNext() )
         {
-            Pair<Long,Float> scoredResult = result.next();
-            long nextId = scoredResult.first();
-            float nextScore = scoredResult.other();
+            ScoreEntityIterator.ScoreEntry scoredResult = result.next();
+            long nextId = scoredResult.entityId();
+            float nextScore = scoredResult.score();
             assertThat( nextScore, lessThanOrEqualTo( score ) );
             score = nextScore;
             assertEquals( String.format( "Result returned node id %d, expected %d", nextId, ids[num] ), ids[num], nextId );

@@ -27,15 +27,17 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
-public class ScoreEntityIterator implements Iterator<Pair<Long,Float>>
+/**
+ * Iterator over entity ids together with their respective score.
+ */
+public class ScoreEntityIterator implements Iterator<ScoreEntityIterator.ScoreEntry>
 {
     private static final ScoreEntityIterator EMPTY = new ScoreEntityIterator()
     {
         @Override
-        public Stream<Pair<Long,Float>> stream()
+        public Stream<ScoreEntry> stream()
         {
             return Stream.empty();
         }
@@ -47,7 +49,7 @@ public class ScoreEntityIterator implements Iterator<Pair<Long,Float>>
         }
 
         @Override
-        public Pair<Long,Float> next()
+        public ScoreEntry next()
         {
             throw new NoSuchElementException( "The iterator is exhausted" );
         }
@@ -64,7 +66,7 @@ public class ScoreEntityIterator implements Iterator<Pair<Long,Float>>
         this.iterator = null;
     }
 
-    public Stream<Pair<Long,Float>> stream()
+    public Stream<ScoreEntry> stream()
     {
         return StreamSupport.stream( Spliterators.spliteratorUnknownSize( this, Spliterator.ORDERED ), false );
     }
@@ -76,11 +78,11 @@ public class ScoreEntityIterator implements Iterator<Pair<Long,Float>>
     }
 
     @Override
-    public Pair<Long,Float> next()
+    public ScoreEntry next()
     {
         if ( hasNext() )
         {
-            return Pair.of( currentIterator().next(), currentIterator().currentScore() );
+            return new ScoreEntry( iterator.next(), iterator.currentScore() );
         }
         else
         {
@@ -88,14 +90,15 @@ public class ScoreEntityIterator implements Iterator<Pair<Long,Float>>
         }
     }
 
-    ValuesIterator currentIterator()
-    {
-        return iterator;
-    }
-
+    /**
+     * Concatenates the given iterators
+     *
+     * @param iterators to concatenate
+     * @return a {@link ScoreEntityIterator} that iterates over all of the elements in all of the given iterators
+     */
     public static ScoreEntityIterator concat( List<ScoreEntityIterator> iterators )
     {
-        return new ConcatenatingScoreEntityIterator( iterators.iterator() );
+        return new ConcatenatingScoreEntityIterator( iterators );
     }
 
     public static ScoreEntityIterator emptyIterator()
@@ -105,35 +108,94 @@ public class ScoreEntityIterator implements Iterator<Pair<Long,Float>>
 
     private static class ConcatenatingScoreEntityIterator extends ScoreEntityIterator
     {
-        private final Iterator<? extends ScoreEntityIterator> iterators;
-        private ScoreEntityIterator currentIterator;
+        private final List<? extends ScoreEntityIterator> iterators;
+        private final ScoreEntry[] buffer;
+        private boolean fetched;
+        private ScoreEntry nextHead;
 
-        ConcatenatingScoreEntityIterator( Iterator<? extends ScoreEntityIterator> iterators )
+        ConcatenatingScoreEntityIterator( List<? extends ScoreEntityIterator> iterators )
         {
             this.iterators = iterators;
+            this.buffer = new ScoreEntry[iterators.size()];
         }
 
         @Override
         public boolean hasNext()
         {
-            if ( currentIterator == null || !currentIterator.hasNext() )
+            if ( !fetched )
             {
-                while ( iterators.hasNext() )
+                fetch();
+            }
+            return nextHead != null;
+        }
+
+        private void fetch()
+        {
+            int candidateHead = -1;
+            for ( int i = 0; i < iterators.size(); i++ )
+            {
+                ScoreEntry entry = buffer[i];
+                //Fill buffer if needed.
+                if ( entry == null && iterators.get( i ).hasNext() )
                 {
-                    currentIterator = iterators.next();
-                    if ( currentIterator.hasNext() )
-                    {
-                        break;
-                    }
+                    entry = iterators.get( i ).next();
+                    buffer[i] = entry;
+                }
+
+                //Check if entry might be candidate for next to return.
+                if ( entry != null && (nextHead == null || entry.score > nextHead.score) )
+                {
+                    nextHead = entry;
+                    candidateHead = i;
                 }
             }
-            return currentIterator != null && currentIterator.hasNext();
+            if ( candidateHead != -1 )
+            {
+                buffer[candidateHead] = null;
+            }
+            fetched = true;
         }
 
         @Override
-        final ValuesIterator currentIterator()
+        public ScoreEntry next()
         {
-            return currentIterator.iterator;
+            if ( hasNext() )
+            {
+                fetched = false;
+                ScoreEntry best = nextHead;
+                nextHead = null;
+                return best;
+            }
+            else
+            {
+                throw new NoSuchElementException( "The iterator is exhausted" );
+            }
+        }
+    }
+
+    /**
+     * A ScoreEntry consists of an entity id together with its score.
+     */
+    public static class ScoreEntry
+    {
+        private final long entityId;
+        private final float score;
+
+        public long entityId()
+        {
+            return entityId;
+        }
+
+        public float score()
+        {
+            return score;
+        }
+
+        ScoreEntry( long entityId, float score )
+        {
+
+            this.entityId = entityId;
+            this.score = score;
         }
     }
 }

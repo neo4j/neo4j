@@ -63,6 +63,11 @@ public abstract class ValuesIterator extends PrimitiveLongCollections.PrimitiveL
 
     protected final int size;
     protected int index;
+
+    /**
+     * Gets the score for the current iterator position.
+     * @return The score of the value, or 0 if scoring is not kept or applicable.
+     */
     public abstract float currentScore();
 
     ValuesIterator( int size )
