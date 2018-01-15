@@ -21,14 +21,19 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, Rewritable, Unchangeable}
-import org.neo4j.cypher.internal.util.v3_4.Rewritable._
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, Strictness}
-import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.util.v3_4.Foldable._
+import org.neo4j.cypher.internal.util.v3_4.Rewritable._
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, IdGen, SameId}
+import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, Rewritable, Unchangeable}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
+import scala.util.hashing.MurmurHash3
 import scala.collection.mutable
+
+object LogicalPlan {
+  val LOWEST_TX_LAYER = 0
+}
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -51,7 +56,9 @@ abstract class LogicalPlan(idGen: IdGen)
   def rhs: Option[LogicalPlan]
   def availableSymbols: Set[String]
 
-  val id = idGen.id()
+  val id: Id = idGen.id()
+
+  override val hashCode: Int = MurmurHash3.productHash(self)
 
   override def equals(obj: scala.Any): Boolean = {
     if (!obj.isInstanceOf[LogicalPlan]) false
@@ -134,7 +141,7 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
 
-  override def toString = {
+  override def toString: String = {
     def indent(level: Int, in: String): String = level match {
       case 0 => in
       case _ => "\n" + "  " * level + in
@@ -150,7 +157,7 @@ abstract class LogicalPlan(idGen: IdGen)
           val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
           val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
           val prodPrefix = plan.productPrefix
-          sb.append(indent(level, s"""$prefix${prodPrefix}($nonChildFields) {""".stripMargin))
+          sb.append(indent(level, s"""$prefix$prodPrefix($nonChildFields) {""".stripMargin))
 
           (plan.lhs, plan.rhs) match {
             case (None, None) =>
@@ -171,9 +178,9 @@ abstract class LogicalPlan(idGen: IdGen)
     sb.toString()
   }
 
-  def satisfiesExpressionDependencies(e: Expression) = e.dependencies.map(_.name).forall(availableSymbols.contains)
+  def satisfiesExpressionDependencies(e: Expression): Boolean = e.dependencies.map(_.name).forall(availableSymbols.contains)
 
-  def debugId: String = f"0x${hashCode()}%08x"
+  def debugId: String = f"0x$hashCode%08x"
 
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
