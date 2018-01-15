@@ -31,6 +31,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -193,6 +195,32 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             Relationship relationship = db.getRelationshipById( 0 );
             assertFalse( relationship.hasProperty( testPropertyKey ) );
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToForceTypeChangeOfProperty()
+    {
+        // Given
+        Relationship relationship;
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationship = db.createNode().createRelationshipTo( db.createNode(), withName( "R" ) );
+            relationship.setProperty( "prop", 1337 );
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationship.setProperty( "prop", 1337.0 );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction ignore = db.beginTx() )
+        {
+            assertThat( relationship.getProperty( "prop" ), instanceOf( Double.class ) );
         }
     }
 
