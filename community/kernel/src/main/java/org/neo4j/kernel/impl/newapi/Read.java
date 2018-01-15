@@ -108,7 +108,6 @@ abstract class Read implements TxStateHolder,
             {
                 switch ( q.type() )
                 {
-                case rangeGeometric:
                 case rangeNumeric:
                     if ( !reader.hasFullNumberPrecision( q ) )
                     {
