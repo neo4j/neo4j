@@ -27,6 +27,7 @@ import java.util.function.BiConsumer;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.Values;
 
@@ -164,6 +165,12 @@ public final class MapValue extends VirtualValue
             }
         }
         return equalityResult;
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapMap( this );
     }
 
     public void foreach( BiConsumer<String,AnyValue> f )

@@ -33,7 +33,11 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.procedure.Name;
+import org.neo4j.values.AnyValue;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Double.parseDouble;
@@ -51,7 +55,7 @@ import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntFloat;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntInteger;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.nullValue;
 
-public class TypeMappers
+public class TypeMappers extends DefaultValueMapper
 {
     public abstract static class TypeChecker
     {
@@ -79,12 +83,26 @@ public class TypeMappers
                     "Expected `%s` to be a `%s`, found `%s`.", javaValue, javaClass.getSimpleName(),
                     javaValue.getClass() );
         }
+
+        public AnyValue toValue( Object obj )
+        {
+            return ValueUtils.of( obj );
+        }
     }
 
     private final Map<Type,DefaultValueConverter> javaToNeo = new HashMap<>();
 
+    /**
+     * Used by testing.
+     */
     public TypeMappers()
     {
+        this( null );
+    }
+
+    public TypeMappers( EmbeddedProxySPI proxySPI )
+    {
+        super( proxySPI );
         registerScalarsAndCollections();
     }
 

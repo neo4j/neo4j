@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
@@ -102,14 +103,14 @@ public abstract class CharArray extends TextArray
     }
 
     @Override
-    public Object asObjectCopy()
+    public char[] asObjectCopy()
     {
         return value().clone();
     }
 
     @Override
     @Deprecated
-    public Object asObject()
+    public char[] asObject()
     {
         return value();
     }
@@ -124,6 +125,12 @@ public abstract class CharArray extends TextArray
     public AnyValue value( int position )
     {
         return Values.charValue( value()[position] );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapCharArray( this );
     }
 
     static final class Direct extends CharArray

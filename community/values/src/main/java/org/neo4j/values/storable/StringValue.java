@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
 import static java.lang.String.format;
@@ -112,6 +113,12 @@ public abstract class StringValue extends TextValue
     public String prettyPrint()
     {
         return format( "'%s'", value() );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapString( this );
     }
 
     @Override

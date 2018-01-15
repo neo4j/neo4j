@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.ValueMapper;
+
 import static java.lang.String.format;
 
 public final class LongValue extends IntegralValue
@@ -81,5 +83,11 @@ public final class LongValue extends IntegralValue
     public String toString()
     {
         return format( "Long(%d)", value );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapLong( this );
     }
 }

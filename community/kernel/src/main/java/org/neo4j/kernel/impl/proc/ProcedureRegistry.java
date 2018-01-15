@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.values.AnyValue;
 
 public class ProcedureRegistry
 {
@@ -201,7 +202,7 @@ public class ProcedureRegistry
         return proc.apply( ctx, input );
     }
 
-    public Object callFunction( Context ctx, QualifiedName name, Object[] input )
+    public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input )
             throws ProcedureException
     {
         CallableUserFunction func = functions.get( name );

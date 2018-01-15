@@ -52,6 +52,9 @@ import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -241,8 +244,9 @@ public class DataSourceModule
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
+        EmbeddedProxySPI proxySPI = platform.dependencies.resolveDependency( EmbeddedProxySPI.class );
 
-        Procedures procedures = new Procedures(
+        Procedures procedures = new Procedures( proxySPI,
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
                 pluginDir, internalLog, new ProcedureConfig( platform.config ) );

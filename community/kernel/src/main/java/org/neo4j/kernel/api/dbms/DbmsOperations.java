@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.values.AnyValue;
 
 /**
  * Defines all types of system-oriented operations - i.e. those which do not read from or
@@ -44,9 +45,9 @@ public interface DbmsOperations
     ) throws ProcedureException;
 
     /** Invoke a DBMS function by name */
-    Object functionCallDbms(
+    AnyValue functionCallDbms(
             QualifiedName name,
-            Object[] input,
+            AnyValue[] input,
             SecurityContext securityContext
     ) throws ProcedureException;
 }

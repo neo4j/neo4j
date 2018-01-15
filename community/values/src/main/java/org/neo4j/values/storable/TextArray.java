@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.ValueMapper;
+
 public abstract class TextArray extends ArrayValue
 {
     public abstract String stringValue( int offset );

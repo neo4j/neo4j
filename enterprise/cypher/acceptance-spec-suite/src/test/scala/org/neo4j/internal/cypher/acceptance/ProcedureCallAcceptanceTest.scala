@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.proc.CallableUserFunction.BasicUserFunction
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 import org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature}
+import org.neo4j.values.AnyValue
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -57,13 +58,13 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
       }
     }
 
-  protected def registerUserFunction(value: AnyRef, typ: Neo4jTypes.AnyType = Neo4jTypes.NTAny) =
+  protected def registerUserFunction(value: AnyValue, typ: Neo4jTypes.AnyType = Neo4jTypes.NTAny) =
     registerUserDefinedFunction("my.first.value") { builder =>
       val builder = functionSignature(Array("my", "first"), "value")
       builder.out(typ)
 
       new BasicUserFunction(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): AnyRef = value
+        override def apply(ctx: Context, input: Array[AnyValue]): AnyValue = value
       }
     }
 

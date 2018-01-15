@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.values.AnyValue;
 
 public class NonTransactionalDbmsOperations implements DbmsOperations
 {
@@ -51,9 +52,9 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     }
 
     @Override
-    public Object functionCallDbms(
+    public AnyValue functionCallDbms(
             QualifiedName name,
-            Object[] input,
+            AnyValue[] input,
             SecurityContext securityContext
     ) throws ProcedureException
     {

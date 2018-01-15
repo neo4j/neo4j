@@ -23,10 +23,11 @@ import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
-abstract class DoubleArray extends FloatingPointArray
+public abstract class DoubleArray extends FloatingPointArray
 {
     abstract double[] value();
 
@@ -46,6 +47,12 @@ abstract class DoubleArray extends FloatingPointArray
     public int computeHash()
     {
         return NumberValues.hash( value() );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapDoubleArray( this );
     }
 
     @Override
@@ -112,14 +119,14 @@ abstract class DoubleArray extends FloatingPointArray
     }
 
     @Override
-    public Object asObjectCopy()
+    public double[] asObjectCopy()
     {
         return value().clone();
     }
 
     @Override
     @Deprecated
-    public Object asObject()
+    public double[] asObject()
     {
         return value();
     }

@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 /**
  * Array of one of the storable primitives

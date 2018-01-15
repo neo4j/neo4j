@@ -42,6 +42,8 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -160,10 +162,10 @@ public class ResourceInjectionTest
                 compiler.compileFunction( FunctionWithInjectedAPI.class).get( 0 );
 
         // When
-        Object out = proc.apply( new BasicContext(), new Object[0] );
+        Object out = proc.apply( new BasicContext(), new AnyValue[0] );
 
         // Then
-        assertThat( out, equalTo( "[Bonnie, Clyde]" ) );
+        assertThat( out, equalTo( Values.of("[Bonnie, Clyde]") ) );
     }
 
     @Test
@@ -190,7 +192,7 @@ public class ResourceInjectionTest
         assertThat( procList.size(), equalTo( 1 ) );
         try
         {
-            procList.get( 0 ).apply( new BasicContext(), new Object[0] );
+            procList.get( 0 ).apply( new BasicContext(), new AnyValue[0] );
             fail();
         }
         catch ( ProcedureException e )

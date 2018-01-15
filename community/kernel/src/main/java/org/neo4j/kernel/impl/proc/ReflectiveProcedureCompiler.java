@@ -61,6 +61,8 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
@@ -353,7 +355,7 @@ class ReflectiveProcedureCompiler
                 new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
                         config.rolesFor( procName.toString() ), description );
 
-        return new ReflectiveUserFunction( signature, constructor, procedureMethod, typeChecker, setters );
+        return new ReflectiveUserFunction( signature, constructor, procedureMethod, typeChecker, typeMappers, setters );
     }
 
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
@@ -552,9 +554,11 @@ class ReflectiveProcedureCompiler
     {
 
         final List<FieldInjections.FieldSetter> fieldSetters;
+        private final ValueMapper<Object> mapper;
 
-        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters )
+        ReflectiveBase( ValueMapper<Object> mapper, List<FieldInjections.FieldSetter> fieldSetters )
         {
+            this.mapper = mapper;
             this.fieldSetters = fieldSetters;
         }
 
@@ -573,6 +577,17 @@ class ReflectiveProcedureCompiler
             System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
             return args;
         }
+
+        protected Object[] args( int numberOfDeclaredArguments, Object cls, AnyValue[] input )
+        {
+            Object[] args = new Object[numberOfDeclaredArguments + 1];
+            args[0] = cls;
+            for ( int i = 0; i < input.length; i++ )
+            {
+                args[i + 1] = input[i].map( mapper );
+            }
+            return args;
+        }
     }
 
     private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
@@ -586,7 +601,7 @@ class ReflectiveProcedureCompiler
                 MethodHandle procedureMethod, OutputMapper outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( fieldSetters );
+            super( null, fieldSetters );
             this.constructor = constructor;
             this.procedureMethod = procedureMethod;
             this.signature = signature;
@@ -709,7 +724,6 @@ class ReflectiveProcedureCompiler
 
     private static class ReflectiveUserFunction extends ReflectiveBase implements CallableUserFunction
     {
-
         private final TypeMappers.TypeChecker typeChecker;
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
@@ -717,9 +731,9 @@ class ReflectiveProcedureCompiler
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, TypeMappers.TypeChecker typeChecker,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                ValueMapper<Object> mapper, List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( fieldSetters );
+            super( mapper, fieldSetters );
             this.constructor = constructor;
             this.udfMethod = procedureMethod;
             this.signature = signature;
@@ -733,7 +747,7 @@ class ReflectiveProcedureCompiler
         }
 
         @Override
-        public Object apply( Context ctx, Object[] input ) throws ProcedureException
+        public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
         {
             // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
             // instances local to
@@ -758,7 +772,7 @@ class ReflectiveProcedureCompiler
 
                 Object rs = udfMethod.invokeWithArguments( args );
 
-                return typeChecker.typeCheck( rs );
+                return typeChecker.toValue( rs );
             }
             catch ( Throwable throwable )
             {
@@ -792,7 +806,7 @@ class ReflectiveProcedureCompiler
                 TypeMappers.TypeChecker typeChecker,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( fieldSetters );
+            super( null, fieldSetters );
             this.constructor = constructor;
             this.creator = creator;
             this.updateMethod = updateMethod;

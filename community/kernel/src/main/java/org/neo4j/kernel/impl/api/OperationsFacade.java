@@ -112,6 +112,8 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -1463,7 +1465,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException
+    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
     {
         if ( !tx.securityContext().mode().allowsReads() )
         {
@@ -1475,7 +1477,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Object functionCallOverride( QualifiedName name, Object[] arguments ) throws ProcedureException
+    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
     {
         return callFunction( name, arguments,
                 new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
@@ -1499,7 +1501,13 @@ public class OperationsFacade
                 new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
-    private Object callFunction( QualifiedName name, Object[] input, final AccessMode mode ) throws ProcedureException
+    @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        return procedures.valueMapper();
+    }
+
+    private AnyValue callFunction( QualifiedName name, AnyValue[] input, final AccessMode mode ) throws ProcedureException
     {
         statement.assertOpen();
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.ValueMapper;
+
 import static java.lang.String.format;
 
 /**
@@ -85,5 +87,11 @@ public final class ShortValue extends IntegralValue
     public String toString()
     {
         return format( "Short(%d)", value );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapShort( this );
     }
 }

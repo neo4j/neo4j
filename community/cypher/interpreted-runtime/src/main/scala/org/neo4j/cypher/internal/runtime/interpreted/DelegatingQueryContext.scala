@@ -221,7 +221,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     inner.callDbmsProcedure(name, args, allowed)
 
-  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callFunction(name, args, allowed))
 
   override def aggregateFunction(name: QualifiedName,

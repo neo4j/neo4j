@@ -190,7 +190,7 @@ trait QueryContext extends TokenContext {
 
   def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
+  def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue
 
   def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
 

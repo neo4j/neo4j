@@ -21,7 +21,7 @@ package org.neo4j.values.storable;
 
 import org.neo4j.graphdb.spatial.Geometry;
 
-abstract class NumberArray extends ArrayValue
+public abstract class NumberArray extends ArrayValue
 {
     abstract int compareTo( IntegralArray other );
 

@@ -57,6 +57,12 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void writeTo( AnyValueWriter writer )
     {
     }

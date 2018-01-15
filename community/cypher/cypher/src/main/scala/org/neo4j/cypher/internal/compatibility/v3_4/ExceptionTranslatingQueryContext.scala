@@ -154,7 +154,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callDbmsProcedure(name, args, allowed))
 
-  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     translateException(inner.callFunction(name, args, allowed))
 
 
