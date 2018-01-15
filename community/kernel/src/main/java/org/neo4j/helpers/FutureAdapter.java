@@ -76,26 +76,7 @@ public abstract class FutureAdapter<V> implements Future<V>
         return new Present<>( value );
     }
 
-    public static final Future<Void> VOID = new FutureAdapter<Void>()
-    {
-        @Override
-        public boolean isDone()
-        {
-            return true;
-        }
-
-        @Override
-        public Void get()
-        {
-            return null;
-        }
-
-        @Override
-        public Void get( long timeout, TimeUnit unit )
-        {
-            return null;
-        }
-    };
+    public static final Future<Void> VOID = new Present<>( null );
 
     public static <T> Future<T> latchGuardedValue( final Supplier<T> supplier, final CountDownLatch guardedByLatch,
                                                    final String jobDescription )

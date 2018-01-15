@@ -36,7 +36,6 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.Responses;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.UpdatePuller.Condition;
@@ -238,7 +237,7 @@ public class SlaveUpdatePullerTest
         OutOfMemoryError oom = new OutOfMemoryError();
         when( master.pullUpdates( any( RequestContext.class ) ) )
                 .thenThrow( oom )
-                .thenReturn( Responses.empty() );
+                .thenReturn( Response.EMPTY );
 
         // WHEN making the first pull
         updatePuller.pullUpdates();
@@ -266,7 +265,7 @@ public class SlaveUpdatePullerTest
         logProvider.assertContainsThrowablesMatching( 0, repeat( new ComException(), SlaveUpdatePuller.LOG_CAP ) );
 
         // And we should be able to recover afterwards
-        updatePullStubbing.thenReturn( Responses.empty() ).thenThrow( new ComException() );
+        updatePullStubbing.thenReturn( Response.EMPTY ).thenThrow( new ComException() );
 
         updatePuller.pullUpdates(); // This one will succeed and unlock the circuit breaker
         updatePuller.pullUpdates(); // And then we log another exception
@@ -299,7 +298,7 @@ public class SlaveUpdatePullerTest
                 repeat( new InvalidEpochException( 2, 1 ), SlaveUpdatePuller.LOG_CAP ) );
 
         // And we should be able to recover afterwards
-        updatePullStubbing.thenReturn( Responses.empty() ).thenThrow( new InvalidEpochException( 2, 1 ) );
+        updatePullStubbing.thenReturn( Response.EMPTY ).thenThrow( new InvalidEpochException( 2, 1 ) );
 
         updatePuller.pullUpdates(); // This one will succeed and unlock the circuit breaker
         updatePuller.pullUpdates(); // And then we log another exception

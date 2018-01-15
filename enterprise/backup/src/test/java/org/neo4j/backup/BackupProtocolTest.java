@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.Responses;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
@@ -74,7 +73,7 @@ public class BackupProtocolTest
     private void shouldGatherForensicsInFullBackupRequest( boolean forensics ) throws Exception
     {
         // GIVEN
-        Response<Void> response = Responses.empty();
+        Response<Void> response = Response.EMPTY;
         StoreId storeId = response.getStoreId();
         String host = "localhost";
         int port = BackupServer.DEFAULT_PORT;
@@ -112,7 +111,7 @@ public class BackupProtocolTest
         {
             this.receivedForensics = forensics;
             writer.close();
-            return Responses.empty();
+            return Response.EMPTY;
         }
 
         @Override
