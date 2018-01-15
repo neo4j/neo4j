@@ -587,12 +587,24 @@ public class GBPTree<KEY,VALUE> implements Closeable
         try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, layout ) )
         {
             Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+            if ( states.getLeft().isEmpty() && states.getRight().isEmpty() )
+            {
+                throw new IllegalStateException( "Both state pages are empty" );
+            }
+
             TreeState state = TreeStatePair.selectNewestValidState( states );
             try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
             {
                 PageCursorUtil.goTo( cursor, "header data", state.pageId() );
                 doReadHeader( headerReader, cursor );
             }
+        }
+        catch ( IllegalStateException e )
+        {
+            // Thrown from PageCursorUtil.goTo, meaning that this index hasn't even been properly initialized
+            // and so should be treated as non-existent
+            throw new IOException( format( "GBPTree[file:%s, layout:%s] seems to not be fully initialized since it's missing meta pages",
+                    indexFile, layout ), e );
         }
     }
 

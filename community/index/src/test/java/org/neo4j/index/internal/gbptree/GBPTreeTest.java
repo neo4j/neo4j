@@ -29,8 +29,10 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -681,6 +683,75 @@ public class GBPTreeTest
         catch ( NoSuchFileException e )
         {
             // good
+        }
+    }
+
+    @Test
+    public void readHeaderMustThrowIOExceptionIfFileIsEmpty() throws Exception
+    {
+        // given an existing empty file
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        pageCache.map( indexFile, pageCache.pageSize(), StandardOpenOption.CREATE ).close();
+
+        // when
+        try
+        {
+            GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( IOException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void readHeaderMustThrowIOExceptionIfSomeMetaPageIsMissing() throws Exception
+    {
+        // given an existing index with only the first page in it
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {   // Just for creating it
+        }
+        fs.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
+
+        // when
+        try
+        {
+            GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( IOException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
+    {
+        // given an existing index with all-zero state pages
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {   // Just for creating it
+        }
+        fs.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
+        try ( OutputStream out = fs.openAsOutputStream( indexFile, true ) )
+        {
+            byte[] allZeroPage = new byte[DEFAULT_PAGE_SIZE];
+            out.write( allZeroPage ); // page A
+            out.write( allZeroPage ); // page B
+        }
+
+        // when
+        try
+        {
+            GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( IOException e )
+        {
+            // then good
         }
     }
 
