@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.util.v3_4.attribution.{Attributes, IdGen}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
@@ -39,7 +40,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  */
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solveds, cardinalities: Cardinalities, idGen : IdGen) extends ListSupport {
 
-  implicit val implicitIdGen = idGen
+  implicit val implicitIdGen: IdGen = idGen
 
   def planLock(plan: LogicalPlan, nodesToLock: Set[String], context: LogicalPlanningContext): LogicalPlan =
     annotate(LockNodes(plan, nodesToLock), solveds.get(plan.id), context)
