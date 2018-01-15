@@ -50,9 +50,9 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
     textResult should equal( """+--------------------------------------------------------------------------------------------------------+
                                || col                                                                                                    |
                                |+--------------------------------------------------------------------------------------------------------+
-                               || "ProduceResult[txl=Unchangeable(0)](Vector(a, b)) {"                                                   |
-                               || "  LHS -> Expand[txl=Unchangeable(0)](a, OUTGOING, List(RelTypeName(T)), b,   UNNAMED10, ExpandAll) {" |
-                               || "    LHS -> AllNodesScan[txl=Unchangeable(0)](a, Set()) {}"                                            |
+                               || "ProduceResult(Vector(a, b)) {"                                                   |
+                               || "  LHS -> Expand(a, OUTGOING, List(RelTypeName(T)), b,   UNNAMED10, ExpandAll) {" |
+                               || "    LHS -> AllNodesScan(a, Set()) {}"                                            |
                                || "  }"                                                                                                  |
                                || "}"                                                                                                    |
                                |+--------------------------------------------------------------------------------------------------------+

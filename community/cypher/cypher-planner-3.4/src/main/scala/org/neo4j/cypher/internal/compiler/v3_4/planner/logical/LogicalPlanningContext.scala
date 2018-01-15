@@ -48,8 +48,6 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
   def withUpdatedCardinalityInformation(plan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities) = copy(input = input.recurse(plan, solveds, cardinalities))
 
-  def withNextTxLayer = copy(logicalPlanProducer = logicalPlanProducer.withNextTxLayer)
-
   def forExpressionPlanning(nodes: Iterable[Variable], rels: Iterable[Variable]): LogicalPlanningContext = {
     val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
     val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }

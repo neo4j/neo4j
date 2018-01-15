@@ -171,14 +171,11 @@ object LogicalPlanConverter {
         case plan: LogicalPlanV3_3 =>
           try {
             val plan3_4 = rewritten.asInstanceOf[LogicalPlanV3_4]
-            // 3.3 does not know about transaction layers, it plans Eagers instead.
-            plan3_4.readTransactionLayer.value = 0
-
             // Set other attributes that were part of the plan in 3.3
             solveds.set(plan3_4.id, new PlannerQueryWrapper(plan.solved))
             cardinalities.set(plan3_4.id, helpers.as3_4(plan.solved.estimatedCardinality))
           } catch {
-            case (e: frontendV3_3.InternalException) =>
+            case (_: frontendV3_3.InternalException) =>
             // ProcedureOrSchema plans have no assigned IDs. That's ok.
           }
         // Save Mapping from 3.3 expression to 3.4 expression
