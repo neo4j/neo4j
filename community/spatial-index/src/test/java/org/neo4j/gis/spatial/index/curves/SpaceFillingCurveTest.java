@@ -21,7 +21,9 @@ package org.neo4j.gis.spatial.index.curves;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import org.neo4j.gis.spatial.index.Envelope;
@@ -324,6 +326,86 @@ public class SpaceFillingCurveTest
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 0, halfTile, 0, halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() / 2, curve.getValueWidth() / 2 ) );
         }
+    }
+
+    @Test
+    public void shouldGet2DHilbertSearchTilesForWideRangeAtManyLevels()
+    {
+        Envelope envelope = new Envelope( -180, 180, -90, 90 );
+        for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
+        {
+            HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
+            System.out.print( "Testing hilbert query at level " + level );
+            double halfTile = curve.getTileWidth( 0, level ) / 2.0;
+            long start = System.currentTimeMillis();
+            // Bottom left should give 1/4 of all tiles started at index 0
+            assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( envelope.getMin( 0 ), 0 - halfTile, envelope.getMin( 1 ), 0 - halfTile ) ),
+                    new SpaceFillingCurve.LongRange( 0, curve.getValueWidth() / 4 - 1 ) );
+            // Top left should give 1/4 of all tiles started at index 1/4
+            assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( envelope.getMin( 0 ), 0 - halfTile, 0, envelope.getMax( 1 ) ) ),
+                    new SpaceFillingCurve.LongRange( curve.getValueWidth() / 4, curve.getValueWidth() / 2 - 1 ) );
+            // Top right should give 1/4 of all tiles started at index 1/2
+            assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 0, envelope.getMax( 0 ), 0, envelope.getMax( 1 ) ) ),
+                    new SpaceFillingCurve.LongRange( curve.getValueWidth() / 2, 3 * curve.getValueWidth() / 4 - 1 ) );
+            // Bottom right should give 1/4 of all tiles started at index 3/4
+            assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 0, envelope.getMax( 0 ), envelope.getMin( 1 ), 0 - halfTile ) ),
+                    new SpaceFillingCurve.LongRange( 3 * curve.getValueWidth() / 4, curve.getValueWidth() - 1 ) );
+            System.out.println( ", took " + (System.currentTimeMillis() - start) + "ms" );
+        }
+    }
+
+    @Test
+    public void shouldGet2DHilbertSearchTilesForWideRangeAndManyTilesAtManyLevels()
+    {
+        Envelope envelope = new Envelope( -8, 8, -8, 8 );
+        for ( int level = 2; level <= 11; level++ )  // 12 takes 6s, 13 takes 25s, 14 takes 100s, 15 takes over 400s
+        {
+            HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
+            double fullTile = curve.getTileWidth( 0, level );
+            double halfTile = fullTile / 2.0;
+            Envelope centerWithoutOuterRing = new Envelope( envelope.getMin( 0 ) + fullTile + halfTile, envelope.getMax( 0 ) - fullTile - halfTile,
+                    envelope.getMin( 1 ) + fullTile + halfTile, envelope.getMax( 1 ) - fullTile - halfTile );
+            long start = System.currentTimeMillis();
+            List<SpaceFillingCurve.LongRange> result = curve.getTilesIntersectingEnvelope( centerWithoutOuterRing );
+            System.out.println(
+                    "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms to produce " + result.size() + " tiles" );
+            assertTiles( result, tilesNotTouchingOuterRing( curve ).toArray( new SpaceFillingCurve.LongRange[0] ) );
+        }
+    }
+
+    private List<SpaceFillingCurve.LongRange> tilesNotTouchingOuterRing( SpaceFillingCurve curve )
+    {
+        ArrayList<SpaceFillingCurve.LongRange> expected = new ArrayList<>();
+        HashSet<Long> outerRing = new HashSet<>();
+        for ( int x = 0; x < curve.getWidth(); x++ )
+        {
+            // Adding top and bottom rows
+            outerRing.add( curve.derivedValueFor( new long[]{x, 0} ) );
+            outerRing.add( curve.derivedValueFor( new long[]{x, curve.getWidth() - 1} ) );
+        }
+        for ( int y = 0; y < curve.getWidth(); y++ )
+        {
+            // adding left and right rows
+            outerRing.add( curve.derivedValueFor( new long[]{0, y} ) );
+            outerRing.add( curve.derivedValueFor( new long[]{curve.getWidth() - 1, y} ) );
+        }
+        for ( long derivedValue = 0; derivedValue < curve.getValueWidth(); derivedValue++ )
+        {
+            if ( !outerRing.contains( derivedValue ) )
+            {
+                SpaceFillingCurve.LongRange current = (expected.size() > 0) ? expected.get( expected.size() - 1 ) : null;
+                if ( current != null && current.max == derivedValue - 1 )
+                {
+                    current.expandToMax( derivedValue );
+                }
+                else
+                {
+                    current = new SpaceFillingCurve.LongRange( derivedValue );
+                    expected.add( current );
+                }
+            }
+        }
+        return expected;
     }
 
     //

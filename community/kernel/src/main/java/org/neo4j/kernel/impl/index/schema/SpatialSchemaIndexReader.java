@@ -19,9 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.List;
 
+import org.neo4j.cursor.RawCursor;
+import org.neo4j.gis.spatial.index.Envelope;
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -30,16 +37,21 @@ import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
-public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY, VALUE>
+public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
 {
+    private final SpatialLayout spatial;
+
     SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
+        spatial = (SpatialLayout) layout;
     }
 
     @Override
@@ -61,58 +73,86 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
     @Override
     void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
     {
+        throw new UnsupportedOperationException( "Cannot initialize 1D range in multidimensional spatial index reader" );
+    }
+
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
+    {
+        validateQuery( indexOrder, predicates );
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
         case exists:
-            treeKeyFrom.initAsLowest();
-            treeKeyTo.initAsHighest();
+            startSeekForExists( cursor, predicate );
             break;
         case exact:
-            ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
-            treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
+            startSeekForExact( cursor, ((ExactPredicate) predicate).value(), predicate );
             break;
         case rangeGeometric:
             GeometryRangePredicate rangePredicate = (GeometryRangePredicate) predicate;
-            if ( !rangePredicate.crs().equals( treeKeyTo.crs ) )
+            if ( !rangePredicate.crs().equals( spatial.crs ) )
             {
                 throw new IllegalArgumentException(
-                        "IndexQuery on spatial index with mismatching CoordinateReferenceSystem: " + rangePredicate.crs() + " != " + treeKeyTo.crs );
+                        "IndexQuery on spatial index with mismatching CoordinateReferenceSystem: " + rangePredicate.crs() + " != " + spatial.crs );
             }
-            initFromForRange( rangePredicate, treeKeyFrom );
-            initToForRange( rangePredicate, treeKeyTo );
+            startSeekForRange( cursor, rangePredicate, predicates );
             break;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
     }
 
-    private void initToForRange( GeometryRangePredicate rangePredicate, KEY treeKeyTo )
+    private void startSeekForExists( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
     {
-        PointValue toValue = rangePredicate.to();
-        if ( toValue == null )
-        {
-            treeKeyTo.initAsHighest();
-        }
-        else
-        {
-            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
-            treeKeyTo.setEntityIdIsSpecialTieBreaker( true );
-        }
+        KEY treeKeyFrom = layout.newKey();
+        KEY treeKeyTo = layout.newKey();
+        treeKeyFrom.initAsLowest();
+        treeKeyTo.initAsHighest();
+        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates );
     }
 
-    private void initFromForRange( GeometryRangePredicate rangePredicate, KEY treeKeyFrom )
+    private void startSeekForExact( IndexProgressor.NodeValueClient client, Value value, IndexQuery... predicates )
     {
-        PointValue fromValue = rangePredicate.from();
-        if ( fromValue == null )
+        KEY treeKeyFrom = layout.newKey();
+        KEY treeKeyTo = layout.newKey();
+        treeKeyFrom.from( Long.MIN_VALUE, value );
+        treeKeyTo.from( Long.MAX_VALUE, value );
+        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates );
+    }
+
+    private void startSeekForRange( IndexProgressor.NodeValueClient client, GeometryRangePredicate rangePredicate, IndexQuery[] query )
+    {
+        try
         {
-            treeKeyFrom.initAsLowest();
+            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
+            client.initialize( descriptor, multiProgressor, query );
+            SpaceFillingCurve curve = spatial.getSpaceFillingCurve();
+            Envelope completeEnvelope = SpatialKnownIndex.envelopeFromCRS( spatial.crs );
+            double[] from = rangePredicate.from() == null ? completeEnvelope.getMin() : rangePredicate.from().coordinate();
+            double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
+            Envelope envelope = new Envelope( from, to );
+            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope );
+            System.out.println( "Searching " + rangePredicate + " using " + ranges.size() + " 1D sub-queries:" );
+            for ( SpaceFillingCurve.LongRange range : ranges )
+            {
+                System.out.println( "\t" + range );
+                KEY treeKeyFrom = layout.newKey();
+                KEY treeKeyTo = layout.newKey();
+                treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min );
+                treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
+                RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+                IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client, openSeekers );
+                multiProgressor.initialize( descriptor, hitProgressor, query );
+            }
         }
-        else
+        catch ( IllegalArgumentException e )
         {
-            treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
-            treeKeyFrom.setEntityIdIsSpecialTieBreaker( true );
+            // Invalid query ranges will cause this state (eg. min>max)
+            client.initialize( descriptor, IndexProgressor.EMPTY, query );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 
