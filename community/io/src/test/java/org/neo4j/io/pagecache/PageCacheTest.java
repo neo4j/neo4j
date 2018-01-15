@@ -69,6 +69,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.test.rule.RepeatRule;
 
@@ -5286,8 +5287,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void noFaultReadOfPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        cursorTracerSupplier.get().init( cacheTracer );
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
         getPageCache( fs, maxPages, cacheTracer, cursorTracerSupplier );
 
         File file = file( "a" );
@@ -5299,12 +5299,25 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    private DefaultPageCursorTracerSupplier getCursorTracerSupplier( DefaultPageCacheTracer cacheTracer )
+    {
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        // This cursor tracer is thread-local, so we'll initialise it on behalf of this thread.
+        PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+        // Clear any stray counts that might have been carried over form other tests,
+        // by reporting into a throw-away cache tracer.
+        cursorTracer.init( new DefaultPageCacheTracer() );
+        cursorTracer.reportEvents();
+        // Initialise it for real.
+        cursorTracer.init( cacheTracer );
+        return cursorTracerSupplier;
+    }
+
     @Test
     public void noFaultWriteOnPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        cursorTracerSupplier.get().init( cacheTracer );
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
         getPageCache( fs, maxPages, cacheTracer, cursorTracerSupplier );
 
         File file = file( "a" );
@@ -5321,8 +5334,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void noFaultLinkedReadOfPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        cursorTracerSupplier.get().init( cacheTracer );
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
         getPageCache( fs, maxPages, cacheTracer, cursorTracerSupplier );
 
         File file = file( "a" );
@@ -5339,8 +5351,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void noFaultLinkedWriteOnPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        cursorTracerSupplier.get().init( cacheTracer );
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
         getPageCache( fs, maxPages, cacheTracer, cursorTracerSupplier );
 
         File file = file( "a" );
