@@ -19,33 +19,31 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.values.storable.Value;
 
-class NonUniqueLayoutTestUtil extends LayoutTestUtil<SchemaNumberKey,SchemaNumberValue>
+/**
+ * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
+ *
+ * NOTE:  For the time being no data exists in {@link NativeSchemaValue}, but since the layout is under development
+ * it's very convenient to have this class still exist so that it's very easy to try out different types
+ * of layouts without changing the entire stack of arguments. In the end it may just be that this class
+ * will be deleted, but for now it sticks around.
+ */
+class NativeSchemaValue
 {
-    NonUniqueLayoutTestUtil()
+    static final int SIZE = 0;
+
+    static final NativeSchemaValue INSTANCE = new NativeSchemaValue();
+
+    void from( Value... values )
     {
-        super( IndexDescriptorFactory.forLabel( 42, 666 ) );
+        // not needed a.t.m.
     }
 
     @Override
-    Layout<SchemaNumberKey,SchemaNumberValue> createLayout()
+    public String toString()
     {
-        return new NonUniqueNumberLayout();
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
-    protected double fractionDuplicates()
-    {
-        return 0.1;
+        return "[no value]";
     }
 }

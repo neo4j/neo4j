@@ -38,14 +38,13 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 
-public class NativeNonUniqueSchemaNumberIndexPopulatorTest
-        extends NativeSchemaNumberIndexPopulatorTest<SchemaNumberKey,SchemaNumberValue>
+public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
 {
     @Override
-    NativeSchemaNumberIndexPopulator<SchemaNumberKey,SchemaNumberValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
-            File indexFile, Layout<SchemaNumberKey,SchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
+    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
+            File indexFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, indexDescriptor,
+        return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, indexDescriptor,
                 indexId );
     }
 
@@ -114,8 +113,8 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     }
 
     @Override
-    protected LayoutTestUtil<SchemaNumberKey,SchemaNumberValue> createLayoutTestUtil()
+    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new NonUniqueLayoutTestUtil();
+        return new NumberNonUniqueLayoutTestUtil();
     }
 }

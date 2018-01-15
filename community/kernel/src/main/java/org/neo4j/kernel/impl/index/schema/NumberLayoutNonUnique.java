@@ -19,31 +19,37 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.values.storable.Value;
+import org.neo4j.index.internal.gbptree.Layout;
 
-/**
- * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
- *
- * NOTE:  For the time being no data exists in {@link SchemaNumberValue}, but since the layout is under development
- * it's very convenient to have this class still exist so that it's very easy to try out different types
- * of layouts without changing the entire stack of arguments. In the end it may just be that this class
- * will be deleted, but for now it sticks around.
- */
-class SchemaNumberValue
+public class NumberLayoutNonUnique extends NumberLayout
 {
-    static final int SIZE = 0;
+    private static final String IDENTIFIER_NAME = "NUNI";
+    static final int MAJOR_VERSION = 0;
+    static final int MINOR_VERSION = 1;
+    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
-    static final SchemaNumberValue INSTANCE = new SchemaNumberValue();
-
-    void from( Value... values )
+    @Override
+    public long identifier()
     {
-        // not needed a.t.m.
+        return IDENTIFIER;
     }
 
     @Override
-    public String toString()
+    public int majorVersion()
     {
-        return "[no value]";
+        return MAJOR_VERSION;
+    }
+
+    @Override
+    public int minorVersion()
+    {
+        return MINOR_VERSION;
+    }
+
+    @Override
+    public int compare( NumberSchemaKey o1, NumberSchemaKey o2 )
+    {
+        int comparison = o1.compareValueTo( o2 );
+        return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
     }
 }

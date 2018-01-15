@@ -35,16 +35,16 @@ import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
- * {@link NativeSchemaNumberIndexPopulator} which can accept duplicate values (for different entity ids).
+ * {@link NativeSchemaIndexPopulator} which can accept duplicate values (for different entity ids).
  */
-class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
-        extends NativeSchemaNumberIndexPopulator<KEY,VALUE>
+class NativeNonUniqueSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+        extends NativeSchemaIndexPopulator<KEY,VALUE>
 {
     private final IndexSamplingConfig samplingConfig;
     private boolean updateSampling;
     private NonUniqueIndexSampler sampler;
 
-    NativeNonUniqueSchemaNumberIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+    NativeNonUniqueSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig, SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );

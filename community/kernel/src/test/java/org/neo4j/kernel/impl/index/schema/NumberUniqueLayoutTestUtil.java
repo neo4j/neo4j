@@ -20,36 +20,32 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
-public class NonUniqueNumberLayout extends NumberLayout
+public class NumberUniqueLayoutTestUtil extends NumberLayoutTestUtil
 {
-    private static final String IDENTIFIER_NAME = "NUNI";
-    static final int MAJOR_VERSION = 0;
-    static final int MINOR_VERSION = 1;
-    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberValue.SIZE );
-
-    @Override
-    public long identifier()
+    NumberUniqueLayoutTestUtil()
     {
-        return IDENTIFIER;
+        super( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
     }
 
     @Override
-    public int majorVersion()
+    public Layout<NumberSchemaKey,NativeSchemaValue> createLayout()
     {
-        return MAJOR_VERSION;
+        return new NumberLayoutUnique();
     }
 
     @Override
-    public int minorVersion()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
-        return MINOR_VERSION;
+        return someUpdatesNoDuplicateValues();
     }
 
     @Override
-    public int compare( SchemaNumberKey o1, SchemaNumberKey o2 )
+    protected double fractionDuplicates()
     {
-        int comparison = o1.compareValueTo( o2 );
-        return comparison != 0 ? comparison : Long.compare( o1.entityId, o2.entityId );
+        return 0.0;
     }
 }

@@ -19,27 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
-
-public class NativeSelector implements FusionSchemaIndexProvider.Selector
+public class NumberNonUniqueSchemaIndexAccessorTest extends NumberSchemaIndexAccessorTest<NumberSchemaKey,NativeSchemaValue>
 {
     @Override
-    public <T> T select( T numberInstance, T luceneInstance, Value... values )
+    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        if ( values.length > 1 )
-        {
-            // Multiple values must be handled by lucene
-            return luceneInstance;
-        }
-
-        Value singleValue = values[0];
-        if ( singleValue.valueGroup() == ValueGroup.NUMBER )
-        {
-            // It's a number, the native can handle this
-            return numberInstance;
-        }
-        return luceneInstance;
+        return new NumberNonUniqueLayoutTestUtil();
     }
 }

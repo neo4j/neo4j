@@ -40,20 +40,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumberIndexPopulatorTest<SchemaNumberKey,SchemaNumberValue>
+public class NumberUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
 {
     @Override
-    NativeSchemaNumberIndexPopulator<SchemaNumberKey,SchemaNumberValue> createPopulator(
+    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator(
             PageCache pageCache, FileSystemAbstraction fs, File indexFile,
-            Layout<SchemaNumberKey,SchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
+            Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
+        return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
     }
 
     @Override
-    protected LayoutTestUtil<SchemaNumberKey,SchemaNumberValue> createLayoutTestUtil()
+    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil();
+        return new NumberUniqueLayoutTestUtil();
     }
 
     @Test

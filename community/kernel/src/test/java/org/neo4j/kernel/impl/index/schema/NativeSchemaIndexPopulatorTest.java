@@ -59,11 +59,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 
-public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue>
-        extends SchemaNumberIndexTestUtil<KEY,VALUE>
+public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>
+        extends NativeSchemaIndexTestUtil<KEY,VALUE>
 {
     private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
     static final PropertyAccessor null_property_accessor = ( nodeId, propKeyId ) ->
@@ -71,7 +71,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
         throw new RuntimeException( "Did not expect an attempt to go to store" );
     };
 
-    NativeSchemaNumberIndexPopulator<KEY,VALUE> populator;
+    NativeSchemaIndexPopulator<KEY,VALUE> populator;
 
     @Before
     public void setupPopulator()
@@ -80,7 +80,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
         populator = createPopulator( pageCache, fs, indexFile, layout, samplingConfig );
     }
 
-    abstract NativeSchemaNumberIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, FileSystemAbstraction fs, File indexFile,
+    abstract NativeSchemaIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, FileSystemAbstraction fs, File indexFile,
             Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig );
 
     @Test
@@ -543,7 +543,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
         return RandomStringUtils.random( length, true, true );
     }
 
-    private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, NativeSchemaNumberIndexPopulator<KEY,VALUE> populator )
+    private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, NativeSchemaIndexPopulator<KEY,VALUE> populator )
             throws IOException, IndexEntryConflictException
     {
         boolean useUpdater = true;

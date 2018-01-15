@@ -19,33 +19,38 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
-public class UniqueLayoutTestUtil extends LayoutTestUtil<SchemaNumberKey,SchemaNumberValue>
+abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,NativeSchemaValue>
 {
-    UniqueLayoutTestUtil()
+    NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
-        super( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
+        super( indexDescriptor );
     }
 
     @Override
-    public Layout<SchemaNumberKey,SchemaNumberValue> createLayout()
+    IndexQuery rangeQuery( Number from, boolean fromInclusive, Number to, boolean toInclusive )
     {
-        return new UniqueNumberLayout();
+        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    Value asValue( Number value )
     {
-        return someUpdatesNoDuplicateValues();
+        return Values.of( value );
     }
 
     @Override
-    protected double fractionDuplicates()
+    int compareIndexedPropertyValue( NumberSchemaKey key1, NumberSchemaKey key2 )
     {
-        return 0.0;
+        int typeCompare = Byte.compare( key1.type, key2.type );
+        if ( typeCompare == 0 )
+        {
+            return Long.compare( key1.rawValueBits, key2.rawValueBits );
+        }
+        return typeCompare;
     }
 }
