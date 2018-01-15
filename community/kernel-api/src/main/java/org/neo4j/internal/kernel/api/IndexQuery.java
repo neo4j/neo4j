@@ -25,6 +25,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -407,6 +408,12 @@ public abstract class IndexQuery
             {
                 PointValue point = (PointValue) value;
                 return point.withinRange( from, fromInclusive, to, toInclusive );
+            }
+            else if ( value instanceof LongValue )
+            {
+                // This is called from the hilbert space filling curve index which decomposed 2D range into 1D long curve index
+                // TODO: Filter with property lookup
+                return true;
             }
             return false;
         }

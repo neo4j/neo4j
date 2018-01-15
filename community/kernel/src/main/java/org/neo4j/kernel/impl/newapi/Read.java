@@ -89,6 +89,7 @@ abstract class Read implements TxStateHolder,
             {
                 switch ( q.type() )
                 {
+                case rangeGeometric:
                 case rangeNumeric:
                     if ( !reader.hasFullNumberPrecision( q ) )
                     {
@@ -97,7 +98,7 @@ abstract class Read implements TxStateHolder,
                     break;
                 case exact:
                     Value value = ((IndexQuery.ExactPredicate) q).value();
-                    if ( value.valueGroup() == ValueGroup.NUMBER )
+                    if ( value.valueGroup() == ValueGroup.NUMBER || value.valueGroup() == ValueGroup.GEOMETRY )
                     {
                         if ( !reader.hasFullNumberPrecision( q ) )
                         {
