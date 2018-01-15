@@ -24,10 +24,11 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Hint, UsingJoinHint}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, OuterHashJoin}
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.util.v3_4.Cost
-import org.neo4j.cypher.internal.v3_4.expressions.{PatternExpression, SemanticDirection}
+import org.neo4j.cypher.internal.util.v3_4.{Cost, InputPosition}
+import org.neo4j.cypher.internal.v3_4.expressions.{PatternExpression, SemanticDirection, Variable}
 
 class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -69,5 +70,35 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plans = outerHashJoin(optionalQg, left, context)
 
     plans should equal(Some(OuterHashJoin(Set(aNode), left, innerPlan)(solved)))
+  }
+
+  test("solve optional match with hint") {
+    val theHint: Set[Hint] = Set(UsingJoinHint(Seq(Variable("a")(pos)))(pos))
+    // MATCH a OPTIONAL MATCH a-->b
+    val optionalQg = QueryGraph(
+      patternNodes = Set(aNode, bNode),
+      patternRelationships = Set(r1Rel),
+      hints = theHint,
+      argumentIds = Set(aNode)
+    )
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+      case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
+      case _ => Cost(1000)
+    })
+
+    val innerPlan = newMockedLogicalPlan("b")
+
+    val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext,
+      strategy = newMockedStrategy(innerPlan),
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
+    )
+    val left = newMockedLogicalPlanWithPatterns(Set(aNode))
+    val plan = outerHashJoin(optionalQg, left, context).getOrElse(fail("No result from outerHashJoin"))
+
+    plan should equal(OuterHashJoin(Set(aNode), left, innerPlan)(solved))
+    plan.solved.lastQueryGraph.allHints should equal (theHint)
   }
 }

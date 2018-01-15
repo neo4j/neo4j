@@ -315,8 +315,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
     annotate(Optional(inputPlan, ids), solved, context)
   }
 
-  def planOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(right.solved.queryGraph))
+  def planOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
+    val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(right.solved.queryGraph.addHints(hints)))
     annotate(OuterHashJoin(nodes, left, right), solved, context)
   }
 
