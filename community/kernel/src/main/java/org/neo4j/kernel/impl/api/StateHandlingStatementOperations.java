@@ -969,7 +969,7 @@ public class StateHandlingStatementOperations implements
             // This because there are established ways of rebuilding auto-indexes which involves this function.
             autoIndexProperty( nodeId, property, ops, existingProperty, autoIndexing.nodes() );
 
-            if ( !property.equals( existingProperty ) )
+            if ( propertyHasChanged( property, existingProperty ) )
             {
                 state.txState().nodeDoReplaceProperty( node.id(), existingProperty, property );
 
@@ -1020,7 +1020,7 @@ public class StateHandlingStatementOperations implements
             // This because there are established ways of rebuilding auto-indexes which involves this function.
             autoIndexProperty( relationshipId, property, ops, existingProperty, autoIndexing.relationships() );
 
-            if ( !property.equals( existingProperty ) )
+            if ( propertyHasChanged( property, existingProperty ) )
             {
                 state.txState().relationshipDoReplaceProperty( relationship.id(), existingProperty, property );
             }
@@ -1722,6 +1722,14 @@ public class StateHandlingStatementOperations implements
             }
         }
         return storeLayer.nodeExists( id );
+    }
+
+    private boolean propertyHasChanged( Property lhs, Property rhs )
+    {
+        //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
+        //so by only checking for equality users cannot change type of property without also "changing" the value.
+        //Hence the extra type check here.
+        return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
     }
 
     private static DefinedProperty definedPropertyOrNull( Property existingProperty )
