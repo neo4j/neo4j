@@ -72,7 +72,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
@@ -104,7 +104,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
@@ -170,7 +170,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val argument = Argument(Set("a"))
     val inner = Expand(argument, "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
@@ -207,7 +207,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
 
     // When
@@ -253,7 +253,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
@@ -299,7 +299,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
@@ -345,7 +345,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
@@ -396,7 +396,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 
@@ -447,7 +447,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
     val inner2 = Expand(Argument(Set("a")), "a", dir, types, "  UNNAMED4", patternRel2.name, ExpandAll)
 

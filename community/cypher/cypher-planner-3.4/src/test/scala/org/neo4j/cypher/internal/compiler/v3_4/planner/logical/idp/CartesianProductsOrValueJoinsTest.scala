@@ -117,8 +117,8 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("c")), allNodesScan("c", solveds, cardinalities))),
       expectedPlan =
         Selection(Seq(eq3),
-          ValueHashJoin(planA,
-            ValueHashJoin(planB, planC, eq2), eq1.switchSides)))
+          ValueHashJoin(planC,
+            ValueHashJoin(planB, planA, eq1), eq2.switchSides)))
   }
 
   private def testThis(graph: QueryGraph, input: (Solveds, Cardinalities) => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
