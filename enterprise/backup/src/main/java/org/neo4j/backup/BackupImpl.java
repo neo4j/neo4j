@@ -73,11 +73,15 @@ class BackupImpl implements TheBackupInterface
                     logFileInformation, storeId, copyStartContext.lastAppliedTransaction() + 1,
                     storeCopyServer.monitor() );
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
-            return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
-        }
-        finally
-        {
+
+            Response<Void> response = responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null );
             logger.log( "%s: Full backup finished.", backupIdentifier );
+            return response;
+        }
+        catch ( Throwable e )
+        {
+            logger.log( backupIdentifier + ": Full backup ended with exception.", e );
+            throw e;
         }
     }
 
@@ -88,11 +92,14 @@ class BackupImpl implements TheBackupInterface
         try
         {
             logger.log( "%s: Incremental backup started...", backupIdentifier );
-            return incrementalResponsePacker.packTransactionStreamResponse( context, null );
-        }
-        finally
-        {
+            Response<Void> response = incrementalResponsePacker.packTransactionStreamResponse( context, null );
             logger.log( "%s: Incremental backup finished.", backupIdentifier );
+            return response;
+        }
+        catch ( Throwable e )
+        {
+            logger.log( backupIdentifier + ": Incremental backup ended with exception.", e );
+            throw e;
         }
     }
 
