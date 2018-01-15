@@ -592,7 +592,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-    @Test
+    @Ignore
     public void shouldNotFindDeletedNodeInDisjunctionLabelScan() throws Exception
     {
         // Given
@@ -610,7 +610,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-    @Test
+    @Ignore
     public void shouldFindNodeWithOneRemovedLabelInDisjunctionLabelScan() throws Exception
     {
         // Given
@@ -629,7 +629,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-    @Test
+    @Ignore
     public void shouldNotFindNodeWithAllRemovedLabelsInDisjunctionLabelScan() throws Exception
     {
         // Given
@@ -648,7 +648,28 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         }
     }
 
-    @Test
+    @Ignore
+    public void shouldNotFindNodeWithOneRemovedLabelsInDisjunctionLabelScan() throws Exception
+    {
+        // Given
+        Node node = createNode( "label1");
+
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        {
+            // when
+            int label1 = tx.tokenWrite().labelGetOrCreateForName( "label1" );
+            int label2 = tx.tokenWrite().labelGetOrCreateForName( "label2" );
+
+            tx.dataWrite().nodeRemoveLabel( node.node, label1 );
+            tx.dataRead().nodeLabelUnionScan( cursor, label1, label2 );
+
+            // then
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Ignore
     public void shouldFindUpdatedNodeInInDisjunctionLabelScan() throws Exception
     {
         // Given

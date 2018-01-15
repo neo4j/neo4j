@@ -87,7 +87,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    @Test
+    @Ignore
     public void shouldFindNodesByDisjunction() throws Exception
     {
         // given

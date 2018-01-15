@@ -63,6 +63,13 @@ class NodeLabelIndexCursor extends IndexCursor
             changes = read.txState().nodesWithAnyOfLabelsChanged( labels );
             added = changes.augment( PrimitiveLongCollections.emptyIterator() );
         }
+        //TODO: Currently we don't have a good way of handling this in the tx state
+        //The problem is this case:
+        //Given a node with label :A
+        //we remove label A in a transaction and follow that by
+        //a scan of `:A and :B`. In order to figure this out we need
+        //to check both tx state and disk, which we currently don't.
+        throw new UnsupportedOperationException(  );
     }
 
     @Override
