@@ -28,6 +28,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.SocketChannelConfig;
 import io.netty.util.Attribute;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +38,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -56,6 +59,9 @@ import static org.mockito.Mockito.when;
 
 public class TransportWriteThrottleTest
 {
+    @Rule
+    public OtherThreadRule<Void> otherThread = new OtherThreadRule<>( 1, TimeUnit.MINUTES );
+
     private ChannelHandlerContext context;
     private Channel channel;
     private SocketChannelConfig config;
@@ -177,10 +183,13 @@ public class TransportWriteThrottleTest
         TransportThrottle throttle = newThrottleAndInstall( channel, lockOverride );
         when( channel.isWritable() ).thenReturn( false );
 
-        Thread throttleThread = Executors.defaultThreadFactory().newThread( () -> throttle.acquire( channel ) );
-        throttleThread.start();
+        Future<Void> completionFuture = otherThread.execute( state ->
+        {
+            throttle.acquire( channel );
+            return null;
+        } );
 
-        awaitWaitingState( throttleThread, TimeUnit.MINUTES.toMillis( 1 ) );
+        otherThread.get().waitUntilWaiting();
 
         // when
         when( channel.isWritable() ).thenReturn( true );
@@ -188,9 +197,8 @@ public class TransportWriteThrottleTest
         verify( channel.pipeline() ).addLast( captor.capture() );
         captor.getValue().channelWritabilityChanged( context );
 
-        throttleThread.join( TimeUnit.MINUTES.toMillis( 1 ) );
+        otherThread.get().awaitFuture( completionFuture );
 
-        assertFalse( throttleThread.isAlive() );
         assertThat( lockOverride.lockCallCount(), greaterThan( 0 ) );
         assertThat( lockOverride.unlockCallCount(), is( 1 ) );
     }
@@ -224,42 +232,6 @@ public class TransportWriteThrottleTest
         throttle.install( channel );
 
         return throttle;
-    }
-
-    public static void awaitWaitingState( Thread thread, long timeoutMillis ) throws TimeoutException
-    {
-        long startTime = -1;
-
-        do
-        {
-            long currentTime = System.currentTimeMillis();
-            if ( startTime == -1 )
-            {
-                startTime = currentTime;
-            }
-
-            long elapsedTime = currentTime - startTime;
-            if ( elapsedTime > timeoutMillis )
-            {
-                throw new TimeoutException( "timed out waiting for thread to be blocked" );
-            }
-
-            sleep( 500 );
-        }
-        while ( thread.getState() != Thread.State.WAITING );
-    }
-
-    public static void sleep( int millis )
-    {
-        try
-        {
-            Thread.sleep( millis );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException( e );
-        }
     }
 
     private static class TestThrottleLock implements ThrottleLock
