@@ -28,6 +28,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
+import org.neo4j.com.Responses;
 import org.neo4j.com.Server;
 import org.neo4j.com.StoreIdTestFactory;
 import org.neo4j.com.TransactionStream;
@@ -155,7 +156,7 @@ public class MasterClientTest
         ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
         MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( storeId );
         when( masterImplSPI.packTransactionObligationResponse( any( RequestContext.class ), Matchers.anyObject() ) )
-                .thenReturn( Response.empty() );
+                .thenReturn( Responses.empty() );
         when( masterImplSPI.getTransactionChecksum( anyLong() ) ).thenReturn( txChecksum );
 
         newMasterServer( masterImplSPI );

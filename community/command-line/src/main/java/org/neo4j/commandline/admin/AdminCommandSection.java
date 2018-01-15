@@ -26,14 +26,12 @@ import javax.annotation.Nonnull;
 
 public abstract class AdminCommandSection
 {
-    private static final AdminCommandSection GENERAL = new GeneralSection();
-
     @Nonnull
     public abstract String printable();
 
     public static AdminCommandSection general()
     {
-        return GENERAL;
+        return new GeneralSection();
     }
 
     @Override
