@@ -29,13 +29,18 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  */
 public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchemaValue>
 {
-    private CoordinateReferenceSystem crs;
-    private SpaceFillingCurve curve;
+    CoordinateReferenceSystem crs;
+    SpaceFillingCurve curve;
 
     public SpatialLayout( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
         this.crs = crs;
         this.curve = curve;
+    }
+
+    SpaceFillingCurve getSpaceFillingCurve()
+    {
+        return curve;
     }
 
     @Override

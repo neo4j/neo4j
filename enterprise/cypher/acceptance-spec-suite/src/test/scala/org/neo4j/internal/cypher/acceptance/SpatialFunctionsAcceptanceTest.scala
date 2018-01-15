@@ -389,6 +389,24 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
+  test("indexed point - range query - points far apart") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 5.7, longitude: 116.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: -50.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: -10.78, crs: 'WGS-84'})")
+
+    // When
+    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location > point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    plan should useOperatorWithText("Projection", "point")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) > point")
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+  }
+
   test("indexed point - range query") {
     // Given
     graph.createIndex("Place", "location")

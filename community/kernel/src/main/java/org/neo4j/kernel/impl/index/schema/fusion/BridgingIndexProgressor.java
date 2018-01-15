@@ -30,14 +30,14 @@ import org.neo4j.values.storable.Value;
 /**
  * Combine multiple progressor to act like one single logical progressor seen from clients perspective.
  */
-class BridgingIndexProgressor implements IndexProgressor.NodeValueClient, IndexProgressor
+public class BridgingIndexProgressor implements IndexProgressor.NodeValueClient, IndexProgressor
 {
     private final NodeValueClient client;
     private final int[] keys;
     private final Queue<IndexProgressor> progressors;
     private IndexProgressor current;
 
-    BridgingIndexProgressor( NodeValueClient client, int[] keys )
+    public BridgingIndexProgressor( NodeValueClient client, int[] keys )
     {
         this.client = client;
         this.keys = keys;

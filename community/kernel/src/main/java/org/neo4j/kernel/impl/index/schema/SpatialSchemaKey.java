@@ -98,7 +98,7 @@ class SpatialSchemaKey implements NativeSchemaKey
     public NumberValue asValue()
     {
         // This is used in the index sampler to estimate value diversity. Since the spatial index does not store values
-        // the uniqueness of the space filling cuve number is the best estimate. This can become a bad estimate for
+        // the uniqueness of the space filling curve number is the best estimate. This can become a bad estimate for
         // indexes with badly defined Envelopes for the space filling curves, such that many points exist within the
         // same tile.
         return (NumberValue) Values.of( rawValueBits );
@@ -126,9 +126,20 @@ class SpatialSchemaKey implements NativeSchemaKey
         entityIdIsSpecialTieBreaker = true;
     }
 
+    public void fromDerivedValue( long entityId, long derivedValue )
+    {
+        rawValueBits = derivedValue;
+        this.entityId = entityId;
+        this.entityIdIsSpecialTieBreaker = false;
+    }
+
+    /**
+     * This method will compare along the curve, which is not a spatial comparison, but is correct
+     * for comparison within the space filling index as long as the original spatial range has already
+     * been decomposed into a collection of 1D curve ranges before calling down into the GPTree.
+     */
     int compareValueTo( SpatialSchemaKey other )
     {
-        // TODO this is incorrect!
         return Long.compare( rawValueBits, other.rawValueBits );
     }
 
@@ -155,6 +166,7 @@ class SpatialSchemaKey implements NativeSchemaKey
     private void extractRawBitsAndType( PointValue value )
     {
         writePoint( value.getCoordinateReferenceSystem(), value.coordinate() );
+        System.out.println( "Wrote point " + rawValueBits + ": " + Arrays.toString( value.coordinate() ) );
     }
 
     /**

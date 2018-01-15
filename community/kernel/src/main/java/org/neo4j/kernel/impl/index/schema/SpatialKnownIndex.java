@@ -89,6 +89,11 @@ public class SpatialKnownIndex
                 new SchemaIndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
         IndexDirectoryStructure indexDir = IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
         indexFile = new File( indexDir.directoryForIndex( indexId ), indexFileName( indexId ) );
+        curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 5 );
+    }
+
+    static Envelope envelopeFromCRS( CoordinateReferenceSystem crs )
+    {
         Envelope curveEnvelope;
         //TODO: Support more CRS
         if ( crs.equals( WGS84 ) )
@@ -101,7 +106,7 @@ public class SpatialKnownIndex
             curveEnvelope = new Envelope( -1000000, 1000000, -1000000, 1000000 );
         }
         //TODO: support 3D
-        curve = new HilbertSpaceFillingCurve2D( curveEnvelope );
+        return curveEnvelope;
     }
 
     private static String indexFileName( long indexId )

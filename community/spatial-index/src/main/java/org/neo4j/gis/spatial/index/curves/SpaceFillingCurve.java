@@ -143,6 +143,23 @@ public abstract class SpaceFillingCurve
     {
         assertValidLevel( level );
         long[] normalizedValues = getNormalizedCoord( coord );
+        return derivedValueFor( normalizedValues, level );
+    }
+
+    /**
+     * Given a normalized coordinate in multiple dimensions, calculate its derived key for maxLevel
+     */
+    public Long derivedValueFor( long[] normalizedValues )
+    {
+        return derivedValueFor( normalizedValues, maxLevel );
+    }
+
+    /**
+     * Given a normalized coordinate in multiple dimensions, calculate its derived key for given level
+     */
+    private Long derivedValueFor( long[] normalizedValues, int level )
+    {
+        assertValidLevel( level );
         long derivedValue = 0;
         long mask = 1L << (maxLevel - 1);
 
@@ -187,6 +204,14 @@ public abstract class SpaceFillingCurve
     {
         long[] normalizedCoord = normalizedCoordinateFor( derivedValue, level );
         return getDoubleCoord( normalizedCoord, level );
+    }
+
+    /**
+     * Given a derived key, find the normalized coordinate it corresponds to on a specific level
+     */
+    public long[] normalizedCoordinateFor( long derivedValue )
+    {
+        return normalizedCoordinateFor( derivedValue, maxLevel );
     }
 
     /**
