@@ -1102,12 +1102,6 @@ public class DatabaseActions
             {
                 return returnType.toRepresentation( position );
             }
-
-            @Override
-            public Iterator<Representation> iterator()
-            {
-                return newResourceIterator( () -> paths.forEach( Path::close ), super.iterator() );
-            }
         };
         return new ListRepresentation( returnType.repType, result );
     }
