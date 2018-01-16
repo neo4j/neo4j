@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.v3_4.expressions._
 
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{GenTraversableOnce, mutable}
 import scala.runtime.ScalaRunTime
 
@@ -41,7 +42,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
                       optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
                       hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
-                      mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
+                      mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty)
   extends UpdateGraph {
 
   /**
@@ -90,12 +91,19 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   /**
     * Includes not only pattern nodes in the read part of the query graph, but also pattern nodes from CREATE and MERGE
     */
-  def allPatternNodes: Set[String] =
-    patternNodes ++
-      optionalMatches.flatMap(_.allPatternNodes) ++
-      createNodePatterns.map(_.nodeName) ++
-      mergeNodePatterns.map(_.createNodePattern.nodeName) ++
-      mergeRelationshipPatterns.flatMap(_.createNodePatterns.map(_.nodeName))
+  def allPatternNodes: collection.Set[String] = {
+    val nodes = mutable.Set[String]()
+    collectAllPatternNodes(nodes.add)
+    nodes
+  }
+
+  def collectAllPatternNodes(f: (String) => Unit): Unit = {
+    patternNodes.foreach(f)
+    optionalMatches.foreach(m => m.allPatternNodes.foreach(f))
+    createNodePatterns.foreach(p => f(p.nodeName))
+    mergeNodePatterns.foreach(p => f(p.createNodePattern.nodeName))
+    mergeRelationshipPatterns.foreach(p => p.createNodePatterns.foreach(pp => f(pp.nodeName)))
+  }
 
   def allPatternRelationshipsRead: Set[PatternRelationship] =
     patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationshipsRead)
@@ -147,7 +155,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
       case p: MergeRelationshipPattern => p.copy(matchGraph = matchGraph)
     }.get
 
-    copy(argumentIds = matchGraph.argumentIds, mutatingPatterns = Seq(newMutatingPattern))
+    copy(argumentIds = matchGraph.argumentIds, mutatingPatterns = IndexedSeq(newMutatingPattern))
   }
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
@@ -328,8 +336,20 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
 
   def writeOnly: Boolean = !containsReads && containsUpdates
 
-  def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
-    copy(mutatingPatterns = mutatingPatterns ++ patterns)
+  def addMutatingPatterns(pattern: MutatingPattern): QueryGraph = {
+    val copyPatterns = new mutable.ArrayBuffer[MutatingPattern](mutatingPatterns.size + 1)
+    copyPatterns.appendAll(mutatingPatterns)
+    copyPatterns.append(pattern)
+
+    copy(mutatingPatterns = copyPatterns)
+  }
+
+  def addMutatingPatterns(patterns: Seq[MutatingPattern]): QueryGraph = {
+    val copyPatterns = new ArrayBuffer[MutatingPattern](patterns.size)
+    copyPatterns.appendAll(mutatingPatterns)
+    copyPatterns.appendAll(patterns)
+    copy(mutatingPatterns = copyPatterns)
+  }
 
   override def toString: String = {
     var added = false

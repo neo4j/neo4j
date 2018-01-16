@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.ir.v3_4
 
 import org.neo4j.cypher.internal.v3_4.expressions._
 
-sealed trait MutatingPattern {
+import scala.util.hashing.MurmurHash3
+
+sealed trait MutatingPattern extends Product {
   def coveredIds: Set[String]
   def dependencies: Set[String]
   protected def deps(expression: Expression): Set[String] = expression.dependencies.map(_.name)
@@ -29,6 +31,11 @@ sealed trait MutatingPattern {
     val expressionSet = expression.toSet
     expressionSet.flatMap(_.dependencies.map(_.name))
   }
+
+  //We spend a lot of time hashing these objects,
+  //since they are all immutable we can memoize the hashcode
+  override val hashCode: Int = MurmurHash3.productHash(this)
+
 }
 
 sealed trait NoSymbols {
