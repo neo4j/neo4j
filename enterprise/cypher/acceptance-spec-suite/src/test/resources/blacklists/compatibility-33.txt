@@ -1,0 +1,3 @@
+// MatchAcceptence
+// To be further investigated. This does work from 3.3 browser and tests, seems to be a bug in TCK-framework.
+Filter on path nodes
