@@ -19,33 +19,21 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SameId}
 
 /**
   * Produce a single row with the contents of argument
   */
-case class Argument(argumentIds: Set[String] = Set.empty)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalLeafPlan(idGen) {
+case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds
 
-  override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): Argument = {
-    val resultingPlan = copy(argumentIds)(newSolved)(SameId(this.id))
-    resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-    resultingPlan
-  }
-
   override def copyPlan(): LogicalPlan = {
-    val resultingPlan = this.copy(argumentIds)(solved)(SameId(this.id)).asInstanceOf[this.type]
-    resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-    resultingPlan
+    this.copy(argumentIds)(SameId(this.id)).asInstanceOf[this.type]
   }
 
   override def dup(children: Seq[AnyRef]) = children.size match {
     case 1 =>
-      val resultingPlan = copy(children.head.asInstanceOf[Set[String]])(solved)(SameId(this.id)).asInstanceOf[this.type]
-      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
-      resultingPlan
+      copy(children.head.asInstanceOf[Set[String]])(SameId(this.id)).asInstanceOf[this.type]
   }
 }

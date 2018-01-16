@@ -21,23 +21,24 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
-  override def apply(in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] =
-    unsolvedPredicates(in, qg).collect {
+  override def apply(in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] =
+    unsolvedPredicates(in, qg, solveds).collect {
       // WHERE NOT (a)-[:X]->(c)
       case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg, context)
       // WHERE (a)-[:X]->(c)
       case patternExpr: PatternExpression => findMatchingRelationshipPattern(positivePredicate = true, patternExpr, patternExpr, in, qg, context)
     }.flatten
 
-  def unsolvedPredicates(in: LogicalPlan, qg: QueryGraph) = {
+  def unsolvedPredicates(in: LogicalPlan, qg: QueryGraph, solveds: Solveds) = {
     val patternPredicates: Seq[Expression] = qg.selections.patternPredicatesGiven(in.availableSymbols)
-    val solvedPredicates: Seq[Expression] = in.solved.lastQueryGraph.selections.flatPredicates
+    val solvedPredicates: Seq[Expression] = solveds.get(in.id).lastQueryGraph.selections.flatPredicates
     patternPredicates.filter { patternPredicate =>
       !(solvedPredicates contains patternPredicate)
     }
@@ -80,7 +81,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
         exp1
 
       val argument = context.logicalPlanProducer.planArgumentFrom(left, context)
-      val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(exp2.solved)(SameId(exp2.id))
+      val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(SameId(exp2.id))
       val right = if (incomingPredicates.nonEmpty)
         context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, incomingPredicates, context)
       else

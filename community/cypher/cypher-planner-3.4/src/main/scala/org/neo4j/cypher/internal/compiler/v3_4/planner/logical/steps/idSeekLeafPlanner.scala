@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
 import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, SeekableArgs}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -53,7 +54,7 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     }
   }
 
-  override def apply(queryGraph: QueryGraph, context: LogicalPlanningContext) =
+  override def apply(queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) =
     queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, context).toSeq.flatMap(_.plans))
 
   private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: SeekableArgs, predicates: Seq[Expression], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {

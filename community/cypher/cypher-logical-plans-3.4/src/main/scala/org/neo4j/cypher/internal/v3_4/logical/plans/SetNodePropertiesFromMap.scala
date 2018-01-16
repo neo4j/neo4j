@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -36,7 +36,7 @@ case class SetNodePropertiesFromMap(
                                      idName: String,
                                      expression: Expression,
                                      removeOtherProps: Boolean
-                                   )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
+                                   )(implicit idGen: IdGen)
   extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)

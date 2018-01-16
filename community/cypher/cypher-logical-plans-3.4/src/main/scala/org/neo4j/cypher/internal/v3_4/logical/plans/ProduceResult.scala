@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -30,8 +30,6 @@ case class ProduceResult(source: LogicalPlan, columns: Seq[String])(implicit idG
 
   val lhs = Some(source)
   def rhs = None
-
-  def solved: PlannerQuery with CardinalityEstimation = source.solved
 
   val availableSymbols: Set[String] = source.availableSymbols
 

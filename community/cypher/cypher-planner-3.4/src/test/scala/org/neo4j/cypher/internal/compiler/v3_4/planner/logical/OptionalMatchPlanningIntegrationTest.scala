@@ -34,25 +34,25 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build plans containing joins") {
     (new given {
       cost = {
-        case (_: AllNodesScan, _) => 2000000.0
-        case (_: NodeByLabelScan, _) => 20.0
-        case (p: Expand, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
-        case (_: Expand, _) => 10.0
-        case (_: OuterHashJoin, _) => 20.0
-        case (_: Argument, _) => 1.0
+        case (_: AllNodesScan, _, _) => 2000000.0
+        case (_: NodeByLabelScan, _, _) => 20.0
+        case (p: Expand, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
+        case (_: Expand, _, _) => 10.0
+        case (_: OuterHashJoin, _, _) => 20.0
+        case (_: Argument, _, _) => 1.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
         OuterHashJoin(Set("b"),
-          Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")(solved),
-          Expand(NodeByLabelScan("c", lblName("Y"), Set.empty)(solved), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")(solved)
-        )(solved)
+          Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
+          Expand(NodeByLabelScan("c", lblName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+        )
     )
   }
 
   test("should build simple optional match plans") { // This should be built using plan rewriting
     planFor("OPTIONAL MATCH (a) RETURN a")._2 should equal(
-      Optional(AllNodesScan("a", Set.empty)(solved))(solved))
+      Optional(AllNodesScan("a", Set.empty)))
   }
 
   test("should build simple optional expand") {
@@ -127,24 +127,23 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     plan should equal(
       OptionalExpand(
         OptionalExpand(
-          AllNodesScan("a", Set.empty)(solved),
-          "a", SemanticDirection.OUTGOING, List(RelTypeName("R1") _), "x1", "  UNNAMED29", ExpandAll, Seq.empty)(solved),
-        "a", SemanticDirection.OUTGOING, List(RelTypeName("R2") _), "x2", "  UNNAMED60", ExpandAll, Seq.empty)(solved)
+          AllNodesScan("a", Set.empty),
+          "a", SemanticDirection.OUTGOING, List(RelTypeName("R1") _), "x1", "  UNNAMED29", ExpandAll, Seq.empty),
+        "a", SemanticDirection.OUTGOING, List(RelTypeName("R2") _), "x2", "  UNNAMED60", ExpandAll, Seq.empty)
     )
   }
 
   test("should solve optional matches with arguments and predicates") {
     val plan =  new given {
       cost = {
-        case (_: Expand, _) => 1000.0
+        case (_: Expand, _, _) => 1000.0
       }
     }.getLogicalPlanFor (
       """MATCH (n:X)
         |OPTIONAL MATCH (n)-[r]-(m:Y)
         |WHERE m.prop = 42
         |RETURN m""".stripMargin)._2.endoRewrite(unnestOptional)
-    val s = solved
-    val allNodesN: LogicalPlan = NodeByLabelScan("n", LabelName("X") _, Set.empty)(solved)
+    val allNodesN: LogicalPlan = NodeByLabelScan("n", LabelName("X") _, Set.empty)
     val propEquality: Expression =
       In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(List(SignedDecimalIntegerLiteral("42") _)) _) _
 
@@ -153,7 +152,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
     plan should equal(
       OptionalExpand(allNodesN, "n", SemanticDirection.BOTH, Seq.empty, "m", "r", ExpandAll,
-        Seq(propEquality, labelCheck))(s)
+        Seq(propEquality, labelCheck))
     )
   }
 
@@ -204,9 +203,10 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                   |RETURN *
                 """.stripMargin
 
-   lom.getLogicalPlanFor(query)._2.treeExists {
+    val (_, plan, _, _, cardinalities) = lom.getLogicalPlanFor(query)
+    plan.treeExists {
       case plan:LogicalPlan =>
-        plan.solved.estimatedCardinality match {
+        cardinalities.get(plan.id) match {
           case Cardinality(amount) =>
             withClue("We should not get a NaN cardinality.") {
               amount.isNaN should not be true

@@ -101,7 +101,7 @@ case object pruningVarExpander extends Rewriter {
         val innerRewriter = topDown(Rewriter.lift {
           case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, ExpandAll, _, _, _, _, predicates) if distinctSet(expand.selfThis) =>
             if (length.max.get > 1)
-              PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)(SameId(expand.id))
+              PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(SameId(expand.id))
             else expand.selfThis
         })
         plan.endoRewrite(innerRewriter)

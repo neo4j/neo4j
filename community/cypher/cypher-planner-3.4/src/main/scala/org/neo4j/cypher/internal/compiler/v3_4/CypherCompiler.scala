@@ -61,7 +61,7 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
-    val startState = LogicalPlanState(queryText, offset, plannerName)
+    val startState = InitialState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
     val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, debugOptions,
       offset, monitors, metricsFactory, null, config, updateStrategy, clock, logicalPlanIdGen = null, evaluator = null)

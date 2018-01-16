@@ -25,12 +25,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
-  def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val constructed = plan.solved
+  def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+    val constructed = solveds.get(plan.id)
     if (expected != constructed) {
       val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext)
       val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)

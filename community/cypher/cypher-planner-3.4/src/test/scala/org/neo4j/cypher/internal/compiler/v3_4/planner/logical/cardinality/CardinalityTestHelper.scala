@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.util.v3_4.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.v3_4.expressions.Variable
@@ -232,8 +233,8 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
     }
 
     def createQueryGraph(semanticTable: SemanticTable): (QueryGraph, SemanticTable) = {
-      val (queryGraph, rewrittenTable) = produceQueryGraphForPattern(query)
-      (queryGraph.withArgumentIds(queryGraphArgumentIds), semanticTable.transplantResolutionOnto(rewrittenTable))
+      val (plannerQuery, rewrittenTable) = producePlannerQueryForPattern(query)
+      (plannerQuery.lastQueryGraph.withArgumentIds(queryGraphArgumentIds), semanticTable.transplantResolutionOnto(rewrittenTable))
     }
   }
 }

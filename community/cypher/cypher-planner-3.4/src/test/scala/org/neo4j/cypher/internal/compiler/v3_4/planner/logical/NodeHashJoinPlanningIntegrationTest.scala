@@ -47,13 +47,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         NodeHashJoin(
           Set("b"),
           Expand(
-            NodeByLabelScan("a", lblName("X"), Set.empty)(solved),
-            "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1")(solved),
+            NodeByLabelScan("a", lblName("X"), Set.empty),
+            "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1"),
           Expand(
-            NodeByLabelScan("c", lblName("X"), Set.empty)(solved),
-            "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2")(solved)
-        )(solved)
-      )(solved)
+            NodeByLabelScan("c", lblName("X"), Set.empty),
+            "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2")
+        )
+      )
 
     result should equal(expected)
   }
@@ -84,13 +84,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         NodeHashJoin(
           Set("b"),
           Expand(
-            NodeByLabelScan("a", lblName("A"), Set.empty)(solved),
-            "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "b", "r1", ExpandAll)(solved),
+            NodeByLabelScan("a", lblName("A"), Set.empty),
+            "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "b", "r1", ExpandAll),
           Expand(
-            NodeByLabelScan("c", lblName("C"), Set.empty)(solved),
-            "c", SemanticDirection.INCOMING, Seq(RelTypeName("X") _), "b", "r2", ExpandAll)(solved)
-        )(solved)
-      )(solved)
+            NodeByLabelScan("c", lblName("C"), Set.empty),
+            "c", SemanticDirection.INCOMING, Seq(RelTypeName("X") _), "b", "r2", ExpandAll)
+        )
+      )
 
     result shouldEqual expected
   }

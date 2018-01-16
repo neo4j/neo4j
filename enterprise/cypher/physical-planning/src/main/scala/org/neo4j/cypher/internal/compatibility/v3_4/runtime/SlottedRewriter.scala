@@ -64,7 +64,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case (column, expression) => column -> expression.endoRewrite(rewriter)
         }
 
-        val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)(SameId(oldPlan.id))
+        val newPlan = oldPlan.copy(expressions = newExpressions)(SameId(oldPlan.id))
         newSlotConfigurations += (newPlan -> slotConfiguration)
 
         newPlan
@@ -84,7 +84,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
           nodePredicate = newNodePredicate,
           edgePredicate = newEdgePredicate,
           legacyPredicates = Seq.empty // If we use the legacy predicates, we are not on the slotted runtime
-        )(oldPlan.solved)(SameId(oldPlan.id))
+        )(SameId(oldPlan.id))
 
         /*
         Since the logical plan SlotConfiguration is about the output rows we still need to remember the
@@ -100,7 +100,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
         val rhsRewriter = rewriteCreator(slotConfigurations(rhs.id), plan.selfThis, slotConfigurations)
         val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
         val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
-        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(plan.solved)(SameId(plan.id))
+        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(SameId(plan.id))
 
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))

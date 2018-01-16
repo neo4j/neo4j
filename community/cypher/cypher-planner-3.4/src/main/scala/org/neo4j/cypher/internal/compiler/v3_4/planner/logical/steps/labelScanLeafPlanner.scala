@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UsingScanHint
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, HasLabels, Variable}
 
 object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
@@ -44,6 +45,6 @@ object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     }
   }
 
-  override def apply(qg: QueryGraph, context: LogicalPlanningContext) =
+  override def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) =
     qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg, context).toSeq.flatMap(_.plans))
 }

@@ -20,15 +20,13 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /*
  * Sort source rows according to the ordering in 'sortItems'. Only retain the first 'limit' rows, which are
  * produced once source if fully consumed.
  */
-case class Top(source: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression)
-              (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class Top(source: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(source)
 
   override def rhs: Option[LogicalPlan] = None

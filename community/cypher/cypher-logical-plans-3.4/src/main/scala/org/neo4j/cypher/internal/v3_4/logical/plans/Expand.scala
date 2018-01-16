@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_4.VarPatternLength
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions._
 
@@ -35,7 +35,6 @@ case class Expand(source: LogicalPlan,
                   to: String,
                   relName: String,
                   mode: ExpansionMode = ExpandAll)
-                 (val solved: PlannerQuery with CardinalityEstimation)
                  (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
@@ -57,7 +56,6 @@ case class OptionalExpand(source: LogicalPlan,
                           relName: String,
                           mode: ExpansionMode = ExpandAll,
                           predicates: Seq[Expression] = Seq.empty)
-                         (val solved: PlannerQuery with CardinalityEstimation)
                          (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
@@ -88,7 +86,6 @@ case class VarExpand(source: LogicalPlan,
                      nodePredicate: Expression,
                      edgePredicate: Expression,
                      legacyPredicates: Seq[(LogicalVariable, Expression)])
-                    (val solved: PlannerQuery with CardinalityEstimation)
                     (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   override val lhs = Some(source)
   override def rhs = None
@@ -112,7 +109,8 @@ case class PruningVarExpand(source: LogicalPlan,
                             minLength: Int,
                             maxLength: Int,
                             predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+                           (implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None

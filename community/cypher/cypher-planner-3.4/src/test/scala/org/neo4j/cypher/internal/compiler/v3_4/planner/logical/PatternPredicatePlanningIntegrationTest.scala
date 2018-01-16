@@ -48,10 +48,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
               Selection(
                 Seq(HasLabels(varFor("  NODE116"), Seq(LabelName("ComedyClub")_))_),
                 Expand(
-                  Argument(Set("f"))(solved),
+                  Argument(Set("f")),
                   "f", SemanticDirection.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  NODE116", "  REL102", ExpandAll
-                )(solved)
-              )(solved)
+                )
+              )
             )
         }
     }
@@ -60,16 +60,16 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans with getDegree for a single pattern predicate") {
     planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a")._2 should equal(
       Selection(Seq(GreaterThan(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_),
-        AllNodesScan("a", Set.empty)(solved)
-      )(solved)
+        AllNodesScan("a", Set.empty)
+      )
     )
   }
 
   test("should build plans containing getDegree for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a")._2 should equal(
       Selection(Seq(LessThanOrEqual(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_),
-                AllNodesScan("a", Set.empty)(solved)
-      )(solved)
+                AllNodesScan("a", Set.empty)
+      )
     )
   }
 
@@ -80,7 +80,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_,
         GreaterThan(
           GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_, SignedDecimalIntegerLiteral("0")_)_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+                AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for a pattern predicate and an expression") {
@@ -90,7 +90,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
         GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _))_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+                AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for a pattern predicate and multiple expressions") {
@@ -101,7 +101,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SignedDecimalIntegerLiteral("0")_)_,
         GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _,
         In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+                AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for a single negated pattern predicate and an expression") {
@@ -111,7 +111,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
         In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+                AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for two pattern predicates and expressions") {
@@ -124,7 +124,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_,
         In(Property(Variable("a")_, PropertyKeyName("prop")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("9")_))_)_))_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+                AllNodesScan("a", Set.empty)))
   }
 
   test("should build plans containing getDegree for two pattern predicates with one negation") {
@@ -136,7 +136,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         LessThanOrEqual(
           GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
           SignedDecimalIntegerLiteral("0")_)_))_),
-                AllNodesScan("a", Set.empty)(solved))(solved)
+                AllNodesScan("a", Set.empty))
     )
   }
 
@@ -146,7 +146,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         LessThanOrEqual(GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
                         SignedDecimalIntegerLiteral("0")_)_,
         LessThanOrEqual(GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
-                        SignedDecimalIntegerLiteral("0")_)_))_),  AllNodesScan("a", Set.empty)(solved))(solved)
+                        SignedDecimalIntegerLiteral("0")_)_))_),  AllNodesScan("a", Set.empty))
     )
   }
 

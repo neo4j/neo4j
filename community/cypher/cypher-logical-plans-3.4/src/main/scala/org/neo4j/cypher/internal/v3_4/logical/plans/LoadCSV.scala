@@ -36,7 +36,7 @@ case class LoadCSV(source: LogicalPlan,
                    format: CSVFormat,
                    fieldTerminator: Option[String],
                    legacyCsvQuoteEscaping: Boolean)
-                  (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+                  (implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override val availableSymbols: Set[String] = source.availableSymbols + variableName
 

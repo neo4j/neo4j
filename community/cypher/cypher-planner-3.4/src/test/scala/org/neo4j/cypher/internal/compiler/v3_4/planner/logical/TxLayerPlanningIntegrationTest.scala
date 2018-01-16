@@ -27,7 +27,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("MATCH and CREATE") {
-    val plan = planFor("MATCH (a) CREATE (b)")._2
+    val (_, plan, _, _, _) = planFor("MATCH (a) CREATE (b)")
     inSeqAssert(plan,
       (classOf[AllNodesScan], _ should readFromLayer(0)),
       (classOf[CreateNode], _ should writeToLayer(1)),
@@ -36,7 +36,7 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("MATCH SET RETURN") {
-    val plan = planFor("MATCH (n)-[r]-(m) SET r.val = r.val + 1 RETURN r.val AS rv")._2
+    val (_, plan, _, _, _) = planFor("MATCH (n)-[r]-(m) SET r.val = r.val + 1 RETURN r.val AS rv")
     inSeqAssert(plan,
       (classOf[Expand], _ should readFromLayer(0)),
       (classOf[SetRelationshipPropery], _ should writeToLayer(1)),
@@ -45,7 +45,7 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("MATCH and triple SET") {
-    val plan = planFor("MATCH (a:A),(b:B),(c:C) SET a.prop = b.prop SET b.prop = c.prop SET c.prop = 42")._2
+    val (_, plan, _, _, _) = planFor("MATCH (a:A),(b:B),(c:C) SET a.prop = b.prop SET b.prop = c.prop SET c.prop = 42")
     inSeqAssert(plan,
       (classOf[CartesianProduct], _ should readFromLayer(0)),
       (classOf[SetNodeProperty], _ should writeToLayer(1)),
@@ -56,7 +56,7 @@ class TxLayerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("DELETE and MERGE") {
-    val plan = planFor("MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)")._2
+    val (_, plan, _, _, _) = planFor("MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)")
     inSeqAssert(plan,
       (classOf[AllNodesScan], _ should readFromLayer(0)), // First match
       (classOf[DeleteNode], _ should writeToLayer(1)),

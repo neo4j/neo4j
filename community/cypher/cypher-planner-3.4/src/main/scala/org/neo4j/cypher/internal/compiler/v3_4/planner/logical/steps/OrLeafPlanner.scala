@@ -23,12 +23,13 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.ir.v3_4.{QueryGraph, Selections}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.expressions.PartialPredicate.PartialPredicateWrapper
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Ors}
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
 
-  override def apply(qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
     qg.selections.flatPredicates.flatMap {
       case orPredicate@Ors(exprs) =>
 
@@ -38,7 +39,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
             val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, context))
             val qgForExpression = qg.copy(selections = Selections.from(e))
             plansForVariables.map(p =>
-              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, context))))
+              p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, context, solveds, cardinalities))))
         }
 
         val wasUnableToFindPlanForAtLeastOnePredicate = plansPerExpression.exists(_.isEmpty)
@@ -59,8 +60,8 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
               val predicates = collection.mutable.HashSet[Expression]()
               val singlePlan = plans.reduce[LogicalPlan] {
                 case (p1, p2) =>
-                  predicates ++= coveringPredicates(p1)
-                  predicates ++= coveringPredicates(p2)
+                  predicates ++= coveringPredicates(p1, solveds)
+                  predicates ++= coveringPredicates(p2, solveds)
                   producer.planUnion(p1, p2, context)
               }
               val orPlan = context.logicalPlanProducer.planDistinctStar(singlePlan, context)
@@ -79,8 +80,8 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
     plansPerExpression.exists(leafs => leafs.exists(_.id != id))
   }
 
-  def coveringPredicates(plan: LogicalPlan): Seq[Expression] = {
-    plan.solved.tailOrSelf.queryGraph.selections.flatPredicates.map {
+  private def coveringPredicates(plan: LogicalPlan, solveds: Solveds): Seq[Expression] = {
+    solveds.get(plan.id).tailOrSelf.queryGraph.selections.flatPredicates.map {
       case PartialPredicateWrapper(coveredPredicate, coveringPredicate) => coveringPredicate
       case predicate => predicate
     }

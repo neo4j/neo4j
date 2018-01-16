@@ -17,22 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.v3_4.logical.plans
+package org.neo4j.cypher.internal.planner.v3_4.spi
 
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
-import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
+import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
+import org.neo4j.cypher.internal.util.v3_4.Cardinality
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attribute
 
-/**
-  * For each input row, delete the entity specified by 'expression'. Entity can be a node, relationship or path.
-  */
-case class DeleteExpression(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
-
-  override def lhs: Option[LogicalPlan] = Some(source)
-
-  override val availableSymbols: Set[String] = source.availableSymbols
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def strictness: StrictnessMode = source.strictness
+object PlanningAttributes {
+  class Solveds extends Attribute[PlannerQuery]
+  class Cardinalities extends Attribute[Cardinality]
+  class ReadOnlies extends Attribute[Boolean]
 }

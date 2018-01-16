@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -28,9 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *   If the procedure returns a stream, produce one row per result in this stream with result appended to the row
   *   If the procedure returns void, produce the source row
   */
-case class ProcedureCall(source: LogicalPlan, call: ResolvedCall)
-                        (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class ProcedureCall(source: LogicalPlan, call: ResolvedCall)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None

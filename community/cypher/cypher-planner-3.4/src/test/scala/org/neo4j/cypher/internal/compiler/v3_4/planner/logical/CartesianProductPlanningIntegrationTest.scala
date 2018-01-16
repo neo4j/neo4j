@@ -30,17 +30,17 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans for simple cartesian product") {
     planFor("MATCH (n), (m) RETURN n, m")._2 should equal(
       CartesianProduct(
-        AllNodesScan("n", Set.empty)(solved),
-        AllNodesScan("m", Set.empty)(solved)
-      )(solved)
+        AllNodesScan("n", Set.empty),
+        AllNodesScan("m", Set.empty)
+      )
     )
   }
 
   test("should build plans so the cheaper plan is on the left") {
     (new given {
       cost = {
-        case (_: Selection, _) => 1000.0
-        case (_: NodeByLabelScan, _) => 20.0
+        case (_: Selection, _, _) => 1000.0
+        case (_: NodeByLabelScan, _, _) => 20.0
       }
       cardinality = mapCardinality {
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.selections.predicates.size == 1 => 10
@@ -61,12 +61,12 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan._2 should equal(
       CartesianProduct(
-        NodeByLabelScan("a", lblName("A"), Set.empty)(solved),
+        NodeByLabelScan("a", lblName("A"), Set.empty),
         CartesianProduct(
-          NodeByLabelScan("c", lblName("C"), Set.empty)(solved),
-          NodeByLabelScan("b", lblName("B"), Set.empty)(solved)
-        )(solved)
-      )(solved)
+          NodeByLabelScan("c", lblName("C"), Set.empty),
+          NodeByLabelScan("b", lblName("B"), Set.empty)
+        )
+      )
     )
   }
 
@@ -83,9 +83,9 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan._2 should equal(
       CartesianProduct(
-        NodeByLabelScan("b", lblName("B"), Set.empty)(solved),
-        NodeByLabelScan("a", lblName("A"), Set.empty)(solved)
-      )(solved)
+        NodeByLabelScan("b", lblName("B"), Set.empty),
+        NodeByLabelScan("a", lblName("A"), Set.empty)
+      )
     )
   }
 }

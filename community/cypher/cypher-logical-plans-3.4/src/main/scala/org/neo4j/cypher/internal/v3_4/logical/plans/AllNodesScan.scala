@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Produce one row for every node in the graph. Each row contains the contents of argument, and
   * a node assigned to the variable IdName.
   */
-case class AllNodesScan(idName: String, argumentIds: Set[String])
-                       (val solved: PlannerQuery with CardinalityEstimation)
-                       (implicit idGen: IdGen)
+case class AllNodesScan(idName: String, argumentIds: Set[String])(implicit idGen: IdGen)
   extends NodeLogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName

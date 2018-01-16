@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CardinalityCostM
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
@@ -37,10 +38,10 @@ case class RealLogicalPlanningConfiguration()
     })
   }
 
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost] = {
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = {
     val model: Metrics.CostModel = CardinalityCostModel
     ({
-      case (plan: LogicalPlan, input: QueryGraphSolverInput) => model(plan, input)
+      case (plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities) => model(plan, input, cardinalities)
     })
   }
 

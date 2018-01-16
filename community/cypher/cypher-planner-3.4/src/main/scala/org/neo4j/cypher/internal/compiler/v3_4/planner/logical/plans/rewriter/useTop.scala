@@ -30,7 +30,7 @@ case object useTop extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case o @ Limit(Sort(src, sortDescriptions), limit, DoNotIncludeTies) =>
-      Top(src, sortDescriptions, limit)(o.solved)(SameId(o.id))
+      Top(src, sortDescriptions, limit)(SameId(o.id))
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

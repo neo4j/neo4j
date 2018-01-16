@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlansForVari
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, QueryExpression}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelToken, PropertyKeyToken}
 
@@ -40,7 +41,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelToken, Prope
  */
 object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 
-  override def apply(qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
     val resultPlans: Set[LeafPlansForVariable] = producePlanFor(qg.selections.flatPredicates.toSet, qg, context)
     val grouped: Map[String, Set[LeafPlansForVariable]] = resultPlans.groupBy(_.id)
 
