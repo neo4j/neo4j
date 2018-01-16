@@ -65,13 +65,6 @@ public abstract class SpaceFillingCurve
         }
 
         abstract CurveRule childAt( int npoint );
-
-        abstract String name();
-
-        public String toString()
-        {
-            return name();
-        }
     }
 
     private final Envelope range;

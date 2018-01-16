@@ -108,7 +108,7 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
             }
         }
 
-        public String name()
+        String name()
         {
             return String.valueOf( direction( npointValues[0], npointValues[1] ) ) + direction( npointValues[1], npointValues[2] ) +
                     direction( npointValues[0], npointValues[length() - 1] );
@@ -208,6 +208,12 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
                 makeChildren();
             }
             return children[npoint];
+        }
+
+        @Override
+        public String toString()
+        {
+            return name();
         }
     }
 

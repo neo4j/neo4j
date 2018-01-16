@@ -59,7 +59,7 @@ public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
             }
         }
 
-        public String name()
+        String name()
         {
             return String.valueOf( direction( npointValues[1] ) );
         }
@@ -73,6 +73,12 @@ public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
         public CurveRule childAt( int npoint )
         {
             return children[npoint];
+        }
+
+        @Override
+        public String toString()
+        {
+            return name();
         }
     }
 

@@ -36,15 +36,16 @@ public class ZOrderSpaceFillingCurve2D extends SpaceFillingCurve
             assert npointValues[0] == 1 && npointValues[3] == 2;
         }
 
-        public String name()
-        {
-            return "Z";
-        }
-
         @Override
         public CurveRule childAt( int npoint )
         {
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Z";
         }
     }
 
