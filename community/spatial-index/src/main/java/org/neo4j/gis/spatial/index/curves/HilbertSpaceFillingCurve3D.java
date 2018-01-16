@@ -70,21 +70,7 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
         private HilbertCurve3D( int... npointValues )
         {
             super( 3, npointValues );
-            //debugNpoints();
             assert npointValues[0] == 0 || npointValues[0] == 3 || npointValues[0] == 5 || npointValues[0] == 6;
-        }
-
-        private void debugNpoints()
-        {
-            System.out.println( "\t" + name() );
-            for ( int i = 0; i < length(); i++ )
-            {
-                System.out.println( "\t\t" + i + ": NPoint = " + npointValues[i] + "\t" + binaryString( npointValues[i] ) );
-                if ( npointValues[i] >= length() )
-                {
-                    System.out.println( "Invalid npoint: " + npointValues[i] );
-                }
-            }
         }
 
         static String binaryString( int value )
