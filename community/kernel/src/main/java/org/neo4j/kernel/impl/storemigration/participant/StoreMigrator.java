@@ -88,10 +88,10 @@ import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
@@ -371,10 +371,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
-            // Use the standard importer, instead of loading from BatchImporterFactory because an aborted store migration
-            // will be restarted from scratch anyway
-            BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem, pageCache,
-                    importConfig, logService,
+            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( migrationDir.getAbsoluteFile(),
+                    fileSystem, pageCache, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR );
             InputIterable nodes = replayable( () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors ) );
