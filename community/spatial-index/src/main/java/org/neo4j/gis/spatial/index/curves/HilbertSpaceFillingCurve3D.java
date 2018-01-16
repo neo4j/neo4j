@@ -92,9 +92,9 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
             switch ( end )
             {
             case 1:
-                return 'F'; // move up      000->001
+                return 'F'; // move forward 000->001
             case 2:
-                return 'U'; // move right   000->010
+                return 'U'; // move up      000->010
             case 4:
                 return 'R'; // move right   000->100
             case -4:

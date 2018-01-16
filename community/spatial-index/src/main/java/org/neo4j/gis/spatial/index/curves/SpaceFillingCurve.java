@@ -42,7 +42,7 @@ public abstract class SpaceFillingCurve
             assert npointValues.length == length();
         }
 
-        int length()
+        final int length()
         {
             return (int) Math.pow( 2, dimension );
         }
