@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -29,7 +28,6 @@ import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -48,6 +46,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TransactionStateController;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
@@ -192,10 +191,10 @@ public class AllStoreHolder extends Read implements Token
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
-        if ( ktx.hasTxStateWithChanges() )
+        if ( hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    ktx.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
+                    txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -225,9 +224,9 @@ public class AllStoreHolder extends Read implements Token
         sharedOptimisticLock( descriptor.keyType(), descriptor.keyId() );
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetForSchema( descriptor );
-        if ( ktx.hasTxStateWithChanges() )
+        if ( hasTxStateWithChanges() )
         {
-            return ktx.txState().constraintsChangesForSchema( descriptor ).apply( constraints );
+            return txState().constraintsChangesForSchema( descriptor ).apply( constraints );
         }
         return constraints;
     }
@@ -239,10 +238,10 @@ public class AllStoreHolder extends Read implements Token
         sharedOptimisticLock( schema.keyType(), schema.keyId() );
         ktx.assertOpen();
         boolean inStore = storeReadLayer.constraintExists( descriptor );
-        if ( ktx.hasTxStateWithChanges() )
+        if ( hasTxStateWithChanges() )
         {
             ReadableDiffSets<ConstraintDescriptor> diffSet =
-                    ktx.txState().constraintsChangesForSchema( descriptor.schema() );
+                    txState().constraintsChangesForSchema( descriptor.schema() );
             return diffSet.isAdded( descriptor ) || (inStore && !diffSet.isRemoved( descriptor ));
         }
 
@@ -255,9 +254,9 @@ public class AllStoreHolder extends Read implements Token
         sharedOptimisticLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetForLabel( labelId );
-        if ( ktx.hasTxStateWithChanges() )
+        if ( hasTxStateWithChanges() )
         {
-            return ktx.txState().constraintsChangesForLabel( labelId ).apply( constraints );
+            return txState().constraintsChangesForLabel( labelId ).apply( constraints );
         }
         return constraints;
     }
@@ -267,9 +266,9 @@ public class AllStoreHolder extends Read implements Token
     {
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetAll();
-        if ( ktx.hasTxStateWithChanges() )
+        if ( hasTxStateWithChanges() )
         {
-            constraints = ktx.txState().constraintsChanges().apply( constraints );
+            constraints = txState().constraintsChanges().apply( constraints );
         }
         return Iterators.map( constraintDescriptor ->
         {

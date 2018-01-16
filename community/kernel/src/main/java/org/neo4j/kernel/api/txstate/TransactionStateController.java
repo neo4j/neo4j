@@ -19,13 +19,9 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-public interface TxStateHolder
+public interface TransactionStateController
 {
-    TransactionState txState();
+    void combine();
 
-    TransactionStateController transactionStateController();
-
-    ExplicitIndexTransactionState explicitIndexTxState();
-
-    boolean hasTxStateWithChanges();
+    void split();
 }

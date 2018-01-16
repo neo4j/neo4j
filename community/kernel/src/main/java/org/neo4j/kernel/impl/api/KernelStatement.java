@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TransactionStateController;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -173,6 +174,12 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     public TransactionState txState()
     {
         return txStateHolder.txState();
+    }
+
+    @Override
+    public TransactionStateController transactionStateController()
+    {
+        return txStateHolder.transactionStateController();
     }
 
     @Override

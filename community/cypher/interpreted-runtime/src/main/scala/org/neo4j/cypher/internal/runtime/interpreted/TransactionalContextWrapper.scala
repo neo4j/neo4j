@@ -28,7 +28,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.query.PlannerInfo
-import org.neo4j.kernel.api.txstate.TxStateHolder
+import org.neo4j.kernel.api.txstate.{TransactionStateController, TxStateHolder}
 import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, Statement}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -57,7 +57,11 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   override def dataRead: Read = tc.kernelTransaction().dataRead()
 
+  override def stableDataRead: Read = tc.kernelTransaction().stableDataRead()
+
   override def dataWrite: Write = tc.kernelTransaction().dataWrite()
+
+  override def transactionStateController: TransactionStateController = tc.stateView().transactionStateController()
 
   override def readOperations: ReadOperations = tc.readOperations()
 

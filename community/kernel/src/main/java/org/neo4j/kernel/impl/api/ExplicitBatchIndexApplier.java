@@ -61,8 +61,7 @@ public class ExplicitBatchIndexApplier extends BatchTransactionApplier.Adapter
             // Cache transactionApplier because it has some expensive lookups
             if ( txApplier == null )
             {
-                txApplier = new ExplicitIndexTransactionApplier( applierLookup, indexConfigStore, mode,
-                        transactionOrdering );
+                txApplier = new ExplicitIndexTransactionApplier( applierLookup, indexConfigStore, mode, transactionOrdering );
             }
 
             if ( transaction.requiresApplicationOrdering() )

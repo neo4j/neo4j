@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Set;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -34,7 +32,6 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-import static java.util.Collections.emptySet;
 import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
 import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 
@@ -45,15 +42,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private PageCursor pageCursor;
     private long next;
     private long highMark;
-    private HasChanges hasChanges = HasChanges.MAYBE;
-    private Set<Long> addedNodes;
-
-    private enum HasChanges
-    {
-        MAYBE,
-        YES,
-        NO
-    }
 
     NodeCursor()
     {
@@ -73,8 +61,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.next = 0;
         this.highMark = read.nodeHighMark();
         this.read = read;
-        this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = emptySet();
     }
 
     void single( long reference, Read read )
@@ -91,8 +77,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         //This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
         this.read = read;
-        this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = emptySet();
     }
 
     @Override
@@ -104,7 +88,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public LabelSet labels()
     {
-        if ( hasChanges() )
+        if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
             if ( txState.nodeIsAddedInThisTx( getId() ) )
@@ -184,7 +168,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             return false;
         }
         // Check tx state
-        boolean hasChanges = hasChanges();
+        boolean hasChanges = read.hasTxStateWithChanges();
 
         TransactionState txs = hasChanges ? read.txState() : null;
         do
@@ -236,7 +220,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
 
     private boolean containsNode( TransactionState txs )
     {
-        return isSingle() ? txs.nodeIsAddedInThisTx( next ) : addedNodes.contains( next );
+        return txs.nodeIsAddedInThisTx( next );
     }
 
     @Override
@@ -260,8 +244,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             labelCursor.close();
             labelCursor = null;
         }
-        hasChanges = HasChanges.MAYBE;
-        addedNodes = emptySet();
         reset();
     }
 
@@ -269,38 +251,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     public boolean isClosed()
     {
         return pageCursor == null;
-    }
-
-    /**
-     * NodeCursor should only see changes that are there from the beginning
-     * otherwise it will not be stable.
-     */
-    private boolean hasChanges()
-    {
-        switch ( hasChanges )
-        {
-        case MAYBE:
-            boolean changes = read.hasTxStateWithChanges();
-            if ( changes )
-            {
-                if ( !isSingle() )
-                {
-                    addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
-                }
-                hasChanges = HasChanges.YES;
-            }
-            else
-            {
-                hasChanges = HasChanges.NO;
-            }
-            return changes;
-        case YES:
-            return true;
-        case NO:
-            return false;
-        default:
-            throw new IllegalStateException( "Style guide, why are you making me do this" );
-        }
     }
 
     private void reset()

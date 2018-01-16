@@ -74,6 +74,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public Read stableDataRead()
+    {
+        return null;
+    }
+
+    @Override
     public Write dataWrite()
     {
         throw new UnsupportedOperationException( "not implemented" );

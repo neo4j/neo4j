@@ -156,19 +156,11 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
         List<IndexCommand> commands = null;
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
-            commands = nodeCommands.get( indexName );
-            if ( commands == null )
-            {
-                nodeCommands.put( indexName, commands = new ArrayList<>() );
-            }
+            commands = nodeCommands.computeIfAbsent( indexName, k -> new ArrayList<>() );
         }
         else if ( command.getEntityType() == IndexEntityType.Relationship.id() )
         {
-            commands = relationshipCommands.get( indexName );
-            if ( commands == null )
-            {
-                relationshipCommands.put( indexName, commands = new ArrayList<>() );
-            }
+            commands = relationshipCommands.computeIfAbsent( indexName, k -> new ArrayList<>() );
         }
         else
         {

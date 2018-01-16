@@ -78,6 +78,7 @@ public class Operations implements Write, ExplicitIndexWrite
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
     private final StorageStatement statement;
+    private final StableStoreHolder stableStoreHolder;
     private final AutoIndexing autoIndexing;
     private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
@@ -85,13 +86,11 @@ public class Operations implements Write, ExplicitIndexWrite
     private final Cursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
 
-    public Operations(
-            AllStoreHolder allStoreHolder,
-            IndexTxStateUpdater updater,
-            StorageStatement statement,
-            KernelTransactionImplementation ktx,
+    public Operations( AllStoreHolder allStoreHolder, StableStoreHolder stableStoreHolder, IndexTxStateUpdater updater,
+            StorageStatement statement, KernelTransactionImplementation ktx,
             Cursors cursors, AutoIndexing autoIndexing, NodeSchemaMatcher schemaMatcher )
     {
+        this.stableStoreHolder = stableStoreHolder;
         this.autoIndexing = autoIndexing;
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
@@ -594,5 +593,10 @@ public class Operations implements Write, ExplicitIndexWrite
     public PropertyCursor propertyCursor()
     {
         return propertyCursor;
+    }
+
+    public Read stableDataRead()
+    {
+        return stableStoreHolder;
     }
 }

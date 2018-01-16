@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipPro
 import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value, Values}
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -101,6 +101,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   //We cannot assign to value because of periodic commit
   private def writes() = transactionalContext.dataWrite
   private def reads() = transactionalContext.dataRead
+  private def stableReads() = transactionalContext.stableDataRead
+  private def transactionStateController() = transactionalContext.transactionStateController
   private val nodeCursor = allocateAndTraceNodeCursor()
   private val propertyCursor = allocateAndTracePropertyCursor()
   private lazy val nodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
@@ -486,13 +488,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def all: Iterator[NodeValue] = {
       val nodeCursor = allocateAndTraceNodeCursor()
-      reads().allNodesScan(nodeCursor)
+      stableReads().allNodesScan(nodeCursor)
       nodeCursorToIterator(nodeCursor)
     }
 
     override def allPrimitive: PrimitiveLongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
-      reads().allNodesScan(nodeCursor)
+      stableReads().allNodesScan(nodeCursor)
       new PrimitiveLongIterator {
         private var _next: Long = fetchNext()
 
@@ -505,12 +507,16 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         override def next(): Long = {
           if (!hasNext) {
             nodeCursor.close()
+            transactionStateController().combine()
             Iterator.empty.next()
           }
 
           val current = _next
           _next = fetchNext()
-          if (!hasNext) nodeCursor.close()
+          if (!hasNext) {
+            nodeCursor.close()
+            transactionStateController().combine()
+          }
 
           current
         }
@@ -979,10 +985,21 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     private def fetchNext() = {
       if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxyById(nodeCursor.nodeReference()))
-      else null
+      else {
+        nodeCursor.close()
+        null
+      }
     }
 
-    override def hasNext: Boolean = _next != null
+    override def hasNext: Boolean = {
+      if (_next == null) {
+        nodeCursor.close()
+        transactionStateController().combine()
+        false
+      } else {
+        true
+      }
+    }
 
     override def next(): NodeValue = {
       if (!hasNext) {
@@ -992,9 +1009,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
       val current = _next
       _next = fetchNext()
-      if (!hasNext) {
-        nodeCursor.close()
-      }
       current
     }
   }

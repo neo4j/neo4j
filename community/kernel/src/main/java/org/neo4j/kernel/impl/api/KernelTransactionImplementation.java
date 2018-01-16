@@ -66,7 +66,7 @@ import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.state.TransactionStatesContainer;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.Operations;
+import org.neo4j.kernel.impl.newapi.StableStoreHolder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -134,7 +135,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
-    private TransactionState txState;
+    private TransactionStatesContainer transactionStatesContainer;
     private ExplicitIndexTransactionState explicitIndexTransactionState;
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
@@ -204,14 +205,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
+        StableStoreHolder activeStoreHolder =
+                new StableStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
         org.neo4j.kernel.impl.newapi.NodeSchemaMatcher matcher =
                 new org.neo4j.kernel.impl.newapi.NodeSchemaMatcher( allStoreHolder );
-        this.operations =
-                new Operations(
-                        allStoreHolder,
+        this.operations = new Operations(
+                        allStoreHolder, activeStoreHolder,
                         new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
                         storageStatement,
                         this, cursors, autoIndexing, matcher );
+        this.transactionStatesContainer = new TransactionStatesContainer();
     }
 
     /**
@@ -411,12 +414,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TransactionState txState()
     {
-        if ( txState == null )
+        if ( !transactionStatesContainer.hasState() )
         {
             transactionMonitor.upgradeToWriteTransaction();
-            txState = new TxState();
         }
-        return txState;
+        return transactionStateController().global();
+    }
+
+    @Override
+    public TransactionStatesContainer transactionStateController()
+    {
+        return transactionStatesContainer;
     }
 
     @Override
@@ -429,7 +437,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public boolean hasTxStateWithChanges()
     {
-        return txState != null && txState.hasChanges();
+        return transactionStatesContainer.hasChanges();
     }
 
     private void markAsClosed( long txId )
@@ -491,7 +499,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasDataChanges()
     {
-        return hasTxStateWithChanges() && txState.hasDataChanges();
+        return hasTxStateWithChanges() && transactionStatesContainer.hasDataChanges();
     }
 
     @Override
@@ -504,7 +512,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             if ( failure || !success || isTerminated() )
             {
-                rollback();
+                rollback( transactionStatesContainer.hasState() ? transactionStatesContainer.global() : null );
                 failOnNonExplicitRollbackIfNeeded();
                 return ROLLBACK;
             }
@@ -522,7 +530,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionEvent.setSuccess( success );
                 transactionEvent.setFailure( failure );
                 transactionEvent.setTransactionWriteState( writeState.name() );
-                transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
+                transactionEvent.setReadOnly( !transactionStatesContainer.hasChanges() );
                 transactionEvent.close();
             }
             finally
@@ -573,14 +581,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         boolean success = false;
         long txId = READ_ONLY;
 
+        TransactionState transactionState = null;
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
             // Trigger transaction "before" hooks.
+            transactionStatesContainer.validateForCommit();
+            transactionState = transactionStatesContainer.global();
             if ( hasDataChanges() )
             {
                 try
                 {
-                    hooksState = hooks.beforeCommit( txState, this, storageEngine.storeReadLayer(), storageStatement );
+                    hooksState = hooks.beforeCommit( transactionState, this, storageEngine.storeReadLayer(), storageStatement );
                     if ( hooksState != null && hooksState.failed() )
                     {
                         Throwable cause = hooksState.failure();
@@ -605,7 +616,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();
                 storageEngine.createCommands(
                         extractedCommands,
-                        txState,
+                        transactionState,
                         storageStatement,
                         commitLocks,
                         lastTransactionIdWhenStarted );
@@ -655,16 +666,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             if ( !success )
             {
-                rollback();
+                rollback( transactionState );
             }
             else
             {
-                afterCommit( txId );
+                afterCommit( transactionState, txId );
             }
         }
     }
 
-    private void rollback() throws TransactionFailureException
+    private void rollback( TransactionState transactionState ) throws TransactionFailureException
     {
         try
         {
@@ -679,11 +690,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
 
             // Free any acquired id's
-            if ( txState != null )
+            if ( transactionState != null )
             {
                 try
                 {
-                    txState.accept( new TxStateVisitor.Adapter()
+                    transactionState.accept( new TxStateVisitor.Adapter()
                     {
                         @Override
                         public void visitCreatedNode( long id )
@@ -708,7 +719,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            afterRollback();
+            afterRollback( transactionState );
         }
     }
 
@@ -717,6 +728,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
         return operations.dataRead();
+    }
+
+    @Override
+    public Read stableDataRead()
+    {
+        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        transactionStateController().split();
+        return operations.stableDataRead();
     }
 
     @Override
@@ -784,14 +803,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement.lockTracer();
     }
 
-    private void afterCommit( long txId )
+    private void afterCommit( TransactionState transactionState, long txId )
     {
         try
         {
             markAsClosed( txId );
             if ( beforeHookInvoked )
             {
-                hooks.afterCommit( txState, this, hooksState );
+                hooks.afterCommit( transactionState, this, hooksState );
             }
         }
         finally
@@ -800,14 +819,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void afterRollback()
+    private void afterRollback( TransactionState transactionState )
     {
         try
         {
             markAsClosed( ROLLBACK );
             if ( beforeHookInvoked )
             {
-                hooks.afterRollback( txState, this, hooksState );
+                hooks.afterRollback( transactionState, this, hooksState );
             }
         }
         finally
@@ -833,7 +852,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             securityContext = null;
             transactionEvent = null;
             explicitIndexTransactionState = null;
-            txState = null;
+            transactionStatesContainer.clear();
             hooksState = null;
             closeListeners.clear();
             reuseCount++;

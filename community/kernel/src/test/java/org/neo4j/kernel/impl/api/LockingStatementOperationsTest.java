@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TransactionStateController;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.TwoPhaseNodeForRelationshipLockingTest.RelationshipData;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -503,6 +504,12 @@ public class LockingStatementOperationsTest
         public TransactionState txState()
         {
             return txState;
+        }
+
+        @Override
+        public TransactionStateController transactionStateController()
+        {
+            return null;
         }
 
         @Override

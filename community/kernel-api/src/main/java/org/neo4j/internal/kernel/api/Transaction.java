@@ -61,6 +61,11 @@ public interface Transaction extends AutoCloseable
     Read dataRead();
 
     /**
+     * @return Read operations on top of stable fixed transaction state
+     */
+    Read stableDataRead();
+
+    /**
      * @return The Write operations of the graph.
      * @throws InvalidTransactionTypeKernelException when transaction cannot be upgraded to a write transaction. This
      * can happen when there have been schema modifications.

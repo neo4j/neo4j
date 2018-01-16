@@ -80,7 +80,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
@@ -399,6 +398,12 @@ public class ConstraintIndexCreatorTest
             public Read dataRead()
             {
                 throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public Read stableDataRead()
+            {
+                return null;
             }
 
             @Override

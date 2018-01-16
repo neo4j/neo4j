@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TransactionStateController;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -479,6 +480,12 @@ abstract class Read implements TxStateHolder,
     public TransactionState txState()
     {
         return ktx.txState();
+    }
+
+    @Override
+    public TransactionStateController transactionStateController()
+    {
+        return ktx.transactionStateController();
     }
 
     @Override

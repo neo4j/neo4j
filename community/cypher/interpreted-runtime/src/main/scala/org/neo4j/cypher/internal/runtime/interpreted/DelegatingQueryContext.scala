@@ -27,15 +27,16 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
+import org.neo4j.kernel.api.txstate.TransactionStateController
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
 
 import scala.collection.Iterator
 
@@ -299,4 +300,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def dataRead: Read = inner.dataRead
 
   override def dataWrite: Write = inner.dataWrite
+
+  override def transactionStateController: TransactionStateController = inner.transactionStateController
+
+  override def stableDataRead: Read = inner.stableDataRead
 }
