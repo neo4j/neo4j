@@ -37,7 +37,6 @@ class QueryState(val query: QueryContext,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val timeReader: TimeReader = new TimeReader,
                  var initialContext: Option[ExecutionContext] = None,
-                 val queryId: AnyRef = UUID.randomUUID().toString,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
                  val typeConverter: RuntimeTypeConverter = IdentityTypeConverter,
@@ -62,13 +61,13 @@ class QueryState(val query: QueryContext,
   def getStatistics: InternalQueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, typeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState, repeatableReads, typeConverter, cachedIn)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, typeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), triadicState, repeatableReads, typeConverter, cachedIn)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, typeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState, repeatableReads, typeConverter, cachedIn)
 }
 
 object QueryState {

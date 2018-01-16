@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
                               (val id: Id = new Id)
-                              (implicit pipeMonitor: PipeMonitor)
   extends Pipe
   {
 
@@ -39,6 +38,4 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
         Iterator.empty
     }
   }
-
-  override def monitor = pipeMonitor
 }

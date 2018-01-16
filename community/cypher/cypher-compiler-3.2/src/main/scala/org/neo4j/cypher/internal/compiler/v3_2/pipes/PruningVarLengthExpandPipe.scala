@@ -33,8 +33,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                                       min: Int,
                                       max: Int,
                                       filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
-                                     (val id: Id = new Id)
-                                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with Pipe {
+                                     (val id: Id = new Id) extends PipeWithSource(source) with Pipe {
   self =>
 
   assert(min <= max)

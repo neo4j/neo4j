@@ -28,8 +28,7 @@ import scala.collection.mutable
 
 case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
                            (val id: Id = new Id)
-                           (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(left, pipeMonitor) {
+  extends PipeWithSource(left) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     if (input.isEmpty)

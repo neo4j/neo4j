@@ -31,8 +31,7 @@ case class ExpandAllPipe(source: Pipe,
                          dir: SemanticDirection,
                          types: LazyTypes)
                         (val id: Id = new Id)
-                        (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+  extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {

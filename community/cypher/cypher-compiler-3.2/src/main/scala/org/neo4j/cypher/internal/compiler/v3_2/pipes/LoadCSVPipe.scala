@@ -36,8 +36,7 @@ case class LoadCSVPipe(source: Pipe,
                        fieldTerminator: Option[String],
                        legacyCsvQuoteEscaping: Boolean)
                       (val id: Id = new Id)
-                      (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+  extends PipeWithSource(source) {
 
   urlExpression.registerOwningPipe(this)
 

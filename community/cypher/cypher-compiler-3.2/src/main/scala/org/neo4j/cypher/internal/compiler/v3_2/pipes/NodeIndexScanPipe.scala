@@ -27,7 +27,6 @@ case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken)
                             (val id: Id = new Id)
-                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe {
 
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
@@ -37,6 +36,4 @@ case class NodeIndexScanPipe(ident: String,
     val resultNodes = state.query.indexScan(descriptor)
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
-
-  override def monitor = pipeMonitor
 }

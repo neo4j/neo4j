@@ -30,7 +30,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = pipeWithResults { (state) => Iterator(state.initialContext.get) }
 
-    val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData)
   }
@@ -41,7 +41,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhsData = "c" -> 36
     val rhs = pipeWithResults { (state) => Iterator(ExecutionContext.empty += rhsData) }
 
-    val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData.map(_ + rhsData))
   }
@@ -51,7 +51,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
     val rhs = pipeWithResults { (state) => Iterator(state.initialContext.get += "b" -> null) }
 
-    val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData)
   }

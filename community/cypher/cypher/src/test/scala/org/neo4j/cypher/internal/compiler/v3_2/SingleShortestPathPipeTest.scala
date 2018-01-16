@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{FakePipe, PipeMonitor, ShortestPathPipe}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{FakePipe, ShortestPathPipe}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.graphdb.{Direction, Node, Path}
 
 class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
-  private implicit val monitor = mock[PipeMonitor]
   private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH,
     allowZeroLength = false, Some(15), single = true, relIterator = None)
 

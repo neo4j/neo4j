@@ -22,13 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class AllNodesScanPipe(ident: String)(val id: Id = new Id)
-                           (implicit pipeMonitor: PipeMonitor) extends Pipe {
+case class AllNodesScanPipe(ident: String)(val id: Id = new Id) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext()
     state.query.nodeOps.all.map(n => baseContext.newWith1(ident, n))
   }
-
-  override def monitor = pipeMonitor
 }

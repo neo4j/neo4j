@@ -58,7 +58,6 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
 
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val id: Id = new Id)
-                           (implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with ListSupport  {
 
@@ -69,6 +68,4 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)
   }
-
-  override def monitor = pipeMonitor
 }

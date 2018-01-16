@@ -28,8 +28,6 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
-  implicit val monitor = mock[PipeMonitor]
-
   import Mockito.when
 
   test("should seek relationship by id") {

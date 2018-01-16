@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class EagerPipe(src: Pipe)(val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) {
+case class EagerPipe(src: Pipe)(val id: Id = new Id) extends PipeWithSource(src) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toIndexedSeq.toIterator
