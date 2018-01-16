@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, Tran
 import org.neo4j.graphdb.{Node, Relationship, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -152,8 +152,8 @@ class StringInfoLogger(log: Log) extends InfoLogger {
   }
 }
 
-class EntityAccessorWrapper(nodeManager: NodeManager) extends EntityAccessor {
-  override def newNodeProxyById(id: Long): Node = nodeManager.newNodeProxyById(id)
+class EntityAccessorWrapper(proxySpi: EmbeddedProxySPI) extends EntityAccessor {
+  override def newNodeProxyById(id: Long): Node = proxySpi.newNodeProxy(id)
 
-  override def newRelationshipProxyById(id: Long): Relationship = nodeManager.newRelationshipProxyById(id)
+  override def newRelationshipProxyById(id: Long): Relationship = proxySpi.newRelationshipProxy(id)
 }

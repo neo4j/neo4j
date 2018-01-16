@@ -29,7 +29,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.AnyValue;
@@ -69,20 +69,20 @@ import static org.neo4j.values.virtual.VirtualValues.path;
 
 public class ParameterConverterTest
 {
-    private ParameterConverter converter = new ParameterConverter( mock( NodeManager.class ) );
+    private ParameterConverter converter = new ParameterConverter( mock( EmbeddedProxySPI.class ) );
 
     @Before
     public void setup()
     {
-        NodeManager manager = mock( NodeManager.class );
-        when( manager.newNodeProxyById( anyLong() ) ).thenAnswer( invocationOnMock ->
+        EmbeddedProxySPI manager = mock( EmbeddedProxySPI.class );
+        when( manager.newNodeProxy( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );
             NodeProxy mock = mock( NodeProxy.class );
             when( mock.getId() ).thenReturn( id );
             return mock;
         } );
-        when( manager.newRelationshipProxyById( anyLong() ) ).thenAnswer( invocationOnMock ->
+        when( manager.newRelationshipProxy( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );
             RelationshipProxy mock = mock( RelationshipProxy.class );

@@ -19,14 +19,30 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 
-public interface EntityFactory
+public interface EmbeddedProxySPI
 {
-    Node newNodeProxyById( long id );
+    Statement statement();
 
-    Relationship newRelationshipProxyById( long id );
+    KernelTransaction kernelTransaction();
 
-    GraphProperties newGraphProperties();
+    GraphDatabaseService getGraphDatabase();
+
+    void assertInUnterminatedTransaction();
+
+    void failTransaction();
+
+    RelationshipProxy newRelationshipProxy( long id );
+
+    RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
+
+    NodeProxy newNodeProxy( long nodeId );
+
+    GraphPropertiesProxy newGraphPropertiesProxy();
+
+    RelationshipType getRelationshipTypeById( int type );
 }

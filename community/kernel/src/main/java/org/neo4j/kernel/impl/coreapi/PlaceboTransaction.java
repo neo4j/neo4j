@@ -36,10 +36,10 @@ public class PlaceboTransaction implements InternalTransaction
     private final KernelTransaction currentTransaction;
     private boolean success;
 
-    public PlaceboTransaction( Supplier<KernelTransaction> currentTransaction, Supplier<Statement> stmt )
+    public PlaceboTransaction( KernelTransaction currentTransaction, Supplier<Statement> stmt )
     {
         this.stmt = stmt;
-        this.currentTransaction = currentTransaction.get();
+        this.currentTransaction = currentTransaction;
     }
 
     @Override

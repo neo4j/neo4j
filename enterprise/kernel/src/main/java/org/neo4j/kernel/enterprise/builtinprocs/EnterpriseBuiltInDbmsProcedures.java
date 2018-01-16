@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -283,7 +283,7 @@ public class EnterpriseBuiltInDbmsProcedures
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
-        NodeManager nodeManager = resolver.resolveDependency( NodeManager.class );
+        EmbeddedProxySPI nodeManager = resolver.resolveDependency( EmbeddedProxySPI.class );
         try
         {
             return getKernelTransactions().activeTransactions().stream()

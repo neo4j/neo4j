@@ -56,36 +56,21 @@ import static java.lang.String.format;
 
 public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
 {
-    public interface RelationshipActions
-    {
-        Statement statement();
-
-        Node newNodeProxy( long nodeId );
-
-        RelationshipType getRelationshipTypeById( int type );
-
-        GraphDatabaseService getGraphDatabaseService();
-
-        void failTransaction();
-
-        void assertInUnterminatedTransaction();
-    }
-
-    private final RelationshipActions actions;
+    private final EmbeddedProxySPI actions;
     private long id = AbstractBaseRecord.NO_ID;
     private long startNode = AbstractBaseRecord.NO_ID;
     private long endNode = AbstractBaseRecord.NO_ID;
     private int type;
 
-    public RelationshipProxy( RelationshipActions actions, long id, long startNode, int type, long endNode )
+    public RelationshipProxy( EmbeddedProxySPI spi, long id, long startNode, int type, long endNode )
     {
-        this.actions = actions;
+        this.actions = spi;
         visit( id, type, startNode, endNode );
     }
 
-    public RelationshipProxy( RelationshipActions actions, long id )
+    public RelationshipProxy( EmbeddedProxySPI spi, long id )
     {
-        this.actions = actions;
+        this.actions = spi;
         this.id = id;
     }
 
@@ -141,7 +126,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
-        return actions.getGraphDatabaseService();
+        return actions.getGraphDatabase();
     }
 
     @Override

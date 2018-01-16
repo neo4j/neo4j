@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
 import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 
@@ -256,15 +256,15 @@ public abstract class CompiledConversionUtils
         throw new CypherTypeException( "Don't know how to treat that as a boolean: " + predicate.toString(), null );
     }
 
-    public static Object loadParameter( AnyValue value, NodeManager manager )
+    public static Object loadParameter( AnyValue value, EmbeddedProxySPI proxySpi )
     {
-       ParameterConverter converter = new ParameterConverter( manager );
+       ParameterConverter converter = new ParameterConverter( proxySpi );
        value.writeTo( converter );
        return converter.value();
     }
 
     @SuppressWarnings( {"unchecked", "WeakerAccess"} )
-    public static Object materializeAnyResult( NodeManager nodeManager, Object anyValue )
+    public static Object materializeAnyResult( EmbeddedProxySPI proxySpi, Object anyValue )
     {
         if ( anyValue == null )
         {
@@ -272,16 +272,16 @@ public abstract class CompiledConversionUtils
         }
         else if ( anyValue instanceof NodeIdWrapper )
         {
-            return nodeManager.newNodeProxyById( ((NodeIdWrapper) anyValue).id() );
+            return proxySpi.newNodeProxy( ((NodeIdWrapper) anyValue).id() );
         }
         else if ( anyValue instanceof RelationshipIdWrapper )
         {
-            return nodeManager.newRelationshipProxyById( ((RelationshipIdWrapper) anyValue).id() );
+            return proxySpi.newRelationshipProxy( ((RelationshipIdWrapper) anyValue).id() );
         }
         else if ( anyValue instanceof List )
         {
             return ((List) anyValue).stream()
-                    .map( v -> materializeAnyResult( nodeManager, v ) ).collect( Collectors.toList() );
+                    .map( v -> materializeAnyResult( proxySpi, v ) ).collect( Collectors.toList() );
         }
         else if ( anyValue instanceof Map )
         {
@@ -289,20 +289,20 @@ public abstract class CompiledConversionUtils
             HashMap<String,Object> outgoing = new HashMap<>( incoming.size() );
             for ( Map.Entry<String,?> entry : incoming.entrySet() )
             {
-                outgoing.put( entry.getKey(), materializeAnyResult( nodeManager, entry.getValue() ) );
+                outgoing.put( entry.getKey(), materializeAnyResult( proxySpi, entry.getValue() ) );
             }
             return outgoing;
         }
         else if ( anyValue instanceof PrimitiveNodeStream )
         {
             return ((PrimitiveNodeStream) anyValue).longStream()
-                    .mapToObj( nodeManager::newNodeProxyById )
+                    .mapToObj( proxySpi::newNodeProxy )
                     .collect( Collectors.toList() );
         }
         else if ( anyValue instanceof PrimitiveRelationshipStream )
         {
             return ((PrimitiveRelationshipStream) anyValue).longStream()
-                    .mapToObj( nodeManager::newRelationshipProxyById )
+                    .mapToObj( proxySpi::newRelationshipProxy )
                     .collect( Collectors.toList() );
         }
         else if ( anyValue instanceof LongStream )
@@ -339,7 +339,7 @@ public abstract class CompiledConversionUtils
                 Object[] copy = new Object[length];
                 for ( int i = 0; i < length; i++ )
                 {
-                    copy[i] = materializeAnyResult( nodeManager, Array.get( anyValue, i ) );
+                    copy[i] = materializeAnyResult( proxySpi, Array.get( anyValue, i ) );
                 }
                 return copy;
             }

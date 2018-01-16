@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 
 /**
   * These are not test in the normal sense that they assert on some result,
@@ -231,7 +231,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       val fields = Fields(
         closer = body.field(typeRef[TaskCloser], "closer"),
         ro = body.field(typeRef[ReadOperations], "ro"),
-        entityAccessor = body.field(typeRef[NodeManager], "nodeManager"),
+        entityAccessor = body.field(typeRef[EmbeddedProxySPI], "proxySpi"),
         executionMode = body.field(typeRef[ExecutionMode], "executionMode"),
         description = body.field(typeRef[Provider[InternalPlanDescription]], "description"),
         tracer = body.field(typeRef[QueryExecutionTracer], "tracer"),

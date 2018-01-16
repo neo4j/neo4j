@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerConfiguration, Cyp
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 case class RuleCompatibility(graph: GraphDatabaseQueryService,
@@ -31,8 +31,8 @@ case class RuleCompatibility(graph: GraphDatabaseQueryService,
                              clock: Clock,
                              kernelMonitors: KernelMonitors) extends Compatibility {
   protected val compiler = {
-    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
-    val entityAccessor = new EntityAccessorWrapper(nodeManager)
+    val proxySpi = graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
+    val entityAccessor = new EntityAccessorWrapper(proxySpi)
     val monitors = new WrappedMonitors(kernelMonitors)
     val databaseService = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
     CypherCompilerFactory.ruleBasedCompiler(databaseService, entityAccessor, config, clock, monitors, rewriterSequencer)

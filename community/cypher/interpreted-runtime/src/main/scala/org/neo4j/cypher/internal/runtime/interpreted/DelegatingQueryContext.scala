@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
@@ -51,7 +51,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def transactionalContext: QueryTransactionalContext = inner.transactionalContext
 
-  override def entityAccessor: NodeManager = inner.entityAccessor
+  override def entityAccessor: EmbeddedProxySPI = inner.entityAccessor
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.setLabelsOnNode(node, labelIds))
