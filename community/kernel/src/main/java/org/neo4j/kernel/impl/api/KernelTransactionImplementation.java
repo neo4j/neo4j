@@ -430,6 +430,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         closed = true;
         notifyListeners( txId );
         closeCurrentStatementIfAny();
+        closeRead();
     }
 
     private void notifyListeners( long txId )
@@ -443,6 +444,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void closeCurrentStatementIfAny()
     {
         currentStatement.forceClose();
+    }
+
+    private void closeRead()
+    {
+        operations.getCursorTracker().assertCursorsAreClosed();
     }
 
     private void assertTransactionNotClosing()

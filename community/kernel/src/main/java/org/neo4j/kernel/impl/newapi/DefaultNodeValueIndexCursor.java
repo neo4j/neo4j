@@ -140,6 +140,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     public void setRead( Read read )
     {
         this.read = read;
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
     }
 
     @Override
@@ -181,6 +185,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         super.close();
         this.node = NO_ID;
         this.query = null;

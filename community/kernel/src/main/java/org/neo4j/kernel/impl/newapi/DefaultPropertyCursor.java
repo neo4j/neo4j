@@ -113,6 +113,10 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
 
     private void init( long reference, Read read, AssertOpen assertOpen )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         if ( getId() != NO_ID )
         {
             clear();
@@ -230,6 +234,10 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         if ( page != null )
         {
             page.close();

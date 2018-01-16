@@ -650,6 +650,11 @@ public class Operations implements Write, ExplicitIndexWrite
         return allStoreHolder;
     }
 
+    public CursorTracker getCursorTracker()
+    {
+        return allStoreHolder;
+    }
+
     public DefaultNodeCursor nodeCursor()
     {
         return nodeCursor;

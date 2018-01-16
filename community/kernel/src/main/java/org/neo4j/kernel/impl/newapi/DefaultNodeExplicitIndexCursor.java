@@ -61,6 +61,10 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor
     public void setRead( Read read )
     {
         this.read = read;
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
     }
 
     @Override
@@ -90,6 +94,10 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         super.close();
         node = NO_ID;
         score = 0;

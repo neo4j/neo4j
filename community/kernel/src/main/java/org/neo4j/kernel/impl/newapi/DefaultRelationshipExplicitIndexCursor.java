@@ -58,6 +58,10 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     public void setRead( Read read )
     {
         this.read = read;
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
     }
 
     @Override
@@ -117,6 +121,10 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         super.close();
         relationship = NO_ID;
         score = 0;

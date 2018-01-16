@@ -49,6 +49,10 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
 
     void buffer( long nodeReference, long relationshipReference, Read read )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         setOwningNode( nodeReference );
         setId( NO_ID );
         setNext( NO_ID );
@@ -96,6 +100,10 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
 
     void direct( long nodeReference, long reference, Read read )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         setOwningNode( nodeReference );
         bufferedGroup = null;
         clear();
@@ -157,6 +165,10 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         if ( page != null )
         {
             page.close();

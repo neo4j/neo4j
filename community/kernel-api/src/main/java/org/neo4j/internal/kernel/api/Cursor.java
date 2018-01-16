@@ -40,7 +40,7 @@ package org.neo4j.internal.kernel.api;
  * }
  * </pre></code>
  */
-interface Cursor extends AutoCloseable
+public interface Cursor extends AutoCloseable
 {
     boolean next();
 

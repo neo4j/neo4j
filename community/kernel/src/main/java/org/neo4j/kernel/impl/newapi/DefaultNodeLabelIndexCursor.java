@@ -117,6 +117,10 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     public void setRead( Read read )
     {
         this.read = read;
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
     }
 
     @Override
@@ -140,6 +144,10 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         super.close();
         node = NO_ID;
         labels = null;
