@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, QueryGraphProducer}
@@ -31,7 +30,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionN
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-class countStorePTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {
+class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {
 
   test("should ignore tail") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
@@ -179,7 +178,7 @@ class countStorePTest extends CypherFunSuite with LogicalPlanningTestSupport wit
       aggregationExpressions = Map(s"count($variable)" -> FunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
   }
 
-  private def countStoreP(query: PlannerQuery, context: LogicalPlanningContext) = countStorePlanner(query, context, new FakeSolveds, new FakeCardinalities)
+  private def countStoreP(query: PlannerQuery, context: LogicalPlanningContext) = countStorePlanner(query, context, new StubSolveds, new StubCardinalities)
 
   case class IsCountPlan(variable: String, noneExpected: Boolean) extends Matcher[Option[LogicalPlan]] {
 

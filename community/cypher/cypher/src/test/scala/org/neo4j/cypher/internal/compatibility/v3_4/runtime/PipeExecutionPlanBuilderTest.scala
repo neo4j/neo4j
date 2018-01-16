@@ -89,7 +89,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
   private val planContext = newMockedPlanContext
   private val pipeContext = mock[PipeExecutionBuilderContext]
-  when(pipeContext.readOnlies).thenReturn(new FakeReadOnlies)
+  when(pipeContext.readOnlies).thenReturn(new StubReadOnlies)
 
   test("should handle plan with single leaf node") {
     val plan = LeafPlan("a")

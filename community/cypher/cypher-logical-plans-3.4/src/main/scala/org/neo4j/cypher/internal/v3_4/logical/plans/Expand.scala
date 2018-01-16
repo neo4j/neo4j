@@ -28,7 +28,14 @@ import org.neo4j.cypher.internal.v3_4.expressions._
   * provided constraints. Produce one row per traversed relationships, and add the
   * relationship and end node as values on the produced rows.
   */
-case class Expand(source: LogicalPlan, from: String, dir: SemanticDirection, types: Seq[RelTypeName], to: String, relName: String, mode: ExpansionMode = ExpandAll)(implicit idGen: IdGen)
+case class Expand(source: LogicalPlan,
+                  from: String,
+                  dir: SemanticDirection,
+                  types: Seq[RelTypeName],
+                  to: String,
+                  relName: String,
+                  mode: ExpansionMode = ExpandAll)
+                 (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
@@ -41,7 +48,15 @@ case class Expand(source: LogicalPlan, from: String, dir: SemanticDirection, typ
   * row is produced instead populated by the argument, and the 'relName' and 'to' variables
   * are set to NO_VALUE.
   */
-case class OptionalExpand(source: LogicalPlan, from: String, dir: SemanticDirection, types: Seq[RelTypeName], to: String, relName: String, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)(implicit idGen: IdGen)
+case class OptionalExpand(source: LogicalPlan,
+                          from: String,
+                          dir: SemanticDirection,
+                          types: Seq[RelTypeName],
+                          to: String,
+                          relName: String,
+                          mode: ExpansionMode = ExpandAll,
+                          predicates: Seq[Expression] = Seq.empty)
+                         (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
@@ -57,7 +72,21 @@ case class OptionalExpand(source: LogicalPlan, from: String, dir: SemanticDirect
   *
   * The relationships and end node of the corresponding path are added to the produced row.
   */
-case class VarExpand(source: LogicalPlan, from: String, dir: SemanticDirection, projectedDir: SemanticDirection, types: Seq[RelTypeName], to: String, relName: String, length: VarPatternLength, mode: ExpansionMode = ExpandAll, tempNode: String, tempEdge: String, nodePredicate: Expression, edgePredicate: Expression, legacyPredicates: Seq[(LogicalVariable, Expression)])(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class VarExpand(source: LogicalPlan,
+                     from: String,
+                     dir: SemanticDirection,
+                     projectedDir: SemanticDirection,
+                     types: Seq[RelTypeName],
+                     to: String,
+                     relName: String,
+                     length: VarPatternLength,
+                     mode: ExpansionMode = ExpandAll,
+                     tempNode: String,
+                     tempEdge: String,
+                     nodePredicate: Expression,
+                     edgePredicate: Expression,
+                     legacyPredicates: Seq[(LogicalVariable, Expression)])
+                    (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   override val lhs = Some(source)
   override def rhs = None
 

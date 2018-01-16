@@ -31,11 +31,9 @@ import scala.language.implicitConversions
 trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
   implicit val idGen = new SequentialIdGen()
 
-  implicit protected def idName(name: String): String = name
-
   implicit protected def idSymbol(name: Symbol): String = name.name
 
-  class FakeSolveds extends Solveds {
+  class StubSolveds extends Solveds {
     override def set(id: Id, t: PlannerQuery): Unit = {}
 
     override def isDefinedAt(id: Id): Boolean = true
@@ -45,7 +43,7 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def copy(from: Id, to: Id): Unit = {}
   }
 
-  class FakeReadOnlies extends ReadOnlies {
+  class StubReadOnlies extends ReadOnlies {
     override def set(id: Id, t: Boolean): Unit = {}
 
     override def isDefinedAt(id: Id): Boolean = true
@@ -55,7 +53,7 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def copy(from: Id, to: Id): Unit = {}
   }
 
-  class FakeCardinalities extends Cardinalities {
+  class StubCardinalities extends Cardinalities {
     override def set(id: Id, t: Cardinality): Unit = {}
 
     override def isDefinedAt(id: Id): Boolean = true

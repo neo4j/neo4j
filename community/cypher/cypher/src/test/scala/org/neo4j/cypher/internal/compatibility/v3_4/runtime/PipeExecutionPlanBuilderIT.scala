@@ -233,7 +233,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val semanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
 
     when(context.semanticTable).thenReturn(semanticTable)
-    when(context.readOnlies).thenReturn(new FakeReadOnlies)
+    when(context.readOnlies).thenReturn(new StubReadOnlies)
 
     context
   }

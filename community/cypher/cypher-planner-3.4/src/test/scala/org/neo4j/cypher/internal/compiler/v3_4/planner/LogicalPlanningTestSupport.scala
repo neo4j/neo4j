@@ -159,7 +159,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
-    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new FakeSolveds, new FakeCardinalities, idGen), metrics, semanticTable,
+    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new StubSolveds, new StubCardinalities, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)

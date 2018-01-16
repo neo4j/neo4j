@@ -111,5 +111,5 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def rewrite(p: LogicalPlan) =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestEager(new FakeSolveds, new Attributes(idGen))))(p)
+    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestEager(new StubSolveds, new Attributes(idGen))))(p)
 }

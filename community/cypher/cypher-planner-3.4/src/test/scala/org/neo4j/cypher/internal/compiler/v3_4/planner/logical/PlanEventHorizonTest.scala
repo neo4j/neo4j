@@ -37,7 +37,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = Argument()
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new FakeSolveds, new FakeCardinalities)
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
       producedPlan should equal(Projection(inputPlan, Map("a" -> literal)))
@@ -60,7 +60,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = Argument()
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new FakeSolveds, new FakeCardinalities)
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
       // Then
       producedPlan should equal(ProcedureCall(inputPlan, call))

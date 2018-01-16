@@ -72,12 +72,12 @@ class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport 
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val input = LogicalPlanState(null, null, null, new FakeSolveds, new FakeCardinalities, Some(original))
+    val input = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(original))
     //We use CNFNormalizer to get it to the canonical form without duplicates
     val result = (transitiveClosure andThen  CNFNormalizer).transform(input, ContextHelper.create())
 
     //We must also use CNFNormalizer on the expected to get the AND -> ANDS rewrite
-    val expectedInput = LogicalPlanState(null, null, null, new FakeSolveds, new FakeCardinalities, Some(expected))
+    val expectedInput = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(expected))
     val expectedResult = CNFNormalizer.transform(expectedInput, ContextHelper.create())
     result.statement() should equal(expectedResult.statement())
   }

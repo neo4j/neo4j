@@ -99,5 +99,5 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
                     planType: ExecutionMode,
                     params: MapValue,
                     notificationLogger: InternalNotificationLogger,
-                    runtimeName: RuntimeName) = builder.build(queryId, planType, params, notificationLogger, runtimeName, new FakeReadOnlies, new FakeCardinalities)
+                    runtimeName: RuntimeName) = builder.build(queryId, planType, params, notificationLogger, runtimeName, new StubReadOnlies, new StubCardinalities)
 }

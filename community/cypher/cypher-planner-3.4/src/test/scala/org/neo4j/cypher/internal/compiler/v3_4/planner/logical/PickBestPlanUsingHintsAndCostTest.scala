@@ -46,7 +46,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val a = fakeLogicalPlanFor("a")
     val b = fakeLogicalPlanFor("b")
 
-    assertTopPlan(winner = b, new FakeSolveds, new FakeCardinalities, a, b)(new given {
+    assertTopPlan(winner = b, new StubSolveds, new StubCardinalities, a, b)(new given {
       cost = {
         case (p, _, _) if p == a => Cost(100)
         case (p, _, _) if p == b => Cost(50)
@@ -65,14 +65,14 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       }
     }
 
-    assertTopPlan(winner = b, new FakeSolveds, new FakeCardinalities, ab, b)(GIVEN)
+    assertTopPlan(winner = b, new StubSolveds, new StubCardinalities, ab, b)(GIVEN)
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
     val ab = fakeLogicalPlanFor("a", "b")
     val c = fakeLogicalPlanFor("c")
 
-    assertTopPlan(winner = ab, new FakeSolveds, new FakeCardinalities, ab, c)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = ab, new StubSolveds, new StubCardinalities, ab, c)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solves a hint over plan that solves no hint") {
@@ -82,7 +82,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty)
 
-    assertTopPlan(winner = a, solveds, new FakeCardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = a, solveds, new StubCardinalities, a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints") {
@@ -94,7 +94,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
 
-    assertTopPlan(winner = b, solveds, new FakeCardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = b, solveds, new StubCardinalities, a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints in tails") {
@@ -106,7 +106,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2)))))
 
-    assertTopPlan(winner = b, solveds, new FakeCardinalities, a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = b, solveds, new StubCardinalities, a, b)(GIVEN_FIXED_COST)
   }
 
   private def assertTopPlan(winner: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities, candidates: LogicalPlan*)(GIVEN: given)= {

@@ -73,7 +73,7 @@ class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingT
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val input = LogicalPlanState(null, null, null, new FakeSolveds, new FakeCardinalities, Some(original))
+    val input = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(original))
     val result = rewriteEqualityToInPredicate.transform(input, ContextHelper.create())
 
     result.statement should equal(expected)

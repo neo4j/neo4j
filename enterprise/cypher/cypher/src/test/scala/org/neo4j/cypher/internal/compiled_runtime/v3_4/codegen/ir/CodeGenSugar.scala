@@ -64,7 +64,7 @@ trait CodeGenSugar extends MockitoSugar with LogicalPlanConstructionTestSupport 
     val context = mock[PlanContext]
     doReturn(statistics, Nil: _*).when(context).statistics
     new CodeGenerator(GeneratedQueryStructure, Clocks.systemClock())
-      .generate(plan, context, semanticTable, CostBasedPlannerName.default, new FakeReadOnlies, new FakeCardinalities)
+      .generate(plan, context, semanticTable, CostBasedPlannerName.default, new StubReadOnlies, new StubCardinalities)
   }
 
   def compileAndExecute(plan: LogicalPlan,

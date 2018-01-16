@@ -60,8 +60,8 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   private def createProduceResultOperator(columns: Seq[String], semanticTable: SemanticTable): ProduceResult = {
-    val solveds = new FakeSolveds
-    val cardinalities = new FakeCardinalities
+    val solveds = new StubSolveds
+    val cardinalities = new StubCardinalities
     val planningContext = mockLogicalPlanningContext(semanticTable, solveds, cardinalities)
 
     val inputPlan = FakePlan(columns.toSet)

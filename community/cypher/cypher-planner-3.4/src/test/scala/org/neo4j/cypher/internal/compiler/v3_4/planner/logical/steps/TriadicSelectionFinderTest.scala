@@ -271,5 +271,5 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   private def testTriadic(in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] =
-    triadicSelectionFinder(in, qg, context, new FakeSolveds, new FakeCardinalities)
+    triadicSelectionFinder(in, qg, context, new StubSolveds, new StubCardinalities)
 }

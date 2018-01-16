@@ -248,5 +248,5 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestApply(new FakeSolveds, Attributes(idGen))))(p)
+    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestApply(new StubSolveds, Attributes(idGen))))(p)
 }

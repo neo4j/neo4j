@@ -126,7 +126,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
     val notificationLogger = new RecordingNotificationLogger
-    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, new FakeSolveds, new FakeCardinalities, maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
+    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, new StubSolveds, new StubCardinalities, maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
     val context = ContextHelper.create(notificationLogger = notificationLogger)
     CheckForUnresolvedTokens.transform(compilationState, context)
     notificationLogger.notifications

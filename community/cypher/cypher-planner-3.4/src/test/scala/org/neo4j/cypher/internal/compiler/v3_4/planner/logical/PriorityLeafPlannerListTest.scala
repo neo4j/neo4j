@@ -39,7 +39,7 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, context = context, solveds = new FakeSolveds, cardinalities = new FakeCardinalities)
+    val result = list.candidates(queryGraph, context = context, solveds = new StubSolveds, cardinalities = new StubCardinalities)
 
     // THEN
     result should equal(candidates)
@@ -56,7 +56,7 @@ class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTes
     val list = PriorityLeafPlannerList(priority, fallback)
 
     // WHEN
-    val result = list.candidates(queryGraph, context = context, solveds = new FakeSolveds, cardinalities = new FakeCardinalities)
+    val result = list.candidates(queryGraph, context = context, solveds = new StubSolveds, cardinalities = new StubCardinalities)
 
     // THEN
     result should equal(candidates)
