@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.ir.v3_2._
 class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   implicit val planContext: PlanContext = newMockedPlanContext
-  implicit val pipeMonitor = mock[PipeMonitor]
   implicit val LogicalPlanningContext = newMockedLogicalPlanningContext(planContext)
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)

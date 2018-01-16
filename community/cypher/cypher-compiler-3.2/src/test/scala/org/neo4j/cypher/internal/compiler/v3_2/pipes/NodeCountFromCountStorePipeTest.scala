@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  implicit val monitor = mock[PipeMonitor]
-
   test("should return a count for nodes with a label") {
     implicit val table = new SemanticTable()
     table.resolvedLabelIds.put("A", LabelId(12))

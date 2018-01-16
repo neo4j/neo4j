@@ -29,7 +29,6 @@ import org.neo4j.graphdb.Node
 
 class NodeHashJoinPipeTest extends CypherFunSuite {
 
-  implicit val monitor = mock[PipeMonitor]
   import org.mockito.Mockito._
 
   test("should support simple hash join over nodes") {

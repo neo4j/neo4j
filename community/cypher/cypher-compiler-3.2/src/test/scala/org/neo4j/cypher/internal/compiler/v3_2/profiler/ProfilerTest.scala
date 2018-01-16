@@ -31,8 +31,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo
 
 class ProfilerTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   test("should report simplest case") {
     //GIVEN
     val start = SingleRowPipe()()
@@ -312,11 +310,11 @@ class ProfilerTest extends CypherFunSuite {
 }
 
 case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int,
-                            statisticProvider: ConfiguredKernelStatisticProvider = null, hits: Long = 0, misses: Long
-                            = 0)  //
+                            statisticProvider: ConfiguredKernelStatisticProvider = null,
+                            hits: Long = 0, misses: Long = 0) extends PipeWithSource(source) {
                            // MATCH a, ()-[r]->()
                            // WHERE id(r) = length(a-->())
-                  (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+
   var id = new Id
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

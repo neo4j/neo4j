@@ -47,7 +47,7 @@ class ProcedureCallPipeTest
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
       resultIndices = Seq(0 -> "r")
-    )()(newMonitor)
+    )()
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
 
@@ -70,7 +70,7 @@ class ProcedureCallPipeTest
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
       resultIndices = Seq(0 -> "r")
-    )()(newMonitor)
+    )()
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
@@ -92,7 +92,7 @@ class ProcedureCallPipeTest
       rowProcessing = PassThroughRow,
       resultSymbols = Seq.empty,
       resultIndices = Seq.empty
-    )()(newMonitor)
+    )()
 
     val qtx = new FakeQueryContext(procedureName, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(

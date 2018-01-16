@@ -521,7 +521,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
   private val resolver = new KeyTokenResolver
   private val entityProducerFactory = new EntityProducerFactory
-  implicit private val monitor = monitors.newMonitor[PipeMonitor]()
   implicit val table: SemanticTable = context.semanticTable
 
   private object buildPipeExpressions extends Rewriter {

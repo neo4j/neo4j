@@ -31,8 +31,7 @@ import scala.collection.mutable.{Map => MutableMap}
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggregations: Map[String, AggregationExpression])
-                               (val id: Id = new Id)
-                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                               (val id: Id = new Id) extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))
 

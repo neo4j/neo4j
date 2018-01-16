@@ -91,7 +91,7 @@ object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationS
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(queryId, planType, params, notificationLogger)
+      builder.build(planType, params, notificationLogger)
     }
 
   /**

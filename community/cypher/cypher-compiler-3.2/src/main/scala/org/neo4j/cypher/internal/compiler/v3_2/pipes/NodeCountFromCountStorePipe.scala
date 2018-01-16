@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.NameId
 
 case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
-                                      (val id: Id = new Id)
-                                      (implicit pipeMonitor: PipeMonitor) extends Pipe {
+                                      (val id: Id = new Id) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext()
@@ -38,6 +37,4 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
     }
     Seq(baseContext.newWith1(ident, count)).iterator
   }
-
-  override def monitor = pipeMonitor
 }

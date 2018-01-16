@@ -31,8 +31,7 @@ import scala.collection.JavaConverters._
 
 case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
                      (val id: Id = new Id)
-                     (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src) with GraphElementPropertyFunctions with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {

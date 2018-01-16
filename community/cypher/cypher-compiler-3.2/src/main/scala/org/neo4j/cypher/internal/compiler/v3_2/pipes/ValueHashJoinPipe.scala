@@ -28,8 +28,7 @@ import scala.collection.mutable
 
 case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)
                             (val id: Id = new Id)
-                            (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(left, pipeMonitor) {
+  extends PipeWithSource(left) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     implicit val x = state

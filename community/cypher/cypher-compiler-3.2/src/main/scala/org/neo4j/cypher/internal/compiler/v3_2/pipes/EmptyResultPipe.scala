@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class EmptyResultPipe(source: Pipe)(val id: Id = new Id)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class EmptyResultPipe(source: Pipe)(val id: Id = new Id) extends PipeWithSource(source) {
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
     while(input.hasNext) {
