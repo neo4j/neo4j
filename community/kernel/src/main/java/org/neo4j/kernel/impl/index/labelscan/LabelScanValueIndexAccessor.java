@@ -58,7 +58,7 @@ abstract class LabelScanValueIndexAccessor
     /**
      * Indicate provided cursor has been closed.
      */
-    private boolean closed;
+    protected boolean closed;
 
     LabelScanValueIndexAccessor(
             Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed,

@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeLabelClient;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
@@ -32,6 +35,8 @@ class NodeLabelIndexCursor extends IndexCursor
     private Read read;
     private long node;
     private LabelSet labels;
+    private PrimitiveLongIterator added;
+    private ReadableDiffSets<Long> changes;
 
     NodeLabelIndexCursor()
     {
@@ -39,17 +44,73 @@ class NodeLabelIndexCursor extends IndexCursor
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, boolean providesLabels )
+    public void scan( IndexProgressor progressor, boolean providesLabels, int label )
     {
         super.initialize( progressor );
+        if ( read.hasTxStateWithChanges() )
+        {
+            changes = read.txState().nodesWithLabelChanged( label );
+            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
+        }
+    }
+
+    @Override
+    public void unionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
+    {
+        super.initialize( progressor );
+        if ( read.hasTxStateWithChanges() )
+        {
+            changes = read.txState().nodesWithAnyOfLabelsChanged( labels );
+            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
+        }
+        //TODO: Currently we don't have a good way of handling this in the tx state
+        //The problem is this case:
+        //Given a node with label :A
+        //we remove label A in a transaction and follow that by
+        //a scan of `:A and :B`. In order to figure this out we need
+        //to check both tx state and disk, which we currently don't.
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
+    public void intersectionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
+    {
+        super.initialize( progressor );
+        //TODO: Currently we don't have a good way of handling this in the tx state
+        //The problem is for the nodes where some - but not all of the labels - are
+        //added in the transaction. For these we need to go to disk and check if they
+        //have the missing labels and hence return them or if not discard them.
+        throw new UnsupportedOperationException(  );
     }
 
     @Override
     public boolean acceptNode( long reference, LabelSet labels )
     {
-        this.node = reference;
-        this.labels = labels;
-        return true;
+        if ( isRemoved( reference ) )
+        {
+            return false;
+        }
+        else
+        {
+            this.node = reference;
+            this.labels = labels;
+
+            return true;
+        }
+    }
+
+    @Override
+    public boolean next()
+    {
+        if ( added != null && added.hasNext() )
+        {
+            this.node = added.next();
+            return true;
+        }
+        else
+        {
+            return innerNext();
+        }
     }
 
     public void setRead( Read read )
@@ -102,5 +163,11 @@ class NodeLabelIndexCursor extends IndexCursor
             return "NodeLabelIndexCursor[node=" + node + ", labels= " + labels +
                     ", underlying record=" + super.toString() + " ]";
         }
+    }
+
+    private boolean isRemoved( long reference )
+    {
+        return (changes != null && changes.isRemoved( reference ) ) ||
+               (read.hasTxStateWithChanges() && read.txState().addedAndRemovedNodes().isRemoved( reference ));
     }
 }

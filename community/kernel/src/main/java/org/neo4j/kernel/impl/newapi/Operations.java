@@ -361,7 +361,7 @@ public class Operations implements Write, ExplicitIndexWrite
         }
         else
         {
-            if ( !value.equals( existingValue ) )
+            if ( propertyHasChanged( value, existingValue ) )
             {
                 //the value has changed to a new value
                 autoIndexing.nodes().propertyChanged( this, node, propertyKey, existingValue, value );
@@ -561,6 +561,14 @@ public class Operations implements Write, ExplicitIndexWrite
     private void acquireSharedLabelLock( int labelId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+    }
+
+    private boolean propertyHasChanged( Value lhs, Value rhs )
+    {
+        //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
+        //so by only checking for equality users cannot change type of property without also "changing" the value.
+        //Hence the extra type check here.
+        return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
     }
 
     public ExplicitIndexRead indexRead()

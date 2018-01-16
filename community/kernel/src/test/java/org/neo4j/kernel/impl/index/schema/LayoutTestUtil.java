@@ -31,15 +31,16 @@ import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-abstract class LayoutTestUtil<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
+abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
 {
-    private final IndexDescriptor indexDescriptor;
+    final IndexDescriptor indexDescriptor;
 
     LayoutTestUtil( IndexDescriptor indexDescriptor )
     {
@@ -52,6 +53,12 @@ abstract class LayoutTestUtil<KEY extends SchemaNumberKey, VALUE extends SchemaN
 
     protected abstract double fractionDuplicates();
 
+    abstract IndexQuery rangeQuery( Number from, boolean fromInclusive, Number to, boolean toInclusive );
+
+    abstract Value asValue( Number value );
+
+    abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
+
     IndexDescriptor indexDescriptor()
     {
         return indexDescriptor;
@@ -59,16 +66,6 @@ abstract class LayoutTestUtil<KEY extends SchemaNumberKey, VALUE extends SchemaN
 
     void copyValue( VALUE value, VALUE intoValue )
     {
-    }
-
-    int compareIndexedPropertyValue( SchemaNumberKey key1, SchemaNumberKey key2 )
-    {
-        int typeCompare = Byte.compare( key1.type, key2.type );
-        if ( typeCompare == 0 )
-        {
-            return Long.compare( key1.rawValueBits, key2.rawValueBits );
-        }
-        return typeCompare;
     }
 
     Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )
@@ -107,9 +104,9 @@ abstract class LayoutTestUtil<KEY extends SchemaNumberKey, VALUE extends SchemaN
                     compareValue = value.doubleValue();
                 }
                 while ( !uniqueCompareValues.add( compareValue ) );
-                Value numberValue = Values.of( value );
-                uniqueValues.add( numberValue );
-                return numberValue;
+                Value storableValue = asValue( value );
+                uniqueValues.add( storableValue );
+                return storableValue;
             }
 
             private Value existingNonUniqueValue( RandomRule randomRule )

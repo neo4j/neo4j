@@ -54,7 +54,7 @@ import org.neo4j.time.Clocks
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, MapValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 
 import scala.collection.JavaConverters._
 import scala.collection.{JavaConverters, mutable}
@@ -1678,6 +1678,13 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
                        else cursor.withNode(n.getId))
     cursor
   }
+
+  private def nodeLabelIndexCursor() = {
+    val lookup: util.Map[Integer, Array[Long]] = labelTokens.map {
+      case (label, token) => Int.box(token) -> nodesForLabel(label).map(_.getId).toArray
+    }.asJava
+    new StubNodeLabelIndexCursor(lookup)
+  }
   private def propertyCursor() = new StubPropertyCursor
 
 
@@ -1688,6 +1695,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   when(cursors.allocatePropertyCursor()).thenAnswer(new Answer[PropertyCursor] {
     override def answer(invocation: InvocationOnMock): PropertyCursor = propertyCursor()
   })
+  when(cursors.allocateNodeLabelIndexCursor()).thenAnswer(new Answer[NodeLabelIndexCursor] {
+    override def answer(invocation: InvocationOnMock): NodeLabelIndexCursor = nodeLabelIndexCursor()
+  })
   when(transactionalContext.cursors).thenReturn(cursors)
   private def read = new StubRead
 
@@ -1695,16 +1705,6 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     override def answer(invocation: InvocationOnMock): Read = read
   })
   when(queryContext.entityAccessor).thenReturn(nodeManager)
-  when(ro.nodeGetProperty(anyLong(), anyInt())).thenAnswer(new Answer[Value] {
-    override def answer(invocationOnMock: InvocationOnMock): Value = {
-      val id = invocationOnMock.getArguments()(0).asInstanceOf[Long]
-      if (id < 3) Values.stringValue("value")
-      else null
-    }
-  })
-  when(ro.nodesGetAll()).thenAnswer(new Answer[PrimitiveLongIterator] {
-    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = primitiveIterator(allNodes.map(_.getId))
-  })
   when(ro.labelGetForName(anyString())).thenAnswer(new Answer[Int] {
     override def answer(invocationOnMock: InvocationOnMock): Int = {
       val label = invocationOnMock.getArguments.apply(0).asInstanceOf[String]
@@ -1715,16 +1715,6 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     override def answer(invocationOnMock: InvocationOnMock): Int = {
       val label = invocationOnMock.getArguments.apply(0).asInstanceOf[String]
       relTokens(label)
-    }
-  })
-  when(ro.nodesGetForLabel(anyInt())).thenAnswer(new Answer[PrimitiveLongResourceIterator] {
-    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongResourceIterator = {
-      val labelToken = invocationOnMock.getArguments.apply(0).asInstanceOf[Int]
-      val (label, _) = labelTokens.find {
-        case (l, t) => t == labelToken
-      }.get
-      val nodeIds = nodesForLabel(label).map(_.getId)
-      primitiveResourceIterator(null, nodeIds)
     }
   })
   when(ro.nodeGetRelationships(anyLong(), any[Direction])).thenAnswer(new Answer[PrimitiveLongIterator] {

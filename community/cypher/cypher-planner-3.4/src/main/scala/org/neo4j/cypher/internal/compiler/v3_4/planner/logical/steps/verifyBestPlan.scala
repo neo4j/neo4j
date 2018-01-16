@@ -69,7 +69,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
         }
       } else {
         processUnfulfilledIndexHints(context, unfulfillableIndexHints)
-        processUnfulfilledJoinHints(context, unfulfillableJoinHints)
+        processUnfulfilledJoinHints(plan, context, unfulfillableJoinHints)
       }
     }
     plan
@@ -89,12 +89,12 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def processUnfulfilledJoinHints(context: LogicalPlanningContext, hints: Set[UsingJoinHint]) = {
+  private def processUnfulfilledJoinHints(plan: LogicalPlan, context: LogicalPlanningContext, hints: Set[UsingJoinHint]): Unit = {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
         val firstJoinHint = hints.head
-        throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), "Unable to plan hash join")
+        throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), s"Unable to plan hash join. Instead, constructed\n$plan")
       } else {
         hints.foreach { hint =>
           context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq))

@@ -49,6 +49,12 @@ class RelationshipExplicitIndexCursor extends IndexCursor
         return true;
     }
 
+    @Override
+    public boolean next()
+    {
+        return innerNext();
+    }
+
     public void setRead( Read read )
     {
         this.read = read;

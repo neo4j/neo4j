@@ -52,9 +52,19 @@ public interface ReadableTransactionState
     // ENTITY RELATED
 
     /**
-     * Returns all nodes that, in this tx, have had labelId removed.
+     * Returns all nodes that, in this tx, have had the labels changed.
      */
-    ReadableDiffSets<Long> nodesWithLabelChanged( int labelId );
+    ReadableDiffSets<Long> nodesWithLabelChanged( int label );
+
+    /**
+     * Returns all nodes that, in this tx, have had any of the labels changed.
+     */
+    ReadableDiffSets<Long> nodesWithAnyOfLabelsChanged( int... labels );
+
+    /**
+     * Returns all nodes that, in this tx, have had all the labels changed.
+     */
+    ReadableDiffSets<Long> nodesWithAllLabelsChanged( int... labels );
 
     /**
      * Returns nodes that have been added and removed in this tx.

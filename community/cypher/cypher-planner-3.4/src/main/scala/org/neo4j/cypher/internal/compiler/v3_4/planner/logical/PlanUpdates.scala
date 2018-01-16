@@ -32,6 +32,17 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 case object PlanUpdates
   extends ((PlannerQuery, LogicalPlan, Boolean, LogicalPlanningContext, Solveds, Cardinalities) => (LogicalPlan, LogicalPlanningContext)) {
 
+  private def computePlan(plan: LogicalPlan, query: PlannerQuery, firstPlannerQuery: Boolean, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
+    var updatePlan = plan
+    var ctx = context
+    val iterator = query.queryGraph.mutatingPatterns.iterator
+    while(iterator.hasNext) {
+      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, ctx, solveds, cardinalities)
+      ctx = ctx.withNextTxLayer
+    }
+    (updatePlan, ctx)
+  }
+
   override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): (LogicalPlan, LogicalPlanningContext) = {
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan = if (firstPlannerQuery)
@@ -40,9 +51,7 @@ case object PlanUpdates
     //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
       Eagerness.tailReadWriteEagerizeNonRecursive(in, query, context)
 
-    val (updatePlan, finalContext) = query.queryGraph.mutatingPatterns.foldLeft((plan, context)) {
-      case ((acc, ctx), pattern) => (planUpdate(acc, pattern, firstPlannerQuery, ctx, solveds, cardinalities), ctx.withNextTxLayer)
-    }
+    val (updatePlan, finalContext) = computePlan(plan, query, firstPlannerQuery, context, solveds, cardinalities)
 
     val lp = if (firstPlannerQuery)
       Eagerness.headWriteReadEagerize(updatePlan, query, finalContext)

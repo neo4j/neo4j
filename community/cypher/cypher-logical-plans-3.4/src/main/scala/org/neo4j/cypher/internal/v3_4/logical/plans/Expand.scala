@@ -118,30 +118,6 @@ case class PruningVarExpand(source: LogicalPlan,
   override val availableSymbols: Set[String] = source.availableSymbols + to
 }
 
-/**
-  * Another variant of VarExpand, where paths are not explored if they could not produce an unseen
-  * end node. A more powerful version of PruningVarExpand, which keeps more state. Guaranteed to
-  * produce unique end nodes.
-  *
-  * Only the end node is added to produced rows.
-  */
-case class FullPruningVarExpand(source: LogicalPlan,
-                                from: String,
-                                dir: SemanticDirection,
-                                types: Seq[RelTypeName],
-                                to: String,
-                                minLength: Int,
-                                maxLength: Int,
-                                predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
-                               (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
-
-  override val lhs = Some(source)
-  override def rhs = None
-
-  override val availableSymbols: Set[String] = source.availableSymbols + to
-}
-
 sealed trait ExpansionMode
 
 /**
