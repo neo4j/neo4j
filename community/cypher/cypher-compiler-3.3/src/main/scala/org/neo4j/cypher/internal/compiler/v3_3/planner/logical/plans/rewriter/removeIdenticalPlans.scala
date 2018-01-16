@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_3._
+import java.util
+import java.util.Collections
+
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
@@ -30,11 +32,13 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 case object removeIdenticalPlans extends Rewriter {
 
   override def apply(input: AnyRef) = {
-    var seenPlans = IdentitySet.empty[LogicalPlan]
+    val seenPlans = Collections.newSetFromMap(new util.IdentityHashMap[LogicalPlan, java.lang.Boolean]())
 
     val rewriter: Rewriter = bottomUp(Rewriter.lift {
-      case plan: LogicalPlan if seenPlans(plan) => plan.copyPlan()
-      case plan: LogicalPlan => seenPlans = seenPlans + plan ; plan
+      case plan: LogicalPlan if seenPlans.contains(plan) => plan.copyPlan()
+      case plan: LogicalPlan =>
+        seenPlans.add(plan)
+        plan
     })
 
     rewriter.apply(input)

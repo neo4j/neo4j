@@ -141,8 +141,12 @@ object ClauseConverters {
               s"Can't create node `${c.nodeName}` with labels or properties here. The variable is already declared in this context")
         }
 
+        val allMutatingPatterns = mutable.ListBuffer[MutatingPattern]()
+        allMutatingPatterns.appendAll(nodesToCreate)
+        allMutatingPatterns.appendAll(rels)
+
         acc
-          .amendQueryGraph(_.addMutatingPatterns(nodesToCreate ++ rels: _*))
+          .amendQueryGraph(_.addMutatingPatterns(allMutatingPatterns))
 
       case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $clause")
     }
@@ -196,7 +200,7 @@ object ClauseConverters {
   }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
-    acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced)): _*))
+    acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced))))
   }
 
   private def asReturnItems(current: QueryGraph, returnItems: ReturnItemsDef): Seq[ReturnItem] = returnItems match {
@@ -449,7 +453,7 @@ object ClauseConverters {
 
     val foreachGraph = QueryGraph(
       argumentIds = currentlyAvailableVariables,
-      mutatingPatterns = Seq(foreachPattern)
+      mutatingPatterns = IndexedSeq(foreachPattern)
     )
 
     // Since foreach can contain reads (via inner merge) we put it in its own separate planner query

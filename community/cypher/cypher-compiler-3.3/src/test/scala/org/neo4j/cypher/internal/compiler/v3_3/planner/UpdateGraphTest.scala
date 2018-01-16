@@ -37,7 +37,7 @@ class UpdateGraphTest extends CypherFunSuite {
   test("overlap when reading all labels and creating a specific label") {
     //MATCH (a) CREATE (:L)
     val qg = QueryGraph(patternNodes = Set("a"))
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
 
     ug.overlaps(qg) shouldBe true
   }
@@ -46,7 +46,7 @@ class UpdateGraphTest extends CypherFunSuite {
     //MATCH (a:L) CREATE (b:L)
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
 
     ug.overlaps(qg) shouldBe true
   }
@@ -55,7 +55,7 @@ class UpdateGraphTest extends CypherFunSuite {
     //MATCH (a:L1:L2) CREATE (b:L3)
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateNodePattern("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None)))
 
     ug.overlaps(qg) shouldBe false
   }
@@ -65,7 +65,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val selections = Selections.from(In(Variable("a")(pos),
       Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
 
     ug.overlaps(qg) shouldBe false
   }
@@ -76,7 +76,7 @@ class UpdateGraphTest extends CypherFunSuite {
       In(Variable("a")(pos),Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
       HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateNodePattern("b", Seq(LabelName("L")(pos)), None)))
 
     ug.overlaps(qg) shouldBe false
   }
@@ -86,7 +86,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)))
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateRelationshipPattern("r2",
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
       "a", RelTypeName("T")(pos), "b", None, SemanticDirection.OUTGOING)))
 
     ug.overlaps(qg) shouldBe true
@@ -97,7 +97,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateRelationshipPattern("r2",
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
       "a", RelTypeName("T2")(pos), "b", None, SemanticDirection.OUTGOING)))
 
     ug.overlaps(qg) shouldBe false
@@ -108,7 +108,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateRelationshipPattern("r2",
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
       "a", RelTypeName("T1")(pos), "b", None, SemanticDirection.OUTGOING)))
 
     ug.overlaps(qg) shouldBe true
@@ -122,7 +122,7 @@ class UpdateGraphTest extends CypherFunSuite {
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
       selections = selections)
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateRelationshipPattern("r2",
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
       "a", RelTypeName("T1")(pos), "b", None, SemanticDirection.OUTGOING)))
 
     ug.overlaps(qg) shouldBe false
@@ -136,7 +136,7 @@ class UpdateGraphTest extends CypherFunSuite {
       Set(PatternRelationship("r", ("a", "b"),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
       selections = selections)
-    val ug = QueryGraph(mutatingPatterns = Seq(CreateRelationshipPattern("r2",
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(CreateRelationshipPattern("r2",
       "a", RelTypeName("T1")(pos), "b",
       Some(MapExpression(Seq((PropertyKeyName("foo")(pos),
         SignedDecimalIntegerLiteral("42")(pos))))(pos)), SemanticDirection.OUTGOING)))
@@ -148,7 +148,7 @@ class UpdateGraphTest extends CypherFunSuite {
     //MATCH (a:L1:L2) DELETE a CREATE (b:L3)
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
-    val ug = QueryGraph(mutatingPatterns = Seq(
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
       DeleteExpression(Variable("a")(pos), forced = false),
       MergeNodePattern(
         CreateNodePattern("b", Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
@@ -161,7 +161,7 @@ class UpdateGraphTest extends CypherFunSuite {
   test("overlap when reading and deleting with collections") {
     //... WITH collect(a) as col DELETE col[0]
     val qg = QueryGraph(argumentIds = Set("col"))
-    val ug = QueryGraph(mutatingPatterns = Seq(
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
       DeleteExpression(Variable("col")(pos), forced = false)
     ))
 

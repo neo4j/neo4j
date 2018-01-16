@@ -19,14 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.io.File
-
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.graphdb.Transaction
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.api.exceptions.Status
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 
 class PropertyExistenceConstraintAcceptanceTest
@@ -34,7 +29,6 @@ class PropertyExistenceConstraintAcceptanceTest
     with QueryStatisticsTestSupport
     with ListSupport
     with EnterpriseGraphDatabaseTestSupport {
-
 
   test("node: should enforce constraints on creation") {
     // GIVEN

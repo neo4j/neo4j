@@ -40,15 +40,22 @@ case object PlanUpdates
     //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
       Eagerness.tailReadWriteEagerizeNonRecursive(in, query)
 
-    val updatePlan = query.queryGraph.mutatingPatterns.foldLeft(plan) {
-      case (acc, pattern) => planUpdate(acc, pattern, firstPlannerQuery)
-    }
+    val updatePlan = computePlan(plan, query, firstPlannerQuery)
 
     if (firstPlannerQuery)
       Eagerness.headWriteReadEagerize(updatePlan, query)
     else {
       Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query), query)
     }
+  }
+
+  private def computePlan(plan: LogicalPlan, query: PlannerQuery, firstPlannerQuery: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan  = {
+    var updatePlan = plan
+    val iterator = query.queryGraph.mutatingPatterns.iterator
+    while(iterator.hasNext) {
+      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery)
+    }
+    updatePlan
   }
 
   private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean)
