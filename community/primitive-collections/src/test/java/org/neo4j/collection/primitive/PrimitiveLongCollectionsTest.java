@@ -584,6 +584,21 @@ public class PrimitiveLongCollectionsTest
         assertThat( longs, containsInAnyOrder(1L, 3L, 5L) );
     }
 
+    @Test
+    public void copyMap()
+    {
+        PrimitiveLongObjectMap<Object> originalMap = Primitive.longObjectMap();
+        originalMap.put( 1L, "a" );
+        originalMap.put( 2L, "b" );
+        originalMap.put( 3L, "c" );
+        PrimitiveLongObjectMap<Object> copyMap = PrimitiveLongCollections.copy( originalMap );
+        assertNotSame( originalMap, copyMap );
+        assertEquals( 3, copyMap.size() );
+        assertEquals( "a", copyMap.get( 1L ) );
+        assertEquals( "b", copyMap.get( 2L ) );
+        assertEquals( "c", copyMap.get( 3L ) );
+    }
+
     private void assertNoMoreItems( PrimitiveLongIterator iterator )
     {
         assertFalse( iterator + " should have no more items", iterator.hasNext() );
