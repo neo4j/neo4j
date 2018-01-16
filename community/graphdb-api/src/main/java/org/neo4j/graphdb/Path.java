@@ -30,7 +30,7 @@ import java.util.Iterator;
  * position of the traverser is represented by each such path. The current
  * node in such a traversal is reached via {@link Path#endNode()}.
  */
-public interface Path extends Iterable<PropertyContainer>, Resource
+public interface Path extends Iterable<PropertyContainer>
 {
     /**
      * Returns the start node of this path. It's also the first node returned
@@ -130,10 +130,4 @@ public interface Path extends Iterable<PropertyContainer>, Resource
      * @see Iterable#iterator()
      */
     Iterator<PropertyContainer> iterator();
-
-    @Override
-    default void close()
-    {
-        // empty
-    }
 }
