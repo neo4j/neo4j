@@ -23,6 +23,8 @@ import java.util.Arrays;
 
 public class Envelope
 {
+    private double[] min;
+    private double[] max;
 
     /**
      * Copy constructor
@@ -103,7 +105,7 @@ public class Envelope
 
     public int getDimension()
     {
-        return isValid() ? min.length : 0;
+        return min.length;
     }
 
     /**
@@ -117,41 +119,29 @@ public class Envelope
 
     public boolean covers( Envelope other )
     {
-        boolean ans = isValid() && other.isValid() && getDimension() == other.getDimension();
-        for ( int i = 0; i < min.length; i++ )
+        boolean covers = getDimension() == other.getDimension();
+        for ( int i = 0; i < min.length && covers; i++ )
         {
-            if ( !ans )
-            {
-                return ans;
-            }
-            ans = ans && other.min[i] >= min[i] && other.max[i] <= max[i];
+            covers = other.min[i] >= min[i] && other.max[i] <= max[i];
         }
-        return ans;
+        return covers;
     }
 
     public boolean intersects( Envelope other )
     {
-        if ( isValid() && other.isValid() && getDimension() == other.getDimension() )
+        boolean intersects = getDimension() == other.getDimension();
+        for ( int i = 0; i < min.length && intersects; i++ )
         {
-            boolean result = true;
-            for ( int i = 0; i < min.length; i++ )
-            {
-                result = result && other.min[i] <= max[i] && other.max[i] >= min[i];
-            }
-            return result;
+            intersects = other.min[i] <= max[i] && other.max[i] >= min[i];
         }
-        else
-        {
-            return false;
-        }
+        return intersects;
     }
 
     public void expandToInclude( Envelope other )
     {
-        if ( !isValid() )
+        if ( getDimension() != other.getDimension() )
         {
-            min = other.min.clone();
-            max = other.max.clone();
+            throw new IllegalArgumentException( "Cannot join Envelopes with different dimensions: " + this.getDimension() + " != " + other.getDimension() );
         }
         else
         {
@@ -226,7 +216,7 @@ public class Envelope
      */
     public double getWidth( int dimension )
     {
-        return isValid() ? max[dimension] - min[dimension] : 0;
+        return max[dimension] - min[dimension];
     }
 
     /**
@@ -237,20 +227,13 @@ public class Envelope
      */
     public double[] getWidths( int divisor )
     {
-        if ( isValid() )
+        double[] widths = Arrays.copyOf(max, max.length);
+        for ( int d = 0; d < max.length; d++ )
         {
-            double[] widths = Arrays.copyOf(max, max.length);
-            for ( int d = 0; d < max.length; d++ )
-            {
-                widths[d] -= min[d];
-                widths[d] /= divisor;
-            }
-            return widths;
+            widths[d] -= min[d];
+            widths[d] /= divisor;
         }
-        else
-        {
-            return null;
-        }
+        return widths;
     }
 
     public double getArea()
@@ -272,37 +255,22 @@ public class Envelope
 
     public boolean isPoint()
     {
-        if ( isValid() )
+        boolean ans = true;
+        for ( int i = 0; i < min.length && ans; i++ )
         {
-            boolean ans = true;
-            for ( int i = 0; i < min.length; i++ )
-            {
-                ans = ans && min[i] == max[i];
-            }
-            return ans;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    public boolean isValid()
-    {
-        boolean ans = min != null && max != null && min.length == max.length;
-        if ( !ans )
-        {
-            return ans;
-        }
-        for ( int i = 0; i < min.length; i++ )
-        {
-            ans = ans && min[i] <= max[i];
-            if ( !ans )
-            {
-                return ans;
-            }
+            ans = min[i] == max[i];
         }
         return ans;
+    }
+
+    private boolean isValid()
+    {
+        boolean valid = min != null && max != null && min.length == max.length;
+        for ( int i = 0; i < min.length && valid; i++ )
+        {
+            valid = min[i] <= max[i];
+        }
+        return valid;
     }
 
     /**
@@ -355,7 +323,7 @@ public class Envelope
 
     public Envelope intersection( Envelope other )
     {
-        if ( isValid() && other.isValid() && getDimension() == other.getDimension() )
+        if ( getDimension() == other.getDimension() )
         {
             double[] i_min = new double[this.min.length];
             double[] i_max = new double[this.min.length];
@@ -382,8 +350,4 @@ public class Envelope
                     "Cannot calculate intersection of Envelopes with different dimensions: " + this.getDimension() + " != " + other.getDimension() );
         }
     }
-
-    // Attributes
-    private double[] min;
-    private double[] max;
 }
