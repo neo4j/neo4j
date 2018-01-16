@@ -49,7 +49,7 @@ import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.diagnostics.DiagnosticsReportSources;
 import org.neo4j.diagnostics.DiagnosticsReporter;
-import org.neo4j.diagnostics.DiagnosticsReporterProgressInteractions;
+import org.neo4j.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.diagnostics.InteractiveProgress;
 import org.neo4j.diagnostics.NonInteractiveProgress;
 import org.neo4j.helpers.Args;
@@ -80,7 +80,6 @@ public class DiagnosticsReportCommand implements AdminCommand
     private final PrintStream out;
     private final FileSystemAbstraction fs;
     private final PrintStream err;
-    private boolean force;
 
     DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
@@ -102,7 +101,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         Args args = Args.withFlags( "list", "to", "verbose", "force" ).parse( stringArgs );
         verbose = args.has( "verbose" );
         jmxDumper = new JMXDumper( homeDir, fs, out, err, verbose );
-        force = args.has( "force" );
+        boolean force = args.has( "force" );
 
         DiagnosticsReporter reporter = createAndRegisterSources();
 
@@ -112,7 +111,7 @@ public class DiagnosticsReportCommand implements AdminCommand
             return;
         }
 
-        DiagnosticsReporterProgressInteractions progress = buildProgress();
+        DiagnosticsReporterProgress progress = buildProgress();
 
         // Start dumping
         Path destinationDir = new File( destinationArgument.parse( args ) ).toPath();
@@ -121,7 +120,7 @@ public class DiagnosticsReportCommand implements AdminCommand
             SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
             Path reportFile = destinationDir.resolve( dumpFormat.format( new Date() ) + ".zip" );
             out.println( "Writing report to " + reportFile.toAbsolutePath().toString() );
-            reporter.dump( classifiers.get(), reportFile, progress );
+            reporter.dump( classifiers.get(), reportFile, progress, force );
         }
         catch ( IOException e )
         {
@@ -129,16 +128,16 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
     }
 
-    private DiagnosticsReporterProgressInteractions buildProgress()
+    private DiagnosticsReporterProgress buildProgress()
     {
-        DiagnosticsReporterProgressInteractions progress;
+        DiagnosticsReporterProgress progress;
         if ( System.console() != null )
         {
-            progress = new InteractiveProgress( out, verbose, force );
+            progress = new InteractiveProgress( out, verbose );
         }
         else
         {
-            progress = new NonInteractiveProgress( out, verbose, force );
+            progress = new NonInteractiveProgress( out, verbose );
         }
         return progress;
     }

@@ -43,7 +43,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Long.max;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
@@ -95,7 +94,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     @Override
     public void initialize( DependencyResolver dependencyResolver )
     {
-        out.println( "Interactive command list (end with ENTER):" );
+        out.println( "InteractiveReporterInteractions command list (end with ENTER):" );
         actions.forEach( ( key, action ) -> out.println( "  " + key + ": " + action.first() ) );
         out.println();
         gcMonitor.start();

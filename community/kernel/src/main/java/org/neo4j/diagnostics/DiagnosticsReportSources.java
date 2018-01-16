@@ -119,7 +119,7 @@ public class DiagnosticsReportSources
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressInteractions progress )
+        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
                 throws IOException
         {
             long size = fs.getFileSize( source );
@@ -133,7 +133,7 @@ public class DiagnosticsReportSources
         }
 
         @Override
-        public long estimatedSize( DiagnosticsReporterProgressInteractions progress )
+        public long estimatedSize( DiagnosticsReporterProgress progress )
         {
             return fs.getFileSize( source );
         }
@@ -157,7 +157,7 @@ public class DiagnosticsReportSources
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressInteractions progress )
+        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
                 throws IOException
         {
             String message = messageSupplier.get();
@@ -166,7 +166,7 @@ public class DiagnosticsReportSources
         }
 
         @Override
-        public long estimatedSize( DiagnosticsReporterProgressInteractions progress )
+        public long estimatedSize( DiagnosticsReporterProgress progress )
         {
             return 0; // Size of strings should be negligible
         }

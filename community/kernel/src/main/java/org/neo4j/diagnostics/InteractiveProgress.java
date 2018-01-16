@@ -26,22 +26,20 @@ import java.util.Collections;
  * Tracks progress in an interactive way, relies on the fact that the {@code PrintStream} echoes to a terminal that can
  * interpret the carrier return to reset the current line.
  */
-public class InteractiveProgress implements DiagnosticsReporterProgressInteractions
+public class InteractiveProgress implements DiagnosticsReporterProgress
 {
     private String prefix;
     private String suffix;
     private String totalSteps = "?";
     private final PrintStream out;
     private final boolean verbose;
-    private final boolean force;
     private String info = "";
     private int longestInfo;
 
-    public InteractiveProgress( PrintStream out, boolean verbose, boolean force )
+    public InteractiveProgress( PrintStream out, boolean verbose )
     {
         this.out = out;
         this.verbose = verbose;
-        this.force = force;
     }
 
     @Override
@@ -101,33 +99,6 @@ public class InteractiveProgress implements DiagnosticsReporterProgressInteracti
         if ( verbose )
         {
             throwable.printStackTrace( out );
-        }
-    }
-
-    @Override
-    public boolean shouldIgnorePotentialFullDisk( String message )
-    {
-        if ( force )
-        {
-            return true;
-        }
-        out.println( message );
-        while ( true )
-        {
-            out.print( "Ignore available disk space warning? [yN]: " );
-            String answer = System.console().readLine();
-            if ( answer.length() == 0 || answer.toLowerCase().equals( "n" ) )
-            {
-                return false;
-            }
-            else if ( answer.toLowerCase().equals( "y" ) )
-            {
-                return true;
-            }
-            else
-            {
-                out.println( "Unrecognised option: " + answer );
-            }
         }
     }
 

@@ -44,7 +44,7 @@ public interface DiagnosticsReportSource
      * @throws IOException if any file operations fail, exceptions should be handled by the caller for better error
      * reporting to the user.
      */
-    void addToArchive( Path archiveDestination, DiagnosticsReporterProgressInteractions progress ) throws IOException;
+    void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress ) throws IOException;
 
     /**
      * Returns an estimated upper bound of the input file size. Since the content will be placed in an archive the final
@@ -52,6 +52,7 @@ public interface DiagnosticsReportSource
      *
      * @param progress a monitor that can track progress.
      * @return the estimated file size in bytes.
+     * @throws IOException if size cannot be determined.
      */
-    long estimatedSize( DiagnosticsReporterProgressInteractions progress );
+    long estimatedSize( DiagnosticsReporterProgress progress ) throws IOException;
 }

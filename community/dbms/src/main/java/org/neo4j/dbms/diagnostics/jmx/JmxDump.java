@@ -45,7 +45,7 @@ import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.diagnostics.DiagnosticsReportSources;
-import org.neo4j.diagnostics.DiagnosticsReporterProgressInteractions;
+import org.neo4j.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.diagnostics.ProgressAwareInputStream;
 
 /**
@@ -181,7 +181,7 @@ public class JmxDump
             }
 
             @Override
-            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressInteractions progress )
+            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
                     throws IOException
             {
                 // Heap dump has to target an actual file, we cannot stream directly to the archive
@@ -203,21 +203,13 @@ public class JmxDump
             }
 
             @Override
-            public long estimatedSize( DiagnosticsReporterProgressInteractions progress )
+            public long estimatedSize( DiagnosticsReporterProgress progress ) throws IOException
             {
-                try
-                {
-                    MemoryMXBean bean = ManagementFactory.getPlatformMXBean( mBeanServer, MemoryMXBean.class );
-                    long totalMemory = bean.getHeapMemoryUsage().getCommitted() + bean.getNonHeapMemoryUsage().getCommitted();
+                MemoryMXBean bean = ManagementFactory.getPlatformMXBean( mBeanServer, MemoryMXBean.class );
+                long totalMemory = bean.getHeapMemoryUsage().getCommitted() + bean.getNonHeapMemoryUsage().getCommitted();
 
-                    // We first write raw to disk then write to archive, 5x compression is a reasonable worst case estimation
-                    return (long) (totalMemory * 1.2);
-                }
-                catch ( IOException e )
-                {
-                    progress.error( "Unable to determine size of neo4j instance memory", e );
-                }
-                return 0;
+                // We first write raw to disk then write to archive, 5x compression is a reasonable worst case estimation
+                return (long) (totalMemory * 1.2);
             }
         };
     }
@@ -243,7 +235,7 @@ public class JmxDump
             }
 
             @Override
-            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressInteractions progress )
+            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
                     throws IOException
             {
                 try ( PrintStream printStream = new PrintStream( Files.newOutputStream( archiveDestination ) ) )
@@ -253,7 +245,7 @@ public class JmxDump
             }
 
             @Override
-            public long estimatedSize( DiagnosticsReporterProgressInteractions progress )
+            public long estimatedSize( DiagnosticsReporterProgress progress )
             {
                 return 0;
             }
