@@ -43,4 +43,12 @@ public class RelationshipTypeToken extends Token implements RelationshipType
             return new RelationshipTypeToken( name, id );
         }
     }
+
+    @Override
+    public String toString()
+    {
+        // Conveniently use name() for toString. One should always use name() in favor of toString(), but sometimes
+        // it's easy to forget and we can help out by doing this.
+        return name();
+    }
 }
