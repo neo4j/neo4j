@@ -19,22 +19,15 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.bolt.BoltChannel;
+import java.util.Collection;
 
-/**
- * Creates {@link BoltWorker}s. Implementations of this interface can decorate queues and their jobs
- * to monitor activity and enforce constraints.
- */
-public interface WorkerFactory
+public interface BoltWorkerQueueMonitor
 {
-    default BoltWorker newWorker( BoltChannel boltChannel )
-    {
-        return newWorker( boltChannel, null );
-    }
 
-    /**
-     * @param boltChannel channel over which Bolt messages can be exchanged
-     * @return a new job queue
-     */
-    BoltWorker newWorker( BoltChannel boltChannel, BoltWorkerQueueMonitor queueMonitor );
+    void enqueued( Job job );
+
+    void dequeued( Job job );
+
+    void drained( Collection<Job> jobs );
+
 }
