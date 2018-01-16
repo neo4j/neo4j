@@ -35,6 +35,8 @@ import static org.hamcrest.Matchers.equalTo;
 
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.HilbertCurve3D;
+import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.SubCurve3D;
+
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointLeft;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointRight;
 
@@ -676,11 +678,11 @@ public class SpaceFillingCurveTest
 
     private void printMapping()
     {
-        HashMap<Integer,Map<String,HilbertCurve3D>> map = new HashMap<>();
-        for ( Map.Entry<String,HilbertCurve3D> entry : HilbertSpaceFillingCurve3D.curves.entrySet() )
+        HashMap<Integer,Map<SubCurve3D,HilbertCurve3D>> map = new HashMap<>();
+        for ( Map.Entry<SubCurve3D,HilbertCurve3D> entry : HilbertSpaceFillingCurve3D.curves.entrySet() )
         {
             int start = entry.getValue().npointForIndex( 0 );
-            Map<String,HilbertCurve3D> mapEntry;
+            Map<SubCurve3D,HilbertCurve3D> mapEntry;
             if ( map.containsKey( start ) )
             {
                 mapEntry = map.get( start );
@@ -698,7 +700,7 @@ public class SpaceFillingCurveTest
         for ( Integer start : sortedKeys )
         {
             System.out.println( HilbertCurve3D.binaryString( start ) + ":\t" + map.get( start ).size() );
-            for ( Map.Entry<String,HilbertCurve3D> mapEntry : map.get( start ).entrySet() )
+            for ( Map.Entry<SubCurve3D,HilbertCurve3D> mapEntry : map.get( start ).entrySet() )
             {
                 System.out.println( "\t" + mapEntry.getKey() + ":\t" + Arrays.toString( mapEntry.getValue().children ) );
             }

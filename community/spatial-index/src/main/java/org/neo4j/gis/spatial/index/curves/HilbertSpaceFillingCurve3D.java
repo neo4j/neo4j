@@ -24,6 +24,13 @@ import java.util.LinkedHashMap;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.Direction3D.BACK;
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.Direction3D.DOWN;
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.Direction3D.FRONT;
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.Direction3D.LEFT;
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.Direction3D.RIGHT;
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.Direction3D.UP;
+
 public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
 {
 
@@ -86,32 +93,33 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
             return binary.substring( binary.length() - 3, binary.length() );
         }
 
-        private char direction( int start, int end )
+        private Direction3D direction( int start, int end )
         {
             end -= start;
             switch ( end )
             {
             case 1:
-                return 'F'; // move forward 000->001
+                return FRONT; // move forward 000->001
             case 2:
-                return 'U'; // move up      000->010
+                return UP;    // move up      000->010
             case 4:
-                return 'R'; // move right   000->100
+                return RIGHT; // move right   000->100
             case -4:
-                return 'L'; // move left    111->011
+                return LEFT;  // move left    111->011
             case -2:
-                return 'D'; // move down    111->101
+                return DOWN;  // move down    111->101
             case -1:
-                return 'B'; // move back    111->110
+                return BACK;  // move back    111->110
             default:
-                return '-';
+                throw new IllegalArgumentException("Illegal direction: " + end);
             }
         }
 
-        String name()
+        SubCurve3D name()
         {
-            return String.valueOf( direction( npointValues[0], npointValues[1] ) ) + direction( npointValues[1], npointValues[2] ) +
-                    direction( npointValues[0], npointValues[length() - 1] );
+            return new SubCurve3D( direction( npointValues[0], npointValues[1] ),
+                    direction( npointValues[1], npointValues[2] ),
+                    direction( npointValues[0], npointValues[length() - 1] ));
         }
 
         /**
@@ -175,7 +183,7 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
 
         private HilbertCurve3D singleTon( HilbertCurve3D curve )
         {
-            String name = curve.name();
+            SubCurve3D name = curve.name();
             if ( curves.containsKey( name ) )
             {
                 return curves.get( name );
@@ -213,16 +221,58 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
         @Override
         public String toString()
         {
-            return name();
+            return name().toString();
         }
     }
 
-    static HashMap<String,HilbertCurve3D> curves = new LinkedHashMap<>();
+    enum Direction3D
+    {
+        UP, RIGHT, LEFT, DOWN, FRONT, BACK;
+    }
+
+    static class SubCurve3D
+    {
+        private final Direction3D firstMove;
+        private final Direction3D secondMove;
+        private final Direction3D overallDirection;
+
+        SubCurve3D( Direction3D firstMove, Direction3D secondMove, Direction3D overallDirection )
+        {
+            this.firstMove = firstMove;
+            this.secondMove = secondMove;
+            this.overallDirection = overallDirection;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return java.util.Objects.hash( firstMove, secondMove, overallDirection );
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( obj == null || this.getClass() != obj.getClass() )
+            {
+                return false;
+            }
+            SubCurve3D other = (SubCurve3D) obj;
+            return this.firstMove == other.firstMove && this.secondMove == other.secondMove && this.overallDirection == other.overallDirection;
+        }
+
+        @Override
+        public String toString()
+        {
+            return firstMove.toString() + secondMove.toString() + overallDirection.toString();
+        }
+    }
+
+    static HashMap<SubCurve3D,HilbertCurve3D> curves = new LinkedHashMap<>();
 
     private static HilbertCurve3D addCurveRule( int... npointValues )
     {
         HilbertCurve3D curve = new HilbertCurve3D( npointValues );
-        String name = curve.name();
+        SubCurve3D name = curve.name();
         if ( !curves.containsKey( name ) )
         {
             curves.put( name, curve );

@@ -19,10 +19,14 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.EnumMap;
 
 import org.neo4j.gis.spatial.index.Envelope;
+
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D.Direction2D.DOWN;
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D.Direction2D.LEFT;
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D.Direction2D.RIGHT;
+import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D.Direction2D.UP;
 
 public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
 {
@@ -40,28 +44,28 @@ public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
             assert npointValues[0] == 0 || npointValues[0] == 3;
         }
 
-        public char direction( int end )
+        private Direction2D direction( int end )
         {
             int start = npointValues[0];
             end -= start;
             switch ( end )
             {
             case 1:
-                return 'U'; // move up      00->01
+                return UP; // move up      00->01
             case 2:
-                return 'R'; // move right   00->10
+                return RIGHT; // move right   00->10
             case -2:
-                return 'L'; // move left    11->01
+                return LEFT; // move left    11->01
             case -1:
-                return 'D'; // move down    11->10
+                return DOWN; // move down    11->10
             default:
-                return '-';
+                throw new IllegalArgumentException("Illegal direction: " + end);
             }
         }
 
-        String name()
+        private Direction2D name()
         {
-            return String.valueOf( direction( npointValues[1] ) );
+            return direction( npointValues[1] );
         }
 
         private void setChildren( CurveRule... children )
@@ -78,23 +82,28 @@ public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
         @Override
         public String toString()
         {
-            return name();
+            return String.valueOf( name() );
         }
     }
 
-    private static HashMap<String,HilbertCurve2D> curves = new LinkedHashMap<>();
+    enum Direction2D
+    {
+        UP, RIGHT, LEFT, DOWN
+    }
+
+    private static EnumMap<Direction2D,HilbertCurve2D> curves = new EnumMap<>( Direction2D.class );
 
     private static void addCurveRule( int... npointValues )
     {
         HilbertCurve2D curve = new HilbertCurve2D( npointValues );
-        String name = curve.name();
+        Direction2D name = curve.name();
         if ( !curves.containsKey( name ) )
         {
             curves.put( name, curve );
         }
     }
 
-    private static void setChildren( String parent, String... children )
+    private static void setChildren( Direction2D parent, Direction2D... children )
     {
         HilbertCurve2D curve = curves.get( parent );
         HilbertCurve2D[] childCurves = new HilbertCurve2D[children.length];
@@ -113,11 +122,11 @@ public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
         addCurveRule( 0, 2, 3, 1 );
         addCurveRule( 3, 1, 0, 2 );
         addCurveRule( 3, 2, 0, 1 );
-        setChildren( "U", "R", "U", "U", "L" );
-        setChildren( "R", "U", "R", "R", "D" );
-        setChildren( "D", "L", "D", "D", "R" );
-        setChildren( "L", "D", "L", "L", "U" );
-        curveUp = curves.get( "U" );
+        setChildren( UP, RIGHT, UP, UP, LEFT );
+        setChildren( RIGHT, UP, RIGHT, RIGHT, DOWN );
+        setChildren( DOWN, LEFT, DOWN, DOWN, RIGHT );
+        setChildren( LEFT, DOWN, LEFT, LEFT, UP );
+        curveUp = curves.get( UP );
     }
 
     public static final int MAX_LEVEL = 63 / 2 - 1;
