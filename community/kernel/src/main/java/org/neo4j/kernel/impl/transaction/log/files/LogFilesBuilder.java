@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -222,7 +223,11 @@ public class LogFilesBuilder
         Supplier<LogVersionRepository> logVersionRepositorySupplier = getLogVersionRepositorySupplier();
         LongSupplier lastCommittedIdSupplier = lastCommittedIdSupplier();
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
-        long rotationThreshold = getRotationThreshold();
+
+        // Register listener for rotation threshold
+        AtomicLong rotationThreshold = new AtomicLong( getRotationThreshold() );
+        config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> rotationThreshold.set( update ) );
+
         return new TransactionLogFilesContext( rotationThreshold, logEntryReader,
                 lastCommittedIdSupplier, committingTransactionIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem );
     }
