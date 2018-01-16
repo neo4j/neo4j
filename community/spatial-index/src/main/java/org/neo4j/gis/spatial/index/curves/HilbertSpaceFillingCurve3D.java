@@ -97,15 +97,16 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
             case -1:
                 return BACK;  // move back    111->110
             default:
-                throw new IllegalArgumentException("Illegal direction: " + end);
+                throw new IllegalArgumentException( "Illegal direction: " + end );
             }
         }
 
         SubCurve3D name()
         {
-            return new SubCurve3D( direction( npointValues[0], npointValues[1] ),
+            return new SubCurve3D(
+                    direction( npointValues[0], npointValues[1] ),
                     direction( npointValues[1], npointValues[2] ),
-                    direction( npointValues[0], npointValues[length() - 1] ));
+                    direction( npointValues[0], npointValues[length() - 1] ) );
         }
 
         /**

@@ -59,7 +59,7 @@ public class HilbertSpaceFillingCurve2D extends SpaceFillingCurve
             case -1:
                 return DOWN; // move down    11->10
             default:
-                throw new IllegalArgumentException("Illegal direction: " + end);
+                throw new IllegalArgumentException( "Illegal direction: " + end );
             }
         }
 
