@@ -400,13 +400,25 @@ public abstract class CompiledConversionUtils
         {
             return ((PrimitiveEntityStream) iterable).iterator();
         }
+        else if ( iterable instanceof Long)
+        {
+            return (LongStream.of((Long) iterable)).iterator();
+        }
         else if ( iterable instanceof LongStream )
         {
             return ((LongStream) iterable).iterator();
         }
+        else if ( iterable instanceof Double)
+        {
+            return (DoubleStream.of((Double) iterable)).iterator();
+        }
         else if ( iterable instanceof DoubleStream )
         {
             return ((DoubleStream) iterable).iterator();
+        }
+        else if ( iterable instanceof Integer)
+        {
+            return (IntStream.of((Integer) iterable)).iterator();
         }
         else if ( iterable instanceof IntStream )
         {
@@ -416,36 +428,45 @@ public abstract class CompiledConversionUtils
         {
             return Collections.emptyIterator();
         }
+        else if ( iterable instanceof String )
+        {
+            String[] singleStringArray = {(String) iterable};
+            return getIterator( singleStringArray, 1 );
+        }
         else if ( iterable.getClass().isArray() )
         {
             int len = Array.getLength( iterable );
-
-            return new Iterator()
-            {
-                private int position = 0;
-
-                @Override
-                public boolean hasNext()
-                {
-                    return position < len;
-                }
-
-                @Override
-                public Object next()
-                {
-                    if ( position >= len )
-                    {
-                        throw new NoSuchElementException();
-                    }
-                    return Array.get( iterable, position++ );
-                }
-            };
+            return getIterator( iterable, len );
         }
         else
         {
             throw new CypherTypeException(
                     "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
         }
+    }
+
+    private static Iterator getIterator( Object iterable, int len )
+    {
+        return new Iterator()
+        {
+            private int position = 0;
+
+            @Override
+            public boolean hasNext()
+            {
+                return position < len;
+            }
+
+            @Override
+            public Object next()
+            {
+                if ( position >= len )
+                {
+                    throw new NoSuchElementException();
+                }
+                return Array.get( iterable, position++ );
+            }
+        };
     }
 
     @SuppressWarnings( "unchecked" )
