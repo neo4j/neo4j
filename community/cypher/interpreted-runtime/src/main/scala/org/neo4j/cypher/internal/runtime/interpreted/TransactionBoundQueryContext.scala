@@ -384,11 +384,38 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       if (transactionalContext.statement.dataWriteOperations().nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
-  override def getNodesByLabel(id: Int): Iterator[NodeValue] =
-    JavaConversionSupport.mapToScalaENFXSafe(getNodesByLabelPrimitive(id))(nodeOps.getById)
+  override def getNodesByLabel(id: Int): Iterator[NodeValue] = {
+    val cursor = allocateAndTraceNodeLabelIndexCursor()
+    reads().nodeLabelScan(id, cursor)
+    nodeLabelIndexCursorToIterator(cursor)
+  }
 
-  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator =
-    transactionalContext.statement.readOperations().nodesGetForLabel(id)
+  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = {
+    val cursor = allocateAndTraceNodeLabelIndexCursor()
+    reads().nodeLabelScan(id, cursor)
+    new PrimitiveLongIterator {
+      private var _next: Long = fetchNext()
+
+      private def fetchNext() =
+        if (cursor.next()) cursor.nodeReference()
+        else -1L
+
+      override def hasNext: Boolean = _next >= 0
+
+      override def next(): Long = {
+        if (!hasNext) {
+          cursor.close()
+          Iterator.empty.next()
+        }
+
+        val current = _next
+        _next = fetchNext()
+        if (!hasNext) cursor.close()
+
+        current
+      }
+    }
+  }
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
     transactionalContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
@@ -968,6 +995,12 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     cursor
   }
 
+  private def allocateAndTraceNodeLabelIndexCursor() = {
+    val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor()
+    resources.trace(cursor)
+    cursor
+  }
+
   private def allocateAndTracePropertyCursor() = {
     val cursor = transactionalContext.cursors.allocatePropertyCursor()
     resources.trace(cursor)
@@ -1000,6 +1033,31 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   private def nodeValueIndexCursorToIterator(nodeCursor: NodeValueIndexCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
+    private var _next: NodeValue = fetchNext()
+
+    private def fetchNext() = {
+      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxyById(nodeCursor.nodeReference()))
+      else null
+    }
+
+    override def hasNext: Boolean = _next != null
+
+    override def next(): NodeValue = {
+      if (!hasNext) {
+        nodeCursor.close()
+        Iterator.empty.next()
+      }
+
+      val current = _next
+      _next = fetchNext()
+      if (!hasNext) {
+        nodeCursor.close()
+      }
+      current
+    }
+  }
+
+  private def nodeLabelIndexCursorToIterator(nodeCursor: NodeLabelIndexCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
     private var _next: NodeValue = fetchNext()
 
     private def fetchNext() = {

@@ -34,14 +34,14 @@ abstract class IndexCursor
         this.progressor = progressor;
     }
 
-    public boolean next()
-    {
-        return progressor != null && progressor.next();
-    }
-
     public final boolean shouldRetry()
     {
         return false;
+    }
+
+    boolean innerNext()
+    {
+        return progressor != null && progressor.next();
     }
 
     void close()

@@ -66,7 +66,7 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int labelGetForName( String name ) throws LabelNotFoundKernelException
+    public int labelGetForName( String name )
     {
         return store.labelGetForName( name );
     }

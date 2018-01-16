@@ -67,6 +67,7 @@ import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
@@ -682,12 +683,12 @@ public class NodeProxy implements Node
               NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
         {
             int labelId = transaction.tokenRead().labelGetForName( label.name() );
+            if ( labelId == NO_SUCH_LABEL )
+            {
+                return false;
+            }
             transaction.dataRead().singleNode( nodeId, nodes );
             return nodes.next() && nodes.labels().contains( labelId );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            return false;
         }
     }
 

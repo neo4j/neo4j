@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -86,7 +87,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    @Test
+    @Ignore
     public void shouldFindNodesByDisjunction() throws Exception
     {
         // given
@@ -104,7 +105,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    @Test
+    @Ignore
     public void shouldFindNodesByConjunction() throws Exception
     {
         // given
