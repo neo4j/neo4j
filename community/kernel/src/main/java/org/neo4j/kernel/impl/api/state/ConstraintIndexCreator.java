@@ -64,9 +64,12 @@ public class ConstraintIndexCreator
         int CREATED_INDEX = 0;
         int REUSED_INDEX = 1;
         int RELEASED_LOCK = 3;
+        int RELEASING_LOCK = 6;
         int AWAITED_POPULATION = 2;
         int GOT_LOCK = 4;
+        int AWAITING_LOCK = 7;
         int GOT_LOCK_AGAIN = 5;
+        int AWAITING_LOCK_AGAIN = 8;
 
         void event( long threadId, int eventId );
         void log();
@@ -137,8 +140,9 @@ public class ConstraintIndexCreator
             // At this point the integrity of the constraint to be created was checked
             // while holding the lock and the index rule backing the soon-to-be-created constraint
             // has been created. Now it's just the population left, which can take a long time
-            monitor.event( Thread.currentThread().getId(), Monitor.RELEASED_LOCK );
+            monitor.event( Thread.currentThread().getId(), Monitor.RELEASING_LOCK );
             releaseLabelLock( locks, descriptor.getLabelId() );
+            monitor.event( Thread.currentThread().getId(), Monitor.RELEASED_LOCK );
 
             monitor.event( Thread.currentThread().getId(), Monitor.AWAITED_POPULATION );
             awaitConstrainIndexPopulation( constraint, proxy );
@@ -147,6 +151,7 @@ public class ConstraintIndexCreator
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
             // and if everything checks out then it will be held until after the constraint has been
             // created and activated.
+            monitor.event( Thread.currentThread().getId(), Monitor.AWAITING_LOCK );
             acquireLabelLock( state, locks, descriptor.getLabelId() );
             monitor.event( Thread.currentThread().getId(), Monitor.GOT_LOCK );
             reacquiredLabelLock = true;
@@ -179,6 +184,7 @@ public class ConstraintIndexCreator
             {
                 if ( !reacquiredLabelLock )
                 {
+                    monitor.event( Thread.currentThread().getId(), Monitor.AWAITING_LOCK_AGAIN );
                     acquireLabelLock( state, locks, descriptor.getLabelId() );
                     monitor.event( Thread.currentThread().getId(), Monitor.GOT_LOCK_AGAIN );
                 }

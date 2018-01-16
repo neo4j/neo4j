@@ -296,9 +296,12 @@ public class ConcurrentCreateDropIndexIT
             messages.put( ConstraintIndexCreator.Monitor.CREATED_INDEX, "Created Index" );
             messages.put( ConstraintIndexCreator.Monitor.REUSED_INDEX, "Reused Index" );
             messages.put( ConstraintIndexCreator.Monitor.AWAITED_POPULATION, "Awaited Population" );
+            messages.put( ConstraintIndexCreator.Monitor.RELEASING_LOCK, "Releasing lock" );
             messages.put( ConstraintIndexCreator.Monitor.RELEASED_LOCK, "Released lock" );
             messages.put( ConstraintIndexCreator.Monitor.GOT_LOCK, "Got lock" );
             messages.put( ConstraintIndexCreator.Monitor.GOT_LOCK_AGAIN, "Got lock again" );
+            messages.put( ConstraintIndexCreator.Monitor.AWAITING_LOCK, "Awaiting lock" );
+            messages.put( ConstraintIndexCreator.Monitor.AWAITING_LOCK_AGAIN, "Awaiting lock again" );
         }
 
         @Override
