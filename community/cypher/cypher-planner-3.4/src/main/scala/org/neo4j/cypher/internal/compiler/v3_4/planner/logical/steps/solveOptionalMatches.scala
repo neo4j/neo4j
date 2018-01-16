@@ -45,7 +45,15 @@ case object outerHashJoin extends OptionalSolver {
     if (joinNodes.nonEmpty &&
       joinNodes.forall(lhs.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
-      Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs, context))
+
+      // Use the smaller of the two sides to build the hash table
+      val lhsCard = lhs.solved.estimatedCardinality
+      val rhsCard = rhs.solved.estimatedCardinality
+
+      if(lhsCard < rhsCard)
+        Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs, context))
+      else
+        Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, rhs, lhs, context))
     } else {
       None
     }
