@@ -534,16 +534,15 @@ object SlotAllocation {
         }
         result
 
-      case NodeHashJoin(nodes, _, _) =>
+      case join:NodeJoin => // NodeHashJoin and OuterHashJoin
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val result = lhs.copy()
         rhs.foreachSlotOrdered {
-          case (k, slot) if !nodes(k) =>
+          case (k, slot) if !join.nodes(k) =>
             result.add(k, slot)
-            // If the column is one of the join columns there is no need to add it again
 
-          case _ =>
+          case _ => // If the column is one of the join columns there is no need to add it again
         }
         result
 

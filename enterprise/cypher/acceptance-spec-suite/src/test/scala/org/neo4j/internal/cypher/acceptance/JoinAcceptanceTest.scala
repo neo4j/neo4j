@@ -22,9 +22,9 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
-class ValueHashJoinImplementationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-  val expectedToSucceed: CypherComparisonSupport.TestConfiguration = Configs.Interpreted
-  val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
+class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+  private val expectedToSucceed = Configs.Interpreted
+  private val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
 
   test("find friends of others") {
     // given
@@ -49,7 +49,24 @@ class ValueHashJoinImplementationAcceptanceTest extends ExecutionEngineFunSuite 
     }
 
     // when
-  executeWith(expectedToSucceed, "MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b",
+    executeWith(expectedToSucceed, "MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("ValueHashJoin"), expectPlansToFail))
+  }
+
+  test("should handle node outer hash join") {
+    val a = createLabeledNode(Map[String, Any]("name" -> "a"), "A")
+    for(i <- 0 until 10) {
+      val b = createLabeledNode(Map[String, Any]("name" -> s"${i}b"), "B")
+      relate(a, b)
+    }
+
+    val query = """MATCH (a:A)
+                  |OPTIONAL MATCH (a)-->(b:B)
+                  |USING JOIN ON a
+                  |RETURN a.name, b.name""".stripMargin
+
+    val expectSucceed = Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1
+    executeWith(expectSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeOuterHashJoin"), expectPlansToFail))
   }
 }

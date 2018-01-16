@@ -26,11 +26,12 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable
+import scala.collection.mutable.MutableList
 import scala.collection.mutable.ListBuffer
 
-case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner: Pipe, nullableVariables: Set[String])
+case class NodeOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs: Pipe, nullableVariables: Set[String])
                                 (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+  extends PipeWithSource(lhs) {
   val nullColumns: Seq[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toSeq
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -42,12 +43,12 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
 
     val seenKeys = mutable.Set[IndexedSeq[Long]]()
     val joinedRows = (
-      for {context <- inner.createResults(state)
-           joinKey <- computeKey(context)}
+      for {rhsRow <- rhs.createResults(state)
+           joinKey <- computeKey(rhsRow)}
       yield {
         val seq = probeTable(joinKey)
         seenKeys.add(joinKey)
-        seq.map(context.mergeWith)
+        seq.map(lhsRow => executionContextFactory.copyWith(lhsRow).mergeWith(rhsRow))
       }).flatten
 
     def rowsWithoutRhsMatch: Iterator[ExecutionContext] = (probeTable.keySet -- seenKeys).iterator.flatMap {
@@ -59,7 +60,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
     rowsWithNullAsJoinKey ++ joinedRows ++ rowsWithoutRhsMatch
   }
 
-  private def addNulls(in: ExecutionContext): ExecutionContext = in.set(nullColumns)
+  private def addNulls(in: ExecutionContext): ExecutionContext = executionContextFactory.copyWith(in).set(nullColumns)
 
   private def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext]): ProbeTable = {
     val probeTable = new ProbeTable()
@@ -91,23 +92,25 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
   }
 }
 
+//noinspection ReferenceMustBePrefixed
 class ProbeTable() {
-  private val table: mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]] =
-    new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]]
+  private val table: mutable.HashMap[IndexedSeq[Long], MutableList[ExecutionContext]] =
+    new mutable.HashMap[IndexedSeq[Long], MutableList[ExecutionContext]]
 
   private val rowsWithNullInKey: ListBuffer[ExecutionContext] = new ListBuffer[ExecutionContext]()
 
   def addValue(key: IndexedSeq[Long], newValue: ExecutionContext) {
-    val values = table.getOrElseUpdate(key, mutable.MutableList.empty)
+    val values = table.getOrElseUpdate(key, MutableList.empty)
     values += newValue
   }
 
-  def addNull(context: ExecutionContext) = rowsWithNullInKey += context
+  def addNull(context: ExecutionContext): Unit = rowsWithNullInKey += context
 
-  val EMPTY = mutable.MutableList.empty
-  def apply(key: IndexedSeq[Long]) = table.getOrElse(key, EMPTY)
+  private val EMPTY: MutableList[ExecutionContext] = MutableList.empty
+
+  def apply(key: IndexedSeq[Long]): MutableList[ExecutionContext] = table.getOrElse(key, EMPTY)
 
   def keySet: collection.Set[IndexedSeq[Long]] = table.keySet
 
-  def nullRows = rowsWithNullInKey.iterator
+  def nullRows: Iterator[ExecutionContext] = rowsWithNullInKey.iterator
 }
