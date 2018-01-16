@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.com.slave;
 
 import org.neo4j.com.Response;
+import org.neo4j.com.Responses;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.ha.com.master.Slave;
@@ -44,7 +45,7 @@ public class SlaveImpl implements Slave
         {
             throw Exceptions.launderedException( e );
         }
-        return Response.EMPTY;
+        return Responses.empty();
     }
 
     @Override
