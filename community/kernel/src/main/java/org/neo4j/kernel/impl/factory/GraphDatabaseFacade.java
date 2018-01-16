@@ -56,11 +56,16 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -166,8 +171,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         /**
          * Begin a new kernel transaction with specified timeout in milliseconds.
-         * If a transaction is already associated to the current context
-         * (meaning, non-null is returned from {@link #currentTransaction()}), this should fail.
+         * If a transaction is already associated to the current context, this should fail.
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
          * @see SPI#beginTransaction(KernelTransaction.Type, SecurityContext)
@@ -614,34 +618,63 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Value value )
     {
-        Statement statement = statementContext.get();
-
-        ReadOperations readOps = statement.readOperations();
-        int propertyId = readOps.propertyKeyGetForName( key );
-        int labelId = readOps.labelGetForName( myLabel.name() );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        Statement statement = transaction.acquireStatement();
+        Read read = transaction.dataRead();
+        TokenRead tokenRead = transaction.tokenRead();
+        int propertyId = tokenRead.propertyKey( key );
+        int labelId = tokenRead.nodeLabel( myLabel.name() );
 
         if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
         {
             statement.close();
             return emptyResourceIterator();
         }
-
-        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
-
-        try
+        CapableIndexReference index = transaction.schemaRead().index( labelId, propertyId );
+        if ( index != CapableIndexReference.NO_INDEX )
         {
-            if ( null != descriptor )
+            // Ha! We found an index - let's use it to find matching nodes
+            try
             {
-                // Ha! We found an index - let's use it to find matching nodes
-                IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.schema().getPropertyId(), value );
-                PrimitiveLongResourceIterator indexResult = readOps.indexQuery( descriptor, query );
-                return map2nodes( indexResult, statement, indexResult );
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+                IndexQuery.ExactPredicate query = IndexQuery.exact( propertyId, value );
+                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, query );
+
+                return new PrefetchingResourceIterator<Node>()
+                {
+                    private boolean closed;
+                    @Override
+                    protected Node fetchNextOrNull()
+                    {
+                        if ( cursor.next() )
+                        {
+                            return newNodeProxy( cursor.nodeReference() );
+                        }
+                        else
+                        {
+                            close();
+                            return null;
+                        }
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                        if ( !closed )
+                        {
+                            statement.close();
+                            cursor.close();
+                            closed = true;
+                        }
+                    }
+                };
+            }
+            catch ( KernelException e )
+            {
+                // weird at this point but ignore and fallback to a label scan
             }
         }
-        catch ( KernelException e )
-        {
-            // weird at this point but ignore and fallback to a label scan
-        }
+
 
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
     }
