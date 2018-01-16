@@ -346,8 +346,8 @@ object CypherComparisonSupport {
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
-    val oldest = orderedVersions.head
-    val latest = orderedVersions.last
+    val oldest: Version = orderedVersions.head
+    val latest: Version = orderedVersions.last
     val all = Versions(orderedVersions: _*)
 
     object V2_3 extends Version("2.3")

@@ -241,11 +241,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
                                           maxLength = Some(max))
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(expandSpec), variables)
 
-      case FullPruningVarExpand(_, fromName, dir, types, toName, min, max, predicates) =>
-        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min,
-                                          maxLength = Some(max))
-        PlanDescriptionImpl(id, s"VarLengthExpand(FullPruning)", children, Seq(expandSpec), variables)
-
       case _: RemoveLabels =>
         PlanDescriptionImpl(id, "RemoveLabels", children, Seq.empty, variables)
 

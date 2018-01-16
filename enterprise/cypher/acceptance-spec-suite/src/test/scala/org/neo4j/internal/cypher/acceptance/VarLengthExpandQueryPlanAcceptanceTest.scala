@@ -39,7 +39,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
       }, expectPlansToFail = ignoreConfiguration))
   }
 
-  test("Plan should have right relationship direction other direction") {
+  test("Plan should have right relationship direction, other direction") {
     setUp("To")
     val query = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
     val ignoreConfiguration = Configs.AllRulePlanners + Configs.Cost2_3
@@ -124,11 +124,11 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
       }, expectPlansToFail = ignoreConfiguration))
   }
 
-  test("on longer var-lengths, we use FullPruningVarExpand") {
+  test("on longer var-lengths, we also use PruningVarExpand") {
     val query = "MATCH (a)-[*4..5]->(b) RETURN DISTINCT b"
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(FullPruning)")
+        plan should useOperators("VarLengthExpand(Pruning)")
       }, expectPlansToFail = ignoreConfiguration))
   }
 
@@ -141,35 +141,14 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
       }, expectPlansToFail = ignoreConfiguration))
   }
 
-  //  test("Do not plan pruning var expand when path is needed") {
-  //    val query = "MATCH p=(from)-[r*0..1]->(to) WITH nodes(p) AS d RETURN DISTINCT d"
-  //    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-  //
-  //    result.executionPlanDescription() should useOperators("VarLengthExpand(All)")
-  //=======
-  //    val query = "MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
-  //
-  //    val expectedPlan =
-  //      """
-  //        |+-----------------------+----------------+------------------+--------------------------------+
-  //        || Operator              | Estimated Rows | Variables        | Other                          |
-  //        |+-----------------------+----------------+------------------+--------------------------------+
-  //        || +ProduceResults       |              0 | anon[37], a, e   |                                |
-  //        || |                     +----------------+------------------+--------------------------------+
-  //        || +Filter               |              0 | anon[37], a, e   | e:To; e.name = {  AUTOSTRING1} |
-  //        || |                     +----------------+------------------+--------------------------------+
-  //        || +VarLengthExpand(All) |              0 | anon[37], e -- a | (a)-[:*..4]->(e)               |
-  //        || |                     +----------------+------------------+--------------------------------+
-  //        || +Filter               |              0 | a                | a.name = {  AUTOSTRING0}       |
-  //        || |                     +----------------+------------------+--------------------------------+
-  //        || +NodeByLabelScan      |              1 | a                | :From                          |
-  //        |+-----------------------+----------------+------------------+--------------------------------+
-  //        |""".stripMargin
-  //
-  //    val ignoreConfiguration = TestConfiguration(V2_3 -> V3_2, Planners.all, Runtimes.all ) + Configs.AllRulePlanners
-  //    executeWith(expectedToSucceed, query,planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = ignoreConfiguration))
-  //>>>>>>> More ported test before bug fixig.
-  //  }
+  test("Do not plan pruning var executeWithCostPlannerAndInterpretedRuntimeOnly when path is needed") {
+    val query = "MATCH p=(from)-[r*0..1]->(to) WITH nodes(p) AS d RETURN DISTINCT d"
+    val ignoreConfiguration = Configs.AllRulePlanners
+    executeWith(expectedToSucceed, query, planComparisonStrategy =
+      ComparePlansWithAssertion( plan => {
+        plan should useOperators("VarLengthExpand(All)")
+      }, expectPlansToFail = ignoreConfiguration))
+  }
 
   private def setUp(startLabel: String) {
     val a = createLabeledNode(Map("name" -> "Keanu Reeves"), "From")
