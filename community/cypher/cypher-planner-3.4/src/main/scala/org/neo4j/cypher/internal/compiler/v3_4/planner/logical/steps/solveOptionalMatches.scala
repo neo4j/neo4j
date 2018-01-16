@@ -49,11 +49,11 @@ case object outerHashJoin extends OptionalSolver {
     if (joinNodes.nonEmpty &&
       joinNodes.forall(lhs.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
-      val solvedHits = optionalQg.joinHints.filter { hint =>
+      val solvedHints = optionalQg.joinHints.filter { hint =>
         joinNodes == hint.variables.map(_.name).toSet
       }
 
-      Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs, solvedHits, context))
+      Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context))
     } else {
       None
     }

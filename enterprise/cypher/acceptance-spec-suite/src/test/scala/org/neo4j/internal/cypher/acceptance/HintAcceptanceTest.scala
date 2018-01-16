@@ -27,7 +27,6 @@ import scala.collection.Map
 class HintAcceptanceTest
     extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-
   test("should use a simple hint") {
     val query = "MATCH (a)--(b)--(c) USING JOIN ON b RETURN a,b,c"
     executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeHashJoin"), expectPlansToFail = Configs.AllRulePlanners))
