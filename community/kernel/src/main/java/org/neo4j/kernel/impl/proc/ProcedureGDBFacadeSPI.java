@@ -25,14 +25,12 @@ import java.util.Map;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -94,30 +92,6 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     public String name()
     {
         return "ProcedureGraphDatabaseService";
-    }
-
-    @Override
-    public KernelTransaction currentTransaction()
-    {
-        availability.assertDatabaseAvailable();
-        KernelTransaction tx = sourceModule.threadToTransactionBridge.getKernelTransactionBoundToThisThread( false );
-        if ( tx == null )
-        {
-            throw new NotInTransactionException();
-        }
-        return tx;
-    }
-
-    @Override
-    public boolean isInOpenTransaction()
-    {
-        return sourceModule.threadToTransactionBridge.hasTransaction();
-    }
-
-    @Override
-    public Statement currentStatement()
-    {
-        return sourceModule.threadToTransactionBridge.get();
     }
 
     @Override

@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.unsolvedPreds
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, Variable}
 
 case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
 
-  def apply(plan: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] =
-    unsolvedPreds(queryGraph.selections, plan).collect {
+  def apply(plan: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] =
+    unsolvedPreds(solveds)(queryGraph.selections, plan).collect {
       case s@HasLabels(id: Variable, Seq(labelName)) =>
         val labelScan = context.logicalPlanProducer.planNodeByLabelScan(id.name, labelName, Seq(s), None, Set.empty, context)
         context.logicalPlanProducer.planNodeHashJoin(Set(id.name), plan, labelScan, Set.empty, context)

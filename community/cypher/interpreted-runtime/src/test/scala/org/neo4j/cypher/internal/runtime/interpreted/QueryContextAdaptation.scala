@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
 
@@ -80,7 +80,7 @@ trait QueryContextAdaptation {
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = ???
 
-  override def entityAccessor: NodeManager = ???
+  override def entityAccessor: EmbeddedProxySPI = ???
 
   override def resources: CloseableResource = ???
 

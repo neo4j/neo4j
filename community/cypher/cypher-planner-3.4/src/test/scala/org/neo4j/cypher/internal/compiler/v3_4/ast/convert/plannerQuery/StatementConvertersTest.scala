@@ -837,7 +837,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val expectation =
       """RegularPlannerQuery(QueryGraph {Nodes: ['owner']},AggregatingQueryProjection(Map(owner -> Variable(owner)),Map(xyz -> CountStar()),QueryShuffle(List(),None,None)),Some(RegularPlannerQuery(QueryGraph {Arguments: ['owner', 'xyz']},RegularQueryProjection(Map(owner -> Variable(owner), collection -> GreaterThan(Variable(xyz),SignedDecimalIntegerLiteral(0))),QueryShuffle(List(),None,None)),Some(RegularPlannerQuery(QueryGraph {Arguments: ['collection', 'owner']},RegularQueryProjection(Map(owner -> Variable(owner), collection -> Variable(collection),   FRESHID82 -> PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(owner)),List(),None),RelationshipPattern(Some(Variable(  REL90)),List(),None,None,BOTH,false),NodePattern(Some(Variable(  NODE92)),List(),None))))),QueryShuffle(List(),None,None)),Some(RegularPlannerQuery(QueryGraph {Arguments: ['  FRESHID82', 'collection', 'owner'], Predicates: ['`  FRESHID82`']},RegularQueryProjection(Map(owner -> Variable(owner)),QueryShuffle(List(),None,None)),None)))))))""".stripMargin
-
     result should equal(expectation)
   }
 

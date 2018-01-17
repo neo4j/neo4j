@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.Variable
@@ -45,9 +46,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   leafPlanUpdater: LogicalPlan => LogicalPlan = identity) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
 
-  def withUpdatedCardinalityInformation(plan: LogicalPlan) = copy(input = input.recurse(plan))
-
-  def withNextTxLayer = copy(logicalPlanProducer = logicalPlanProducer.withNextTxLayer)
+  def withUpdatedCardinalityInformation(plan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities) = copy(input = input.recurse(plan, solveds, cardinalities))
 
   def forExpressionPlanning(nodes: Iterable[Variable], rels: Iterable[Variable]): LogicalPlanningContext = {
     val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }

@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object projection {
 
-  def apply(in: LogicalPlan, projs: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
+  def apply(in: LogicalPlan, projs: Map[String, Expression], context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
 
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs, context)
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs, context, solveds, cardinalities)
 
     val ids = plan.availableSymbols
 

@@ -41,14 +41,13 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap
     )
 
-    val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
       planContext = newMockedPlanContext
     )
-
     val startPlan = newMockedLogicalPlan()
 
-    aggregation(startPlan, projection, context) should equal(
-      Aggregation(startPlan, Map(), aggregatingMap)(solved)
+    aggregation(startPlan, projection, context, new StubSolveds, new StubCardinalities) should equal(
+      Aggregation(startPlan, Map(), aggregatingMap)
     )
   }
 
@@ -59,15 +58,15 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap2
     )
 
-    val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
       planContext = newMockedPlanContext
     )
 
     val startPlan = newMockedLogicalPlan()
 
-    aggregation(startPlan, projectionPlan, context) should equal(
+    aggregation(startPlan, projectionPlan, context, new StubSolveds, new StubCardinalities) should equal(
       Aggregation(
-       startPlan, groupingMap, aggregatingMap2)(solved)
+       startPlan, groupingMap, aggregatingMap2)
     )
   }
 
@@ -80,19 +79,19 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap
     )
 
-    val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
       planContext = newMockedPlanContext
     )
 
     val startPlan = newMockedLogicalPlan()
 
-    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)(solved)
+    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)
 
     // When
-    val result = aggregation(projectionPlan, projection, context)
+    val result = aggregation(projectionPlan, projection, context, new StubSolveds, new StubCardinalities)
     // Then
     result should equal(
-      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)(solved)
+      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
     )
   }
 }

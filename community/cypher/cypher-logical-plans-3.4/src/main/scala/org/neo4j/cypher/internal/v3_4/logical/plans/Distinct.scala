@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -30,7 +29,6 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   */
 case class Distinct(source: LogicalPlan,
                     groupingExpressions: Map[String, Expression])
-                   (val solved: PlannerQuery with CardinalityEstimation)
                    (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
   override def lhs = Some(source)
 

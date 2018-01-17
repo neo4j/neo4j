@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.backup.IncrementalBackupNotPossibleException;
 import org.neo4j.backup.OnlineBackupExtensionFactory;
@@ -415,7 +416,11 @@ public class BackupProtocolServiceIT
         db.shutdown();
 
         // then
-        File[] files = Files.list( backupDir ).map( Path::toFile ).toArray( File[]::new );
+        File[] files;
+        try ( Stream<Path> listing = Files.list( backupDir ) )
+        {
+            files = listing.map( Path::toFile ).toArray( File[]::new );
+        }
 
         assertTrue( files.length > 0 );
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
@@ -28,7 +29,7 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
 
   import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.expandSolverStep._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext, solveds: Solveds): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
       for (patternId <- goal.iterator;
            pattern <- registry.lookup(patternId);

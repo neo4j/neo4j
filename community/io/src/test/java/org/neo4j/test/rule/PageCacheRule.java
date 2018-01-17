@@ -34,7 +34,6 @@ import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
 public class PageCacheRule extends ExternalResource
@@ -176,7 +175,7 @@ public class PageCacheRule extends ExternalResource
         PageCursorTracerSupplier cursorTracerSupplier = selectConfig(
                 baseConfig.pageCursorTracerSupplier,
                 overriddenConfig.pageCursorTracerSupplier,
-                DefaultPageCursorTracerSupplier.INSTANCE );
+                PageCursorTracerSupplier.NULL );
 
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( fs, Configuration.EMPTY );

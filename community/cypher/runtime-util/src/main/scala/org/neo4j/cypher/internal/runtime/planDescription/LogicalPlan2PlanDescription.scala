@@ -20,18 +20,21 @@
 package org.neo4j.cypher.internal.runtime.planDescription
 
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => InternalPlanDescription) {
+object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, ReadOnlies, Cardinalities) => InternalPlanDescription) {
 
   override def apply(input: LogicalPlan,
-                     plannerName: PlannerName): InternalPlanDescription = {
-    val readOnly = input.solved.readOnly
-    new LogicalPlan2PlanDescription(readOnly).create(input)
+                     plannerName: PlannerName,
+                     readOnlies: ReadOnlies,
+                     cardinalities: Cardinalities): InternalPlanDescription = {
+    val readOnly = readOnlies.get(input.id)
+    new LogicalPlan2PlanDescription(readOnly, cardinalities).create(input)
       .addArgument(Version("CYPHER 3.4"))
       .addArgument(RuntimeVersion("3.4"))
       .addArgument(Planner(plannerName.toTextOutput))
@@ -40,7 +43,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => Intern
   }
 }
 
-case class LogicalPlan2PlanDescription(readOnly: Boolean)
+case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities)
   extends TreeBuilder[InternalPlanDescription] {
 
   override protected def build(plan: LogicalPlan): InternalPlanDescription = {
@@ -113,7 +116,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    result.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
+    result.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
   }
 
   override protected def build(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
@@ -241,11 +244,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
                                           maxLength = Some(max))
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(expandSpec), variables)
 
-      case FullPruningVarExpand(_, fromName, dir, types, toName, min, max, predicates) =>
-        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min,
-                                          maxLength = Some(max))
-        PlanDescriptionImpl(id, s"VarLengthExpand(FullPruning)", children, Seq(expandSpec), variables)
-
       case _: RemoveLabels =>
         PlanDescriptionImpl(id, "RemoveLabels", children, Seq.empty, variables)
 
@@ -290,7 +288,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    result.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
+    result.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
   }
 
   override protected def build(plan: LogicalPlan, lhs: InternalPlanDescription,
@@ -375,7 +373,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
-    result.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
+    result.addArgument(EstimatedRows(cardinalities.get(plan.id).amount))
   }
 
   private def getDescriptions(label: LabelToken,

@@ -27,32 +27,32 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, LogicalPlan, Sele
 
 class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {
-    val argument: LogicalPlan = Argument(Set("a"))(solved)
+    val argument: LogicalPlan = Argument(Set("a"))
     val predicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos))(pos)
     val cleanPredicate: Expression = Equals(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val selection = Selection(Seq(predicate), argument)(solved)
+    val selection = Selection(Seq(predicate), argument)
 
     selection.endoRewrite(simplifyPredicates) should equal(
-      Selection(Seq(cleanPredicate), argument)(solved))
+      Selection(Seq(cleanPredicate), argument))
   }
 
   test("should not rewrite WHERE x.prop in [1, 2]") {
-    val argument: LogicalPlan = Argument(Set("a"))(solved)
+    val argument: LogicalPlan = Argument(Set("a"))
     val collection = ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos), SignedDecimalIntegerLiteral("2")(pos)))(pos)
     val orgPredicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), collection)(pos)
-    val selection = Selection(Seq(orgPredicate), argument)(solved)
+    val selection = Selection(Seq(orgPredicate), argument)
 
     selection.endoRewrite(simplifyPredicates) should equal(selection)
   }
 
   test("should rewrite WHERE AndedPropertyInequality(x.prop, 1) to WHERE x.prop > 42") {
-    val argument: LogicalPlan = Argument(Set("x"))(solved)
+    val argument: LogicalPlan = Argument(Set("x"))
     val variable = Variable("x")(pos)
     val property = Property(variable, PropertyKeyName("prop")(pos))(pos)
     val greaterThan = GreaterThan(property, SignedDecimalIntegerLiteral("42")(pos))(pos)
     val complexForm = AndedPropertyInequalities(variable, property, NonEmptyList(greaterThan))
-    val selection = Selection(Seq(complexForm), argument)(solved)
-    val expectedSelection = Selection(Seq(greaterThan), argument)(solved)
+    val selection = Selection(Seq(complexForm), argument)
+    val expectedSelection = Selection(Seq(greaterThan), argument)
 
     selection.endoRewrite(simplifyPredicates) should equal(expectedSelection)
   }

@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
@@ -96,7 +95,7 @@ public class RandomPageCacheTestHarness implements Closeable
         cachePageCount = 20;
         filePageCount = cachePageCount * 10;
         tracer = PageCacheTracer.NULL;
-        cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        cursorTracerSupplier = PageCursorTracerSupplier.NULL;
         commandCount = 1000;
 
         Command[] commands = Command.values();

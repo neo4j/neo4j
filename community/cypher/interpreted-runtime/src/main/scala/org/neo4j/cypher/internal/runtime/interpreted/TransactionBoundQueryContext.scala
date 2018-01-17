@@ -54,7 +54,7 @@ import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
@@ -75,8 +75,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override val resources: ResourceManager = new ResourceManager
   override val nodeOps: NodeOperations = new NodeOperations
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
-  override lazy val entityAccessor: NodeManager =
-    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+  override lazy val entityAccessor: EmbeddedProxySPI =
+    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
@@ -123,7 +123,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def createNode(): Node = entityAccessor.newNodeProxyById(writes().nodeCreate())
+  override def createNode(): Node = entityAccessor.newNodeProxy(writes().nodeCreate())
 
   override def createNodeId(): Long = writes().nodeCreate()
 
@@ -384,11 +384,38 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       if (transactionalContext.statement.dataWriteOperations().nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
-  override def getNodesByLabel(id: Int): Iterator[NodeValue] =
-    JavaConversionSupport.mapToScalaENFXSafe(getNodesByLabelPrimitive(id))(nodeOps.getById)
+  override def getNodesByLabel(id: Int): Iterator[NodeValue] = {
+    val cursor = allocateAndTraceNodeLabelIndexCursor()
+    reads().nodeLabelScan(id, cursor)
+    nodeLabelIndexCursorToIterator(cursor)
+  }
 
-  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator =
-    transactionalContext.statement.readOperations().nodesGetForLabel(id)
+  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = {
+    val cursor = allocateAndTraceNodeLabelIndexCursor()
+    reads().nodeLabelScan(id, cursor)
+    new PrimitiveLongIterator {
+      private var _next: Long = fetchNext()
+
+      private def fetchNext() =
+        if (cursor.next()) cursor.nodeReference()
+        else -1L
+
+      override def hasNext: Boolean = _next >= 0
+
+      override def next(): Long = {
+        if (!hasNext) {
+          cursor.close()
+          Iterator.empty.next()
+        }
+
+        val current = _next
+        _next = fetchNext()
+        if (!hasNext) cursor.close()
+
+        current
+      }
+    }
+  }
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
     transactionalContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
@@ -479,7 +506,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getById(id: Long): NodeValue = try {
-      fromNodeProxy(entityAccessor.newNodeProxyById(id))
+      fromNodeProxy(entityAccessor.newNodeProxy(id))
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
@@ -541,7 +568,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def getByIdIfExists(id: Long): Option[NodeValue] =
       if (transactionalContext.statement.readOperations().nodeExists(id))
-        Some(fromNodeProxy(entityAccessor.newNodeProxyById(id)))
+        Some(fromNodeProxy(entityAccessor.newNodeProxy(id)))
       else
         None
   }
@@ -596,7 +623,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getById(id: Long): RelationshipValue = try {
-      fromRelationshipProxy(entityAccessor.newRelationshipProxyById(id))
+      fromRelationshipProxy(entityAccessor.newRelationshipProxy(id))
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
@@ -781,7 +808,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
       baseTraversalDescription.expand(expander.build())
     }
-    traversalDescription.traverse(entityAccessor.newNodeProxyById(realNode)).iterator().asScala
+    traversalDescription.traverse(entityAccessor.newNodeProxy(realNode)).iterator().asScala
   }
 
   override def nodeCountByCountStore(labelId: Int): Long = {
@@ -805,7 +832,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
     //could probably do without node proxies here
-    Option(pathFinder.findSinglePath(entityAccessor.newNodeProxyById(left), entityAccessor.newNodeProxyById(right)))
+    Option(pathFinder.findSinglePath(entityAccessor.newNodeProxy(left), entityAccessor.newNodeProxy(right)))
   }
 
   override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
@@ -813,7 +840,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
                                filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
-    pathFinder.findAllPaths(entityAccessor.newNodeProxyById(left), entityAccessor.newNodeProxyById(right)).iterator()
+    pathFinder.findAllPaths(entityAccessor.newNodeProxy(left), entityAccessor.newNodeProxy(right)).iterator()
       .asScala
   }
 
@@ -968,6 +995,12 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     cursor
   }
 
+  private def allocateAndTraceNodeLabelIndexCursor() = {
+    val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor()
+    resources.trace(cursor)
+    cursor
+  }
+
   private def allocateAndTracePropertyCursor() = {
     val cursor = transactionalContext.cursors.allocatePropertyCursor()
     resources.trace(cursor)
@@ -978,7 +1011,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     private var _next: NodeValue = fetchNext()
 
     private def fetchNext() = {
-      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxyById(nodeCursor.nodeReference()))
+      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
       else null
     }
 
@@ -1003,7 +1036,32 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     private var _next: NodeValue = fetchNext()
 
     private def fetchNext() = {
-      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxyById(nodeCursor.nodeReference()))
+      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+      else null
+    }
+
+    override def hasNext: Boolean = _next != null
+
+    override def next(): NodeValue = {
+      if (!hasNext) {
+        nodeCursor.close()
+        Iterator.empty.next()
+      }
+
+      val current = _next
+      _next = fetchNext()
+      if (!hasNext) {
+        nodeCursor.close()
+      }
+      current
+    }
+  }
+
+  private def nodeLabelIndexCursorToIterator(nodeCursor: NodeLabelIndexCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
+    private var _next: NodeValue = fetchNext()
+
+    private def fetchNext() = {
+      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
       else null
     }
 

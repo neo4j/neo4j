@@ -19,35 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
 import org.neo4j.cypher.internal.util.v3_4.DummyPosition
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, Projection, RollUpApply}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Projection, RollUpApply}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("Rewrites single pattern expression") {
     // given MATCH (a) RETURN (a)-->() as x
     val otherSide = newMockedLogicalPlan("  NODE1")
-    val strategy = createStrategy(otherSide)
-    val source = newMockedLogicalPlan("a")
+    val strategy = newMockedStrategyWithMultiplePlans(otherSide)
     val pathStep = mock[PathStep]
 
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep))
-    val context = logicalPlanningContext(strategy)
+    val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
+    val source = newMockedLogicalPlan(solveds, cardinalities, "a")
 
     // when
-    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1), context)
+    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1), context, solveds, cardinalities)
 
     // then
-    val expectedInnerPlan = Projection(otherSide, Map("  FRESHID0" -> PathExpression(pathStep)(pos)))(solved)
+    val expectedInnerPlan = Projection(otherSide, Map("  FRESHID0" -> PathExpression(pathStep)(pos)))
 
-    resultPlan should equal(RollUpApply(source, expectedInnerPlan, "x", "  FRESHID0", Set("a"))(solved))
+    resultPlan should equal(RollUpApply(source, expectedInnerPlan, "x", "  FRESHID0", Set("a")))
     expressions should equal(Map("x" -> Variable("x")(pos)))
   }
 
@@ -55,23 +52,23 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // given MATCH (a) RETURN (a)-->(b) as x, (a)<--(b) as y
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("incoming-inner-plan")
-    val strategy = createStrategy(b1, b2)
-    val context = logicalPlanningContext(strategy)
-    val source = newMockedLogicalPlan("a")
+    val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
+    val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
+    val source = newMockedLogicalPlan(solveds, cardinalities, "a")
     val pathStep1 = mock[PathStep]
     val pathStep2 = mock[PathStep]
 
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
-    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1, "y" -> patExpr2), context)
+    val (resultPlan, expressions) = expressionSolver(source, Map("x" -> patExpr1, "y" -> patExpr2), context, solveds, cardinalities)
 
     // then
-    val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
-    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "x", "  FRESHID0", Set("a"))(solved)
+    val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
+    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "x", "  FRESHID0", Set("a"))
 
-    val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))(solved)
-    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "y", "  FRESHID3", Set("a"))(solved)
+    val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))
+    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "y", "  FRESHID3", Set("a"))
 
     resultPlan should equal(rollUp2)
     expressions should equal(Map("x" -> Variable("x")(pos), "y" -> Variable("y")(pos)))
@@ -81,9 +78,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // given MATCH (a) RETURN (a)-->() = (a)--()
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("both-inner-plan")
-    val strategy = createStrategy(b1, b2)
-    val context = logicalPlanningContext(strategy)
-    val source = newMockedLogicalPlan("a")
+    val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
+    val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
+    val source = newMockedLogicalPlan(solveds, cardinalities, "a")
     val pathStep1 = mock[PathStep]
     val pathStep2 = mock[PathStep]
 
@@ -91,14 +88,14 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val stringToEquals1: Map[String, Expression] = Map("x" -> Equals(patExpr1, patExpr2)(pos))
-    val (resultPlan, expressions) = expressionSolver(source, stringToEquals1, context)
+    val (resultPlan, expressions) = expressionSolver(source, stringToEquals1, context, solveds, cardinalities)
 
     // then
-    val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
-    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "  FRESHID1", "  FRESHID0", Set("a"))(solved)
+    val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
+    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "  FRESHID1", "  FRESHID0", Set("a"))
 
-    val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))(solved)
-    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))(solved)
+    val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))
+    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))
 
     resultPlan should equal(rollUp2)
     expressions should equal(Map("x" -> Equals(Variable("  FRESHID1")(pos), Variable("  FRESHID4")(pos))(pos)))
@@ -108,9 +105,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // given MATCH (a) WHERE (a)-->() = (a)--() return a
     val b1 = newMockedLogicalPlan("outgoing-inner-plan")
     val b2 = newMockedLogicalPlan("both-inner-plan")
-    val strategy = createStrategy(b1, b2)
-    val context = logicalPlanningContext(strategy)
-    val source = newMockedLogicalPlan("a")
+    val strategy = newMockedStrategyWithMultiplePlans(b1, b2)
+    val (context, solveds, cardinalities) = logicalPlanningContext(strategy)
+    val source = newMockedLogicalPlan(solveds, cardinalities, "a")
     val pathStep1 = mock[PathStep]
     val pathStep2 = mock[PathStep]
 
@@ -118,14 +115,14 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val predicate = Equals(patExpr1, patExpr2)(pos)
-    val (resultPlan, expressions) = expressionSolver(source, Seq(predicate), context)
+    val (resultPlan, expressions) = expressionSolver(source, Seq(predicate), context, solveds, cardinalities)
 
     // then
-    val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
-    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "  FRESHID1", "  FRESHID0", Set("a"))(solved)
+    val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))
+    val rollUp1 = RollUpApply(source, expectedInnerPlan1, "  FRESHID1", "  FRESHID0", Set("a"))
 
-    val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))(solved)
-    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))(solved)
+    val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))
+    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))
 
     resultPlan should equal(rollUp2)
     expressions should equal(Seq(Equals(Variable("  FRESHID1")(pos), Variable("  FRESHID4")(pos))(pos)))
@@ -161,11 +158,5 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
       NodePattern(Some(varFor(left)), Seq.empty, None) _,
       RelationshipPattern(relName, Seq.empty, None, None, dir)(relPos),
       NodePattern(right, Seq.empty, None)(rightPos)) _)(DummyPosition(position)))
-  }
-
-  private def createStrategy(plan: LogicalPlan*): QueryGraphSolver = {
-    val strategy = mock[QueryGraphSolver]
-    when(strategy.plan(any[QueryGraph], any[LogicalPlanningContext])).thenReturn(plan.head, plan.tail:_*)
-    strategy
   }
 }

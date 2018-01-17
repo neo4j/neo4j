@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost, LabelId, Selectivity}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, HasLabels}
@@ -35,7 +36,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   var knownLabels: Set[String] = Set.empty
   var cardinality: PartialFunction[PlannerQuery, Cardinality] = PartialFunction.empty
-  var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost] = PartialFunction.empty
+  var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = PartialFunction.empty
   var selectivity: PartialFunction[Expression, Selectivity] = PartialFunction.empty
   var labelCardinality: Map[String, Cardinality] = Map.empty
   var statistics = null

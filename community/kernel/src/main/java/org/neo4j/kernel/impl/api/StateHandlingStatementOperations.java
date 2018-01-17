@@ -1062,7 +1062,7 @@ public class StateHandlingStatementOperations implements
             }
             else
             {
-                if ( !value.equals( existingValue ) )
+                if ( propertyHasChanged( value, existingValue ) )
                 {
                     state.txState().nodeDoChangeProperty( node.id(), propertyKeyId, existingValue, value );
                     indexTxStateUpdater.onPropertyChange( state, node, propertyKeyId, existingValue, value );
@@ -1094,7 +1094,7 @@ public class StateHandlingStatementOperations implements
                             ops, relationshipId, propertyKeyId, existingValue, value );
                 }
             }
-            if ( !value.equals( existingValue ) )
+            if ( propertyHasChanged( value, existingValue ) )
             {
                 state.txState().relationshipDoReplaceProperty(
                         relationship.id(), propertyKeyId, existingValue, value );
@@ -1811,5 +1811,13 @@ public class StateHandlingStatementOperations implements
                           ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
                           : storeLayer.nodeGetRelationships( storeStatement, node, direction, t -> t == relType ) );
         }
+    }
+
+    private boolean propertyHasChanged( Value lhs, Value rhs )
+    {
+        //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
+        //so by only checking for equality users cannot change type of property without also "changing" the value.
+        //Hence the extra type check here.
+        return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
     }
 }

@@ -129,12 +129,6 @@ public interface Status
                 "The transaction is of the wrong type to service the request. For instance, a transaction that has " +
                 "had schema modifications performed in it cannot be used to subsequently perform data operations, " +
                 "and vice versa." ),
-        TransactionTerminated( ClientError,
-                "The current transaction has been marked as terminated, meaning no more interactions with it are " +
-                "allowed. There are several reasons this happens - the client might have asked for the transaction " +
-                "to be terminated, an operator might have asked for the database to be shut down, or the current " +
-                "instance is about to go through a cluster role switch. Simply retry your operation in a new " +
-                "transaction." ),
         TransactionValidationFailed( ClientError,
                 "Transaction changes did not pass validation checks" ),
         TransactionHookFailed( ClientError,

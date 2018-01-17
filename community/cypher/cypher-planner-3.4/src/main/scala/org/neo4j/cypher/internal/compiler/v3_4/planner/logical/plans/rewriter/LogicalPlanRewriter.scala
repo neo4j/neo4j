@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Condition, Phase}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Rewriter
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attributes
 
 /*
  * Rewriters that live here are required to adhere to the contract of
@@ -37,14 +39,14 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(context: CompilerContext) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
+  override def instance(context: CompilerContext, solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
     fuseSelections,
-    unnestApply,
-    cleanUpEager,
+    unnestApply(solveds, otherAttributes.withAlso(cardinalities)),
+    cleanUpEager(solveds, otherAttributes.withAlso(cardinalities)),
     simplifyPredicates,
     unnestOptional,
-    predicateRemovalThroughJoins,
-    removeIdenticalPlans(context.logicalPlanIdGen),
+    predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes),
+    removeIdenticalPlans(otherAttributes.withAlso(cardinalities, solveds)),
     pruningVarExpander,
     useTop,
     simplifySelections
@@ -54,10 +56,12 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 trait LogicalPlanRewriter extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: CompilerContext): Rewriter
+  def instance(context: CompilerContext, solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes): Rewriter
 
   override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
-    val rewritten = from.logicalPlan.endoRewrite(instance(context))
+    val idGen = context.logicalPlanIdGen
+    val otherAttributes = Attributes(idGen)
+    val rewritten = from.logicalPlan.endoRewrite(instance(context, from.solveds, from.cardinalities, otherAttributes))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }
 }

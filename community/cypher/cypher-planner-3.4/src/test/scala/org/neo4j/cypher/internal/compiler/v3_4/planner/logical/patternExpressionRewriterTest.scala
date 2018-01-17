@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, NestedPlanExpression, Selection}
@@ -36,15 +37,15 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     // given
     val expr: Expression = And(patExpr1, patExpr2)_
     val strategy = createStrategy
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
-    val rewriter = patternExpressionRewriter(Set.empty, context)
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
+    val rewriter = patternExpressionRewriter(Set.empty, context, solveds, cardinalities)
 
     // when
     val result = expr.endoRewrite(rewriter)
 
     // then
-    verify(strategy).planPatternExpression(Set.empty, patExpr1, context)
-    verify(strategy).planPatternExpression(Set.empty, patExpr2, context)
+    verify(strategy).planPatternExpression(Set.empty, patExpr1, context, solveds, cardinalities)
+    verify(strategy).planPatternExpression(Set.empty, patExpr2, context, solveds, cardinalities)
     verifyNoMoreInteractions( strategy )
   }
 
@@ -52,33 +53,33 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     // given
     val expr: Expression = Or(And(patExpr1, NestedPlanExpression(dummyPlan, patExpr2)_)_, patExpr3)_
     val strategy = createStrategy
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
-    val rewriter = patternExpressionRewriter(Set.empty, context)
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
+    val rewriter = patternExpressionRewriter(Set.empty, context, solveds, cardinalities)
 
     // when
     val result = expr.endoRewrite(rewriter)
 
     // then
-    verify(strategy).planPatternExpression(Set.empty, patExpr1, context)
-    verify(strategy).planPatternExpression(Set.empty, patExpr3, context)
+    verify(strategy).planPatternExpression(Set.empty, patExpr1, context, solveds, cardinalities)
+    verify(strategy).planPatternExpression(Set.empty, patExpr3, context, solveds, cardinalities)
     verifyNoMoreInteractions( strategy )
   }
 
   test("Does rewrite pattern expressions inside nested plans") {
     // given
-    val plan = Selection(Seq(patExpr3), dummyPlan)(solved)
+    val plan = Selection(Seq(patExpr3), dummyPlan)
     val expr: Expression = Or(And(patExpr1, NestedPlanExpression(plan, patExpr2)_)_, patExpr4)_
     val strategy = createStrategy
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
-    val rewriter = patternExpressionRewriter(Set.empty, context)
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
+    val rewriter = patternExpressionRewriter(Set.empty, context, solveds, cardinalities)
 
     // when
     val result = expr.endoRewrite(rewriter)
 
     // then
-    verify(strategy).planPatternExpression(Set.empty, patExpr1, context)
-    verify(strategy).planPatternExpression(Set.empty, patExpr3, context)
-    verify(strategy).planPatternExpression(Set.empty, patExpr4, context)
+    verify(strategy).planPatternExpression(Set.empty, patExpr1, context, solveds, cardinalities)
+    verify(strategy).planPatternExpression(Set.empty, patExpr3, context, solveds, cardinalities)
+    verify(strategy).planPatternExpression(Set.empty, patExpr4, context, solveds, cardinalities)
     verifyNoMoreInteractions( strategy )
   }
 
@@ -87,7 +88,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
   private val patExpr3 = newPatExpr( "e", "f ")
   private val patExpr4 = newPatExpr( "g", "h" )
 
-  private val dummyPlan = AllNodesScan("a", Set.empty)(solved)
+  private val dummyPlan = AllNodesScan("a", Set.empty)
 
   private def newPatExpr(left: String, right: String): PatternExpression = {
     PatternExpression(RelationshipsPattern(RelationshipChain(
@@ -98,7 +99,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   private def createStrategy: QueryGraphSolver = {
     val strategy = mock[QueryGraphSolver]
-    when(strategy.planPatternExpression(any[Set[String]], any[PatternExpression], any[LogicalPlanningContext])).thenAnswer(
+    when(strategy.planPatternExpression(any[Set[String]], any[PatternExpression], any[LogicalPlanningContext], any[Solveds], any[Cardinalities])).thenAnswer(
       new Answer[(LogicalPlan, PatternExpression)] {
         override def answer(invocation: InvocationOnMock): (LogicalPlan, PatternExpression) = {
           val expr:PatternExpression = invocation.getArgument(1)

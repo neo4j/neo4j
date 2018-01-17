@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -141,7 +140,7 @@ abstract class Read implements TxStateHolder,
 
         NodeLabelIndexCursor indexCursor = (NodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        labelScanReader().nodesWithLabel( indexCursor, label );
+        labelScanReader().nodesWithLabel( indexCursor, label);
     }
 
     @Override
@@ -149,8 +148,10 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
 
-        ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAnyOfLabels( labels ) );
+        NodeLabelIndexCursor client = (NodeLabelIndexCursor) cursor;
+        client.setRead( this );
+        client.unionScan( new NodeLabelIndexProgressor( labelScanReader().nodesWithAnyOfLabels( labels ), client ),
+                false, labels );
     }
 
     @Override
@@ -158,13 +159,11 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
 
-        ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
-    }
-
-    private void labelScan( IndexProgressor.NodeLabelClient client, PrimitiveLongResourceIterator iterator )
-    {
-        client.initialize( new NodeLabelIndexProgressor( iterator, client ), false );
+        NodeLabelIndexCursor client = (NodeLabelIndexCursor) cursor;
+        client.setRead( this );
+        client.intersectionScan(
+                new NodeLabelIndexProgressor( labelScanReader().nodesWithAllLabels( labels ), client ),
+                false, labels );
     }
 
     @Override

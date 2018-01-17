@@ -42,7 +42,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.MapValue
 
@@ -197,8 +197,8 @@ object Templates {
     put(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description", load("description", typeRef[InternalPlanDescription])).
     put(self(classHandle), typeRef[QueryExecutionTracer], "tracer", load("tracer", typeRef[QueryExecutionTracer])).
     put(self(classHandle), typeRef[MapValue], "params", load("params", typeRef[MapValue])).
-    put(self(classHandle), typeRef[NodeManager], "nodeManager",
-             invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, NodeManager]("entityAccessor"))).
+    put(self(classHandle), typeRef[EmbeddedProxySPI], "proxySpi",
+             invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, EmbeddedProxySPI]("entityAccessor"))).
     put(self(classHandle), typeRef[Boolean], "skip", Expression.constant(false)).
     build()
 

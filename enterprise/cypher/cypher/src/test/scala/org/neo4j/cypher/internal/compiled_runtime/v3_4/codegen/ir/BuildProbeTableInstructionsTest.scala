@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
@@ -53,7 +53,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val buildTableMethodName = "buildProbeTable"
   private val resultRowKey = "resultKey"
 
-  private val entityAccessor = mock[NodeManager]
+  private val entityAccessor = mock[EmbeddedProxySPI]
   private val queryContext = mock[QueryContext]
   private val transactionalContext = mock[TransactionalContextWrapper]
   private val readOps = mock[ReadOperations]
@@ -170,7 +170,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
     ids.foreach { id =>
       val nodeMock = mock[NodeProxy]
       when(nodeMock.getId).thenReturn(id)
-      when(entityAccessor.newNodeProxyById(id)).thenReturn(nodeMock)
+      when(entityAccessor.newNodeProxy(id)).thenReturn(nodeMock)
       allNodeIds += id
     }
   }

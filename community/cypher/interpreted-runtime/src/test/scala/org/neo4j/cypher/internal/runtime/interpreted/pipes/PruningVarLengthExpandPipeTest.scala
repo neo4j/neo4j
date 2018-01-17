@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.withQueryState
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
@@ -60,7 +61,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toList shouldBe List(Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n2)))
+        val toList: Seq[ExecutionContext] = pipeUnderTest.createResults(queryState).toList
+        toList should beEquivalentTo(List(Map("from" -> n1, "to" -> n2)))
       })
     }
   }
@@ -74,10 +76,10 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toList shouldBe List(
-          Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n2)),
-          Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n1))
-        )
+        pipeUnderTest.createResults(queryState).toList should beEquivalentTo(List(
+          Map("from" -> n1, "to" -> n2),
+          Map("from" -> n1, "to" -> n1)
+        ))
       })
     }
   }
@@ -113,19 +115,88 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
      */
     val n1 = createNode()
     val n2 = createNode()
-    relate(n1, n1)
     relate(n1, n2)
+    relate(n1, n1)
 
     val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 2, 2, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toList should equal(
+        pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
           List(
-            Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n2))
+            Map("from" -> n1, "to" -> n2)
           )
         )
+      })
+    }
+  }
+
+  test("fixed length with shortcut") {
+    /*
+    n1 - ---- - n2 - n3 - n4
+       - n1_2 -
+
+    Even though n1-n2 is traversed first, the length 4 path over n1_2 should be found
+     */
+    val n1 = createNode()
+    val n2 = createNode()
+    val n3 = createNode()
+    val n4 = createNode()
+    val n1_2 = createNode()
+
+    relate(n1, n1_2)
+    relate(n1_2, n2)
+
+    relate(n1, n2)
+    relate(n2, n3)
+    relate(n3, n4)
+
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val pipeUnderTest = createPipe(src, 4, 4, SemanticDirection.BOTH)
+
+    graph.withTx { tx =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
+        pipeUnderTest.createResults(queryState).toSet should equal(
+          Set(
+            Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
+          )
+        )
+      })
+    }
+  }
+
+  test("fixed length with longer shortcut") {
+    /*
+    n1 - ----- - ----- - n2 - n3 - n4
+       - n1_2a - n1_2b -
+
+    Even though n1-n2 is traversed first, the length 4 path over n1_2 should be found
+     */
+    val n1 = createNode()
+    val n2 = createNode()
+    val n3 = createNode()
+    val n4 = createNode()
+    val n1_2a = createNode()
+    val n1_2b = createNode()
+
+    relate(n1, n1_2a)
+    relate(n1_2a, n1_2b)
+    relate(n1_2b, n2)
+
+    relate(n1, n2)
+    relate(n2, n3)
+    relate(n3, n4)
+
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val pipeUnderTest = createPipe(src, 5, 5, SemanticDirection.BOTH)
+
+    graph.withTx { tx =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
+        pipeUnderTest.createResults(queryState).toSet should equal(
+          Set(
+            Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
+        ))
       })
     }
   }
@@ -148,11 +219,10 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toList should equal(
+        pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
           List(
-            Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n2))
-          )
-        )
+            Map("from" -> n1, "to" -> n2)
+        ))
       })
     }
   }
@@ -175,10 +245,11 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toList should equal(
+        pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
           List(
-            Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n2))
-        ))
+            Map("from" -> n1, "to" -> n2)
+          )
+        )
       })
     }
   }
@@ -215,7 +286,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
   test("multiple start nodes") {
     val nodes = (0 to 10) map (_ => createNode())
-
+    val nodeValues = nodes.map(fromNodeProxy)
     nodes.tail.foldLeft(nodes.head) {
       case (x: Node, y: Node) =>
         relate(x, y)
@@ -228,14 +299,14 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toSet should equal(Set(
-          Map("from" -> fromNodeProxy(nodes(1)), "to" -> fromNodeProxy(nodes(2))),
-          Map("from" -> fromNodeProxy(nodes(1)), "to" -> fromNodeProxy(nodes(3))),
-          Map("from" -> fromNodeProxy(nodes(1)), "to" -> fromNodeProxy(nodes(4))),
-          Map("from" -> fromNodeProxy(nodes(1)), "to" -> fromNodeProxy(nodes(5))),
-          Map("from" -> fromNodeProxy(nodes(5)), "to" -> fromNodeProxy(nodes(6))),
-          Map("from" -> fromNodeProxy(nodes(5)), "to" -> fromNodeProxy(nodes(7))),
-          Map("from" -> fromNodeProxy(nodes(5)), "to" -> fromNodeProxy(nodes(8))),
-          Map("from" -> fromNodeProxy(nodes(5)), "to" -> fromNodeProxy(nodes(9)))
+          Map("from" -> nodeValues(1), "to" -> nodeValues(2)),
+          Map("from" -> nodeValues(1), "to" -> nodeValues(3)),
+          Map("from" -> nodeValues(1), "to" -> nodeValues(4)),
+          Map("from" -> nodeValues(1), "to" -> nodeValues(5)),
+          Map("from" -> nodeValues(5), "to" -> nodeValues(6)),
+          Map("from" -> nodeValues(5), "to" -> nodeValues(7)),
+          Map("from" -> nodeValues(5), "to" -> nodeValues(8)),
+          Map("from" -> nodeValues(5), "to" -> nodeValues(9))
         ))
       })
     }
@@ -340,6 +411,10 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
   private def createPipe(src: FakePipe, min: Int, max: Int, outgoing: SemanticDirection) = {
     PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max)()
+  }
+
+  private def createReferencePipe(src: FakePipe, min: Int, max: Int, outgoing: SemanticDirection) = {
+    LegacyPruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max)()
   }
 
   private def createPipe(src: FakePipe,

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -33,8 +32,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *
   * This operator is planned for merges using unique index seeks.
   */
-case class AssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class AssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

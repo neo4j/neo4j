@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.phases
 
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
@@ -37,6 +38,8 @@ the pipe line
 case class LogicalPlanState(queryText: String,
                             startPosition: Option[InputPosition],
                             plannerName: PlannerName,
+                            solveds: Solveds,
+                            cardinalities: Cardinalities,
                             maybeStatement: Option[Statement] = None,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,
@@ -59,11 +62,30 @@ case class LogicalPlanState(queryText: String,
   def withMaybeLogicalPlan(p: Option[LogicalPlan]): LogicalPlanState = copy(maybeLogicalPlan = p)
 }
 
+case class InitialState(queryText: String,
+                        startPosition: Option[InputPosition],
+                        plannerName: PlannerName,
+                        maybeStatement: Option[Statement] = None,
+                        maybeSemantics: Option[SemanticState] = None,
+                        maybeExtractedParams: Option[Map[String, Any]] = None,
+                        maybeSemanticTable: Option[SemanticTable] = None,
+                        accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
+  override def withStatement(s: Statement): InitialState = copy(maybeStatement = Some(s))
+
+  override def withSemanticTable(s: SemanticTable): InitialState = copy(maybeSemanticTable = Some(s))
+
+  override def withSemanticState(s: SemanticState): InitialState = copy(maybeSemantics = Some(s))
+
+  override def withParams(p: Map[String, Any]): InitialState = copy(maybeExtractedParams = Some(p))
+}
+
 object LogicalPlanState {
   def apply(state: BaseState): LogicalPlanState =
     LogicalPlanState(queryText = state.queryText,
                      startPosition = state.startPosition,
                      plannerName = state.plannerName,
+                     solveds = new Solveds,
+                     cardinalities = new Cardinalities,
                      maybeStatement = state.maybeStatement,
                      maybeSemantics = state.maybeSemantics,
                      maybeExtractedParams = state.maybeExtractedParams,

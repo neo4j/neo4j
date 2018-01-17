@@ -29,6 +29,6 @@ case object fuseSelections extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case topSelection@Selection(predicates1, Selection(predicates2, lhs)) =>
-      Selection(predicates1 ++ predicates2, lhs)(topSelection.solved)(SameId(topSelection.id))
+      Selection(predicates1 ++ predicates2, lhs)(SameId(topSelection.id))
   })
 }

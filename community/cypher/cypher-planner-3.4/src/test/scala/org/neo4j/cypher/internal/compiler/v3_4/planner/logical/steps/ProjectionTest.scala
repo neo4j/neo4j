@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AscSortItem
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, ColumnOrder, LogicalPlan, Projection}
@@ -40,55 +41,56 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // given
     val projections: Map[String, Expression] = Map("42" -> SignedDecimalIntegerLiteral("42") _)
 
-    val (context, startPlan) = queryGraphWith(projectionsMap = projections)
+    val (context, startPlan, solveds, cardinalities) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, context)
+    val result = projection(startPlan, projections, context, solveds, cardinalities)
 
     // then
-    result should equal(Projection(startPlan, projections)(solved))
-    result.solved.horizon should equal(RegularQueryProjection(projections))
+    result should equal(Projection(startPlan, projections))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }
 
   test("does not add projection when not needed") {
     // given
     val projections: Map[String, Expression] = Map("n" -> Variable("n") _)
-    val (context, startPlan) = queryGraphWith(projectionsMap = projections)
+    val (context, startPlan, solveds, cardinalities) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, context)
+    val result = projection(startPlan, projections, context, solveds, cardinalities)
 
     // then
     result should equal(startPlan)
-    result.solved.horizon should equal(RegularQueryProjection(projections))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }
 
   test("does projection when renaming columns") {
     // given
     val projections: Map[String, Expression] = Map("  n@34" -> Variable("n") _)
-    val (context, startPlan) = queryGraphWith(projectionsMap = projections)
+    val (context, startPlan, solveds, cardinalities) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, context)
+    val result = projection(startPlan, projections, context, solveds, cardinalities)
 
     // then
-    result should equal(Projection(startPlan, projections)(solved))
-    result.solved.horizon should equal(RegularQueryProjection(projections))
+    result should equal(Projection(startPlan, projections))
+    solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }
 
   private def queryGraphWith(skip: Option[Expression] = None,
                              limit: Option[Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos))): (LogicalPlanningContext, LogicalPlan) = {
-    val context = newMockedLogicalPlanningContext(
+                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos))):
+  (LogicalPlanningContext, LogicalPlan, Solveds, Cardinalities) = {
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
     val ids = projectionsMap.keySet
 
     val plan =
-      newMockedLogicalPlanWithSolved(ids, CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)), Cardinality(0)))
+      newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames = ids, solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)))
 
-    (context, plan)
+    (context, plan, solveds, cardinalities)
   }
 }

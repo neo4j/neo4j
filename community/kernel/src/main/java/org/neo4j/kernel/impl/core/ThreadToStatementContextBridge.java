@@ -66,7 +66,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return getKernelTransactionBoundToThisThread( true ).acquireStatement();
     }
 
-    private void assertInUnterminatedTransaction( KernelTransaction transaction )
+    private static void assertInUnterminatedTransaction( KernelTransaction transaction )
     {
         if ( transaction == null )
         {
@@ -115,7 +115,8 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return getTopLevelTransactionBoundToThisThread( strict );
     }
 
-    // Exeptions below extend the public API exceptions with versions that have status codes.
+    // Exceptions below extend the public API exceptions with versions that have status codes.
+    // TODO why not add this status to the super exceptions?
     private static class BridgeNotInTransactionException extends NotInTransactionException implements Status.HasStatus
     {
         @Override

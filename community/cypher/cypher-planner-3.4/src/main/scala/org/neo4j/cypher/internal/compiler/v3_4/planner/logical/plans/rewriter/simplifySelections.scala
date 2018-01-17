@@ -34,7 +34,7 @@ case object simplifySelections extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case s@Selection(predicates: Seq[Expression], source) if predicates.forall(isFalse) =>
-      DropResult(source)(s.solved)(SameId(s.id))
+      DropResult(source)(SameId(s.id))
 
     case s@Selection(predicates: Seq[Expression], source) if predicates.forall(isTrue) =>
       source

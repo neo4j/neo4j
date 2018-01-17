@@ -799,6 +799,17 @@ public class PrimitiveIntCollections
         return set;
     }
 
+    public static <T> PrimitiveIntObjectMap<T> copy( PrimitiveIntObjectMap<T> original )
+    {
+        PrimitiveIntObjectMap<T> copy = Primitive.intObjectMap( original.size() );
+        original.visitEntries( ( key, value ) ->
+        {
+            copy.put( key, value );
+            return false;
+        } );
+        return copy;
+    }
+
     public static boolean contains( int[] values, int candidate )
     {
         for ( int i = 0; i < values.length; i++ )

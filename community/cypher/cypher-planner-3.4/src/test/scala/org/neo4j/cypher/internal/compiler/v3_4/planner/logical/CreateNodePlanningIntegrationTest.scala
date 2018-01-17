@@ -29,7 +29,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan single create") {
     planFor("CREATE (a)")._2 should equal(
       EmptyResult(
-        CreateNode(Argument()(solved), "a", Seq.empty, None)(solved))(solved)
+        CreateNode(Argument(), "a", Seq.empty, None))
     )
   }
 
@@ -38,10 +38,9 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       EmptyResult(
         CreateNode(
           CreateNode(
-            CreateNode(Argument()(solved), "a", Seq.empty, None)(solved),
-            "b", Seq.empty, None)(solved),
-          "c", Seq.empty, None)(solved))
-        (solved)
+            CreateNode(Argument(), "a", Seq.empty, None),
+            "b", Seq.empty, None),
+          "c", Seq.empty, None))
     )
   }
 
@@ -50,23 +49,22 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       EmptyResult(
         CreateNode(
           CreateNode(
-            CreateNode(Argument()(solved), "a", Seq.empty, None)(solved),
-            "b", Seq.empty, None)(solved),
-          "c", Seq.empty, None)(solved))
-        (solved)
+            CreateNode(Argument(), "a", Seq.empty, None),
+            "b", Seq.empty, None),
+          "c", Seq.empty, None))
     )
   }
 
   test("should plan single create with return") {
     planFor("CREATE (a) return a")._2 should equal(
-        CreateNode(Argument()(solved), "a", Seq.empty, None)(solved)
+        CreateNode(Argument(), "a", Seq.empty, None)
     )
   }
 
   test("should plan create with labels") {
     planFor("CREATE (a:A:B)")._2 should equal(
       EmptyResult(
-        CreateNode(Argument()(solved), "a", Seq(lblName("A"), lblName("B")), None)(solved))(solved)
+        CreateNode(Argument(), "a", Seq(lblName("A"), lblName("B")), None))
     )
   }
 
@@ -74,20 +72,20 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
 
     planFor("CREATE (a {prop: 42})")._2 should equal(
       EmptyResult(
-        CreateNode(Argument()(solved), "a", Seq.empty,
+        CreateNode(Argument(), "a", Seq.empty,
           Some(
             MapExpression(Seq((PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))))(pos)
           )
-        )(solved)
-      )(solved)
+        )
+      )
     )
   }
 
   test("should plan match and create") {
     planFor("MATCH (a) CREATE (b)")._2 should equal(
       EmptyResult(
-          CreateNode(AllNodesScan("a", Set.empty)(solved), "b", Seq.empty, None)(solved)
-      )(solved)
+          CreateNode(AllNodesScan("a", Set.empty), "b", Seq.empty, None)
+      )
     )
   }
 
@@ -99,13 +97,13 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
             Apply(
               Eager(
                 CreateNode(
-                  AllNodesScan("a", Set.empty)(solved),
-                  "b", Seq.empty, None)(solved)
-              )(solved),
-              AllNodesScan("c", Set("a", "b"))(solved)
-            )(solved)
-          )(solved),
-          "d", Seq.empty, None)(solved))(solved)
+                  AllNodesScan("a", Set.empty),
+                  "b", Seq.empty, None)
+              ),
+              AllNodesScan("c", Set("a", "b"))
+            )
+          ),
+          "d", Seq.empty, None))
     )
   }
 }

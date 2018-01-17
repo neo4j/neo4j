@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -37,8 +36,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * }
   */
 case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[String])
-                           (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+                           (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(left)
   override val rhs = Some(right)

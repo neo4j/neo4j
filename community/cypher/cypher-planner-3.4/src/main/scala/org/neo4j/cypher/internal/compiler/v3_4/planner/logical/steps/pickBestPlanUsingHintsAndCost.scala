@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateSelector, LogicalPlanningContext}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => CandidateSelector) {
+object pickBestPlanUsingHintsAndCost extends ((LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector) {
   val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
   private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
-  override def apply(context: LogicalPlanningContext): CandidateSelector = new CandidateSelector {
+  override def apply(context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): CandidateSelector = new CandidateSelector {
     override def apply[X](projector: (X) => LogicalPlan, input: Iterable[X]): Option[X] = {
 
       def stringTo(level: Int, plan: LogicalPlan): String = {
@@ -35,8 +36,8 @@ object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => Candidat
           case _ => "\n" + "  " * level + in
         }
 
-        val cost = context.cost(plan, context.input)
-        val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${plan.solved.estimatedCardinality}")
+        val cost = context.cost(plan, context.input, cardinalities)
+        val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${cardinalities.get(plan.id)}")
         val l = plan.lhs.map(p => stringTo(level + 1, p)).getOrElse("")
         val r = plan.rhs.map(p => stringTo(level + 1, p)).getOrElse("")
         thisPlan + l + r
@@ -44,11 +45,10 @@ object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => Candidat
 
 
       val inputOrdering = new Ordering[X] {
-        override def compare(x: X, y: X): Int = baseOrdering.compare(score(projector, x, context), score(projector, y, context))
+        override def compare(x: X, y: X): Int = baseOrdering.compare(score(projector, x, context, solveds, cardinalities), score(projector, y, context, solveds, cardinalities))
       }
 
       if (VERBOSE) {
-        val costs = context.cost
         val sortedPlans = input.toIndexedSeq.sorted(inputOrdering).map(projector)
 
         if (sortedPlans.size > 1) {
@@ -61,7 +61,7 @@ object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => Candidat
             println(s"* Plan #${plan.debugId}")
             println(s"\t$planTextWithCosts")
             println(s"\t$planText")
-            println(s"\t\tHints(${plan.solved.numHints})")
+            println(s"\t\tHints(${solveds.get(plan.id).numHints})")
             println(s"\t\tlhs: ${plan.lhs}")
           }
 
@@ -72,7 +72,7 @@ object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => Candidat
           println(s"\t${best.toString}")
           val planTextWithCosts = stringTo(0, best)
           println(s"\t$planTextWithCosts")
-          println(s"\t\tHints(${best.solved.numHints})")
+          println(s"\t\tHints(${solveds.get(best.id).numHints})")
           println(s"\t\tlhs: ${best.lhs}")
           println("!¡" * 10)
           println()
@@ -83,9 +83,9 @@ object pickBestPlanUsingHintsAndCost extends (LogicalPlanningContext => Candidat
     }
   }
 
-  private def score[X](projector: (X) => LogicalPlan, input: X, context: LogicalPlanningContext) = {
+  private def score[X](projector: (X) => LogicalPlan, input: X, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
     val costs = context.cost
     val plan = projector(input)
-    (-plan.solved.numHints, costs(plan, context.input).gummyBears, -plan.availableSymbols.size)
+    (-solveds.get(plan.id).numHints, costs(plan, context.input, cardinalities).gummyBears, -plan.availableSymbols.size)
   }
 }

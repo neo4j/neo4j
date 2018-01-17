@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -40,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IDPPlannerName, IndexDescriptor}
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Attribute, Attributes}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.PatternExpression
@@ -51,18 +53,13 @@ import org.scalatest.matchers.{BeMatcher, MatchResult}
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
-  implicit val idGen = new SequentialIdGen()
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
-  final var planner = new QueryPlanner() {
-    def internalPlan(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
-      planSingleQuery(query, context)
-  }
+  final var planner = new QueryPlanner()
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
   val realConfig = new RealLogicalPlanningConfiguration
   val cypherCompilerConfig = CypherCompilerConfiguration(
@@ -76,14 +73,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     legacyCsvQuoteEscaping = false,
     nonIndexedLabelWarningThreshold = 10000
   )
-  def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
     lazy val semanticTable = config.updateSemanticTableWithTokens(SemanticTable())
 
     def metricsFactory = new MetricsFactory {
       def newCostModel() =
-        (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan -> input)
+        (plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities) => config.costModel()((plan, input, cardinalities))
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
         config.cardinalityModel(queryGraphCardinalityModel, mock[ExpressionEvaluator])
@@ -138,7 +134,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    val pipeLine =
+    def pipeLine(): Transformer[CompilerContext, BaseState, LogicalPlanState] =
       Parsing andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
@@ -153,7 +149,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       CreatePlannerQuery andThen
       OptionalMatchRemover andThen
       QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
-      Do(removeApply _)
+      Do[CompilerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.solveds, new Attributes(idGen, state.cardinalities)))
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning
@@ -165,29 +161,47 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       input.copy(maybeStatement = Some(newStatement))
     }
 
-    private def removeApply(input: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
-      val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply))
+    private def removeApply(input: LogicalPlanState, context: CompilerContext, solveds: Solveds, attributes: Attributes): LogicalPlanState = {
+      val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply(solveds, attributes)))
       input.copy(maybeLogicalPlan = Some(newPlan))
     }
 
-    def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
+    def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
       def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics,
-                                         config = cypherCompilerConfig, queryGraphSolver = queryGraphSolver)
+                                         config = cypherCompilerConfig, queryGraphSolver = queryGraphSolver, logicalPlanIdGen = idGen)
 
-      val state = LogicalPlanState(queryString, None, IDPPlannerName)
-      val output = pipeLine.transform(state, context)
+      val state = InitialState(queryString, None, IDPPlannerName)
+      val output = pipeLine().transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].source
-      (output.periodicCommit, logicalPlan, output.semanticTable())
+      (output.periodicCommit, logicalPlan, output.semanticTable(), output.solveds, output.cardinalities)
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
       metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator]).queryGraphCardinalityModel(qg, input, semanticTable)
 
-    def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
+    def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext, Solveds, Cardinalities) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, idGen)
+      val solveds = new Solveds
+      val cardinalities = new Cardinalities
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, solveds, cardinalities, idGen)
+      val ctx = LogicalPlanningContext(
+        planContext = planContext,
+        logicalPlanProducer = logicalPlanProducer,
+        metrics = metrics,
+        semanticTable = semanticTable,
+        strategy = queryGraphSolver,
+        input = QueryGraphSolverInput.empty,
+        notificationLogger = devNullLogger
+      )
+      f(config, ctx, solveds, cardinalities)
+    }
+
+
+    def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, new StubSolveds, new StubCardinalities, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         logicalPlanProducer = logicalPlanProducer,
@@ -201,9 +215,26 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
   }
 
-  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.toSet)(solved)
+  def set[T](plan: LogicalPlan, attribute: Attribute[T], t: T): LogicalPlan = {
+    attribute.set(plan.id, t)
+    plan
+  }
 
-  def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) =
+  def setC(plan: LogicalPlan, cardinalities: Cardinalities, c: Cardinality): LogicalPlan = {
+    cardinalities.set(plan.id, c)
+    plan
+  }
+
+  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.toSet)
+
+  def fakeLogicalPlanFor(solveds: Solveds, cardinalities: Cardinalities, id: String*): FakePlan = {
+    val res = FakePlan(id.toSet)
+    solveds.set(res.id, PlannerQuery.empty)
+    cardinalities.set(res.id, 0.0)
+    res
+  }
+
+  def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) =
     new given().getLogicalPlanFor(queryString)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)

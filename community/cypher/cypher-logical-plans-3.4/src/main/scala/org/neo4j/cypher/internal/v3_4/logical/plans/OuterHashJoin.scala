@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -29,9 +28,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *
   * This is equivalent to an outer join in relational algebra.
   */
-case class OuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan)
-                        (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class OuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

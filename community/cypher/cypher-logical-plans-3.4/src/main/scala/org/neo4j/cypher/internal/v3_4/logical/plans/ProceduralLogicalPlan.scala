@@ -29,8 +29,6 @@ abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def rhs: Option[LogicalPlan] = None
 
-  override def solved: PlannerQuery with CardinalityEstimation = CardinalityEstimation.lift(PlannerQuery.empty, 1.0)
-
   override val availableSymbols: Set[String] = Set.empty
 
   override def strictness: StrictnessMode = LazyMode

@@ -169,7 +169,8 @@ public class GraphDatabaseFacadeFactory
                 spi,
                 dataSource.guard,
                 dataSource.threadToTransactionBridge,
-                platform.config
+                platform.config,
+                edition.relationshipTypeTokenHolder
         );
 
         // Start it

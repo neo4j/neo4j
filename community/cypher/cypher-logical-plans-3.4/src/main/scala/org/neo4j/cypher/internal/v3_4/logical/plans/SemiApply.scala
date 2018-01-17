@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -33,8 +32,8 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *   }
   * }
   */
-case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends AbstractSemiApply(left, right, solved)(idGen)
+case class SemiApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
+  extends AbstractSemiApply(left, right)(idGen)
 
 /**
   * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
@@ -47,10 +46,10 @@ case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQ
   *   }
   * }
   */
-case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends AbstractSemiApply(left, right, solved)(idGen)
+case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
+  extends AbstractSemiApply(left, right)(idGen)
 
-abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: PlannerQuery with CardinalityEstimation)(idGen: IdGen)
+abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan)(idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)

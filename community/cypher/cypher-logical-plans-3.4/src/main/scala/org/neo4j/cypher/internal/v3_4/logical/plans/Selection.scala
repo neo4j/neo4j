@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
@@ -28,7 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   */
 case class Selection(predicates: Seq[Expression],
                      source: LogicalPlan
-                    )(val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+                    )(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
 
   val lhs = Some(source)

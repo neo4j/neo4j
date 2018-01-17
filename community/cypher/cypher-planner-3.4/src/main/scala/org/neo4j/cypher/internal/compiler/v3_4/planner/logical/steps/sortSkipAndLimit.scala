@@ -24,11 +24,12 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AscSortItem, DescSortItem, SortItem}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
-  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = query.horizon match {
+  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = query.horizon match {
     case p: QueryProjection =>
       val shuffle = p.shuffle
       val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {

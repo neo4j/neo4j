@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 
 /**
   * Converts a RelationshipIterator coming from the Kernel API into an Iterator[Relationship] while
   * still sticking to the fact that each relationship record is only loaded once.
   */
 class BeansAPIRelationshipIterator(relationships: RelationshipIterator,
-                                   nodeManager: NodeManager) extends Iterator[Relationship] {
+                                   nodeManager: EmbeddedProxySPI) extends Iterator[Relationship] {
 
   private var nextRelationship: Relationship = null
   private val visitor = new RelationshipVisitor[RuntimeException] {

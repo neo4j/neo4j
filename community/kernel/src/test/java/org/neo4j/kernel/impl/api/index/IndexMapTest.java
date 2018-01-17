@@ -22,11 +22,10 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
@@ -48,11 +47,10 @@ public class IndexMapTest
     @Before
     public void setup()
     {
-        Map<Long, IndexProxy> map = new HashMap<>();
+        PrimitiveLongObjectMap<IndexProxy> map = Primitive.longObjectMap();
         map.put( 1L, new TestIndexProxy( schema3_4 ) );
         map.put( 2L, new TestIndexProxy( schema5_6_7 ) );
         map.put( 3L, new TestIndexProxy( schema5_8 ) );
-
         indexMap = new IndexMap( map );
     }
 

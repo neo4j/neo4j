@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For every source row, the nodes assigned to each of the 'nodesToLock' are locked exclusively.
   */
-case class LockNodes(source: LogicalPlan, nodesToLock: Set[String])
-                    (val solved: PlannerQuery with CardinalityEstimation)
-                    (implicit idGen: IdGen)
+case class LockNodes(source: LogicalPlan, nodesToLock: Set[String])(implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(source)
 

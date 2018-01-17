@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -720,9 +721,46 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> nodesWithLabelChanged( int labelId )
+    public ReadableDiffSets<Long> nodesWithLabelChanged( int label )
     {
-        return LABEL_STATE.get( this, labelId ).nodeDiffSets();
+        return LABEL_STATE.get( this, label ).nodeDiffSets();
+    }
+
+    @Override
+    public ReadableDiffSets<Long> nodesWithAnyOfLabelsChanged( int... labels )
+    {
+        //It is enough that one of the labels is added
+        //It is necessary for all the labels are removed
+        Set<Long> added = new HashSet<>();
+        Set<Long> removed = new HashSet<>();
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            ReadableDiffSets<Long> nodeDiffSets = LABEL_STATE.get( this, labels[i] ).nodeDiffSets();
+            if ( i == 0 )
+            {
+                removed.addAll( nodeDiffSets.getRemoved() );
+            }
+            else
+            {
+                removed.retainAll( nodeDiffSets.getRemoved() );
+            }
+            added.addAll( nodeDiffSets.getAdded() );
+        }
+
+        return new DiffSets<>( added, removed );
+    }
+
+    @Override
+    public ReadableDiffSets<Long> nodesWithAllLabelsChanged( int... labels )
+    {
+        DiffSets<Long> changes = new DiffSets<>();
+        for ( int label : labels )
+        {
+            LabelState labelState = LABEL_STATE.get( this, label );
+            changes.addAll( labelState.nodeDiffSets().getAdded().iterator() );
+            changes.removeAll( labelState.nodeDiffSets().getRemoved().iterator() );
+        }
+        return changes;
     }
 
     @Override

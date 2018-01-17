@@ -59,7 +59,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue
 
     public abstract MapValue properties();
 
-    public NodeValue otherNode( NodeValue node )
+    public NodeValue otherNode( VirtualNodeValue node )
     {
         return node.equals( startNode() ) ? endNode() : startNode();
     }

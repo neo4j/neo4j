@@ -31,15 +31,15 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     planFor("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b")._2 should equal(
       FindShortestPaths(
         CartesianProduct(
-          AllNodesScan("a", Set.empty)(solved),
-          AllNodesScan("b", Set.empty)(solved)
-        )(solved),
+          AllNodesScan("a", Set.empty),
+          AllNodesScan("b", Set.empty)
+        ),
         ShortestPathPattern(
           Some("  FRESHID16"),
           PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
           single = true
         )(null)
-      )(solved)
+      )
     )
   }
 
@@ -47,15 +47,15 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     planFor("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b")._2 should equal(
       FindShortestPaths(
         CartesianProduct(
-          AllNodesScan("a", Set.empty)(solved),
-          AllNodesScan("b", Set.empty)(solved)
-        )(solved),
+          AllNodesScan("a", Set.empty),
+          AllNodesScan("b", Set.empty)
+        ),
         ShortestPathPattern(
           Some("  FRESHID16"),
           PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
           single = false
         )(null)
-      )(solved)
+      )
     )
   }
 
@@ -79,14 +79,14 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           NodeHashJoin(
             Set("b"),
             Expand(
-              NodeByLabelScan("a", lblName("X"), Set.empty)(solved),
-              "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1", ExpandAll)(solved),
+              NodeByLabelScan("a", lblName("X"), Set.empty),
+              "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1", ExpandAll),
             Expand(
-              NodeByLabelScan("c", lblName("X"), Set.empty)(solved),
-              "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2", ExpandAll)(solved)
-          )(solved)
-        )(solved),
-        ShortestPathPattern(Some("p"), PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))(solved)
+              NodeByLabelScan("c", lblName("X"), Set.empty),
+              "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2", ExpandAll)
+          )
+        ),
+        ShortestPathPattern(Some("p"), PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))
 
     result should equal(expected)
   }

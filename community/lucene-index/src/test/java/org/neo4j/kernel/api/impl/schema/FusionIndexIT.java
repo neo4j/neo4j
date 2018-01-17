@@ -33,7 +33,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.NumberSchemaIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -68,7 +68,7 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        SchemaIndexProvider.Descriptor descriptor = NativeSchemaNumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        SchemaIndexProvider.Descriptor descriptor = NumberSchemaIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( descriptor );
 
         // then
@@ -99,7 +99,7 @@ public class FusionIndexIT
 
         // when
         SchemaIndexProvider.Descriptor luceneDescriptor = LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
-        SchemaIndexProvider.Descriptor nativeDescriptor = NativeSchemaNumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        SchemaIndexProvider.Descriptor nativeDescriptor = NumberSchemaIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( luceneDescriptor );
         deleteIndexFilesFor( nativeDescriptor );
 

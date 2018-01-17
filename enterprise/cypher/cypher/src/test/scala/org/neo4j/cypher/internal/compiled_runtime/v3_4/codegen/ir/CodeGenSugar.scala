@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.{CompiledExecutionResult, CompiledPlan}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Provider
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
@@ -53,7 +55,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.scalatest.mock.MockitoSugar
 
-trait CodeGenSugar extends MockitoSugar {
+trait CodeGenSugar extends MockitoSugar with LogicalPlanConstructionTestSupport {
 
   private val semanticTable = mock[SemanticTable]
 
@@ -62,7 +64,7 @@ trait CodeGenSugar extends MockitoSugar {
     val context = mock[PlanContext]
     doReturn(statistics, Nil: _*).when(context).statistics
     new CodeGenerator(GeneratedQueryStructure, Clocks.systemClock())
-      .generate(plan, context, semanticTable, CostBasedPlannerName.default)
+      .generate(plan, context, semanticTable, CostBasedPlannerName.default, new StubReadOnlies, new StubCardinalities)
   }
 
   def compileAndExecute(plan: LogicalPlan,

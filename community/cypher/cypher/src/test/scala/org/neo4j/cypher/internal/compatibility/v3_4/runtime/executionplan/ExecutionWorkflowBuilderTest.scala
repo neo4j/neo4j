@@ -22,23 +22,20 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{EagerResultIterator, _}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{InternalNotificationLogger, devNullLogger}
 import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.util.v3_4.Cardinality
-import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.Argument
+import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
-class ExecutionWorkflowBuilderTest extends CypherFunSuite {
-  implicit val idGen = new SequentialIdGen()
+class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
   val PlannerName = IDPPlannerName
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-  val logicalPlan = Argument()(solved)
+  val logicalPlan = Argument()
 
   test("produces eager results for updating queries") {
     // GIVEN
@@ -56,13 +53,12 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, "42", NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
 
   test("produces lazy results for non-updating queries") {
-    // GIVEN
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
@@ -74,7 +70,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, "42", NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
@@ -94,7 +90,14 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", ExplainMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, "42", ExplainMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
     result shouldBe a [ExplainExecutionResult]
   }
+
+  private def build(builder: ExecutionResultBuilder,
+                     queryId: AnyRef,
+                    planType: ExecutionMode,
+                    params: MapValue,
+                    notificationLogger: InternalNotificationLogger,
+                    runtimeName: RuntimeName) = builder.build(queryId, planType, params, notificationLogger, runtimeName, new StubReadOnlies, new StubCardinalities)
 }

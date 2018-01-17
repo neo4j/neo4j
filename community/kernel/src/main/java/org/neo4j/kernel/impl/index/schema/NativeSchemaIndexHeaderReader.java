@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.neo4j.index.internal.gbptree.Header;
 
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 
 class NativeSchemaIndexHeaderReader implements Header.Reader
 {

@@ -610,7 +610,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
         //when
         val result = innerExecuteDeprecated(query, Map.empty)
-    //    val result = profileWithPlannerNew(Configs.AllExceptSlotted, query, Map.empty)
 
         //then
         assertDbHits(2)(result)("NodeByLabelScan")

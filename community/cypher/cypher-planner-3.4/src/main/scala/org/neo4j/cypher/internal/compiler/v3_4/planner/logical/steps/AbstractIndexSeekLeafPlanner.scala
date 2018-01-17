@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.notification.IndexLookupUnfulfill
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.LabelId
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -72,7 +73,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     }
   }
 
-  override def apply(qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
     producePlanFor(qg.selections.flatPredicates.toSet, qg, context).toSeq.flatMap(_.plans)
   }
 

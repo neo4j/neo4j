@@ -19,92 +19,95 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ir.v3_4.LazyMode
-import org.neo4j.cypher.internal.util.v3_4.Cost
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, LabelName, SemanticDirection}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
+class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2  {
 
   test("expand should only be counted once") {
+    val cardinalities = new Cardinalities
     val plan =
-      Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
-        Expand(
-          Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
-            Expand(
-              Argument(Set("a"))(solvedWithEstimation(10.0)),
-              "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
-          )(solvedWithEstimation(10.0)), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
-      )(solvedWithEstimation(10.0))
+      setC(Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
+        setC(Expand(
+          setC(Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
+            setC(Expand(
+              setC(Argument(Set("a")), cardinalities, 10.0),
+              "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
+          ), cardinalities, 10.0), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
+      ), cardinalities, 10.0)
 
-    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(231))
+    CardinalityCostModel(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(231))
   }
 
   test("should introduce increase cost when estimating an eager operator and lazyness is preferred") {
-    val plan = NodeHashJoin(Set("a"),
-      NodeByLabelScan("a", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
-      Expand(
-        NodeByLabelScan("b", lblName("B"), Set.empty)(solvedWithEstimation(5.0)),
-        "b", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandAll)(solvedWithEstimation(15.0))
-    )(solvedWithEstimation(10.0))
+    val cardinalities = new Cardinalities
+    val plan = setC(NodeHashJoin(Set("a"),
+      setC(NodeByLabelScan("a", lblName("A"), Set.empty), cardinalities, 10.0),
+      setC(Expand(
+        setC(NodeByLabelScan("b", lblName("B"), Set.empty), cardinalities, 5.0),
+        "b", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandAll), cardinalities, 15.0)
+    ), cardinalities, 10.0)
 
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
     val whatever = QueryGraphSolverInput.empty
 
-    CardinalityCostModel(plan, whatever) should be < CardinalityCostModel(plan, pleaseLazy)
+    CardinalityCostModel(plan, whatever, cardinalities) should be < CardinalityCostModel(plan, pleaseLazy, cardinalities)
   }
 
   test("non-lazy plan should be penalized when estimating cost wrt a lazy one when lazyness is preferred") {
     // MATCH (a1: A)-[r1]->(b)<-[r2]-(a2: A) RETURN b
-
-    val lazyPlan = Projection(
-      Selection(
+    val lazyCardinalities = new Cardinalities
+    val lazyPlan = setC(Projection(
+      setC(Selection(
         Seq(HasLabels(varFor("a2"), Seq(LabelName("A")(pos)))(pos)),
-        Expand(
-          Expand(
-            NodeByLabelScan("a1", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
+        setC(Expand(
+          setC(Expand(
+            setC(NodeByLabelScan("a1", lblName("A"), Set.empty), lazyCardinalities, 10.0),
             "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
-          )(solvedWithEstimation(50.0)),
+          ), lazyCardinalities, 50.0),
           "b", SemanticDirection.INCOMING, Seq.empty, "a2", "r2", ExpandAll
-        )(solvedWithEstimation(250.0))
-      )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
-    )(solvedWithEstimation(250.0))
+        ), lazyCardinalities, 250.0)
+      ), lazyCardinalities, 250.0), Map("b" -> varFor("b"))
+    ), lazyCardinalities, 250.0)
 
-    val eagerPlan = Projection(
-      NodeHashJoin(Set("b"),
-        Expand(
-          NodeByLabelScan("a1", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
+    val eagerCardinalities = new Cardinalities
+    val eagerPlan = setC(Projection(
+      setC(NodeHashJoin(Set("b"),
+        setC(Expand(
+          setC(NodeByLabelScan("a1", lblName("A"), Set.empty), eagerCardinalities, 10.0),
           "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
-        )(solvedWithEstimation(50.0)),
-        Expand(
-          NodeByLabelScan("a2", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
+        ), eagerCardinalities, 50.0),
+        setC(Expand(
+          setC(NodeByLabelScan("a2", lblName("A"), Set.empty), eagerCardinalities, 10.0),
           "a2", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandAll
-        )(solvedWithEstimation(50.0))
-      )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
-    )(solvedWithEstimation(250.0))
+        ), eagerCardinalities, 50.0)
+      ), eagerCardinalities, 250.0), Map("b" -> varFor("b"))
+    ), eagerCardinalities, 250.0)
 
     val whatever = QueryGraphSolverInput.empty
-    CardinalityCostModel(lazyPlan, whatever) should be > CardinalityCostModel(eagerPlan, whatever)
+    CardinalityCostModel(lazyPlan, whatever, lazyCardinalities) should be > CardinalityCostModel(eagerPlan, whatever, eagerCardinalities)
 
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    CardinalityCostModel(lazyPlan, pleaseLazy) should be < CardinalityCostModel(eagerPlan, pleaseLazy)
+    CardinalityCostModel(lazyPlan, pleaseLazy, lazyCardinalities) should be < CardinalityCostModel(eagerPlan, pleaseLazy, eagerCardinalities)
   }
 
   test("multiple property expressions are counted for in cost") {
+    val cardinalities = new Cardinalities
     val cardinality = 10.0
-    val card10 = solvedWithEstimation(cardinality)
     val plan =
-      Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 42), propEquality("a", "prop1", 42)),
-        Argument(Set("a"))(card10))(card10)
+      setC(Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 42), propEquality("a", "prop1", 42)),
+        setC(Argument(Set("a")), cardinalities, cardinality)), cardinalities, cardinality)
 
     val numberOfPredicates = 3
     val costForSelection = cardinality * numberOfPredicates
     val costForArgument = cardinality *   .1
-    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(costForSelection + costForArgument))
+    CardinalityCostModel(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(costForSelection + costForArgument))
   }
 
 }

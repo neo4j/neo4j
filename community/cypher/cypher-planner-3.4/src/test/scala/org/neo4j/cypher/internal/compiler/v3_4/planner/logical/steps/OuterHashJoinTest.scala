@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Hint, UsingJoinHint}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, OuterHashJoin}
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities}
 import org.neo4j.cypher.internal.util.v3_4.{Cost, InputPosition}
 import org.neo4j.cypher.internal.v3_4.expressions.{PatternExpression, SemanticDirection, Variable}
 
@@ -54,22 +55,22 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
 
     val innerPlan = newMockedLogicalPlan("b")
 
-    val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
     )
-    val left = newMockedLogicalPlanWithPatterns(Set(aNode))
-    val plans = outerHashJoin(optionalQg, left, context)
+    val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, idNames = Set(aNode))
+    val plans = outerHashJoin(optionalQg, left, context, solveds, cardinalities)
 
-    plans should equal(Some(OuterHashJoin(Set(aNode), left, innerPlan)(solved)))
+    plans should equal(Some(OuterHashJoin(Set(aNode), left, innerPlan)))
   }
 
   test("solve optional match with hint") {
@@ -83,22 +84,22 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
 
     val innerPlan = newMockedLogicalPlan("b")
 
-    val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
     )
-    val left = newMockedLogicalPlanWithPatterns(Set(aNode))
-    val plan = outerHashJoin(optionalQg, left, context).getOrElse(fail("No result from outerHashJoin"))
+    val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, Set(aNode))
+    val plan = outerHashJoin(optionalQg, left, context, solveds, cardinalities).getOrElse(fail("No result from outerHashJoin"))
 
-    plan should equal(OuterHashJoin(Set(aNode), left, innerPlan)(solved))
-    plan.solved.lastQueryGraph.allHints should equal (theHint)
+    plan should equal(OuterHashJoin(Set(aNode), left, innerPlan))
+    solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)
   }
 }

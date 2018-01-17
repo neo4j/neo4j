@@ -67,33 +67,19 @@ import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
 public class NodeProxy implements Node
 {
-    public interface NodeActions
-    {
-        Statement statement();
-
-        KernelTransaction kernelTransaction();
-
-        GraphDatabaseService getGraphDatabase();
-
-        void assertInUnterminatedTransaction();
-
-        void failTransaction();
-
-        Relationship newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
-    }
-
-    private final NodeActions actions;
+    private final EmbeddedProxySPI spi;
     private final long nodeId;
 
-    public NodeProxy( NodeActions actions, long nodeId )
+    public NodeProxy( EmbeddedProxySPI spi, long nodeId )
     {
         this.nodeId = nodeId;
-        this.actions = actions;
+        this.spi = spi;
     }
 
     @Override
@@ -105,7 +91,7 @@ public class NodeProxy implements Node
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
-        return actions.getGraphDatabase();
+        return spi.getGraphDatabase();
     }
 
     @Override
@@ -144,10 +130,10 @@ public class NodeProxy implements Node
         assertInUnterminatedTransaction();
         return () ->
         {
-            Statement statement = actions.statement();
+            Statement statement = spi.statement();
             try
             {
-                RelationshipConversion result = new RelationshipConversion( actions );
+                RelationshipConversion result = new RelationshipConversion( spi );
                 result.iterator = statement.readOperations().nodeGetRelationships( nodeId, dir );
                 result.statement = statement;
                 return result;
@@ -181,16 +167,16 @@ public class NodeProxy implements Node
     public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
     {
         final int[] typeIds;
-        try ( Statement statement = actions.statement() )
+        try ( Statement statement = spi.statement() )
         {
             typeIds = relTypeIds( types, statement );
         }
         return () ->
         {
-            Statement statement = actions.statement();
+            Statement statement = spi.statement();
             try
             {
-                RelationshipConversion result = new RelationshipConversion( actions );
+                RelationshipConversion result = new RelationshipConversion( spi );
                 result.iterator = statement.readOperations().nodeGetRelationships(
                         nodeId, direction, typeIds );
                 result.statement = statement;
@@ -271,13 +257,13 @@ public class NodeProxy implements Node
 
     private void assertInUnterminatedTransaction()
     {
-        actions.assertInUnterminatedTransaction();
+        spi.assertInUnterminatedTransaction();
     }
 
     @Override
     public void setProperty( String key, Object value )
     {
-        KernelTransaction transaction = actions.kernelTransaction();
+        KernelTransaction transaction = spi.kernelTransaction();
         try ( Statement statement = transaction.acquireStatement() )
         {
             int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
@@ -293,7 +279,7 @@ public class NodeProxy implements Node
             catch ( IllegalArgumentException e )
             {
                 // Trying to set an illegal value is a critical error - fail this transaction
-                actions.failTransaction();
+                spi.failTransaction();
                 throw e;
             }
         }
@@ -323,7 +309,7 @@ public class NodeProxy implements Node
     @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        KernelTransaction transaction = actions.kernelTransaction();
+        KernelTransaction transaction = spi.kernelTransaction();
         try ( Statement ignore = transaction.acquireStatement() )
         {
             int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
@@ -546,7 +532,7 @@ public class NodeProxy implements Node
 
     private KernelTransaction safeAcquireTransaction()
     {
-        KernelTransaction transaction = actions.kernelTransaction();
+        KernelTransaction transaction = spi.kernelTransaction();
         if ( transaction.isTerminated() )
         {
             Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
@@ -591,12 +577,12 @@ public class NodeProxy implements Node
         //{
         //    throw new IllegalArgumentException( "Nodes do not belong to same graph database." );
         //}
-        try ( Statement statement = actions.statement() )
+        try ( Statement statement = spi.statement() )
         {
             int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
             long relationshipId = statement.dataWriteOperations()
                     .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() );
-            return actions.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
+            return spi.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
         }
         catch ( IllegalTokenNameException | RelationshipTypeIdNotFoundKernelException e )
         {
@@ -616,7 +602,7 @@ public class NodeProxy implements Node
     @Override
     public void addLabel( Label label )
     {
-        KernelTransaction transaction = actions.kernelTransaction();
+        KernelTransaction transaction = spi.kernelTransaction();
         try ( Statement statement = transaction.acquireStatement() )
         {
             try
@@ -651,7 +637,7 @@ public class NodeProxy implements Node
     @Override
     public void removeLabel( Label label )
     {
-        KernelTransaction transaction = actions.kernelTransaction();
+        KernelTransaction transaction = spi.kernelTransaction();
         try ( Statement ignore = transaction.acquireStatement() )
         {
             int labelId = transaction.tokenRead().labelGetForName( label.name() );
@@ -682,12 +668,12 @@ public class NodeProxy implements Node
               NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
         {
             int labelId = transaction.tokenRead().labelGetForName( label.name() );
+            if ( labelId == NO_SUCH_LABEL )
+            {
+                return false;
+            }
             transaction.dataRead().singleNode( nodeId, nodes );
             return nodes.next() && nodes.labels().contains( labelId );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            return false;
         }
     }
 
@@ -695,7 +681,7 @@ public class NodeProxy implements Node
     public Iterable<Label> getLabels()
     {
         KernelTransaction transaction = safeAcquireTransaction();
-        try ( Statement ignore = actions.statement();
+        try ( Statement ignore = spi.statement();
               NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
         {
             singleNode( transaction, nodes );
@@ -717,7 +703,7 @@ public class NodeProxy implements Node
     @Override
     public int getDegree()
     {
-        try ( Statement statement = actions.statement() )
+        try ( Statement statement = spi.statement() )
         {
             return statement.readOperations().nodeGetDegree( nodeId, Direction.BOTH );
         }
@@ -730,7 +716,7 @@ public class NodeProxy implements Node
     @Override
     public int getDegree( RelationshipType type )
     {
-        try ( Statement statement = actions.statement() )
+        try ( Statement statement = spi.statement() )
         {
             ReadOperations ops = statement.readOperations();
             int typeId = ops.relationshipTypeGetForName( type.name() );
@@ -749,7 +735,7 @@ public class NodeProxy implements Node
     @Override
     public int getDegree( Direction direction )
     {
-        try ( Statement statement = actions.statement() )
+        try ( Statement statement = spi.statement() )
         {
             ReadOperations ops = statement.readOperations();
             return ops.nodeGetDegree( nodeId, direction );
@@ -763,7 +749,7 @@ public class NodeProxy implements Node
     @Override
     public int getDegree( RelationshipType type, Direction direction )
     {
-        try ( Statement statement = actions.statement() )
+        try ( Statement statement = spi.statement() )
         {
             ReadOperations ops = statement.readOperations();
             int typeId = ops.relationshipTypeGetForName( type.name() );
@@ -782,7 +768,7 @@ public class NodeProxy implements Node
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        try ( Statement statement = actions.statement() )
+        try ( Statement statement = spi.statement() )
         {
             PrimitiveIntIterator relTypes = statement.readOperations().nodeGetRelationshipTypes( nodeId );
             return asList( map( relTypeId -> convertToRelationshipType( statement, relTypeId ), relTypes ) );

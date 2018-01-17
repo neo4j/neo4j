@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName}
 
@@ -30,10 +30,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, RelTypeName}
   * This is a special version of CreateRelationship, which is used in a merge plan after checking that no relationship
   * with the same type and properties exist between the given nodes.
   */
-case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNode: String, typ: RelTypeName, endNode: String,
-                                   properties: Option[Expression])
-                                  (val solved: PlannerQuery with CardinalityEstimation)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNode: String, typ: RelTypeName, endNode: String, properties: Option[Expression])
+                                  (implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

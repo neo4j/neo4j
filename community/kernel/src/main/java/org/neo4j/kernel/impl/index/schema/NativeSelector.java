@@ -26,7 +26,7 @@ import org.neo4j.values.storable.ValueGroup;
 public class NativeSelector implements FusionSchemaIndexProvider.Selector
 {
     @Override
-    public <T> T select( T nativeInstance, T luceneInstance, Value... values )
+    public <T> T select( T numberInstance, T luceneInstance, Value... values )
     {
         if ( values.length > 1 )
         {
@@ -38,7 +38,7 @@ public class NativeSelector implements FusionSchemaIndexProvider.Selector
         if ( singleValue.valueGroup() == ValueGroup.NUMBER )
         {
             // It's a number, the native can handle this
-            return nativeInstance;
+            return numberInstance;
         }
         return luceneInstance;
     }
