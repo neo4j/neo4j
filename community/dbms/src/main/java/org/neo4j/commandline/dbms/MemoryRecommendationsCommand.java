@@ -116,9 +116,9 @@ public class MemoryRecommendationsCommand implements AdminCommand
 
     public static Arguments buildArgs()
     {
-        long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+        String memory = bytesToString( OsBeanUtil.getTotalPhysicalMemory() );
         return new Arguments()
-                .withArgument( new OptionalNamedArg( ARG_MEMORY, "8g", bytesToString( totalPhysicalMemory ),
+                .withArgument( new OptionalNamedArg( ARG_MEMORY, memory, memory,
                         "Recommend memory settings with respect to the given amount of memory, " +
                         "instead of the total memory of the system running the command." ) );
     }
