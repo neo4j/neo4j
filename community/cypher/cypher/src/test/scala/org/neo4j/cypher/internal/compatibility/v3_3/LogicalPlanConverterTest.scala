@@ -412,6 +412,24 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       }
   }
 
+  test("should convert function call with 'null' default value") {
+    val allowed = Array.empty[String] // this is passed through as the same instance - so shared
+    val name3_3 = plansV3_3.QualifiedName(Seq.empty, "foo")
+    val call3_3 = compilerV3_3.ast.ResolvedFunctionInvocation(name3_3,
+      Some(plansV3_3.UserFunctionSignature(name3_3, Vector(plansV3_3.FieldSignature("input", symbolsV3_3.CTAny,
+        default = Some(plansV3_3.CypherValue(null, symbolsV3_3.CTAny)))),
+        symbolsV3_3.CTAny, None, allowed, None, isAggregate = false)), Vector())(InputPositionV3_3(1, 2, 3))
+
+    val name3_4 = plansV3_4.QualifiedName(Seq.empty, "foo")
+    val call3_4 = plansV3_4.ResolvedFunctionInvocation(name3_4,
+      Some(plansV3_4.UserFunctionSignature(name3_4, Vector(plansV3_4.FieldSignature("input", symbolsV3_4.CTAny,
+        default = Some(plansV3_4.CypherValue(null, symbolsV3_4.CTAny)))),
+        symbolsV3_4.CTAny, None, allowed, None, isAggregate = false)), Vector())(InputPosition(1, 2, 3))
+
+    val rewritten = LogicalPlanConverter.convertExpression[plansV3_4.ResolvedFunctionInvocation](call3_3, new Solveds, new Cardinalities)
+    rewritten should be(call3_4)
+  }
+
   private def argumentProvider[T <: AnyRef](clazz: Class[T]): T = {
     val variable = astV3_3.Variable("n")(pos3_3)
     val value = clazz.getSimpleName match {
