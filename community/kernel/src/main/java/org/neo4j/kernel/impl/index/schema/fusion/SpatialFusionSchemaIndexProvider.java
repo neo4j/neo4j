@@ -208,29 +208,11 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
                                 int code = Integer.parseInt( m.group( 2 ) );
                                 CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
                                 SpatialKnownIndex index = selectAndCreate( indexesFor( indexId ), indexId, crs );
-                                if ( index.indexExists() )
+                                if ( !index.indexExists() )
                                 {
-                                    System.out.println( "Created " + index + " crs: " + crs.getName());
-                                    System.out.println( "Exists: " + index.indexExists() );
-                                    try
-                                    {
-                                        System.out.println( "Status: " + index.readState() );
-                                    }
-                                    catch ( IOException e )
-                                    {
-                                        System.out.println( "Failed to read index state:" + e );
-                                        e.printStackTrace();
-                                    }
-                                }
-                                else
-                                {
-                                    System.out.println( "Found CRS directory, but no GBPTree - removing index from map" );
+                                    // TODO: log something here?
                                     indexesFor( indexId ).remove( crs );
                                 }
-                            }
-                            else
-                            {
-                                System.out.println( "File does not match CRS pattern: " + subdir );
                             }
                         }
                     }
