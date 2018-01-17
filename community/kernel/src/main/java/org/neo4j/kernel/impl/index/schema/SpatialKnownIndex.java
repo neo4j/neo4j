@@ -89,7 +89,7 @@ public class SpatialKnownIndex
                 new SchemaIndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
         IndexDirectoryStructure indexDir = IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
         indexFile = new File( indexDir.directoryForIndex( indexId ), indexFileName( indexId ) );
-        curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 5 );
+        curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 8 );
     }
 
     static Envelope envelopeFromCRS( CoordinateReferenceSystem crs )
