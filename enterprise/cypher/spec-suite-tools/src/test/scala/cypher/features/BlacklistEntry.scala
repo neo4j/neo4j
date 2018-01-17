@@ -29,12 +29,12 @@ case class BlacklistEntry(featureName: Option[String], scenarioName: String) {
   }
 }
 
-object BlacklistEntry{
+object BlacklistEntry {
   val entryPattern: Regex = """Feature "(.*)": Scenario "(.*)"""".r
 
   def apply(line: String): BlacklistEntry = {
-    if(line.startsWith("Feature")){
-      line match{
+    if (line.startsWith("Feature")) {
+      line match {
         case entryPattern(featureName, scenarioName) => new BlacklistEntry(Some(featureName), scenarioName)
         case other => throw new UnsupportedOperationException(s"Could not parse blacklist entry $other")
       }

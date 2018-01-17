@@ -21,6 +21,7 @@ package cypher.features
 
 import org.neo4j.kernel.api.exceptions.Status
 import org.opencypher.tools.tck.api.ExecutionFailed
+import org.opencypher.tools.tck.constants._
 
 object Phase {
   val runtime = "runtime"
@@ -193,89 +194,4 @@ object Neo4jExceptionToExecutionFailed {
 
   private def semanticError(pattern: String): String = DOTALL + pattern + POSITION_PATTERN
 
-}
-
-object TCKErrorDetails {
-
-  val INVALID_ELEMENT_ACCESS = "InvalidElementAccess"
-  val MAP_ELEMENT_ACCESS_BY_NON_STRING = "MapElementAccessByNonString"
-  val LIST_ELEMENT_ACCESS_BY_NON_INTEGER = "ListElementAccessByNonInteger"
-  val NESTED_AGGREGATION = "NestedAggregation"
-  val NEGATIVE_INTEGER_ARGUMENT = "NegativeIntegerArgument"
-  val DELETE_CONNECTED_NODE = "DeleteConnectedNode"
-  val REQUIRES_DIRECTED_RELATIONSHIP = "RequiresDirectedRelationship"
-  val INVALID_RELATIONSHIP_PATTERN = "InvalidRelationshipPattern"
-  val VARIABLE_ALREADY_BOUND = "VariableAlreadyBound"
-  val INVALID_ARGUMENT_TYPE = "InvalidArgumentType"
-  val INVALID_ARGUMENT_VALUE = "InvalidArgumentValue"
-  val NUMBER_OUT_OF_RANGE = "NumberOutOfRange"
-  val UNDEFINED_VARIABLE = "UndefinedVariable"
-  val VARIABLE_TYPE_CONFLICT = "VariableTypeConflict"
-  val RELATIONSHIP_UNIQUENESS_VIOLATION = "RelationshipUniquenessViolation"
-  val CREATING_VAR_LENGTH = "CreatingVarLength"
-  val INVALID_PARAMETER_USE = "InvalidParameterUse"
-  val INVALID_CLAUSE_COMPOSITION = "InvalidClauseComposition"
-  val FLOATING_POINT_OVERFLOW = "FloatingPointOverflow"
-  val PROPERTY_ACCESS_ON_NON_MAP = "PropertyAccessOnNonMap"
-  val INVALID_ARGUMENT_EXPRESSION = "InvalidArgumentExpression"
-  val INVALID_UNICODE_CHARACTER = "InvalidUnicodeCharacter"
-  val NON_CONSTANT_EXPRESSION = "NonConstantExpression"
-  val NO_SINGLE_RELATIONSHIP_TYPE = "NoSingleRelationshipType"
-  val INVALID_AGGREGATION = "InvalidAggregation"
-  val UNKNOWN_FUNCTION = "UnknownFunction"
-  val INVALID_NUMBER_LITERAL = "InvalidNumberLiteral"
-  val INVALID_UNICODE_LITERAL = "InvalidUnicodeLiteral"
-  val MERGE_READ_OWN_WRITES = "MergeReadOwnWrites"
-  val NO_EXPRESSION_ALIAS = "NoExpressionAlias"
-  val DIFFERENT_COLUMNS_IN_UNION = "DifferentColumnsInUnion"
-  val INVALID_DELETE = "InvalidDelete"
-  val INVALID_PROPERTY_TYPE = "InvalidPropertyType"
-  val COLUMN_NAME_CONFLICT = "ColumnNameConflict"
-  val NO_VARIABLES_IN_SCOPE = "NoVariablesInScope"
-  val DELETED_ENTITY_ACCESS = "DeletedEntityAccess"
-  val INVALID_ARGUMENT_PASSING_MODE = "InvalidArgumentPassingMode"
-  val INVALID_NUMBER_OF_ARGUMENTS = "InvalidNumberOfArguments"
-  val MISSING_PARAMETER = "MissingParameter"
-  val PROCEDURE_NOT_FOUND = "ProcedureNotFound"
-
-  val ALL = Set(INVALID_ELEMENT_ACCESS,
-    MAP_ELEMENT_ACCESS_BY_NON_STRING,
-    LIST_ELEMENT_ACCESS_BY_NON_INTEGER,
-    NESTED_AGGREGATION,
-    NEGATIVE_INTEGER_ARGUMENT,
-    REQUIRES_DIRECTED_RELATIONSHIP,
-    DELETE_CONNECTED_NODE,
-    INVALID_RELATIONSHIP_PATTERN,
-    VARIABLE_ALREADY_BOUND,
-    INVALID_ARGUMENT_TYPE,
-    INVALID_ARGUMENT_VALUE,
-    NUMBER_OUT_OF_RANGE,
-    UNDEFINED_VARIABLE,
-    VARIABLE_TYPE_CONFLICT,
-    RELATIONSHIP_UNIQUENESS_VIOLATION,
-    CREATING_VAR_LENGTH,
-    INVALID_PARAMETER_USE,
-    INVALID_CLAUSE_COMPOSITION,
-    FLOATING_POINT_OVERFLOW,
-    PROPERTY_ACCESS_ON_NON_MAP,
-    INVALID_ARGUMENT_EXPRESSION,
-    INVALID_UNICODE_CHARACTER,
-    NON_CONSTANT_EXPRESSION,
-    NO_SINGLE_RELATIONSHIP_TYPE,
-    INVALID_AGGREGATION,
-    UNKNOWN_FUNCTION,
-    INVALID_NUMBER_LITERAL,
-    INVALID_UNICODE_LITERAL,
-    MERGE_READ_OWN_WRITES,
-    NO_EXPRESSION_ALIAS,
-    DIFFERENT_COLUMNS_IN_UNION,
-    INVALID_DELETE,
-    INVALID_PROPERTY_TYPE,
-    COLUMN_NAME_CONFLICT,
-    NO_VARIABLES_IN_SCOPE,
-    INVALID_ARGUMENT_PASSING_MODE,
-    INVALID_NUMBER_OF_ARGUMENTS,
-    MISSING_PARAMETER,
-    PROCEDURE_NOT_FOUND,
-    DELETED_ENTITY_ACCESS)
 }

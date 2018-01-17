@@ -56,14 +56,10 @@ class Neo4jAdapter(service: GraphDatabaseCypherService, executionPrefix: String)
     val queryToExecute = if (meta == ExecQuery) {
       s"$executionPrefix $query"
     }else query
-    val result: Result = Try(instance.execute(queryToExecute, neo4jParams)) match {
-      case Success(r) =>
-        Try(convertResult(r)) match {
-          case Failure(exception) => convert(Phase.runtime, exception)
-          case Success(converted) =>
-            tx.success()
-            converted
-        }
+    val result: Result = Try(instance.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
+      case Success(converted) =>
+        tx.success()
+        converted
       case Failure(exception) =>
         val explainedResult = Try(instance.execute(explainPrefix + queryToExecute))
         val phase = explainedResult match {
@@ -96,16 +92,3 @@ class Neo4jAdapter(service: GraphDatabaseCypherService, executionPrefix: String)
   }
 
 }
-
-case class Neo4jExecutionException(
-                                    query: String,
-                                    params: Map[String, CypherValue],
-                                    meta: QueryType, msg: String)
-  extends Exception(s"Error when executing $meta query $query with params $params: $msg")
-
-case class Neo4jValueConversionException(
-                                          query: String,
-                                          params: Map[String, CypherValue],
-                                          meta: QueryType, msg: String
-                                        )
-  extends Exception(s"Error when converting result values for $meta query $query with params $params: $msg")

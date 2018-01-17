@@ -85,8 +85,14 @@ object ScenarioTestHelper {
     scenarios.map(BlacklistEntry(_))
   }
 
+  /*
+    This method can be used to generate a blacklist for a given TestConfig.
+    It can be very useful when adding a new runtime for example.
+   */
   def printComputedBlacklist(scenarios: Seq[Scenario],
                              config: TestConfig): List[String] = {
+    //Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
+    //TODO: Investigate this!
     println("Evaluating scenarios")
     val numberOfScenarios = scenarios.size
     val blacklist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
