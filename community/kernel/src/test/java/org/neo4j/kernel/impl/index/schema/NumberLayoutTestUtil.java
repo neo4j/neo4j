@@ -19,8 +19,17 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -52,5 +61,53 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
             return Long.compare( key1.rawValueBits, key2.rawValueBits );
         }
         return typeCompare;
+    }
+
+    @Override
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )
+    {
+        double fractionDuplicates = fractionDuplicates();
+        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
+        {
+            private final Set<Double> uniqueCompareValues = new HashSet<>();
+            private final List<Value> uniqueValues = new ArrayList<>();
+            private long currentEntityId;
+
+            @Override
+            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
+            {
+                Value value;
+                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() && random.nextFloat() < fractionDuplicates )
+                {
+                    value = existingNonUniqueValue( random );
+                }
+                else
+                {
+                    value = newUniqueValue( random );
+                }
+
+                return add( currentEntityId++, value );
+            }
+
+            private Value newUniqueValue( RandomRule randomRule )
+            {
+                Number value;
+                Double compareValue;
+                do
+                {
+                    value = randomRule.numberPropertyValue();
+                    compareValue = value.doubleValue();
+                }
+                while ( !uniqueCompareValues.add( compareValue ) );
+                Value storableValue = asValue( value );
+                uniqueValues.add( storableValue );
+                return storableValue;
+            }
+
+            private Value existingNonUniqueValue( RandomRule randomRule )
+            {
+                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
+            }
+        };
     }
 }

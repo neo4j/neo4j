@@ -19,14 +19,22 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
@@ -35,7 +43,7 @@ import org.neo4j.values.storable.Values;
 class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue>
 {
     private CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    private SpaceFillingCurve curve = new HilbertSpaceFillingCurve2D( new Envelope( -180, 180, -90, 90 ) );
+    private SpaceFillingCurve curve = new HilbertSpaceFillingCurve2D( new Envelope( -180, 180, -90, 90 ), 5 );
 
     SpatialLayoutTestUtil()
     {
@@ -69,13 +77,63 @@ class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,NativeSchema
     @Override
     Value asValue( Number value )
     {
-        return Values.pointValue( CoordinateReferenceSystem.WGS84, value.doubleValue(), value.doubleValue() );
+        // multiply value with 5 to make sure the points aren't too close together, avoiding false positives that will be filtered in higher level later
+        return Values.pointValue( CoordinateReferenceSystem.WGS84, 3 * value.doubleValue(), 3 * value.doubleValue() );
     }
 
-    // TODO fix this comparison
     @Override
     int compareIndexedPropertyValue( SpatialSchemaKey key1, SpatialSchemaKey key2 )
     {
         return Long.compare( key1.rawValueBits, key2.rawValueBits );
+    }
+
+    @Override
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )
+    {
+        double fractionDuplicates = fractionDuplicates();
+        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
+        {
+            private final Set<Long> uniqueCompareValues = new HashSet<>();
+            private final List<Value> uniqueValues = new ArrayList<>();
+            private long currentEntityId;
+
+            @Override
+            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
+            {
+                Value value;
+                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() && random.nextFloat() < fractionDuplicates )
+                {
+                    value = existingNonUniqueValue( random );
+                }
+                else
+                {
+                    value = newUniqueValue( random );
+                }
+
+                return add( currentEntityId++, value );
+            }
+
+            private Value newUniqueValue( RandomRule randomRule )
+            {
+                double x, y;
+                PointValue pointValue;
+                Long compareValue;
+                do
+                {
+                    x = randomRule.nextDouble() * 360 - 180;
+                    y = randomRule.nextDouble() * 180 - 90;
+                    pointValue = Values.pointValue( CoordinateReferenceSystem.WGS84, x, y );
+                    compareValue = curve.derivedValueFor( pointValue.coordinate() );
+                }
+                while ( !uniqueCompareValues.add( compareValue ) );
+                uniqueValues.add( pointValue );
+                return pointValue;
+            }
+
+            private Value existingNonUniqueValue( RandomRule randomRule )
+            {
+                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
+            }
+        };
     }
 }
