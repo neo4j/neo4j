@@ -857,7 +857,7 @@ public class OperationsFacade
 
     @Override
     public long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
-            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
+            throws EntityNotFoundException
     {
         statement.assertOpen();
         return dataWrite().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );

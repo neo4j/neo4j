@@ -584,7 +584,7 @@ public class NodeProxy implements Node
                     .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() );
             return spi.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
         }
-        catch ( IllegalTokenNameException | RelationshipTypeIdNotFoundKernelException e )
+        catch ( IllegalTokenNameException e )
         {
             throw new IllegalArgumentException( e );
         }
