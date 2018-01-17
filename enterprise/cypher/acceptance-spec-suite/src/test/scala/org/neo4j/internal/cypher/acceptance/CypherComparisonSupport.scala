@@ -155,7 +155,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
       else TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
 
     val explicitlyRequestedExperimentalScenarios = expectSucceedEffective.scenarios intersect Configs.Experimental.scenarios
-    val positiveResults = ((Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios) - baseScenario).flatMap {
+    val positiveResults = (Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios).flatMap {
       thisScenario =>
         executeScenario(thisScenario, query, expectSucceedEffective.containsScenario(thisScenario), executeBefore, params, resultAssertionInTx)
     }
