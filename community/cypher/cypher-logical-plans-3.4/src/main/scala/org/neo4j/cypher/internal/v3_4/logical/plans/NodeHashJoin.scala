@@ -36,7 +36,10 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   *   for ( leftRow <- group )
   *     produce (leftRow merge rightRow)
   */
-case class NodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class NodeHashJoin(nodes: Set[String],
+                        left: LogicalPlan,
+                        right: LogicalPlan)
+                       (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with NodeJoin {
 
   val lhs = Some(left)
   val rhs = Some(right)
