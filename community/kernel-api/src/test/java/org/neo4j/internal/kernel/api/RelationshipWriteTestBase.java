@@ -27,8 +27,8 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
@@ -37,7 +37,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.intValue;
@@ -113,6 +112,77 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             int label = session.token().relationshipTypeGetOrCreateForName( "R" );
             tx.dataWrite().relationshipCreate( n1, label, n2 );
             tx.failure();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertEquals( 0, graphDb.getNodeById( n1 ).getDegree() );
+        }
+    }
+
+    @Test
+    public void shouldDeleteRelationship() throws Exception
+    {
+        long n1, r;
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node node1 = graphDb.createNode();
+            Node node2 = graphDb.createNode();
+
+            n1 = node1.getId();
+            r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
+
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertEquals( 0, graphDb.getNodeById( n1 ).getDegree() );
+        }
+    }
+
+    @Test
+    public void shouldNotDeleteRelationshipThatDoesNotExist() throws Exception
+    {
+        long relationship = 0;
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertFalse( tx.dataWrite().relationshipDelete( relationship ) );
+            tx.failure();
+        }
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertFalse( tx.dataWrite().relationshipDelete( relationship ) );
+            tx.success();
+        }
+        // should not crash
+    }
+
+    @Test
+    public void shouldDeleteRelationshipAddedInTransaction() throws Exception
+    {
+        long n1, n2;
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            n1 = graphDb.createNode().getId();
+            n2 = graphDb.createNode().getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int label = session.token().relationshipTypeGetOrCreateForName( "R" );
+            long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
+
+            assertTrue( tx.dataWrite().relationshipDelete( r ) );
+            tx.success();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )

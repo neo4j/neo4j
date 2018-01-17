@@ -83,6 +83,7 @@ public class Operations implements Write, ExplicitIndexWrite
     private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
     private PropertyCursor propertyCursor;
+    private RelationshipScanCursor relationshipCursor;
     private final Cursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
 
@@ -110,6 +111,7 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
+        this.relationshipCursor = cursors.allocateRelationshipScanCursor();
     }
 
     @Override
@@ -166,10 +168,22 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public void relationshipDelete( long relationship )
+    public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+
+        allStoreHolder.singleRelationship( relationship, relationshipCursor ); // tx-state aware
+
+        if ( relationshipCursor.next() )
+        {
+            autoIndexing.relationships().entityRemoved( this, relationship );
+            ktx.txState().relationshipDoDelete( relationship, relationshipCursor.getType(),
+                    relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            return true;
+        }
+
+        // tried to delete relationship that does not exist
+        return false;
     }
 
     @Override

@@ -62,4 +62,34 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.success();
         }
     }
+
+    @Test
+    public void shouldNotSeeSingleRelationshipWhichWasDeletedInTransaction() throws Exception
+    {
+        int label;
+        long n1, n2, r;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            n1 = tx.dataWrite().nodeCreate();
+            n2 = tx.dataWrite().nodeCreate();
+            label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+
+            long decoyNode = tx.dataWrite().nodeCreate();
+            tx.dataWrite().relationshipCreate( n2, label, decoyNode ); // to have >1 relationship in the db
+
+            r = tx.dataWrite().relationshipCreate( n1, label, n2 );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
+            {
+                tx.dataRead().singleRelationship( r, relationship );
+                assertFalse( "should not find relationship", relationship.next() );
+            }
+            tx.success();
+        }
+    }
 }

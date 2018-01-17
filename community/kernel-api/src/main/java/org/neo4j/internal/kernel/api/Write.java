@@ -55,7 +55,7 @@ public interface Write
      * Delete a relationship
      * @param relationship the internal id of the relationship to delete
      */
-    void relationshipDelete( long relationship );
+    boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException;
 
     /**
      * Add a label to a node
