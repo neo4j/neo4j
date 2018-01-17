@@ -79,9 +79,9 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -684,34 +684,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new PrefetchingResourceIterator<Node>()
-        {
-            private boolean closed;
-            @Override
-            protected Node fetchNextOrNull()
-            {
-                if ( cursor.next() )
-                {
-                    return newNodeProxy( cursor.nodeReference() );
-                }
-                else
-                {
-                    close();
-                    return null;
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                if ( !closed )
-                {
-                    statement.close();
-                    cursor.close();
-                    closed = true;
-                }
-            }
-        };
+        return new NodeCursorResourceIterator( cursor, statement );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )
@@ -921,5 +894,70 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public GraphPropertiesProxy newGraphPropertiesProxy()
     {
         return new GraphPropertiesProxy( this );
+    }
+
+    private final class NodeCursorResourceIterator implements ResourceIterator<Node>
+    {
+        private static final long UNINITIALIZED = -2L;
+        private static final long NO_ID = -1L;
+        private final NodeLabelIndexCursor cursor;
+        private final Statement statement;
+        private long next;
+        private boolean closed;
+
+        NodeCursorResourceIterator( NodeLabelIndexCursor cursor, Statement statement )
+        {
+            this.cursor = cursor;
+            this.statement = statement;
+            next = -2L;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            if ( next == UNINITIALIZED )
+            {
+                fetchNext();
+            }
+            return next != NO_ID;
+        }
+
+        @Override
+        public Node next()
+        {
+            if ( !hasNext() )
+            {
+                close();
+                throw new NoSuchElementException(  );
+            }
+            Node nodeProxy = newNodeProxy( next );
+            fetchNext();
+            return nodeProxy;
+        }
+
+        private void fetchNext()
+        {
+            if ( cursor.next() )
+            {
+                next = cursor.nodeReference();
+            }
+            else
+            {
+                next = NO_ID;
+                close();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            if ( !closed )
+            {
+                next = NO_ID;
+                statement.close();
+                cursor.close();
+                closed = true;
+            }
+        }
     }
 }
