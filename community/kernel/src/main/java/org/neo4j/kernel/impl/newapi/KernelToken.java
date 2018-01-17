@@ -23,6 +23,8 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
@@ -36,15 +38,15 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int labelGetOrCreateForName( String labelName ) throws KernelException
+    public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
-        return store.labelGetOrCreateForName( labelName );
+        return store.labelGetOrCreateForName( checkValidTokenName( labelName ) );
     }
 
     @Override
-    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
+    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
-        return store.propertyKeyGetOrCreateForName( propertyKeyName );
+        return store.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKeyName ) );
     }
 
     @Override
@@ -105,5 +107,14 @@ public class KernelToken implements Token
     public String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException
     {
         return store.propertyKeyGetName( propertyKeyId );
+    }
+
+    private String checkValidTokenName( String name ) throws IllegalTokenNameException
+    {
+        if ( name == null || name.isEmpty() )
+        {
+            throw new IllegalTokenNameException( name );
+        }
+        return name;
     }
 }

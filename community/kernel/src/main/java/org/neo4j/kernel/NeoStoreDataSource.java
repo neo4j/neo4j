@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -668,16 +669,18 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                         constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
+        KernelToken token = new KernelToken( storageEngine );
+
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
-                cpuClockRef, heapAllocationRef, accessCapability, new Cursors(), autoIndexing, explicitIndexStore ) );
+                cpuClockRef, heapAllocationRef, accessCapability, token, new Cursors(), autoIndexing, explicitIndexStore ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
-                config, storageEngine );
+                config, storageEngine, token );
 
         kernel.registerTransactionHook( transactionEventHandlers );
         life.add( kernel );
