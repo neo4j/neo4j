@@ -56,6 +56,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.DelegatingPageCache;
@@ -687,7 +688,18 @@ public class GBPTreeTest
     }
 
     @Test
-    public void readHeaderMustThrowIOExceptionIfFileIsEmpty() throws Exception
+    public void openWithReadHeaderMustThrowIOExceptionIfFileIsEmpty() throws Exception
+    {
+        openMustThrowIOExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void openWithConstructorMustThrowIOExceptionIfFileIsEmpty() throws Exception
+    {
+        openMustThrowIOExceptionIfFileIsEmpty( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowIOExceptionIfFileIsEmpty( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
     {
         // given an existing empty file
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
@@ -696,7 +708,7 @@ public class GBPTreeTest
         // when
         try
         {
-            GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER );
+            opener.accept( pageCache );
             fail( "Should've thrown IOException" );
         }
         catch ( IOException e )
@@ -708,6 +720,18 @@ public class GBPTreeTest
     @Test
     public void readHeaderMustThrowIOExceptionIfSomeMetaPageIsMissing() throws Exception
     {
+        openMustThrowIOExceptionIfSomeMetaPageIsMissing(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void constructorMustThrowIOExceptionIfSomeMetaPageIsMissing() throws Exception
+    {
+        openMustThrowIOExceptionIfSomeMetaPageIsMissing( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowIOExceptionIfSomeMetaPageIsMissing( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    {
         // given an existing index with only the first page in it
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
@@ -718,7 +742,7 @@ public class GBPTreeTest
         // when
         try
         {
-            GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER );
+            opener.accept( pageCache );
             fail( "Should've thrown IOException" );
         }
         catch ( IOException e )
@@ -729,6 +753,18 @@ public class GBPTreeTest
 
     @Test
     public void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
+    {
+        openMustThrowIOExceptionIfStatePagesAreAllZeros(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void constructorMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
+    {
+        openMustThrowIOExceptionIfStatePagesAreAllZeros( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowIOExceptionIfStatePagesAreAllZeros( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
     {
         // given an existing index with all-zero state pages
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
@@ -746,7 +782,7 @@ public class GBPTreeTest
         // when
         try
         {
-            GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER );
+            opener.accept( pageCache );
             fail( "Should've thrown IOException" );
         }
         catch ( IOException e )
