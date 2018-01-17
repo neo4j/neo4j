@@ -27,12 +27,15 @@ import java.util.Map;
 
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
 
-import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
@@ -45,6 +48,8 @@ import static org.neo4j.io.ByteUnit.exbiBytes;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 
 public class MemoryRecommendationsCommandTest
 {
@@ -83,9 +88,26 @@ public class MemoryRecommendationsCommandTest
         assertThat( recommendPageCacheMemory( exbiBytes( 1 ) ), lessThan( tebiBytes( 17 ) ) );
     }
 
+    @Test
+    public void bytesToStringMustBeParseableBySettings()
+    {
+        Setting<Long> setting = buildSetting( "arg", BYTES ).build();
+        for ( int i = 1; i < 10_000; i++ )
+        {
+            int mebibytes = 75 * i;
+            long expectedBytes = mebiBytes( mebibytes );
+            String bytesToString = bytesToString( expectedBytes );
+            long actualBytes = setting.apply( s -> bytesToString );
+            long tenPercent = (long) (expectedBytes * 0.1);
+            assertThat( mebibytes + "m",
+                    actualBytes,
+                    between( expectedBytes - tenPercent, expectedBytes + tenPercent ) );
+        }
+    }
+
     private Matcher<Long> between( long lowerBound, long upperBound )
     {
-        return allOf( greaterThan( lowerBound ), lessThan( upperBound ) );
+        return both( greaterThanOrEqualTo( lowerBound ) ).and( lessThanOrEqualTo( upperBound ) );
     }
 
     @Test

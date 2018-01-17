@@ -123,19 +123,37 @@ public class MemoryRecommendationsCommand implements AdminCommand
                         "instead of the total memory of the system running the command." ) );
     }
 
-    static String bytesToString( long bytes )
+    static String bytesToString( double bytes )
     {
-        if ( bytes > ONE_GIBI_BYTE )
+        double gibi1 = ONE_GIBI_BYTE;
+        double mebi1 = ONE_MEBI_BYTE;
+        double mebi100 = 100 * mebi1;
+        long kibi100 = 100 * ONE_KIBI_BYTE;
+        if ( bytes >= gibi1 )
         {
-            return format( Locale.ROOT, "%.1fg", bytes / (double) ONE_GIBI_BYTE );
+            double gibibytes = bytes / gibi1;
+            double modMebi = bytes % gibi1;
+            if ( modMebi >= mebi100 )
+            {
+                return format( Locale.ROOT, "%dm", Math.round( bytes / mebi100 ) * 100 );
+            }
+            else
+            {
+                return format( Locale.ROOT, "%.0fg", gibibytes );
+            }
         }
-        else if ( bytes > ONE_MEBI_BYTE )
+        else if ( bytes >= mebi1 )
         {
-            return format( Locale.ROOT, "%.1fm", bytes / (double) ONE_MEBI_BYTE );
-        }
-        else if ( bytes > ONE_KIBI_BYTE )
-        {
-            return format( Locale.ROOT, "%.0fk", bytes / (double) ONE_KIBI_BYTE );
+            double mebibytes = bytes / mebi1;
+            double modKibi = bytes % mebi1;
+            if ( modKibi >= kibi100 )
+            {
+                return format( Locale.ROOT, "%dk", Math.round( bytes / kibi100 ) * 100 );
+            }
+            else
+            {
+                return format( Locale.ROOT, "%.0fm", mebibytes );
+            }
         }
         else
         {
