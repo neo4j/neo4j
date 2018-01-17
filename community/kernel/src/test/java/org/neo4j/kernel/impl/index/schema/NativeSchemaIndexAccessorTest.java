@@ -735,63 +735,6 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         assertEquals( expectedIds, ids );
     }
 
-    @Test
-    public void shouldNotSeeFilteredEntries() throws Exception
-    {
-        // given
-        IndexEntryUpdate[] updates = new IndexEntryUpdate[]
-                {
-                        IndexEntryUpdate.add( 0, indexDescriptor, layoutUtil.asValue( 0 ) ),
-                        IndexEntryUpdate.add( 1, indexDescriptor, layoutUtil.asValue( 1 ) ),
-                        IndexEntryUpdate.add( 2, indexDescriptor, layoutUtil.asValue( 2 ) ),
-                };
-        //noinspection unchecked
-        processAll( updates );
-        IndexReader reader = accessor.newReader();
-
-        // when
-        NodeValueIterator iter = new NodeValueIterator();
-        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, layoutUtil.asValue( 1 ) );
-        IndexQuery rangeQuery = layoutUtil.rangeQuery( 0, true, 2, true );
-        IndexProgressor.NodeValueClient filterClient = filterClient( iter, filter );
-        reader.query( filterClient, IndexOrder.NONE, rangeQuery );
-
-        // then
-        assertTrue( iter.hasNext() );
-        assertEquals( 1, iter.next() );
-        assertFalse( iter.hasNext() );
-    }
-
-    private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery.ExactPredicate filter )
-    {
-        return new IndexProgressor.NodeValueClient()
-        {
-            @Override
-            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
-            {
-                iter.initialize( descriptor, progressor, query );
-            }
-
-            @Override
-            public boolean acceptNode( long reference, Value... values )
-            {
-                //noinspection SimplifiableIfStatement
-                if ( values.length > 1 )
-                {
-                    return false;
-                }
-                // TODO fails for spatial because the asValue is not returning the actual value
-                return filter.acceptsValue( values[0] ) && iter.acceptNode( reference, values );
-            }
-
-            @Override
-            public boolean needsValues()
-            {
-                return true;
-            }
-        };
-    }
-
     private PrimitiveLongIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
