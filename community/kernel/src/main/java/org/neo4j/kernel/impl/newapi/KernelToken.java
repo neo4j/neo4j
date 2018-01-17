@@ -23,8 +23,8 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
@@ -50,13 +50,13 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException
+    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void labelCreateForName( String labelName, int id ) throws KernelException
+    public void labelCreateForName( String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -74,13 +74,13 @@ public class KernelToken implements Token
     }
 
     @Override
-    public void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException
+    public void propertyKeyCreateForName( String propertyKeyName, int id ) throws IllegalTokenNameException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws KernelException
+    public void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws IllegalTokenNameException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
