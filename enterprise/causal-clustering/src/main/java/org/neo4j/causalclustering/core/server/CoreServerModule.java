@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.core.server;
 
-import io.netty.channel.ServerChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.io.File;
@@ -30,7 +29,6 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupServer;
-import org.neo4j.causalclustering.catchup.CatchupServerBootstrapper;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.storecopy.CatchupServerApplication;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
@@ -105,12 +103,9 @@ public class CoreServerModule
     private final PipelineHandlerAppender pipelineAppender;
     private final LifeSupport servicesToStopOnStoreCopy;
 
-    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule,
-            ConsensusModule consensusModule,
-            CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule,
-            ReplicationModule replicationModule,
-            LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier,
-            File clusterStateDirectory, PipelineHandlerAppender pipelineAppender )
+    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
+            CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule, ReplicationModule replicationModule,
+            LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier, File clusterStateDirectory, PipelineHandlerAppender pipelineAppender )
     {
         this.identityModule = identityModule;
         this.coreStateMachinesModule = coreStateMachinesModule;
@@ -128,7 +123,7 @@ public class CoreServerModule
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final LifeSupport life = platformModule.life;
-        Map<String, String> overrideBackupSettings = backupDisabledSettings();
+        Map<String,String> overrideBackupSettings = backupDisabledSettings();
         config.augment( overrideBackupSettings );
 
         this.logProvider = logging.getInternalLogProvider();
@@ -142,20 +137,13 @@ public class CoreServerModule
 
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
-        CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines,
-                replicationModule.getSessionTracker(), lastFlushedStorage );
+        CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines, replicationModule.getSessionTracker(), lastFlushedStorage );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = platformModule.dependencies.provideDependency( DatabaseHealth.class );
-        commandApplicationProcess = new CommandApplicationProcess(
-                consensusModule.raftLog(),
+        commandApplicationProcess = new CommandApplicationProcess( consensusModule.raftLog(),
                 platformModule.config.get( CausalClusteringSettings.state_machine_apply_max_batch_size ),
-                platformModule.config.get( CausalClusteringSettings.state_machine_flush_window_size ),
-                databaseHealthSupplier,
-                logProvider,
-                replicationModule.getProgressTracker(),
-                replicationModule.getSessionTracker(),
-                coreState,
-                consensusModule.inFlightCache(),
+                platformModule.config.get( CausalClusteringSettings.state_machine_flush_window_size ), databaseHealthSupplier, logProvider,
+                replicationModule.getProgressTracker(), replicationModule.getSessionTracker(), coreState, consensusModule.inFlightCache(),
                 platformModule.monitors );
         platformModule.dependencies.satisfyDependency( commandApplicationProcess ); // lastApplied() for CC-robustness
 
@@ -163,30 +151,26 @@ public class CoreServerModule
 
         CoreStateDownloader downloader = createCoreStateDownloader( servicesToStopOnStoreCopy );
 
-        this.downloadService =
-                new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess,
-                        logProvider,
-                        new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() );
+        this.downloadService = new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess, logProvider,
+                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() );
 
         this.membershipWaiterLifecycle = createMembershipWaiterLifecycle();
 
         CatchupServerApplication<NioServerSocketChannel> catchupServerApplication =
                 createCatchupServer( platformModule, localDatabase, pipelineAppender, fileSystem, userLogProvider );
 
-        RaftLogPruner raftLogPruner =
-                new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
+        RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
         dependencies.satisfyDependency( raftLogPruner );
 
-        life.add( new PruningScheduler( raftLogPruner, jobScheduler,
-                config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(), logProvider ) );
+        life.add( new PruningScheduler( raftLogPruner, jobScheduler, config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(),
+                logProvider ) );
 
         // Exposes this so that tests can start/stop the catchup server
         servicesToStopOnStoreCopy.add( catchupServerApplication );
         dependencies.satisfyDependency( catchupServerApplication );
     }
 
-    private CatchupServerApplication<NioServerSocketChannel> createCatchupServer( PlatformModule platformModule,
-            LocalDatabase localDatabase,
+    private CatchupServerApplication<NioServerSocketChannel> createCatchupServer( PlatformModule platformModule, LocalDatabase localDatabase,
             PipelineHandlerAppender pipelineAppender, FileSystemAbstraction fileSystem, LogProvider userLogProvider )
     {
         NioEventLoopServerContextSupplier catchupServerExecutor = new NioEventLoopServerContextSupplier( new NamedThreadFactory( "catchupServer" ) );
@@ -200,41 +184,37 @@ public class CoreServerModule
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )
     {
-        long inactivityTimeoutMillis =
-                platformModule.config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
+        long inactivityTimeoutMillis = platformModule.config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient =
-                new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors,
-                        pipelineAppender );
+                new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors, pipelineAppender );
         platformModule.life.add( new NettyApplication<>( catchUpClient, new NioEventLoopClientContextSupplier( new NamedThreadFactory( "catchup-client" ) ) ) );
 
-        RemoteStore remoteStore = new RemoteStore(
-                logProvider, platformModule.fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
-                new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), config, platformModule.monitors );
+        RemoteStore remoteStore =
+                new RemoteStore( logProvider, platformModule.fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
+                        new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = platformModule.life.add(
                 new CopiedStoreRecovery( platformModule.config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache ) );
 
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( platformModule.fileSystem, platformModule.pageCache, localDatabase,
-                copiedStoreRecovery, remoteStore, logProvider );
+        StoreCopyProcess storeCopyProcess =
+                new StoreCopyProcess( platformModule.fileSystem, platformModule.pageCache, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
-        return new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, remoteStore, catchUpClient, logProvider,
-                storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, clusteringModule.topologyService() );
+        return new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, remoteStore, catchUpClient, logProvider, storeCopyProcess,
+                coreStateMachinesModule.coreStateMachines, snapshotService, clusteringModule.topologyService() );
     }
 
     private MembershipWaiterLifecycle createMembershipWaiterLifecycle()
     {
         long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
-        MembershipWaiter membershipWaiter = new MembershipWaiter( identityModule.myself(), jobScheduler,
-                dbHealthSupplier, electionTimeout * 4, logProvider );
+        MembershipWaiter membershipWaiter = new MembershipWaiter( identityModule.myself(), jobScheduler, dbHealthSupplier, electionTimeout * 4, logProvider );
         long joinCatchupTimeout = config.get( CausalClusteringSettings.join_catch_up_timeout ).toMillis();
         return new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
     }
 
     public CoreLife createCoreLife( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler )
     {
-        return new CoreLife( consensusModule.raftMachine(),
-                localDatabase, clusteringModule.clusterBinder(), commandApplicationProcess, coreStateMachinesModule.coreStateMachines,
-                handler, snapshotService );
+        return new CoreLife( consensusModule.raftMachine(), localDatabase, clusteringModule.clusterBinder(), commandApplicationProcess,
+                coreStateMachinesModule.coreStateMachines, handler, snapshotService );
     }
 
     public CommandApplicationProcess commandApplicationProcess()
@@ -249,7 +229,7 @@ public class CoreServerModule
 
     private static Map<String,String> backupDisabledSettings()
     {
-        Map<String,String> overrideBackupSettings = new HashMap<>(  );
+        Map<String,String> overrideBackupSettings = new HashMap<>();
         overrideBackupSettings.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         return overrideBackupSettings;
     }
