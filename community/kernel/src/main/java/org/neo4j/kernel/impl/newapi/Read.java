@@ -101,11 +101,12 @@ abstract class Read implements TxStateHolder,
     {
         this.cursors = cursors;
         this.ktx = ktx;
-        this.cursorsOpenCloseCalls = RECORD_CURSORS_TRACES ? new LruCache<>("LruCursors", CURSORS_TRACK_HISTORY_MAX_SIZE) : EMPTY_CURSOR_HISTORY;
+        this.cursorsOpenCloseCalls = RECORD_CURSORS_TRACES ?
+                                     new LruCache<>( "LruCursors", CURSORS_TRACK_HISTORY_MAX_SIZE ) : EMPTY_CURSOR_HISTORY;
     }
 
     @Override
-    public void acquireCursor(Cursor cursor)
+    public void acquireCursor( Cursor cursor )
     {
         if ( TRACK_CURSORS )
         {

@@ -54,8 +54,8 @@ public class TraceCursorTest
         try
         {
             folder.create();
-            readTestSupport.setup( folder.getRoot(), ( a ) -> {
-            } );
+            readTestSupport.setup( folder.getRoot(), a ->
+            { } );
         }
         catch ( IOException e )
         {
@@ -92,7 +92,7 @@ public class TraceCursorTest
         NodeCursor cursor = (NodeCursor) kernel.cursors().allocateNodeCursor();
         Transaction tx = openTX();
 
-        tx.dataRead().singleNode(0L, cursor );
+        tx.dataRead().singleNode( 0L, cursor );
         closeTXAndExpectException( tx );
     }
 
@@ -104,7 +104,7 @@ public class TraceCursorTest
         RelationshipScanCursor cursor = (RelationshipScanCursor) kernel.cursors().allocateRelationshipScanCursor();
         Transaction tx = openTX();
 
-        tx.dataRead().relationshipLabelScan(0, cursor );
+        tx.dataRead().relationshipLabelScan( 0, cursor );
         closeTXAndExpectException( tx );
     }
 
@@ -140,7 +140,7 @@ public class TraceCursorTest
         RelationshipGroupCursor cursor = (RelationshipGroupCursor) kernel.cursors().allocateRelationshipGroupCursor();
         Transaction tx = openTX();
 
-        tx.dataRead().relationshipGroups( 0L,0L, cursor );
+        tx.dataRead().relationshipGroups( 0L, 0L, cursor );
         closeTXAndExpectException( tx );
     }
 
@@ -152,7 +152,7 @@ public class TraceCursorTest
         RelationshipTraversalCursor cursor = (RelationshipTraversalCursor) kernel.cursors().allocateRelationshipTraversalCursor();
         Transaction tx = openTX();
 
-        tx.dataRead().relationships( 0L,0L,cursor );
+        tx.dataRead().relationships( 0L, 0L, cursor );
         closeTXAndExpectException( tx );
     }
 
@@ -222,7 +222,7 @@ public class TraceCursorTest
         }
         catch ( Exception e )
         {
-            if ( e.getMessage().contains( "IndexNotFoundKernelException" )) // no index for given label
+            if ( e.getMessage().contains( "IndexNotFoundKernelException" ) ) // no index for given label
             {
                 // ignore this, because it is actually correct but not what we want to test here
             }
@@ -272,7 +272,7 @@ public class TraceCursorTest
         PropertyCursor cursor = (PropertyCursor) kernel.cursors().allocatePropertyCursor();
         Transaction tx = openTX();
 
-        tx.dataRead().nodeProperties( 0L,0L, cursor );
+        tx.dataRead().nodeProperties( 0L, 0L, cursor );
         closeTXAndExpectException( tx );
     }
 
@@ -284,7 +284,7 @@ public class TraceCursorTest
         PropertyCursor cursor = (PropertyCursor) kernel.cursors().allocatePropertyCursor();
         Transaction tx = openTX();
 
-        tx.dataRead().relationshipProperties( 0L,0L, cursor );
+        tx.dataRead().relationshipProperties( 0L, 0L, cursor );
         closeTXAndExpectException( tx );
     }
 
@@ -297,7 +297,7 @@ public class TraceCursorTest
         PropertyCursor cursor = (PropertyCursor) kernel.cursors().allocatePropertyCursor();
         Transaction tx = openTX();
 
-        tx.dataRead().graphProperties(  cursor );
+        tx.dataRead().graphProperties( cursor );
         closeTXAndExpectException( tx );
     }
 

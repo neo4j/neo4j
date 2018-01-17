@@ -23,8 +23,9 @@ import org.neo4j.internal.kernel.api.Cursor;
 
 public interface CursorTracker
 {
-    void acquireCursor(Cursor cursor);
-    void releaseCursor(Cursor cursor);
+    void acquireCursor( Cursor cursor );
+
+    void releaseCursor( Cursor cursor );
 
     void assertCursorsAreClosed();
 }
