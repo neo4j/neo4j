@@ -132,10 +132,8 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
             double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
             Envelope envelope = new Envelope( from, to );
             List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope );
-            System.out.println( "Searching " + rangePredicate + " using " + ranges.size() + " 1D sub-queries:" );
             for ( SpaceFillingCurve.LongRange range : ranges )
             {
-                System.out.println( "\t" + range );
                 KEY treeKeyFrom = layout.newKey();
                 KEY treeKeyTo = layout.newKey();
                 treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min );

@@ -166,7 +166,6 @@ class SpatialSchemaKey implements NativeSchemaKey
     private void extractRawBitsAndType( PointValue value )
     {
         writePoint( value.getCoordinateReferenceSystem(), value.coordinate() );
-        System.out.println( "Wrote point " + rawValueBits + ": " + Arrays.toString( value.coordinate() ) );
     }
 
     /**
