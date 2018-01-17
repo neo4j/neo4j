@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -556,7 +556,7 @@ public class ImportTool
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
 
         life.start();
-        BatchImporter importer = new ParallelBatchImporter( storeDir,
+        BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( storeDir,
                 fs,
                 null, // no external page cache
                 configuration,
