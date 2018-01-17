@@ -119,8 +119,8 @@ class SpatialSchemaKey implements NativeSchemaKey
     public void initAsHighest()
     {
         //TODO: Get dimension
-        double[] limit = new double[2];
-        Arrays.fill(limit, Double.POSITIVE_INFINITY);
+        // These coords will generate the largest value on the spacial curve
+        double[] limit = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
         writePoint( crs, limit );
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
