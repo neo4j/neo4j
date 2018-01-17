@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-abstract class IndexCursor
+abstract class IndexCursor<T extends IndexProgressor>
 {
-    private IndexProgressor progressor;
+    protected T progressor;
 
-    final void initialize( IndexProgressor progressor )
+    final void initialize( T progressor )
     {
         if ( this.progressor != null )
         {

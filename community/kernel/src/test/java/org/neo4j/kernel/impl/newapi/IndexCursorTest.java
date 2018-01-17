@@ -46,7 +46,7 @@ public class IndexCursorTest
         assertFalse( "new still open", otherProgressor.isClosed );
     }
 
-    private static class StubIndexCursor extends IndexCursor
+    private static class StubIndexCursor extends IndexCursor<StubProgressor>
     {
     }
 

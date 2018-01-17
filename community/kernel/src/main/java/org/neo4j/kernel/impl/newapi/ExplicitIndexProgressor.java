@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-class ExplicitIndexProgressor implements IndexProgressor
+public class ExplicitIndexProgressor implements IndexProgressor
 {
     private final ExplicitClient client;
     private final ExplicitIndexHits hits;

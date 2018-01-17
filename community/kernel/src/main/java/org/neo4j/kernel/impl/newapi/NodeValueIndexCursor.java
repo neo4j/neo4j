@@ -35,7 +35,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyItera
 import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertOnlyExactPredicates;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class NodeValueIndexCursor extends IndexCursor
+class NodeValueIndexCursor extends IndexCursor<IndexProgressor>
         implements org.neo4j.internal.kernel.api.NodeValueIndexCursor, NodeValueClient
 {
     private Read read;
