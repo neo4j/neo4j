@@ -47,15 +47,15 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
   test("logicalplan-tostring works") {
     val textResult = graph.execute(queryWithOutputOf("logicalPlan")).resultAsString()
 
-    textResult should equal( """+--------------------------------------------------------------------------------------------------------+
-                               || col                                                                                                    |
-                               |+--------------------------------------------------------------------------------------------------------+
-                               || "ProduceResult[txl=Unchangeable(0)](Vector(a, b)) {"                                                   |
-                               || "  LHS -> Expand[txl=Unchangeable(0)](a, OUTGOING, List(RelTypeName(T)), b,   UNNAMED10, ExpandAll) {" |
-                               || "    LHS -> AllNodesScan[txl=Unchangeable(0)](a, Set()) {}"                                            |
-                               || "  }"                                                                                                  |
-                               || "}"                                                                                                    |
-                               |+--------------------------------------------------------------------------------------------------------+
+    textResult should equal( """+-----------------------------------------------------------------------------------+
+                               || col                                                                               |
+                               |+-----------------------------------------------------------------------------------+
+                               || "ProduceResult(Vector(a, b)) {"                                                   |
+                               || "  LHS -> Expand(a, OUTGOING, List(RelTypeName(T)), b,   UNNAMED10, ExpandAll) {" |
+                               || "    LHS -> AllNodesScan(a, Set()) {}"                                            |
+                               || "  }"                                                                             |
+                               || "}"                                                                               |
+                               |+-----------------------------------------------------------------------------------+
                                |5 rows
                                |""".stripMargin)
   }

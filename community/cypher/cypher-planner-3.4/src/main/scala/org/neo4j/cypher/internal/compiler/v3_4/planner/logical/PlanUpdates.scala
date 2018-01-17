@@ -38,7 +38,6 @@ case object PlanUpdates
     val iterator = query.queryGraph.mutatingPatterns.iterator
     while(iterator.hasNext) {
       updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, ctx, solveds, cardinalities)
-      ctx = ctx.withNextTxLayer
     }
     (updatePlan, ctx)
   }
@@ -54,11 +53,11 @@ case object PlanUpdates
     val (updatePlan, finalContext) = computePlan(plan, query, firstPlannerQuery, context, solveds, cardinalities)
 
     val lp = if (firstPlannerQuery)
-      Eagerness.headWriteReadEagerize(updatePlan, query, finalContext)
+      Eagerness.headWriteReadEagerize(updatePlan, query, context)
     else {
-      Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query, context), query, finalContext)
+      Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query, context), query, context)
     }
-    (lp, finalContext)
+    (lp, context)
   }
 
   private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {

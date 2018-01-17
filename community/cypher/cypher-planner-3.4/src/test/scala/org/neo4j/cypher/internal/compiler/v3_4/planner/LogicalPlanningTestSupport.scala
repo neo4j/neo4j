@@ -142,7 +142,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       useErrorsOverWarnings: Boolean = false): (LogicalPlanningContext, Solveds, Cardinalities) = {
     val solveds = new Solveds
     val cardinalities = new Cardinalities
-    (LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, solveds, cardinalities, idGen), metrics, semanticTable,
+    (LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, solveds, cardinalities, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default),
@@ -159,7 +159,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
-    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new StubSolveds, new StubCardinalities, idGen), metrics, semanticTable,
+    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, new StubSolveds, new StubCardinalities, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)

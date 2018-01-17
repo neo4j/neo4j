@@ -28,10 +28,6 @@ import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SameId}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
-object LogicalPlan {
-  val LOWEST_TX_LAYER = 0
-}
-
 import scala.collection.mutable
 
 /*
@@ -54,7 +50,6 @@ abstract class LogicalPlan(idGen: IdGen)
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
   def availableSymbols: Set[String]
-  val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   val id = idGen.id()
 
@@ -134,7 +129,6 @@ abstract class LogicalPlan(idGen: IdGen)
           constructor.invoke(this, args :+ SameId(this.id): _*).asInstanceOf[this.type]
         else
           constructor.invoke(this, args: _*).asInstanceOf[this.type]
-      resultingPlan.readTransactionLayer.copyFrom(readTransactionLayer)
       resultingPlan
     }
 
@@ -156,7 +150,7 @@ abstract class LogicalPlan(idGen: IdGen)
           val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
           val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
           val prodPrefix = plan.productPrefix
-          sb.append(indent(level, s"""$prefix${prodPrefix}[txl=${plan.readTransactionLayer}]($nonChildFields) {""".stripMargin))
+          sb.append(indent(level, s"""$prefix${prodPrefix}($nonChildFields) {""".stripMargin))
 
           (plan.lhs, plan.rhs) match {
             case (None, None) =>

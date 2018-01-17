@@ -185,7 +185,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
       val solveds = new Solveds
       val cardinalities = new Cardinalities
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, solveds, cardinalities, idGen)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, solveds, cardinalities, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         logicalPlanProducer = logicalPlanProducer,
@@ -201,7 +201,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, LogicalPlan.LOWEST_TX_LAYER, new StubSolveds, new StubCardinalities, idGen)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, new StubSolveds, new StubCardinalities, idGen)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
         logicalPlanProducer = logicalPlanProducer,

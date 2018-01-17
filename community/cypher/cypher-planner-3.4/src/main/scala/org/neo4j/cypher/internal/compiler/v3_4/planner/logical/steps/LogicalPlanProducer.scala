@@ -37,11 +37,9 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteE
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransactionLayer: Int, solveds: Solveds, cardinalities: Cardinalities, idGen : IdGen) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solveds, cardinalities: Cardinalities, idGen : IdGen) extends ListSupport {
 
   implicit val implicitIdGen = idGen
-
-  def withNextTxLayer: LogicalPlanProducer = copy(readTransactionLayer = this.readTransactionLayer + 1, idGen = this.idGen)
 
   def planLock(plan: LogicalPlan, nodesToLock: Set[String], context: LogicalPlanningContext): LogicalPlan =
     annotate(LockNodes(plan, nodesToLock), solveds.get(plan.id), context)
@@ -675,7 +673,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
 
   def planProduceResult(inner: LogicalPlan, columns: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
     val produceResult = ProduceResult(inner, columns)
-    produceResult.readTransactionLayer.value = readTransactionLayer
     solveds.copy(inner.id, produceResult.id)
     // Do not calculate cardinality for ProduceResult. Since the passed context does not have accurate label information
     // It will get a wrong value with some projections. Use the cardinality of inner instead
@@ -685,7 +682,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, readTransacti
 
   private def annotate(plan: LogicalPlan, plannerQuery: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
-    plan.readTransactionLayer.value = readTransactionLayer
     solveds.set(plan.id, plannerQuery)
     cardinalities.set(plan.id, cardinality)
     plan
