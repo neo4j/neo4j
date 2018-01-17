@@ -44,7 +44,7 @@ public class StoreCopyFinishedResponse
         return lastCommittedTxBeforeStoreCopy;
     }
 
-    Status status()
+    public Status status()
     {
         return status;
     }

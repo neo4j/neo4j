@@ -32,7 +32,7 @@ import org.neo4j.logging.LogProvider;
 
 public class StoreCopyClient
 {
-    private final CatchUpClient catchUpClient;
+    private final CatchUpClient<?> catchUpClient;
     private final Log log;
 
     public StoreCopyClient( CatchUpClient catchUpClient, LogProvider logProvider )

@@ -43,13 +43,13 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 
-public class CatchUpClient implements ChannelService<Bootstrap, NioSocketChannel>
+public class CatchUpClient<C extends Channel> implements ChannelService<Bootstrap, C>
 {
     private final Log log;
     private final Clock clock;
     private final long inactivityTimeoutMillis;
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
-    private final ClientConnector<NioSocketChannel> clientConnector;
+    private final ClientConnector<C> clientConnector;
 
     private final CatchupClientBootstrapper catchupClientBootstrapper;
 
@@ -93,7 +93,7 @@ public class CatchUpClient implements ChannelService<Bootstrap, NioSocketChannel
     }
 
     @Override
-    public void bootstrap( EventLoopContext<NioSocketChannel> eventLoopContext )
+    public void bootstrap( EventLoopContext<C> eventLoopContext )
     {
         clientConnector.bootstrap( eventLoopContext );
     }
@@ -122,6 +122,7 @@ public class CatchUpClient implements ChannelService<Bootstrap, NioSocketChannel
             this.handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
             this.nettyChannel = clientConnector
                     .connect( destination.socketAddress(), catchupClientBootstrapper.addHandler( handler ) );
+            nettyChannel.isActive();
         }
 
         void setResponseHandler( CatchUpResponseCallback responseHandler, CompletableFuture<?> requestOutcomeSignal )
@@ -167,7 +168,7 @@ public class CatchUpClient implements ChannelService<Bootstrap, NioSocketChannel
             this.pipelineAppender = pipelineAppender;
         }
 
-        Function<EventLoopContext<NioSocketChannel>,Bootstrap> bootstrapper()
+        Function<EventLoopContext<C>,Bootstrap> bootstrapper()
         {
             return eventLoopContext -> new Bootstrap().group( eventLoopContext.eventExecutors() )
                     .channel( eventLoopContext.channelClass() );
@@ -175,10 +176,10 @@ public class CatchUpClient implements ChannelService<Bootstrap, NioSocketChannel
 
         Function<Bootstrap,Bootstrap> addHandler( TrackingResponseHandler handler )
         {
-            return bootstrap -> bootstrap.handler( new ChannelInitializer<SocketChannel>()
+            return bootstrap -> bootstrap.handler( new ChannelInitializer<C>()
             {
                 @Override
-                protected void initChannel( SocketChannel ch ) throws Exception
+                protected void initChannel( C ch ) throws Exception
                 {
                     CatchUpClientChannelPipeline
                             .initChannel( ch, handler, logProvider, monitors, pipelineAppender );

@@ -48,7 +48,7 @@ public class CoreStateDownloader
     private final LocalDatabase localDatabase;
     private final Lifecycle startStopOnStoreCopy;
     private final RemoteStore remoteStore;
-    private final CatchUpClient catchUpClient;
+    private final CatchUpClient<?> catchUpClient;
     private final Log log;
     private final StoreCopyProcess storeCopyProcess;
     private final CoreStateMachines coreStateMachines;

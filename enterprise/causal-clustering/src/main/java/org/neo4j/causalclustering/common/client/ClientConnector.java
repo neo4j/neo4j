@@ -26,6 +26,7 @@ import io.netty.channel.ChannelOutboundInvoker;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.common.ChannelService;
@@ -53,11 +54,13 @@ public class ClientConnector<C extends Channel> implements ChannelService<Bootst
 
     public synchronized Channel connect( InetSocketAddress socketAddress )
     {
+        checkBootstrapped();
         return connect( bootstrap, socketAddress );
     }
 
     public synchronized Channel connect( InetSocketAddress socketAddress, Function<Bootstrap,Bootstrap> augmentedConfig )
     {
+        checkBootstrapped();
         return connect( augmentedConfig.apply( bootstrap.clone() ), socketAddress );
     }
 
@@ -69,13 +72,21 @@ public class ClientConnector<C extends Channel> implements ChannelService<Bootst
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
-        // do nothing
+        checkBootstrapped();
+    }
+
+    private void checkBootstrapped()
+    {
+        if ( bootstrap == null )
+        {
+            throw new IllegalStateException( "Need to be bootstrapped first" );
+        }
     }
 
     @Override
-    public synchronized void closeChannels() throws Throwable
+    public synchronized void closeChannels() throws ExecutionException, InterruptedException
     {
         Futures.combine( connect.stream().map( ChannelOutboundInvoker::close ).collect( toList() ) ).get();
         connect.clear();

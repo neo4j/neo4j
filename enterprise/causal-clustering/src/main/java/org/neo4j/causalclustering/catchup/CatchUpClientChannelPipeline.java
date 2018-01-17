@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.catchup;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
@@ -57,8 +57,8 @@ class CatchUpClientChannelPipeline
     {
     }
 
-    static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider,
-                             Monitors monitors, PipelineHandlerAppender pipelineHandlerAppender ) throws Exception
+    static <C extends Channel> void initChannel( C ch, CatchUpResponseHandler handler, LogProvider logProvider, Monitors monitors,
+            PipelineHandlerAppender pipelineHandlerAppender ) throws Exception
     {
         CatchupClientProtocol protocol = new CatchupClientProtocol();
 
@@ -81,15 +81,12 @@ class CatchUpClientChannelPipeline
 
         pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 
-        RequestDecoderDispatcher<CatchupClientProtocol.State> decoderDispatcher =
-                new RequestDecoderDispatcher<>( protocol, logProvider );
+        RequestDecoderDispatcher<CatchupClientProtocol.State> decoderDispatcher = new RequestDecoderDispatcher<>( protocol, logProvider );
         decoderDispatcher.register( CatchupClientProtocol.State.STORE_ID, new GetStoreIdResponseDecoder() );
         decoderDispatcher.register( CatchupClientProtocol.State.TX_PULL_RESPONSE, new TxPullResponseDecoder() );
         decoderDispatcher.register( CatchupClientProtocol.State.CORE_SNAPSHOT, new CoreSnapshotDecoder() );
-        decoderDispatcher.register( CatchupClientProtocol.State.STORE_COPY_FINISHED, new
-                StoreCopyFinishedResponseDecoder() );
-        decoderDispatcher.register( CatchupClientProtocol.State.TX_STREAM_FINISHED, new
-                TxStreamFinishedResponseDecoder() );
+        decoderDispatcher.register( CatchupClientProtocol.State.STORE_COPY_FINISHED, new StoreCopyFinishedResponseDecoder() );
+        decoderDispatcher.register( CatchupClientProtocol.State.TX_STREAM_FINISHED, new TxStreamFinishedResponseDecoder() );
         decoderDispatcher.register( CatchupClientProtocol.State.FILE_HEADER, new FileHeaderDecoder() );
         decoderDispatcher.register( CatchupClientProtocol.State.FILE_CONTENTS, new FileChunkDecoder() );
 
@@ -104,8 +101,7 @@ class CatchUpClientChannelPipeline
         pipeline.addLast( new GetStoreIdResponseHandler( protocol, handler ) );
 
         pipeline.addLast( new ExceptionLoggingHandler( logProvider.getLog( CatchUpClient.class ) ) );
-        pipeline.addLast( new ExceptionMonitoringHandler(
-                monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, CatchUpClient.class ) ) );
+        pipeline.addLast( new ExceptionMonitoringHandler( monitors.newMonitor( ExceptionMonitoringHandler.Monitor.class, CatchUpClient.class ) ) );
         pipeline.addLast( new ExceptionSwallowingHandler() );
     }
 }

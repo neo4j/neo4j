@@ -31,7 +31,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 public class TxPullClient
 {
-    private final CatchUpClient catchUpClient;
+    private final CatchUpClient<?> catchUpClient;
     private PullRequestMonitor pullRequestMonitor;
 
     public TxPullClient( CatchUpClient catchUpClient, Monitors monitors )
