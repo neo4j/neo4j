@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -44,7 +45,8 @@ import static org.junit.Assert.fail;
 public class TraceCursorTest
 {
     private ReadTestSupport readTestSupport = new ReadTestSupport();
-    private static final TemporaryFolder folder = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
     private Kernel kernel;
     private Session session;
 
@@ -53,7 +55,6 @@ public class TraceCursorTest
     {
         try
         {
-            folder.create();
             readTestSupport.setup( folder.getRoot(), a ->
             { } );
         }
@@ -64,6 +65,7 @@ public class TraceCursorTest
         kernel = readTestSupport.kernelToTest();
         session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
         System.setProperty( "org.neo4j.kernel.impl.newapi.Read.trackCursors", "true" );
+        System.setProperty( "org.neo4j.kernel.impl.newapi.Read.recordCursorTraces", "true" );
     }
 
     @After

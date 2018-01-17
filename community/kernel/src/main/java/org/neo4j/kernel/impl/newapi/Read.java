@@ -108,7 +108,7 @@ abstract class Read implements TxStateHolder,
     @Override
     public void acquireCursor( Cursor cursor )
     {
-        if ( TRACK_CURSORS )
+        if ( RECORD_CURSORS_TRACES )
         {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             cursorsOpenCloseCalls.put( cursor, Arrays.copyOfRange(stackTrace, 2, stackTrace.length) );
@@ -121,7 +121,7 @@ abstract class Read implements TxStateHolder,
     {
         if ( cursorsInUse > 0 )
         {
-            if ( TRACK_CURSORS )
+            if ( RECORD_CURSORS_TRACES )
             {
                 cursorsOpenCloseCalls.remove( cursor );
             }
