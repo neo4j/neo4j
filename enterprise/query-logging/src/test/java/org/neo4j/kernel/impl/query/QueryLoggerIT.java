@@ -461,7 +461,7 @@ public class QueryLoggerIT
     {
         GraphDatabaseFacade database =
                 (GraphDatabaseFacade) databaseBuilder.setConfig( log_queries, Settings.TRUE )
-                        .setConfig( GraphDatabaseSettings.log_timezone, LogTimeZone.SYSTEM.name() )
+                        .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() )
                         .setConfig( logs_directory, logsDirectory.getPath() )
                         .newGraphDatabase();
         database.execute( QUERY ).close();

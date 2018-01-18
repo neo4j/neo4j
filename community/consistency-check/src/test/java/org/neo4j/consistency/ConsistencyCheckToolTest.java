@@ -113,7 +113,7 @@ public class ConsistencyCheckToolTest
             File storeDir = testDirectory.directory();
             File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
             Properties properties = new Properties();
-            properties.setProperty( GraphDatabaseSettings.log_timezone.name(), LogTimeZone.SYSTEM.name() );
+            properties.setProperty( GraphDatabaseSettings.db_timezone.name(), LogTimeZone.SYSTEM.name() );
             properties.store( new FileWriter( configFile ), null );
             String[] args = {storeDir.getPath(), "-config", configFile.getPath()};
 

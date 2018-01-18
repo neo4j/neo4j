@@ -65,7 +65,7 @@ public class BoltMessageLogging
             {
                 File boltLogFile = config.get( GraphDatabaseSettings.bolt_log_filename );
                 Executor executor = scheduler.executor( JobScheduler.Groups.boltLogRotation );
-                ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+                ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
                 return new BoltMessageLog( fs, logTimeZoneId, boltLogFile, executor );
             }
             catch ( Throwable t )

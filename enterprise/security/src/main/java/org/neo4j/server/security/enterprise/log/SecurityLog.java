@@ -26,8 +26,8 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLog;
@@ -46,7 +46,7 @@ public class SecurityLog extends LifecycleAdapter implements Log
 
     public SecurityLog( Config config, FileSystemAbstraction fileSystem, Executor executor ) throws IOException
     {
-        ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         File logFile = config.get( SecuritySettings.security_log_filename );
 
         FormattedLog.Builder builder = FormattedLog.withZoneId( logTimeZoneId );

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.enterprise.builtinprocs;
 
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.Statement;
@@ -46,7 +48,6 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -283,14 +284,16 @@ public class EnterpriseBuiltInDbmsProcedures
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
+
         EmbeddedProxySPI nodeManager = resolver.resolveDependency( EmbeddedProxySPI.class );
+        ZoneId zoneId = getConfiguredTimeZone();
         try
         {
             return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
                     .filter( query -> isAdminOrSelf( query.username() ) )
                     .map( catchThrown( InvalidArgumentsException.class,
-                            query -> new QueryStatusResult( query, nodeManager ) ) );
+                            query -> new QueryStatusResult( query, nodeManager, zoneId ) ) );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -315,10 +318,13 @@ public class EnterpriseBuiltInDbmsProcedures
 
             TransactionDependenciesResolver transactionBlockerResolvers =
                     new TransactionDependenciesResolver( handleQuerySnapshotsMap );
+
+            ZoneId zoneId = getConfiguredTimeZone();
+
             return handles.stream()
                     .map( catchThrown( InvalidArgumentsException.class,
                             tx -> new TransactionStatusResult( tx, transactionBlockerResolvers,
-                                    handleQuerySnapshotsMap ) ) );
+                                    handleQuerySnapshotsMap, zoneId ) ) );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -520,6 +526,12 @@ public class EnterpriseBuiltInDbmsProcedures
             .map( entry -> new ConnectionResult( entry.getKey(), entry.getValue() ) );
     }
 
+    private ZoneId getConfiguredTimeZone()
+    {
+        Config config = resolver.resolveDependency( Config.class );
+        return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
+    }
+
     private boolean isAdmin()
     {
         return securityContext.isAdmin();
@@ -539,7 +551,6 @@ public class EnterpriseBuiltInDbmsProcedures
     }
 
     private void assertAdminOrSelf( String username )
-            throws InvalidArgumentsException
     {
         if ( !isAdminOrSelf( username ) )
         {

@@ -91,7 +91,7 @@ public class SecurityLogTest
     private void checkLogTimeZone( int hoursShift, String timeZoneSuffix ) throws Exception
     {
         TimeZone.setDefault( TimeZone.getTimeZone( ZoneOffset.ofHours( hoursShift ) ) );
-        Config timeZoneConfig = Config.defaults( GraphDatabaseSettings.log_timezone, LogTimeZone.SYSTEM.name() );
+        Config timeZoneConfig = Config.defaults( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() );
         SecurityLog securityLog = new SecurityLog( timeZoneConfig, fileSystemRule.get(), Runnable::run );
         securityLog.info( "line 1" );
 
