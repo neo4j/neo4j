@@ -742,7 +742,6 @@ public class EncodingIdMapper implements IdMapper
         return clearCollision( dataCache.get( trackerCache.get( index ) ) );
     }
 
-//<<<<<<< HEAD
     private long findCollisionIndex( long value )
     {
         // can't be done on unsorted data
