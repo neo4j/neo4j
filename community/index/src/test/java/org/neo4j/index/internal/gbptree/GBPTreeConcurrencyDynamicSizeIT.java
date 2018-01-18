@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.index.internal.gbptree.misc.TestLayout;
 import org.neo4j.test.rule.RandomRule;
 
 public class GBPTreeConcurrencyDynamicSizeIT extends GBPTreeConcurrencyITBase<RawBytes,RawBytes>

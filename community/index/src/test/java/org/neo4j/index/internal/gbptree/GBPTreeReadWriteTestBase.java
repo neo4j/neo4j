@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.index.internal.gbptree.misc.TestLayout;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 

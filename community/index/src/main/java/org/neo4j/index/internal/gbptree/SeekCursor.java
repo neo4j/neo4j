@@ -140,7 +140,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * suddenly another key when he goes there he knows that he could have missed some keys and he needs to go back until
  * he find the place where he left off, K4.
  */
-class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hit<KEY,VALUE>
+public class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hit<KEY,VALUE>
 {
     /**
      * Cursor for reading from tree nodes and also will be moved around when following pointers.

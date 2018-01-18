@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.index.internal.gbptree.misc.TestLayout;
 import org.neo4j.io.pagecache.PageCursor;
 
 public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
@@ -133,7 +134,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     }
 
     @Override
-    int compareValue( RawBytes v1, RawBytes v2 )
+    public int compareValue( RawBytes v1, RawBytes v2 )
     {
         return compare( v1, v2 );
     }
@@ -167,6 +168,20 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
             return 1;
         }
         return 0;
+    }
+
+    @Override
+    public RawBytes keyWithSeed( RawBytes rawBytes, long seed )
+    {
+        rawBytes.bytes = fromSeed( seed );
+        return rawBytes;
+    }
+
+    @Override
+    public RawBytes valueWithSeed( RawBytes rawBytes, long seed )
+    {
+        rawBytes.bytes = fromSeed( seed );
+        return rawBytes;
     }
 
     @Override

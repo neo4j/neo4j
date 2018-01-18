@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
+import org.neo4j.index.internal.gbptree.misc.TestLayout;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -53,7 +54,7 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     }
 
     @Override
-    int compareValue( MutableLong v1, MutableLong v2 )
+    public int compareValue( MutableLong v1, MutableLong v2 )
     {
         return compare( v1, v2 );
     }
@@ -191,6 +192,20 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
         byte[] bytes = new byte[length];
         cursor.getBytes( bytes );
         return new String( bytes, UTF_8 );
+    }
+
+    @Override
+    public MutableLong keyWithSeed( MutableLong key, long seed )
+    {
+        key.setValue( seed );
+        return key;
+    }
+
+    @Override
+    public MutableLong valueWithSeed( MutableLong value, long seed )
+    {
+        value.setValue( seed );
+        return value;
     }
 
     @Override

@@ -37,6 +37,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.index.internal.gbptree.misc.TestLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;

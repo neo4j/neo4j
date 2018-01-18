@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
+import org.neo4j.index.internal.gbptree.misc.TestLayout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
