@@ -27,8 +27,9 @@ import java.util.function.Supplier;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static java.lang.Integer.max;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 /**
  * {@link RawCursor} over tree leaves, making keys/values accessible to user. Given a starting leaf
@@ -201,12 +202,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private final Supplier<Root> rootCatchup;
 
     /**
-     * Max of leaf/internal key count that a tree node can have at most. This is used to sanity check
-     * key counts read from {@link TreeNode#keyCount(PageCursor)}.
-     */
-    private final int maxKeyCount;
-
-    /**
      * Whether or not some result has been found, i.e. if {@code true} if there have been no call to
      * {@link #next()} returning {@code true}, otherwise {@code false}. If {@code false} then value in
      * {@link #prevKey} can be used and trusted.
@@ -317,7 +312,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long pointerGeneration;
 
     /**
-     * Result from {@link KeySearch#search(PageCursor, TreeNode, Object, Object, int)}.
+     * Result from {@link KeySearch#search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
      */
     private int searchResult;
 
@@ -388,7 +383,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.mutableKey = layout.newKey();
         this.mutableValue = layout.newValue();
         this.prevKey = layout.newKey();
-        this.maxKeyCount = max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() );
         this.seekForward = layout.compare( fromInclusive, toExclusive ) <= 0;
         this.stride = seekForward ? 1 : -1;
         this.expectedFirstAfterGoToNext = layout.newKey();
@@ -432,7 +426,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     continue;
                 }
 
-                searchResult = searchKey( fromInclusive );
+                searchResult = searchKey( fromInclusive, isInternal ? INTERNAL : LEAF );
                 if ( !KeySearch.isSuccess( searchResult ) )
                 {
                     continue;
@@ -459,10 +453,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             {
                 throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
                         "  nodeType:%d%n  currentNodeGeneration:%d%n  successor:%d%n  successorGeneration:%d%n" +
-                        "  isInternal:%b%n  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n" +
+                        "  isInternal:%b%n  keyCount:%d%n  searchResult:%d%n  pos:%d%n" +
                         "  childId:%d%n  childIdGeneration:%d",
                         cursor.getCurrentPageId(), nodeType, currentNodeGeneration, successor, successorGeneration,
-                        isInternal, keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGeneration );
+                        isInternal, keyCount, searchResult, pos, pointerId, pointerGeneration );
             }
 
             if ( goToSuccessor() )
@@ -518,14 +512,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( verifyExpectedFirstAfterGoToNext )
                 {
                     pos = seekForward ? 0 : keyCount - 1;
-                    bTreeNode.keyAt( cursor,firstKeyInNode, pos );
+                    bTreeNode.keyAt( cursor,firstKeyInNode, pos, LEAF );
                 }
 
                 if ( concurrentWriteHappened )
                 {
                     // Keys could have been moved so we need to make sure we are not missing any keys by
                     // moving position back until we find previously returned key
-                    searchResult = searchKey( first ? fromInclusive : prevKey );
+                    searchResult = searchKey( first ? fromInclusive : prevKey, LEAF );
                     if ( !KeySearch.isSuccess( searchResult ) )
                     {
                         continue;
@@ -550,8 +544,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( 0 <= pos && pos < keyCount )
                 {
                     // Read the next value in this leaf
-                    bTreeNode.keyAt( cursor, mutableKey, pos );
-                    bTreeNode.valueAt( cursor, mutableValue, pos );
+                    bTreeNode.keyValueAt( cursor, mutableKey, mutableValue, pos );
                 }
             }
             while ( concurrentWriteHappened = cursor.shouldRetry() );
@@ -569,10 +562,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             {
                 throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
                         "  nodeType:%d%n  currentNodeGeneration:%d%n  successor:%d%n  successorGeneration:%d%n" +
-                        "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n" +
+                        "  keyCount:%d%n  searchResult:%d%n  pos:%d%n" +
                         "  rightSibling:%d%n  rightSiblingGeneration:%d",
                         cursor.getCurrentPageId(), nodeType, currentNodeGeneration, successor, successorGeneration,
-                        keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGeneration );
+                        keyCount, searchResult, pos, pointerId, pointerGeneration );
             }
 
             if ( !verifyFirstKeyInNodeIsExpectedAfterGoTo() )
@@ -772,9 +765,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      *
      * @return position of the {@code key} in the current tree node, or position of the closest key.
      */
-    private int searchKey( KEY key )
+    private int searchKey( KEY key, TreeNode.Type type )
     {
-        return KeySearch.search( cursor, bTreeNode, key, mutableKey, keyCount );
+        return KeySearch.search( cursor, bTreeNode, type, key, mutableKey, keyCount );
     }
 
     private int positionOf( int searchResult )
@@ -929,7 +922,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( keyCountIsSane( keyCount ) )
                 {
                     int firstPos = seekForward ? 0 : keyCount - 1;
-                    bTreeNode.keyAt( scout, expectedFirstAfterGoToNext, firstPos );
+                    bTreeNode.keyAt( scout, expectedFirstAfterGoToNext, firstPos, LEAF );
                 }
             }
 
@@ -992,7 +985,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     {
         // if keyCount is out of bounds of what a tree node can hold, it must be that we're
         // reading from an evicted page that just happened to look like a tree node.
-        return keyCount >= 0 && keyCount <= maxKeyCount;
+        return bTreeNode.reasonableKeyCount( keyCount );
     }
 
     private boolean saneRead()

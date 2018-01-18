@@ -343,7 +343,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * {@link Consumer} to hand out to others who want to decorate information about this tree
      * to exceptions thrown out from its surface.
      */
-    private final Consumer<Throwable> exceptionDecorator = t -> appendTreeInformation( t );
+    private final Consumer<Throwable> exceptionDecorator = this::appendTreeInformation;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -424,7 +424,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
             this.pageSize = pagedFile.pageSize();
             closed = false;
-            this.bTreeNode = new TreeNode<>( pageSize, layout );
+            this.bTreeNode = layout.fixedSize() ? new TreeNodeFixedSize<>( pageSize, layout )
+                                                : new TreeNodeDynamicSize<>( pageSize, layout );
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
@@ -478,7 +479,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             long stableGeneration = stableGeneration( generation );
             long unstableGeneration = unstableGeneration( generation );
-            TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
             checkOutOfBounds( cursor );
         }
 
@@ -1033,7 +1034,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     void printTree() throws IOException
     {
-        printTree( true, true, true );
+        printTree( false, false, false, false );
     }
 
     // Utility method
@@ -1043,14 +1044,36 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param printValues whether or not to print values in the leaf nodes.
      * @param printPosition whether or not to print position for each key.
      * @param printState whether or not to print the tree state.
+     * @param printHeader
      * @throws IOException on I/O error.
      */
-    public void printTree( boolean printValues, boolean printPosition, boolean printState ) throws IOException
+    void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
             new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
-                .printTree( cursor, cursor, System.out, printValues, printPosition, printState );
+                .printTree( cursor, writer.cursor, System.out, printValues, printPosition, printState, printHeader );
+        }
+    }
+    // Utility method
+    /**
+     * Print node with given id to System.out, if node with id exists.
+     * @param id the page id of node to print
+     */
+    void printNode( int id ) throws IOException
+    {
+        if ( id < freeList.lastId() )
+        {
+            // Use write lock to avoid adversary interference
+            try ( PageCursor cursor = pagedFile.io( id, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            {
+                cursor.next();
+                byte nodeType = TreeNode.nodeType( cursor );
+                if ( nodeType == TreeNode.NODE_TYPE_TREE_NODE )
+                {
+                    bTreeNode.printNode( cursor, false, true, stableGeneration( generation ), unstableGeneration( generation ) );
+                }
+            }
         }
     }
 
@@ -1184,26 +1207,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 throw e;
             }
 
-            if ( structurePropagation.hasRightKeyInsert )
-            {
-                // New root
-                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
-                PageCursorUtil.goTo( cursor, "new root", newRootId );
-
-                TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
-                TreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
-                        stableGeneration, unstableGeneration );
-                bTreeNode.setChildAt( cursor, structurePropagation.rightChild, 1,
-                        stableGeneration, unstableGeneration );
-                setRoot( newRootId );
-            }
-            else if ( structurePropagation.hasMidChildUpdate )
-            {
-                setRoot( structurePropagation.midChild );
-            }
-            structurePropagation.clear();
+            handleStructureChanges();
 
             checkOutOfBounds( cursor );
         }
@@ -1230,14 +1234,33 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 throw e;
             }
 
-            if ( structurePropagation.hasMidChildUpdate )
+            handleStructureChanges();
+
+            checkOutOfBounds( cursor );
+            return result;
+        }
+
+        private void handleStructureChanges() throws IOException
+        {
+            if ( structurePropagation.hasRightKeyInsert )
+            {
+                // New root
+                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
+                PageCursorUtil.goTo( cursor, "new root", newRootId );
+
+                bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
+                        stableGeneration, unstableGeneration );
+                bTreeNode.insertKeyAndRightChildAt( cursor, structurePropagation.rightKey, structurePropagation.rightChild, 0, 0,
+                        stableGeneration, unstableGeneration );
+                TreeNode.setKeyCount( cursor, 1 );
+                setRoot( newRootId );
+            }
+            else if ( structurePropagation.hasMidChildUpdate )
             {
                 setRoot( structurePropagation.midChild );
             }
             structurePropagation.clear();
-
-            checkOutOfBounds( cursor );
-            return result;
         }
 
         @Override

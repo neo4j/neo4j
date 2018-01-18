@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,7 +59,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 /**
@@ -77,7 +75,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
  * toAdd and toRemove, prepare the GB+Tree with entries and serve readers and writer with information
  * about what they should do next.
  */
-public class GBPTreeConcurrencyIT
+public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
 {
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
@@ -87,26 +85,20 @@ public class GBPTreeConcurrencyIT
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    private Layout<MutableLong,MutableLong> layout;
-    private GBPTree<MutableLong,MutableLong> index;
+    private TestLayout<KEY,VALUE> layout;
+    private GBPTree<KEY,VALUE> index;
     private final ExecutorService threadPool =
             Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 
-    private GBPTree<MutableLong,MutableLong> createIndex()
-            throws IOException
-    {
-        return createIndex( NO_MONITOR );
-    }
-
-    private GBPTree<MutableLong,MutableLong> createIndex( GBPTree.Monitor monitor )
-            throws IOException
+    private GBPTree<KEY,VALUE> createIndex() throws IOException
     {
         int pageSize = 512;
-        layout = new SimpleLongLayout( random.intBetween( 0, 10 ) );
-        PageCache pageCache =
-                pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
+        layout = getLayout( random );
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
     }
+
+    protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
 
     @After
     public void consistencyCheckAndClose() throws IOException
@@ -200,6 +192,7 @@ public class GBPTreeConcurrencyIT
             threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
+                //noinspection ThrowFromFinallyBlock
                 throw readerError.get();
             }
         }
@@ -249,25 +242,25 @@ public class GBPTreeConcurrencyIT
             return shuffledList;
         }
 
-        void prepare( GBPTree<MutableLong,MutableLong> index ) throws IOException
+        void prepare( GBPTree<KEY,VALUE> index ) throws IOException
         {
             prepareIndex( index, readersShouldSee, toRemove, toAdd, random );
             iterationFinished();
         }
 
-        void prepareIndex( GBPTree<MutableLong,MutableLong> index, TreeSet<Long> dataInIndex,
+        void prepareIndex( GBPTree<KEY,VALUE> index, TreeSet<Long> dataInIndex,
                 Queue<Long> toRemove, Queue<Long> toAdd, Random random ) throws IOException
         {
             List<Long> fullRange = LongStream.range( minRange, maxRange ).boxed().collect( Collectors.toList() );
             List<Long> rangeOutOfOrder = shuffleToNewList( fullRange, random );
-            try ( Writer<MutableLong, MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 for ( Long key : rangeOutOfOrder )
                 {
                     boolean addForRemoval = random.nextDouble() > writePercentage;
                     if ( addForRemoval )
                     {
-                        writer.put( new MutableLong( key ), new MutableLong( key ) );
+                        writer.put( key( key ),value( key ) );
                         dataInIndex.add( key );
                         toRemove.add( key );
                     }
@@ -282,8 +275,7 @@ public class GBPTreeConcurrencyIT
         void iterationFinished()
         {
             // Create new set to not modify set that readers use concurrently
-            TreeSet<Long> tmp = new TreeSet<>( readersShouldSee );
-            readersShouldSee = tmp;
+            readersShouldSee = new TreeSet<>( readersShouldSee );
             updateRecentlyInsertedData( readersShouldSee, updatesForNextIteration );
             updatesForNextIteration = generateUpdatesForNextIteration();
             updateWithSoonToBeRemovedData( readersShouldSee, updatesForNextIteration );
@@ -375,7 +367,7 @@ public class GBPTreeConcurrencyIT
         }
     }
 
-    private abstract static class UpdateOperation
+    private abstract class UpdateOperation
     {
         final long key;
 
@@ -384,14 +376,14 @@ public class GBPTreeConcurrencyIT
             this.key = key;
         }
 
-        abstract void apply( Writer<MutableLong,MutableLong> writer ) throws IOException;
+        abstract void apply( Writer<KEY,VALUE> writer ) throws IOException;
 
         abstract void applyToSet( Set<Long> set );
 
         abstract boolean isInsert();
     }
 
-    private static class PutOperation extends UpdateOperation
+    private class PutOperation extends UpdateOperation
     {
         PutOperation( long key )
         {
@@ -399,9 +391,9 @@ public class GBPTreeConcurrencyIT
         }
 
         @Override
-        void apply( Writer<MutableLong,MutableLong> writer ) throws IOException
+        void apply( Writer<KEY,VALUE> writer ) throws IOException
         {
-            writer.put( new MutableLong( key ), new MutableLong( key ) );
+            writer.put( key( key ), value( key ) );
         }
 
         @Override
@@ -417,7 +409,7 @@ public class GBPTreeConcurrencyIT
         }
     }
 
-    private static class RemoveOperation extends UpdateOperation
+    private class RemoveOperation extends UpdateOperation
     {
         RemoveOperation( long key )
         {
@@ -425,9 +417,9 @@ public class GBPTreeConcurrencyIT
         }
 
         @Override
-        void apply( Writer<MutableLong,MutableLong> writer ) throws IOException
+        void apply( Writer<KEY,VALUE> writer ) throws IOException
         {
-            writer.remove( new MutableLong( key ) );
+            writer.remove( key( key ) );
         }
 
         @Override
@@ -465,7 +457,7 @@ public class GBPTreeConcurrencyIT
         Iterator<UpdateOperation> toWriteIterator = toWrite.iterator();
         while ( toWriteIterator.hasNext() )
         {
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 int inBatch = 0;
                 while ( toWriteIterator.hasNext() && inBatch < batchSize )
@@ -532,8 +524,7 @@ public class GBPTreeConcurrencyIT
             long start = readerInstruction.start();
             long end = readerInstruction.end();
             boolean forward = start <= end;
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( start ), new MutableLong( end ) ) )
+            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor = index.seek( key( start ), key( end ) ) )
             {
                 if ( expectToSee.hasNext() )
                 {
@@ -541,8 +532,8 @@ public class GBPTreeConcurrencyIT
                     while ( cursor.next() )
                     {
                         // Actual
-                        long lastSeenKey = cursor.get().key().longValue();
-                        long lastSeenValue = cursor.get().value().longValue();
+                        long lastSeenKey = keySeed( cursor.get().key() );
+                        long lastSeenValue = valueSeed( cursor.get().value() );
 
                         if ( lastSeenKey != lastSeenValue )
                         {
@@ -633,5 +624,25 @@ public class GBPTreeConcurrencyIT
         {
             return expectToSee;
         }
+    }
+
+    private KEY key( long seed )
+    {
+        return layout.key( seed );
+    }
+
+    private VALUE value( long seed )
+    {
+        return layout.value( seed );
+    }
+
+    private long keySeed( KEY key )
+    {
+        return layout.keySeed( key );
+    }
+
+    private long valueSeed( VALUE value )
+    {
+        return layout.valueSeed( value );
     }
 }

@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
+class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
 {
     private final int keyPadding;
     private String customNameAsMetaData;
@@ -53,6 +53,12 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     }
 
     @Override
+    int compareValue( MutableLong v1, MutableLong v2 )
+    {
+        return compare( v1, v2 );
+    }
+
+    @Override
     public MutableLong newKey()
     {
         return new MutableLong();
@@ -72,14 +78,14 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     }
 
     @Override
-    public int keySize()
+    public int keySize( MutableLong key )
     {
         // pad the key here to affect the max key count, useful to get odd or even max key count
         return Long.BYTES + keyPadding;
     }
 
     @Override
-    public int valueSize()
+    public int valueSize( MutableLong value )
     {
         return Long.BYTES;
     }
@@ -97,15 +103,21 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
     }
 
     @Override
-    public void readKey( PageCursor cursor, MutableLong into )
+    public void readKey( PageCursor cursor, MutableLong into, int keySize )
     {
         into.setValue( cursor.getLong() );
     }
 
     @Override
-    public void readValue( PageCursor cursor, MutableLong into )
+    public void readValue( PageCursor cursor, MutableLong into, int valueSize )
     {
         into.setValue( cursor.getLong() );
+    }
+
+    @Override
+    public boolean fixedSize()
+    {
+        return true;
     }
 
     @Override
@@ -179,5 +191,33 @@ class SimpleLongLayout extends Layout.Adapter<MutableLong,MutableLong>
         byte[] bytes = new byte[length];
         cursor.getBytes( bytes );
         return new String( bytes, UTF_8 );
+    }
+
+    @Override
+    public MutableLong key( long seed )
+    {
+        MutableLong key = newKey();
+        key.setValue( seed );
+        return key;
+    }
+
+    @Override
+    public MutableLong value( long seed )
+    {
+        MutableLong value = newValue();
+        value.setValue( seed );
+        return value;
+    }
+
+    @Override
+    public long keySeed( MutableLong key )
+    {
+        return key.getValue();
+    }
+
+    @Override
+    public long valueSeed( MutableLong value )
+    {
+        return value.getValue();
     }
 }

@@ -160,6 +160,14 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        byte[] byteArray = new byte[bytes];
+        Arrays.fill( byteArray, value );
+        buffer.put( byteArray );
+    }
+
+    @Override
     public short getShort()
     {
         return buffer.getShort();

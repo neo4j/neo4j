@@ -40,6 +40,9 @@ import static java.lang.String.format;
  */
 public interface Layout<KEY, VALUE> extends Comparator<KEY>
 {
+    int FIXED_SIZE_KEY = -1;
+    int FIXED_SIZE_VALUE = -1;
+
     /**
      * @return new key instance.
      */
@@ -60,14 +63,16 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     VALUE newValue();
 
     /**
-     * @return size, in bytes, of a key.
+     * @param key for which to give size.
+     * @return size, in bytes, of given key.
      */
-    int keySize();
+    int keySize( KEY key );
 
     /**
-     * @return size, in bytes, of a value.
+     * @param value for which to give size.
+     * @return size, in bytes, of given value.
      */
-    int valueSize();
+    int valueSize( VALUE value );
 
     /**
      * Writes contents of {@code key} into {@code cursor} at its current offset.
@@ -87,20 +92,25 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
 
     /**
      * Reads key contents at {@code cursor} at its current offset into {@code key}.
-     *
      * @param cursor {@link PageCursor} to read from, at current offset.
      * @param into key instances to read into.
+     * @param keySize size of key to read or {@link #FIXED_SIZE_KEY} if key is fixed size.
      */
-    void readKey( PageCursor cursor, KEY into );
+    void readKey( PageCursor cursor, KEY into, int keySize );
 
     /**
      * Reads value contents at {@code cursor} at its current offset into {@code value}.
-     *
      * @param cursor {@link PageCursor} to read from, at current offset.
      * @param into value instances to read into.
+     * @param valueSize size of key to read or {@link #FIXED_SIZE_VALUE} if value is fixed size.
      */
-    void readValue( PageCursor cursor, VALUE into );
+    void readValue( PageCursor cursor, VALUE into, int valueSize );
 
+    /**
+     * Indicate if keys and values are fixed or dynamix size.
+     * @return true if keys and values are fixed size, otherwise true.
+     */
+    boolean fixedSize();
     /**
      * Used as verification when loading an index after creation, to verify that the same layout is used,
      * as the one it was initially created with.
@@ -202,7 +212,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         {
             return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d]",
                     getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(),
-                    keySize(), valueSize() );
+                    keySize( null ), valueSize( null ) );
         }
 
         @Override
@@ -238,13 +248,13 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public int keySize()
+        public int keySize( Object key )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
 
         @Override
-        public int valueSize()
+        public int valueSize( Object value )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
@@ -262,13 +272,19 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public void readKey( PageCursor cursor, Object into )
+        public void readKey( PageCursor cursor, Object into, int keySize )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
 
         @Override
-        public void readValue( PageCursor cursor, Object into )
+        public void readValue( PageCursor cursor, Object into, int valueSize )
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public boolean fixedSize()
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }

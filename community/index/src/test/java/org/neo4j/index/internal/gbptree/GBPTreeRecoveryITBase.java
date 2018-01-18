@@ -19,13 +19,14 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,7 +43,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
@@ -50,11 +50,8 @@ import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public class GBPTreeRecoveryIT
+public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 {
-    private static final int PAGE_SIZE = 256;
-    private final Action CHECKPOINT = new CheckpointAction();
-
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule(
@@ -64,26 +61,48 @@ public class GBPTreeRecoveryIT
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    private final MutableLong key = new MutableLong();
-    private final MutableLong value = new MutableLong();
+    // Test config
+    private int loadCountTransactions;
+    private int minInsertCountPerBatch;
+    private int maxInsertCountPerBatch;
+    private int minRemoveCountPerBatch;
+    private int maxRemoveCountPerBatch;
+
+    private static final int PAGE_SIZE = 256;
+    private final Action CHECKPOINT = new CheckpointAction();
+
+    private TestLayout<KEY,VALUE> layout;
 
     /* Global variables for recoverFromAnything test */
     private boolean recoverFromAnythingInitialized;
     private int keyRange;
+
+    @Before
+    public void setUp()
+    {
+        this.layout = getLayout( random );
+        loadCountTransactions = random.intBetween( 300, 1_000 );
+        minInsertCountPerBatch = 30;
+        maxInsertCountPerBatch = 200;
+        minRemoveCountPerBatch = 5;
+        maxRemoveCountPerBatch = 20;
+    }
+
+    protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
 
     @Test
     public void shouldRecoverFromCrashBeforeFirstCheckpoint() throws Exception
     {
         // GIVEN
         // a tree with only small amount of data that has not yet seen checkpoint from outside
+        KEY key = key( 1L );
+        VALUE value = value( 10L );
         File file = directory.file( "index" );
         {
             try ( PageCache pageCache = createPageCache();
-                  GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
-                  Writer<MutableLong,MutableLong> writer = index.writer() )
+                  GBPTree<KEY,VALUE> index = createIndex( pageCache, file );
+                  Writer<KEY,VALUE> writer = index.writer() )
             {
-                key.setValue( 1L );
-                value.setValue( 10L );
                 writer.put( key, value );
                 pageCache.flushAndForce();
                 // No checkpoint
@@ -92,9 +111,9 @@ public class GBPTreeRecoveryIT
 
         // WHEN
         try ( PageCache pageCache = createPageCache();
-              GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
+              GBPTree<KEY,VALUE> index = createIndex( pageCache, file ) )
         {
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 writer.put( key, value );
             }
@@ -104,13 +123,13 @@ public class GBPTreeRecoveryIT
             index.consistencyCheck();
 
             // ... containing all the stuff load says
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( Long.MIN_VALUE ), new MutableLong( Long.MAX_VALUE ) ) )
+            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor =
+                          index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
             {
                 assertTrue( cursor.next() );
-                Hit<MutableLong,MutableLong> hit = cursor.get();
-                assertEquals( key.getValue(), hit.key().getValue() );
-                assertEquals( value.getValue(), hit.value().getValue() );
+                Hit<KEY,VALUE> hit = cursor.get();
+                assertEqualsKey( key, hit.key() );
+                assertEqualsValue( value, hit.value() );
             }
         }
     }
@@ -172,7 +191,7 @@ public class GBPTreeRecoveryIT
             //
 
             PageCache pageCache = createPageCache();
-            GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
+            GBPTree<KEY,VALUE> index = createIndex( pageCache, file );
             // Execute all actions up to and including last checkpoint ...
             execute( shuffledLoad.subList( 0, lastCheckPointIndex + 1 ), index );
             // ... a random amount of the remaining "unsafe" actions ...
@@ -207,7 +226,7 @@ public class GBPTreeRecoveryIT
         for ( int i = 0; i < numberOfCrashesDuringRecovery; i++ )
         {
             try ( PageCache pageCache = createPageCache();
-                  GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
+                  GBPTree<KEY,VALUE> index = createIndex( pageCache, file ) )
             {
                 int numberOfActionsToRecoverBeforeCrashing = random.intBetween( 1, recoveryActions.size() );
                 recover( recoveryActions.subList( 0, numberOfActionsToRecoverBeforeCrashing ), index );
@@ -217,7 +236,7 @@ public class GBPTreeRecoveryIT
 
         // to finally apply all actions after last checkpoint and verify tree
         try ( PageCache pageCache = createPageCache();
-                GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
+                GBPTree<KEY,VALUE> index = createIndex( pageCache, file ) )
         {
             recover( recoveryActions, index );
 
@@ -225,15 +244,15 @@ public class GBPTreeRecoveryIT
             // we should end up with a consistent index containing all the stuff load says
             index.consistencyCheck();
             long[/*key,value,key,value...*/] aggregate = expectedSortedAggregatedDataFromGeneratedLoad( load );
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                    index.seek( new MutableLong( Long.MIN_VALUE ), new MutableLong( Long.MAX_VALUE ) ) )
+            try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor =
+                    index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
             {
                 for ( int i = 0; i < aggregate.length; )
                 {
                     assertTrue( cursor.next() );
-                    Hit<MutableLong,MutableLong> hit = cursor.get();
-                    assertEquals( aggregate[i++], hit.key().longValue() );
-                    assertEquals( aggregate[i++], hit.value().longValue() );
+                    Hit<KEY,VALUE> hit = cursor.get();
+                    assertEqualsKey( key( aggregate[i++] ), hit.key() );
+                    assertEqualsValue( value( aggregate[i++] ), hit.value() );
                 }
                 assertFalse( cursor.next() );
             }
@@ -249,7 +268,8 @@ public class GBPTreeRecoveryIT
      */
     private List<Action> randomCausalAwareShuffle( List<Action> actions )
     {
-        Action[] arrayToShuffle = actions.toArray( new Action[actions.size()] );
+        //noinspection unchecked
+        Action[] arrayToShuffle = actions.toArray( (Action[]) Array.newInstance( Action.class, actions.size() ) );
         int size = arrayToShuffle.length;
         int numberOfActionsToShuffle = random.nextInt( size / 2 );
 
@@ -290,12 +310,12 @@ public class GBPTreeRecoveryIT
                 .collect( Collectors.toList() );
     }
 
-    private void recover( List<Action> load, GBPTree<MutableLong,MutableLong> index ) throws IOException
+    private void recover( List<Action> load, GBPTree<KEY,VALUE> index ) throws IOException
     {
         execute( load, index );
     }
 
-    private static void execute( List<Action> load, GBPTree<MutableLong,MutableLong> index )
+    private void execute( List<Action> load, GBPTree<KEY,VALUE> index )
             throws IOException
     {
         for ( Action action : load )
@@ -304,7 +324,7 @@ public class GBPTreeRecoveryIT
         }
     }
 
-    private static long[] expectedSortedAggregatedDataFromGeneratedLoad( List<Action> load )
+    private long[] expectedSortedAggregatedDataFromGeneratedLoad( List<Action> load )
     {
         TreeMap<Long,Long> map = new TreeMap<>();
         for ( Action action : load )
@@ -316,11 +336,11 @@ public class GBPTreeRecoveryIT
                 {
                     long key = data[i++];
                     long value = data[i++];
-                    if ( action instanceof InsertAction )
+                    if ( action.type() == ActionType.INSERT )
                     {
                         map.put( key, value );
                     }
-                    else if ( action instanceof RemoveAction )
+                    else if ( action.type() == ActionType.REMOVE )
                     {
                         map.remove( key );
                     }
@@ -337,13 +357,13 @@ public class GBPTreeRecoveryIT
         long[] result = new long[entries.length * 2];
         for ( int i = 0, c = 0; i < entries.length; i++ )
         {
-            result[c++] = entries[i].getKey().longValue();
-            result[c++] = entries[i].getValue().longValue();
+            result[c++] = entries[i].getKey();
+            result[c++] = entries[i].getValue();
         }
         return result;
     }
 
-    private static int indexOfLastCheckpoint( List<Action> actions )
+    private int indexOfLastCheckpoint( List<Action> actions )
     {
         int i = 0;
         int lastCheckpoint = -1;
@@ -361,9 +381,8 @@ public class GBPTreeRecoveryIT
     private List<Action> generateLoad()
     {
         List<Action> actions = new LinkedList<>();
-        int count = random.intBetween( 300, 1_000 );
         boolean hasCheckPoint = false;
-        for ( int i = 0; i < count; i++ )
+        for ( int i = 0; i < loadCountTransactions; i++ )
         {
             Action action = randomAction( true );
             actions.add( action );
@@ -397,13 +416,13 @@ public class GBPTreeRecoveryIT
         if ( randomized <= 0.7 )
         {
             // put
-            long[] data = modificationData( 30, 200 );
+            long[] data = modificationData( minInsertCountPerBatch, maxInsertCountPerBatch );
             return new InsertAction( data );
         }
         else if ( randomized <= 0.95 || !allowCheckPoint )
         {
             // remove
-            long[] data = modificationData( 5, 20 );
+            long[] data = modificationData( minRemoveCountPerBatch, maxRemoveCountPerBatch );
             return new RemoveAction( data );
         }
         else
@@ -424,9 +443,9 @@ public class GBPTreeRecoveryIT
         return data;
     }
 
-    private static GBPTree<MutableLong,MutableLong> createIndex( PageCache pageCache, File file ) throws IOException
+    private GBPTree<KEY,VALUE> createIndex( PageCache pageCache, File file ) throws IOException
     {
-        return new GBPTreeBuilder<>( pageCache, file, new SimpleLongLayout() ).build();
+        return new GBPTreeBuilder<>( pageCache, file, layout ).build();
     }
 
     private PageCache createPageCache()
@@ -434,7 +453,12 @@ public class GBPTreeRecoveryIT
         return pageCacheRule.getPageCache( fs.get() );
     }
 
-    abstract static class Action
+    enum ActionType
+    {
+        INSERT, REMOVE, CHECKPOINT
+    }
+
+    abstract class Action
     {
         long[] data;
         Set<Long> allKeys;
@@ -450,7 +474,7 @@ public class GBPTreeRecoveryIT
             return data;
         }
 
-        abstract void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException;
+        abstract void execute( GBPTree<KEY,VALUE> index ) throws IOException;
 
         abstract boolean isCheckpoint();
 
@@ -465,6 +489,8 @@ public class GBPTreeRecoveryIT
             }
             return keys;
         }
+
+        abstract ActionType type();
     }
 
     abstract class DataAction extends Action
@@ -503,17 +529,21 @@ public class GBPTreeRecoveryIT
         }
 
         @Override
-        public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
+        public void execute( GBPTree<KEY,VALUE> index ) throws IOException
         {
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 for ( int i = 0; i < data.length; )
                 {
-                    key.setValue( data[i++] );
-                    value.setValue( data[i++] );
-                    writer.put( key, value );
+                    writer.put( key( data[i++] ), value( data[i++] ) );
                 }
             }
+        }
+
+        @Override
+        ActionType type()
+        {
+            return ActionType.INSERT;
         }
     }
 
@@ -525,17 +555,23 @@ public class GBPTreeRecoveryIT
         }
 
         @Override
-        public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
+        public void execute( GBPTree<KEY,VALUE> index ) throws IOException
         {
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = index.writer() )
             {
                 for ( int i = 0; i < data.length; )
                 {
-                    key.setValue( data[i++] );
+                    KEY key = key( data[i++] );
                     i++; // value
                     writer.remove( key );
                 }
             }
+        }
+
+        @Override
+        ActionType type()
+        {
+            return ActionType.REMOVE;
         }
     }
 
@@ -547,7 +583,7 @@ public class GBPTreeRecoveryIT
         }
 
         @Override
-        public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
+        public void execute( GBPTree<KEY,VALUE> index ) throws IOException
         {
             index.checkpoint( unlimited() );
         }
@@ -563,5 +599,43 @@ public class GBPTreeRecoveryIT
         {
             return true;
         }
+
+        @Override
+        ActionType type()
+        {
+            return ActionType.CHECKPOINT;
+        }
+    }
+
+    private KEY key( long seed )
+    {
+        return layout.key( seed );
+    }
+
+    private VALUE value( long seed )
+    {
+        return layout.value( seed );
+    }
+
+    private void assertEqualsKey( KEY expected, KEY actual )
+    {
+        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
+                layout.compare( expected, actual ) == 0 );
+    }
+
+    private void assertEqualsValue( VALUE expected, VALUE actual )
+    {
+        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
+                layout.compareValue( expected, actual ) == 0 );
+    }
+
+    private long keySeed( KEY key )
+    {
+        return layout.keySeed( key );
+    }
+
+    private long valueSeed( VALUE value )
+    {
+        return layout.valueSeed( value );
     }
 }

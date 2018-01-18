@@ -54,16 +54,16 @@ class KeySearch
      *
      * @param cursor {@link PageCursor} pinned to page with node (internal or leaf does not matter)
      * @param bTreeNode {@link TreeNode} that knows how to operate on KEY and VALUE
-     * @param key KEY to search for
+     * @param type {@link TreeNode.Type} of this tree node being searched
+     *@param key KEY to search for
      * @param readKey KEY to use as temporary storage during calculation.
-     * @param keyCount number of keys in node when starting search
-     * @return search result where least significant 31 bits are first position i for which
+     * @param keyCount number of keys in node when starting search    @return search result where least significant 31 bits are first position i for which
      * bTreeNode.keyComparator().compare( key, bTreeNode.keyAt( i ) <= 0, or keyCount if no such key exists.
      * highest bit (sign bit) says whether or not the exact key was found in the node, if so set to 1, otherwise 0.
      * To extract position from the returned search result, then use {@link #positionOf(int)}.
      * To extract whether or not the exact key was found, then use {@link #isHit(int)}.
      */
-    static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY key,
+    static <KEY,VALUE> int search( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, TreeNode.Type type, KEY key,
             KEY readKey, int keyCount )
     {
         if ( keyCount == 0 )
@@ -81,12 +81,12 @@ class KeySearch
         int comparison;
 
         // key greater than greatest key in node
-        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher ) ) > 0 )
+        if ( comparator.compare( key, bTreeNode.keyAt( cursor, readKey, higher, type ) ) > 0 )
         {
             pos = keyCount;
         }
         // key smaller than or equal to smallest key in node
-        else if ( (comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower ) )) <= 0 )
+        else if ( (comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, lower, type ) )) <= 0 )
         {
             if ( comparison == 0 )
             {
@@ -103,7 +103,7 @@ class KeySearch
             while ( lower < higher )
             {
                 pos = (lower + higher) / 2;
-                comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) );
+                comparison = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, type ) );
                 if ( comparison <= 0 )
                 {
                     higher = pos;
@@ -119,7 +119,7 @@ class KeySearch
             }
             pos = lower;
 
-            hit = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos ) ) == 0;
+            hit = comparator.compare( key, bTreeNode.keyAt( cursor, readKey, pos, type ) ) == 0;
         }
         return searchResult( pos, hit );
     }
@@ -130,9 +130,9 @@ class KeySearch
     }
 
     /**
-     * Extracts the position from a search result from {@link #search(PageCursor, TreeNode, Object, Object, int)}.
+     * Extracts the position from a search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
      *
-     * @param searchResult search result from {@link #search(PageCursor, TreeNode, Object, Object, int)}.
+     * @param searchResult search result from {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
      * @return position of the search result.
      */
     static int positionOf( int searchResult )
@@ -142,9 +142,9 @@ class KeySearch
 
     /**
      * Extracts whether or not the searched key was found from search result from
-     * {@link #search(PageCursor, TreeNode, Object, Object, int)}.
+     * {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
      *
-     * @param searchResult search result form {@link #search(PageCursor, TreeNode, Object, Object, int)}.
+     * @param searchResult search result form {@link #search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int)}.
      * @return whether or not the searched key was found.
      */
     static boolean isHit( int searchResult )

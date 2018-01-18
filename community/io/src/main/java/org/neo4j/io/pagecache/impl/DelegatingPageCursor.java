@@ -141,6 +141,12 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        delegate.putBytes( bytes, value );
+    }
+
+    @Override
     public void rewind()
     {
         delegate.rewind();

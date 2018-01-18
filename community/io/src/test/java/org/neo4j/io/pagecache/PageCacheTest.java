@@ -1697,7 +1697,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
     {
         configureStandardPageCache();
-        try ( PagedFile pagedFile = pageCache.map( file( "a" ), 20 ) )
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), 23 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
@@ -1709,6 +1709,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.putShort( (short) 41 ); // 12+2 = 14
                 cursor.putByte( (byte) 41 );   // 14+1 = 15
                 cursor.putBytes( data );       // 15+5 = 20
+                cursor.putBytes( 3, (byte) 47 ); // 20+3 = 23
             }
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
@@ -1724,19 +1725,25 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         cursor.getByte(),   // 19
                         cursor.getByte()    // 20
                 };
+                byte d = cursor.getByte();  // 21
+                byte e = cursor.getByte();  // 22
+                byte f = cursor.getByte();  // 23
                 cursor.setOffset( 0 );
                 cursor.putLong( 1 + a );
                 cursor.putInt( 1 + b );
                 cursor.putShort( (short) (1 + c) );
-                for ( byte d : data )
+                for ( byte g : data )
                 {
-                    d++;
-                    cursor.putByte( d );
+                    g++;
+                    cursor.putByte( g );
                 }
+                cursor.putByte( (byte) (1 + d) );
+                cursor.putByte( (byte) (1 + e) );
+                cursor.putByte( (byte) (1 + f) );
             }
         }
 
-        ByteBuffer buf = ByteBuffer.allocate( 20 );
+        ByteBuffer buf = ByteBuffer.allocate( 23 );
         try ( StoreChannel channel = fs.open( file( "a" ), OpenMode.READ ) )
         {
             channel.readAll( buf );
@@ -1752,6 +1759,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( buf.get(), is( (byte) 45 ) );
         assertThat( buf.get(), is( (byte) 46 ) );
         assertThat( buf.get(), is( (byte) 47 ) );
+        assertThat( buf.get(), is( (byte) 48 ) );
+        assertThat( buf.get(), is( (byte) 48 ) );
+        assertThat( buf.get(), is( (byte) 48 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
@@ -2470,6 +2480,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( cursor.getOffset(), is( 18 ) );
         cursor.putBytes( new byte[]{1, 2, 3}, 1, 1 );
         assertThat( cursor.getOffset(), is( 19 ) );
+        cursor.putBytes( 5, (byte)1 );
+        assertThat( cursor.getOffset(), is( 24 ) );
     }
 
     private void verifyReadOffsets( PageCursor cursor )
@@ -2487,16 +2499,19 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( cursor.getOffset(), is( 18 ) );
         cursor.getBytes( new byte[3], 1, 1 );
         assertThat( cursor.getOffset(), is( 19 ) );
+        cursor.getBytes( new byte[5] );
+        assertThat( cursor.getOffset(), is( 24 ) );
 
         byte[] expectedBytes = new byte[] {
                 0, 0, 0, 0, 0, 0, 0, 1, // first; long
                 0, 0, 0, 1, // second; int
                 0, 1, // third; short
                 1, // fourth; byte
-                1, 2, 3, // lastly; more bytes
-                2
+                1, 2, 3, // fifth; more bytes
+                2, // sixth; additional bytes
+                1, 1, 1, 1, 1, // lastly; more bytes
         };
-        byte[] actualBytes = new byte[19];
+        byte[] actualBytes = new byte[24];
         cursor.setOffset( 0 );
         cursor.getBytes( actualBytes );
         assertThat( actualBytes, byteArray( expectedBytes ) );
@@ -2972,6 +2987,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         final byte[] bytes = new byte[] { 1, 2, 3 };
         verifyPageBounds( cursor -> cursor.putBytes( bytes ) );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void putBytesRepeatedByteBeyondPageEndMustThrow() throws IOException
+    {
+        verifyPageBounds( cursor -> cursor.putBytes( 3, (byte) 1 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )

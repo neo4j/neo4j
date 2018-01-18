@@ -160,6 +160,10 @@ public abstract class PageCursor implements AutoCloseable
     public abstract void putBytes( byte[] data, int arrayOffset, int length );
 
     /**
+     * Set the given number of bytes to the given value, beginning at current offset into the page.
+     */
+    public abstract void putBytes( int bytes, byte value );
+    /**
      * Get the signed short at the current page offset, and then increment the offset by one.
      */
     public abstract short getShort();

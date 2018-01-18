@@ -71,6 +71,23 @@ class PageCursorUtil
     }
 
     /**
+     *  Puts the low 2 bytes of the {@code value} into cursor at current offset.
+     *  Puts {@link PageCursor#putShort(short)}.
+     *
+     * @param cursor {@link PageCursor} to put into, at the current offset.
+     * @param value the value to put.
+     */
+    static void putUnsignedShort( PageCursor cursor, int value )
+    {
+        if ( (value & ~_2B_MASK) != 0 )
+        {
+            throw new IllegalArgumentException( "Illegal 2B value " + value );
+        }
+
+        cursor.putShort( (short) value );
+    }
+
+    /**
      * Gets 2 bytes and returns that value as an {@code int}, ignoring its sign.
      *
      * @param cursor {@link PageCursor} to get from, at the current offset.

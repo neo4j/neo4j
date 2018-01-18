@@ -31,9 +31,10 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 /**
  * <ul>
@@ -262,12 +263,11 @@ class ConsistencyChecker<KEY>
             successorGeneration = node.pointerGeneration( cursor, successor );
 
             keyCount = TreeNode.keyCount( cursor );
-            if ( keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount() )
+            if ( !node.reasonableKeyCount( keyCount ) )
             {
                 cursor.setCursorException( "Unexpected keyCount:" + keyCount );
                 continue;
             }
-            assertKeyOrder( cursor, range, keyCount );
             isInternal = TreeNode.isInternal( cursor );
             isLeaf = TreeNode.isLeaf( cursor );
         }
@@ -279,6 +279,12 @@ class ConsistencyChecker<KEY>
             throw new TreeInconsistencyException( "Page:" + cursor.getCurrentPageId() + " at level:" + level +
                     " isn't a tree node, parent expected range " + range );
         }
+
+        do
+        {
+            assertKeyOrder( cursor, range, keyCount, isLeaf ? LEAF : INTERNAL );
+        }
+        while ( cursor.shouldRetry() );
 
         assertPointerGenerationMatchesGeneration( cursor, currentNodeGeneration, expectedGeneration );
         assertSiblings( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
@@ -345,7 +351,7 @@ class ConsistencyChecker<KEY>
             throws IOException
     {
         long pageId = cursor.getCurrentPageId();
-        KEY prev = layout.newKey();
+        KEY prev = null;
         KeyRange<KEY> childRange;
 
         // Check children, all except the last one
@@ -358,7 +364,7 @@ class ConsistencyChecker<KEY>
             {
                 child = childAt( cursor, pos );
                 childGeneration = node.pointerGeneration( cursor, child );
-                node.keyAt( cursor, readKey, pos );
+                node.keyAt( cursor, readKey, pos, INTERNAL );
             }
             while ( cursor.shouldRetry() );
             checkAfterShouldRetry( cursor );
@@ -374,6 +380,10 @@ class ConsistencyChecker<KEY>
 
             TreeNode.goTo( cursor, "parent", pageId );
 
+            if ( pos == 0 )
+            {
+                prev = layout.newKey();
+            }
             layout.copyKey( readKey, prev );
             pos++;
         }
@@ -384,6 +394,12 @@ class ConsistencyChecker<KEY>
         do
         {
             child = childAt( cursor, pos );
+        }
+        while ( cursor.shouldRetry() );
+        checkAfterShouldRetry( cursor );
+
+        do
+        {
             childGeneration = node.pointerGeneration( cursor, child );
         }
         while ( cursor.shouldRetry() );
@@ -408,17 +424,18 @@ class ConsistencyChecker<KEY>
         return node.childAt( cursor, pos, stableGeneration, unstableGeneration );
     }
 
-    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount )
+    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount, TreeNode.Type type )
     {
         KEY prev = layout.newKey();
         boolean first = true;
         for ( int pos = 0; pos < keyCount; pos++ )
         {
-            node.keyAt( cursor, readKey, pos );
+            node.keyAt( cursor, readKey, pos, type );
             if ( !range.inRange( readKey ) )
             {
-                cursor.setCursorException( "Expected range for this node is " + range + " but found " + readKey +
-                        " in position " + pos + ", with key count " + keyCount );
+                cursor.setCursorException(
+                        format( "Expected range for this node is %n%s%n but found %s in position %d, with keyCount %d on page %d",
+                        range, readKey, pos, keyCount, cursor.getCurrentPageId() ) );
             }
             if ( !first )
             {
@@ -442,20 +459,22 @@ class ConsistencyChecker<KEY>
         long currentNodeId = cursor.getCurrentPageId();
         // A
         long generationA = GenerationSafePointer.readGeneration( cursor );
-        long pointerA = GenerationSafePointer.readPointer( cursor );
+        long readPointerA = GenerationSafePointer.readPointer( cursor );
+        long pointerA = GenerationSafePointerPair.pointer( readPointerA );
         short checksumA = GenerationSafePointer.readChecksum( cursor );
-        boolean correctChecksumA = GenerationSafePointer.checksumOf( generationA, pointerA ) == checksumA;
+        boolean correctChecksumA = GenerationSafePointer.checksumOf( generationA, readPointerA ) == checksumA;
         byte stateA = GenerationSafePointerPair.pointerState(
-                stableGeneration, unstableGeneration, generationA, pointerA, correctChecksumA );
+                stableGeneration, unstableGeneration, generationA, readPointerA, correctChecksumA );
         boolean okA = stateA != GenerationSafePointerPair.BROKEN && stateA != GenerationSafePointerPair.CRASH;
 
         // B
         long generationB = GenerationSafePointer.readGeneration( cursor );
-        long pointerB = GenerationSafePointer.readPointer( cursor );
+        long readPointerB = GenerationSafePointer.readPointer( cursor );
+        long pointerB = GenerationSafePointerPair.pointer( readPointerA );
         short checksumB = GenerationSafePointer.readChecksum( cursor );
-        boolean correctChecksumB = GenerationSafePointer.checksumOf( generationB, pointerB ) == checksumB;
+        boolean correctChecksumB = GenerationSafePointer.checksumOf( generationB, readPointerB ) == checksumB;
         byte stateB = GenerationSafePointerPair.pointerState(
-                stableGeneration, unstableGeneration, generationB, pointerB, correctChecksumB );
+                stableGeneration, unstableGeneration, generationB, readPointerB, correctChecksumB );
         boolean okB = stateB != GenerationSafePointerPair.BROKEN && stateB != GenerationSafePointerPair.CRASH;
 
         if ( !(okA && okB) )
@@ -465,15 +484,15 @@ class ConsistencyChecker<KEY>
             cursor.setCursorException( format(
                     "GSPP state found that was not ok in %s field in %s node with id %d%n  slotA[%s]%n  slotB[%s]",
                     pointerFieldName, type, currentNodeId,
-                    stateToString( generationA, pointerA, stateA ),
-                    stateToString( generationB, pointerB, stateB ) ) );
+                    stateToString( generationA, readPointerA, pointerA, stateA ),
+                    stateToString( generationB, readPointerB, pointerB, stateB ) ) );
         }
     }
 
-    private static String stateToString( long generationA, long pointerA, byte stateA )
+    private static String stateToString( long generation, long readPointer, long pointer, byte stateA )
     {
-        return format( "generation=%d, pointer=%d, state=%s",
-                generationA, pointerA, GenerationSafePointerPair.pointerStateName( stateA ) );
+        return format( "generation=%d, readPointer=%d, pointer=%d, state=%s",
+                generation, readPointer, pointer, GenerationSafePointerPair.pointerStateName( stateA ) );
     }
 
     private static class KeyRange<KEY>
@@ -509,7 +528,15 @@ class ConsistencyChecker<KEY>
 
         KeyRange<KEY> restrictLeft( KEY left )
         {
-            if ( fromInclusive == null || comparator.compare( fromInclusive, left ) < 0 )
+            if ( fromInclusive == null )
+            {
+                return new KeyRange<>( comparator, left, toExclusive, layout, this );
+            }
+            if ( left == null )
+            {
+                return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+            }
+            if ( comparator.compare( fromInclusive, left ) < 0 )
             {
                 return new KeyRange<>( comparator, left, toExclusive, layout, this );
             }
@@ -518,7 +545,15 @@ class ConsistencyChecker<KEY>
 
         KeyRange<KEY> restrictRight( KEY right )
         {
-            if ( toExclusive == null || comparator.compare( toExclusive, right ) > 0 )
+            if ( toExclusive == null )
+            {
+                return new KeyRange<>( comparator, fromInclusive, right, layout, this );
+            }
+            if ( right == null )
+            {
+                return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+            }
+            if ( comparator.compare( toExclusive, right ) > 0 )
             {
                 return new KeyRange<>( comparator, fromInclusive, right, layout, this );
             }
