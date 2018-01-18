@@ -40,6 +40,8 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.values.storable.Values;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class TraceCursorTest
@@ -72,6 +74,31 @@ public class TraceCursorTest
     public void tearDown()
     {
         System.clearProperty( "org.neo4j.kernel.impl.newapi.Read.trackCursors" );
+        System.clearProperty( "org.neo4j.kernel.impl.newapi.Read.recordCursorTraces" );
+    }
+
+    @Test
+    public void verifyTracingOutput()
+    {
+        NodeCursor cursor = (NodeCursor) kernel.cursors().allocateNodeCursor();
+        Transaction tx = openTX();
+
+        tx.dataRead().allNodesScan( cursor );
+        try
+        {
+            // when
+            tx.close();
+
+            // then (not expected)
+            fail( "Should have failed because of open cursor" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( "Cursors were not correctly closed. Number of leaked cursors: 1.", e.getMessage() );
+            assertEquals( 1, e.getSuppressed().length );
+            assertTrue( "This class caused the open cursor but it wasn't named in the stack trace",
+                    e.getSuppressed()[0].getMessage().contains( this.getClass().getName() ) );
+        }
     }
 
     // AllNodesScan

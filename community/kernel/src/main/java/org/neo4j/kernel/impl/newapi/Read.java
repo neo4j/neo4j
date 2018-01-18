@@ -92,7 +92,7 @@ abstract class Read implements TxStateHolder,
     private long cursorsInUse;
 
     private static final boolean TRACK_CURSORS = flag( Read.class, "trackCursors", false );
-    private static final boolean RECORD_CURSORS_TRACES = flag( KernelStatement.class, "recordCursorTraces", false );
+    private static final boolean RECORD_CURSORS_TRACES = flag( Read.class, "recordCursorTraces", false );
     private static final int CURSORS_TRACK_HISTORY_MAX_SIZE = 100;
     private static final LruCache<Cursor, StackTraceElement[]>  EMPTY_CURSOR_HISTORY = new LruCache<>( "EmptyLru", 1 );
     private final LruCache<Cursor, StackTraceElement[]> cursorsOpenCloseCalls;
