@@ -128,7 +128,10 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        indexFactory.selectAndCreate( indexMap, indexId, update.values() ).getPopulator( descriptor, samplingConfig ).includeSample( update );
+        Value[] values = update.values();
+        assert values.length == 1;
+        SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, values[0] );
+        index.getPopulator( descriptor, samplingConfig ).includeSample( update );
     }
 
     @Override

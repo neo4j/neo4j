@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -95,9 +96,23 @@ class SpatialFusionIndexReader implements IndexReader
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, predicates );
-        return nodeValueIterator;
+        if ( predicates[0] instanceof ExistsPredicate )
+        {
+            PrimitiveLongResourceIterator[] iterators = new PrimitiveLongResourceIterator[readerMap.size()];
+            int i = 0;
+            for ( IndexReader reader : readerMap.values() )
+            {
+                iterators[i] = reader.query( predicates[0] );
+                ++i;
+            }
+            return PrimitiveLongResourceCollections.concat( iterators );
+        }
+        else
+        {
+            NodeValueIterator nodeValueIterator = new NodeValueIterator();
+            query( nodeValueIterator, IndexOrder.NONE, predicates );
+            return nodeValueIterator;
+        }
     }
 
     private IndexReader selectIf( IndexQuery... predicates ) throws IndexNotApplicableKernelException

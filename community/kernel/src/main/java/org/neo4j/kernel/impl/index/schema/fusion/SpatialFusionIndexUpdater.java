@@ -35,6 +35,8 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
+
 class SpatialFusionIndexUpdater implements IndexUpdater
 {
     private final Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap;
@@ -136,10 +138,7 @@ class SpatialFusionIndexUpdater implements IndexUpdater
     {
         while ( !currentUpdaters.isEmpty() )
         {
-            for ( IndexUpdater updater : currentUpdaters.values() )
-            {
-                updater.close();
-            }
+            forAll( updater -> ((IndexUpdater) updater).close(), currentUpdaters.values().toArray() );
             currentUpdaters.clear();
         }
     }
