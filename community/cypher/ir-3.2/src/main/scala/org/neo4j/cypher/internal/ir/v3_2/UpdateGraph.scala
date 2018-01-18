@@ -228,7 +228,7 @@ trait UpdateGraph {
     val allRelPatternsRead = qg.allPatternRelationshipsRead
 
     //CREATE () MATCH ()-->()
-    (allRelPatternsWritten.nonEmpty && qg.patternRelationships.nonEmpty) && allRelPatternsRead.exists(r => {
+    (allRelPatternsWritten.nonEmpty && allRelPatternsRead.nonEmpty) && allRelPatternsRead.exists(r => {
       val readProps = qg.allKnownPropertiesOnIdentifier(r.name).map(_.propertyKey)
       // CREATE ()-[]->() MATCH ()-[]-()?
       r.types.isEmpty && readProps.isEmpty ||
