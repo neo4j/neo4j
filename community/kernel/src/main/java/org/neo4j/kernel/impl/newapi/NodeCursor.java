@@ -35,8 +35,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Collections.emptySet;
-import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 
 class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.NodeCursor
 {
@@ -153,13 +151,13 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public long relationshipGroupReference()
     {
-        return isDense() ? getNextRel() : setDirectFlag( getNextRel() );
+        return isDense() ? getNextRel() : References.Group.encodeRelationship( getNextRel() );
     }
 
     @Override
     public long allRelationshipsReference()
     {
-        return isDense() ? setGroupFlag( getNextRel() ) : getNextRel();
+        return isDense() ? References.Relationship.encodeFromGroup( getNextRel() ) : getNextRel();
     }
 
     @Override

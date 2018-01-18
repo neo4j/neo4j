@@ -69,7 +69,47 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         super( NO_ID );
     }
 
-    void init( long entityReference, long reference, Read read, AssertOpen assertOpen )
+    void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
+    {
+        assert nodeReference != NO_ID;
+
+        init( reference, read, assertOpen );
+
+        // Transaction state
+        if ( read.hasTxStateWithChanges() )
+        {
+            this.propertiesState = read.txState().getNodeState( nodeReference );
+            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
+        }
+    }
+
+    void initRelationship( long relationshipReference, long reference, Read read, AssertOpen assertOpen )
+    {
+        assert relationshipReference != NO_ID;
+
+        init( reference, read, assertOpen );
+
+        // Transaction state
+        if ( read.hasTxStateWithChanges() )
+        {
+            this.propertiesState = read.txState().getRelationshipState( relationshipReference );
+            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
+        }
+    }
+
+    void initGraph( long reference, Read read, AssertOpen assertOpen )
+    {
+        init( reference, read, assertOpen );
+
+        // Transaction state
+        if ( read.hasTxStateWithChanges() )
+        {
+            throw new UnsupportedOperationException(
+                    "Tx state has no method for accessing graph property state, please add when needed" );
+        }
+    }
+
+    private void init( long reference, Read read, AssertOpen assertOpen )
     {
         if ( getId() != NO_ID )
         {
@@ -86,25 +126,6 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
             {
                 page = read.propertyPage( reference );
             }
-        }
-
-        // Transaction state
-        if ( read.hasTxStateWithChanges() )
-        {
-            if ( entityReference == NO_ID )
-            {
-                throw new UnsupportedOperationException(
-                        "Tx state has no method for accessing graph property state, please add when needed" );
-            }
-            else if ( References.hasNodeFlag( entityReference ) )
-            {
-                this.propertiesState = read.txState().getNodeState( References.clearFlags( entityReference ) );
-            }
-            else if ( References.hasRelationshipFlag( entityReference ) )
-            {
-                this.propertiesState = read.txState().getRelationshipState( References.clearFlags( entityReference ) );
-            }
-            this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
         }
 
         // Store state

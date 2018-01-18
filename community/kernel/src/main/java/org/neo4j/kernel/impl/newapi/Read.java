@@ -49,10 +49,10 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.impl.newapi.References.clearFlags;
-import static org.neo4j.kernel.impl.newapi.References.hasDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
+import static org.neo4j.kernel.impl.newapi.References.Group.isRelationship;
+import static org.neo4j.kernel.impl.newapi.References.Relationship.isFilter;
+import static org.neo4j.kernel.impl.newapi.References.Relationship.isGroup;
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 abstract class Read implements TxStateHolder,
@@ -238,9 +238,9 @@ abstract class Read implements TxStateHolder,
         {
             cursor.close();
         }
-        else if ( hasDirectFlag( reference ) ) // the relationships for this node are not grouped
+        else if ( isRelationship( reference ) ) // the relationships for this node are not grouped in the store
         {
-            ((RelationshipGroupCursor) cursor).buffer( nodeReference, clearFlags( reference ), this );
+            ((RelationshipGroupCursor) cursor).buffer( nodeReference, clearEncoding( reference ), this );
         }
         else // this is a normal group reference.
         {
@@ -285,13 +285,13 @@ abstract class Read implements TxStateHolder,
             // still initiate cursor in case there are tx-state additions
             ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference, this );
         }
-        else if ( hasGroupFlag( reference ) ) // this reference is actually to a group record
+        else if ( isGroup( reference ) ) // this reference is actually to a group record
         {
-            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearFlags( reference ), this );
+            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearEncoding( reference ), this );
         }
-        else if ( hasFilterFlag( reference ) ) // this relationship chain need to be filtered
+        else if ( isFilter( reference ) ) // this relationship chain needs to be filtered
         {
-            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearFlags( reference ), this );
+            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearEncoding( reference ), this );
         }
         else // this is a normal relationship reference
         {
@@ -303,7 +303,7 @@ abstract class Read implements TxStateHolder,
     public final void nodeProperties( long nodeReference, long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( References.setNodeFlag( nodeReference ), reference, this, ktx );
+        ((PropertyCursor) cursor).initNode( nodeReference, reference, this, ktx );
     }
 
     @Override
@@ -311,14 +311,14 @@ abstract class Read implements TxStateHolder,
             org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( References.setRelationshipFlag( relationshipReference ), reference, this, ktx );
+        ((PropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
     }
 
     @Override
     public final void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( NO_ID, graphPropertiesReference(), this, ktx );
+        ((PropertyCursor) cursor).initGraph( graphPropertiesReference(), this, ktx );
     }
 
     abstract long graphPropertiesReference();
