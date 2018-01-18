@@ -343,6 +343,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case LeftOuterHashJoin(nodes, _, _) =>
         PlanDescriptionImpl(id, "NodeLeftOuterHashJoin", children, Seq(KeyNames(nodes.toSeq)), variables)
 
+      case RightOuterHashJoin(nodes, _, _) =>
+        PlanDescriptionImpl(id, "NodeRightOuterHashJoin", children, Seq(KeyNames(nodes.toSeq)), variables)
+
       case RollUpApply(_, _, collectionName, _, _) =>
         PlanDescriptionImpl(id, "RollUpApply", children, Seq(KeyNames(Seq(collectionName))), variables)
 
