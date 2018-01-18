@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,9 +30,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.PageCacheFlusher;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -43,17 +46,19 @@ class StreamToDisk implements StoreFileStreams
     private final FileCopyMonitor fileCopyMonitor;
     private final Map<String,WritableByteChannel> channels;
     private final Map<String,PagedFile> pagedFiles;
+    private final PageCacheFlusher flusherThread;
 
     StreamToDisk( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Monitors monitors ) throws IOException
     {
         this.storeDir = storeDir;
         this.fs = fs;
         this.pageCache = pageCache;
+        this.flusherThread = new PageCacheFlusher( pageCache );
+        flusherThread.start();
         fs.mkdirs( storeDir );
         this.fileCopyMonitor = monitors.newMonitor( FileCopyMonitor.class );
         channels = new HashMap<>();
         pagedFiles = new HashMap<>();
-
     }
 
     @Override
@@ -93,13 +98,13 @@ class StreamToDisk implements StoreFileStreams
     @Override
     public void close() throws IOException
     {
-        for ( WritableByteChannel channel : channels.values() )
+        //noinspection EmptyTryBlock,unused
+        try ( Closeable chans = () -> IOUtils.closeAll( channels.values() );
+              Closeable pfs = () -> IOUtils.closeAll( pagedFiles.values() );
+              Closeable flusher = flusherThread::halt )
         {
-            channel.close();
-        }
-        for ( PagedFile pagedFile : pagedFiles.values() )
-        {
-            pagedFile.close();
+            // The combination of try-with-resources and closeAll will ensure that all resources are closed,
+            // regardless of any exceptions thrown, and that any exceptions will be properly combined.
         }
     }
 }
