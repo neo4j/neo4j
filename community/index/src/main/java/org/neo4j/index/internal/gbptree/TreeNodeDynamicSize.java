@@ -61,6 +61,9 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  */
 public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 {
+    static final byte FORMAT_IDENTIFIER = 3;
+    static final byte FORMAT_VERSION = 0;
+
     /**
      * Concepts
      * Total space - The space available for data (pageSize - headerSize)
@@ -88,8 +91,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private final int maxKeyCount = pageSize / bytesKeyOffset() + bytesKeySize() + bytesValueSize();
     private final int[] oldOffset = new int[maxKeyCount];
     private final int[] newOffset = new int[maxKeyCount];
-    private int totalSpace;
-    private int halfSpace;
+    private final int totalSpace;
+    private final int halfSpace;
 
     TreeNodeDynamicSize( int pageSize, Layout<KEY,VALUE> layout )
     {

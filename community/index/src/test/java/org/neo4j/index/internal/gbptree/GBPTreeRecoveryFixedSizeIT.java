@@ -23,11 +23,13 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 import org.neo4j.test.rule.RandomRule;
 
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.layout;
+
 public class GBPTreeRecoveryFixedSizeIT extends GBPTreeRecoveryITBase<MutableLong,MutableLong>
 {
     @Override
     protected TestLayout<MutableLong,MutableLong> getLayout( RandomRule random )
     {
-        return new SimpleLongLayout( random.intBetween( 0, 10 ) );
+        return layout().withKeyPadding( random.intBetween( 0, 10 ) ).build();
     }
 }

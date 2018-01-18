@@ -23,9 +23,11 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.layout;
+
 public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong,MutableLong>
 {
-    private SimpleLongLayout layout = new SimpleLongLayout();
+    private final SimpleLongLayout layout = layout().build();
 
     @Override
     protected TestLayout<MutableLong,MutableLong> getLayout()

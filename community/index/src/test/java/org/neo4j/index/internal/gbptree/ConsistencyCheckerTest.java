@@ -32,6 +32,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.layout;
 
 public class ConsistencyCheckerTest
 {
@@ -48,7 +49,7 @@ public class ConsistencyCheckerTest
         long pointer = 123;
 
         cursor.next( 0 );
-        new TreeNodeFixedSize<>( pageSize, new SimpleLongLayout() ).initializeInternal( cursor, stableGeneration, crashGeneration );
+        new TreeNodeFixedSize<>( pageSize, layout().build() ).initializeInternal( cursor, stableGeneration, crashGeneration );
         TreeNode.setSuccessor( cursor, pointer, stableGeneration, crashGeneration );
 
         // WHEN
@@ -75,7 +76,7 @@ public class ConsistencyCheckerTest
     {
         // GIVEN
         int pageSize = 256;
-        Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+        Layout<MutableLong,MutableLong> layout = layout().build();
         TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( pageSize, layout );
         long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;

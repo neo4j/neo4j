@@ -64,6 +64,9 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  */
 class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 {
+    static final byte FORMAT_IDENTIFIER = 2;
+    static final byte FORMAT_VERSION = 0;
+
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
     private final int keySize;
