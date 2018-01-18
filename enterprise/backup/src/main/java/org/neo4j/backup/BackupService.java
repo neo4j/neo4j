@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -266,9 +268,24 @@ class BackupService
     {
         Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+
+        sendLogsToDevNullSoItWillNotInterfereWithLocalRunningNeo4jServer( tempDbConfig );
+
         // In case someone deleted the logical log from a full backup
         tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
         return tempDbConfig;
+    }
+
+    private void sendLogsToDevNullSoItWillNotInterfereWithLocalRunningNeo4jServer( Map<String,String> tempDbConfig )
+    {
+        if ( SystemUtils.IS_OS_WINDOWS )
+        {
+            tempDbConfig.put( GraphDatabaseSettings.store_internal_log_path.name(), System.getProperty( "java.io.tmpdir" ) + File.separatorChar + "nul" );
+        }
+        else
+        {
+            tempDbConfig.put( GraphDatabaseSettings.store_internal_log_path.name(), "/dev/null" );
+        }
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
