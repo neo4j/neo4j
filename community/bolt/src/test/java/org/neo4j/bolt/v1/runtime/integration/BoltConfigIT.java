@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
@@ -60,6 +61,8 @@ public class BoltConfigIT
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
+    private final TransportTestUtil util = new TransportTestUtil( new Neo4jPackV1() );
+
     @Test
     public void shouldSupportMultipleConnectors() throws Throwable
     {
@@ -84,7 +87,7 @@ public class BoltConfigIT
     private void assertConnectionRejected( HostnamePort address, TransportConnection client ) throws Exception
     {
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) );
 
         assertThat( client, eventuallyDisconnects() );
     }
@@ -92,8 +95,8 @@ public class BoltConfigIT
     private void assertConnectionAccepted( HostnamePort address, TransportConnection client ) throws Exception
     {
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
     }
 }

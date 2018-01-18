@@ -31,6 +31,7 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 import java.util.HashMap;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
@@ -80,8 +81,8 @@ public class TransportSessionIT
     public Factory<TransportConnection> cf;
 
     private HostnamePort address;
-
     private TransportConnection client;
+    private TransportTestUtil util;
 
     @Parameterized.Parameters
     public static Collection<Factory<TransportConnection>> transports()
@@ -95,6 +96,7 @@ public class TransportSessionIT
     {
         this.client = cf.newInstance();
         this.address = server.lookupDefaultConnector();
+        this.util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @After
@@ -111,7 +113,7 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
@@ -122,7 +124,7 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1337, 0, 0, 0 ) );
+                .send( util.acceptedVersions( 1337, 0, 0, 0 ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 0} ) );
@@ -133,15 +135,15 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ),
                         equalTo( asList( "a", "a_squared" ) ) ), hasKey( "result_available_after" ) ) ),
@@ -157,15 +159,15 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         discardAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(
                         CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
@@ -179,14 +181,14 @@ public class TransportSessionIT
     {
         // Given
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "QINVALID" ),
                         pullAll() ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
                         String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
@@ -194,10 +196,10 @@ public class TransportSessionIT
                                        " ^" ) ), msgIgnored() ) );
 
         // When
-        client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
+        client.send( util.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
@@ -209,14 +211,14 @@ public class TransportSessionIT
     {
         // Given
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ),
                         pullAll() ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
                         hasKey( "result_available_after" ) ) ),
@@ -224,12 +226,12 @@ public class TransportSessionIT
                 msgSuccess() ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CALL db.labels() YIELD label" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
                         hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
@@ -242,15 +244,15 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n:Test) DELETE n RETURN n" ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
                         hasKey( "result_available_after" ) ) ) ) );
@@ -265,7 +267,7 @@ public class TransportSessionIT
         assertThat( client,
                 eventuallyReceives( bytes( 0x00, 0x08, 0xB1, 0x71, 0x91,
                         0xB3, 0x4E, 0x00, 0x90, 0xA0, 0x00, 0x00 ) ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -273,15 +275,15 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r" ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
                         hasKey( "result_available_after" ) ) ) ) );
@@ -298,7 +300,7 @@ public class TransportSessionIT
         assertThat( client,
                 eventuallyReceives( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
                         0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00, 0x00 ) ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -306,25 +308,25 @@ public class TransportSessionIT
     {
         // Given
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n)" ),
                         pullAll() ) );
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgSuccess() ) );
 
         // When
         client.send(
-                TransportTestUtil.chunk(
+                util.chunk(
                         run( "RETURN 1" ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
@@ -336,15 +338,15 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 hasNotification(
@@ -363,15 +365,15 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "RETURN point({x:13, y:37, crs:'cartesian'}) as p" ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
                         hasKey( "result_available_after" ) ) ),
@@ -401,24 +403,24 @@ public class TransportSessionIT
 
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "RETURN {p}", ValueUtils.asMapValue( params ) ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Request.Invalid,
                         "Value `null` is not supported as key in maps, must be a non-nullable string." ),
                 msgIgnored() ) );
 
-        client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
+        client.send( util.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
@@ -430,15 +432,15 @@ public class TransportSessionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "DROP INDEX on :Movie12345(id)" ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Schema.IndexDropFailed,
                         "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)." ),

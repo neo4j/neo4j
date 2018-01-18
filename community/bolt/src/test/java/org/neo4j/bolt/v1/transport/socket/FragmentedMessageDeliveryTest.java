@@ -124,7 +124,7 @@ public class FragmentedMessageDeliveryTest
         when( boltChannel.rawChannel() ).thenReturn( ch );
         when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
 
-        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel, new Neo4jPackV1(),
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel,
                 new SynchronousBoltWorker( machine ), TransportThrottleGroup.NO_THROTTLE,
                 NullLogService.getInstance() );
 

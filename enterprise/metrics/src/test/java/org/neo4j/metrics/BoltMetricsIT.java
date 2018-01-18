@@ -25,7 +25,9 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
+import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -41,8 +43,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
@@ -61,6 +61,8 @@ public class BoltMetricsIT
 
     private GraphDatabaseAPI db;
     private TransportConnection conn;
+
+    private final TransportTestUtil util = new TransportTestUtil( new Neo4jPackV1() );
 
     @Test
     public void shouldMonitorBolt() throws Throwable
@@ -86,8 +88,8 @@ public class BoltMetricsIT
         // When
         conn = new SocketConnection()
                 .connect( new HostnamePort( "localhost", port ) )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( InitMessage.init( "TestClient",
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( InitMessage.init( "TestClient",
                         map("scheme", "basic", "principal", "neo4j", "credentials", "neo4j") ) ) );
 
         // Then

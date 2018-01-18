@@ -29,6 +29,7 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
@@ -45,8 +46,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
@@ -61,6 +60,7 @@ public class TransportErrorIT
 
     private HostnamePort address;
     private TransportConnection client;
+    private TransportTestUtil util;
 
     @Parameterized.Parameters
     public static Collection<Factory<TransportConnection>> transports()
@@ -74,6 +74,7 @@ public class TransportErrorIT
     {
         this.client = cf.newInstance();
         this.address = server.lookupDefaultConnector();
+        this.util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @After
@@ -89,13 +90,13 @@ public class TransportErrorIT
     public void shouldHandleIncorrectFraming() throws Throwable
     {
         // Given I have a message that gets truncated in the chunking, so part of it is missing
-        byte[] truncated = serialize( run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
+        byte[] truncated = serialize( util.getNeo4jPack(), run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
         truncated = Arrays.copyOf(truncated, truncated.length - 12);
 
         // When
         client.connect( address )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( 32, truncated ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( 32, truncated ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
@@ -118,8 +119,8 @@ public class TransportErrorIT
 
         // When
         client.connect( address )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( 32, invalidMessage ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( 32, invalidMessage ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
@@ -141,8 +142,8 @@ public class TransportErrorIT
 
         // When
         client.connect( address )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( 32, invalidMessage ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( 32, invalidMessage ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
@@ -165,8 +166,8 @@ public class TransportErrorIT
 
         // When
         client.connect( address )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( 32, invalidMessage ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk( 32, invalidMessage ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );

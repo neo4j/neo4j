@@ -20,12 +20,13 @@
 package org.neo4j.bolt.transport;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
+import org.neo4j.bolt.v2.transport.BoltMessagingProtocolV2Handler;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 
 public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFactory
 {
@@ -46,14 +47,22 @@ public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFac
     {
         if ( protocolVersion == BoltMessagingProtocolV1Handler.VERSION_NUMBER )
         {
-            BoltChannelAutoReadLimiter limiter =
-                    new BoltChannelAutoReadLimiter( channel.rawChannel(), logService.getInternalLog( BoltChannelAutoReadLimiter.class ) );
-            BoltWorker worker = workerFactory.newWorker( channel, limiter );
-            return new BoltMessagingProtocolV1Handler( channel, new Neo4jPackV1(), worker, throttleGroup, logService );
+            return new BoltMessagingProtocolV1Handler( channel, newBoltWorker( channel ), throttleGroup, logService );
+        }
+        else if ( protocolVersion == BoltMessagingProtocolV2Handler.VERSION )
+        {
+            return new BoltMessagingProtocolV2Handler( channel, newBoltWorker( channel ), throttleGroup, logService );
         }
         else
         {
             return null;
         }
+    }
+
+    private BoltWorker newBoltWorker( BoltChannel channel )
+    {
+        Log log = logService.getInternalLog( BoltChannelAutoReadLimiter.class );
+        BoltChannelAutoReadLimiter limiter = new BoltChannelAutoReadLimiter( channel.rawChannel(), log );
+        return workerFactory.newWorker( channel, limiter );
     }
 }

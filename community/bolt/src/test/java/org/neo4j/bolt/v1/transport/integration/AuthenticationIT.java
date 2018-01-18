@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.message.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
@@ -98,6 +99,7 @@ public class AuthenticationIT
     private HostnamePort address;
     private TransportConnection client;
     private final String version = "Neo4j/" + Version.getNeo4jVersion();
+    private final TransportTestUtil util = new TransportTestUtil( new Neo4jPackV1() );
 
     @Parameterized.Parameters
     public static Collection<Factory<TransportConnection>> transports()
@@ -127,22 +129,22 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         verifyConnectionOpen();
     }
 
     private void verifyConnectionOpen() throws IOException
     {
-        client.send( TransportTestUtil.chunk( ResetMessage.reset() ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        client.send( util.chunk( ResetMessage.reset() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -150,14 +152,14 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
         assertThat( client, eventuallyDisconnects() );
@@ -168,37 +170,37 @@ public class AuthenticationIT
     {
         // When change password
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1", map( "principal", "neo4j",
                                 "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         // When login again with the new password
         reconnect();
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         // When login again with the wrong password
         reconnect();
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
         assertThat( client, eventuallyDisconnects() );
@@ -209,15 +211,15 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", singletonList( "neo4j" ), "credentials", "neo4j", "scheme",
                                         "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, the value associated with the key `principal` " +
                 "must be a String but was: ArrayList" ) ) );
 
@@ -229,15 +231,15 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "this-should-have-been-credentials", "neo4j", "scheme",
                                         "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, missing key `credentials`" ) ) );
 
         assertThat( client, eventuallyDisconnects() );
@@ -248,14 +250,14 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, missing key `scheme`" ) ) );
 
         assertThat( client, eventuallyDisconnects() );
@@ -266,15 +268,15 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j",
                                         "scheme", "unknown" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, scheme 'unknown' is not supported." ) ) );
 
         assertThat( client, eventuallyDisconnects() );
@@ -292,14 +294,14 @@ public class AuthenticationIT
         {
             // Done in a loop because we're racing with the clock to get enough failed requests in 5 seconds
             client.connect( address )
-                    .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                    .send( TransportTestUtil.chunk(
+                    .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                    .send( util.chunk(
                             InitMessage.init( "TestClient/1.1",
                                     map( "principal", "neo4j", "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN",
                                             "scheme", "basic" ) ) ) );
 
             assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-            assertThat( client, eventuallyReceives( failureMatcher ) );
+            assertThat( client, util.eventuallyReceives( failureMatcher ) );
 
             assertThat( client, eventuallyDisconnects() );
             reconnect();
@@ -316,35 +318,35 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1", map( "principal", "neo4j",
                                 "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         // If I reconnect I cannot use the old password
         reconnect();
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
         // But the new password works fine
         reconnect();
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -352,22 +354,22 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1", map( "principal", "neo4j",
                                 "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 RunMessage.run( "MATCH (n) RETURN n" ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -375,43 +377,43 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "secret" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         // If I reconnect I cannot use the old password
         reconnect();
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
         // But the new password works fine
         reconnect();
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
@@ -419,30 +421,30 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "secret" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 RunMessage.run( "MATCH (n) RETURN n" ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -450,30 +452,30 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "neo4j" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgFailure( Status.General.InvalidArguments,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.General.InvalidArguments,
                 "Old password and new password cannot be the same." ) ) );
 
         // However you should also be able to recover
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 AckFailureMessage.ackFailure(),
                 RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "abc" ) ),
                 PullAllMessage.pullAll() ) );
-        assertThat( client, eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -481,30 +483,30 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgFailure( Status.General.InvalidArguments,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.General.InvalidArguments,
                 "A password cannot be empty." ) ) );
 
         // However you should also be able to recover
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 AckFailureMessage.ackFailure(),
                 RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "abc" ) ),
                 PullAllMessage.pullAll() ) );
-        assertThat( client, eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -512,22 +514,22 @@ public class AuthenticationIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 RunMessage.run( "MATCH (n) RETURN n" ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.CredentialsExpired,
+        assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.CredentialsExpired,
                 "The credentials you provided were valid, but must be changed before you can use this instance." ) ) );
 
         assertThat( client, eventuallyDisconnects() );

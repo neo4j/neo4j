@@ -31,7 +31,6 @@ import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
 import org.neo4j.bolt.transport.SocketTransportHandler;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
@@ -204,7 +203,7 @@ public class SocketTransportHandlerTest
         BoltProtocolHandlerFactory handlerFactory = ( version, channel ) ->
         {
             assertEquals( 1, version );
-            return new BoltMessagingProtocolV1Handler( channel, new Neo4jPackV1(), new SynchronousBoltWorker( machine ),
+            return new BoltMessagingProtocolV1Handler( channel, new SynchronousBoltWorker( machine ),
                     TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
         };
 

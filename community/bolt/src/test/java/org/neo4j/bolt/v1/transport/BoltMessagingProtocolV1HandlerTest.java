@@ -29,8 +29,8 @@ import org.mockito.stubbing.Answer;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
@@ -40,6 +40,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doReturn;
@@ -61,7 +62,7 @@ public class BoltMessagingProtocolV1HandlerTest
         when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel, new Neo4jPackV1(),
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel,
                 new SynchronousBoltWorker( machine ), TransportThrottleGroup.NO_THROTTLE,
                 NullLogService.getInstance() );
         verify( outputChannel ).alloc();
@@ -95,7 +96,7 @@ public class BoltMessagingProtocolV1HandlerTest
         BoltChannel boltChannel = mock( BoltChannel.class );
         when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
-        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel, new Neo4jPackV1(),
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel,
                 new SynchronousBoltWorker( machine ), TransportThrottleGroup.NO_THROTTLE,
                 NullLogService.getInstance() );
         protocol.close();
@@ -117,7 +118,7 @@ public class BoltMessagingProtocolV1HandlerTest
         BoltChannel boltChannel = mock( BoltChannel.class );
         when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
-        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel, new Neo4jPackV1(),
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel,
                 mock( BoltWorker.class ), TransportThrottleGroup.NO_THROTTLE, logService );
 
         protocol.handle( mock( ChannelHandlerContext.class ), data );
@@ -126,6 +127,16 @@ public class BoltMessagingProtocolV1HandlerTest
                 inLog( BoltMessagingProtocolV1Handler.class ).error(
                         equalTo( "Failed to handle incoming Bolt message. Connection will be closed." ),
                         equalTo( error ) ) );
+    }
+
+    @Test
+    public void shouldHaveCorrectVersion()
+    {
+        BoltMessagingProtocolHandler handler = new BoltMessagingProtocolV1Handler(
+                mock( BoltChannel.class, RETURNS_MOCKS ), mock( BoltWorker.class ), TransportThrottleGroup.NO_THROTTLE,
+                NullLogService.getInstance() );
+
+        assertEquals( 1, handler.version() );
     }
 
     private static ByteBuf newThrowingByteBuf( RuntimeException exceptionToThrow )

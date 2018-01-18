@@ -27,10 +27,14 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
+import org.neo4j.bolt.v2.transport.BoltMessagingProtocolV2Handler;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -44,27 +48,13 @@ public class DefaultBoltProtocolHandlerFactoryTest
     @Test
     public void shouldCreateV1Handler()
     {
-        int protocolVersion = 1;
-        BoltChannel boltChannel = BoltChannel.open( newChannelCtxMock(), NullBoltMessageLogger.getInstance() );
-        WorkerFactory workerFactory = mock( WorkerFactory.class );
+        testHandlerCreation( BoltMessagingProtocolV1Handler.VERSION, BoltMessagingProtocolV1Handler.class );
+    }
 
-        BoltWorker worker = mock( BoltWorker.class );
-        when( workerFactory.newWorker( same( boltChannel ), any() ) ).thenReturn( worker );
-
-        BoltProtocolHandlerFactory factory = new DefaultBoltProtocolHandlerFactory( workerFactory,
-                TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
-
-        BoltMessagingProtocolHandler handler = factory.create( protocolVersion, boltChannel );
-
-        // handler is actually created
-        assertNotNull( handler );
-        // it uses the expected worker
-        verify( workerFactory ).newWorker( same( boltChannel ), any() );
-
-        // and halts this same worker when closed
-        verify( worker, never() ).halt();
-        handler.close();
-        verify( worker ).halt();
+    @Test
+    public void shouldCreateV2Handler()
+    {
+        testHandlerCreation( BoltMessagingProtocolV2Handler.VERSION, BoltMessagingProtocolV2Handler.class );
     }
 
     @Test
@@ -79,6 +69,32 @@ public class DefaultBoltProtocolHandlerFactoryTest
 
         // handler is not created
         assertNull( handler );
+    }
+
+    private static void testHandlerCreation( int protocolVersion,
+            Class<? extends BoltMessagingProtocolHandler> expectedHandlerClass )
+    {
+        BoltChannel boltChannel = BoltChannel.open( newChannelCtxMock(), NullBoltMessageLogger.getInstance() );
+        WorkerFactory workerFactory = mock( WorkerFactory.class );
+
+        BoltWorker worker = mock( BoltWorker.class );
+        when( workerFactory.newWorker( same( boltChannel ), any() ) ).thenReturn( worker );
+
+        BoltProtocolHandlerFactory factory = new DefaultBoltProtocolHandlerFactory( workerFactory,
+                TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
+
+        BoltMessagingProtocolHandler handler = factory.create( protocolVersion, boltChannel );
+
+        // correct handler handler is created
+        assertThat( handler, instanceOf( expectedHandlerClass ) );
+        assertEquals( protocolVersion, handler.version() );
+        // it uses the expected worker
+        verify( workerFactory ).newWorker( same( boltChannel ), any() );
+
+        // and halts this same worker when closed
+        verify( worker, never() ).halt();
+        handler.close();
+        verify( worker ).halt();
     }
 
     private static ChannelHandlerContext newChannelCtxMock()
