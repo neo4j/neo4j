@@ -29,6 +29,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
@@ -43,7 +44,14 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEA
 public class StringCollisionValuesTest
 {
     @Rule
-    public final RandomRule random = new RandomRule();
+    public final RandomRule random = new RandomRule().withConfiguration( new Randoms.Default()
+    {
+        @Override
+        public int stringMaxLength()
+        {
+            return 1 << Short.SIZE;
+        }
+    } );
 
     @Parameters
     public static Collection<NumberArrayFactory> data()
@@ -58,7 +66,7 @@ public class StringCollisionValuesTest
     public void shouldStoreAndLoadStrings() throws Exception
     {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory, 100_000 ); )
+        try ( StringCollisionValues values = new StringCollisionValues( factory, 10_000 ); )
         {
             // when
             long[] offsets = new long[100];

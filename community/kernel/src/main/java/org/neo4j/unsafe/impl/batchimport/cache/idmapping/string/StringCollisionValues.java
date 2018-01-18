@@ -24,6 +24,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
+import static java.lang.Integer.min;
 import static java.lang.Long.max;
 
 /**
@@ -32,13 +33,15 @@ import static java.lang.Long.max;
  */
 public class StringCollisionValues implements CollisionValues
 {
+    private final long chunkSize;
     private final ByteArray cache;
     private long offset;
     private ByteArray current;
 
     public StringCollisionValues( NumberArrayFactory factory, long length )
     {
-        cache = factory.newDynamicByteArray( max( length, 10_000 ), new byte[1] );
+        chunkSize = max( length, 10_000 );
+        cache = factory.newDynamicByteArray( chunkSize, new byte[1] );
         current = cache.at( 0 );
     }
 
@@ -53,20 +56,30 @@ public class StringCollisionValues implements CollisionValues
             throw new IllegalArgumentException( string );
         }
 
-        long endOffset = offset + 2 + bytes.length;
-        ByteArray end = cache.at( endOffset );
-        if ( end != current )
+        if ( offset % chunkSize >= chunkSize - 2 )
         {
-            offset = endOffset;
-            current = end;
+            // There isn't enough space left in the current chunk to begin writing this value, move over to the next one
+            offset += chunkSize - (offset % chunkSize);
+            current = cache.at( offset );
         }
 
         long startOffset = offset;
-        current.setByte( offset++, 0, (byte) (length & 0xFF) );
-        current.setByte( offset++, 0, (byte) ((length >>> 8) & 0xFF) );
-        for ( byte charByte : bytes )
+        current.setShort( offset, 0, (short) length );
+        offset += 2;
+        for ( int i = 0; i < length; )
         {
-            current.setByte( offset++, 0, charByte );
+            int bytesLeftToWrite = length - i;
+            int bytesLeftInChunk = (int) (chunkSize - offset % chunkSize);
+            int bytesToWriteInThisChunk = min( bytesLeftToWrite, bytesLeftInChunk );
+            for ( int j = 0; j < bytesToWriteInThisChunk; j++ )
+            {
+                current.setByte( offset++, 0, bytes[i++] );
+            }
+
+            if ( length > i )
+            {
+                current = cache.at( offset );
+            }
         }
 
         return startOffset;
@@ -76,13 +89,23 @@ public class StringCollisionValues implements CollisionValues
     public Object get( long offset )
     {
         ByteArray array = cache.at( offset );
-        int lengthLsb = array.getByte( offset++, 0 ) & 0xFF;
-        int lengthMsb = array.getByte( offset++, 0 ) & 0xFF;
-        int length = (lengthMsb << 8) | lengthLsb;
+        int length = array.getShort( offset, 0 ) & 0xFFFF;
+        offset += 2;
         byte[] bytes = new byte[length];
-        for ( int i = 0; i < length; i++ )
+        for ( int i = 0; i < length; )
         {
-            bytes[i] = array.getByte( offset++, 0 );
+            int bytesLeftToRead = length - i;
+            int bytesLeftInChunk = (int) (chunkSize - offset % chunkSize);
+            int bytesToReadInThisChunk = min( bytesLeftToRead, bytesLeftInChunk );
+            for ( int j = 0; j < bytesToReadInThisChunk; j++ )
+            {
+                bytes[i++] = array.getByte( offset++, 0 );
+            }
+
+            if ( length > i )
+            {
+                array = cache.at( offset );
+            }
         }
         return UTF8.decode( bytes );
     }
