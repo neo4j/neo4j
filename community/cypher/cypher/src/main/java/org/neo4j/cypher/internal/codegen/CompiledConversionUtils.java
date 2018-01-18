@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
@@ -424,49 +425,45 @@ public abstract class CompiledConversionUtils
         {
             return ((IntStream) iterable).iterator();
         }
+        else if ( iterable instanceof String )
+        {
+            String[] singleStringArray = {(String) iterable};
+            return (Stream.of((String) iterable)).iterator();
+        }
         else if ( iterable == null )
         {
             return Collections.emptyIterator();
         }
-        else if ( iterable instanceof String )
-        {
-            String[] singleStringArray = {(String) iterable};
-            return getIterator( singleStringArray, 1 );
-        }
         else if ( iterable.getClass().isArray() )
         {
             int len = Array.getLength( iterable );
-            return getIterator( iterable, len );
+
+            return new Iterator()
+            {
+                private int position = 0;
+
+                @Override
+                public boolean hasNext()
+                {
+                    return position < len;
+                }
+
+                @Override
+                public Object next()
+                {
+                    if ( position >= len )
+                    {
+                        throw new NoSuchElementException();
+                    }
+                    return Array.get( iterable, position++ );
+                }
+            };
         }
         else
         {
             throw new CypherTypeException(
                     "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
         }
-    }
-
-    private static Iterator getIterator( Object iterable, int len )
-    {
-        return new Iterator()
-        {
-            private int position = 0;
-
-            @Override
-            public boolean hasNext()
-            {
-                return position < len;
-            }
-
-            @Override
-            public Object next()
-            {
-                if ( position >= len )
-                {
-                    throw new NoSuchElementException();
-                }
-                return Array.get( iterable, position++ );
-            }
-        };
     }
 
     @SuppressWarnings( "unchecked" )
