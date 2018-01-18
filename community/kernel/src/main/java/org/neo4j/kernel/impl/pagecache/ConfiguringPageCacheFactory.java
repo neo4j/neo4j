@@ -92,13 +92,6 @@ public class ConfiguringPageCacheFactory
     {
         Long pageCacheMemorySetting = config.get( pagecache_memory );
         long pageCacheMemory = interpretMemorySetting( pageCacheMemorySetting );
-        long maxHeap = Runtime.getRuntime().maxMemory();
-        if ( pageCacheMemory / maxHeap > 100 )
-        {
-            log.warn( "The memory configuration looks unbalanced. It is generally recommended to have at least " +
-                      "10 KiB of heap memory, for every 1 MiB of page cache memory. The current configuration is " +
-                      "allocating %s bytes for the page cache, and %s bytes for the heap.", pageCacheMemory, maxHeap );
-        }
         long pageCount = pageCacheMemory / cachePageSize;
         return (int) Math.min( Integer.MAX_VALUE - 2000, pageCount );
     }
@@ -112,7 +105,8 @@ public class ConfiguringPageCacheFactory
         long heuristic = defaultHeuristicPageCacheMemory();
         log.warn( "The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this " +
                   "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
-                  "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " );
+                  "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " +
+                  "Run `neo4j-admin memrec` for memory configuration suggestions." );
         return heuristic;
     }
 
