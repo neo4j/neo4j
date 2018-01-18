@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -66,6 +67,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         JobScheduler scheduler();
 
         TransactionIdStore transactionIdStore();
+
+        NeoStoreFileListing fileListing();
     }
 
     public BloomKernelExtensionFactory()
@@ -85,7 +88,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         AvailabilityGuard availabilityGuard = dependencies.availabilityGuard();
         JobScheduler scheduler = dependencies.scheduler();
         Supplier<TransactionIdStore> transactionIdStore = dependencies::transactionIdStore;
+        Supplier<NeoStoreFileListing> fileListing = dependencies::fileListing;
         return new BloomKernelExtension(
-                fs, storeDir, config, db, procedures, logService, availabilityGuard, scheduler, transactionIdStore );
+                fs, storeDir, config, db, procedures, logService, availabilityGuard, scheduler, transactionIdStore, fileListing );
     }
 }

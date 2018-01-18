@@ -22,9 +22,11 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 
 public interface FulltextProvider extends AutoCloseable
 {
@@ -80,6 +82,12 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
+        public void registerFileListing( Supplier<NeoStoreFileListing> fileListing )
+        {
+            throw noProvider();
+        }
+
+        @Override
         public void close() throws Exception
         {
             throw noProvider();
@@ -125,4 +133,6 @@ public interface FulltextProvider extends AutoCloseable
     InternalIndexState getState( String identifier, FulltextIndexType type );
 
     void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys ) throws IOException, InvalidArgumentsException;
+
+    void registerFileListing( Supplier<NeoStoreFileListing> fileListing );
 }

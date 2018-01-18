@@ -26,13 +26,13 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProviderImpl;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -49,17 +49,15 @@ class BloomKernelExtension extends LifecycleAdapter
     private final FileSystemAbstraction fileSystem;
     private final GraphDatabaseService db;
     private final Procedures procedures;
-    private LogService logService;
+    private final LogService logService;
     private final AvailabilityGuard availabilityGuard;
     private final JobScheduler scheduler;
     private final Supplier<TransactionIdStore> transactionIdStore;
+    private final Supplier<NeoStoreFileListing> fileListing;
     private FulltextProvider provider;
 
-    BloomKernelExtension( FileSystemAbstraction fileSystem, File storeDir, Config config,
-                          GraphDatabaseService db, Procedures procedures,
-                          LogService logService, AvailabilityGuard availabilityGuard,
-                          JobScheduler scheduler,
-                          Supplier<TransactionIdStore> transactionIdStore )
+    BloomKernelExtension( FileSystemAbstraction fileSystem, File storeDir, Config config, GraphDatabaseService db, Procedures procedures, LogService logService,
+            AvailabilityGuard availabilityGuard, JobScheduler scheduler, Supplier<TransactionIdStore> transactionIdStore, Supplier<NeoStoreFileListing> fileListing )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -70,10 +68,11 @@ class BloomKernelExtension extends LifecycleAdapter
         this.availabilityGuard = availabilityGuard;
         this.scheduler = scheduler;
         this.transactionIdStore = transactionIdStore;
+        this.fileListing = fileListing;
     }
 
     @Override
-    public void start() throws IOException, KernelException
+    public void start() throws IOException
     {
         if ( config.get( BloomFulltextConfig.bloom_enabled ) )
         {
@@ -85,6 +84,7 @@ class BloomKernelExtension extends LifecycleAdapter
             provider.openIndex( BLOOM_NODES, NODES );
             provider.openIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
             provider.registerTransactionEventHandler();
+            provider.registerFileListing(fileListing);
 
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );
         }

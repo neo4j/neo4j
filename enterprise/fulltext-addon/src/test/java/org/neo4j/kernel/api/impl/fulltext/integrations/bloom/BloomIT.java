@@ -62,18 +62,18 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltex
 
 public class BloomIT
 {
-    private static final String NODES = "CALL bloom.searchNodes([%s])";
-    private static final String NODES_ADVANCED = "CALL bloom.searchNodes([%s], %b, %b)";
-    private static final String RELS = "CALL bloom.searchRelationships([%s])";
-    private static final String RELS_ADVANCED = "CALL bloom.searchRelationships([%s], %b, %b)";
-    private static final String ENTITYID = "entityid";
-    private static final String SCORE = "score";
-    private static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
-    private static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
-    private static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
-    private static final String GET_REL_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
-    private static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
-    private static final String STATUS = "CALL bloom.indexStatus";
+    static final String NODES = "CALL bloom.searchNodes([%s])";
+    static final String NODES_ADVANCED = "CALL bloom.searchNodes([%s], %b, %b)";
+    static final String RELS = "CALL bloom.searchRelationships([%s])";
+    static final String RELS_ADVANCED = "CALL bloom.searchRelationships([%s], %b, %b)";
+    static final String ENTITYID = "entityid";
+    static final String SCORE = "score";
+    static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
+    static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
+    static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
+    static final String GET_REL_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
+    static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
+    static final String STATUS = "CALL bloom.indexStatus";
 
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
