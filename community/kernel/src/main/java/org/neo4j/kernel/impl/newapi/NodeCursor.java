@@ -176,10 +176,11 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             reset();
             return false;
         }
+
         // Check tx state
         boolean hasChanges = hasChanges();
-
         TransactionState txs = hasChanges ? read.txState() : null;
+
         do
         {
             if ( hasChanges && containsNode( txs ) )

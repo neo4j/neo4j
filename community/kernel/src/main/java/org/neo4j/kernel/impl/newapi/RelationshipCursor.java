@@ -19,19 +19,14 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Set;
-
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-
-import static java.util.Collections.emptySet;
 
 abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor, RelationshipVisitor<RuntimeException>
 {
     Read read;
     private HasChanges hasChanges = HasChanges.MAYBE;
-    Set<Long> addedRelationships;
 
     RelationshipCursor()
     {
@@ -42,7 +37,6 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     {
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedRelationships = emptySet();
     }
 
     @Override
@@ -99,7 +93,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
         return getNextProp();
     }
 
-    protected abstract boolean shouldGetAddedTxStateSnapshot();
+    protected abstract void collectAddedTxStateSnapshot();
 
     /**
      * RelationshipCursor should only see changes that are there from the beginning
@@ -113,10 +107,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
             boolean changes = read.hasTxStateWithChanges();
             if ( changes )
             {
-                if ( shouldGetAddedTxStateSnapshot() )
-                {
-                    addedRelationships = read.txState().addedAndRemovedRelationships().getAddedSnapshot();
-                }
+                collectAddedTxStateSnapshot();
                 hasChanges = HasChanges.YES;
             }
             else

@@ -93,4 +93,98 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.success();
         }
     }
+
+    @Test
+    public void shouldSeeRelationshipInTransaction() throws Exception
+    {
+        long n1, n2;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            n1 = tx.dataWrite().nodeCreate();
+            n2 = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+            {
+                tx.dataRead().singleNode( n1, node );
+                assertTrue( "should access node", node.next() );
+
+                node.allRelationships( relationship );
+                assertTrue( "should find relationship", relationship.next() );
+                assertEquals( r, relationship.relationshipReference() );
+
+                assertFalse( "should only find one relationship", relationship.next() );
+            }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotSeeRelationshipDeletedInTransaction() throws Exception
+    {
+        long n1, n2, r;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            n1 = tx.dataWrite().nodeCreate();
+            n2 = tx.dataWrite().nodeCreate();
+
+            int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            r = tx.dataWrite().relationshipCreate( n1, label, n2 );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.dataWrite().relationshipDelete( r );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+            {
+                tx.dataRead().singleNode( n1, node );
+                assertTrue( "should access node", node.next() );
+
+                node.allRelationships( relationship );
+                assertFalse( "should not find relationship", relationship.next() );
+            }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldSeeRelationshipInTransactionBeforeCursorInitialization() throws Exception
+    {
+        long n1, n2;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            n1 = tx.dataWrite().nodeCreate();
+            n2 = tx.dataWrite().nodeCreate();
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                    RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
+            {
+                tx.dataRead().singleNode( n1, node );
+                assertTrue( "should access node", node.next() );
+
+                node.allRelationships( relationship );
+                assertTrue( "should find relationship", relationship.next() );
+                assertEquals( r, relationship.relationshipReference() );
+
+                tx.dataWrite().relationshipCreate( n1, label, n2 ); // should not be seen
+                assertFalse( "should not find relationship added after cursor init", relationship.next() );
+            }
+            tx.success();
+        }
+    }
 }
