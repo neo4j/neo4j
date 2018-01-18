@@ -202,12 +202,12 @@ public class OnlineBackupContextBuilderTest
     public void prioritiseConfigDirOverHomeDir() throws Exception
     {
         // given
-        Files.write( configFile, singletonList( "causal_clustering.expected_core_cluster_size=4" ), WRITE );
+        Files.write( configFile, singletonList( "causal_clustering.minimum_core_cluster_size_at_startup=4" ), WRITE );
 
         // and
         Path homeDirConfigFile = homeDir.resolve( "neo4j.conf" );
         Files.write( homeDirConfigFile, asList(
-                "causal_clustering.expected_core_cluster_size=5",
+                "causal_clustering.minimum_core_cluster_size_at_startup=5",
                 "causal_clustering.raft_in_queue_max_batch=21" ) );
 
         // when
@@ -215,7 +215,7 @@ public class OnlineBackupContextBuilderTest
         Config config = handler.createContext( requiredAnd() ).getConfig();
 
         // then
-        assertEquals( Integer.valueOf( 4 ), config.get( CausalClusteringSettings.expected_core_cluster_size ) );
+        assertEquals( Integer.valueOf( 3 ), config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation ) );
         assertEquals( Integer.valueOf( 64 ), config.get( CausalClusteringSettings.raft_in_queue_max_batch ) );
     }
 
@@ -224,12 +224,12 @@ public class OnlineBackupContextBuilderTest
     {
         // given
         Files.write( configFile, asList(
-                "causal_clustering.expected_core_cluster_size=4",
+                "causal_clustering.minimum_core_cluster_size_at_startup=4",
                 "causal_clustering.raft_in_queue_max_batch=21" ) );
 
         // and
         Path additionalConf = homeDir.resolve( "additional-neo4j.conf" );
-        Files.write( additionalConf, singletonList( "causal_clustering.expected_core_cluster_size=5" ) );
+        Files.write( additionalConf, singletonList( "causal_clustering.minimum_core_cluster_size_at_startup=5" ) );
 
         // when
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
@@ -237,7 +237,7 @@ public class OnlineBackupContextBuilderTest
         Config config = context.getConfig();
 
         // then
-        assertEquals( Integer.valueOf( 5 ), config.get( CausalClusteringSettings.expected_core_cluster_size ) );
+        assertEquals( Integer.valueOf( 3 ), config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation ) );
         assertEquals( Integer.valueOf( 21 ), config.get( CausalClusteringSettings.raft_in_queue_max_batch ) );
     }
 

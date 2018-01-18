@@ -201,7 +201,8 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( CausalClusteringSettings.transaction_listen_address.name(), specifyPortOnly( txPort ) );
                 builder.withConfig( CausalClusteringSettings.raft_listen_address.name(), specifyPortOnly( raftPort ) );
 
-                builder.withConfig( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( nCores ) );
+                builder.withConfig( CausalClusteringSettings.minimum_core_cluster_size_at_formation.name(), String.valueOf( nCores ) );
+                builder.withConfig( CausalClusteringSettings.minimum_core_cluster_size_at_runtime.name(), String.valueOf( nCores ) );
                 builder.withConfig( CausalClusteringSettings.server_groups.name(), "core," + "core" + coreId );
                 configureConnectors( boltPort, httpPort, httpsPort, builder );
 

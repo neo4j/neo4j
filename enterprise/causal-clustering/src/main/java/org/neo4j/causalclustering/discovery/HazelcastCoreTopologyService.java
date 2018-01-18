@@ -300,7 +300,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     private Integer minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize()
     {
-        return config.get( CausalClusteringSettings.expected_core_cluster_size ) / 2 + 1;
+        return config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation ) / 2 + 1;
     }
 
     @Override
