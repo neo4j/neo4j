@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.CanWrite
 import org.neo4j.kernel.impl.locking.LockTracer
-import org.neo4j.kernel.impl.newapi.Cursors
+import org.neo4j.kernel.impl.newapi.DefaultCursors
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
@@ -86,7 +86,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new Cursors())
+    when(transaction.cursors()).thenReturn(new DefaultCursors())
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, null, null, bridge, locker, outerTx, statement, null)
     val transactionalContext = TransactionalContextWrapper(tc)
@@ -109,7 +109,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new Cursors())
+    when(transaction.cursors()).thenReturn(new DefaultCursors())
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, null, null, bridge, locker, outerTx, statement, null)
     val transactionalContext = TransactionalContextWrapper(tc)
@@ -212,7 +212,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new Cursors())
+    when(transaction.cursors()).thenReturn(new DefaultCursors())
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, null, null, bridge, locker, outerTx, statement, null)
     val transactionalContext = TransactionalContextWrapper(tc)

@@ -79,9 +79,9 @@ public class OperationsLockTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final Write write = mock( Write.class );
     private InOrder order;
-    private NodeCursor nodeCursor;
-    private PropertyCursor propertyCursor;
-    private RelationshipScanCursor relationshipCursor;
+    private DefaultNodeCursor nodeCursor;
+    private DefaultPropertyCursor propertyCursor;
+    private DefaultRelationshipScanCursor relationshipCursor;
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
@@ -97,10 +97,10 @@ public class OperationsLockTest
         when( transaction.isOpen() ).thenReturn( true );
         when( transaction.lockTracer() ).thenReturn( LockTracer.NONE );
         when( transaction.txState() ).thenReturn( txState );
-        Cursors cursors = mock( Cursors.class );
-        nodeCursor = mock( NodeCursor.class );
-        propertyCursor = mock( PropertyCursor.class );
-        relationshipCursor = mock( RelationshipScanCursor.class );
+        DefaultCursors cursors = mock( DefaultCursors.class );
+        nodeCursor = mock( DefaultNodeCursor.class );
+        propertyCursor = mock( DefaultPropertyCursor.class );
+        relationshipCursor = mock( DefaultRelationshipScanCursor.class );
         when( cursors.allocateNodeCursor() ).thenReturn( nodeCursor );
         when( cursors.allocatePropertyCursor() ).thenReturn( propertyCursor );
         when( cursors.allocateRelationshipScanCursor() ).thenReturn( relationshipCursor );

@@ -28,6 +28,7 @@ import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -79,7 +80,7 @@ public class AllStoreHolder extends Read
     public AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors,
+            DefaultCursors cursors,
             ExplicitIndexStore explicitIndexStore )
     {
         super( cursors, ktx );
@@ -121,7 +122,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index ) throws IndexNotFoundKernelException
+    IndexReader indexReader( IndexReference index ) throws IndexNotFoundKernelException
     {
         IndexDescriptor indexDescriptor = index.isUnique() ?
                                           IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
@@ -346,7 +347,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    TextValue string( PropertyCursor cursor, long reference, PageCursor page )
+    TextValue string( DefaultPropertyCursor cursor, long reference, PageCursor page )
     {
         ByteBuffer buffer = cursor.buffer = properties.loadString( reference, cursor.buffer, page );
         buffer.flip();
@@ -354,7 +355,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    ArrayValue array( PropertyCursor cursor, long reference, PageCursor page )
+    ArrayValue array( DefaultPropertyCursor cursor, long reference, PageCursor page )
     {
         ByteBuffer buffer = cursor.buffer = properties.loadArray( reference, cursor.buffer, page );
         buffer.flip();

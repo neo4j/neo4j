@@ -44,7 +44,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClient
 {
     @Rule
-    public final MockStore store = new MockStore( new Cursors() );
+    public final MockStore store = new MockStore( new DefaultCursors() );
     private final List<Event> events = new ArrayList<>();
 
     @Test
@@ -131,7 +131,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     private NodeValueClientFilter initializeFilter( IndexQuery... filters )
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
-                this, new NodeCursor(), new PropertyCursor(), store, filters );
+                this, new DefaultNodeCursor(), new DefaultPropertyCursor(), store, filters );
         filter.initialize( IndexDescriptorFactory.forLabel( 11), this, null );
         return filter;
     }

@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.TransactionId;
@@ -93,7 +93,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final SystemNanoClock clock;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
-    private final Cursors cursors;
+    private final DefaultCursors cursors;
     private final KernelToken token;
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
@@ -135,7 +135,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore,
             SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
-            KernelToken token, Cursors cursors,
+            KernelToken token, DefaultCursors cursors,
             AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore )
     {

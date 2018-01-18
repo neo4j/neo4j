@@ -82,11 +82,11 @@ public class Operations implements Write, ExplicitIndexWrite
     private final KernelToken token;
     private final StorageStatement statement;
     private final AutoIndexing autoIndexing;
-    private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
+    private DefaultNodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
-    private PropertyCursor propertyCursor;
-    private RelationshipScanCursor relationshipCursor;
-    private final Cursors cursors;
+    private DefaultPropertyCursor propertyCursor;
+    private DefaultRelationshipScanCursor relationshipCursor;
+    private final DefaultCursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
 
     public Operations(
@@ -95,7 +95,7 @@ public class Operations implements Write, ExplicitIndexWrite
             StorageStatement statement,
             KernelTransactionImplementation ktx,
             KernelToken token,
-            Cursors cursors,
+            DefaultCursors cursors,
             AutoIndexing autoIndexing,
             NodeSchemaMatcher schemaMatcher )
     {
@@ -296,7 +296,7 @@ public class Operations implements Write, ExplicitIndexWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
     ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        try ( NodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
+        try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
         {
             IndexDescriptor indexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( indexDescriptor );
@@ -651,12 +651,12 @@ public class Operations implements Write, ExplicitIndexWrite
         return allStoreHolder;
     }
 
-    public NodeCursor nodeCursor()
+    public DefaultNodeCursor nodeCursor()
     {
         return nodeCursor;
     }
 
-    public PropertyCursor propertyCursor()
+    public DefaultPropertyCursor propertyCursor()
     {
         return propertyCursor;
     }

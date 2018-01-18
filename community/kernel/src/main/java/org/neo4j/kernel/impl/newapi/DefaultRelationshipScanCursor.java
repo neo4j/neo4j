@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Set;
 
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
 import static java.util.Collections.emptySet;
 
-class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.internal.kernel.api.RelationshipScanCursor
+class DefaultRelationshipScanCursor extends RelationshipCursor implements RelationshipScanCursor
 {
     private int label;
     private long next;

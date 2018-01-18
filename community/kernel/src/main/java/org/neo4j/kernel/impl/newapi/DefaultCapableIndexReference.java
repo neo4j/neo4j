@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.values.storable.ValueGroup;
 
-class DefaultCapableIndexReference implements org.neo4j.internal.kernel.api.CapableIndexReference
+class DefaultCapableIndexReference implements CapableIndexReference
 {
     private final int label;
     private final int[] properties;

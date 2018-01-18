@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.store.GeometryType;
@@ -48,7 +49,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-public class PropertyCursor extends PropertyRecord implements org.neo4j.internal.kernel.api.PropertyCursor
+public class DefaultPropertyCursor extends PropertyRecord implements PropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     public static final int INITIAL_POSITION = -1;
@@ -64,7 +65,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;
 
-    public PropertyCursor()
+    public DefaultPropertyCursor()
     {
         super( NO_ID );
     }

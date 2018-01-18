@@ -69,8 +69,8 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 {
     private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
     private final NodeValueClient target;
-    private final NodeCursor node;
-    private final PropertyCursor property;
+    private final DefaultNodeCursor node;
+    private final DefaultPropertyCursor property;
     private final IndexQuery[] filters;
     private final Read read;
     private int[] keys;
@@ -78,7 +78,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 
     NodeValueClientFilter(
             NodeValueClient target,
-            NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
+            DefaultNodeCursor node, DefaultPropertyCursor property, Read read, IndexQuery... filters )
     {
         this.target = target;
         this.node = node;
