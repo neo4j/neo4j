@@ -44,7 +44,7 @@ class HintAcceptanceTest
                   |USING JOIN ON a
                   |RETURN a.name, b.name""".stripMargin
 
-    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
+    executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should useOperators("NodeOuterHashJoin")
       p should not(useOperators("NodeHashJoin"))
     }, expectPlansToFail = Configs.AllRulePlanners + Configs.BackwardsCompatibility))
