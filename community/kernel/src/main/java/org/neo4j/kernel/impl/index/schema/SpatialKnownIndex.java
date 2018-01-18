@@ -55,7 +55,7 @@ public class SpatialKnownIndex
 
     public interface Factory
     {
-        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value... values );
+        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value value );
 
         SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, CoordinateReferenceSystem crs );
     }

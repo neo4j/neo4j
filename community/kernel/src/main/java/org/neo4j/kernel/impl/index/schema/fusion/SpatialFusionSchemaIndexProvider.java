@@ -91,7 +91,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
         return new SpatialFusionIndexAccessor( indexesFor( indexId ), indexId, descriptor, samplingConfig, this );
     }
 
-    private Map<CoordinateReferenceSystem,SpatialKnownIndex> indexesFor( long indexId )
+    Map<CoordinateReferenceSystem,SpatialKnownIndex> indexesFor( long indexId )
     {
         return indexes.computeIfAbsent( indexId, k -> new HashMap<>() );
     }
@@ -170,10 +170,9 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value... values )
+    public SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value value )
     {
-        assert values.length == 1;
-        PointValue pointValue = (PointValue) values[0];
+        PointValue pointValue = (PointValue) value;
         CoordinateReferenceSystem crs = pointValue.getCoordinateReferenceSystem();
         return selectAndCreate( indexMap, indexId, crs );
     }
@@ -188,7 +187,12 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     private void findAndCreateKnownSpatialIndexes()
     {
         Pattern pattern = Pattern.compile( "(\\d+)-(\\d+)" );
-        File[] files = this.directoryStructure().rootDirectory().listFiles();
+        File rootDirectory = this.directoryStructure().rootDirectory();
+        if (rootDirectory == null)
+        {
+            return;
+        }
+        File[] files = rootDirectory.listFiles();
         if ( files != null )
         {
             for ( File file : files )

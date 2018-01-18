@@ -417,7 +417,7 @@ public class FusionIndexAccessorTest
         assertThat( fusionAllEntriesReader.maxCount(), is( 6L ) );
     }
 
-    private void assertResultContainsAll( Set<Long> result, long[] nativeEntries )
+    static void assertResultContainsAll( Set<Long> result, long[] nativeEntries )
     {
         for ( long nativeEntry : nativeEntries )
         {
@@ -425,42 +425,42 @@ public class FusionIndexAccessorTest
         }
     }
 
-    private void mockAllEntriesReaders( long[] nativeEntries, long[] luceneEntries )
-    {
-        mockSingleAllEntriesReader( nativeAccessor, nativeEntries );
-        mockSingleAllEntriesReader( spatialAccessor, nativeEntries );
-        mockSingleAllEntriesReader( luceneAccessor, luceneEntries );
-    }
-
-    private BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, long[] entries )
+    static BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, long[] entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReader( entries );
         when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
-    private BoundedIterable<Long> mockedAllEntriesReader( long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReader( long... entries )
     {
         return mockedAllEntriesReader( true, entries );
     }
 
-    private BoundedIterable<Long> mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, long[] entries )
+    static BoundedIterable<Long> mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, long[] entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
         when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
-    private BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( long... entries )
     {
         return mockedAllEntriesReader( false, entries );
     }
 
-    private BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, long... entries )
     {
         BoundedIterable<Long> mockedAllEntriesReader = mock( BoundedIterable.class );
         when( mockedAllEntriesReader.maxCount() ).thenReturn( knownMaxCount ? entries.length : BoundedIterable.UNKNOWN_MAX_COUNT );
         when( mockedAllEntriesReader.iterator() ).thenReturn( Iterators.asIterator(entries ) );
         return mockedAllEntriesReader;
+    }
+
+    private void mockAllEntriesReaders( long[] nativeEntries, long[] luceneEntries )
+    {
+        mockSingleAllEntriesReader( nativeAccessor, nativeEntries );
+        mockSingleAllEntriesReader( spatialAccessor, nativeEntries );
+        mockSingleAllEntriesReader( luceneAccessor, luceneEntries );
     }
 }
