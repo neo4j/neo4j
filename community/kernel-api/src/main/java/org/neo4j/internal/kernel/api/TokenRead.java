@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 
@@ -53,6 +54,14 @@ public interface TokenRead
      * @return the relationship type id, or NO_TOKEN
      */
     int relationshipType( String name );
+
+    /**
+     * Returns the name of a relationship type given its id
+     *
+     * @param relationshipTypeId The id of the relationship type
+     * @return The name of the relationship type
+     */
+    String relationshipTypeName( int relationshipTypeId ) throws KernelException;
 
     /**
      * Return the id of the provided property key, or NO_TOKEN if the property isn't known to the graph.

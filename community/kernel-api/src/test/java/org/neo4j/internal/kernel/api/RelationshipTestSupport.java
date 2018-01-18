@@ -1,0 +1,268 @@
+/*
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.internal.kernel.api;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
+import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.RelationshipType.withName;
+
+public class RelationshipTestSupport
+{
+    private RelationshipTestSupport()
+    {
+    }
+
+    static void someGraph( GraphDatabaseService graphDb )
+    {
+        Relationship dead;
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node a = graphDb.createNode(),
+                    b = graphDb.createNode(),
+                    c = graphDb.createNode(),
+                    d = graphDb.createNode();
+
+            a.createRelationshipTo( a, withName( "ALPHA" ) );
+            a.createRelationshipTo( b, withName( "BETA" ) );
+            a.createRelationshipTo( c, withName( "GAMMA" ) );
+            a.createRelationshipTo( d, withName( "DELTA" ) );
+
+            graphDb.createNode().createRelationshipTo( a, withName( "BETA" ) );
+            a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
+            dead = a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
+            a.createRelationshipTo( graphDb.createNode(), withName( "BETA" ) );
+
+            Node clump = graphDb.createNode();
+            clump.createRelationshipTo( clump, withName( "REL" ) );
+            clump.createRelationshipTo( clump, withName( "REL" ) );
+            clump.createRelationshipTo( clump, withName( "REL" ) );
+            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
+            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
+            clump.createRelationshipTo( graphDb.createNode(), withName( "REL" ) );
+            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
+            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
+            graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
+
+            tx.success();
+        }
+
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node node = dead.getEndNode();
+            dead.delete();
+            node.delete();
+
+            tx.success();
+        }
+    }
+
+    static Function<Node, R>[] sparseDenseRels = Iterators.array(
+            outgoing( "FOO" ),
+            outgoing( "BAR" ),
+            outgoing( "BAR" ),
+            incoming( "FOO" ),
+            outgoing( "FOO" ),
+            incoming( "BAZ" ),
+            incoming( "BAR" ),
+            outgoing( "BAZ" )
+        );
+
+    static StartNode sparse( GraphDatabaseService graphDb )
+    {
+        Node node;
+        Map<String,List<R>> relationshipMap;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode();
+            relationshipMap = buildSparseDenseRels( node );
+            tx.success();
+        }
+        return new StartNode( node.getId(), relationshipMap );
+    }
+
+    static StartNode dense( GraphDatabaseService graphDb )
+    {
+        Node node;
+        Map<String,List<R>> relationshipMap;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode();
+            relationshipMap = buildSparseDenseRels( node );
+
+            for ( int i = 0; i < 200; i++ )
+            {
+                node.createRelationshipTo( graphDb.createNode(), withName( "BULK" ) );
+            }
+
+            tx.success();
+        }
+        return new StartNode( node.getId(), relationshipMap );
+    }
+
+    static void count(
+            Session session,
+            RelationshipTraversalCursor relationship,
+            Map<String,Integer> counts,
+            boolean expectSameType ) throws KernelException
+    {
+        Integer type = null;
+        while ( relationship.next() )
+        {
+            if ( expectSameType )
+            {
+                if ( type != null )
+                {
+                    assertEquals( "same type", type.intValue(), relationship.label() );
+                }
+                else
+                {
+                    type = relationship.label();
+                }
+            }
+
+            String key = computeKey( session, relationship );
+
+            counts.compute( key, ( k, value ) -> value == null ? 1 : value + 1 );
+        }
+    }
+
+    static class R
+    {
+        public final long id;
+        public final Direction direction;
+        public final RelationshipType type;
+
+        R( long id, Direction direction, RelationshipType type )
+        {
+            this.id = id;
+            this.type = type;
+            this.direction = direction;
+        }
+    }
+
+    static class StartNode
+    {
+        public final long id;
+        public final Map<String,List<R>> relationships;
+
+        StartNode( long id, Map<String,List<R>> relationships )
+        {
+            this.id = id;
+            this.relationships = relationships;
+        }
+
+        Map<String,Integer> expectedCounts()
+        {
+            Map<String,Integer> expectedCounts = new HashMap<>();
+            for ( Map.Entry<String,List<RelationshipTestSupport.R>> kv : relationships.entrySet() )
+            {
+                expectedCounts.put( kv.getKey(), relationships.get( kv.getKey() ).size() );
+            }
+            return expectedCounts;
+        }
+    }
+
+    static void assertCounts( Map<String,Integer> expectedCounts, Map<String,Integer> counts )
+    {
+        for ( Map.Entry<String, Integer> expected : expectedCounts.entrySet() )
+        {
+            assertEquals(
+                    String.format( "counts for relationship key '%s' are equal", expected.getKey() ),
+                    expected.getValue(), counts.get( expected.getKey()) );
+        }
+    }
+
+    private static Map<String,List<R>> buildSparseDenseRels( Node node )
+    {
+        Map<String,List<R>> relationshipMap = new HashMap<>();
+        for ( Function<Node, R> rel : sparseDenseRels )
+        {
+            R r = rel.apply( node );
+            List<R> relsOfType = relationshipMap.computeIfAbsent( computeKey( r ), key -> new ArrayList<>() );
+            relsOfType.add( r );
+        }
+        return relationshipMap;
+    }
+
+    private static String computeKey( R r )
+    {
+        return computeKey( r.type.name(), r.direction );
+    }
+
+    private static String computeKey( Session session, RelationshipTraversalCursor r ) throws KernelException
+    {
+        Direction d;
+        if ( r.sourceNodeReference() == r.targetNodeReference() )
+        {
+            d = Direction.BOTH;
+        }
+        else if ( r.sourceNodeReference() == r.originNodeReference() )
+        {
+            d = Direction.OUTGOING;
+        }
+        else
+        {
+            d = Direction.INCOMING;
+        }
+
+        return computeKey( session.token().relationshipTypeName( r.label() ), d );
+    }
+
+    private static String computeKey( String type, Direction direction )
+    {
+        return type.toString() + "-" + direction.toString();
+    }
+
+    private static Function<Node, R> outgoing( String type )
+    {
+        return node ->
+        {
+            GraphDatabaseService db = node.getGraphDatabase();
+            RelationshipType relType = withName( type );
+            return new R(
+                    node.createRelationshipTo( db.createNode(), relType ).getId(),
+                    Direction.OUTGOING,
+                    relType );
+        };
+    }
+
+    private static Function<Node, R> incoming( String type )
+    {
+        return node ->
+        {
+            GraphDatabaseService db = node.getGraphDatabase();
+            RelationshipType relType = withName( type );
+            return new R(
+                    db.createNode().createRelationshipTo( node, relType ).getId(),
+                    Direction.INCOMING,
+                    relType );
+        };
+    }
+}
