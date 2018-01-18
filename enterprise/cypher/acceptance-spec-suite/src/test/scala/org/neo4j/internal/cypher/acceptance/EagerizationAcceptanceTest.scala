@@ -2714,6 +2714,41 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
+  test("merge and pattern comprehension readwrite conflict requires eager") {
+    val query =
+      """
+        |CREATE (node)
+        |WITH node
+        |UNWIND [{ value: 'apples' }, { value: 'oranges' }] as tags
+        |MERGE (tag { value: tags.value})
+        |MERGE (node)-[:HAS_TAG {relProp1: 'relProp1', relProp2: 'relProp2'}]->(tag)
+        |WITH DISTINCT node
+        |RETURN [(node)-[:HAS_TAG {relProp1: 'relProp1', relProp2: 'relProp2'}]->(t) | t.value] as tags
+      """.stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    result.toList should equal(List(Map("tags" -> List("apples", "oranges"))))
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("merge and optional match readwrite conflict requires eager") {
+    val query =
+      """
+        |CREATE (node:Node {id: 'xyzzy'})
+        |WITH node
+        |UNWIND [{ value: 'apples' }, { value: 'oranges' }] as tags
+        |MERGE (tag:Tag { value: tags.value})
+        |MERGE (node)-[:HAS_TAG]->(tag)
+        |WITH DISTINCT node
+        |OPTIONAL MATCH (node)-[:HAS_TAG]->(t:Tag)
+        |RETURN COLLECT(t.value) as tags
+      """.stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    result.toList should equal(List(Map("tags" -> Vector("apples", "oranges"))))
+    assertNumberOfEagerness(query, 2)
+  }
+
   private def assertNumberOfEagerness(query: String, expectedEagerCount: Int, optimalEagerCount: Int = -1) {
     withClue("The optimum must be smaller than the expected, otherwise just use expected") {
       expectedEagerCount shouldBe >=(optimalEagerCount)
