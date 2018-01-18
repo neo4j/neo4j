@@ -429,7 +429,7 @@ public class GraphDatabaseSettingsTest
 
         for ( String valid : validSet )
         {
-            Config.defaults( keep_logical_logs, valid );
+            assertEquals( valid, Config.defaults( keep_logical_logs, valid ).get( keep_logical_logs ) );
         }
 
         for ( String invalid : invalidSet )
