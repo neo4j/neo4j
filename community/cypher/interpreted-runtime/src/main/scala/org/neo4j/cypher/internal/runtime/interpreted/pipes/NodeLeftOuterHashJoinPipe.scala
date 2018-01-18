@@ -29,8 +29,8 @@ import scala.collection.mutable
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.ListBuffer
 
-case class NodeOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs: Pipe, nullableVariables: Set[String])
-                                (val id: Id = Id.INVALID_ID)
+case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs: Pipe, nullableVariables: Set[String])
+                                    (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(lhs) {
   val nullColumns: Seq[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toSeq
 

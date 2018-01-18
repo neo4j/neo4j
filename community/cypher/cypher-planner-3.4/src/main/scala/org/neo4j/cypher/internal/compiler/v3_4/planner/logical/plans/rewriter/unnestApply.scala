@@ -102,7 +102,7 @@ case class unnestApply(solveds: Solveds, attributes: Attributes) extends Rewrite
       res
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@OuterHashJoin(_, _:Argument, rhs)) =>
+    case apply@Apply(lhs, join@LeftOuterHashJoin(_, _:Argument, rhs)) =>
       val res = join.copy(left = lhs)(attributes.copy(join.id))
       solveds.copy(apply.id, res.id)
       res

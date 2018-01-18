@@ -347,8 +347,8 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
       case NodeHashJoin(nodes, _, _) =>
         NodeHashJoinPipe(nodes, lhs, rhs)(id = id)
 
-      case OuterHashJoin(nodes, l, r) =>
-        NodeOuterHashJoinPipe(nodes, lhs, rhs, r.availableSymbols -- l.availableSymbols)(id = id)
+      case LeftOuterHashJoin(nodes, l, r) =>
+        NodeLeftOuterHashJoinPipe(nodes, lhs, rhs, r.availableSymbols -- l.availableSymbols)(id = id)
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 

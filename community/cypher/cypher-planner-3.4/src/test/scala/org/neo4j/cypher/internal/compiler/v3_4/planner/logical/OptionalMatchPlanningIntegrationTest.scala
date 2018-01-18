@@ -38,12 +38,12 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         case (_: NodeByLabelScan, _, _) => 20.0
         case (p: Expand, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
         case (_: Expand, _, _) => 10.0
-        case (_: OuterHashJoin, _, _) => 20.0
+        case (_: LeftOuterHashJoin, _, _) => 20.0
         case (_: Argument, _, _) => 1.0
         case _ => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
-        OuterHashJoin(Set("b"),
+        LeftOuterHashJoin(Set("b"),
           Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
           Expand(NodeByLabelScan("c", lblName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
         )

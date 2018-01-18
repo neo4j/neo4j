@@ -54,7 +54,7 @@ case object outerHashJoin extends OptionalSolver {
         joinNodes == hint.variables.map(_.name).toSet
       }
 
-      Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context))
+      Some(context.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context))
     } else {
       None
     }

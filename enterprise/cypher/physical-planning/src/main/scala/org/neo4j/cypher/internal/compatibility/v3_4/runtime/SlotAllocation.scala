@@ -558,7 +558,7 @@ object SlotAllocation {
         }
         slotConfig
 
-      case OuterHashJoin(nodes, _, _) =>
+      case LeftOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         val result = lhs.copy()

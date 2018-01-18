@@ -340,8 +340,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: LetAntiSemiApply =>
         PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq.empty, variables)
 
-      case OuterHashJoin(nodes, _, _) =>
-        PlanDescriptionImpl(id, "NodeOuterHashJoin", children, Seq(KeyNames(nodes.toSeq)), variables)
+      case LeftOuterHashJoin(nodes, _, _) =>
+        PlanDescriptionImpl(id, "NodeLeftOuterHashJoin", children, Seq(KeyNames(nodes.toSeq)), variables)
 
       case RollUpApply(_, _, collectionName, _, _) =>
         PlanDescriptionImpl(id, "RollUpApply", children, Seq(KeyNames(Seq(collectionName))), variables)

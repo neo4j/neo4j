@@ -80,7 +80,7 @@ object CardinalityCostModel extends CostModel {
          _: Limit |
          _: Optional |
          _: Argument |
-         _: OuterHashJoin |
+         _: LeftOuterHashJoin |
          _: AbstractSemiApply |
          _: Skip |
          _: Sort |
@@ -146,7 +146,7 @@ object CardinalityCostModel extends CostModel {
   object HashJoin {
     def unapply(x: Any): Option[(LogicalPlan, LogicalPlan)] = x match {
       case NodeHashJoin(_, l, r) => Some(l -> r)
-      case OuterHashJoin(_, l, r) => Some(l -> r)
+      case LeftOuterHashJoin(_, l, r) => Some(l -> r)
       case ValueHashJoin(l, r, _) => Some(l -> r)
       case _ => None
     }

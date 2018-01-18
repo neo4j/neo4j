@@ -728,7 +728,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     new given {
       cost = {
-        case (_: OuterHashJoin, _, _) => 20.0
+        case (_: LeftOuterHashJoin, _, _) => 20.0
         case _ => Double.MaxValue
       }
 
@@ -743,7 +743,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
       queryGraphSolver.plan(cfg.qg, ctx, solveds, cardinalities) should equal(
-        OuterHashJoin(
+        LeftOuterHashJoin(
           Set("a", "b"),
           CartesianProduct(
             AllNodesScan("a", Set.empty),

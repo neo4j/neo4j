@@ -66,14 +66,14 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val input =
       Apply(lhs,
-        OuterHashJoin(Set("a"),
+        LeftOuterHashJoin(Set("a"),
           argPlan,
           rhs
         )
       )
 
     rewrite(input) should equal(
-      OuterHashJoin(Set("a"), lhs, rhs)
+      LeftOuterHashJoin(Set("a"), lhs, rhs)
     )
   }
 

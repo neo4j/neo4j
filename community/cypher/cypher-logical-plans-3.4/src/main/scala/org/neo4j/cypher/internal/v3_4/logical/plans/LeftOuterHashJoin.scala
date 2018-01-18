@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
   * table. In addition, also produces left and right rows with missing key values, and right rows that do not match
   * in the hash table. In these additional rows, variables from the opposing stream are set to NO_VALUE.
   *
-  * This is equivalent to an outer join in relational algebra.
+  * This is equivalent to a left outer join in relational algebra.
   */
-case class OuterHashJoin(nodes: Set[String],
-                         left: LogicalPlan,
-                         right: LogicalPlan)
-                        (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with NodeJoin {
+case class LeftOuterHashJoin(nodes: Set[String],
+                             left: LogicalPlan,
+                             right: LogicalPlan)
+                            (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with NodeJoin {
 
   val lhs = Some(left)
   val rhs = Some(right)
