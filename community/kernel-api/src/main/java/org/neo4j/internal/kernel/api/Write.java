@@ -49,7 +49,7 @@ public interface Write
      * @param targetNode the target internal node id
      * @return the internal id of the created relationship
      */
-    long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode );
+    long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode ) throws KernelException;
 
     /**
      * Delete a relationship

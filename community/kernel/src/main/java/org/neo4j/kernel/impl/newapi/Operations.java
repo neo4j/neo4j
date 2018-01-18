@@ -154,10 +154,15 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode )
+    public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode ) throws EntityNotFoundException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+        nodeExists( sourceNode );
+        nodeExists( targetNode );
+
+        long id = statement.reserveRelationship();
+        ktx.txState().relationshipDoCreate( id, relationshipLabel, sourceNode, targetNode );
+        return id;
     }
 
     @Override
@@ -574,6 +579,14 @@ public class Operations implements Write, ExplicitIndexWrite
         //so by only checking for equality users cannot change type of property without also "changing" the value.
         //Hence the extra type check here.
         return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
+    }
+
+    private void nodeExists( long sourceNode ) throws EntityNotFoundException
+    {
+        if ( !allStoreHolder.nodeExists( sourceNode ) )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, sourceNode );
+        }
     }
 
     public ExplicitIndexRead indexRead()

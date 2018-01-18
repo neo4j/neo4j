@@ -50,7 +50,7 @@ public class KernelToken implements Token
     @Override
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
-        return store.propertyKeyGetOrCreateForName( checkValidTokenName( relationshipTypeName ) );
+        return store.relationshipTypeGetOrCreateForName( checkValidTokenName( relationshipTypeName ) );
     }
 
     @Override
