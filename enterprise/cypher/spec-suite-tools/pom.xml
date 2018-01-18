@@ -65,20 +65,6 @@
       <groupId>org.opencypher</groupId>
       <artifactId>tck</artifactId>
       <version>${opencypher.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.antlr</groupId>
-          <artifactId>antlr4-runtime</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>info.cukes</groupId>
-          <artifactId>cucumber-scala_2.11</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>info.cukes</groupId>
-          <artifactId>cucumber-junit</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- scala -->
