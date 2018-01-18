@@ -213,11 +213,6 @@ class RelationshipTraversalCursor extends RelationshipCursor
     @Override
     public boolean next()
     {
-        if ( traversingDenseNode() )
-        {
-            traverseDenseNode();
-        }
-
         if ( hasBufferedData() )
         {   //We have buffered data, iterate the chain of buffered records
             return nextBufferedData();
@@ -238,10 +233,13 @@ class RelationshipTraversalCursor extends RelationshipCursor
             return true;
         }
 
-        // Not a group, nothing buffered, no filtering.
-        // Just a plain old traversal.
         do
         {
+            if ( traversingDenseNode() )
+            {
+                traverseDenseNode();
+            }
+
             if ( next == NO_ID )
             {
                 reset();
@@ -368,8 +366,8 @@ class RelationshipTraversalCursor extends RelationshipCursor
                 boolean hasNext = group.next();
                 if ( !hasNext )
                 {
-                    reset();
-                    return;
+                    assert next == NO_ID;
+                    return; // no more groups nor relationships
                 }
                 next = group.incomingReference();
                 if ( pageCursor == null )
