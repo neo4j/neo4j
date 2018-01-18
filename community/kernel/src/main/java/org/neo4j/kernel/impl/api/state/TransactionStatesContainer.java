@@ -21,14 +21,22 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TransactionStateController;
+import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class TransactionStatesContainer implements TransactionStateController
 {
     private static final boolean MULTI_STATE = flag( TransactionStatesContainer.class, "multiState", false );
+
+    private final TransactionMonitor transactionMonitor;
     private TransactionState globalTransactionState;
     private TxState stableTransactionState;
+
+    public TransactionStatesContainer( TransactionMonitor transactionMonitor )
+    {
+        this.transactionMonitor = transactionMonitor;
+    }
 
     public boolean hasChanges()
     {
@@ -70,6 +78,7 @@ public class TransactionStatesContainer implements TransactionStateController
     {
         if ( globalTransactionState == null )
         {
+            transactionMonitor.upgradeToWriteTransaction();
             globalTransactionState = new TxState();
         }
         return globalTransactionState;

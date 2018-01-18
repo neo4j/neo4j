@@ -214,7 +214,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
                         storageStatement,
                         this, cursors, autoIndexing, matcher );
-        this.transactionStatesContainer = new TransactionStatesContainer();
+        this.transactionStatesContainer = new TransactionStatesContainer( transactionMonitor );
     }
 
     /**
@@ -414,11 +414,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TransactionState txState()
     {
-        if ( !transactionStatesContainer.hasState() )
-        {
-            transactionMonitor.upgradeToWriteTransaction();
-        }
-        return transactionStateController().global();
+//        if ( !transactionStatesContainer.hasState() )
+//        {
+//            transactionMonitor.upgradeToWriteTransaction();
+//        }
+        return transactionStatesContainer.global();
     }
 
     @Override

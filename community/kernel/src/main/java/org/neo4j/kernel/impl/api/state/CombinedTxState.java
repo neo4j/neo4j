@@ -78,19 +78,19 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original )
     {
-        return currentTxState.augmentGraphProperties( original );
+        return stableTxState.augmentGraphProperties( currentTxState.augmentGraphProperties( original ) );
     }
 
     @Override
     public boolean nodeIsAddedInThisTx( long nodeId )
     {
-        return currentTxState.nodeIsAddedInThisTx( nodeId );
+        return stableTxState.nodeIsAddedInThisTx( nodeId ) || currentTxState.nodeIsAddedInThisTx( nodeId );
     }
 
     @Override
     public boolean relationshipIsAddedInThisTx( long relationshipId )
     {
-        return currentTxState.relationshipIsAddedInThisTx( relationshipId );
+        return stableTxState.relationshipIsAddedInThisTx( relationshipId ) || currentTxState.relationshipIsAddedInThisTx( relationshipId );
     }
 
     @Override
@@ -114,13 +114,13 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
-        return currentTxState.nodeIsDeletedInThisTx( nodeId );
+        return stableTxState.nodeIsDeletedInThisTx( nodeId ) || currentTxState.nodeIsDeletedInThisTx( nodeId );
     }
 
     @Override
     public boolean nodeModifiedInThisTx( long nodeId )
     {
-        return currentTxState.nodeModifiedInThisTx( nodeId );
+        return stableTxState.nodeModifiedInThisTx( nodeId ) || currentTxState.nodeModifiedInThisTx( nodeId );
     }
 
     @Override
@@ -132,13 +132,15 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public void relationshipDoDeleteAddedInThisTx( long relationshipId )
     {
+        //TODO hm...
         currentTxState.relationshipDoDeleteAddedInThisTx( relationshipId );
     }
 
     @Override
     public boolean relationshipIsDeletedInThisTx( long relationshipId )
     {
-        return currentTxState.relationshipIsDeletedInThisTx( relationshipId );
+        return stableTxState.relationshipIsDeletedInThisTx(relationshipId) ||
+               currentTxState.relationshipIsDeletedInThisTx( relationshipId );
     }
 
     @Override
@@ -199,19 +201,19 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public void labelDoCreateForName( String labelName, int id )
     {
-        currentTxState.labelDoCreateForName( labelName, id );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
     public void propertyKeyDoCreateForName( String propertyKeyName, int id )
     {
-        currentTxState.propertyKeyDoCreateForName( propertyKeyName, id );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
     public void relationshipTypeDoCreateForName( String labelName, int id )
     {
-        currentTxState.relationshipTypeDoCreateForName( labelName, id );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
@@ -276,7 +278,8 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor )
     {
-        return currentTxState.augmentRelationshipsGetAllCursor( cursor );
+        return stableTxState
+                .augmentRelationshipsGetAllCursor( currentTxState.augmentRelationshipsGetAllCursor( cursor ) );
     }
 
     @Override
@@ -288,13 +291,13 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public void indexRuleDoAdd( IndexDescriptor descriptor )
     {
-        currentTxState.indexRuleDoAdd( descriptor );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
     public void indexDoDrop( IndexDescriptor descriptor )
     {
-        currentTxState.indexDoDrop( descriptor );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
@@ -354,13 +357,13 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId )
     {
-        currentTxState.constraintDoAdd( constraint, indexId );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
     public void constraintDoAdd( ConstraintDescriptor constraint )
     {
-        currentTxState.constraintDoAdd( constraint );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
@@ -390,25 +393,25 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public void constraintDoDrop( ConstraintDescriptor constraint )
     {
-        currentTxState.constraintDoDrop( constraint );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
     public boolean constraintDoUnRemove( ConstraintDescriptor constraint )
     {
-        return currentTxState.constraintDoUnRemove( constraint );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
     public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
     {
-        return currentTxState.constraintIndexesCreatedInTx();
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
     public Long indexCreatedForConstraint( ConstraintDescriptor constraint )
     {
-        return currentTxState.indexCreatedForConstraint( constraint );
+        throw new UnsupportedOperationException( "Operation not supported." );
     }
 
     @Override
@@ -452,28 +455,28 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
         currentTxState.indexDoUpdateEntry( descriptor, nodeId, propertiesBefore, propertiesAfter );
     }
 
+// ----->>>> test arrow is here
+
     @Override
     public PrimitiveLongResourceIterator augmentNodesGetAll( PrimitiveLongIterator committed )
     {
-        PrimitiveLongCollections.concat( currentTxState.augmentNodesGetAll( committed ), stableTxState
-                .augmentNodesGetAll( PrimitiveLongCollections.emptyIterator() ) );
-        return null;
+        return stableTxState.augmentNodesGetAll( currentTxState.augmentNodesGetAll( committed ) );
     }
 
     @Override
     public RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed )
     {
-        return currentTxState.augmentRelationshipsGetAll( committed );
+        return stableTxState.augmentRelationshipsGetAll( currentTxState.augmentRelationshipsGetAll( committed ) );
     }
 
     @Override
-    public <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor ) throws EX
+    public <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor )
     {
         throw new UnsupportedOperationException( "Can't visit combined state. Merge states before." );
     }
 
     @Override
-    public void accept( TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException
+    public void accept( TxStateVisitor visitor )
     {
         throw new UnsupportedOperationException( "Can't visit combined state. Merge states before." );
     }
