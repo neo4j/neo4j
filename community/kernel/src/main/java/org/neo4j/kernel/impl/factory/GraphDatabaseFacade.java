@@ -675,7 +675,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
         Statement statement = ktx.acquireStatement();
 
-        int labelId = ktx.tokenRead().labelGetForName( myLabel.name() );
+        int labelId = ktx.tokenRead().nodeLabel( myLabel.name() );
         if ( labelId == NO_SUCH_LABEL )
         {
             statement.close();

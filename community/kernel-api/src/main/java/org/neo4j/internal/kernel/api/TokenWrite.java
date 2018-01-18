@@ -37,10 +37,4 @@ public interface TokenWrite
     int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
 
     int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
-
-    void labelCreateForName( String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException;
-
-    void propertyKeyCreateForName( String propertyKeyName, int id ) throws IllegalTokenNameException;
-
-    void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws IllegalTokenNameException;
 }

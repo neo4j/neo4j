@@ -380,7 +380,7 @@ public class NodeProxy implements Node
             nodes.properties( properties );
             while ( properties.next() )
             {
-               keys.add( token.propertyKeyGetName( properties.propertyKey() ));
+               keys.add( token.propertyKeyName( properties.propertyKey() ));
             }
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
@@ -457,7 +457,7 @@ public class NodeProxy implements Node
             nodes.properties( propertyCursor );
             while ( propertyCursor.next() )
             {
-                properties.put( token.propertyKeyGetName( propertyCursor.propertyKey() ),
+                properties.put( token.propertyKeyName( propertyCursor.propertyKey() ),
                         propertyCursor.propertyValue().asObjectCopy() );
             }
         }
@@ -640,7 +640,7 @@ public class NodeProxy implements Node
         KernelTransaction transaction = spi.kernelTransaction();
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            int labelId = transaction.tokenRead().labelGetForName( label.name() );
+            int labelId = transaction.tokenRead().nodeLabel( label.name() );
             if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
             {
                 transaction.dataWrite().nodeRemoveLabel( getId(), labelId );
@@ -667,7 +667,7 @@ public class NodeProxy implements Node
         try ( Statement ignore = transaction.acquireStatement();
               NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
         {
-            int labelId = transaction.tokenRead().labelGetForName( label.name() );
+            int labelId = transaction.tokenRead().nodeLabel( label.name() );
             if ( labelId == NO_SUCH_LABEL )
             {
                 return false;
@@ -690,7 +690,7 @@ public class NodeProxy implements Node
             ArrayList<Label> list = new ArrayList<>( labelSet.numberOfLabels() );
             for ( int i = 0; i < labelSet.numberOfLabels(); i++ )
             {
-                list.add( label( tokenRead.labelGetName( labelSet.label( i ) ) ) );
+                list.add( label( tokenRead.nodeLabelName( labelSet.label( i ) ) ) );
             }
             return list;
         }

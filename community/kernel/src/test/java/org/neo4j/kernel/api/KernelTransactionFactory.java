@@ -101,7 +101,7 @@ public class KernelTransactionFactory
                 Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
-                storageEngine, new CanWrite(), new KernelToken( storageEngine ), new Cursors(), AutoIndexing.UNSUPPORTED, mock(
+                storageEngine, new CanWrite(), new KernelToken( storeReadLayer ), new Cursors(), AutoIndexing.UNSUPPORTED, mock(
                 ExplicitIndexStore.class) );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );

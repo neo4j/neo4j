@@ -669,7 +669,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                         constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
-        KernelToken token = new KernelToken( storageEngine );
+        KernelToken token = new KernelToken( storageEngine.storeReadLayer() );
 
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,

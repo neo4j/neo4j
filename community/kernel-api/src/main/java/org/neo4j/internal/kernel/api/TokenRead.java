@@ -30,19 +30,13 @@ public interface TokenRead
     int NO_TOKEN = -1;
 
     /**
-     * Returns the name corresponding to given token
-     * @param token The token associated with the name
-     * @return The name corresponding to the token
-     * @throws LabelNotFoundKernelException if the token doesn't exist in the database
+     * Returns the name of a label given its label id
+     *
+     * @param labelId The label id
+     * @return The name of the label
+     * @throws LabelNotFoundKernelException if no label is associates with this id
      */
-    String labelGetName( int token ) throws LabelNotFoundKernelException;
-
-    /**
-     * Returns the token corresponding to the provided name
-     * @param name The name associated with the token
-     * @return The token corresponding withe
-     */
-    int labelGetForName( String name );
+    String nodeLabelName( int labelId ) throws LabelNotFoundKernelException;
 
     /**
      * Return the id of the provided label, or NO_TOKEN if the label isn't known to the graph.
@@ -75,5 +69,5 @@ public interface TokenRead
      * @return The name of the key
      * @throws PropertyKeyIdNotFoundKernelException if no key is associated with the id
      */
-    String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
+    String propertyKeyName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 }

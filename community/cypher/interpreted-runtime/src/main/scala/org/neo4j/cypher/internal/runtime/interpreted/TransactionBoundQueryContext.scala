@@ -147,7 +147,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val labelArray = new Array[TextValue](labelSet.numberOfLabels())
     var i = 0
     while (i < labelSet.numberOfLabels()) {
-      labelArray(i) = Values.stringValue(tokenRead.labelGetName(labelSet.label(i)))
+      labelArray(i) = Values.stringValue(tokenRead.nodeLabelName(labelSet.label(i)))
       i += 1
     }
     VirtualValues.list(labelArray: _*)
@@ -164,7 +164,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def getOrCreateLabelId(labelName: String): Int = {
-    val id = tokenRead.labelGetForName(labelName)
+    val id = tokenRead.nodeLabel(labelName)
     if (id != KeyReadOperations.NO_SUCH_LABEL) id
     else tokenWrite.labelGetOrCreateForName(labelName)
   }
