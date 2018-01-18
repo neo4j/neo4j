@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Si
 import org.neo4j.cypher.internal.frontend.v3_4.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, NoHeaders, ShortestPathPattern}
-import org.neo4j.cypher.internal.util.v3_4.{InternalException, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -156,16 +157,25 @@ object SlotAllocation {
                                   argumentSizes: ArgumentSizes,
                                   shouldAllocateLhs: Boolean = true)
                                  (semanticTable: SemanticTable): SlotConfiguration = {
+    allocateExpressionsInternal(lp, nullable, slots, slotConfigurations, argumentSizes, shouldAllocateLhs, lp.id)(semanticTable)
+  }
+
+  private def allocateExpressionsInternal(p: Foldable, nullable: Boolean, slots: SlotConfiguration,
+                                          slotConfigurations: SlotConfigurations,
+                                          argumentSizes: ArgumentSizes,
+                                          shouldAllocateLhs: Boolean = true,
+                                          planId: Id)
+                                 (semanticTable: SemanticTable): SlotConfiguration = {
     case class Accumulator(slots: SlotConfiguration, doNotTraverseExpression: Option[Expression])
 
     val TRAVERSE_INTO_CHILDREN = Some((s: Accumulator) => s)
     val DO_NOT_TRAVERSE_INTO_CHILDREN = None
 
-    val result = lp.treeFold[Accumulator](Accumulator(slots, doNotTraverseExpression = None)) {
+    val result = p.treeFold[Accumulator](Accumulator(slots, doNotTraverseExpression = None)) {
       //-----------------------------------------------------
       // Logical plans
       //-----------------------------------------------------
-      case p: LogicalPlan if p.id != lp.id =>
+      case p: LogicalPlan if p.id != planId =>
         acc: Accumulator => (acc, DO_NOT_TRAVERSE_INTO_CHILDREN) // Do not traverse the logical plan tree! We are only looking at the given lp
 
       case ValueHashJoin(_, _, Equals(_, rhsExpression)) if shouldAllocateLhs =>
@@ -209,7 +219,14 @@ object SlotAllocation {
             // Pass in mutable attributes to be modified by recursive call
             val nestedPhysicalPlan = allocateSlots(e.plan, semanticTable, initialSlotsAndArgument = Some(slotsAndArgument), slotConfigurations, argumentSizes)
 
-            (acc, DO_NOT_TRAVERSE_INTO_CHILDREN) // We already recursively allocated the nested plan, so do not traverse into its children
+            // Allocate slots for the projection expression, based on the resulting slot configuration
+            // from the inner plan
+            val nestedSlots = nestedPhysicalPlan.slotConfigurations(e.plan.id)
+            allocateExpressionsInternal(e.projection, nullable, nestedSlots, slotConfigurations, argumentSizes, shouldAllocateLhs, planId)(semanticTable)
+
+            // Since we did allocation for nested plan and projection explicitly we do not need to traverse into children
+            // The inner slot configuration does not need to affect the accumulated result of the outer plan
+            (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
           }
         }
 

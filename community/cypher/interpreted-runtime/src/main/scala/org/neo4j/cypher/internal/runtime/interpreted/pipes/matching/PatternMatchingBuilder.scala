@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.Map
 
@@ -32,7 +32,8 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
                              predicates: Seq[Predicate],
                              variablesInClause: Set[String]) extends MatcherBuilder {
   def getMatches(sourceRow: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
-    val bindings: Map[String, AnyValue] = sourceRow.filter(s => s._2.isInstanceOf[NodeValue] || s._2.isInstanceOf[RelationshipValue])
+    val bindings: Map[String, AnyValue] =
+      sourceRow.boundEntities(state.query.nodeOps.getById, state.query.relationshipOps.getById)
     val boundPairs: Map[String, Set[MatchingPair]] = extractBoundMatchingPairs(bindings)
 
     val undirectedBoundRelationships: Iterable[PatternRelationship] = bindings.keys.
