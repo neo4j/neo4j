@@ -46,9 +46,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
 {
     // Fields: {System Memory in GiBs; OS memory reserve in GiBs; JVM Heap memory in GiBs}.
     // And the page cache gets what's left, though always at least 100 MiB.
-    // Heap never goes beyond 31 GiBs, which is the upper limit for compressed oops.
-    // More details on heap sizing wrt. compressed oops:
-    // https://www.elastic.co/guide/en/elasticsearch/guide/current/heap-sizing.html
+    // Heap never goes beyond 31 GiBs.
     private static final Bracket[] datapoints = {
             new Bracket( 0.01, 0.005, 0.005 ),
             new Bracket( 1.0, 0.5, 0.5 ),
