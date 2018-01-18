@@ -20,18 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Hint, UsingJoinHint}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, LeftOuterHashJoin}
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities}
-import org.neo4j.cypher.internal.util.v3_4.{Cost, InputPosition}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.v3_4.Cost
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{PatternExpression, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, RightOuterHashJoin}
 
-class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
@@ -46,7 +46,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
   val r2Rel = PatternRelationship(r2Name, (bNode, cNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val r3Rel = PatternRelationship(r3Name, (cNode, dNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  test("solve optional match with left outer join") {
+  test("solve optional match with right outer join") {
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
       patternNodes = Set(aNode, bNode),
@@ -68,9 +68,9 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
     )
     val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, idNames = Set(aNode))
-    val plans = leftOuterHashJoin(optionalQg, left, context, solveds, cardinalities)
+    val plans = rightOuterHashJoin(optionalQg, left, context, solveds, cardinalities)
 
-    plans should equal(Some(LeftOuterHashJoin(Set(aNode), left, innerPlan)))
+    plans should equal(Some(RightOuterHashJoin(Set(aNode), innerPlan, left)))
   }
 
   test("solve optional match with hint") {
@@ -97,9 +97,9 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
     )
     val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, Set(aNode))
-    val plan = leftOuterHashJoin(optionalQg, left, context, solveds, cardinalities).getOrElse(fail("No result from outerHashJoin"))
+    val plan = rightOuterHashJoin(optionalQg, left, context, solveds, cardinalities).getOrElse(fail("No result from outerHashJoin"))
 
-    plan should equal(LeftOuterHashJoin(Set(aNode), left, innerPlan))
+    plan should equal(RightOuterHashJoin(Set(aNode), innerPlan, left))
     solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)
   }
 }

@@ -66,7 +66,8 @@ object QueryPlannerConfiguration {
     ),
     optionalSolvers = Seq(
       applyOptional,
-      outerHashJoin
+      leftOuterHashJoin,
+      rightOuterHashJoin
     ),
     leafPlanners = LeafPlannerList(allLeafPlanners),
   updateStrategy = defaultUpdateStrategy

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost, LabelId, Selectiv
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, HasLabels}
 
-class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
+class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
   self =>
@@ -37,9 +37,8 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
   var knownLabels: Set[String] = Set.empty
   var cardinality: PartialFunction[PlannerQuery, Cardinality] = PartialFunction.empty
   var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = PartialFunction.empty
-  var selectivity: PartialFunction[Expression, Selectivity] = PartialFunction.empty
   var labelCardinality: Map[String, Cardinality] = Map.empty
-  var statistics = null
+  var statistics: GraphStatistics = null
   var qg: QueryGraph = null
   var expressionEvaluator: ExpressionEvaluator = new ExpressionEvaluator {
     override def evaluateExpression(expr: Expression): Option[Any] = ???

@@ -20,17 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.IteratorSupport._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningSupport._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{applyOptional, leafPlanOptions, outerHashJoin}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.leafPlanOptions
 import org.neo4j.cypher.internal.frontend.v3_4.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /**
