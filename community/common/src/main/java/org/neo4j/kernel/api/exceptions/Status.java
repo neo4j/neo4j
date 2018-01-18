@@ -103,7 +103,9 @@ public interface Status
                 "The client provided a request that was missing required fields, or had values that are not allowed." ),
         TransactionRequired( ClientError,
                 "The request cannot be performed outside of a transaction, and there is no transaction present to " +
-                "use. Wrap your request in a transaction and retry." );
+                "use. Wrap your request in a transaction and retry." ),
+        InvalidUsage( ClientError,  // TODO: see above
+                "The client made a request but did not consume outgoing buffers in a timely fashion." );
         private final Code code;
 
         @Override

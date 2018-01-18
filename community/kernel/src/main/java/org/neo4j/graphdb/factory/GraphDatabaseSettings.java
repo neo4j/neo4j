@@ -791,6 +791,13 @@ public class GraphDatabaseSettings implements LoadableConfig
             buildSetting( "unsupported.dbms.bolt.write_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
                     range( (int) ByteUnit.kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
 
+    @Description( "When the total time write throttle lock is held exceeds this value, the corresponding bolt channel will be aborted. Setting "
+            + " this to 0 will disable this behaviour." )
+    @Internal
+    public static final Setting<Duration> bolt_write_throttle_max_duration =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.max_duration", DURATION, "15m" ).constraint(
+                    min( Duration.ofSeconds( 30 ) ) ).build();
+
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal
     public static final Setting<Boolean> archive_failed_index = setting(

@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import java.io.IOException;
 import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
@@ -375,15 +378,9 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                             }
                             return READY;
                         }
-                        catch ( AuthenticationException | AuthProviderTimeoutException | AuthProviderFailedException e )
-                        {
-                            fail( machine, Neo4jError.fatalFrom( e.status(), e.getMessage() ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
-                        }
                         catch ( Throwable t )
                         {
-                            fail( machine, Neo4jError.fatalFrom( Status.General.UnknownError, t.getMessage() ) );
-                            throw new BoltConnectionFatality( t.getMessage() );
+                            return handleFailure( machine, t, true );
                         }
                     }
                 },
@@ -411,13 +408,11 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         }
                         catch ( AuthorizationExpiredException e )
                         {
-                            fail( machine, Neo4jError.fatalFrom( e ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
+                            return handleFailure( machine, e, true );
                         }
-                        catch ( Throwable e )
+                        catch ( Throwable t )
                         {
-                            fail( machine, Neo4jError.from( e ) );
-                            return FAILED;
+                            return handleFailure( machine, t );
                         }
                     }
 
@@ -465,13 +460,11 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         }
                         catch ( AuthorizationExpiredException e )
                         {
-                            fail( machine, Neo4jError.fatalFrom( e ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
+                            return handleFailure( machine, e, true );
                         }
                         catch ( Throwable e )
                         {
-                            fail( machine, Neo4jError.from( e ) );
-                            return FAILED;
+                            return handleFailure( machine, e );
                         }
                     }
 
@@ -487,13 +480,11 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         }
                         catch ( AuthorizationExpiredException e )
                         {
-                            fail( machine, Neo4jError.fatalFrom( e ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
+                            return handleFailure( machine, e, true );
                         }
-                        catch ( Throwable e )
+                        catch ( Throwable t )
                         {
-                            fail( machine, Neo4jError.from( e ) );
-                            return FAILED;
+                            return handleFailure( machine, t );
                         }
                     }
                 },
@@ -662,12 +653,43 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                 machine.ctx.statementProcessor.reset();
                 return READY;
             }
-            catch ( Throwable e )
+            catch ( Throwable t )
             {
-                fail( machine, Neo4jError.fatalFrom( e ) );
-                throw new BoltConnectionFatality( e.getMessage() );
+                return handleFailure( machine, t, true );
             }
         }
+    }
+
+    private static State handleFailure( BoltStateMachine machine, Throwable t ) throws BoltConnectionFatality
+    {
+        return handleFailure( machine, t, false );
+    }
+
+    private static State handleFailure( BoltStateMachine machine, Throwable t, boolean fatal ) throws BoltConnectionFatality
+    {
+        if ( ExceptionUtils.indexOfType( t, BoltConnectionFatality.class ) != -1 )
+        {
+            fatal = true;
+        }
+
+        return handleFailure( machine, t, fatal ? Neo4jError.fatalFrom( t ) : Neo4jError.from( t ) );
+    }
+
+    private static State handleFailure( BoltStateMachine machine, Throwable t, Neo4jError error ) throws BoltConnectionFatality
+    {
+        fail( machine, error );
+
+        if ( error.isFatal() )
+        {
+            if ( ExceptionUtils.indexOfType( t, AuthorizationExpiredException.class ) != -1 )
+            {
+                throw new BoltConnectionAuthFatality( t.getMessage() );
+            }
+
+            throw new BoltConnectionFatality( t.getMessage() );
+        }
+
+        return State.FAILED;
     }
 
     private static void fail( BoltStateMachine machine, Neo4jError neo4jError )

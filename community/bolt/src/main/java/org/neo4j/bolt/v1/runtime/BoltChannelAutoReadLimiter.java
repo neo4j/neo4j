@@ -98,7 +98,7 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
         {
             if ( log != null )
             {
-                log.warn( "Channel [%s]: client produced %d messages on the worker queue, auto-read is being disabled.", channel.id(), currentSize );
+                log.warn( "Channel [%s]: client produced %d messages on the worker queue, auto-read is being disabled.", channel.remoteAddress(), currentSize );
             }
 
             channel.config().setAutoRead( false );
@@ -111,7 +111,7 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
         {
             if ( log != null )
             {
-                log.warn( "Channel [%s]: consumed messages on the worker queue below %d, auto-read is being enabled.", channel.id(), currentSize );
+                log.warn( "Channel [%s]: consumed messages on the worker queue below %d, auto-read is being enabled.", channel.remoteAddress(), currentSize );
             }
 
             channel.config().setAutoRead( true );

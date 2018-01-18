@@ -100,7 +100,7 @@ public class BoltChannelAutoReadLimiterTest
         limiter.enqueued( job );
 
         assertFalse( channel.config().isAutoRead() );
-        verify( log ).warn( contains( "disabled" ), eq( channel.id() ), eq( 3 ) );
+        verify( log ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
     }
 
     @Test
@@ -117,7 +117,7 @@ public class BoltChannelAutoReadLimiterTest
         limiter.enqueued( job );
 
         assertFalse( channel.config().isAutoRead() );
-        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.id() ), eq( 3 ) );
+        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
     }
 
     @Test
@@ -134,8 +134,8 @@ public class BoltChannelAutoReadLimiterTest
         limiter.dequeued( job );
 
         assertTrue( channel.config().isAutoRead() );
-        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.id() ), eq( 3 ) );
-        verify( log, times( 1 ) ).warn( contains( "enabled" ), eq( channel.id() ), eq( 1 ) );
+        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
+        verify( log, times( 1 ) ).warn( contains( "enabled" ), eq( channel.remoteAddress() ), eq( 1 ) );
     }
 
     @Test
@@ -153,8 +153,8 @@ public class BoltChannelAutoReadLimiterTest
         limiter.dequeued( job );
 
         assertTrue( channel.config().isAutoRead() );
-        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.id() ), eq( 3 ) );
-        verify( log, times( 1 ) ).warn( contains( "enabled" ), eq( channel.id() ), eq( 1 ) );
+        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
+        verify( log, times( 1 ) ).warn( contains( "enabled" ), eq( channel.remoteAddress() ), eq( 1 ) );
     }
 
     @Test

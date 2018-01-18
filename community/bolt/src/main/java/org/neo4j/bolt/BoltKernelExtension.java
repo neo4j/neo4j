@@ -148,7 +148,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
         ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
-        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config );
+        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
         BoltProtocolHandlerFactory handlerFactory = createHandlerFactory( workerFactory, throttleGroup, logService );
 
         Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()

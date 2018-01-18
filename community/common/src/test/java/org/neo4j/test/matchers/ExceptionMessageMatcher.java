@@ -17,15 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.test.matchers;
 
-/**
- * Indicates that bolt connection has been fatally misused and therefore the server should close the connection.
- */
-public class BoltConnectionFatality extends Exception
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
+public class ExceptionMessageMatcher extends TypeSafeMatcher<Throwable>
 {
-    protected BoltConnectionFatality( String message )
+    private final Matcher<? super String> matcher;
+
+    public ExceptionMessageMatcher( Matcher<? super String> matcher )
     {
-        super( message );
+        this.matcher = matcher;
     }
+
+    @Override
+    protected boolean matchesSafely( Throwable throwable )
+    {
+        return matcher.matches( throwable.getMessage() );
+    }
+
+    @Override
+    public void describeTo( Description description )
+    {
+        description.appendText( "expect message to be " ).appendDescriptionOf( matcher );
+    }
+
 }
