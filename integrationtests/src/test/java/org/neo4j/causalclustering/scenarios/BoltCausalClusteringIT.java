@@ -119,7 +119,7 @@ public class BoltCausalClusteringIT
         assertEquals( 1, count );
     }
 
-    private int executeWriteAndReadThroughBolt( CoreClusterMember core ) throws TimeoutException, InterruptedException
+    private int executeWriteAndReadThroughBolt( CoreClusterMember core ) throws TimeoutException
     {
         try ( Driver driver = GraphDatabase.driver( core.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
@@ -456,7 +456,7 @@ public class BoltCausalClusteringIT
 
             assertNotNull( bookmark );
 
-            try ( Session session = driver.session(); Transaction tx = session.beginTransaction( bookmark ) )
+            try ( Session session = driver.session( bookmark ); Transaction tx = session.beginTransaction() )
             {
                 Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
                 assertEquals( 1, record.get( "count" ).asInt() );
@@ -494,9 +494,9 @@ public class BoltCausalClusteringIT
 
             assertNotNull( bookmark );
 
-            inExpirableSession( driver, d -> d.session( AccessMode.WRITE ), session ->
+            inExpirableSession( driver, d -> d.session( AccessMode.WRITE, bookmark ), session ->
             {
-                try ( Transaction tx = session.beginTransaction( bookmark ) )
+                try ( Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
                     tx.success();
@@ -545,9 +545,9 @@ public class BoltCausalClusteringIT
 
         driver = GraphDatabase.driver( readReplica.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
-        try ( Session session = driver.session( AccessMode.READ ) )
+        try ( Session session = driver.session( AccessMode.READ, bookmark ) )
         {
-            try ( Transaction tx = session.beginTransaction( bookmark ) )
+            try ( Transaction tx = session.beginTransaction() )
             {
                 Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
                 tx.success();
@@ -599,7 +599,7 @@ public class BoltCausalClusteringIT
             {
                 try ( Session session = driver.session( AccessMode.READ, bookmark ) )
                 {
-                    executeReadQuery( bookmark, session );
+                    executeReadQuery( session );
 
                     session.readTransaction( (TransactionWork<Void>) tx ->
                     {
@@ -748,9 +748,9 @@ public class BoltCausalClusteringIT
         assertEquals( numberOfRequests, happyCount );
     }
 
-    private void executeReadQuery( String bookmark, Session session )
+    private void executeReadQuery( Session session )
     {
-        try ( Transaction tx = session.beginTransaction( bookmark ) )
+        try ( Transaction tx = session.beginTransaction() )
         {
             Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
             assertEquals( 1, record.get( "count" ).asInt() );
@@ -758,7 +758,7 @@ public class BoltCausalClusteringIT
     }
 
     private <T> T inExpirableSession( Driver driver, Function<Driver,Session> acquirer, Function<Session,T> op )
-            throws TimeoutException, InterruptedException
+            throws TimeoutException
     {
         long endTime = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
 
@@ -806,16 +806,15 @@ public class BoltCausalClusteringIT
         }
     }
 
-    private CoreClusterMember triggerElection( CoreClusterMember initialLeader ) throws IOException, TimeoutException
+    private void triggerElection( CoreClusterMember initialLeader ) throws IOException, TimeoutException
     {
         for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
         {
             if ( !coreClusterMember.equals( initialLeader ) )
             {
                 coreClusterMember.raft().triggerElection( Clock.systemUTC() );
-                return cluster.awaitLeader();
+                cluster.awaitLeader();
             }
         }
-        return initialLeader;
     }
 }
