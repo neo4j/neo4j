@@ -49,7 +49,7 @@ import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.diagnostics.DiagnosticsReportSources;
 import org.neo4j.diagnostics.DiagnosticsReporter;
-import org.neo4j.diagnostics.DiagnosticsReporterProgressCallback;
+import org.neo4j.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.diagnostics.InteractiveProgress;
 import org.neo4j.diagnostics.NonInteractiveProgress;
 import org.neo4j.helpers.Args;
@@ -68,6 +68,7 @@ public class DiagnosticsReportCommand implements AdminCommand
             .withArgument( new OptionalListArgument() )
             .withArgument( destinationArgument )
             .withArgument( new OptionalVerboseArgument() )
+            .withArgument( new OptionalForceArgument() )
             .withPositionalArgument( new ClassifierFiltersArgument() );
 
     private final Path homeDir;
@@ -97,9 +98,10 @@ public class DiagnosticsReportCommand implements AdminCommand
     @Override
     public void execute( String[] stringArgs ) throws IncorrectUsage, CommandFailed
     {
-        Args args = Args.withFlags( "list", "to", "verbose" ).parse( stringArgs );
+        Args args = Args.withFlags( "list", "to", "verbose", "force" ).parse( stringArgs );
         verbose = args.has( "verbose" );
         jmxDumper = new JMXDumper( homeDir, fs, out, err, verbose );
+        boolean force = args.has( "force" );
 
         DiagnosticsReporter reporter = createAndRegisterSources();
 
@@ -109,7 +111,7 @@ public class DiagnosticsReportCommand implements AdminCommand
             return;
         }
 
-        DiagnosticsReporterProgressCallback progress = buildProgress();
+        DiagnosticsReporterProgress progress = buildProgress();
 
         // Start dumping
         Path destinationDir = new File( destinationArgument.parse( args ) ).toPath();
@@ -118,7 +120,7 @@ public class DiagnosticsReportCommand implements AdminCommand
             SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
             Path reportFile = destinationDir.resolve( dumpFormat.format( new Date() ) + ".zip" );
             out.println( "Writing report to " + reportFile.toAbsolutePath().toString() );
-            reporter.dump( classifiers.get(), reportFile, progress );
+            reporter.dump( classifiers.get(), reportFile, progress, force );
         }
         catch ( IOException e )
         {
@@ -126,9 +128,9 @@ public class DiagnosticsReportCommand implements AdminCommand
         }
     }
 
-    private DiagnosticsReporterProgressCallback buildProgress()
+    private DiagnosticsReporterProgress buildProgress()
     {
-        DiagnosticsReporterProgressCallback progress;
+        DiagnosticsReporterProgress progress;
         if ( System.console() != null )
         {
             progress = new InteractiveProgress( out, verbose );
@@ -365,6 +367,29 @@ public class DiagnosticsReportCommand implements AdminCommand
         public String usage()
         {
             return "[--verbose]";
+        }
+    }
+
+    /**
+     * Helper class to format output of {@link Usage}. Parsing is done manually in this command module.
+     */
+    public static class OptionalForceArgument extends MandatoryNamedArg
+    {
+        OptionalForceArgument()
+        {
+            super( "force", "", "Ignore disk full warning" );
+        }
+
+        @Override
+        public String optionsListing()
+        {
+            return "--force";
+        }
+
+        @Override
+        public String usage()
+        {
+            return "[--force]";
         }
     }
 

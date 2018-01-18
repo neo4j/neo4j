@@ -23,7 +23,7 @@ package org.neo4j.diagnostics;
  * Interface for handling feedback to the user. Implementations of this should be responsible of presenting the progress
  * to the user. Some specialised implementations can choose to omit any of the information provided here.
  */
-public interface DiagnosticsReporterProgressCallback
+public interface DiagnosticsReporterProgress
 {
     /**
      * Calling this will notify the user that the percentage has changed.

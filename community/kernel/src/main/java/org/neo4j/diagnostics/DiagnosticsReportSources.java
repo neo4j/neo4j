@@ -119,17 +119,23 @@ public class DiagnosticsReportSources
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor )
+        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
                 throws IOException
         {
             long size = fs.getFileSize( source );
             InputStream in = fs.openAsInputStream( source );
 
             // Track progress of the file reading, source might be a very large file
-            try ( ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, monitor::percentChanged ) )
+            try ( ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, progress::percentChanged ) )
             {
                 Files.copy( inStream, archiveDestination );
             }
+        }
+
+        @Override
+        public long estimatedSize( DiagnosticsReporterProgress progress )
+        {
+            return fs.getFileSize( source );
         }
     }
 
@@ -151,12 +157,18 @@ public class DiagnosticsReportSources
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor )
+        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
                 throws IOException
         {
             String message = messageSupplier.get();
             Files.write( archiveDestination, message.getBytes( StandardCharsets.UTF_8 ), StandardOpenOption.CREATE,
                     StandardOpenOption.APPEND );
+        }
+
+        @Override
+        public long estimatedSize( DiagnosticsReporterProgress progress )
+        {
+            return 0; // Size of strings should be negligible
         }
     }
 }

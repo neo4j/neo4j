@@ -26,7 +26,7 @@ import java.util.Collections;
  * Tracks progress in an interactive way, relies on the fact that the {@code PrintStream} echoes to a terminal that can
  * interpret the carrier return to reset the current line.
  */
-public class InteractiveProgress implements DiagnosticsReporterProgressCallback
+public class InteractiveProgress implements DiagnosticsReporterProgress
 {
     private String prefix;
     private String suffix;

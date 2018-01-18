@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -44,7 +45,7 @@ import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.diagnostics.DiagnosticsReportSource;
 import org.neo4j.diagnostics.DiagnosticsReportSources;
-import org.neo4j.diagnostics.DiagnosticsReporterProgressCallback;
+import org.neo4j.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.diagnostics.ProgressAwareInputStream;
 
 /**
@@ -111,8 +112,7 @@ public class JmxDump
         ThreadMXBean threadMxBean;
         try
         {
-            threadMxBean =
-                    ManagementFactory.newPlatformMXBeanProxy( mBeanServer, "java.lang:type=Threading", ThreadMXBean.class );
+            threadMxBean = ManagementFactory.getPlatformMXBean( mBeanServer, ThreadMXBean.class );
         }
         catch ( IOException e )
         {
@@ -181,25 +181,35 @@ public class JmxDump
             }
 
             @Override
-            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor )
+            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
                     throws IOException
             {
                 // Heap dump has to target an actual file, we cannot stream directly to the archive
-                monitor.info( "dumping..." );
+                progress.info( "dumping..." );
                 Path tempFile = Files.createTempFile("neo4j-heapdump", ".hprof");
                 Files.deleteIfExists( tempFile );
                 heapDump( tempFile.toAbsolutePath().toString() );
 
                 // Track progress of archiving process
-                monitor.info( "archiving..." );
+                progress.info( "archiving..." );
                 long size = Files.size( tempFile );
                 InputStream in = Files.newInputStream( tempFile );
-                try ( ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, monitor::percentChanged ) )
+                try ( ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, progress::percentChanged ) )
                 {
                     Files.copy( inStream, archiveDestination );
                 }
 
                 Files.delete( tempFile );
+            }
+
+            @Override
+            public long estimatedSize( DiagnosticsReporterProgress progress ) throws IOException
+            {
+                MemoryMXBean bean = ManagementFactory.getPlatformMXBean( mBeanServer, MemoryMXBean.class );
+                long totalMemory = bean.getHeapMemoryUsage().getCommitted() + bean.getNonHeapMemoryUsage().getCommitted();
+
+                // We first write raw to disk then write to archive, 5x compression is a reasonable worst case estimation
+                return (long) (totalMemory * 1.2);
             }
         };
     }
@@ -209,10 +219,8 @@ public class JmxDump
      */
     private void heapDump( String destination ) throws IOException
     {
-        HotSpotDiagnosticMXBean hotSpotDiagnosticMXBean = ManagementFactory
-                .newPlatformMXBeanProxy( mBeanServer, "com.sun.management:type=HotSpotDiagnostic",
-                        HotSpotDiagnosticMXBean.class );
-
+        HotSpotDiagnosticMXBean hotSpotDiagnosticMXBean =
+                ManagementFactory.getPlatformMXBean( mBeanServer, HotSpotDiagnosticMXBean.class );
         hotSpotDiagnosticMXBean.dumpHeap( destination, false );
     }
 
@@ -227,13 +235,19 @@ public class JmxDump
             }
 
             @Override
-            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor )
+            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
                     throws IOException
             {
                 try ( PrintStream printStream = new PrintStream( Files.newOutputStream( archiveDestination ) ) )
                 {
                     systemProperties.list( printStream );
                 }
+            }
+
+            @Override
+            public long estimatedSize( DiagnosticsReporterProgress progress )
+            {
+                return 0;
             }
         };
     }

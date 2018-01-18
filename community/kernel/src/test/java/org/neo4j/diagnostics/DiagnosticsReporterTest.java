@@ -102,10 +102,16 @@ public class DiagnosticsReporterTest
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgressCallback monitor )
+        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
         {
-            monitor.percentChanged( 30 );
+            progress.percentChanged( 30 );
             throw new RuntimeException( "You had it coming..." );
+        }
+
+        @Override
+        public long estimatedSize( DiagnosticsReporterProgress progress )
+        {
+            return 0;
         }
     }
 
@@ -121,7 +127,7 @@ public class DiagnosticsReporterTest
 
         Path destination = testDirectory.file( "logs.zip" ).toPath();
 
-        reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgressCallback.class ) );
+        reporter.dump( Collections.singleton( "logs" ), destination, mock( DiagnosticsReporterProgress.class), true );
 
         // Verify content
         URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getPath() );
@@ -156,7 +162,7 @@ public class DiagnosticsReporterTest
             PrintStream out = new PrintStream( baos );
             NonInteractiveProgress progress = new NonInteractiveProgress( out, false );
 
-            reporter.dump( classifiers, destination, progress );
+            reporter.dump( classifiers, destination, progress, true );
 
             assertThat( baos.toString(), is(String.format(
                     "1/2 fail.txt%n" +
