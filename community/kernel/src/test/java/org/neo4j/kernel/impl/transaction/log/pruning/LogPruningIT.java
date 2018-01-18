@@ -44,16 +44,17 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 public class LogPruningIT
 {
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule().withSetting( keep_logical_logs, "true" );
+    public final DatabaseRule db = new EmbeddedDatabaseRule().withSetting( keep_logical_logs, "true" );
 
     private final SimpleTriggerInfo triggerInfo = new SimpleTriggerInfo( "forced trigger" );
 
     @Test
     public void pruningStrategyShouldBeDynamic() throws IOException
     {
-        CheckPointer checkPointer = db.getDependencyResolver().resolveDependency( CheckPointer.class );
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        FileSystemAbstraction fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
+        CheckPointer checkPointer = getInstanceFromDb( CheckPointer.class );
+        Config config = getInstanceFromDb( Config.class );
+        FileSystemAbstraction fs = getInstanceFromDb( FileSystemAbstraction.class );
+
         LogFiles logFiles = LogFilesBuilder.builder( db.getStoreDir(), fs )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withLastCommittedTransactionIdSupplier( () -> 1 )
@@ -104,6 +105,11 @@ public class LogPruningIT
             db.createNode();
             tx.success();
         }
+    }
+
+    private <T> T getInstanceFromDb( Class<T> clazz )
+    {
+        return db.getDependencyResolver().resolveDependency( clazz );
     }
 
     private int countTransactionLogs( LogFiles logFiles )
