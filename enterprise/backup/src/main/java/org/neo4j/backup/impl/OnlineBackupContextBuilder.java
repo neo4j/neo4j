@@ -151,7 +151,7 @@ class OnlineBackupContextBuilder
 
             OptionalHostnamePort address = toOptionalHostnamePortFromRawAddress(
                     arguments.get( ARG_NAME_BACKUP_SOURCE ) );
-            Path folder = arguments.getMandatoryPath( ARG_NAME_BACKUP_DIRECTORY ).toRealPath();
+            Path folder = getFolder( arguments );
             String name = arguments.get( ARG_NAME_BACKUP_NAME );
             boolean fallbackToFull = arguments.getBoolean( ARG_NAME_FALLBACK_FULL );
             boolean doConsistencyCheck = arguments.getBoolean( ARG_NAME_CHECK_CONSISTENCY );
@@ -191,9 +191,22 @@ class OnlineBackupContextBuilder
         {
             throw new IncorrectUsage( e.getMessage() );
         }
-        catch ( UncheckedIOException | IOException e )
+        catch ( UncheckedIOException e )
         {
             throw new CommandFailed( e.getMessage(), e );
+        }
+    }
+
+    private Path getFolder( Arguments arguments ) throws CommandFailed
+    {
+        Path path = arguments.getMandatoryPath( ARG_NAME_BACKUP_DIRECTORY );
+        try
+        {
+            return path.toRealPath();
+        }
+        catch ( IOException e )
+        {
+            throw new CommandFailed( String.format( "Directory '%s' does not exist.", path.toFile().toString() ) );
         }
     }
 
