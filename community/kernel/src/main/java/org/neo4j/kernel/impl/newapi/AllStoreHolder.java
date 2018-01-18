@@ -95,23 +95,23 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public boolean nodeExists( long id )
+    public boolean nodeExists( long reference )
     {
         ktx.assertOpen();
 
         if ( hasTxStateWithChanges() )
         {
             TransactionState txState = txState();
-            if ( txState.nodeIsDeletedInThisTx( id ) )
+            if ( txState.nodeIsDeletedInThisTx( reference ) )
             {
                 return false;
             }
-            else if ( txState.nodeIsAddedInThisTx( id ) )
+            else if ( txState.nodeIsAddedInThisTx( reference ) )
             {
                 return true;
             }
         }
-        return storeReadLayer.nodeExists( id );
+        return storeReadLayer.nodeExists( reference );
     }
 
     @Override

@@ -439,6 +439,12 @@ class RelationshipTraversalCursor extends RelationshipCursor
     }
 
     @Override
+    protected boolean shouldGetAddedTxStateSnapshot()
+    {
+        return true;
+    }
+
+    @Override
     public boolean isClosed()
     {
         return pageCursor == null && !hasBufferedData();
