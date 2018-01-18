@@ -61,6 +61,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -640,34 +641,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 IndexQuery.ExactPredicate query = IndexQuery.exact( propertyId, value );
                 read.nodeIndexSeek( index, cursor, IndexOrder.NONE, query );
 
-                return new PrefetchingResourceIterator<Node>()
-                {
-                    private boolean closed;
-                    @Override
-                    protected Node fetchNextOrNull()
-                    {
-                        if ( cursor.next() )
-                        {
-                            return newNodeProxy( cursor.nodeReference() );
-                        }
-                        else
-                        {
-                            close();
-                            return null;
-                        }
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        if ( !closed )
-                        {
-                            statement.close();
-                            cursor.close();
-                            closed = true;
-                        }
-                    }
-                };
+                return new NodeCursorResourceIterator<>( cursor, statement );
             }
             catch ( KernelException e )
             {
@@ -721,7 +695,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new NodeCursorResourceIterator( cursor, statement );
+        return new NodeCursorResourceIterator<>( cursor, statement );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )
@@ -932,16 +906,19 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         return new GraphPropertiesProxy( this );
     }
+    private static final long UNINITIALIZED = -2L;
+    private static final long NO_ID = -1L;
 
-    private final class NodeCursorResourceIterator implements ResourceIterator<Node>
+    private final class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> implements ResourceIterator<Node>
     {
-        private final NodeLabelIndexCursor cursor;
+
+        private final CURSOR cursor;
         private final Statement statement;
         private long next;
         private boolean closed;
         private static final long NOT_INITIALIZED = -2L;
 
-        NodeCursorResourceIterator( NodeLabelIndexCursor cursor, Statement statement )
+        NodeCursorResourceIterator( CURSOR cursor, Statement statement )
         {
             this.cursor = cursor;
             this.statement = statement;
