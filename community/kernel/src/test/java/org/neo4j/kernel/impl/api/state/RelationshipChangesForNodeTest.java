@@ -122,10 +122,6 @@ public class RelationshipChangesForNodeTest
         PrimitiveLongIterator rawLoops =
                 changes.getRawRelationships( RelationshipDirection.LOOP, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawLoops ), ids( 4, 5, 6 ) );
-
-        PrimitiveLongIterator rawAll =
-                changes.getRawRelationships( RelationshipDirection.ALL, TYPE );
-        assertThat( PrimitiveLongCollections.asArray( rawAll ), ids( 1, 2, 3, 4, 5, 6 ) );
     }
 
     private Matcher<long[]> ids( long... ids )

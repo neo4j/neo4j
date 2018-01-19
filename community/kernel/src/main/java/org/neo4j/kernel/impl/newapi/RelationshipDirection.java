@@ -31,7 +31,6 @@ package org.neo4j.kernel.impl.newapi;
  *  a.getRelationships( OUTGOING ) => r1
  *  a.getRelationships( INCOMING ) => r2
  *  a.getRelationships( LOOP ) => r3
- *  a.getRelationships( ALL ) => r1, r2, r3
  *
  * Note that this contrasts with /** @see #org.neo4j.graphdb.Direction(long), where
  *  a.getRelationships( org.neo4j.graphdb.Direction.OUTGOING ) => r1, r3
@@ -43,5 +42,5 @@ public enum RelationshipDirection
     OUTGOING,
     INCOMING,
     LOOP,
-    ALL
+    ERROR // NOOP value for state machines et.c.
 }

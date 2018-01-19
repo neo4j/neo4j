@@ -510,12 +510,6 @@ public class RelationshipChangesForNode
             return outgoing != null ? primitiveIdsByType( outgoing, type ) : emptyIterator();
         case LOOP:
             return loops != null ? primitiveIdsByType( loops, type ) : emptyIterator();
-        case ALL:
-            return outgoing != null || incoming != null || loops != null ?
-                   PrimitiveLongCollections.concat(
-                           getRawRelationships( INCOMING, type ),
-                           getRawRelationships( OUTGOING, type ),
-                           getRawRelationships( LOOP, type ) ) : emptyIterator();
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
