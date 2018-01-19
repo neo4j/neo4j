@@ -109,8 +109,7 @@ class NodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgressor>
         }
         else
         {
-            LabelScanValueIndexProgressor p = progressor;
-            return p != null && p.next();
+            return innerNext();
         }
     }
 

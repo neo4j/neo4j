@@ -119,6 +119,7 @@ import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 /**
  * Implementation of the GraphDatabaseService/GraphDatabaseService interfaces - the "Core API". Given an {@link SPI}
@@ -898,8 +899,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
     private final class NodeCursorResourceIterator implements ResourceIterator<Node>
     {
-        private static final long UNINITIALIZED = -2L;
-        private static final long NO_ID = -1L;
         private final NodeLabelIndexCursor cursor;
         private final Statement statement;
         private long next;
@@ -909,16 +908,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             this.cursor = cursor;
             this.statement = statement;
-            next = -2L;
+            fetchNext();
         }
 
         @Override
         public boolean hasNext()
         {
-            if ( next == UNINITIALIZED )
-            {
-                fetchNext();
-            }
             return next != NO_ID;
         }
 
@@ -943,7 +938,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             }
             else
             {
-                next = NO_ID;
                 close();
             }
         }

@@ -23,7 +23,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 
 abstract class IndexCursor<T extends IndexProgressor>
 {
-    protected T progressor;
+    private T progressor;
 
     final void initialize( T progressor )
     {
@@ -39,7 +39,7 @@ abstract class IndexCursor<T extends IndexProgressor>
         return false;
     }
 
-    boolean innerNext()
+    final boolean innerNext()
     {
         return progressor != null && progressor.next();
     }
