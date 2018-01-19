@@ -575,19 +575,6 @@ object SlotAllocation {
         }
         slotConfig
 
-      case OuterHashJoin(nodes, _, _) =>
-        // A new pipeline is not strictly needed here unless we have batching/vectorization
-        recordArgument(lp)
-        val result = lhs.copy()
-        rhs.foreachSlotOrdered {
-          case (k, slot) if !nodes(k) =>
-            result.add(k, slot)
-          // If the column is one of the join columns there is no need to add it again
-
-          case _ =>
-        }
-        result
-
       case RollUpApply(_, _, collectionName, _, _) =>
         lhs.newReference(collectionName, nullable, CTList(CTAny))
         lhs

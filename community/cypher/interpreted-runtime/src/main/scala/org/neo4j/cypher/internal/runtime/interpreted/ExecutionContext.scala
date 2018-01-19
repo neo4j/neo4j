@@ -156,15 +156,15 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
   }
 
   override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] =
-    collect {
-      case kv: (String, NodeValue) =>
-        kv
-      case kv: (String, RelationshipValue) =>
-        kv
-      case (k: String, v: NodeReference) =>
-        (k, materializeNode(v.id()))
-      case (k: String, v: RelationshipReference) =>
-        (k, materializeRelationship(v.id()))
+    m.collect {
+      case kv => kv._2 match {
+        case _: NodeValue | _: RelationshipValue =>
+          kv
+        case v: NodeReference =>
+          (kv._1, materializeNode(v.id()))
+        case v: RelationshipReference =>
+          (kv._1, materializeRelationship(v.id()))
+      }
     }.toMap
 
   override def isNull(key: String): Boolean =
