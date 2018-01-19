@@ -22,7 +22,6 @@ package org.neo4j.internal.kernel.api;
 import org.junit.Assume;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,7 +32,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCount;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCounts;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.count;
 
@@ -299,6 +302,8 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     private void traverseViaGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws KernelException
     {
         // given
+        Map<String,Integer> expectedCounts = start.expectedCounts();
+
         try ( NodeCursor node = cursors.allocateNodeCursor();
               RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
               RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
@@ -314,7 +319,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             {
                 node.relationships( group );
             }
-            Map<String,Integer> counts = new HashMap<>();
+
             while ( group.next() )
             {
                 // outgoing
@@ -326,7 +331,8 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                 {
                     group.outgoing( relationship );
                 }
-                count( session, relationship, counts, true );
+                // then
+                assertCount( session, relationship, expectedCounts, group.relationshipLabel(), OUTGOING );
 
                 // incoming
                 if ( detached )
@@ -337,7 +343,8 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                 {
                     group.incoming( relationship );
                 }
-                count( session, relationship, counts, true );
+                // then
+                assertCount( session, relationship, expectedCounts, group.relationshipLabel(), INCOMING );
 
                 // loops
                 if ( detached )
@@ -348,11 +355,9 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                 {
                     group.loops( relationship );
                 }
-                count( session, relationship, counts, true );
+                // then
+                assertCount( session, relationship, expectedCounts, group.relationshipLabel(), BOTH );
             }
-
-            // then
-            assertCounts( start.expectedCounts(), counts );
         }
     }
 
@@ -366,6 +371,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             // when
             read.singleNode( start.id, node );
             assertTrue( "access node", node.next() );
+
             if ( detached )
             {
                 read.relationships( start.id, node.allRelationshipsReference(), relationship );
@@ -374,8 +380,8 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             {
                 node.allRelationships( relationship );
             }
-            Map<String,Integer> counts = new HashMap<>();
-            count( session, relationship, counts, false );
+
+            Map<String,Integer> counts = count( session, relationship );
 
             // then
             assertCounts( start.expectedCounts(), counts );

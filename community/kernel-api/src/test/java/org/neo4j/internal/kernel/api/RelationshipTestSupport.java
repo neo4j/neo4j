@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
@@ -87,21 +88,10 @@ public class RelationshipTestSupport
         }
     }
 
-    static Function<Node, R>[] sparseDenseRels = Iterators.array(
-            outgoing( "FOO" ),
-            outgoing( "BAR" ),
-            outgoing( "BAR" ),
-            incoming( "FOO" ),
-            outgoing( "FOO" ),
-            incoming( "BAZ" ),
-            incoming( "BAR" ),
-            outgoing( "BAZ" )
-        );
-
     static StartNode sparse( GraphDatabaseService graphDb )
     {
         Node node;
-        Map<String,List<R>> relationshipMap;
+        Map<String,List<StartRelationship>> relationshipMap;
         try ( Transaction tx = graphDb.beginTx() )
         {
             node = graphDb.createNode();
@@ -114,56 +104,69 @@ public class RelationshipTestSupport
     static StartNode dense( GraphDatabaseService graphDb )
     {
         Node node;
-        Map<String,List<R>> relationshipMap;
+        Map<String,List<StartRelationship>> relationshipMap;
         try ( Transaction tx = graphDb.beginTx() )
         {
             node = graphDb.createNode();
             relationshipMap = buildSparseDenseRels( node );
 
+            List<StartRelationship> bulk = new ArrayList<>();
+            RelationshipType bulkType = withName( "BULK" );
+
             for ( int i = 0; i < 200; i++ )
             {
-                node.createRelationshipTo( graphDb.createNode(), withName( "BULK" ) );
+                Relationship r = node.createRelationshipTo( graphDb.createNode(), bulkType );
+                bulk.add( new StartRelationship( r.getId(), Direction.OUTGOING, bulkType ) );
             }
+
+            String bulkKey = computeKey( "BULK", Direction.OUTGOING );
+            relationshipMap.put( bulkKey, bulk );
 
             tx.success();
         }
         return new StartNode( node.getId(), relationshipMap );
     }
 
-    static void count(
+    static Map<String,Integer> count(
             Session session,
-            RelationshipTraversalCursor relationship,
-            Map<String,Integer> counts,
-            boolean expectSameType ) throws KernelException
+            RelationshipTraversalCursor relationship ) throws KernelException
     {
-        Integer type = null;
+        HashMap<String,Integer> counts = new HashMap<>();
         while ( relationship.next() )
         {
-            if ( expectSameType )
-            {
-                if ( type != null )
-                {
-                    assertEquals( "same type", type.intValue(), relationship.label() );
-                }
-                else
-                {
-                    type = relationship.label();
-                }
-            }
-
             String key = computeKey( session, relationship );
-
             counts.compute( key, ( k, value ) -> value == null ? 1 : value + 1 );
         }
+        return counts;
     }
 
-    static class R
+    static void assertCount(
+            Session session,
+            RelationshipTraversalCursor relationship,
+            Map<String,Integer> expectedCounts,
+            int expectedType,
+            Direction direction ) throws KernelException
+    {
+        String key = computeKey( session.token().relationshipTypeName( expectedType ), direction );
+        int expectedCount = expectedCounts.getOrDefault( key, 0 );
+        int count = 0;
+
+        while ( relationship.next() )
+        {
+            assertEquals( "same type", expectedType, relationship.label() );
+            count++;
+        }
+
+        assertEquals( format( "expected number of relationships for key '%s'", key ), expectedCount, count );
+    }
+
+    static class StartRelationship
     {
         public final long id;
         public final Direction direction;
         public final RelationshipType type;
 
-        R( long id, Direction direction, RelationshipType type )
+        StartRelationship( long id, Direction direction, RelationshipType type )
         {
             this.id = id;
             this.type = type;
@@ -174,9 +177,9 @@ public class RelationshipTestSupport
     static class StartNode
     {
         public final long id;
-        public final Map<String,List<R>> relationships;
+        public final Map<String,List<StartRelationship>> relationships;
 
-        StartNode( long id, Map<String,List<R>> relationships )
+        StartNode( long id, Map<String,List<StartRelationship>> relationships )
         {
             this.id = id;
             this.relationships = relationships;
@@ -185,7 +188,7 @@ public class RelationshipTestSupport
         Map<String,Integer> expectedCounts()
         {
             Map<String,Integer> expectedCounts = new HashMap<>();
-            for ( Map.Entry<String,List<RelationshipTestSupport.R>> kv : relationships.entrySet() )
+            for ( Map.Entry<String,List<StartRelationship>> kv : relationships.entrySet() )
             {
                 expectedCounts.put( kv.getKey(), relationships.get( kv.getKey() ).size() );
             }
@@ -198,24 +201,24 @@ public class RelationshipTestSupport
         for ( Map.Entry<String, Integer> expected : expectedCounts.entrySet() )
         {
             assertEquals(
-                    String.format( "counts for relationship key '%s' are equal", expected.getKey() ),
+                    format( "counts for relationship key '%s' are equal", expected.getKey() ),
                     expected.getValue(), counts.get( expected.getKey()) );
         }
     }
 
-    private static Map<String,List<R>> buildSparseDenseRels( Node node )
+    private static Map<String,List<StartRelationship>> buildSparseDenseRels( Node node )
     {
-        Map<String,List<R>> relationshipMap = new HashMap<>();
-        for ( Function<Node, R> rel : sparseDenseRels )
+        Map<String,List<StartRelationship>> relationshipMap = new HashMap<>();
+        for ( Function<Node,StartRelationship> rel : sparseDenseRels )
         {
-            R r = rel.apply( node );
-            List<R> relsOfType = relationshipMap.computeIfAbsent( computeKey( r ), key -> new ArrayList<>() );
+            StartRelationship r = rel.apply( node );
+            List<StartRelationship> relsOfType = relationshipMap.computeIfAbsent( computeKey( r ), key -> new ArrayList<>() );
             relsOfType.add( r );
         }
         return relationshipMap;
     }
 
-    private static String computeKey( R r )
+    private static String computeKey( StartRelationship r )
     {
         return computeKey( r.type.name(), r.direction );
     }
@@ -239,33 +242,57 @@ public class RelationshipTestSupport
         return computeKey( session.token().relationshipTypeName( r.label() ), d );
     }
 
-    private static String computeKey( String type, Direction direction )
+    static String computeKey( String type, Direction direction )
     {
-        return type.toString() + "-" + direction.toString();
+        return type + "-" + direction.toString();
     }
 
-    private static Function<Node, R> outgoing( String type )
+    private static Function<Node,StartRelationship>[] sparseDenseRels = Iterators.array(
+            outgoing( "FOO" ),
+            outgoing( "BAR" ),
+            outgoing( "BAR" ),
+            incoming( "FOO" ),
+            outgoing( "FOO" ),
+            incoming( "BAZ" ),
+            incoming( "BAR" ),
+            outgoing( "BAZ" ),
+            loop( "FOO" )
+    );
+
+    private static Function<Node,StartRelationship> outgoing( String type )
     {
         return node ->
         {
             GraphDatabaseService db = node.getGraphDatabase();
             RelationshipType relType = withName( type );
-            return new R(
+            return new StartRelationship(
                     node.createRelationshipTo( db.createNode(), relType ).getId(),
                     Direction.OUTGOING,
                     relType );
         };
     }
 
-    private static Function<Node, R> incoming( String type )
+    private static Function<Node,StartRelationship> incoming( String type )
     {
         return node ->
         {
             GraphDatabaseService db = node.getGraphDatabase();
             RelationshipType relType = withName( type );
-            return new R(
+            return new StartRelationship(
                     db.createNode().createRelationshipTo( node, relType ).getId(),
                     Direction.INCOMING,
+                    relType );
+        };
+    }
+
+    private static Function<Node,StartRelationship> loop( String type )
+    {
+        return node ->
+        {
+            RelationshipType relType = withName( type );
+            return new StartRelationship(
+                    node.createRelationshipTo( node, relType ).getId(),
+                    Direction.BOTH,
                     relType );
         };
     }
