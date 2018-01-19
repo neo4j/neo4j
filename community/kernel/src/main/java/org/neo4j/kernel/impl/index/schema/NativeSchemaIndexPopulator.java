@@ -39,9 +39,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
@@ -69,7 +69,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
     private boolean dropped;
 
     NativeSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
+            IndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         this.treeKey = layout.newKey();

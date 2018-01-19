@@ -29,7 +29,7 @@ import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -47,7 +47,7 @@ public class SchemaIndexTestHelper
     }
 
     public static KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies> singleInstanceSchemaIndexProviderFactory(
-            String key, final SchemaIndexProvider provider )
+            String key, final IndexProvider provider )
     {
         return new SingleInstanceSchemaIndexProviderFactory( key, provider );
     }
@@ -60,9 +60,9 @@ public class SchemaIndexTestHelper
     private static class SingleInstanceSchemaIndexProviderFactory
         extends KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies>
     {
-        private final SchemaIndexProvider provider;
+        private final IndexProvider provider;
 
-        private SingleInstanceSchemaIndexProviderFactory( String key, SchemaIndexProvider provider )
+        private SingleInstanceSchemaIndexProviderFactory( String key, IndexProvider provider )
         {
             super( key );
             this.provider = provider;

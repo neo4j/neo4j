@@ -26,7 +26,7 @@ import org.neo4j.index.internal.gbptree.CleanupJob;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -43,7 +43,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
- * Utility for loading {@link SchemaIndexProvider} instances from {@link KernelExtensions}.
+ * Utility for loading {@link IndexProvider} instances from {@link KernelExtensions}.
  */
 public class SchemaIndexExtensionLoader
 {
@@ -54,9 +54,9 @@ public class SchemaIndexExtensionLoader
 
     public static SchemaIndexProviderMap loadSchemaIndexProviders( KernelExtensions extensions )
     {
-        AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
-        SchemaIndexProvider defaultIndexProvider =
-                extensions.resolveDependency( SchemaIndexProvider.class, indexProviderSelection );
+        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+        IndexProvider defaultIndexProvider =
+                extensions.resolveDependency( IndexProvider.class, indexProviderSelection );
         return new DefaultSchemaIndexProviderMap( defaultIndexProvider,
                 indexProviderSelection.lowerPrioritizedCandidates() );
     }

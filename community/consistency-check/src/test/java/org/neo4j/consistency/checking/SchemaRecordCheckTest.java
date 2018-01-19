@@ -25,7 +25,7 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -87,7 +87,7 @@ public class SchemaRecordCheckTest
         int schemaRuleId = 0;
 
         DynamicRecord record = inUse( dynamicRecord( schemaRuleId ) );
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
         IndexRule rule = indexRule( schemaRuleId, labelId, propertyKeyId, providerDescriptor );
         when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
 
@@ -108,7 +108,7 @@ public class SchemaRecordCheckTest
         int schemaRuleId = 0;
 
         DynamicRecord record = inUse( dynamicRecord( schemaRuleId ) );
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
         IndexRule rule = indexRule( schemaRuleId, labelId, propertyKeyId, providerDescriptor );
         when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
 
@@ -155,7 +155,7 @@ public class SchemaRecordCheckTest
         DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
         DynamicRecord record2 = inUse( dynamicRecord( ruleId2 ) );
 
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
 
         IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId2 );
         ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
@@ -185,7 +185,7 @@ public class SchemaRecordCheckTest
 
         DynamicRecord record = inUse( dynamicRecord( ruleId ) );
 
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
 
         IndexRule rule = constraintIndexRule( ruleId, labelId, propertyKeyId, providerDescriptor );
 
@@ -264,7 +264,7 @@ public class SchemaRecordCheckTest
         DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
         DynamicRecord record2 = inUse( dynamicRecord( ruleId2) );
 
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
 
         IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId1 );
         ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId1 );
@@ -296,7 +296,7 @@ public class SchemaRecordCheckTest
         DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
         DynamicRecord record2 = inUse( dynamicRecord( ruleId2 ) );
 
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
 
         IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId1 );
         IndexRule rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, providerDescriptor, (long) ruleId1 );
@@ -323,7 +323,7 @@ public class SchemaRecordCheckTest
 
         DynamicRecord record = inUse( dynamicRecord( ruleId ) );
 
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
 
         IndexRule rule = constraintIndexRule( ruleId, labelId, propertyKeyId, providerDescriptor, (long) ruleId );
 
@@ -351,7 +351,7 @@ public class SchemaRecordCheckTest
         DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
         DynamicRecord record2 = inUse( dynamicRecord( ruleId2 ) );
 
-        SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
 
         IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId1 );
         IndexRule rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, providerDescriptor, (long) ruleId2 );

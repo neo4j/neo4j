@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 
 import static org.junit.Assert.fail;
@@ -30,16 +30,16 @@ import static org.mockito.Mockito.when;
 
 import static java.util.Arrays.asList;
 
-public class DefaultSchemaIndexProviderMapTest
+public class DefaultIndexProviderMapTest
 {
     @Test
     public void shouldNotSupportMultipleProvidersWithSameDescriptor() throws Exception
     {
         // given
-        SchemaIndexProvider.Descriptor descriptor = new SchemaIndexProvider.Descriptor( "provider", "1.2" );
-        SchemaIndexProvider provider1 = mock( SchemaIndexProvider.class );
+        IndexProvider.Descriptor descriptor = new IndexProvider.Descriptor( "provider", "1.2" );
+        IndexProvider provider1 = mock( IndexProvider.class );
         when( provider1.getProviderDescriptor() ).thenReturn( descriptor );
-        SchemaIndexProvider provider2 = mock( SchemaIndexProvider.class );
+        IndexProvider provider2 = mock( IndexProvider.class );
         when( provider2.getProviderDescriptor() ).thenReturn( descriptor );
 
         // when
@@ -58,14 +58,14 @@ public class DefaultSchemaIndexProviderMapTest
     public void shouldThrowOnLookupOnUnknownProvider() throws Exception
     {
         // given
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
-        when( provider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "provider", "1.2" ) );
+        IndexProvider provider = mock( IndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "provider", "1.2" ) );
 
         // when
         SchemaIndexProviderMap map = new DefaultSchemaIndexProviderMap( provider );
         try
         {
-            new DefaultSchemaIndexProviderMap( provider ).apply( new SchemaIndexProvider.Descriptor( "provider2", "1.2" ) );
+            new DefaultSchemaIndexProviderMap( provider ).apply( new IndexProvider.Descriptor( "provider2", "1.2" ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )

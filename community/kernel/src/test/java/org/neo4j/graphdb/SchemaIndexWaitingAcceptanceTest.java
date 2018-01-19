@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.ControlledPopulationSchemaIndexProvider;
+import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -41,7 +41,7 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstan
 
 public class SchemaIndexWaitingAcceptanceTest
 {
-    private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
+    private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
 
     @Rule
     public ImpermanentDatabaseRule rule = new ImpermanentDatabaseRule()

@@ -43,8 +43,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
@@ -382,9 +382,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         life.add( recoveryCleanupWorkCollector );
 
-        AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
-        SchemaIndexProvider defaultIndexProvider =
-                dependencyResolver.resolveDependency( SchemaIndexProvider.class, indexProviderSelection );
+        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+        IndexProvider defaultIndexProvider =
+                dependencyResolver.resolveDependency( IndexProvider.class, indexProviderSelection );
 
         schemaIndexProviderMap =
                 new DefaultSchemaIndexProviderMap( defaultIndexProvider, indexProviderSelection.lowerPrioritizedCandidates() );

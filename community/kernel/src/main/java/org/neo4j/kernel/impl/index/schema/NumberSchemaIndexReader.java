@@ -56,7 +56,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         if ( indexOrder != IndexOrder.NONE )
         {
             ValueGroup valueGroup = predicates[0].valueGroup();
-            IndexOrder[] capability = NumberSchemaIndexProvider.CAPABILITY.orderCapability( valueGroup );
+            IndexOrder[] capability = NumberIndexProvider.CAPABILITY.orderCapability( valueGroup );
             if ( !ArrayUtil.contains( capability, indexOrder ) )
             {
                 capability = ArrayUtils.add( capability, IndexOrder.NONE );

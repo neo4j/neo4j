@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 
-public interface SchemaIndexProviderMap extends Function<SchemaIndexProvider.Descriptor, SchemaIndexProvider>
+public interface SchemaIndexProviderMap extends Function<IndexProvider.Descriptor,IndexProvider>
 {
     @Override
-    SchemaIndexProvider apply( SchemaIndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
+    IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
 
-    SchemaIndexProvider getDefaultProvider();
+    IndexProvider getDefaultProvider();
 
-    void accept( Consumer<SchemaIndexProvider> visitor );
+    void accept( Consumer<IndexProvider> visitor );
 }

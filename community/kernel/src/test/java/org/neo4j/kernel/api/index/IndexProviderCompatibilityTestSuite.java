@@ -48,7 +48,7 @@ import org.neo4j.test.runner.ParameterizedSuiteRunner;
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
-    protected abstract SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
+    protected abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
 
     public abstract static class Compatibility
     {
@@ -58,7 +58,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
         protected final IndexProviderCompatibilityTestSuite testSuite;
-        protected SchemaIndexProvider indexProvider;
+        protected IndexProvider indexProvider;
         protected IndexDescriptor descriptor;
 
         @Before

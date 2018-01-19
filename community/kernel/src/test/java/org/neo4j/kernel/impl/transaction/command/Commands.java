@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -144,7 +144,7 @@ public class Commands
         return new RelationshipGroupCommand( before, after );
     }
 
-    public static SchemaRuleCommand createIndexRule( SchemaIndexProvider.Descriptor provider,
+    public static SchemaRuleCommand createIndexRule( IndexProvider.Descriptor provider,
             long id, LabelSchemaDescriptor descriptor )
     {
         SchemaRule rule = IndexRule.indexRule(

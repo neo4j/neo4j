@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
@@ -106,7 +106,7 @@ public class BuiltInProceduresTest
                         getIndexProviderDescriptorMap( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR ) ) ) );
     }
 
-    private Map<String,String> getIndexProviderDescriptorMap( SchemaIndexProvider.Descriptor providerDescriptor )
+    private Map<String,String> getIndexProviderDescriptorMap( IndexProvider.Descriptor providerDescriptor )
     {
         return MapUtil.stringMap( "key", providerDescriptor.getKey(), "version", providerDescriptor.getVersion() );
     }

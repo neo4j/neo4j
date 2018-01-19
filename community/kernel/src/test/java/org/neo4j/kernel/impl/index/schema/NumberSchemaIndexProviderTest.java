@@ -34,9 +34,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -63,9 +63,9 @@ public class NumberSchemaIndexProviderTest
     private static final int indexId = 1;
     private static final int labelId = 1;
     private static final int propId = 1;
-    private NumberSchemaIndexProvider provider;
+    private NumberIndexProvider provider;
     private final AssertableLogProvider logging = new AssertableLogProvider();
-    private SchemaIndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
+    private IndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
 
     @Before
     public void setup() throws IOException
@@ -387,14 +387,14 @@ public class NumberSchemaIndexProviderTest
         return IndexDescriptorFactory.uniqueForLabel( labelId, propId );
     }
 
-    private NumberSchemaIndexProvider newProvider()
+    private NumberIndexProvider newProvider()
     {
-        return new NumberSchemaIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, false );
+        return new NumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, false );
     }
 
-    private NumberSchemaIndexProvider newReadOnlyProvider()
+    private NumberIndexProvider newReadOnlyProvider()
     {
-        return new NumberSchemaIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, true );
+        return new NumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE, true );
     }
 
     private PageCache pageCache()

@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -101,8 +101,8 @@ public class OperationsFacadeTest
             db.schema().indexFor( LABEL1 ).on( PROP1 ).create();
             ReadOperations readOperations = statement.readOperations();
             IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( labelId, propertyId );
-            SchemaIndexProvider.Descriptor providerDescriptor = readOperations.indexGetProviderDescriptor( indexDescriptor );
-            assertThat( providerDescriptor, is( SchemaIndexProvider.UNDECIDED ) );
+            IndexProvider.Descriptor providerDescriptor = readOperations.indexGetProviderDescriptor( indexDescriptor );
+            assertThat( providerDescriptor, is( IndexProvider.UNDECIDED ) );
             tx.success();
         }
     }

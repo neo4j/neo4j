@@ -54,7 +54,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
  * class in the index provider module, all value types will be checked against the index provider.
  */
 @RunWith( value = Parameterized.class )
-public abstract class SchemaIndexProviderApprovalTest
+public abstract class IndexProviderApprovalTest
 {
     // These are the values that will be checked.
     public enum TestValue
@@ -110,7 +110,7 @@ public abstract class SchemaIndexProviderApprovalTest
 
     private final TestValue currentValue;
 
-    public SchemaIndexProviderApprovalTest( TestValue value )
+    public IndexProviderApprovalTest( TestValue value )
     {
         currentValue = value;
     }

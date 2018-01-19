@@ -30,7 +30,7 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -88,7 +88,7 @@ public class IndexAccessors implements Closeable
         }
     }
 
-    private SchemaIndexProvider provider( SchemaIndexProviderMap providers, IndexRule indexRule )
+    private IndexProvider provider( SchemaIndexProviderMap providers, IndexRule indexRule )
     {
         return providers.apply( indexRule.getProviderDescriptor() );
     }

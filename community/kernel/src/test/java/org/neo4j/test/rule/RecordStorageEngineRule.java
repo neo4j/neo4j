@@ -27,7 +27,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
@@ -94,7 +94,7 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
-            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory,
+            IndexProvider indexProvider, DatabaseHealth databaseHealth, File storeDirectory,
             Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
             Monitors monitors )
     {
@@ -115,8 +115,7 @@ public class RecordStorageEngineRule extends ExternalResource
         return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs,
                 NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
-                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
-                schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
+                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
@@ -139,7 +138,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private File storeDirectory = new File( "/graph.db" );
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
-        private SchemaIndexProvider schemaIndexProvider = SchemaIndexProvider.NO_INDEX_PROVIDER;
+        private IndexProvider indexProvider = IndexProvider.NO_INDEX_PROVIDER;
         private Monitors monitors = new Monitors();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache )
@@ -155,9 +154,9 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder indexProvider( SchemaIndexProvider schemaIndexProvider )
+        public Builder indexProvider( IndexProvider indexProvider )
         {
-            this.schemaIndexProvider = schemaIndexProvider;
+            this.indexProvider = indexProvider;
             return this;
         }
 
@@ -183,7 +182,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, schemaIndexProvider, databaseHealth, storeDirectory,
+            return get( fs, pageCache, indexProvider, databaseHealth, storeDirectory,
                     transactionApplierTransformer, monitors );
         }
     }
@@ -197,7 +196,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 LogProvider logProvider, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
                 RelationshipTypeTokenHolder relationshipTypeTokens, SchemaState schemaState,
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                LockService lockService, SchemaIndexProvider indexProvider,
+                LockService lockService, IndexProvider indexProvider,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
                 ExplicitIndexProviderLookup explicitIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue explicitIndexTransactionOrdering,

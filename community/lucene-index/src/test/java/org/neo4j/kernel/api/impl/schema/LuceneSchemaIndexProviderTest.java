@@ -31,7 +31,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -137,6 +137,6 @@ public class LuceneSchemaIndexProviderTest
                                                                     FileSystemAbstraction fs, File graphDbDir )
     {
         return new LuceneSchemaIndexProvider( fs, directoryFactory, defaultDirectoryStructure( graphDbDir ),
-                SchemaIndexProvider.Monitor.EMPTY, config, OperationalMode.single );
+                IndexProvider.Monitor.EMPTY, config, OperationalMode.single );
     }
 }

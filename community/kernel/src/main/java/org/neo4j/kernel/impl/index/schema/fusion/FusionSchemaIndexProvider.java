@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
@@ -39,24 +39,24 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 /**
- * This {@link SchemaIndexProvider index provider} act as one logical index but is backed by two physical
+ * This {@link IndexProvider index provider} act as one logical index but is backed by two physical
  * indexes, the native index and the lucene index. All index entries that can be handled by the native index will be directed
  * there and the rest will be directed to the lucene index.
  */
-public class FusionSchemaIndexProvider extends SchemaIndexProvider
+public class FusionSchemaIndexProvider extends IndexProvider
 {
     public interface Selector
     {
         <T> T select( T nativeInstance, T luceneInstance, Value... values );
     }
 
-    private final SchemaIndexProvider nativeProvider;
-    private final SchemaIndexProvider luceneProvider;
+    private final IndexProvider nativeProvider;
+    private final IndexProvider luceneProvider;
     private final Selector selector;
     private final DropAction dropAction;
 
-    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider,
-            SchemaIndexProvider luceneProvider, Selector selector, SchemaIndexProvider.Descriptor descriptor,
+    public FusionSchemaIndexProvider( IndexProvider nativeProvider,
+            IndexProvider luceneProvider, Selector selector, IndexProvider.Descriptor descriptor,
             int priority, IndexDirectoryStructure.Factory directoryStructure, FileSystemAbstraction fs )
     {
         super( descriptor, priority, directoryStructure );

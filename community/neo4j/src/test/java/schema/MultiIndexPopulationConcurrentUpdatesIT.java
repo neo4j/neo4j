@@ -54,7 +54,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -110,7 +110,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<SchemaIndexProvider.Descriptor> parameters()
+    public static Collection<IndexProvider.Descriptor> parameters()
     {
         return asList( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR,
                 NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR,
@@ -118,7 +118,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     }
 
     @Parameterized.Parameter( 0 )
-    public SchemaIndexProvider.Descriptor indexDescriptor;
+    public IndexProvider.Descriptor indexDescriptor;
 
     private IndexingService indexService;
     private int propertyId;

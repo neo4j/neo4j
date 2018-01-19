@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
@@ -48,18 +48,18 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 
 public class FusionSchemaIndexProviderTest
 {
-    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "test-fusion", "1" );
+    private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "test-fusion", "1" );
 
-    private SchemaIndexProvider nativeProvider;
-    private SchemaIndexProvider luceneProvider;
+    private IndexProvider nativeProvider;
+    private IndexProvider luceneProvider;
 
     @Before
     public void setup()
     {
-        nativeProvider = mock( SchemaIndexProvider.class );
-        luceneProvider = mock( SchemaIndexProvider.class );
-        when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
-        when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
+        nativeProvider = mock( IndexProvider.class );
+        luceneProvider = mock( IndexProvider.class );
+        when( nativeProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "native", "1" ) );
+        when( luceneProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "lucene", "1" ) );
     }
 
     @Rule
@@ -78,7 +78,7 @@ public class FusionSchemaIndexProviderTest
         for ( Value numberValue : numberValues )
         {
             // when
-            SchemaIndexProvider selected = selector.select( nativeProvider, luceneProvider, numberValue );
+            IndexProvider selected = selector.select( nativeProvider, luceneProvider, numberValue );
 
             // then
             assertSame( nativeProvider, selected );
@@ -88,7 +88,7 @@ public class FusionSchemaIndexProviderTest
         for ( Value otherValue : otherValues )
         {
             // when
-            SchemaIndexProvider selected = selector.select( nativeProvider, luceneProvider, otherValue );
+            IndexProvider selected = selector.select( nativeProvider, luceneProvider, otherValue );
 
             // then
             assertSame( luceneProvider, selected );
@@ -100,7 +100,7 @@ public class FusionSchemaIndexProviderTest
             for ( Value secondValue : allValues )
             {
                 // when
-                SchemaIndexProvider selected = selector.select( nativeProvider, luceneProvider, firstValue, secondValue );
+                IndexProvider selected = selector.select( nativeProvider, luceneProvider, firstValue, secondValue );
 
                 // then
                 assertSame( luceneProvider, selected );
@@ -205,7 +205,7 @@ public class FusionSchemaIndexProviderTest
     public void shouldReportFailedIfAnyIsFailed() throws Exception
     {
         // given
-        SchemaIndexProvider provider = fusionProvider();
+        IndexProvider provider = fusionProvider();
         IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : InternalIndexState.values() )
@@ -229,7 +229,7 @@ public class FusionSchemaIndexProviderTest
     public void shouldReportPopulatingIfAnyIsPopulating() throws Exception
     {
         // given
-        SchemaIndexProvider provider = fusionProvider();
+        IndexProvider provider = fusionProvider();
         IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
@@ -255,7 +255,7 @@ public class FusionSchemaIndexProviderTest
                 mock( FileSystemAbstraction.class ) );
     }
 
-    private void setInitialState( SchemaIndexProvider mockedProvider, InternalIndexState state )
+    private void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
         when( mockedProvider.getInitialState( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( state );
     }

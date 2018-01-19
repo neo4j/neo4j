@@ -31,9 +31,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.index.schema.NumberSchemaIndexProvider;
+import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -68,7 +68,7 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        SchemaIndexProvider.Descriptor descriptor = NumberSchemaIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        IndexProvider.Descriptor descriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( descriptor );
 
         // then
@@ -83,7 +83,7 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        SchemaIndexProvider.Descriptor descriptor = LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+        IndexProvider.Descriptor descriptor = LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( descriptor );
 
         // then
@@ -98,8 +98,8 @@ public class FusionIndexIT
         initializeIndexWithDataAndShutdown();
 
         // when
-        SchemaIndexProvider.Descriptor luceneDescriptor = LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
-        SchemaIndexProvider.Descriptor nativeDescriptor = NumberSchemaIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
+        IndexProvider.Descriptor luceneDescriptor = LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+        IndexProvider.Descriptor nativeDescriptor = NumberIndexProvider.NATIVE_PROVIDER_DESCRIPTOR;
         deleteIndexFilesFor( luceneDescriptor );
         deleteIndexFilesFor( nativeDescriptor );
 
@@ -120,7 +120,7 @@ public class FusionIndexIT
         }
     }
 
-    private void deleteIndexFilesFor( SchemaIndexProvider.Descriptor descriptor )
+    private void deleteIndexFilesFor( IndexProvider.Descriptor descriptor )
     {
         File rootDirectory = subProviderDirectoryStructure( storeDir ).forProvider( descriptor ).rootDirectory();
         File[] files = fs.listFiles( rootDirectory );

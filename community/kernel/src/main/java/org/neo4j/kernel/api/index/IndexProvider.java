@@ -44,7 +44,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Populating the index</h3>
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
- * your {@link SchemaIndexProvider} for a\
+ * your {@link IndexProvider} for a\
  * {@link #getPopulator(long, IndexDescriptor, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
@@ -93,7 +93,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * {@link #getOnlineAccessor(long, IndexDescriptor, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
-public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
+public abstract class IndexProvider extends LifecycleAdapter implements Comparable<IndexProvider>
 {
     public interface Monitor
     {
@@ -117,8 +117,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
     }
 
-    public static final SchemaIndexProvider NO_INDEX_PROVIDER =
-            new SchemaIndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
+    public static final IndexProvider NO_INDEX_PROVIDER =
+            new IndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
             {
                 private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
                 private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
@@ -174,12 +174,12 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     private final IndexDirectoryStructure.Factory directoryStructureFactory;
     private final IndexDirectoryStructure directoryStructure;
 
-    protected SchemaIndexProvider( SchemaIndexProvider copySource )
+    protected IndexProvider( IndexProvider copySource )
     {
         this( copySource.providerDescriptor, copySource.priority, copySource.directoryStructureFactory );
     }
 
-    protected SchemaIndexProvider( Descriptor descriptor, int priority,
+    protected IndexProvider( Descriptor descriptor, int priority,
             IndexDirectoryStructure.Factory directoryStructureFactory )
     {
         this.directoryStructureFactory = directoryStructureFactory;
@@ -232,7 +232,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     }
 
     @Override
-    public int compareTo( SchemaIndexProvider o )
+    public int compareTo( IndexProvider o )
     {
         return this.priority - o.priority;
     }
@@ -249,7 +249,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
             return false;
         }
 
-        SchemaIndexProvider other = (SchemaIndexProvider) o;
+        IndexProvider other = (IndexProvider) o;
 
         return priority == other.priority &&
                providerDescriptor.equals( other.providerDescriptor );

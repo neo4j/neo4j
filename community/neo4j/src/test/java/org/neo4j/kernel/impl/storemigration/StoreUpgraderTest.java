@@ -38,7 +38,7 @@ import java.util.List;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -106,7 +106,7 @@ public class StoreUpgraderTest
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = fileSystemRule.get();
     private final RecordFormats formats;
-    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final IndexProvider indexProvider = new InMemoryIndexProvider();
 
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
@@ -390,7 +390,7 @@ public class StoreUpgraderTest
         NullLogService instance = NullLogService.getInstance();
         StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance );
         CountsMigrator countsMigrator = new CountsMigrator( fileSystem, pageCache, getTuningConfig() );
-        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, indexProvider );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
                 NullLogProvider.getInstance() );

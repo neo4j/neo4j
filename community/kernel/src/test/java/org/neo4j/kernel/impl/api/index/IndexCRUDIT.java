@@ -44,9 +44,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -145,7 +145,7 @@ public class IndexCRUDIT
     private GraphDatabaseAPI db;
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
     private ThreadToStatementContextBridge ctxSupplier;
@@ -188,7 +188,7 @@ public class IndexCRUDIT
         when( mockedIndexProvider.getOnlineAccessor(
                     anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
             ) ).thenReturn( writer );
-        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
+        when( mockedIndexProvider.compareTo( any( IndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         return writer;
     }

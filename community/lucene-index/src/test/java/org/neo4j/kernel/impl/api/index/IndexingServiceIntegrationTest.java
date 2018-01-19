@@ -42,7 +42,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -89,7 +89,7 @@ public class IndexingServiceIntegrationTest
     public KernelExtensionFactory<?> kernelExtensionFactory;
 
     @Parameterized.Parameter( 1 )
-    public SchemaIndexProvider.Descriptor indexDescriptor;
+    public IndexProvider.Descriptor indexDescriptor;
 
     @Before
     public void setUp()

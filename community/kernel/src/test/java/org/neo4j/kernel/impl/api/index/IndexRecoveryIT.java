@@ -47,7 +47,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -235,7 +235,7 @@ public class IndexRecoveryIT
     private GraphDatabaseAPI db;
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceSchemaIndexProviderFactory( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),
                     mockedIndexProvider );
@@ -247,7 +247,7 @@ public class IndexRecoveryIT
     {
         when( mockedIndexProvider.getProviderDescriptor() )
                 .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
-        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
+        when( mockedIndexProvider.compareTo( any( IndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ),
                 any( PageCache.class ) ) )

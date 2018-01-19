@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -316,7 +316,7 @@ public class LuceneIndexRecoveryIT
                     throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
-                        SchemaIndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
+                        IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
@@ -340,10 +340,10 @@ public class LuceneIndexRecoveryIT
                     throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
-                        SchemaIndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
+                        IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
-                    public int compareTo( SchemaIndexProvider o )
+                    public int compareTo( IndexProvider o )
                     {
                         return 1;
                     }

@@ -25,30 +25,30 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 
 public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
 {
-    private final SchemaIndexProvider defaultIndexProvider;
-    private final Map<SchemaIndexProvider.Descriptor,SchemaIndexProvider> indexProviders = new HashMap<>();
+    private final IndexProvider defaultIndexProvider;
+    private final Map<IndexProvider.Descriptor,IndexProvider> indexProviders = new HashMap<>();
 
-    public DefaultSchemaIndexProviderMap( SchemaIndexProvider defaultIndexProvider )
+    public DefaultSchemaIndexProviderMap( IndexProvider defaultIndexProvider )
     {
         this( defaultIndexProvider, Collections.emptyList() );
     }
 
-    public DefaultSchemaIndexProviderMap( SchemaIndexProvider defaultIndexProvider,
-            Iterable<SchemaIndexProvider> additionalIndexProviders )
+    public DefaultSchemaIndexProviderMap( IndexProvider defaultIndexProvider,
+            Iterable<IndexProvider> additionalIndexProviders )
     {
         this.defaultIndexProvider = defaultIndexProvider;
         indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
-        for ( SchemaIndexProvider provider : additionalIndexProviders )
+        for ( IndexProvider provider : additionalIndexProviders )
         {
             Descriptor providerDescriptor = provider.getProviderDescriptor();
             Objects.requireNonNull( providerDescriptor );
-            SchemaIndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+            IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
             if ( existing != null )
             {
                 throw new IllegalArgumentException( "Tried to load multiple schema index providers with the same provider descriptor " +
@@ -58,15 +58,15 @@ public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
     }
 
     @Override
-    public SchemaIndexProvider getDefaultProvider()
+    public IndexProvider getDefaultProvider()
     {
         return defaultIndexProvider;
     }
 
     @Override
-    public SchemaIndexProvider apply( SchemaIndexProvider.Descriptor descriptor )
+    public IndexProvider apply( IndexProvider.Descriptor descriptor )
     {
-        SchemaIndexProvider provider = indexProviders.get( descriptor );
+        IndexProvider provider = indexProviders.get( descriptor );
         if ( provider != null )
         {
             return provider;
@@ -78,7 +78,7 @@ public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
     }
 
     @Override
-    public void accept( Consumer<SchemaIndexProvider> visitor )
+    public void accept( Consumer<IndexProvider> visitor )
     {
         indexProviders.values().forEach( visitor );
     }

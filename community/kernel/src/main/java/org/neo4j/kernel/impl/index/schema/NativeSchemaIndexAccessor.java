@@ -32,9 +32,9 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -56,7 +56,7 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
             File storeFile,
             Layout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            SchemaIndexProvider.Monitor monitor,
+            IndexProvider.Monitor monitor,
             IndexDescriptor descriptor,
             long indexId,
             IndexSamplingConfig samplingConfig ) throws IOException

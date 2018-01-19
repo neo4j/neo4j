@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -52,7 +52,7 @@ public class IndexingServiceFactory
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
             throw new IllegalStateException( "You cannot run the database without an index provider, " +
-                                             "please make sure that a valid provider (subclass of " + SchemaIndexProvider.class.getName() +
+                                             "please make sure that a valid provider (subclass of " + IndexProvider.class.getName() +
                                              ") is on your classpath." );
         }
 

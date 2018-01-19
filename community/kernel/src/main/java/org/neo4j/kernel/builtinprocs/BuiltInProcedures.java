@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -609,7 +609,7 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( true ) );
     }
 
-    private Map<String,String> indexProviderDescriptorMap( SchemaIndexProvider.Descriptor providerDescriptor )
+    private Map<String,String> indexProviderDescriptorMap( IndexProvider.Descriptor providerDescriptor )
     {
         return MapUtil.stringMap(
                 "key", providerDescriptor.getKey(),

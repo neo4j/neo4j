@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -40,13 +40,13 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private final FileSystemAbstraction fileSystem;
     private boolean deleteObsoleteIndexes;
     private File schemaIndexDirectory;
-    private final SchemaIndexProvider schemaIndexProvider;
+    private final IndexProvider indexProvider;
 
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, SchemaIndexProvider schemaIndexProvider )
+    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, IndexProvider indexProvider )
     {
         super( "Indexes" );
         this.fileSystem = fileSystem;
-        this.schemaIndexProvider = schemaIndexProvider;
+        this.indexProvider = indexProvider;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
         if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
         {
-            schemaIndexDirectory = schemaIndexProvider.directoryStructure().rootDirectory();
+            schemaIndexDirectory = indexProvider.directoryStructure().rootDirectory();
             if ( schemaIndexDirectory != null )
             {
                 deleteObsoleteIndexes = true;

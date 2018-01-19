@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -87,7 +87,7 @@ public class LuceneSchemaIndexPopulatorTest
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
-                SchemaIndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
+                IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         indexPopulator = provider.getPopulator( indexId, index, samplingConfig );

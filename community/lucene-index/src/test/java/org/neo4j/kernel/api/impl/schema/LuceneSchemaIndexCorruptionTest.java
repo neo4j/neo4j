@@ -37,8 +37,8 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -64,7 +64,7 @@ public class LuceneSchemaIndexCorruptionTest
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private final SchemaIndexProvider.Monitor monitor = new LoggingMonitor( logProvider.getLog( "test" ) );
+    private final IndexProvider.Monitor monitor = new LoggingMonitor( logProvider.getLog( "test" ) );
 
     @Test
     public void shouldRequestIndexPopulationIfTheIndexIsCorrupt() throws Exception

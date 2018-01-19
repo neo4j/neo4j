@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -47,7 +47,7 @@ import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class NumberSchemaIndexProvider extends SchemaIndexProvider
+public class NumberIndexProvider extends IndexProvider
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -59,7 +59,7 @@ public class NumberSchemaIndexProvider extends SchemaIndexProvider
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    public NumberSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+    public NumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly )
     {

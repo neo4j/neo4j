@@ -26,7 +26,7 @@ import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
-public class LoggingMonitor implements SchemaIndexProvider.Monitor
+public class LoggingMonitor implements IndexProvider.Monitor
 {
     private final Log log;
 

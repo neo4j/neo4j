@@ -61,8 +61,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -152,7 +152,7 @@ public class IndexingServiceTest
     private final IndexDescriptor index = IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
     private final IndexPopulator populator = mock( IndexPopulator.class );
     private final IndexUpdater updater = mock( IndexUpdater.class );
-    private final SchemaIndexProvider indexProvider = mock( SchemaIndexProvider.class );
+    private final IndexProvider indexProvider = mock( IndexProvider.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
     private final IndexStoreView storeView  = mock( IndexStoreView.class );
     private final TokenNameLookup nameLookup = mock( TokenNameLookup.class );
@@ -348,7 +348,7 @@ public class IndexingServiceTest
     public void shouldLogIndexStateOnInit() throws Exception
     {
         // given
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
@@ -390,7 +390,7 @@ public class IndexingServiceTest
     public void shouldLogIndexStateOnStart() throws Exception
     {
         // given
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
@@ -440,7 +440,7 @@ public class IndexingServiceTest
     {
         // GIVEN an indexing service that has a schema index provider X
         String otherProviderKey = "something-completely-different";
-        SchemaIndexProvider.Descriptor otherDescriptor = new SchemaIndexProvider.Descriptor(
+        IndexProvider.Descriptor otherDescriptor = new IndexProvider.Descriptor(
                 otherProviderKey, "no-version" );
         IndexRule rule = indexRule( 1, 2, 3, otherDescriptor );
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
@@ -910,7 +910,7 @@ public class IndexingServiceTest
     public void shouldLogIndexStateOutliersOnInit() throws Exception
     {
         // given
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
@@ -958,7 +958,7 @@ public class IndexingServiceTest
     public void shouldLogIndexStateOutliersOnStart() throws Exception
     {
         // given
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
@@ -1362,21 +1362,21 @@ public class IndexingServiceTest
         }
     }
 
-    private IndexRule indexRule( long ruleId, int labelId, int propertyKeyId, SchemaIndexProvider.Descriptor
+    private IndexRule indexRule( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
             providerDescriptor )
     {
         return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyKeyId ),
                 providerDescriptor );
     }
 
-    private IndexRule constraintIndexRule( long ruleId, int labelId, int propertyKeyId, SchemaIndexProvider.Descriptor
+    private IndexRule constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
             providerDescriptor )
     {
         return IndexRule.indexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ),
                 providerDescriptor );
     }
 
-    private IndexRule constraintIndexRule( long ruleId, int labelId, int propertyKeyId, SchemaIndexProvider.Descriptor
+    private IndexRule constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
             providerDescriptor, long constraintId )
     {
         return IndexRule.constraintIndexRule(
