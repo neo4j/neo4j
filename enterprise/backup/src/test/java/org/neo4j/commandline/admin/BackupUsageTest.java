@@ -19,15 +19,13 @@
  */
 package org.neo4j.commandline.admin;
 
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Console;
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,12 +34,19 @@ import org.neo4j.backup.impl.BackupHelpOutput;
 import org.neo4j.backup.impl.OnlineBackupCommandProvider;
 import org.neo4j.backup.impl.ParametrisedOutsideWorld;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.rule.SuppressOutput;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 public class BackupUsageTest
 {
+    private static final Path HERE = Paths.get( "." );
+
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     OnlineBackupCommandProvider onlineBackupCommandProvider = new OnlineBackupCommandProvider();
     CommandLocator commandLocator = AugmentedCommandLocator.fromFixedArray( onlineBackupCommandProvider );
 
@@ -52,8 +57,11 @@ public class BackupUsageTest
         String output = runBackup();
 
         // then
-        String reason = "Missing argument 'backup-dir'\n\n";
-        assertEquals( reason + BackupHelpOutput.BACKUP_OUTPUT, output );
+        String reason = "Missing argument 'backup-dir'";
+        assertThat( output, containsString( reason ) );
+
+        // and
+        assertThat( output, containsString( BackupHelpOutput.BACKUP_OUTPUT ) );
     }
 
     @Test
@@ -63,20 +71,24 @@ public class BackupUsageTest
         String output = runBackup( "--backup-dir=target" );
 
         // then
-        String reason = "Missing argument 'name'\n\n";
-        assertEquals( reason + BackupHelpOutput.BACKUP_OUTPUT, output );
+        String reason = "Missing argument 'name'";
+        assertThat( output, containsString( reason ) );
+
+        // and
+        assertThat( output, containsString( BackupHelpOutput.BACKUP_OUTPUT ) );
     }
 
     @Test
     public void incorrectBackupDirectory() throws IOException
     {
         // when
-        Path backupDirectoryResolved = new File( "." ).toPath().toRealPath().resolve( "non_existing_dir" );
+        Path backupDirectoryResolved = HERE.toRealPath().resolve( "non_existing_dir" );
         String output = runBackup( "--backup-dir=non_existing_dir", "--name=mybackup" );
 
         // then
         String reason = String.format( "command failed: Directory '%s' does not exist.\n", backupDirectoryResolved.toFile().toString() );
-        assertEquals( reason, output );
+        assertThat( output, containsString( reason ) );
+        assertThat( output, not( containsString( BackupHelpOutput.BACKUP_OUTPUT ) ) );
     }
 
     private String runBackup( String... args ) throws UnsupportedEncodingException
@@ -86,24 +98,16 @@ public class BackupUsageTest
 
     private String runBackup( boolean debug, String... args ) throws UnsupportedEncodingException
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( baos, true, "utf-8" );
-        ParametrisedOutsideWorld outsideWorld = capturableOutputOutsideWorld( printStream );
+        ParametrisedOutsideWorld outsideWorld = // ParametrisedOutsideWorld used for suppressing #close() doing System.exit()
+                new ParametrisedOutsideWorld( System.console(), System.out, System.err, System.in, new DefaultFileSystemAbstraction() );
         AdminTool subject = new AdminTool( commandLocator, AugmentedBlockerLocator.fromList(), outsideWorld, debug );
-        Path homeDir = new File( "." ).toPath();
-        Path configDir = new File( "." ).toPath();
+        Path homeDir = HERE;
+        Path configDir = HERE;
         List<String> params = new ArrayList();
         params.add( "backup" );
         params.addAll( Arrays.asList( args ) );
         String[] argArray = params.toArray( new String[params.size()] );
         subject.execute( homeDir, configDir, argArray );
-        return baos.toString();
-    }
-
-    private ParametrisedOutsideWorld capturableOutputOutsideWorld( PrintStream printStream )
-    {
-        Console console = System.console();
-        FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
-        return new ParametrisedOutsideWorld( console, printStream, printStream, System.in, fileSystemAbstraction );
+        return suppressOutput.getErrorVoice().toString() + suppressOutput.getOutputVoice().toString();
     }
 }

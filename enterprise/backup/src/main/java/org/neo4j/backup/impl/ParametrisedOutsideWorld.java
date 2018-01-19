@@ -120,5 +120,8 @@ public class ParametrisedOutsideWorld implements OutsideWorld
     public void close() throws IOException
     {
         fileSystemAbstraction.close();
+        inStream().close();
+        outStream().close();
+        errorStream().close();
     }
 }

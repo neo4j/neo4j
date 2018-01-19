@@ -151,7 +151,7 @@ class OnlineBackupContextBuilder
 
             OptionalHostnamePort address = toOptionalHostnamePortFromRawAddress(
                     arguments.get( ARG_NAME_BACKUP_SOURCE ) );
-            Path folder = getFolder( arguments );
+            Path folder = getBackupDirectory( arguments );
             String name = arguments.get( ARG_NAME_BACKUP_NAME );
             boolean fallbackToFull = arguments.getBoolean( ARG_NAME_FALLBACK_FULL );
             boolean doConsistencyCheck = arguments.getBoolean( ARG_NAME_CHECK_CONSISTENCY );
@@ -197,7 +197,7 @@ class OnlineBackupContextBuilder
         }
     }
 
-    private Path getFolder( Arguments arguments ) throws CommandFailed
+    private Path getBackupDirectory( Arguments arguments ) throws CommandFailed
     {
         Path path = arguments.getMandatoryPath( ARG_NAME_BACKUP_DIRECTORY );
         try
