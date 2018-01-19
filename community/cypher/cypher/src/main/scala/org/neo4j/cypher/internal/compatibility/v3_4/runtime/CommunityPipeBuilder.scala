@@ -350,6 +350,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
       case LeftOuterHashJoin(nodes, l, r) =>
         NodeLeftOuterHashJoinPipe(nodes, lhs, rhs, r.availableSymbols -- l.availableSymbols)(id = id)
 
+      case RightOuterHashJoin(nodes, l, r) =>
+        NodeRightOuterHashJoinPipe(nodes, lhs, rhs, l.availableSymbols -- r.availableSymbols)(id = id)
+
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 
       case AssertSameNode(node, _, _) =>
