@@ -21,96 +21,39 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable
-import scala.collection.mutable.MutableList
-import scala.collection.mutable.ListBuffer
 
 case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs: Pipe, nullableVariables: Set[String])
                                     (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(lhs) {
-  val nullColumns: Seq[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toSeq
+  extends NodeOuterHashJoinPipe(nodeVariables, lhs, rhs, nullableVariables) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
-    if(input.isEmpty)
+    if (input.isEmpty)
       return Iterator.empty
 
-    val probeTable = buildProbeTableAndFindNullRows(input)
+    val probeTable = buildProbeTableAndFindNullRows(input, withNulls = true)
 
-    val seenKeys = mutable.Set[IndexedSeq[Long]]()
+    val rhsKeys = mutable.Set[IndexedSeq[Long]]()
+    val lhsKeys = probeTable.keySet
     val joinedRows = (
       for {rhsRow <- rhs.createResults(state)
            joinKey <- computeKey(rhsRow)}
-      yield {
-        val seq = probeTable(joinKey)
-        seenKeys.add(joinKey)
-        seq.map(lhsRow => executionContextFactory.copyWith(lhsRow).mergeWith(rhsRow))
-      }).flatten
+        yield {
+          val seq = probeTable(joinKey)
+          rhsKeys.add(joinKey)
+          seq.map(lhsRow => executionContextFactory.copyWith(lhsRow).mergeWith(rhsRow))
+        }).flatten
 
-    def rowsWithoutRhsMatch: Iterator[ExecutionContext] = (probeTable.keySet -- seenKeys).iterator.flatMap {
-      x => probeTable(x).map(addNulls)
+    def rowsWithoutRhsMatch: Iterator[ExecutionContext] = {
+      (lhsKeys -- rhsKeys).iterator.flatMap {
+        x => probeTable(x).map(addNulls)
+      }
     }
 
     val rowsWithNullAsJoinKey = probeTable.nullRows.map(addNulls)
 
     rowsWithNullAsJoinKey ++ joinedRows ++ rowsWithoutRhsMatch
   }
-
-  private def addNulls(in: ExecutionContext): ExecutionContext = executionContextFactory.copyWith(in).set(nullColumns)
-
-  private def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext]): ProbeTable = {
-    val probeTable = new ProbeTable()
-
-    for (context <- input) {
-      val key = computeKey(context)
-
-      key match {
-        case Some(joinKey) => probeTable.addValue(joinKey, context)
-        case None          => probeTable.addNull(context)
-      }
-    }
-
-    probeTable
-  }
-
-  private val myVariables = nodeVariables.toIndexedSeq
-
-  private def computeKey(context: ExecutionContext): Option[IndexedSeq[Long]] = {
-    val key = new Array[Long](myVariables.length)
-
-    for (idx <- myVariables.indices) {
-      key(idx) = context(myVariables(idx)) match {
-        case n: VirtualNodeValue => n.id
-        case _ => return None
-      }
-    }
-    Some(key.toIndexedSeq)
-  }
-}
-
-//noinspection ReferenceMustBePrefixed
-class ProbeTable() {
-  private val table: mutable.HashMap[IndexedSeq[Long], MutableList[ExecutionContext]] =
-    new mutable.HashMap[IndexedSeq[Long], MutableList[ExecutionContext]]
-
-  private val rowsWithNullInKey: ListBuffer[ExecutionContext] = new ListBuffer[ExecutionContext]()
-
-  def addValue(key: IndexedSeq[Long], newValue: ExecutionContext) {
-    val values = table.getOrElseUpdate(key, MutableList.empty)
-    values += newValue
-  }
-
-  def addNull(context: ExecutionContext): Unit = rowsWithNullInKey += context
-
-  private val EMPTY: MutableList[ExecutionContext] = MutableList.empty
-
-  def apply(key: IndexedSeq[Long]): MutableList[ExecutionContext] = table.getOrElse(key, EMPTY)
-
-  def keySet: collection.Set[IndexedSeq[Long]] = table.keySet
-
-  def nullRows: Iterator[ExecutionContext] = rowsWithNullInKey.iterator
 }
