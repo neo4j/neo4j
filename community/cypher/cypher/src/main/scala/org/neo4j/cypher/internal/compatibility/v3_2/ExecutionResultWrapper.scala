@@ -142,9 +142,8 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
                     uniqueConstraintsRemoved = i.uniqueConstraintsRemoved,
                     existenceConstraintsAdded = i.existenceConstraintsAdded,
                     existenceConstraintsRemoved = i.existenceConstraintsRemoved,
-                    // TODO: Once next release of 3.2.8 is made, we should enable these missing statistics
-                    nodekeyConstraintsAdded = 0, //i.nodekeyConstraintsAdded,
-                    nodekeyConstraintsRemoved = 0 //i.nodekeyConstraintsRemoved
+                    nodekeyConstraintsAdded = i.nodekeyConstraintsAdded,
+                    nodekeyConstraintsRemoved = i.nodekeyConstraintsRemoved
     )
   }
 

@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_2
 
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, StatsDivergenceCalculator, StatsDivergenceInverseDecayCalculator}
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerConfiguration => CypherCompilerConfiguration3_2}
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.{CompilationPhase => v3_2Phase, CompilationPhaseEvent => CompilationPhaseEvent3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition => InputPosition3_2}
-import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, StatsDivergenceExponentialDecayCalculator}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, phases}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
 object helpers {
@@ -34,11 +35,23 @@ object helpers {
     monitor.endFailure(tc.executingQuery(), t)
   }
 
-  def as3_2(config: CypherCompilerConfiguration) =
+  def as3_2(stats: phases.StatsDivergenceCalculator): StatsDivergenceCalculator = {
+    stats match {
+      case old: StatsDivergenceExponentialDecayCalculator =>
+        PlanFingerprint.divergenceCalculatorFor("exponential", old.initialThreshold, old.targetThreshold,
+          old.initialMillis, old.targetMillis)
+      case old: StatsDivergenceInverseDecayCalculator =>
+        PlanFingerprint.divergenceCalculatorFor("inverse", old.initialThreshold, old.targetThreshold,
+          old.initialMillis, old.targetMillis)
+      case _ =>
+        PlanFingerprint.divergenceNoDecayCalculator(stats.initialThreshold, stats.initialMillis)
+    }
+  }
+
+  def as3_2(config: CypherCompilerConfiguration): CypherCompilerConfiguration3_2 =
     CypherCompilerConfiguration3_2(
       config.queryCacheSize,
-      config.statsDivergenceCalculator.initialThreshold,  //TODO: When 3.2.9 is released, change these two lines
-      config.statsDivergenceCalculator.initialMillis,
+      as3_2(config.statsDivergenceCalculator),
       config.useErrorsOverWarnings,
       config.idpMaxTableSize,
       config.idpIterationDuration,
@@ -46,6 +59,7 @@ object helpers {
       config.errorIfShortestPathHasCommonNodesAtRuntime,
       config.legacyCsvQuoteEscaping,
       config.nonIndexedLabelWarningThreshold)
+
 
   def as3_2(tracer: CompilationPhaseTracer): org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer = {
     new org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer {
