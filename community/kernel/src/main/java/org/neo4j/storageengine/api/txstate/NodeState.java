@@ -24,6 +24,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.storageengine.api.Direction;
 
 /**
@@ -58,6 +59,10 @@ public interface NodeState extends PropertyContainerState
     PrimitiveLongIterator getAddedRelationships( Direction direction );
 
     PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
+
+    PrimitiveLongIterator getAddedRawRelationships();
+
+    PrimitiveLongIterator getAddedRawRelationships( RelationshipDirection direction, int relType );
 
     boolean hasRelationshipChanges();
 }
