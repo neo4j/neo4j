@@ -71,7 +71,7 @@ public class BloomIT
     static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
     static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
     static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
-    static final String GET_REL_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
+    static final String GET_REL_KEYS = "CALL bloom.getIndexedRelationshipPropertyKeys";
     static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
     static final String STATUS = "CALL bloom.indexStatus";
 
@@ -608,11 +608,18 @@ public class BloomIT
         db = getDb();
 
         db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"otherprop\", \"proppmatt\"" ) );
+        db.execute( String.format( SET_REL_KEYS, "\"ata\", \"mata\", \"matt\"" ) );
 
         Result result = db.execute( GET_NODE_KEYS );
         assertEquals( "otherprop", result.next().get( "propertyKey" ) );
         assertEquals( "prop", result.next().get( "propertyKey" ) );
         assertEquals( "proppmatt", result.next().get( "propertyKey" ) );
+        assertFalse( result.hasNext() );
+
+        result = db.execute( GET_REL_KEYS );
+        assertEquals( "mata", result.next().get( "propertyKey" ) );
+        assertEquals( "matt", result.next().get( "propertyKey" ) );
+        assertEquals( "ata", result.next().get( "propertyKey" ) );
         assertFalse( result.hasNext() );
     }
 

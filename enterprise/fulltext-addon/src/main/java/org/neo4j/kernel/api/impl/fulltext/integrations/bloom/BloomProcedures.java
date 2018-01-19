@@ -68,7 +68,7 @@ public class BloomProcedures
     @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
     public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws Exception
     {
-        return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
+        return provider.getProperties( BLOOM_RELATIONSHIPS, RELATIONSHIPS ).stream().map( PropertyOutput::new );
     }
 
     @Description( "Set the node property keys to index" )

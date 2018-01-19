@@ -57,7 +57,8 @@ class BloomKernelExtension extends LifecycleAdapter
     private FulltextProvider provider;
 
     BloomKernelExtension( FileSystemAbstraction fileSystem, File storeDir, Config config, GraphDatabaseService db, Procedures procedures, LogService logService,
-            AvailabilityGuard availabilityGuard, JobScheduler scheduler, Supplier<TransactionIdStore> transactionIdStore, Supplier<NeoStoreFileListing> fileListing )
+            AvailabilityGuard availabilityGuard, JobScheduler scheduler, Supplier<TransactionIdStore> transactionIdStore,
+            Supplier<NeoStoreFileListing> fileListing )
     {
         this.storeDir = storeDir;
         this.config = config;
