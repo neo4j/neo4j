@@ -76,7 +76,7 @@ public class SpatialFusionIndexPopulatorTest
             when( indexMap.get( crs ).getPopulator( any(), any() ) ).thenReturn( populatorMap.get( crs ) );
         }
 
-        when( indexFactory.selectAndCreate( eq( indexMap ), eq( 0L ), any( PointValue.class ) ) ).thenAnswer( ( a ) ->
+        when( indexFactory.selectAndCreate( eq( indexMap ), eq( 0L ), any( PointValue.class ) ) ).thenAnswer( a ->
         {
             PointValue pointValue = a.getArgument( 2 );
             return indexMap.get( pointValue.getCoordinateReferenceSystem() );
