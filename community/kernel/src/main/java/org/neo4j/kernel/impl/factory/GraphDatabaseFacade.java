@@ -903,17 +903,22 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         private final Statement statement;
         private long next;
         private boolean closed;
+        private static final long NOT_INITIALIZED = -2L;
 
         NodeCursorResourceIterator( NodeLabelIndexCursor cursor, Statement statement )
         {
             this.cursor = cursor;
             this.statement = statement;
-            fetchNext();
+            this.next = NOT_INITIALIZED;
         }
 
         @Override
         public boolean hasNext()
         {
+            if ( next == NOT_INITIALIZED )
+            {
+                fetchNext();
+            }
             return next != NO_ID;
         }
 
