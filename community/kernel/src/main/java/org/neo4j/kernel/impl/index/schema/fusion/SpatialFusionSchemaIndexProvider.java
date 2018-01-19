@@ -188,7 +188,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     {
         Pattern pattern = Pattern.compile( "(\\d+)-(\\d+)" );
         File rootDirectory = this.directoryStructure().rootDirectory();
-        if (rootDirectory == null)
+        if ( rootDirectory == null )
         {
             return;
         }

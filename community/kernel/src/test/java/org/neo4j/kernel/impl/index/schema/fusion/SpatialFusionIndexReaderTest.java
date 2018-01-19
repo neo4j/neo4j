@@ -144,8 +144,10 @@ public class SpatialFusionIndexReaderTest
     {
         // given
         IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
-        when( readerMap.get( CoordinateReferenceSystem.Cartesian ).query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 0L, 1L, 4L, 5L ) );
-        when( readerMap.get( CoordinateReferenceSystem.WGS84 ).query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2L, 3L, 6L ) );
+        when( readerMap.get( CoordinateReferenceSystem.Cartesian ).query( exists ) ).thenReturn(
+                PrimitiveLongResourceCollections.iterator( null, 0L, 1L, 4L, 5L ) );
+        when( readerMap.get( CoordinateReferenceSystem.WGS84 ).query( exists ) ).thenReturn(
+                PrimitiveLongResourceCollections.iterator( null, 2L, 3L, 6L ) );
 
         PrimitiveLongIterator result = fusionIndexReader.query( exists );
 

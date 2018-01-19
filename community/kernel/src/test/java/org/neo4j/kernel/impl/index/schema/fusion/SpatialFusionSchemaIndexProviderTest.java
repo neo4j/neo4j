@@ -69,7 +69,6 @@ public class SpatialFusionSchemaIndexProviderTest
         indexMap.put( CoordinateReferenceSystem.Cartesian, mock( SpatialKnownIndex.class ) );
     }
 
-
     @Test
     public void shouldReportPopulatingIfAnyIsPopulating() throws Exception
     {
