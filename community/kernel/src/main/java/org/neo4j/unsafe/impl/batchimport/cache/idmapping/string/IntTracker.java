@@ -20,8 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
-
-import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 
 /**
  * {@link Tracker} capable of keeping {@code int} range values, using {@link IntArray}.
@@ -29,8 +28,11 @@ import static org.neo4j.helpers.Numbers.safeCastLongToInt;
  */
 public class IntTracker extends AbstractTracker<IntArray>
 {
-    static final int ID_SIZE = Integer.BYTES;
+    static final int SIZE = Integer.BYTES;
+    static final int ID_BITS = Byte.SIZE * SIZE - 1;
+    static final long MAX_ID = (1 << ID_BITS) - 1;
     static final int DEFAULT_VALUE = -1;
+    private static final LongBitsManipulator BITS = new LongBitsManipulator( ID_BITS, 1 );
 
     public IntTracker( IntArray array )
     {
@@ -40,7 +42,7 @@ public class IntTracker extends AbstractTracker<IntArray>
     @Override
     public long get( long index )
     {
-        return array.get( index );
+        return BITS.get( array.get( index ), 0 );
     }
 
     /**
@@ -49,6 +51,24 @@ public class IntTracker extends AbstractTracker<IntArray>
     @Override
     public void set( long index, long value )
     {
-        array.set( index, safeCastLongToInt( value ) );
+        long field = array.get( index );
+        field = BITS.set( field, 0, value );
+        array.set( index, (int) field );
+    }
+
+    @Override
+    public void markAsDuplicate( long index )
+    {
+        long field = array.get( index );
+        // Since the default value for the whole field is -1 (i.e. all 1s) then this mark will have to be 0.
+        field = BITS.set( field, 1, 0 );
+        array.set( index, (int) field );
+    }
+
+    @Override
+    public boolean isMarkedAsDuplicate( long index )
+    {
+        long field = array.get( index );
+        return BITS.get( field, 1 ) == 0;
     }
 }

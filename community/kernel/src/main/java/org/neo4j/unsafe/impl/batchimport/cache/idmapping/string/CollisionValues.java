@@ -19,22 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-/**
- * Common {@link TrackerFactory} implementations.
- */
-public class TrackerFactories
-{
-    private TrackerFactories()
-    {
-    }
+import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 
-    /**
-     * @return {@link TrackerFactory} creating different {@link Tracker} instances depending on size.
-     */
-    public static TrackerFactory dynamic()
-    {
-        return ( arrayFactory, size ) -> size > IntTracker.MAX_ID
-                ? new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) )
-                : new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) );
-    }
+/**
+ * Stores collision values efficiently for retrieval later. The idea is that there's a single thread {@link #add(Object) adding}
+ * ids, each gets assigned an offset, and later use those offsets to get back the added ids.
+ */
+public interface CollisionValues extends MemoryStatsVisitor.Visitable, AutoCloseable
+{
+    long add( Object id );
+
+    Object get( long offset );
+
+    @Override
+    void close();
 }
