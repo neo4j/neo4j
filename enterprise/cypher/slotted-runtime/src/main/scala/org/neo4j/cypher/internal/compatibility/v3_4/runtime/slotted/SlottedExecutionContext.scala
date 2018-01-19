@@ -122,37 +122,8 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
   //-----------------------------------------------------------------------------------------------------------
   // Compatibility implementations of the old ExecutionContext API used by Community interpreted runtime pipes
   //-----------------------------------------------------------------------------------------------------------
-  // TODO: As an optimization we can create a map from string key to precompiled getter/setter methods in the SlotConfiguration and use below
-  // to avoid matching and unapplys
-
   override def get(key: String): Option[AnyValue] = {
-    slots.get(key) match {
-      case Some(RefSlot(offset, _, _)) if isRefInitialized(offset) => // Pretend uninitialized slots do not exist to the community pipes
-        Some(getRefAtWithoutCheckingInitialized(offset))
-
-      case Some(LongSlot(offset, false, CTNode)) =>
-        Some(VirtualValues.node(getLongAt(offset)))
-
-      case Some(LongSlot(offset, false, CTRelationship)) =>
-        Some(VirtualValues.relationship(getLongAt(offset)))
-
-      case Some(LongSlot(offset, true, CTNode)) =>
-        val nodeId = getLongAt(offset)
-        if (entityIsNull(nodeId))
-          Some(Values.NO_VALUE)
-        else
-          Some(VirtualValues.node(nodeId))
-
-      case Some(LongSlot(offset, true, CTRelationship)) =>
-        val relId = getLongAt(offset)
-        if (entityIsNull(relId))
-          Some(Values.NO_VALUE)
-        else
-          Some(VirtualValues.relationship(relId))
-
-      case _ =>
-        None
-    }
+    slots.maybeGetter(key).map(g => g(this))
   }
 
   override def +=(kv: (String, AnyValue)): this.type = {
@@ -222,42 +193,10 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
   }
 
   private def setValue(key1: String, value1: AnyValue): Unit = {
-    (slots.get(key1), value1) match {
-      case (Some(RefSlot(offset, _, _)), _) =>
-        setRefAt(offset, value1)
-
-      case (Some(LongSlot(offset, false, CTNode)),
-            nodeVal: VirtualNodeValue) =>
-        setLongAt(offset, nodeVal.id())
-
-      case (Some(LongSlot(offset, false, CTRelationship)),
-            relVal: VirtualRelationshipValue) =>
-        setLongAt(offset, relVal.id())
-
-      case (Some(LongSlot(offset, true, CTNode)), nodeVal) if nodeVal == Values.NO_VALUE =>
-        setLongAt(offset, -1L)
-
-      case (Some(LongSlot(offset, true, CTRelationship)), relVal) if relVal == Values.NO_VALUE =>
-        setLongAt(offset, -1L)
-
-      case (Some(LongSlot(offset, true, CTNode)),
-            nodeVal: VirtualNodeValue) =>
-        setLongAt(offset, nodeVal.id())
-
-      case (Some(LongSlot(offset, true, CTRelationship)),
-            relVal: VirtualRelationshipValue) =>
-        setLongAt(offset, relVal.id())
-
-      case (Some(LongSlot(offset, _, CTNode)), value) =>
-        throw new ParameterWrongTypeException(s"Expected to find a node at long slot $offset but found $value instead")
-
-      case (Some(LongSlot(offset, _, CTRelationship)), value) =>
-        throw new ParameterWrongTypeException(s"Expected to find a relationship at long slot $offset but found $value instead")
-
-      case _ =>
-        throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: ${slots}")
-    }
-  }
+    slots.maybeSetter(key1)
+      .getOrElse(throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: ${slots}"))
+      .apply(this, value1)
+ }
 
   def isRefInitialized(offset: Int): Boolean = {
     refs(offset) != null
