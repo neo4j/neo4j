@@ -86,7 +86,7 @@ public class BackupUsageTest
         String output = runBackup( "--backup-dir=non_existing_dir", "--name=mybackup" );
 
         // then
-        String reason = String.format( "command failed: Directory '%s' does not exist.\n", backupDirectoryResolved.toFile().toString() );
+        String reason = String.format( "command failed: Directory '%s' does not exist.\n", backupDirectoryResolved );
         assertThat( output, containsString( reason ) );
         assertThat( output, not( containsString( BackupHelpOutput.BACKUP_OUTPUT ) ) );
     }
@@ -100,7 +100,7 @@ public class BackupUsageTest
     {
         ParametrisedOutsideWorld outsideWorld = // ParametrisedOutsideWorld used for suppressing #close() doing System.exit()
                 new ParametrisedOutsideWorld( System.console(), System.out, System.err, System.in, new DefaultFileSystemAbstraction() );
-        AdminTool subject = new AdminTool( commandLocator, AugmentedBlockerLocator.fromList(), outsideWorld, debug );
+        AdminTool subject = new AdminTool( commandLocator, cmd -> new ArrayList<>(  ), outsideWorld, debug );
         Path homeDir = HERE;
         Path configDir = HERE;
         List<String> params = new ArrayList();

@@ -206,7 +206,7 @@ class OnlineBackupContextBuilder
         }
         catch ( IOException e )
         {
-            throw new CommandFailed( String.format( "Directory '%s' does not exist.", path.toFile().toString() ) );
+            throw new CommandFailed( String.format( "Directory '%s' does not exist.", path ) );
         }
     }
 
