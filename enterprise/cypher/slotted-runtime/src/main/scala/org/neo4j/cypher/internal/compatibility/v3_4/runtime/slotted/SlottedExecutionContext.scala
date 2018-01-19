@@ -329,4 +329,16 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
     }
     entities.toMap
   }
+
+  override def isNull(key: String): Boolean =
+    slots.get(key) match {
+      case Some(RefSlot(offset, true, _)) if isRefInitialized(offset) =>
+        getRefAtWithoutCheckingInitialized(offset) == Values.NO_VALUE
+      case Some(LongSlot(offset, true, CTNode)) =>
+        entityIsNull(getLongAt(offset))
+      case Some(LongSlot(offset, true, CTRelationship)) =>
+        entityIsNull(getLongAt(offset))
+      case _ =>
+        false
+    }
 }

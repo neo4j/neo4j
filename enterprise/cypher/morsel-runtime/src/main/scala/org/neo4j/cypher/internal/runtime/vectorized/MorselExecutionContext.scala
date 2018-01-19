@@ -74,4 +74,6 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
   override def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = ???
 
   override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] = ???
+
+  override def isNull(key: String): Boolean = ???
 }

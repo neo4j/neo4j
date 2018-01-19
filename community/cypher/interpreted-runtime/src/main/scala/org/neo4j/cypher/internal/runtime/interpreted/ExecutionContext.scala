@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
 
 import scala.collection.mutable.{Map => MutableMap}
@@ -60,6 +61,8 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   // Needed by legacy pattern matcher. Returns a map of all bound nodes/relationships in the context.
   // Entities that are only references (ids) are materialized with the provided materialization functions
   def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue]
+
+  def isNull(key: String): Boolean
 }
 
 case class MapExecutionContext(m: MutableMap[String, AnyValue])
@@ -163,4 +166,10 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
       case (k: String, v: RelationshipReference) =>
         (k, materializeRelationship(v.id()))
     }.toMap
+
+  override def isNull(key: String): Boolean =
+    get(key) match {
+      case Some(Values.NO_VALUE) => true
+      case _ => false
+    }
 }
