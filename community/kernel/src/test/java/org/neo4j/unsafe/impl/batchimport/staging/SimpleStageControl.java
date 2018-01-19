@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.function.Supplier;
 
-import org.neo4j.helpers.Exceptions;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
 /**
  * A simple {@link StageControl} for tests with multiple steps and where an error or assertion failure
@@ -53,7 +53,8 @@ public class SimpleStageControl implements StageControl
     {
         if ( panic != null )
         {
-            throw Exceptions.launderedException( panic );
+            throwIfUnchecked( panic );
+            throw new RuntimeException( panic );
         }
     }
 

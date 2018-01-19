@@ -321,7 +321,7 @@ public class CommonAbstractStoreBehaviourTest
     {
         config.augment( CommonAbstractStore.Configuration.rebuild_idgenerators_fast, "false" );
         createStore();
-        store.setStoreNotOk( new Exception() );
+        store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );
         record.value = 0xCAFEBABE;
         store.updateRecord( record );
@@ -333,7 +333,7 @@ public class CommonAbstractStoreBehaviourTest
     public void scanForHighIdMustThrowOnPageOverflow() throws Exception
     {
         createStore();
-        store.setStoreNotOk( new Exception() );
+        store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );
         record.value = 0xCAFEBABE;
         store.updateRecord( record );

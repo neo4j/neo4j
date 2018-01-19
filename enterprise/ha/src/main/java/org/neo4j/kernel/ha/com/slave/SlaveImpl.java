@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.com.slave;
 
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.ha.com.master.Slave;
 
 public class SlaveImpl implements Slave
@@ -42,7 +41,7 @@ public class SlaveImpl implements Slave
         }
         catch ( InterruptedException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
         return Response.EMPTY;
     }

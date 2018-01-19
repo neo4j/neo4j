@@ -49,7 +49,7 @@ import org.neo4j.logging.Logger;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.neo4j.helpers.ArrayUtil.contains;
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -76,7 +76,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     protected final RecordFormat<RECORD> recordFormat;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
-    private Throwable causeOfStoreNotOk;
+    private RuntimeException causeOfStoreNotOk;
     private final String typeDescriptor;
     protected int recordSize;
 
@@ -153,7 +153,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 e.addSuppressed( failureToClose );
             }
         }
-        throw launderedException( e );
+        throwIfUnchecked( e );
+        throw new RuntimeException( e );
     }
 
     /**
@@ -547,7 +548,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * Marks this store as "not ok".
      */
-    void setStoreNotOk( Throwable cause )
+    void setStoreNotOk( RuntimeException cause )
     {
         storeOk = false;
         causeOfStoreNotOk = cause;
@@ -571,7 +572,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         if ( !storeOk )
         {
-            throw launderedException( causeOfStoreNotOk );
+            throw causeOfStoreNotOk;
         }
     }
 

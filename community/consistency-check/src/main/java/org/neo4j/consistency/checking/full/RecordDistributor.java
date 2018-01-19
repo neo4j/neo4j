@@ -92,7 +92,7 @@ public class RecordDistributor
                 worker.done();
             }
 
-            workers.awaitAndThrowOnError( RuntimeException.class );
+            workers.awaitAndThrowOnError();
         }
         catch ( InterruptedException e )
         {

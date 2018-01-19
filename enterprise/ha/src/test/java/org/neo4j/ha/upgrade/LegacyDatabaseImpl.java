@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +52,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.ha.upgrade.RollingUpgradeIT.type1;
 import static org.neo4j.ha.upgrade.RollingUpgradeIT.type2;
 import static org.neo4j.ha.upgrade.Utils.execJava;
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDatabase
 {
@@ -333,9 +331,9 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         {
             db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         }
-        catch ( Exception e )
+        catch ( InterruptedException e )
         {
-            throw launderedException( e );
+            throw new RuntimeException( e );
         }
 
         try ( Transaction tx = db.beginTx() )

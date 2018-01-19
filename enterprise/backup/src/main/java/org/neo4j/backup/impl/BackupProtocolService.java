@@ -48,7 +48,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -138,7 +137,7 @@ public class BackupProtocolService
         }
         catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -172,9 +171,13 @@ public class BackupProtocolService
             clearIdFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
+        catch ( RuntimeException e )
+        {
+            throw e;
+        }
         catch ( Exception e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -190,7 +193,7 @@ public class BackupProtocolService
         }
         catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -228,7 +231,7 @@ public class BackupProtocolService
         }
         catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -309,7 +312,7 @@ public class BackupProtocolService
         }
         catch ( IOException io )
         {
-            throw Exceptions.launderedException( io );
+            throw new RuntimeException( io );
         }
     }
 

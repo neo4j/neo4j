@@ -151,7 +151,7 @@ public class TransactionThroughMasterSwitchStressIT
             Thread.sleep( 100 );
         }
         end.set( true );
-        transactors.awaitAndThrowOnError( RuntimeException.class );
+        transactors.awaitAndThrowOnError();
 
         // THEN verify that the count is equal to the number of successful transactions
         assertEquals( successes.get(), getNodePropertyValue( master, nodeId, key ) );

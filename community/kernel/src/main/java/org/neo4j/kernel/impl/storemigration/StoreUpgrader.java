@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -230,10 +229,6 @@ public class StoreUpgrader
         catch ( IOException | UncheckedIOException e )
         {
             throw new UnableToUpgradeException( "Failure doing migration", e );
-        }
-        catch ( Exception e )
-        {
-            throw Exceptions.launderedException( e );
         }
     }
 

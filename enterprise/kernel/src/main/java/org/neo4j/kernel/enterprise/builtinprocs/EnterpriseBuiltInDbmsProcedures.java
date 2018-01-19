@@ -401,7 +401,7 @@ public class EnterpriseBuiltInDbmsProcedures
             {
                 for ( String id : idTexts )
                 {
-                    if ( !terminatedQuerys.stream().anyMatch( query -> query.queryId.equals( id ) ) )
+                    if ( terminatedQuerys.stream().noneMatch( query -> query.queryId.equals( id ) ) )
                     {
                         terminatedQuerys.add( new QueryFailedTerminationResult( fromExternalString( id ) ) );
                     }

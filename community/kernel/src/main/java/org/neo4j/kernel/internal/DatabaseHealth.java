@@ -24,8 +24,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.helpers.Exceptions.withCause;
-
 public class DatabaseHealth
 {
     private static final String panicMessage = "The database has encountered a critical error, " +
@@ -64,8 +62,14 @@ public class DatabaseHealth
                 }
                 catch ( NoSuchMethodException e )
                 {
-                    exception = withCause( panicDisguise.getConstructor( String.class )
-                            .newInstance( panicMessage ), causeOfPanic );
+                    exception = panicDisguise.getConstructor( String.class ).newInstance( panicMessage );
+                    try
+                    {
+                        exception.initCause( causeOfPanic );
+                    }
+                    catch ( IllegalStateException ignored )
+                    {
+                    }
                 }
             }
             catch ( Exception e )

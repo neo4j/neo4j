@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.concurrent.Work;
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -189,7 +188,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
         }
         catch ( ExecutionException e )
         {
-            throw Exceptions.launderedException( IOException.class, e );
+            throw new IOException( e );
         }
     }
 

@@ -33,7 +33,6 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -165,6 +164,8 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
 {
@@ -490,7 +491,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             {
                 msgLog.error( "Couldn't close neostore after startup failure", closeException );
             }
-            throw Exceptions.launderedException( e );
+            throwIfUnchecked( e );
+            throw new RuntimeException( e );
         }
 
         // NOTE: please make sure this is performed after having added everything to the life, in fact we would like
@@ -515,7 +517,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             {
                 msgLog.error( "Couldn't close neostore after startup failure", closeException );
             }
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
         /*
          * At this point recovery has completed and the datasource is ready for use. Whatever panic might have

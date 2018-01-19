@@ -21,7 +21,6 @@ package org.neo4j.consistency.report;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -51,9 +50,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.stringify;
-import static org.neo4j.helpers.Exceptions.withCause;
 
 public class ConsistencyReporter implements ConsistencyReport.Reporter
 {
@@ -490,7 +487,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             }
             catch ( NoSuchMethodException e )
             {
-                throw withCause( new LinkageError( "Cannot access Proxy constructor for " + type.getName() ), e );
+                throw new LinkageError( "Cannot access Proxy constructor for " + type.getName(), e );
             }
         }
 
@@ -511,13 +508,9 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             {
                 return constructor.newInstance( handler );
             }
-            catch ( InvocationTargetException e )
-            {
-                throw launderedException( e );
-            }
             catch ( Exception e )
             {
-                throw new LinkageError( "Failed to create proxy instance" );
+                throw new LinkageError( "Failed to create proxy instance", e );
             }
         }
 
