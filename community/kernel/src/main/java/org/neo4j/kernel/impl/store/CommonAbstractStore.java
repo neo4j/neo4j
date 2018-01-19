@@ -47,6 +47,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.string.UTF8;
 
+import static java.lang.Math.max;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -700,39 +701,61 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
             long highestId = getNumberOfReservedLowIds();
-            while ( nextPageId >= 0 && cursor.next( nextPageId ) )
+            /*
+             * We do this in chunks of pages instead of one page at a time, the performance impact is significant.
+             * We first prefetch a chunk of pages and then proceed to scan them backwards. The backwards scan is as
+             * expensive as the forwards, prefetching ensures that everything is in memory anyway, and we also allow
+             * for exiting as soon as we find the first used record - a forward scan would require exhausting the chunk.
+             */
+            final long chunkSizeInPages = 256; // 2MiB (8192 bytes/page * 256 pages/chunk)
+            long currentChunkEnd = nextPageId;
+            long currentChunkStart =
+                    max( currentChunkEnd - chunkSizeInPages, 0 ); // Either chunkSize or whatever is remaining
+            while ( currentChunkEnd >= 0 )
             {
-                nextPageId--;
-                boolean found;
-                do
+                // Prefetching step - just loop through all the pages in the current chunk
+                for ( long currentPageId = currentChunkStart; currentPageId <= currentChunkEnd; currentPageId++ )
                 {
-                    found = false;
-                    int currentRecord = recordsPerPage;
-                    while ( currentRecord-- > 0 )
+                    cursor.next( currentPageId );
+                }
+                nextPageId = currentChunkEnd;
+                while ( nextPageId >= currentChunkStart && cursor.next( nextPageId ) )
+                {
+                    nextPageId--;
+                    boolean found;
+                    do
                     {
-                        int offset = currentRecord * recordSize;
-                        cursor.setOffset( offset );
-                        long recordId = (cursor.getCurrentPageId() * recordsPerPage) + currentRecord;
-                        if ( isInUse( cursor ) )
+                        found = false;
+                        int currentRecord = recordsPerPage;
+                        while ( currentRecord-- > 0 )
                         {
-                            boolean justLegacyStoreTrailer = isJustLegacyStoreTrailer( cursor, offset,
-                                    expectedLegacyVersionBytes, recordSize );
-                            if ( !justLegacyStoreTrailer )
+                            int offset = currentRecord * recordSize;
+                            cursor.setOffset( offset );
+                            long recordId = (cursor.getCurrentPageId() * recordsPerPage) + currentRecord;
+                            if ( isInUse( cursor ) )
                             {
-                                // We've found the highest id in use
-                                highestId = recordId + 1 /*+1 since we return the high id*/;
-                                found = true;
-                                break;
+                                boolean justLegacyStoreTrailer = isJustLegacyStoreTrailer( cursor, offset,
+                                        expectedLegacyVersionBytes, recordSize );
+                                if ( !justLegacyStoreTrailer )
+                                {
+                                    // We've found the highest id in use
+                                    highestId = recordId + 1 /*+1 since we return the high id*/;
+                                    found = true;
+                                    break;
+                                }
                             }
                         }
                     }
+                    while ( cursor.shouldRetry() );
+                    checkIdScanCursorBounds( cursor );
+                    if ( found )
+                    {
+                        return highestId;
+                    }
                 }
-                while ( cursor.shouldRetry() );
-                checkIdScanCursorBounds( cursor );
-                if ( found )
-                {
-                    return highestId;
-                }
+                currentChunkEnd = currentChunkStart - 1;
+                currentChunkStart =
+                        max( currentChunkEnd - chunkSizeInPages, 0 );
             }
 
             return getNumberOfReservedLowIds();
