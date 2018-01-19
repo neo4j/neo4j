@@ -65,11 +65,23 @@ class References
 
     static class Relationship
     {
+        /** @see #encodeForFiltering(long) */
         private static final long FILTER                = 0x1000_0000_0000_0000L;
-        private static final long GROUP                 = 0x2000_0000_0000_0000L;
-        private static final long NO_OUTGOING_OF_TYPE   = 0x3000_0000_0000_0000L;
-        private static final long NO_INCOMING_OF_TYPE   = 0x4000_0000_0000_0000L;
-        private static final long NO_LOOP_OF_TYPE       = 0x5000_0000_0000_0000L;
+
+        /** @see #encodeForTxStateFiltering(long) */
+        private static final long FILTER_TX_STATE       = 0x2000_0000_0000_0000L;
+
+        /** @see #encodeFromGroup(long) */
+        private static final long GROUP                 = 0x3000_0000_0000_0000L;
+
+        /** @see #encodeNoOutgoingRels(int) */
+        private static final long NO_OUTGOING_OF_TYPE   = 0x4000_0000_0000_0000L;
+
+        /** @see #encodeNoIncomingRels(int) */
+        private static final long NO_INCOMING_OF_TYPE   = 0x5000_0000_0000_0000L;
+
+        /** @see #encodeNoLoopRels(int) */
+        private static final long NO_LOOP_OF_TYPE       = 0x6000_0000_0000_0000L;
 
         /**
          * Encode a group id as a relationship reference.
@@ -103,6 +115,23 @@ class References
         {
             assert relationshipReference != NO_ID;
             return (relationshipReference & FLAG_MASK) == FILTER;
+        }
+
+        /**
+         * Encode that the relationship id needs filtering by it's first element.
+         */
+        static long encodeForTxStateFiltering( long relationshipId )
+        {
+            return relationshipId | FILTER_TX_STATE | FLAG_MARKER;
+        }
+
+        /**
+         * Check whether a relationship reference is a relationship id marked for tx-state filtering.
+         */
+        static boolean isTxStateFilter( long relationshipReference )
+        {
+            assert relationshipReference != NO_ID;
+            return (relationshipReference & FLAG_MASK) == FILTER_TX_STATE;
         }
 
         /**
