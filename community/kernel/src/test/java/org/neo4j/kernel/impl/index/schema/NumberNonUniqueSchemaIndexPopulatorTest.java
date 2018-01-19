@@ -29,7 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Values;
@@ -44,7 +44,7 @@ public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPo
     NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
             File indexFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, indexDescriptor,
+        return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, schemaIndexDescriptor,
                 indexId );
     }
 
@@ -53,7 +53,7 @@ public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPo
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
         populator.add( Arrays.asList( updates ) );
@@ -68,11 +68,11 @@ public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPo
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
         {
             // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
             {
                 updater.process( update );
             }
@@ -88,7 +88,7 @@ public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPo
     {
         // GIVEN
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( scanUpdates ) );
         Number[] updates = array( 101, 102, 102, 103, 103 );
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
@@ -96,7 +96,7 @@ public class NumberNonUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPo
             long nodeId = 1000;
             for ( Number number : updates )
             {
-                IndexEntryUpdate<IndexDescriptor> update = layoutUtil.add( nodeId++, Values.of( number ) );
+                IndexEntryUpdate<SchemaIndexDescriptor> update = layoutUtil.add( nodeId++, Values.of( number ) );
                 updater.process( update );
                 populator.includeSample( update );
             }

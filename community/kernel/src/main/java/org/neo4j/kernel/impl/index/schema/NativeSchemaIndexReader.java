@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -48,11 +48,11 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
     private final IndexSamplingConfig samplingConfig;
 
     private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
 
     NativeSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig,
-            IndexDescriptor descriptor )
+            SchemaIndexDescriptor descriptor )
     {
         this.tree = tree;
         this.layout = layout;

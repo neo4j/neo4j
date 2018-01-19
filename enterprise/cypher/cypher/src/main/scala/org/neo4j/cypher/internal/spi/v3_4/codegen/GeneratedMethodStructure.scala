@@ -46,13 +46,13 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
+import org.neo4j.kernel.api.schema.index.{ SchemaIndexDescriptor, SchemaIndexDescriptorFactory}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{RelationshipValue, MapValue, NodeValue}
+import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue}
 
 import scala.collection.mutable
 
@@ -1485,9 +1485,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(typeRef[Int], propIdVar, invoke(readOperations, propertyKeyGetForName, constant(propName)))
 
   override def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
-    val getIndexDescriptor = method[IndexDescriptorFactory, IndexDescriptor]("forLabel", typeRef[Int], typeRef[Array[Int]])
+    val getIndexDescriptor = method[SchemaIndexDescriptorFactory, SchemaIndexDescriptor]("forLabel", typeRef[Int], typeRef[Array[Int]])
     val propertyIdsExpr = Expression.newArray(typeRef[Int], generator.load(propKeyVar))
-    generator.assign(typeRef[IndexDescriptor], descriptorVar,
+    generator.assign(typeRef[SchemaIndexDescriptor], descriptorVar,
                       invoke(getIndexDescriptor, generator.load(labelVar), propertyIdsExpr ))
   }
 
@@ -1498,12 +1498,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       else invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Object], "makeValueNeoSafe", typeRef[Object]), value)
     handleKernelExceptions(generator, fields, _finalizers) { body =>
       val descriptor = body.load(descriptorVar)
-      val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
+      val schema = invoke(descriptor, method[SchemaIndexDescriptor, LabelSchemaDescriptor]("schema"))
       val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))
       body.assign(local,
                   invoke(
                     methodReference(typeRef[CompiledIndexUtils], typeRef[PrimitiveLongIterator], "indexSeek",
-                                    typeRef[ReadOperations], typeRef[IndexDescriptor], typeRef[Int], typeRef[AnyRef]),
+                                    typeRef[ReadOperations], typeRef[SchemaIndexDescriptor], typeRef[Int], typeRef[AnyRef]),
                     readOperations, descriptor, propertyKeyId, boxedValue)
       )
     }

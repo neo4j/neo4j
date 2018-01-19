@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
@@ -47,7 +47,7 @@ public class NumberUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPopul
             PageCache pageCache, FileSystemAbstraction fs, File indexFile,
             Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
+        return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, schemaIndexDescriptor, indexId );
     }
 
     @Override
@@ -61,7 +61,7 @@ public class NumberUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPopul
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
         try
@@ -85,11 +85,11 @@ public class NumberUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPopul
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
 
         // when
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
         {
             updater.process( update );
         }
@@ -114,11 +114,11 @@ public class NumberUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPopul
     {
         // GIVEN
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // WHEN
         populator.add( asList( updates ) );
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
         {
             populator.includeSample( update );
         }

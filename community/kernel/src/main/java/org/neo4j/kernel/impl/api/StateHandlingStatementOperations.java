@@ -71,8 +71,8 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -562,21 +562,21 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.forSchema( descriptor );
-        state.txState().indexRuleDoAdd( indexDescriptor );
-        return indexDescriptor;
+        SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
+        state.txState().indexRuleDoAdd( schemaIndexDescriptor );
+        return schemaIndexDescriptor;
     }
 
     @Override
-    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, SchemaIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         state.txState().indexDoDrop( descriptor );
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, SchemaIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         state.txState().indexDoDrop( descriptor );
     }
@@ -734,10 +734,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = storeLayer.indexGetForSchema( descriptor );
-        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
+        SchemaIndexDescriptor schemaIndexDescriptor = storeLayer.indexGetForSchema( descriptor );
+        Iterator<SchemaIndexDescriptor> rules = iterator( schemaIndexDescriptor );
         if ( state.hasTxStateWithChanges() )
         {
             rules = filter(
@@ -748,7 +748,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
+    public InternalIndexState indexGetState( KernelStatement state, SchemaIndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
@@ -765,7 +765,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -779,7 +779,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
+    public PopulationProgress indexGetPopulationProgress( KernelStatement state, SchemaIndexDescriptor descriptor ) throws
             IndexNotFoundKernelException
     {
         // If index is in our state, then return 0%
@@ -795,7 +795,7 @@ public class StateHandlingStatementOperations implements
         return storeLayer.indexGetPopulationProgress( descriptor.schema() );
     }
 
-    private boolean checkIndexState( IndexDescriptor index, ReadableDiffSets<IndexDescriptor> diffSet )
+    private boolean checkIndexState( SchemaIndexDescriptor index, ReadableDiffSets<SchemaIndexDescriptor> diffSet )
             throws IndexNotFoundKernelException
     {
         if ( diffSet.isAdded( index ) )
@@ -811,7 +811,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
+    public Iterator<SchemaIndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -822,7 +822,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll( KernelStatement state )
+    public Iterator<SchemaIndexDescriptor> indexesGetAll( KernelStatement state )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -834,7 +834,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public long nodeGetFromUniqueIndexSeek(
-            KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... query )
+            KernelStatement state, SchemaIndexDescriptor index, IndexQuery.ExactPredicate... query )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
@@ -853,7 +853,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongResourceIterator indexQuery( KernelStatement state, IndexDescriptor index, IndexQuery... predicates )
+    public PrimitiveLongResourceIterator indexQuery( KernelStatement state, SchemaIndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         StorageStatement storeStatement = state.getStoreStatement();
@@ -935,7 +935,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
+    public long nodesCountIndexed( KernelStatement statement, SchemaIndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         IndexReader reader = statement.getStoreStatement().getIndexReader( index );
@@ -943,7 +943,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForScan(
-            KernelStatement state, PrimitiveLongResourceIterator nodeIds, IndexDescriptor index )
+            KernelStatement state, PrimitiveLongResourceIterator nodeIds, SchemaIndexDescriptor index )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -958,7 +958,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForSeek(
-            KernelStatement state, PrimitiveLongResourceIterator nodeIds, IndexDescriptor index,
+            KernelStatement state, PrimitiveLongResourceIterator nodeIds, SchemaIndexDescriptor index,
             ValueTuple propertyValues )
     {
         if ( state.hasTxStateWithChanges() )
@@ -974,7 +974,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByNumber( KernelStatement state,
-            IndexDescriptor index,
+            SchemaIndexDescriptor index,
             Number lower, boolean includeLower,
             Number upper, boolean includeUpper,
             PrimitiveLongResourceIterator nodeIds )
@@ -994,7 +994,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
-            IndexDescriptor index,
+            SchemaIndexDescriptor index,
             String lower, boolean includeLower,
             String upper, boolean includeUpper,
             PrimitiveLongResourceIterator nodeIds )
@@ -1014,7 +1014,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByPrefix( KernelStatement state,
-            IndexDescriptor index,
+            SchemaIndexDescriptor index,
             String prefix,
             PrimitiveLongResourceIterator nodeIds )
     {
@@ -1281,28 +1281,28 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexSize( KernelStatement statement, IndexDescriptor descriptor )
+    public long indexSize( KernelStatement statement, SchemaIndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return storeLayer.indexSize( descriptor.schema() );
     }
 
     @Override
-    public double indexUniqueValuesPercentage( KernelStatement statement, IndexDescriptor descriptor )
+    public double indexUniqueValuesPercentage( KernelStatement statement, SchemaIndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return storeLayer.indexUniqueValuesPercentage( descriptor.schema() );
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, IndexDescriptor index,
+    public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, SchemaIndexDescriptor index,
             DoubleLongRegister target ) throws IndexNotFoundKernelException
     {
         return storeLayer.indexUpdatesAndSize( index.schema(), target );
     }
 
     @Override
-    public DoubleLongRegister indexSample( KernelStatement statement, IndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( KernelStatement statement, SchemaIndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return storeLayer.indexSample( index.schema(), target );
@@ -1313,20 +1313,20 @@ public class StateHandlingStatementOperations implements
     //
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, SchemaIndexDescriptor index )
     {
         return storeLayer.indexGetOwningUniquenessConstraintId( index );
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index )
+    public long indexGetCommittedId( KernelStatement state, SchemaIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         return storeLayer.indexGetCommittedId( index );
     }
 
     @Override
-    public String indexGetFailure( Statement state, IndexDescriptor descriptor )
+    public String indexGetFailure( Statement state, SchemaIndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return storeLayer.indexGetFailure( descriptor.schema() );

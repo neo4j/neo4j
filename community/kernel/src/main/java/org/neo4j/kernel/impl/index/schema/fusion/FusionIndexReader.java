@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -45,10 +45,10 @@ class FusionIndexReader implements IndexReader
     private final IndexReader nativeReader;
     private final IndexReader luceneReader;
     private final Selector selector;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
 
     FusionIndexReader( IndexReader nativeReader, IndexReader luceneReader, Selector selector,
-            IndexDescriptor descriptor )
+            SchemaIndexDescriptor descriptor )
     {
         this.nativeReader = nativeReader;
         this.luceneReader = luceneReader;
@@ -219,7 +219,7 @@ class FusionIndexReader implements IndexReader
         }
 
         @Override
-        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
+        public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
         {
             assertKeysAlign( descriptor.schema().getPropertyIds() );
             progressors.add( progressor );

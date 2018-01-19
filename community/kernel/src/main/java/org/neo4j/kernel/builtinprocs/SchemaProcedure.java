@@ -43,11 +43,11 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
 
 public class SchemaProcedure
 {
@@ -82,11 +82,11 @@ public class SchemaProcedure
                         int labelId = readOperations.labelGetForName( label.name() );
                         Map<String,Object> properties = new HashMap<>();
 
-                        Iterator<IndexDescriptor> indexDescriptorIterator = readOperations.indexesGetForLabel( labelId );
+                        Iterator<SchemaIndexDescriptor> indexDescriptorIterator = readOperations.indexesGetForLabel( labelId );
                         ArrayList<String> indexes = new ArrayList<>();
                         while ( indexDescriptorIterator.hasNext() )
                         {
-                            IndexDescriptor index = indexDescriptorIterator.next();
+                            SchemaIndexDescriptor index = indexDescriptorIterator.next();
                             if ( index.type() == GENERAL )
                             {
                                 String[] propertyNames = PropertyNameUtils.getPropertyKeys(

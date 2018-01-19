@@ -21,14 +21,14 @@ package org.neo4j.kernel.impl.store.record;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class IndexRuleTest extends SchemaRuleTestBase
@@ -37,7 +37,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     public void shouldCreateGeneralIndex() throws Exception
     {
         // GIVEN
-        IndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
+        SchemaIndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
         IndexRule indexRule = IndexRule.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
         // THEN
@@ -54,7 +54,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     public void shouldCreateUniqueIndex() throws Exception
     {
         // GIVEN
-        IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        SchemaIndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         IndexRule indexRule = IndexRule.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
         // THEN
@@ -79,7 +79,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
     }
 
-    private void assertEqualityByDescriptor( IndexDescriptor descriptor )
+    private void assertEqualityByDescriptor( SchemaIndexDescriptor descriptor )
     {
         IndexRule rule1 = IndexRule.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
         IndexRule rule2 = IndexRule.indexRule( RULE_ID_2, descriptor, PROVIDER_DESCRIPTOR_2 );

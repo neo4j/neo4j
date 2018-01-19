@@ -31,7 +31,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -129,14 +129,14 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        IndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
-        long indexId = awaitOnline( master, indexDescriptor );
+        SchemaIndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        long indexId = awaitOnline( master, schemaIndexDescriptor );
 
         // and the slaves got the updates
         cluster.sync( master );
 
-        long index1 = awaitOnline( slave1, indexDescriptor );
-        long index2 = awaitOnline( slave2, indexDescriptor );
+        long index1 = awaitOnline( slave1, schemaIndexDescriptor );
+        long index2 = awaitOnline( slave2, schemaIndexDescriptor );
 
         // then the slaves has updated counts
         assertOnIndexCounts( 0, 1, 1, 1, indexId, master );
@@ -149,14 +149,14 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        IndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
-        long indexId = awaitOnline( master, indexDescriptor );
+        SchemaIndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        long indexId = awaitOnline( master, schemaIndexDescriptor );
 
         // and the updates are propagate in the cluster
         cluster.sync();
 
-        long index1 = awaitOnline( slave1, indexDescriptor );
-        long index2 = awaitOnline( slave2, indexDescriptor );
+        long index1 = awaitOnline( slave1, schemaIndexDescriptor );
+        long index2 = awaitOnline( slave2, schemaIndexDescriptor );
 
         // then the slaves has updated counts
         assertOnIndexCounts( 0, 1, 1, 1, indexId, master );
@@ -174,7 +174,7 @@ public class HaCountsIT
         }
     }
 
-    private IndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
+    private SchemaIndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
         try ( Transaction tx = db.beginTx();
@@ -182,7 +182,7 @@ public class HaCountsIT
         {
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
-            IndexDescriptor index = statement.schemaWriteOperations()
+            SchemaIndexDescriptor index = statement.schemaWriteOperations()
                     .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
             tx.success();
             return index;
@@ -237,7 +237,7 @@ public class HaCountsIT
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private long awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )
+    private long awaitOnline( HighlyAvailableGraphDatabase db, SchemaIndexDescriptor index )
             throws KernelException
     {
         long start = System.currentTimeMillis();

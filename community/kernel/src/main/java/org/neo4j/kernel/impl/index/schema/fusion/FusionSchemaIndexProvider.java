@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -67,7 +67,7 @@ public class FusionSchemaIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         return new FusionIndexPopulator(
                 nativeProvider.getPopulator( indexId, descriptor, samplingConfig ),
@@ -75,7 +75,7 @@ public class FusionSchemaIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new FusionIndexAccessor(
@@ -111,7 +111,7 @@ public class FusionSchemaIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
         InternalIndexState nativeState = nativeProvider.getInitialState( indexId, descriptor );
         InternalIndexState luceneState = luceneProvider.getInitialState( indexId, descriptor );
@@ -130,10 +130,10 @@ public class FusionSchemaIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        IndexCapability nativeCapability = nativeProvider.getCapability( indexDescriptor );
-        IndexCapability luceneCapability = luceneProvider.getCapability( indexDescriptor );
+        IndexCapability nativeCapability = nativeProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability luceneCapability = luceneProvider.getCapability( schemaIndexDescriptor );
         return new UnionIndexCapability( nativeCapability, luceneCapability )
         {
             @Override

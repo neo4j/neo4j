@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -60,7 +60,7 @@ public class AwaitIndexProcedureTest
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
     private final LabelSchemaDescriptor anyDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
-    private final IndexDescriptor anyIndex = IndexDescriptorFactory.forSchema( anyDescriptor );
+    private final SchemaIndexDescriptor anyIndex = SchemaIndexDescriptorFactory.forSchema( anyDescriptor );
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
@@ -101,7 +101,7 @@ public class AwaitIndexProcedureTest
         when( operations.labelGetForName( anyString() ) ).thenReturn( descriptor.getLabelId() );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( descriptor.getPropertyId() );
         when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
+        when( operations.indexGetState( any( SchemaIndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
         procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
 
@@ -116,7 +116,7 @@ public class AwaitIndexProcedureTest
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( FAILED );
+        when( operations.indexGetState( any( SchemaIndexDescriptor.class ) ) ).thenReturn( FAILED );
 
         try
         {
@@ -159,7 +159,7 @@ public class AwaitIndexProcedureTest
         when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
+        when( operations.indexGetState( any( SchemaIndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
 
         AtomicBoolean done = new AtomicBoolean( false );
         new Thread( () ->
@@ -189,7 +189,7 @@ public class AwaitIndexProcedureTest
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
+        when( operations.indexGetState( any( SchemaIndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();
         new Thread( () ->

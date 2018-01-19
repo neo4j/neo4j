@@ -34,11 +34,11 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
 
 public enum DbStructureArgumentFormatter implements ArgumentFormatter
 {
@@ -52,8 +52,8 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             NodeKeyConstraintDescriptor.class.getCanonicalName(),
             LabelSchemaDescriptor.class.getCanonicalName(),
             SchemaDescriptorFactory.class.getCanonicalName(),
-            IndexDescriptor.class.getCanonicalName(),
-            IndexDescriptorFactory.class.getCanonicalName()
+            SchemaIndexDescriptor.class.getCanonicalName(),
+            SchemaIndexDescriptorFactory.class.getCanonicalName()
     );
 
     @Override
@@ -101,12 +101,12 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
                 builder.append( 'd' );
             }
         }
-        else if ( arg instanceof IndexDescriptor )
+        else if ( arg instanceof SchemaIndexDescriptor )
         {
-            IndexDescriptor descriptor = (IndexDescriptor) arg;
+            SchemaIndexDescriptor descriptor = (SchemaIndexDescriptor) arg;
             int labelId = descriptor.schema().getLabelId();
             String methodName = descriptor.type() == GENERAL ? "forLabel" : "uniqueForLabel";
-            builder.append( format( "IndexDescriptorFactory.%s( %d, %s )", methodName,
+            builder.append( format( "SchemaIndexDescriptorFactory.%s( %d, %s )", methodName,
                     labelId, asString( descriptor.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof LabelSchemaDescriptor )

@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.values.storable.Values;
 
@@ -304,7 +304,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         ReadOperations readOps = statement.readOperations();
         int person = readOps.labelGetForName( "Person" );
         int propId = readOps.propertyKeyGetForName( "id" );
-        IndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
+        SchemaIndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
 
         // when
         createLabeledNode( statement, "Item", "id", 2 );
@@ -331,7 +331,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         ReadOperations readOps = statement.readOperations();
         int person = readOps.labelGetForName( "Person" );
         int propId = readOps.propertyKeyGetForName( "id" );
-        IndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
+        SchemaIndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
 
         // when
         createLabeledNode( statement, "Person", "id", 2 );

@@ -24,7 +24,7 @@ import java.util.Arrays;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
@@ -51,7 +51,7 @@ class NodeValueIndexCursor extends IndexCursor
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
+    public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor,
             IndexQuery[] query )
     {
         assert query != null && query.length > 0;
@@ -200,7 +200,7 @@ class NodeValueIndexCursor extends IndexCursor
         }
     }
 
-    private void prefixQuery( IndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
+    private void prefixQuery( SchemaIndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
     {
         if ( read.hasTxStateWithChanges() )
         {
@@ -209,7 +209,7 @@ class NodeValueIndexCursor extends IndexCursor
         }
     }
 
-    private void stringRangeQuery( IndexDescriptor descriptor, IndexQuery.StringRangePredicate predicate )
+    private void stringRangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.StringRangePredicate predicate )
     {
         if ( read.hasTxStateWithChanges() )
         {
@@ -220,7 +220,7 @@ class NodeValueIndexCursor extends IndexCursor
         }
     }
 
-    private void numericRangeQuery( IndexDescriptor descriptor, IndexQuery.NumberRangePredicate predicate )
+    private void numericRangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.NumberRangePredicate predicate )
     {
         if ( read.hasTxStateWithChanges() )
         {
@@ -231,7 +231,7 @@ class NodeValueIndexCursor extends IndexCursor
         }
     }
 
-    private void scanQuery( IndexDescriptor descriptor )
+    private void scanQuery( SchemaIndexDescriptor descriptor )
     {
         if ( read.hasTxStateWithChanges() )
         {
@@ -240,7 +240,7 @@ class NodeValueIndexCursor extends IndexCursor
         }
     }
 
-    private void seekQuery( IndexDescriptor descriptor, IndexQuery[] query )
+    private void seekQuery( SchemaIndexDescriptor descriptor, IndexQuery[] query )
     {
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );
         if ( read.hasTxStateWithChanges() )

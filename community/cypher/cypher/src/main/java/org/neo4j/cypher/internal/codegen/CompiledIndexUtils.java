@@ -24,7 +24,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 import static org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
@@ -51,7 +51,7 @@ public final class CompiledIndexUtils
      * @param value The value to seek for
      * @return An iterator containing data found in index.
      */
-    public static PrimitiveLongIterator indexSeek( ReadOperations readOperations, IndexDescriptor descriptor,
+    public static PrimitiveLongIterator indexSeek( ReadOperations readOperations, SchemaIndexDescriptor descriptor,
             int propertyId, Object value )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {

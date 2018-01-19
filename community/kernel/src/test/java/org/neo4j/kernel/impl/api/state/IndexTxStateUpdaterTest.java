@@ -32,8 +32,8 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -73,12 +73,12 @@ public class IndexTxStateUpdaterTest
     private IndexTxStateUpdater indexTxUpdater;
     private NodeItem node;
 
-    private IndexDescriptor indexOn1_1 = IndexDescriptorFactory.forLabel( labelId1, propId1 );
-    private IndexDescriptor indexOn2_new = IndexDescriptorFactory.forLabel( labelId2, newPropId );
-    private IndexDescriptor uniqueOn1_2 = IndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
-    private IndexDescriptor indexOn1_1_new = IndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
-    private IndexDescriptor uniqueOn2_2_3 = IndexDescriptorFactory.uniqueForLabel( labelId2, propId2, propId3 );
-    private List<IndexDescriptor> indexes =
+    private SchemaIndexDescriptor indexOn1_1 = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1 );
+    private SchemaIndexDescriptor indexOn2_new = SchemaIndexDescriptorFactory.forLabel( labelId2, newPropId );
+    private SchemaIndexDescriptor uniqueOn1_2 = SchemaIndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
+    private SchemaIndexDescriptor indexOn1_1_new = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
+    private SchemaIndexDescriptor uniqueOn2_2_3 = SchemaIndexDescriptorFactory.uniqueForLabel( labelId2, propId2, propId3 );
+    private List<SchemaIndexDescriptor> indexes =
             Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
 
     @Before

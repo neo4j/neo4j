@@ -42,8 +42,8 @@ import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -130,10 +130,10 @@ public class AllStoreHolder extends Read implements Token
     {
         try
         {
-            IndexDescriptor indexDescriptor = index.isUnique() ?
-                                              IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
-                                              IndexDescriptorFactory.forLabel( index.label(), index.properties() );
-            return statement.getIndexReader( indexDescriptor );
+            SchemaIndexDescriptor schemaIndexDescriptor = index.isUnique() ?
+                                                          SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
+                                                          SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
+            return statement.getIndexReader( schemaIndexDescriptor );
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -163,31 +163,31 @@ public class AllStoreHolder extends Read implements Token
     public CapableIndexReference index( int label, int... properties )
     {
         ktx.assertOpen();
-        IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
-        if ( indexDescriptor == null )
+        SchemaIndexDescriptor schemaIndexDescriptor = storeReadLayer.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
+        if ( schemaIndexDescriptor == null )
         {
             return CapableIndexReference.NO_INDEX;
         }
 
-        return indexGetCapability( indexDescriptor);
+        return indexGetCapability( schemaIndexDescriptor );
     }
 
-    CapableIndexReference indexGetCapability( IndexDescriptor indexDescriptor )
+    CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        boolean unique = indexDescriptor.type() == IndexDescriptor.Type.UNIQUE;
+        boolean unique = schemaIndexDescriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
         try
         {
-            IndexCapability indexCapability = storeReadLayer.indexGetCapability( indexDescriptor );
-            return new DefaultCapableIndexReference( unique, indexCapability, indexDescriptor.schema().getLabelId(),
-                    indexDescriptor.schema().getPropertyIds() );
+            IndexCapability indexCapability = storeReadLayer.indexGetCapability( schemaIndexDescriptor );
+            return new DefaultCapableIndexReference( unique, indexCapability, schemaIndexDescriptor.schema().getLabelId(),
+                    schemaIndexDescriptor.schema().getPropertyIds() );
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new IllegalStateException( "Could not find capability for index " + indexDescriptor, e );
+            throw new IllegalStateException( "Could not find capability for index " + schemaIndexDescriptor, e );
         }
     }
 
-    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
         if ( ktx.hasTxStateWithChanges() )
@@ -202,7 +202,7 @@ public class AllStoreHolder extends Read implements Token
         return storeReadLayer.indexGetState( descriptor );
     }
 
-    private boolean checkIndexState( IndexDescriptor index, ReadableDiffSets<IndexDescriptor> diffSet )
+    private boolean checkIndexState( SchemaIndexDescriptor index, ReadableDiffSets<SchemaIndexDescriptor> diffSet )
             throws IndexNotFoundKernelException
     {
         if ( diffSet.isAdded( index ) )
@@ -469,7 +469,7 @@ public class AllStoreHolder extends Read implements Token
         return name;
     }
 
-    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    String indexGetFailure( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return storeReadLayer.indexGetFailure( descriptor.schema() );
     }

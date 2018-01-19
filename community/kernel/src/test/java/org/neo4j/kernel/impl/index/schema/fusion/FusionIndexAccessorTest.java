@@ -29,7 +29,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 
@@ -64,7 +64,7 @@ public class FusionIndexAccessorTest
         nativeAccessor = mock( IndexAccessor.class );
         luceneAccessor = mock( IndexAccessor.class );
         fusionIndexAccessor = new FusionIndexAccessor( nativeAccessor, luceneAccessor, new NativeSelector(), indexId, mock(
-                IndexDescriptor.class ), dropAction );
+                SchemaIndexDescriptor.class ), dropAction );
     }
 
     /* drop */

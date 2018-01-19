@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -149,7 +149,7 @@ public class Commands
     {
         SchemaRule rule = IndexRule.indexRule(
                 id,
-                IndexDescriptorFactory.forSchema( descriptor ),
+                SchemaIndexDescriptorFactory.forSchema( descriptor ),
                 provider );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );

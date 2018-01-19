@@ -37,8 +37,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -130,7 +130,7 @@ public class NumberSchemaIndexProviderTest
         provider = newProvider();
 
         // when
-        IndexDescriptor descriptor = descriptorUnique();
+        SchemaIndexDescriptor descriptor = descriptorUnique();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -157,7 +157,7 @@ public class NumberSchemaIndexProviderTest
         provider = newProvider();
 
         // when
-        IndexDescriptor descriptor = descriptor();
+        SchemaIndexDescriptor descriptor = descriptor();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -377,14 +377,14 @@ public class NumberSchemaIndexProviderTest
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private IndexDescriptor descriptor()
+    private SchemaIndexDescriptor descriptor()
     {
-        return IndexDescriptorFactory.forLabel( labelId, propId );
+        return SchemaIndexDescriptorFactory.forLabel( labelId, propId );
     }
 
-    private IndexDescriptor descriptorUnique()
+    private SchemaIndexDescriptor descriptorUnique()
     {
-        return IndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        return SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
     }
 
     private NumberIndexProvider newProvider()

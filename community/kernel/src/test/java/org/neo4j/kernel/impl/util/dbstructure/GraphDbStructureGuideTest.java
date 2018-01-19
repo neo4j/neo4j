@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -135,7 +135,7 @@ public class GraphDbStructureGuideTest
 
         commitAndReOpen();
 
-        IndexDescriptor descriptor = createSchemaIndex( labelId, pkId );
+        SchemaIndexDescriptor descriptor = createSchemaIndex( labelId, pkId );
 
         // WHEN
         accept( visitor );
@@ -154,7 +154,7 @@ public class GraphDbStructureGuideTest
         commitAndReOpen();
 
         UniquenessConstraintDescriptor constraint = createUniqueConstraint( labelId, pkId );
-        IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForLabel( labelId, pkId );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, pkId );
 
         // WHEN
         accept( visitor );
@@ -237,7 +237,7 @@ public class GraphDbStructureGuideTest
         }
     }
 
-    private IndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
+    private SchemaIndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
     {
         try ( Statement statement = statement() )
         {

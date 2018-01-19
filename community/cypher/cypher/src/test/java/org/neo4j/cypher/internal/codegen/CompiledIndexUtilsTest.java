@@ -26,8 +26,8 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,7 +47,7 @@ public class CompiledIndexUtilsTest
         ReadOperations read = mock( ReadOperations.class );
 
         // WHEN
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 12, 42 );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 12, 42 );
         CompiledIndexUtils.indexSeek( read, descriptor, 42, "hello" );
 
         // THEN
@@ -62,7 +62,7 @@ public class CompiledIndexUtilsTest
         ReadOperations read = mock( ReadOperations.class );
 
         // WHEN
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 12, 42 );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 12, 42 );
         PrimitiveLongIterator iterator =
                 CompiledIndexUtils.indexSeek( read, descriptor, 42, null );
 

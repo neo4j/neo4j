@@ -29,8 +29,8 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -145,8 +145,8 @@ public class IndexPopulationFlipRaceIT
             int keyAId = statement.readOperations().propertyKeyGetForName( keyA( i ) );
             int labelBId = statement.readOperations().labelGetForName( labelB( i ).name() );
             int keyBId = statement.readOperations().propertyKeyGetForName( keyB( i ) );
-            IndexDescriptor indexA = IndexDescriptorFactory.forLabel( labelAId, keyAId );
-            IndexDescriptor indexB = IndexDescriptorFactory.forLabel( labelBId, keyBId );
+            SchemaIndexDescriptor indexA = SchemaIndexDescriptorFactory.forLabel( labelAId, keyAId );
+            SchemaIndexDescriptor indexB = SchemaIndexDescriptorFactory.forLabel( labelBId, keyBId );
 
             for ( int j = 0; j < NODES_PER_INDEX; j++ )
             {

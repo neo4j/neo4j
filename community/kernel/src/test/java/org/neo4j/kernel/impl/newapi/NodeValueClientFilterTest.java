@@ -28,8 +28,8 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -132,7 +132,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
                 this, new NodeCursor(), new PropertyCursor(), store, filters );
-        filter.initialize( IndexDescriptorFactory.forLabel( 11), this, null );
+        filter.initialize( SchemaIndexDescriptorFactory.forLabel( 11), this, null );
         return filter;
     }
 
@@ -147,7 +147,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
+    public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
     {
         events.add( new Event.Initialize( progressor, descriptor.schema().getPropertyIds() ) );
     }

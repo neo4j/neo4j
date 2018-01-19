@@ -26,8 +26,8 @@ import org.junit.Test;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -206,18 +206,18 @@ public class FusionSchemaIndexProviderTest
     {
         // given
         IndexProvider provider = fusionProvider();
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
+        SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : InternalIndexState.values() )
         {
             // when
             setInitialState( nativeProvider, InternalIndexState.FAILED );
             setInitialState( luceneProvider, state );
-            InternalIndexState failed1 = provider.getInitialState( 0, indexDescriptor );
+            InternalIndexState failed1 = provider.getInitialState( 0, schemaIndexDescriptor );
 
             setInitialState( nativeProvider, state );
             setInitialState( luceneProvider, InternalIndexState.FAILED );
-            InternalIndexState failed2 = provider.getInitialState( 0, indexDescriptor );
+            InternalIndexState failed2 = provider.getInitialState( 0, schemaIndexDescriptor );
 
             // then
             assertEquals( InternalIndexState.FAILED, failed1 );
@@ -230,18 +230,18 @@ public class FusionSchemaIndexProviderTest
     {
         // given
         IndexProvider provider = fusionProvider();
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
+        SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
         {
             // when
             setInitialState( nativeProvider, InternalIndexState.POPULATING );
             setInitialState( luceneProvider, state );
-            InternalIndexState failed1 = provider.getInitialState( 0, indexDescriptor );
+            InternalIndexState failed1 = provider.getInitialState( 0, schemaIndexDescriptor );
 
             setInitialState( nativeProvider, state );
             setInitialState( luceneProvider, InternalIndexState.POPULATING );
-            InternalIndexState failed2 = provider.getInitialState( 0, indexDescriptor );
+            InternalIndexState failed2 = provider.getInitialState( 0, schemaIndexDescriptor );
 
             // then
             assertEquals( InternalIndexState.POPULATING, failed1 );
@@ -257,6 +257,6 @@ public class FusionSchemaIndexProviderTest
 
     private void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
-        when( mockedProvider.getInitialState( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( state );
+        when( mockedProvider.getInitialState( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( state );
     }
 }

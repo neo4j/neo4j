@@ -20,15 +20,15 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,NativeSchemaValue>
 {
-    NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
+    NumberLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        super( indexDescriptor );
+        super( schemaIndexDescriptor );
     }
 
     @Override

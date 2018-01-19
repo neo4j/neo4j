@@ -21,14 +21,14 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 public class NumberUniqueLayoutTestUtil extends NumberLayoutTestUtil
 {
     NumberUniqueLayoutTestUtil()
     {
-        super( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
+        super( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
     }
 
     @Override
@@ -38,7 +38,7 @@ public class NumberUniqueLayoutTestUtil extends NumberLayoutTestUtil
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
     {
         return someUpdatesNoDuplicateValues();
     }

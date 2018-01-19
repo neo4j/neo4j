@@ -39,7 +39,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -67,7 +67,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    IndexDescriptor indexDescriptor;
+    SchemaIndexDescriptor schemaIndexDescriptor;
     LayoutTestUtil<KEY,VALUE> layoutUtil;
     Layout<KEY,VALUE> layout;
     File indexFile;
@@ -79,7 +79,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
     public void setup()
     {
         layoutUtil = createLayoutTestUtil();
-        indexDescriptor = layoutUtil.indexDescriptor();
+        schemaIndexDescriptor = layoutUtil.indexDescriptor();
         layout = layoutUtil.createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
@@ -92,7 +92,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
         layoutUtil.copyValue( value, intoValue );
     }
 
-    void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
+    void verifyUpdates( IndexEntryUpdate<SchemaIndexDescriptor>[] updates )
             throws IOException
     {
         Hit<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
@@ -163,11 +163,11 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
         return new SimpleHit( intoKey, intoValue );
     }
 
-    private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor>[] updates,
+    private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<SchemaIndexDescriptor>[] updates,
             Layout<KEY,VALUE> layout )
     {
         List<Hit<KEY,VALUE>> hits = new ArrayList<>( updates.length );
-        for ( IndexEntryUpdate<IndexDescriptor> u : updates )
+        for ( IndexEntryUpdate<SchemaIndexDescriptor> u : updates )
         {
             KEY key = layout.newKey();
             key.from( u.getEntityId(), u.values() );

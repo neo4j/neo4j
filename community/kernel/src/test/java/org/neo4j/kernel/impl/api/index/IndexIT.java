@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -127,7 +127,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
         // WHEN
-        IndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        SchemaIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
@@ -142,14 +142,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        IndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
+        SchemaIndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
         Statement statement = statementInNewTransaction( AnonymousContext.AUTH_DISABLED );
-        IndexDescriptor addedRule = statement.schemaWriteOperations()
+        SchemaIndexDescriptor addedRule = statement.schemaWriteOperations()
                                             .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
-        Set<IndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
+        Set<SchemaIndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -180,7 +180,7 @@ public class IndexIT extends KernelIntegrationTest
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
-        IndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
+        SchemaIndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertEquals( emptySet(), asSet( readOperations.constraintsGetForLabel( labelId ) ) );
@@ -201,7 +201,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        IndexDescriptor index;
+        SchemaIndexDescriptor index;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             index = statement.indexCreate( descriptor );
@@ -304,14 +304,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        IndexDescriptor index1 = schemaWriteOperations.indexCreate( descriptor );
-        IndexDescriptor index2 = schemaWriteOperations.uniquePropertyConstraintCreate( descriptor2 )
+        SchemaIndexDescriptor index1 = schemaWriteOperations.indexCreate( descriptor );
+        SchemaIndexDescriptor index2 = schemaWriteOperations.uniquePropertyConstraintCreate( descriptor2 )
                                                             .ownedIndexDescriptor();
         commit();
 
         // then/when
         ReadOperations readOperations = readOperationsInNewTransaction();
-        List<IndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
+        List<SchemaIndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();
     }

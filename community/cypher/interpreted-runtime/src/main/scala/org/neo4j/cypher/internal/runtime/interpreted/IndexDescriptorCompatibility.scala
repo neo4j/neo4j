@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IndexDescriptor => CypherIndexDescriptor}
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, SchemaIndexDescriptor => KernelIndexDescriptor}
 
 trait IndexDescriptorCompatibility {
   def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
-    IndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
+    SchemaIndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
 
   def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
     CypherIndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds)
