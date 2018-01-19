@@ -24,10 +24,9 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.Race;
 
 import static java.util.Collections.singletonList;
@@ -803,10 +802,10 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator bob = reader.query( singletonList( "bob" ), true );
-                assertEquals( bobthreads * nodesCreatedPerThread, PrimitiveLongCollections.count( bob ) );
-                PrimitiveLongIterator alice = reader.query( singletonList( "alice" ), true );
-                assertEquals( 0, PrimitiveLongCollections.count( alice ) );
+                ScoreEntityIterator bob = reader.query( singletonList( "bob" ), true );
+                assertEquals( bobthreads * nodesCreatedPerThread, Iterators.count( bob ) );
+                ScoreEntityIterator alice = reader.query( singletonList( "alice" ), true );
+                assertEquals( 0, Iterators.count( alice ) );
             }
         }
     }
