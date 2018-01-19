@@ -306,6 +306,19 @@ public abstract class PageCursor implements AutoCloseable
     public abstract int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes );
 
     /**
+     * Shift the specified number of bytes starting from given offset the specified number of bytes to the left or right. The area
+     * left behind after the shift is not padded and thus is left with garbage.
+     * <p>
+     * Out of bounds flag is raised if either start or end of either source range or target range fall outside end of this cursor
+     * or if length is negative.
+     *
+     * @param sourceOffset The offset into this page to start moving from.
+     * @param length The number of bytes to move.
+     * @param shift How many steps, in terms of number of bytes, to shift. Can be both positive and negative.
+     */
+    public abstract void shiftBytes( int sourceOffset, int length, int shift );
+
+    /**
      * Discern whether an out-of-bounds access has occurred since the last call to {@link #next()} or
      * {@link #next(long)}, or since the last call to {@link #shouldRetry()} that returned {@code true}, or since the
      * last call to this method.

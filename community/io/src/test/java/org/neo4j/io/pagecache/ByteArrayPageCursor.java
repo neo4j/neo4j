@@ -257,6 +257,18 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        int currentOffset = getOffset();
+        setOffset( sourceOffset );
+        byte[] bytes = new byte[length];
+        getBytes( bytes );
+        setOffset( sourceOffset + shift );
+        putBytes( bytes );
+        setOffset( currentOffset );
+    }
+
+    @Override
     public boolean checkAndClearBoundsFlag()
     {
         return false;

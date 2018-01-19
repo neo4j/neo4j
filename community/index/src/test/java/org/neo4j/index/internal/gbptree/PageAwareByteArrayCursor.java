@@ -27,8 +27,8 @@ import java.util.List;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 import static java.lang.String.format;
+import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 
 class PageAwareByteArrayCursor extends PageCursor
 {
@@ -139,6 +139,12 @@ class PageAwareByteArrayCursor extends PageCursor
             targetCursor.putByte( targetOffset + i, getByte( sourceOffset + i ) );
         }
         return bytesToCopy;
+    }
+
+    @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        current.shiftBytes( sourceOffset, length, shift );
     }
 
     private void assertPages()
