@@ -52,7 +52,7 @@ public class RaftMessageProcessingMetricTest
             assertEquals( durationNanos, metric.timer( type ).getSnapshot().getMean(), 0 );
         }
         assertEquals( RaftMessages.Type.values().length, metric.timer().getCount() );
-        assertEquals( 0, metric.timer().getSnapshot().getMean(), durationNanos );
+        assertEquals( durationNanos, metric.timer().getSnapshot().getMean(), 0.0002 );
     }
 
     @Test
