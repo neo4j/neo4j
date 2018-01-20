@@ -64,6 +64,7 @@ abstract class TreeNode<KEY,VALUE>
     static final byte INTERNAL_FLAG = 0;
     static final long NO_NODE_FLAG = 0;
 
+    private final byte[] tmpMem = new byte[64];
     final Layout<KEY,VALUE> layout;
     final int pageSize;
 
@@ -201,27 +202,138 @@ abstract class TreeNode<KEY,VALUE>
     // BODY METHODS
 
     /**
-     * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
-     * from pos - itemCount.
-     * itemCount is keyCount for key and value, but keyCount+1 for children.
+     * Moves data from right to left to remove a slot where data that should be deleted currently sits.
+     *
+     * This is done by reading data in chunks to a temporary byte array and then writing them back down. This "chunk window"
+     * moves from left to right, moving one chunk at the time.
+     *
+     * Key count is NOT updated!
+     *
+     * Descriptive example:
+     * <pre>
+     * Comma separated bytes representing a small page
+     * Page:   0,1,2,3,4,5,6,7,8,9,_,_,_,_
+     *
+     * Want to remove slot of size 2 _,_ in pos 4.
+     * Page:   0,1,2,3,6,7,8,9,_,_,_,_,_,_
+     *
+     * tmpMem.length = 3 _,_,_
+     *
+     * Step by step
+     * 1. Start
+     * tmpMem: _,_,_
+     * page:   0,1,2,3,4,5,6,7,8,9,_,_,_,_
+     *
+     * 2. Read chunk
+     * tmpMem: 6,7,8
+     * page:   0,1,2,3,4,5,6,7,8,9,_,_,_,_
+     *
+     * 3. Write chunk over slot on pos that should be removed.
+     * tmpMem: _,_,_
+     * page:   0,1,2,3,6,7,8,7,8,9,_,_,_,_
+     *
+     * 4. Read next chunk which is now only the rest.
+     * tmpMem: 9,_,_
+     * page:   0,1,2,3,6,7,8,7,8,9,_,_,_,_
+     *
+     * 5. Write rest
+     * tmpMem: _,_,_
+     * page:   0,1,2,3,6,7,8,7,9,_,_,_,_,_
+     * </pre>
+     *
+     * @param cursor Write cursor on relevant page
+     * @param pos Logical position where slots should be inserted, pos is based on baseOffset and slotSize.
+     * @param totalSlotCount How many slots there are in total. (Usually keyCount for keys and values or keyCount+1 for children).
+     * @param baseOffset Offset to slot in logical position 0.
+     * @param slotSize Size of one single slot.
      */
-    static void insertSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int itemCount, int baseOffset,
-            int itemSize )
+    void removeSlotAt( PageCursor cursor, int pos, int totalSlotCount, int baseOffset, int slotSize )
     {
-        for ( int posToMoveRight = itemCount - 1, offset = baseOffset + posToMoveRight * itemSize;
-              posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
+        int bytesToMove = slotSize * (totalSlotCount - (pos + 1));
+        int nbrOfChunksToMove = bytesToMove / tmpMem.length;
+        int rest = bytesToMove % tmpMem.length;
+        int source = baseOffset + (pos + 1) * slotSize;
+        int target = source - slotSize;
+        for ( int i = 0; i < nbrOfChunksToMove; i++, source += tmpMem.length, target += tmpMem.length )
         {
-            cursor.copyTo( offset, cursor, offset + itemSize * numberOfSlots, itemSize );
+            cursor.setOffset( source );
+            cursor.getBytes( tmpMem );
+            cursor.setOffset( target );
+            cursor.putBytes( tmpMem );
         }
+        // take care of rest
+        cursor.setOffset( source );
+        cursor.getBytes( tmpMem, 0, rest );
+        cursor.setOffset( target );
+        cursor.putBytes( tmpMem, 0, rest );
     }
 
-    static void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
+    /**
+     * * Moves data from left to right to open up a gap where data can later be written without overwriting anything.
+     *
+     * This is done by reading data in chunks to a temporary byte array and then writing them back down. This "chunk window"
+     * moves from right to left, moving one chunk at the time.
+     *
+     * Key count is NOT updated!
+     *
+     * Descriptive example:
+     * <pre>
+     * Comma separated bytes representing a small page
+     * Page:   0,1,2,3,4,5,6,7,8,9,_,_,_,_
+     *
+     * Want to insert slot of size 2 _,_ in pos 5.
+     * Page:  0,1,2,3,4,_,_,5,6,7,8,9,_,_
+     *
+     * tmpMem.length = 3 _,_,_
+     *
+     * Step by step
+     * 1. Start
+     * tmpMem: _,_,_
+     * page:   0,1,2,3,4,5,6,7,8,9,_,_,_,_
+     *
+     * 2. Read chunk
+     * tmpMem: 7,8,9
+     * page:   0,1,2,3,4,5,6,7,8,9,_,_,_,_
+     *
+     * 3. Write chunk 2 steps to the right.
+     * tmpMem: _,_,_
+     * page:   0,1,2,3,4,5,6,_,_,7,8,9,_,_
+     *
+     * 4. Read next chunk which is now only the rest.
+     * tmpMem: 5,6,_
+     * page:   0,1,2,3,4,5,6,_,_,7,8,9,_,_
+     *
+     * 5. Write rest
+     * tmpMem: _,_,_
+     * page:   0,1,2,3,4,_,_,5,6,7,8,9,_,_
+     * </pre>
+     *
+     * @param cursor Write cursor on relevant page
+     * @param pos Logical position where slots should be inserted, pos is based on baseOffset and slotSize.
+     * @param numberOfSlots How many slots to be inserted.
+     * @param totalSlotCount How many slots there are in total. (Usually keyCount for keys and values or keyCount+1 for children).
+     * @param baseOffset Offset to slot in logical position 0.
+     * @param slotSize Size of one single slot.
+     */
+    void insertSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int totalSlotCount, int baseOffset, int slotSize )
     {
-        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
-              posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
+        int bytesToMove = slotSize * (totalSlotCount - pos);
+        int nbrOfChunksToMove = bytesToMove / tmpMem.length;
+        int rest = bytesToMove % tmpMem.length;
+        int source = baseOffset + totalSlotCount * slotSize - tmpMem.length;
+        int target = source + slotSize * numberOfSlots;
+        for ( int i = 0; i < nbrOfChunksToMove; i++, source -= tmpMem.length, target -= tmpMem.length )
         {
-            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
+            cursor.setOffset( source );
+            cursor.getBytes( tmpMem );
+            cursor.setOffset( target );
+            cursor.putBytes( tmpMem );
         }
+        // take care of rest
+        cursor.setOffset( source + tmpMem.length - rest );
+        cursor.getBytes( tmpMem, 0, rest );
+        cursor.setOffset( target + tmpMem.length - rest );
+        cursor.putBytes( tmpMem, 0, rest );
     }
 
     abstract KEY keyAt( PageCursor cursor, KEY into, int pos, Type type );
