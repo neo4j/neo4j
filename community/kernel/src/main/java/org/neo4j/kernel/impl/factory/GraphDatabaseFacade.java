@@ -79,9 +79,9 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -119,6 +119,7 @@ import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 /**
  * Implementation of the GraphDatabaseService/GraphDatabaseService interfaces - the "Core API". Given an {@link SPI}
@@ -684,34 +685,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new PrefetchingResourceIterator<Node>()
-        {
-            private boolean closed;
-            @Override
-            protected Node fetchNextOrNull()
-            {
-                if ( cursor.next() )
-                {
-                    return newNodeProxy( cursor.nodeReference() );
-                }
-                else
-                {
-                    close();
-                    return null;
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                if ( !closed )
-                {
-                    statement.close();
-                    cursor.close();
-                    closed = true;
-                }
-            }
-        };
+        return new NodeCursorResourceIterator( cursor, statement );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )
@@ -921,5 +895,68 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public GraphPropertiesProxy newGraphPropertiesProxy()
     {
         return new GraphPropertiesProxy( this );
+    }
+
+    private final class NodeCursorResourceIterator implements ResourceIterator<Node>
+    {
+        private final NodeLabelIndexCursor cursor;
+        private final Statement statement;
+        private long next;
+        private boolean closed;
+        private static final long NOT_INITIALIZED = -2L;
+
+        NodeCursorResourceIterator( NodeLabelIndexCursor cursor, Statement statement )
+        {
+            this.cursor = cursor;
+            this.statement = statement;
+            this.next = NOT_INITIALIZED;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            if ( next == NOT_INITIALIZED )
+            {
+                fetchNext();
+            }
+            return next != NO_ID;
+        }
+
+        @Override
+        public Node next()
+        {
+            if ( !hasNext() )
+            {
+                close();
+                throw new NoSuchElementException(  );
+            }
+            Node nodeProxy = newNodeProxy( next );
+            fetchNext();
+            return nodeProxy;
+        }
+
+        private void fetchNext()
+        {
+            if ( cursor.next() )
+            {
+                next = cursor.nodeReference();
+            }
+            else
+            {
+                close();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            if ( !closed )
+            {
+                next = NO_ID;
+                statement.close();
+                cursor.close();
+                closed = true;
+            }
+        }
     }
 }
