@@ -49,13 +49,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.impl.newapi.References.Group.isRelationship;
-import static org.neo4j.kernel.impl.newapi.References.Relationship.isFilter;
-import static org.neo4j.kernel.impl.newapi.References.Relationship.isGroup;
-import static org.neo4j.kernel.impl.newapi.References.Relationship.isNoIncoming;
-import static org.neo4j.kernel.impl.newapi.References.Relationship.isNoLoop;
-import static org.neo4j.kernel.impl.newapi.References.Relationship.isNoOutgoing;
-import static org.neo4j.kernel.impl.newapi.References.Relationship.isTxStateFilter;
+import static org.neo4j.kernel.impl.newapi.GroupReferenceEncoding.isRelationship;
 import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
@@ -287,41 +281,45 @@ abstract class Read implements TxStateHolder,
          * This means that we need reference encodings (flags) for cases: 1, 3, 4, 5
          */
         ktx.assertOpen();
-        if ( reference == NO_ID ) // there are no relationships for this node
+
+        int relationshipType;
+        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
+
+        switch ( encoding )
         {
-            // still initiate cursor in case there are tx-state additions
+        case NONE: // this is a normal relationship reference
             ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference, this );
-        }
-        else if ( isGroup( reference ) ) // this reference is actually to a group record
-        {
-            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearEncoding( reference ), this );
-        }
-        else if ( isFilter( reference ) ) // this relationship chain needs to be filtered
-        {
+            break;
+
+        case FILTER: // this relationship chain needs to be filtered
             ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearEncoding( reference ), this, true );
-        }
-        else if ( isTxStateFilter( reference ) ) // tx-state changes should be filtered by the head of this chain
-        {
+            break;
+
+        case FILTER_TX_STATE: // tx-state changes should be filtered by the head of this chain
             ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearEncoding( reference ), this, false );
-        }
-        else if ( isNoOutgoing( reference ) ) // nothing in store, but proceed to check tx-state changes
-        {
-            int relationshipType = (int) clearEncoding( reference );
+            break;
+
+        case GROUP: // this reference is actually to a group record
+            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearEncoding( reference ), this );
+            break;
+
+        case NO_OUTGOING_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
             ((RelationshipTraversalCursor) cursor).filteredTxState( nodeReference, this, relationshipType, OUTGOING );
-        }
-        else if ( isNoIncoming( reference ) ) // nothing in store, but proceed to check tx-state changes
-        {
-            int relationshipType = (int) clearEncoding( reference );
+            break;
+
+        case NO_INCOMING_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
             ((RelationshipTraversalCursor) cursor).filteredTxState( nodeReference, this, relationshipType, INCOMING );
-        }
-        else if ( isNoLoop( reference ) ) // nothing in store, but proceed to check tx-state changes
-        {
-            int relationshipType = (int) clearEncoding( reference );
+            break;
+
+        case NO_LOOP_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
             ((RelationshipTraversalCursor) cursor).filteredTxState( nodeReference, this, relationshipType, LOOP );
-        }
-        else // this is a normal relationship reference
-        {
-            ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference, this );
+            break;
+
+        default:
+            throw new IllegalStateException( "Unknown encoding " + encoding );
         }
     }
 

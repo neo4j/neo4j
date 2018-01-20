@@ -151,13 +151,13 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public long relationshipGroupReference()
     {
-        return isDense() ? getNextRel() : References.Group.encodeRelationship( getNextRel() );
+        return isDense() ? getNextRel() : GroupReferenceEncoding.encodeRelationship( getNextRel() );
     }
 
     @Override
     public long allRelationshipsReference()
     {
-        return isDense() ? References.Relationship.encodeFromGroup( getNextRel() ) : getNextRel();
+        return isDense() ? RelationshipReferenceEncoding.encodeGroup( getNextRel() ) : getNextRel();
     }
 
     @Override

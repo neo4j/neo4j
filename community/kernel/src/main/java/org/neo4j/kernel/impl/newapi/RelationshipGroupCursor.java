@@ -26,9 +26,11 @@ import org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.neo4j.kernel.impl.newapi.References.Relationship.encodeNoIncomingRels;
-import static org.neo4j.kernel.impl.newapi.References.Relationship.encodeNoLoopRels;
-import static org.neo4j.kernel.impl.newapi.References.Relationship.encodeNoOutgoingRels;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncomingRels;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
 
 class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
 {
@@ -345,14 +347,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     private long encodeRelationshipReference( long relationshipId )
     {
         assert relationshipId != NO_ID;
-        if ( isBuffered() )
-        {
-            return References.Relationship.encodeForFiltering( relationshipId );
-        }
-        else
-        {
-            return References.Relationship.encodeForTxStateFiltering( relationshipId );
-        }
+        return isBuffered() ? encodeForFiltering( relationshipId ) : encodeForTxStateFiltering( relationshipId );
     }
 
     static class BufferedGroup
