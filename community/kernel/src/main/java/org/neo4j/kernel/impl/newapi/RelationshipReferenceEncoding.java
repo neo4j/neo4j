@@ -24,25 +24,25 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 enum RelationshipReferenceEncoding
 {
     /** No encoding */
-    NONE                  ( 0 ),
+    NONE( 0 ),
 
     /** @see #encodeForFiltering(long) */
-    FILTER                ( 1 ),
+    FILTER( 1 ),
 
     /** @see #encodeForTxStateFiltering(long) */
-    FILTER_TX_STATE       ( 2 ),
+    FILTER_TX_STATE( 2 ),
 
     /** @see #encodeGroup(long) */
-    GROUP                 ( 3 ),
+    GROUP( 3 ),
 
     /** @see #encodeNoOutgoingRels(int) */
-    NO_OUTGOING_OF_TYPE   ( 4 ),
+    NO_OUTGOING_OF_TYPE( 4 ),
 
     /** @see #encodeNoIncomingRels(int) */
-    NO_INCOMING_OF_TYPE   ( 5 ),
+    NO_INCOMING_OF_TYPE( 5 ),
 
     /** @see #encodeNoLoopRels(int) */
-    NO_LOOP_OF_TYPE       ( 6 );
+    NO_LOOP_OF_TYPE( 6 );
 
     final long id;
     final long bits;
