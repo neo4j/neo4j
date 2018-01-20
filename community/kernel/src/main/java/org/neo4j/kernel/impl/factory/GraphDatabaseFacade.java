@@ -649,28 +649,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             }
         }
 
-
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
-    }
-
-    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
-    {
-        try
-        {
-            IndexDescriptor descriptor =
-                    readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
-
-            if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
-            {
-                // Ha! We found an index - let's use it to find matching nodes
-                return descriptor;
-            }
-        }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
-        {
-            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
-        }
-        return null;
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Value value,

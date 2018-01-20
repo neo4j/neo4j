@@ -100,7 +100,7 @@ final class NodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public final boolean acceptNode( long reference, Value[] values )
+    public boolean acceptNode( long reference, Value[] values )
     {
         if ( isRemoved( reference ) )
         {
@@ -115,7 +115,7 @@ final class NodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public final boolean next()
+    public boolean next()
     {
         if ( added.hasNext() )
         {
