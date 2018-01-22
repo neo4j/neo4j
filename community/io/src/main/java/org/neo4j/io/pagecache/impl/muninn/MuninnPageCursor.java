@@ -790,6 +790,74 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public void shiftBytes( int sourceStart, int length, int shift )
+    {
+        int sourceEnd = sourceStart + length;
+        int targetStart = sourceStart + shift;
+        int targetEnd = sourceStart + length + shift;
+        if ( sourceStart < 0
+                | sourceEnd > filePageSize
+                | targetStart < 0
+                | targetEnd > filePageSize
+                | length < 0 )
+        {
+            outOfBounds = true;
+            return;
+        }
+
+        if ( shift < 0 )
+        {
+            unsafeShiftLeft( sourceStart, sourceEnd, length, shift );
+        }
+        else
+        {
+            unsafeShiftRight( sourceEnd, sourceStart, length, shift );
+        }
+    }
+
+    private void unsafeShiftLeft( int fromPos, int toPos, int length, int shift )
+    {
+        int longSteps = length >> 3;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess && longSteps > 0 )
+        {
+            for ( int i = 0; i < longSteps; i++ )
+            {
+                long x = UnsafeUtil.getLong( pointer + fromPos );
+                UnsafeUtil.putLong( pointer + fromPos + shift, x );
+                fromPos += Long.BYTES;
+            }
+        }
+
+        while ( fromPos < toPos )
+        {
+            byte b = UnsafeUtil.getByte( pointer + fromPos );
+            UnsafeUtil.putByte( pointer + fromPos + shift, b );
+            fromPos++;
+        }
+    }
+
+    private void unsafeShiftRight( int fromPos, int toPos, int length, int shift )
+    {
+        int longSteps = length >> 3;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess && longSteps > 0 )
+        {
+            for ( int i = 0; i < longSteps; i++ )
+            {
+                fromPos -= Long.BYTES;
+                long x = UnsafeUtil.getLong( pointer + fromPos );
+                UnsafeUtil.putLong( pointer + fromPos + shift, x );
+            }
+        }
+
+        while ( fromPos > toPos )
+        {
+            fromPos--;
+            byte b = UnsafeUtil.getByte( pointer + fromPos );
+            UnsafeUtil.putByte( pointer + fromPos + shift, b );
+        }
+    }
+
+    @Override
     public void setOffset( int offset )
     {
         this.offset = offset;

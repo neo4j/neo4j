@@ -45,6 +45,12 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        delegate.shiftBytes( sourceOffset, length, shift );
+    }
+
+    @Override
     public void putInt( int value )
     {
         delegate.putInt( value );
