@@ -57,7 +57,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = from.statement().returnColumns
     val resultBuilderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
-    val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory,
+    val func = getExecutionPlanFunction(periodicCommitInfo, updating, resultBuilderFactory,
                                         context.notificationLogger, InterpretedRuntimeName, readOnlies, cardinalities)
 
     val execPlan: ExecutionPlan = new InterpretedExecutionPlan(func,
@@ -70,7 +70,6 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   }
 
   def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
-                               queryId: AnyRef,
                                updating: Boolean,
                                resultBuilderFactory: ExecutionResultBuilderFactory,
                                notificationLogger: InternalNotificationLogger,
@@ -95,7 +94,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(queryId, planType, params, notificationLogger, runtimeName, readOnlies, cardinalities)
+      builder.build(planType, params, notificationLogger, runtimeName, readOnlies, cardinalities)
     }
 
   /**

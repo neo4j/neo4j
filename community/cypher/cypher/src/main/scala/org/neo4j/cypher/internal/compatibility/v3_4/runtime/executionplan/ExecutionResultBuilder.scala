@@ -32,8 +32,7 @@ trait ExecutionResultBuilder {
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def setExceptionDecorator(newDecorator: CypherException => CypherException)
-  def build(queryId: AnyRef,
-            planType: ExecutionMode,
+  def build(planType: ExecutionMode,
             params: MapValue,
             notificationLogger: InternalNotificationLogger,
             runtimeName: RuntimeName,

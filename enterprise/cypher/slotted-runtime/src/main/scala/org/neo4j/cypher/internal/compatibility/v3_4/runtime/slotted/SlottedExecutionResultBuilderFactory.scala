@@ -36,9 +36,8 @@ class SlottedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     new SlottedExecutionWorkflowBuilder()
 
   class SlottedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
-    override protected def createQueryState(params: MapValue, queryId: AnyRef) = {
+    override protected def createQueryState(params: MapValue) = {
       new SlottedQueryState(queryContext, externalResource, params, pipeDecorator,
-        queryId = queryId,
         triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
     }
   }

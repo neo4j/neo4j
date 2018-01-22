@@ -44,7 +44,7 @@ abstract class BaseExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     protected var pipeDecorator: PipeDecorator = NullPipeDecorator
     protected var exceptionDecorator: CypherException => CypherException = identity
 
-    protected def createQueryState(params: MapValue, queryId: AnyRef): QueryState
+    protected def createQueryState(params: MapValue): QueryState
 
     def setQueryContext(context: QueryContext) {
       maybeQueryContext = Some(context)
@@ -64,8 +64,7 @@ abstract class BaseExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       exceptionDecorator = newDecorator
     }
 
-    override def build(queryId: AnyRef,
-                       planType: ExecutionMode,
+    override def build(planType: ExecutionMode,
                        params: MapValue,
                        notificationLogger: InternalNotificationLogger,
                        runtimeName: RuntimeName,
@@ -73,7 +72,7 @@ abstract class BaseExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                        cardinalities: Cardinalities): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
-      val state = createQueryState(params, queryId)
+      val state = createQueryState(params)
       try {
         createResults(state, planType, notificationLogger, runtimeName, readOnlies, cardinalities)
       }
@@ -153,8 +152,8 @@ case class InterpretedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     new InterpretedExecutionWorkflowBuilder()
 
   case class InterpretedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
-    override def createQueryState(params: MapValue, queryId: AnyRef) = {
-      new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
+    override def createQueryState(params: MapValue) = {
+      new QueryState(queryContext, externalResource, params, pipeDecorator,
         triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
     }
   }
