@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import java.util.UUID
-
 import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
@@ -39,7 +37,6 @@ class QueryState(val query: QueryContext,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val timeReader: TimeReader = new TimeReader,
                  var initialContext: Option[ExecutionContext] = None,
-                 val queryId: AnyRef = UUID.randomUUID().toString,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
@@ -65,10 +62,10 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState, repeatableReads, cachedIn)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), triadicState, repeatableReads, cachedIn)
 
   /**
     * When running on the RHS of an Apply, this method will fill an execution context with argument data
@@ -79,7 +76,7 @@ class QueryState(val query: QueryContext,
   def copyArgumentStateTo(ctx: ExecutionContext): Unit = initialContext.foreach(initData => initData.copyTo(ctx))
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState, repeatableReads, cachedIn)
 }
 
 object QueryState {
