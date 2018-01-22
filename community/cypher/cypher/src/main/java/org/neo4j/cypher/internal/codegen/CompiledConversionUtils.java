@@ -401,34 +401,17 @@ public abstract class CompiledConversionUtils
         {
             return ((PrimitiveEntityStream) iterable).iterator();
         }
-        else if ( iterable instanceof Long)
-        {
-            return (LongStream.of((Long) iterable)).iterator();
-        }
         else if ( iterable instanceof LongStream )
         {
             return ((LongStream) iterable).iterator();
-        }
-        else if ( iterable instanceof Double)
-        {
-            return (DoubleStream.of((Double) iterable)).iterator();
         }
         else if ( iterable instanceof DoubleStream )
         {
             return ((DoubleStream) iterable).iterator();
         }
-        else if ( iterable instanceof Integer)
-        {
-            return (IntStream.of((Integer) iterable)).iterator();
-        }
         else if ( iterable instanceof IntStream )
         {
             return ((IntStream) iterable).iterator();
-        }
-        else if ( iterable instanceof String )
-        {
-            String[] singleStringArray = {(String) iterable};
-            return (Stream.of((String) iterable)).iterator();
         }
         else if ( iterable == null )
         {
@@ -461,8 +444,7 @@ public abstract class CompiledConversionUtils
         }
         else
         {
-            throw new CypherTypeException(
-                    "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
+            return Stream.of(iterable).iterator();
         }
     }
 

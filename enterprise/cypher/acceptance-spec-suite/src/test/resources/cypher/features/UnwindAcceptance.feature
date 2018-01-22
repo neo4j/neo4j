@@ -282,3 +282,22 @@ Feature: UnwindAcceptance
       | 'e' |
     And no side effects
 
+  Scenario: Nested unwind with mixed types
+    Given an empty graph
+    When executing query:
+      """
+      WITH [['a', 'b'], ['1.5', 'c'], '2', 'd' ] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+      | y     |
+      | 'a'   |
+      | 'b'   |
+      | '1.5' |
+      | 'c'   |
+      | '2'   |
+      | 'd'   |
+    And no side effects
+

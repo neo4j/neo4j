@@ -70,3 +70,4 @@ STARTS WITH should handle null prefix
 Nested unwind with longs
 Nested unwind with doubles
 Nested unwind with strings
+Nested unwind with mixed types
