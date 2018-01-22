@@ -197,7 +197,7 @@ public class OnlineBackupCommandTest
 
     @Test
     public void shouldNotAskForConsistencyCheckIfNotSpecified()
-            throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+            throws CommandFailed, IncorrectUsage
     {
         execute( "--check-consistency=false", backupDir(), "--name=mybackup" );
 
@@ -542,9 +542,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldReadStandardConfig() throws IOException, CommandFailed, IncorrectUsage, BackupTool
-            .ToolFailureException
-
+    public void shouldReadStandardConfig() throws IOException, CommandFailed, IncorrectUsage
     {
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( cypher_planner.name() + "=RULE" ) );
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
@@ -558,7 +556,7 @@ public class OnlineBackupCommandTest
 
     @Test
     public void shouldAugmentConfig()
-            throws IOException, CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+            throws IOException, CommandFailed, IncorrectUsage
     {
         Path extraConf = testDirectory.directory( "someOtherDir" ).toPath().resolve( "extra.conf" );
         Files.write( extraConf, singletonList( cypher_planner.name() + "=RULE" ) );
@@ -572,8 +570,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldDefaultTimeoutToTwentyMinutes()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
+    public void shouldDefaultTimeoutToTwentyMinutes() throws CommandFailed, IncorrectUsage
     {
         execute( backupDir(), "--name=mybackup" );
 
@@ -583,8 +580,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldInterpretAUnitlessTimeoutAsSeconds()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
+    public void shouldInterpretAUnitlessTimeoutAsSeconds() throws CommandFailed, IncorrectUsage
     {
         execute( "--timeout=10", backupDir(), "--name=mybackup" );
 
@@ -594,8 +590,7 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void shouldParseATimeoutWithUnits()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
+    public void shouldParseATimeoutWithUnits() throws CommandFailed, IncorrectUsage
     {
         execute( "--timeout=10h", backupDir(), "--name=mybackup" );
 
