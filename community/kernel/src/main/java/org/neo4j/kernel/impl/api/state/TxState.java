@@ -1033,17 +1033,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             selectedIncludeUpper = includeUpper;
         }
 
-        PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
-
-        Collection<PrimitiveLongDiffSets> inRange =
-                sortedUpdates.subMap( selectedLower, selectedIncludeLower,
-                                      selectedUpper, selectedIncludeUpper ).values();
-        for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
-        {
-            diffs.addAll( diffForSpecificValue.getAdded().iterator() );
-            diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
-        }
-        return diffs;
+        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
     }
 
     @Override
@@ -1094,31 +1084,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             selectedIncludeUpper = includeUpper;
         }
 
-//        TODO this is the old way, the new one doesn't use withinRange
-//        DiffSets<Long> diffs = new DiffSets<>();
-//
-//        Collection<Map.Entry<ValueTuple, DiffSets<Long>>> inRange =
-//                sortedUpdates.subMap( selectedLower, selectedIncludeLower,
-//                        selectedUpper, selectedIncludeUpper ).entrySet();
-//        for ( Map.Entry<ValueTuple, DiffSets<Long>> entry : inRange )
-//        {
-//            if(((PointValue)entry.getKey().valueAt( 0 )).withinRange(lower, includeLower, upper, includeUpper)){
-//                DiffSets<Long> diffForSpecificValue = entry.getValue();
-//                diffs.addAll( diffForSpecificValue.getAdded().iterator() );
-//                diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
-//            }
-//        }
-        PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
-
-        Collection<PrimitiveLongDiffSets> inRange =
-                sortedUpdates.subMap( selectedLower, selectedIncludeLower,
-                        selectedUpper, selectedIncludeUpper ).values();
-        for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
-        {
-            diffs.addAll( diffForSpecificValue.getAdded().iterator() );
-            diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
-        }
-        return diffs;
+        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
     }
 
     @Override
@@ -1160,10 +1126,15 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             selectedIncludeUpper = includeUpper;
         }
 
+        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+    }
+
+    private PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( TreeMap<ValueTuple,PrimitiveLongDiffSets> sortedUpdates, ValueTuple lower,
+            boolean includeLower, ValueTuple upper, boolean includeUpper )
+    {
         PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
-        Collection<PrimitiveLongDiffSets> inRange = sortedUpdates.subMap( selectedLower, selectedIncludeLower,
-                                                                          selectedUpper, selectedIncludeUpper )
-                                                                 .values();
+
+        Collection<PrimitiveLongDiffSets> inRange = sortedUpdates.subMap( lower, includeLower, upper, includeUpper ).values();
         for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
         {
             diffs.addAll( diffForSpecificValue.getAdded().iterator() );
