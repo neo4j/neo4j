@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3._
 
+import scala.collection.mutable
+
 /**
  * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves
  * any ORDER BY to a preceding WITH clause
@@ -54,7 +56,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
 
     case clause @ Return(distinct, ri: ReturnItems, gri, orderBy, skip, limit, _) =>
       clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
-      var rewrites = Map[Expression, Variable]()
+      var rewrites = mutable.Map[Expression, Variable]()
 
       val (aliasProjection, finalProjection) = ri.items.map {
         i =>
@@ -65,8 +67,11 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
 
           val newVariable = Variable(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
 
-          rewrites = rewrites + (returnColumn -> newVariable)
-          rewrites = rewrites + (i.expression -> newVariable)
+          // Always update for the return column, so that it has precedence over the expressions (if there are variables with the same name),
+          // e.g. match (n),(m) return n as m, m as m2
+          rewrites += (returnColumn -> newVariable)
+          // Only update if rewrites does not yet have a mapping for i.expression
+          rewrites.getOrElseUpdate(i.expression, newVariable)
 
           (AliasedReturnItem(i.expression, newVariable)(i.position), AliasedReturnItem(newVariable.copyId, returnColumn)(i.position))
       }.unzip

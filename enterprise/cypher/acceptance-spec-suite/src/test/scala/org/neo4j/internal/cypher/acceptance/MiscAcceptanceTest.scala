@@ -40,13 +40,13 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
   test("order by after projection") {
     val query =
       """
-|UNWIND [ 1,2 ] as x
-|UNWIND [ 3,4 ] as y
-|RETURN x AS y, y as y3
-|ORDER BY y
+        |UNWIND [ 1,2 ] as x
+        |UNWIND [ 3,4 ] as y
+        |RETURN x AS y, y as y3
+        |ORDER BY y
       """.stripMargin
 
-    val result = innerExecuteDeprecated(query, Map.empty)
+    val result = executeWith(Configs.All, query, expectedDifferentResults = Configs.BackwardsCompatibility + Configs.AllRulePlanners)
     result.toList should equal(List(Map("y" -> 1, "y3" -> 3), Map("y" -> 1, "y3" -> 4), Map("y" -> 2, "y3" -> 3), Map("y" -> 2, "y3" -> 4)))
   }
 
