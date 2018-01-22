@@ -133,17 +133,16 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
         }
     }
 
+    // Load transaction state using RelationshipVisitor
     protected void loadFromTxState( long reference )
     {
         read.txState().relationshipVisit( reference, this );
     }
 
+    // used to visit transaction state
     @Override
-    public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId ) throws RuntimeException
+    public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId )
     {
-        setId( relationshipId );
-        setType( typeId );
-        setFirstNode( startNodeId );
-        setSecondNode( endNodeId );
+        initialize( true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false );
     }
 }
