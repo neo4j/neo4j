@@ -30,7 +30,7 @@ public class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
     public void tooLongArrayIsNotAllowed() throws Exception
     {
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "is longer then 32766, " +
+        expectedException.expectMessage( "is longer than 32766, " +
                          "which is maximum supported length of indexed property value."  );
         getValidator().validate( RandomUtils.nextBytes(39978 ) );
     }
