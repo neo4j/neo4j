@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
@@ -443,8 +444,7 @@ public abstract class CompiledConversionUtils
         }
         else
         {
-            throw new CypherTypeException(
-                    "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
+            return Stream.of(iterable).iterator();
         }
     }
 

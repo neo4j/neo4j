@@ -65,3 +65,9 @@ Negative parameter for LIMIT should not generate errors
 
 //IndexAcceptance.feature
 STARTS WITH should handle null prefix
+
+//UnwindAcceptance.feature
+Nested unwind with longs
+Nested unwind with doubles
+Nested unwind with strings
+Nested unwind with mixed types
