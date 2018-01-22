@@ -121,6 +121,20 @@ public class DefaultPageCacheTracerTest
         assertThat( "hitRation", tracer.hitRatio(), closeTo( 3.0 / 10, 0.0001 ) );
     }
 
+    @Test
+    public void usageRatio()
+    {
+        tracer.maxPages( 10 );
+        assertThat( tracer.usageRatio(), closeTo( 0d, 0.0001 ) );
+        tracer.faults( 5 );
+        assertThat( tracer.usageRatio(), closeTo( 0.5, 0.0001 ) );
+        tracer.faults( 5 );
+        tracer.evictions( 5 );
+        assertThat( tracer.usageRatio(), closeTo( 0.5, 0.0001 ) );
+        tracer.faults( 5 );
+        assertThat( tracer.usageRatio(), closeTo( 1d, 0.0001 ) );
+    }
+
     private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions,
             long flushes, long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped, double hitRatio )
     {

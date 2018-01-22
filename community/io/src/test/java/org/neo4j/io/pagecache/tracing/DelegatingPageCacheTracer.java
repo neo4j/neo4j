@@ -116,6 +116,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public double usageRatio()
+    {
+        return delegate.usageRatio();
+    }
+
+    @Override
     public void pins( long pins )
     {
         delegate.pins( pins );
@@ -167,6 +173,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public void flushes( long flushes )
     {
         delegate.flushes( flushes );
+    }
+
+    @Override
+    public void maxPages( long maxPages )
+    {
+        delegate.maxPages( maxPages );
     }
 
     @Override
