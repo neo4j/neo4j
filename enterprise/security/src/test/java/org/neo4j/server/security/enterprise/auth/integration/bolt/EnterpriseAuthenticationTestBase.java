@@ -26,6 +26,7 @@ import org.junit.Rule;
 import org.parboiled.common.StringUtils;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -224,15 +225,35 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected void assertConnectionFails( Map<String,Object> authToken ) throws Exception
     {
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk(
-                        init( "TestClient/1.1", authToken ) ) );
+        final int RETRIES = 10;
+        int tries = 0;
+        while ( tries < RETRIES )
+        {
+            try
+            {
+                client.connect( address )
+                        .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                        .send( chunk(
+                                init( "TestClient/1.1", authToken ) ) );
 
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                "The client is unauthorized due to authentication failure." ) ) );
-        assertThat( client, eventuallyDisconnects() );
+                assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+                assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+                        "The client is unauthorized due to authentication failure." ) ) );
+                assertThat( client, eventuallyDisconnects() );
+                return;
+            }
+            catch ( SocketException se )
+            {
+                if ( se.getMessage().startsWith( "Broken pipe" ) && tries != RETRIES - 1 )
+                {
+                    tries++;
+                }
+                else
+                {
+                    throw se;
+                }
+            }
+        }
     }
 
     protected void assertReadSucceeds() throws Exception
