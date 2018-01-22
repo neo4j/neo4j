@@ -79,8 +79,9 @@ public class OnlineBackupCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "cc-label-scan-store", true,
                     "Perform consistency checks on the label scan store." ) )
             .withArgument( new OptionalBooleanArg( "cc-property-owners", false,
-                    "Perform additional consistency checks on property ownership. This check is *very* expensive in " +
-                            "time and memory." ) );
+                    "Perform additional consistency checks on property ownership. This check is *very* expensive in time and memory." ) )
+            .withArgument( new OptionalCanonicalPath( "backup-log", "backup-log-file-path",
+                    "disabled", "Enable backup client logging and direct log entries to the specified file." ) );
 
     public static Arguments arguments()
     {
@@ -96,9 +97,7 @@ public class OnlineBackupCommand implements AdminCommand
     private ConsistencyCheckService consistencyCheckService;
     private final OutsideWorld outsideWorld;
 
-    public OnlineBackupCommand( BackupService backupService, Path homeDir, Path configDir,
-            ConsistencyCheckService consistencyCheckService,
-            OutsideWorld outsideWorld )
+    OnlineBackupCommand( BackupService backupService, Path homeDir, Path configDir, ConsistencyCheckService consistencyCheckService, OutsideWorld outsideWorld )
     {
         this.backupService = backupService;
         this.homeDir = homeDir;
