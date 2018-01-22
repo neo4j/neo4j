@@ -103,7 +103,7 @@ class TreeState
     /**
      * Is tree clean or dirty. Clean means it was closed without any non-checkpointed changes.
      */
-    private boolean clean;
+    private final boolean clean;
 
     TreeState( long pageId, long stableGeneration, long unstableGeneration, long rootId, long rootGeneration,
             long lastId, long freeListWritePageId, long freeListReadPageId, int freeListWritePos, int freeListReadPos,
@@ -233,7 +233,7 @@ class TreeState
         return this;
     }
 
-    private boolean isEmpty()
+    boolean isEmpty()
     {
         return stableGeneration == 0L && unstableGeneration == 0L && rootId == 0L && lastId == 0L &&
                 freeListWritePageId == 0L && freeListReadPageId == 0L && freeListWritePos == 0 && freeListReadPos == 0;
