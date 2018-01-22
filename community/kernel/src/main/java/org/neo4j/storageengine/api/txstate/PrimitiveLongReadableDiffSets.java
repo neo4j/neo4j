@@ -81,4 +81,12 @@ public interface PrimitiveLongReadableDiffSets
      * @return iterator that will iterate over augmented elements as well as over diff set
      */
     PrimitiveLongIterator augment( PrimitiveLongIterator elements );
+
+    /**
+     * Create new diffSets that contains additions and removals from 2 sets
+     * TODO: mention combine rules
+     * @param additional set to combine with.
+     * @return combined sets view
+     */
+    PrimitiveLongReadableDiffSets combine( PrimitiveLongReadableDiffSets additional );
 }

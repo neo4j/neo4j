@@ -19,69 +19,74 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.neo4j.collection.primitive.CombinePrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
-
-/**
- * Empty implementation of {@link PrimitiveLongDiffSets}.
- *
- * Use {@link #INSTANCE} to reference static singleton.
- */
-public class EmptyPrimitiveLongReadableDiffSets extends PrimitiveLongDiffSets
+public class CombinedPrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
 {
-    public static final PrimitiveLongDiffSets INSTANCE = new EmptyPrimitiveLongReadableDiffSets();
+    private final PrimitiveLongReadableDiffSets masterState;
+    private final PrimitiveLongReadableDiffSets additionalState;
 
-    private EmptyPrimitiveLongReadableDiffSets()
+    CombinedPrimitiveLongDiffSets( PrimitiveLongReadableDiffSets masterState,
+            PrimitiveLongReadableDiffSets additionalState )
     {
+        this.masterState = masterState;
+        this.additionalState = additionalState;
     }
 
     @Override
     public boolean isAdded( long element )
     {
-        return false;
+        return masterState.isAdded( element ) || additionalState.isAdded( element );
     }
 
     @Override
     public boolean isRemoved( long element )
     {
-        return false;
+        return masterState.isRemoved( element ) || additionalState.isRemoved( element );
     }
 
     @Override
     public PrimitiveLongSet getAdded()
     {
-        return emptySet();
+        return new CombinePrimitiveLongSet( masterState.getAdded(), additionalState.getAdded() );
     }
 
     @Override
     public PrimitiveLongSet getAddedSnapshot()
     {
-        return emptySet();
+        throw new UnsupportedOperationException( "AddedSnapshot is not supported in " + getClass() );
     }
 
     @Override
     public PrimitiveLongSet getRemoved()
     {
-        return emptySet();
+        return new CombinePrimitiveLongSet( masterState.getRemoved(), additionalState.getRemoved() );
     }
 
     @Override
     public boolean isEmpty()
     {
-        return true;
+        return masterState.isEmpty() && additionalState.isEmpty();
     }
 
     @Override
     public int delta()
     {
-        return 0;
+        return masterState.delta() + additionalState.delta();
+    }
+
+    @Override
+    public PrimitiveLongIterator augment( PrimitiveLongIterator elements )
+    {
+        throw new UnsupportedOperationException( "Augment is not supported in " + getClass() );
     }
 
     @Override
     public PrimitiveLongReadableDiffSets combine( PrimitiveLongReadableDiffSets diffSets )
     {
-        return diffSets;
+        throw new UnsupportedOperationException( "Combine is not supported in " + getClass() );
     }
 }

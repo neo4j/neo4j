@@ -20,22 +20,27 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TransactionStateController;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -44,10 +49,11 @@ import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.values.storable.ValueTuple;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -57,20 +63,19 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 
 public class CombinedTxStateIT
 {
-
     @Rule
     public DatabaseRule databaseRule = new EmbeddedDatabaseRule();
 
     @Before
     public void setUp() throws Exception
     {
-        FeatureToggles.set( TransactionStatesContainer.class, "multiState", true );
+        TransactionStatesContainer.MULTI_STATE = true;
     }
 
     @After
     public void tearDown() throws Exception
     {
-        FeatureToggles.clear( TransactionStatesContainer.class, "multiState" );
+        TransactionStatesContainer.MULTI_STATE = false;
     }
 
     @Test
@@ -121,12 +126,6 @@ public class CombinedTxStateIT
             TransactionState transactionState = getTransactionState();
             transactionState.accept( new TxStateVisitor.Adapter() );
         }
-    }
-
-    private TransactionState getTransactionState()
-    {
-        KernelTransactionImplementation kernelTransaction = kernelTransaction();
-        return kernelTransaction.txState();
     }
 
     @Test( expected = UnsupportedOperationException.class )
@@ -203,6 +202,257 @@ public class CombinedTxStateIT
 
             stateController.combine();
         }
+    }
+
+    @Test
+    public void splitIndexUpdatesBetweenStates()
+    {
+        Label marker = Label.label( "marker" );
+        String property = "property";
+        createIndex( marker, property );
+        awaitForIndexes();
+
+        try ( Transaction ignored = databaseRule.beginTx() )
+        {
+            TransactionStateController stateController = txStateController();
+            Node node = databaseRule.createNode( marker );
+            node.setProperty( property, "a" );
+
+            stateController.split();
+
+            Node nodeNew = databaseRule.createNode( marker );
+            nodeNew.setProperty( property, "b" );
+
+            IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( getLabelIdsByName( marker.name() ), getPropertyIdByName( property ) );
+            TransactionState transactionState = getTransactionState();
+            assertCombinedTxState( transactionState );
+            TxState stableTxState = ((CombinedTxState) transactionState).getStableTxState();
+            TxState currentTxState = ((CombinedTxState) transactionState).getCurrentTxState();
+
+            checkIndexUpdates( node, descriptor, stableTxState );
+            checkIndexUpdates( nodeNew, descriptor, currentTxState );
+
+            stateController.combine();
+        }
+    }
+
+    @Test
+    public void indexUpdatesForRangeSeekByPrefixFromStableAndNewState()
+    {
+        Label marker = Label.label( "marker" );
+        String property = "property";
+        createIndex( marker, property );
+        awaitForIndexes();
+
+        try ( Transaction ignored = databaseRule.beginTx() )
+        {
+            TransactionStateController stateController = txStateController();
+            Node node = databaseRule.createNode( marker );
+            node.setProperty( property, "aca" );
+
+            stateController.split();
+
+            Node nodeNew = databaseRule.createNode( marker );
+            nodeNew.setProperty( property, "acb" );
+
+            IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( getLabelIdsByName( marker.name() ), getPropertyIdByName( property ) );
+            TransactionState transactionState = getTransactionState();
+            assertCombinedTxState( transactionState );
+
+            PrimitiveLongReadableDiffSets rangeSeekByPrefix = transactionState.indexUpdatesForRangeSeekByPrefix(
+                    descriptor, "ac" );
+            PrimitiveLongSet addedNodes = rangeSeekByPrefix.getAdded();
+            assertEquals( 2, addedNodes.size() );
+            assertTrue( addedNodes.contains( node.getId() ) );
+            assertTrue( addedNodes.contains( nodeNew.getId() ) );
+
+            stateController.combine();
+        }
+    }
+
+    @Test
+    public void indexUpdatesForRangeSeekByStringFromStableAndNewState()
+    {
+        Label marker = Label.label( "marker" );
+        String property = "property";
+        createIndex( marker, property );
+        awaitForIndexes();
+
+        try ( Transaction ignored = databaseRule.beginTx() )
+        {
+            TransactionStateController stateController = txStateController();
+            Node node = databaseRule.createNode( marker );
+            node.setProperty( property, "aca" );
+
+            stateController.split();
+
+            Node nodeNew = databaseRule.createNode( marker );
+            nodeNew.setProperty( property, "acb" );
+
+            IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( getLabelIdsByName( marker.name() ), getPropertyIdByName( property ) );
+            TransactionState transactionState = getTransactionState();
+            assertCombinedTxState( transactionState );
+
+            PrimitiveLongReadableDiffSets rangeSeekByPrefix =
+                    transactionState.indexUpdatesForRangeSeekByString( descriptor, "aca", true, "acz", false );
+            PrimitiveLongSet addedNodes = rangeSeekByPrefix.getAdded();
+            assertEquals( 2, addedNodes.size() );
+            assertTrue( addedNodes.contains( node.getId() ) );
+            assertTrue( addedNodes.contains( nodeNew.getId() ) );
+
+            stateController.combine();
+        }
+    }
+
+    @Test
+    public void indexUpdatesForRangeSeekByNumberFromStableAndNewState()
+    {
+        Label marker = Label.label( "marker" );
+        String property = "property";
+        createIndex( marker, property );
+        awaitForIndexes();
+
+        try ( Transaction ignored = databaseRule.beginTx() )
+        {
+            TransactionStateController stateController = txStateController();
+            Node node = databaseRule.createNode( marker );
+            node.setProperty( property, 5 );
+
+            stateController.split();
+
+            Node nodeNew = databaseRule.createNode( marker );
+            nodeNew.setProperty( property, 6 );
+
+            IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( getLabelIdsByName( marker.name() ), getPropertyIdByName( property ) );
+            TransactionState transactionState = getTransactionState();
+            assertCombinedTxState( transactionState );
+
+            PrimitiveLongReadableDiffSets rangeSeekByPrefix =
+                    transactionState.indexUpdatesForRangeSeekByNumber( descriptor, 5, true, 6, true );
+            PrimitiveLongSet addedNodes = rangeSeekByPrefix.getAdded();
+            assertEquals( 2, addedNodes.size() );
+            assertTrue( addedNodes.contains( node.getId() ) );
+            assertTrue( addedNodes.contains( nodeNew.getId() ) );
+
+            stateController.combine();
+        }
+    }
+
+    @Test
+    public void indexUpdatesForSeekFromStableAndNewState()
+    {
+        Label marker = Label.label( "marker" );
+        String property = "property";
+        createIndex( marker, property );
+        awaitForIndexes();
+
+        try ( Transaction ignored = databaseRule.beginTx() )
+        {
+            TransactionStateController stateController = txStateController();
+            Node node = databaseRule.createNode( marker );
+            node.setProperty( property, "a" );
+
+            stateController.split();
+
+            Node nodeNew = databaseRule.createNode( marker );
+            nodeNew.setProperty( property, "a" );
+
+            IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( getLabelIdsByName( marker.name() ), getPropertyIdByName( property ) );
+            TransactionState transactionState = getTransactionState();
+            assertCombinedTxState( transactionState );
+
+            PrimitiveLongReadableDiffSets rangeSeekByPrefix =
+                    transactionState.indexUpdatesForSeek( descriptor, ValueTuple.of( "a" ) );
+            PrimitiveLongSet addedNodes = rangeSeekByPrefix.getAdded();
+            assertEquals( 2, addedNodes.size() );
+            assertTrue( addedNodes.contains( node.getId() ) );
+            assertTrue( addedNodes.contains( nodeNew.getId() ) );
+
+            stateController.combine();
+        }
+    }
+
+    @Test
+    public void indexUpdatesForScanFromStableAndNewState()
+    {
+        Label marker = Label.label( "marker" );
+        String property = "property";
+        createIndex( marker, property );
+        awaitForIndexes();
+
+        try ( Transaction ignored = databaseRule.beginTx() )
+        {
+            TransactionStateController stateController = txStateController();
+            Node node = databaseRule.createNode( marker );
+            node.setProperty( property, "a" );
+
+            stateController.split();
+
+            Node nodeNew = databaseRule.createNode( marker );
+            nodeNew.setProperty( property, "b" );
+
+            IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( getLabelIdsByName( marker.name() ), getPropertyIdByName( property ) );
+            TransactionState transactionState = getTransactionState();
+            assertCombinedTxState( transactionState );
+
+            PrimitiveLongReadableDiffSets rangeSeekByPrefix =
+                    transactionState.indexUpdatesForScan( descriptor );
+            PrimitiveLongSet addedNodes = rangeSeekByPrefix.getAdded();
+            assertEquals( 2, addedNodes.size() );
+            assertTrue( addedNodes.contains( node.getId() ) );
+            assertTrue( addedNodes.contains( nodeNew.getId() ) );
+
+            stateController.combine();
+        }
+    }
+
+    private void checkIndexUpdates( Node node, IndexDescriptor descriptor, TxState txState )
+    {
+        PrimitiveLongReadableDiffSets updatesForScan = txState.indexUpdatesForScan( descriptor );
+        PrimitiveLongSet added = updatesForScan.getAdded();
+        assertEquals( 1, added.size() );
+        assertTrue( added.contains( node.getId() ) );
+    }
+
+    private int getLabelIdsByName( String labelName )
+    {
+        try ( Statement statement = getKernelStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            return readOperations.labelGetForName( labelName );
+        }
+    }
+
+    private int getPropertyIdByName( String name )
+    {
+        try ( Statement statement = getKernelStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            return readOperations.propertyKeyGetForName( name );
+        }
+    }
+
+    private void createIndex( Label marker, String propertyKey )
+    {
+        try ( Transaction transaction = databaseRule.beginTx() )
+        {
+            databaseRule.schema().indexFor( marker ).on( propertyKey ).create();
+            transaction.success();
+        }
+    }
+
+    private void awaitForIndexes()
+    {
+        try ( Transaction ignored = databaseRule.beginTx() )
+        {
+            databaseRule.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+        }
+    }
+
+    private TransactionState getTransactionState()
+    {
+        KernelTransactionImplementation kernelTransaction = kernelTransaction();
+        return kernelTransaction.txState();
     }
 
     private void assertCombinedTxState( TransactionState transactionState )

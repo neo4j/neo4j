@@ -414,10 +414,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TransactionState txState()
     {
-//        if ( !transactionStatesContainer.hasState() )
-//        {
-//            transactionMonitor.upgradeToWriteTransaction();
-//        }
         return transactionStatesContainer.global();
     }
 
@@ -499,7 +495,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasDataChanges()
     {
-        return hasTxStateWithChanges() && transactionStatesContainer.hasDataChanges();
+        return transactionStatesContainer.hasDataChanges();
     }
 
     @Override
@@ -585,8 +581,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
             // Trigger transaction "before" hooks.
-            transactionStatesContainer.validateForCommit();
-            transactionState = transactionStatesContainer.global();
+            transactionState = transactionStatesContainer.prepareForCommit();
             if ( hasDataChanges() )
             {
                 try

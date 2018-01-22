@@ -27,7 +27,7 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class TransactionStatesContainer implements TransactionStateController
 {
-    private static final boolean MULTI_STATE = flag( TransactionStatesContainer.class, "multiState", false );
+    static boolean MULTI_STATE = flag( TransactionStatesContainer.class, "multiState", false );
 
     private final TransactionMonitor transactionMonitor;
     private TransactionState globalTransactionState;
@@ -66,12 +66,13 @@ public class TransactionStatesContainer implements TransactionStateController
         return stableTransactionState;
     }
 
-    public void validateForCommit()
+    public TransactionState prepareForCommit()
     {
         if ( globalTransactionState instanceof CombinedTxState )
         {
             throw new IllegalStateException( "Commit of splitted transaction state is not supported." );
         }
+        return globalTransactionState;
     }
 
     public TransactionState global()

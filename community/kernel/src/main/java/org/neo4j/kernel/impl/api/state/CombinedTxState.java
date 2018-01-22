@@ -22,16 +22,13 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -405,7 +402,7 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     @Override
     public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
     {
-        throw new UnsupportedOperationException( "Operation not supported." );
+        return Iterables.empty();
     }
 
     @Override
@@ -414,38 +411,43 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
         throw new UnsupportedOperationException( "Operation not supported." );
     }
 
+    // ----->>>> test arrow is here
+
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor descriptor )
     {
-        return currentTxState.indexUpdatesForScan( descriptor );
+        return currentTxState.indexUpdatesForScan( descriptor )
+                .combine( stableTxState.indexUpdatesForScan( descriptor ) );
     }
 
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor descriptor, ValueTuple values )
     {
-        return currentTxState.indexUpdatesForSeek( descriptor, values );
+        return currentTxState.indexUpdatesForSeek( descriptor, values )
+                .combine( stableTxState.indexUpdatesForSeek( descriptor, values ) );
     }
 
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( IndexDescriptor descriptor, Number lower,
             boolean includeLower, Number upper, boolean includeUpper )
     {
-        return currentTxState
-                .indexUpdatesForRangeSeekByNumber( descriptor, lower, includeLower, upper, includeUpper );
+        return currentTxState.indexUpdatesForRangeSeekByNumber( descriptor, lower, includeLower, upper, includeUpper )
+                .combine( stableTxState.indexUpdatesForRangeSeekByNumber( descriptor, lower, includeLower, upper, includeUpper ) );
     }
 
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor descriptor, String lower,
             boolean includeLower, String upper, boolean includeUpper )
     {
-        return currentTxState
-                .indexUpdatesForRangeSeekByString( descriptor, lower, includeLower, upper, includeUpper );
+        return currentTxState.indexUpdatesForRangeSeekByString( descriptor, lower, includeLower, upper, includeUpper )
+                .combine( stableTxState.indexUpdatesForRangeSeekByString( descriptor, lower, includeLower, upper, includeUpper ) );
     }
 
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
     {
-        return currentTxState.indexUpdatesForRangeSeekByPrefix( descriptor, prefix );
+        return currentTxState.indexUpdatesForRangeSeekByPrefix( descriptor, prefix )
+                .combine( stableTxState.indexUpdatesForRangeSeekByPrefix( descriptor, prefix ) );
     }
 
     @Override
@@ -454,8 +456,6 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     {
         currentTxState.indexDoUpdateEntry( descriptor, nodeId, propertiesBefore, propertiesAfter );
     }
-
-// ----->>>> test arrow is here
 
     @Override
     public PrimitiveLongResourceIterator augmentNodesGetAll( PrimitiveLongIterator committed )
@@ -491,6 +491,16 @@ public class CombinedTxState implements TransactionState, RelationshipVisitor.Ho
     public boolean hasDataChanges()
     {
         return stableTxState.hasDataChanges() || currentTxState.hasDataChanges();
+    }
+
+    TxState getStableTxState()
+    {
+        return stableTxState;
+    }
+
+    TxState getCurrentTxState()
+    {
+        return currentTxState;
     }
 
     public TransactionState merge()

@@ -116,7 +116,18 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
     @Override
     public PrimitiveLongIterator augment( PrimitiveLongIterator source )
     {
-        return (T) new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
+        return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
+    }
+
+    @Override
+    public PrimitiveLongReadableDiffSets combine( PrimitiveLongReadableDiffSets diffSets )
+    {
+        if ( diffSets.isEmpty() )
+        {
+            return this;
+        }
+
+        return new CombinedPrimitiveLongDiffSets( this, diffSets );
     }
 
     @Override
