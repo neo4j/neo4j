@@ -43,6 +43,8 @@ import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.SlottedPipeBuilderUtils
+
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
                          monitors: Monitors,
@@ -61,6 +63,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val id = plan.id
     val slots = physicalPlan.slotConfigurations(plan.id)
     val argumentSize = physicalPlan.argumentSizes(plan.id)
+    generateSlotAccessorFunctions(slots)
 
     val pipe = plan match {
       case AllNodesScan(column, _) =>
@@ -92,11 +95,21 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     pipe
   }
 
+  private def generateSlotAccessorFunctions(slots: SlotConfiguration) = {
+    slots.foreachSlot {
+      case (key, slot) =>
+        val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)
+        val setter = SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot)
+        slots.updateAccessorFunctions(key, getter, setter)
+    }
+  }
+
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
     val id = plan.id
     val slots = physicalPlan.slotConfigurations(plan.id)
+    generateSlotAccessorFunctions(slots)
 
     val pipe = plan match {
       case ProduceResult(_, columns) =>
@@ -328,6 +341,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     val slotConfigs = physicalPlan.slotConfigurations
     val id = plan.id
     val slots = slotConfigs(plan.id)
+    generateSlotAccessorFunctions(slots)
 
     val pipe = plan match {
       case Apply(_, _) =>

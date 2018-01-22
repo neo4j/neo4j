@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.{Iterator, immutable}
@@ -55,6 +57,12 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext
   def copyWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext
+
+  // Needed by legacy pattern matcher. Returns a map of all bound nodes/relationships in the context.
+  // Entities that are only references (ids) are materialized with the provided materialization functions
+  def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue]
+
+  def isNull(key: String): Boolean
 }
 
 case class MapExecutionContext(m: MutableMap[String, AnyValue])
@@ -146,4 +154,22 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
     m.remove(key)
     this
   }
+
+  override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] =
+    m.collect {
+      case kv => kv._2 match {
+        case _: NodeValue | _: RelationshipValue =>
+          kv
+        case v: NodeReference =>
+          (kv._1, materializeNode(v.id()))
+        case v: RelationshipReference =>
+          (kv._1, materializeRelationship(v.id()))
+      }
+    }.toMap
+
+  override def isNull(key: String): Boolean =
+    get(key) match {
+      case Some(Values.NO_VALUE) => true
+      case _ => false
+    }
 }

@@ -64,7 +64,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
         | ][0..5] AS related
       """.stripMargin
 
-    val result = executeWith(expectedToSucceedRestricted - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceedRestricted, query)
     result.toList should equal(
       List(Map("related" -> List(Map("tagged" -> Vector(Map("owner" -> Map("name" -> "Michael Hunger"))))))))
   }
