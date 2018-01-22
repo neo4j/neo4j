@@ -210,9 +210,9 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         @Override
         public String toString()
         {
-            return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d]",
+            return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d, fixedSize:%b]",
                     getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(),
-                    keySize( null ), valueSize( null ) );
+                    keySize( null ), valueSize( null ), fixedSize() );
         }
 
         @Override
