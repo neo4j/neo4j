@@ -225,28 +225,29 @@ public class LogFilesBuilder
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
 
         // Register listener for rotation threshold
-        AtomicLong rotationThreshold = new AtomicLong( getRotationThreshold() );
-        config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> rotationThreshold.set( update ) );
+        AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
 
         return new TransactionLogFilesContext( rotationThreshold, logEntryReader,
                 lastCommittedIdSupplier, committingTransactionIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem );
     }
 
-    private long getRotationThreshold()
+    private AtomicLong getRotationThresholdAndRegisterForUpdates()
     {
         if ( rotationThreshold != null )
         {
-            return rotationThreshold;
+            return new AtomicLong( rotationThreshold );
         }
         if ( readOnly )
         {
-            return Long.MAX_VALUE;
+            return new AtomicLong( Long.MAX_VALUE );
         }
         if ( config == null )
         {
             config = Config.defaults();
         }
-        return config.get( logical_log_rotation_threshold );
+        AtomicLong configThreshold = new AtomicLong( config.get( logical_log_rotation_threshold ) );
+        config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );
+        return configThreshold;
     }
 
     private Supplier<LogVersionRepository> getLogVersionRepositorySupplier() throws IOException
