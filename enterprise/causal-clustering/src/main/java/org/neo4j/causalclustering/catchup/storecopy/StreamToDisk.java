@@ -44,9 +44,9 @@ class StreamToDisk implements StoreFileStreams
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final FileCopyMonitor fileCopyMonitor;
-    private final Map<String,WritableByteChannel> channels;
-    private final Map<String,PagedFile> pagedFiles;
     private final PageCacheFlusher flusherThread;
+    private final Map<String,PageCacheDestination> channels;
+    private boolean closed;
 
     StreamToDisk( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Monitors monitors ) throws IOException
     {
@@ -58,7 +58,6 @@ class StreamToDisk implements StoreFileStreams
         fs.mkdirs( storeDir );
         this.fileCopyMonitor = monitors.newMonitor( FileCopyMonitor.class );
         channels = new HashMap<>();
-        pagedFiles = new HashMap<>();
     }
 
     @Override
@@ -70,21 +69,8 @@ class StreamToDisk implements StoreFileStreams
         fileCopyMonitor.copyFile( fileName );
         if ( StoreType.shouldBeManagedByPageCache( destination ) )
         {
-            WritableByteChannel channel = channels.get( destination );
-            if ( channel == null )
-            {
-                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
-                PagedFile pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
-                channel = pagedFile.openWritableByteChannel();
-                pagedFiles.put( destination, pagedFile );
-                channels.put( destination, channel );
-            }
-
-            ByteBuffer buffer = ByteBuffer.wrap( data );
-            while ( buffer.hasRemaining() )
-            {
-                channel.write( buffer );
-            }
+            PageCacheDestination dest = getPageCacheDestination( destination, requiredAlignment, fileName );
+            dest.write( data );
         }
         else
         {
@@ -95,16 +81,86 @@ class StreamToDisk implements StoreFileStreams
         }
     }
 
-    @Override
-    public void close() throws IOException
+    private synchronized PageCacheDestination getPageCacheDestination(
+            String destination, int requiredAlignment, File fileName ) throws IOException
     {
-        //noinspection EmptyTryBlock,unused
-        try ( Closeable chans = () -> IOUtils.closeAll( channels.values() );
-              Closeable pfs = () -> IOUtils.closeAll( pagedFiles.values() );
-              Closeable flusher = flusherThread::halt )
+        if ( closed )
         {
-            // The combination of try-with-resources and closeAll will ensure that all resources are closed,
-            // regardless of any exceptions thrown, and that any exceptions will be properly combined.
+            throw new IOException( "Destination has been closed: " + fileName );
         }
+        PageCacheDestination dest = channels.get( destination );
+        if ( dest == null )
+        {
+            dest = new PageCacheDestination( pageCache, fileName, requiredAlignment );
+            channels.put( destination, dest );
+        }
+        return dest;
+    }
+
+    private static final class PageCacheDestination implements Closeable
+    {
+        private final PagedFile pagedFile;
+        private final WritableByteChannel channel;
+
+        PageCacheDestination( PageCache pageCache, File fileName, int requiredAlignment ) throws IOException
+        {
+            int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
+            pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
+            try
+            {
+                channel = pagedFile.openWritableByteChannel();
+            }
+            catch ( IOException channelException )
+            {
+                try
+                {
+                    pagedFile.close();
+                }
+                catch ( IOException pagedFileException )
+                {
+                    channelException.addSuppressed( pagedFileException );
+                }
+                channelException.printStackTrace();
+                throw channelException;
+            }
+        }
+
+        public synchronized void write( byte[] data ) throws IOException
+        {
+            ByteBuffer buf = ByteBuffer.wrap( data );
+            while ( buf.hasRemaining() )
+            {
+                channel.write( buf );
+            }
+        }
+
+        @Override
+        public synchronized void close() throws IOException
+        {
+            IOUtils.closeAll( channel, pagedFile );
+        }
+    }
+
+    @Override
+    public synchronized void close() throws IOException
+    {
+        closed = true;
+        try
+        {
+            flusherThread.halt();
+        }
+        catch ( Exception haltException )
+        {
+            try
+            {
+                IOUtils.closeAll( channels.values() );
+            }
+            catch ( IOException channelsException )
+            {
+                haltException.addSuppressed( channelsException );
+            }
+            throw haltException;
+        }
+        IOUtils.closeAll( channels.values() );
     }
 }
