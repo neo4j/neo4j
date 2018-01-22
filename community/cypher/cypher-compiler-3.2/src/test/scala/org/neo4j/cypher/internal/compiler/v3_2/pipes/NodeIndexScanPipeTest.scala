@@ -30,8 +30,6 @@ import org.neo4j.graphdb.Node
 
 class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)

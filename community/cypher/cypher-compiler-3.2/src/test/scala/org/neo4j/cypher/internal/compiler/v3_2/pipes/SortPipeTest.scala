@@ -28,8 +28,6 @@ import scala.collection.mutable.{Map => MutableMap}
 
 class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   test("empty input gives empty output") {
     val source = new FakePipe(List(), "x" -> CTAny)
     val sortPipe = new SortPipe(source, List(Ascending("x")))()

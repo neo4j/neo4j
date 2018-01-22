@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v3_2.pipes.{AllNodesScanPipe, EagerPipe, LoadCSVPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.{AllNodesScanPipe, EagerPipe, LoadCSVPipe}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.HasHeaders
 
 class CheckForEagerLoadCsvTest extends CypherFunSuite {
-  implicit val monitor = mock[PipeMonitor]
-
   test("should notify for EagerPipe on top of LoadCsvPipe") {
     val pipe = EagerPipe(LoadCSVPipe(AllNodesScanPipe("a")(), HasHeaders, Literal("foo"), "bar", None, false)())()
 

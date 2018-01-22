@@ -28,8 +28,7 @@ import org.neo4j.graphdb.Node
 case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection,
                                  types: LazyTypes, predicate: Predicate)
                                 (val id: Id = new Id)
-                                (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+  extends PipeWithSource(source) {
 
   predicate.registerOwningPipe(this)
 

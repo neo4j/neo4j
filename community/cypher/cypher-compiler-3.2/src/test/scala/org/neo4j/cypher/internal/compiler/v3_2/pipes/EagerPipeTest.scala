@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class EagerPipeTest extends CypherFunSuite {
-  private implicit val monitor = mock[PipeMonitor]
 
   test("shouldMakeLazyEager") {
     // Given a lazy iterator that is not empty

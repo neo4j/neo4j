@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class ArgumentPipe()
-                       (val id: Id = new Id)
-                       (implicit val monitor: PipeMonitor) extends Pipe {
+case class ArgumentPipe()(val id: Id = new Id) extends Pipe {
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     Iterator(state.initialContext.get)
 }

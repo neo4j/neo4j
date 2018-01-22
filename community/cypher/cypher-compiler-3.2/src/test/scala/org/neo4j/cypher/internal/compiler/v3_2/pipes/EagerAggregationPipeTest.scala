@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class EagerAggregationPipeTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   private def createReturnItemsFor(names: String*): Set[String] = names.toSet
 
   test("should aggregate count(*) on single grouping column") {

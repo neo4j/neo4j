@@ -28,8 +28,7 @@ Projection evaluates expressions and stores their values into new slots in the e
 It's an additive operation - nothing is lost in the execution context, the pipe simply adds new key-value pairs.
  */
 case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])
-                         (val id: Id = new Id)
-                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                         (val id: Id = new Id) extends PipeWithSource(source) {
 
   expressions.values.foreach(_.registerOwningPipe(this))
 

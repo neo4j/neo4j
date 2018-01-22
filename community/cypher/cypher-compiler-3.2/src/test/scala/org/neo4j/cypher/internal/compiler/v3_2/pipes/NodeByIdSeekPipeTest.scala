@@ -27,7 +27,6 @@ import org.neo4j.graphdb.Node
 
 class NodeByIdSeekPipeTest extends CypherFunSuite {
 
-  implicit val monitor = mock[PipeMonitor]
   import Mockito.when
 
   test("should seek node by id") {

@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class Top1WithTiesPipeTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   test("empty input gives empty output") {
     val source = new FakePipe(List(), "x" -> CTAny)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
