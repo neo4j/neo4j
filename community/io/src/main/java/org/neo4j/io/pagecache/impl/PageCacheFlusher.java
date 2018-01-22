@@ -19,7 +19,11 @@
  */
 package org.neo4j.io.pagecache.impl;
 
+import java.io.Flushable;
+import java.io.IOException;
+
 import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -28,7 +32,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  * A dedicated thread which constantly call {@link PageCache#flushAndForce()} until a call to {@link #halt()} is made.
  * Must be started manually by calling {@link #start()}.
  */
-public class PageCacheFlusher extends Thread
+public class PageCacheFlusher extends Thread implements IOLimiter
 {
     private final PageCache pageCache;
     private final BinaryLatch halt = new BinaryLatch();
@@ -49,7 +53,11 @@ public class PageCacheFlusher extends Thread
             {
                 try
                 {
-                    pageCache.flushAndForce();
+                    pageCache.flushAndForce( this );
+                }
+                catch ( HaltFlushException ignore )
+                {
+                    break; // This exception means we've been asked to stop flushing.
                 }
                 catch ( Throwable e )
                 {
@@ -77,5 +85,19 @@ public class PageCacheFlusher extends Thread
         {
             throw launderedException( error );
         }
+    }
+
+    @Override
+    public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException
+    {
+        if ( halted )
+        {
+            throw new HaltFlushException();
+        }
+        return 0;
+    }
+
+    private static final class HaltFlushException extends IOException
+    {
     }
 }
