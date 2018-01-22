@@ -232,8 +232,12 @@ trait UpdateGraph {
   def createRelationshipOverlapHorizon(allRelPatternsRead: Set[RelationshipPattern]): Boolean = {
     //CREATE () MATCH ()-->()
     (allRelPatternsWrittenNonEmpty && allRelPatternsRead.nonEmpty) && allRelPatternsRead.exists(r => {
-      val readProps = r.properties.map(_.asInstanceOf[MapExpression].items.map(_._1).toSet).get
-      relationshipOverlap(r.types.toSet, readProps)
+      r.properties match {
+        case Some(MapExpression(items)) =>
+          val propKeyNames = items.map(_._1).toSet
+          relationshipOverlap(r.types.toSet, propKeyNames)
+        case _ => false
+      }
     })
   }
 
