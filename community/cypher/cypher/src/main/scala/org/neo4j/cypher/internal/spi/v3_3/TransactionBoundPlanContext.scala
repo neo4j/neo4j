@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type
 import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 import org.neo4j.procedure.Mode
@@ -45,7 +46,7 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     readOperationsSupplier().indexesGetForLabel(labelId).asScala
-      .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+      .filter(_.`type`() == Type.GENERAL)
       .flatMap(getOnlineIndex)
   }
 
@@ -58,7 +59,7 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
     try {
       val labelId = getLabelId(labelName)
       val onlineIndexDescriptors = readOperationsSupplier().indexesGetForLabel(labelId).asScala
-        .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+        .filter(_.`type`() == Type.GENERAL)
         .flatMap(getOnlineIndex)
 
       onlineIndexDescriptors.nonEmpty
@@ -69,7 +70,7 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     readOperationsSupplier().indexesGetForLabel(labelId).asScala
-      .filter(_.`type`() == KernelIndexDescriptor.Type.UNIQUE)
+      .filter(_.`type`() == Type.UNIQUE)
       .flatMap(getOnlineIndex)
   }
 

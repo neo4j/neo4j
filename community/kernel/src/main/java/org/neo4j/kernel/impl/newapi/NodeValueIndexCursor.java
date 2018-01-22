@@ -36,7 +36,7 @@ import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertO
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class NodeValueIndexCursor extends IndexCursor
-        implements org.neo4j.internal.kernel.api.NodeValueIndexCursor, NodeValueClient
+        implements org.neo4j.internal.kernel.api.NodeValueIndexCursor, NodeValueClient<SchemaIndexDescriptor>
 {
     private Read read;
     private long node;

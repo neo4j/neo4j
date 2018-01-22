@@ -43,7 +43,7 @@ import org.neo4j.values.storable.ValueGroup;
  * indexes, the native index and the lucene index. All index entries that can be handled by the native index will be directed
  * there and the rest will be directed to the lucene index.
  */
-public class FusionSchemaIndexProvider extends IndexProvider
+public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
     public interface Selector
     {

@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -465,7 +465,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         // GIVEN
         long ruleId = 24;
-        SchemaIndexDescriptor index = forLabel( 512, 4 );
+        IndexDescriptor index = forLabel( 512, 4 );
         IndexProvider.Descriptor indexProvider = new IndexProvider.Descriptor( "index-provider", "25.0" );
         byte[] bytes = decodeBase64( serialized );
 
@@ -486,7 +486,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         // GIVEN
         long ruleId = 33;
         long constraintId = 11;
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( 61, 988 );
+        IndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( 61, 988 );
         IndexProvider.Descriptor indexProvider = new IndexProvider.Descriptor( "index-provider", "25.0" );
         byte[] bytes = decodeBase64( serialized );
 

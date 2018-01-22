@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type
 import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 import org.neo4j.procedure.Mode
@@ -49,7 +50,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     tc.statement.readOperations().indexesGetForLabel(labelId).asScala
-      .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+      .filter(_.`type`() == Type.GENERAL)
       .flatMap(getOnlineIndex)
   }
 
@@ -62,7 +63,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     try {
       val labelId = getLabelId(labelName)
       val onlineIndexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
-        .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+        .filter(_.`type`() == Type.GENERAL)
         .flatMap(getOnlineIndex)
 
       onlineIndexDescriptors.nonEmpty
@@ -73,7 +74,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     tc.statement.readOperations().indexesGetForLabel(labelId).asScala
-      .filter(_.`type`() == KernelIndexDescriptor.Type.UNIQUE)
+      .filter(_.`type`() == Type.UNIQUE)
       .flatMap(getOnlineIndex)
   }
 

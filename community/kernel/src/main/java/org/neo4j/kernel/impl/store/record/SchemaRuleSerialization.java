@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -112,8 +113,8 @@ public class SchemaRuleSerialization
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
 
-        SchemaIndexDescriptor schemaIndexDescriptor = indexRule.getIndexDescriptor();
-        switch ( schemaIndexDescriptor.type() )
+        IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
+        switch ( indexDescriptor.type() )
         {
         case GENERAL:
             target.put( GENERAL_INDEX );
@@ -129,10 +130,10 @@ public class SchemaRuleSerialization
 
         default:
             throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
-                    schemaIndexDescriptor.type() ) );
+                    indexDescriptor.type() ) );
         }
 
-        schemaIndexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
+        indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
         UTF8.putEncodedStringInto( indexRule.getName(), target );
         return target.array();
     }
@@ -190,13 +191,13 @@ public class SchemaRuleSerialization
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
         length += 1; // index type
-        SchemaIndexDescriptor schemaIndexDescriptor = indexRule.getIndexDescriptor();
-        if ( schemaIndexDescriptor.type() == SchemaIndexDescriptor.Type.UNIQUE )
+        IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
+        if ( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE )
         {
             length += 8; // owning constraint id
         }
 
-        length += schemaIndexDescriptor.schema().computeWith( schemaSizeComputer );
+        length += indexDescriptor.schema().computeWith( schemaSizeComputer );
         length += UTF8.computeRequiredByteBufferSize( indexRule.getName() );
         return length;
     }

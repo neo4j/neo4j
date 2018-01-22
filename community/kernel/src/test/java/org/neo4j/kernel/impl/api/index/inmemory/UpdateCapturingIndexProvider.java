@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
-public class UpdateCapturingIndexProvider extends IndexProvider
+public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
     private final IndexProvider actual;
     private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();

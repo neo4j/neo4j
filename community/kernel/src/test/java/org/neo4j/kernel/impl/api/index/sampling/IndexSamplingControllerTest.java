@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -348,7 +349,7 @@ public class IndexSamplingControllerTest
         }
 
         @Override
-        public boolean test( long indexId, SchemaIndexDescriptor descriptor )
+        public boolean test( long indexId, IndexDescriptor descriptor )
         {
             return ans;
         }

@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -41,7 +40,7 @@ import static org.neo4j.kernel.impl.newapi.MockStore.block;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClient
+public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClient<SchemaIndexDescriptor>
 {
     @Rule
     public final MockStore store = new MockStore( new Cursors() );

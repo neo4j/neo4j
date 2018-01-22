@@ -54,7 +54,7 @@ public class SchemaIndexExtensionLoader
 
     public static SchemaIndexProviderMap loadSchemaIndexProviders( KernelExtensions extensions )
     {
-        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+        AllByPrioritySelectionStrategy<IndexProvider<?>> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
         IndexProvider defaultIndexProvider =
                 extensions.resolveDependency( IndexProvider.class, indexProviderSelection );
         return new DefaultSchemaIndexProviderMap( defaultIndexProvider,

@@ -23,8 +23,8 @@ package org.neo4j.kernel.api.schema.index;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class SchemaIndexDescriptorFactory
 {

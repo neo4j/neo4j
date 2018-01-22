@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.logging.LogProvider;
@@ -156,7 +157,7 @@ class IndexProxyCreator
         return proxy;
     }
 
-    private String indexUserDescription( final SchemaIndexDescriptor descriptor,
+    private String indexUserDescription( final IndexDescriptor descriptor,
                                          final IndexProvider.Descriptor providerDescriptor )
     {
         return format( "%s [provider: %s]",
@@ -164,14 +165,14 @@ class IndexProxyCreator
     }
 
     private IndexPopulator populatorFromProvider( IndexProvider.Descriptor providerDescriptor, long ruleId,
-                                                  SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                                                  IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         IndexProvider indexProvider = providerMap.apply( providerDescriptor );
         return indexProvider.getPopulator( ruleId, descriptor, samplingConfig );
     }
 
     private IndexAccessor onlineAccessorFromProvider( IndexProvider.Descriptor providerDescriptor,
-                                                      long ruleId, SchemaIndexDescriptor descriptor,
+                                                      long ruleId, IndexDescriptor descriptor,
                                                       IndexSamplingConfig samplingConfig ) throws IOException
     {
         IndexProvider indexProvider = providerMap.apply( providerDescriptor );

@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -120,7 +120,7 @@ public class SchemaStorageTest
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP2, SchemaIndexDescriptor.Type.GENERAL );
+        assertRule( rule, LABEL1, PROP2, IndexDescriptor.Type.GENERAL );
     }
 
     @Test
@@ -149,7 +149,7 @@ public class SchemaStorageTest
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( d ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( e ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( f ) ) );
-        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( IndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
     }
 
     @Test
@@ -175,7 +175,7 @@ public class SchemaStorageTest
         {
             assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
         }
-        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( IndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
     }
 
     @Test
@@ -205,7 +205,7 @@ public class SchemaStorageTest
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP1, SchemaIndexDescriptor.Type.UNIQUE );
+        assertRule( rule, LABEL1, PROP1, IndexDescriptor.Type.UNIQUE );
     }
 
     @Test
@@ -335,7 +335,7 @@ public class SchemaStorageTest
         return tokenNameLookup;
     }
 
-    private void assertRule( IndexRule rule, String label, String propertyKey, SchemaIndexDescriptor.Type type )
+    private void assertRule( IndexRule rule, String label, String propertyKey, IndexDescriptor.Type type )
     {
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
@@ -349,12 +349,12 @@ public class SchemaStorageTest
         assertEquals( type, rule.getConstraintDescriptor().type() );
     }
 
-    private SchemaIndexDescriptor indexDescriptor( String label, String property )
+    private IndexDescriptor indexDescriptor( String label, String property )
     {
         return SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
     }
 
-    private SchemaIndexDescriptor uniqueIndexDescriptor( String label, String property )
+    private IndexDescriptor uniqueIndexDescriptor( String label, String property )
     {
         return SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
     }

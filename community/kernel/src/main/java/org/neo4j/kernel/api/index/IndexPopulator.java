@@ -24,7 +24,7 @@ import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -110,7 +110,7 @@ public interface IndexPopulator
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link IndexProvider#getInitialState(long, SchemaIndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link IndexProvider#getInitialState(long, IndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
      *
      * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
      * be marked as {@link InternalIndexState#ONLINE}, otherwise {@code false} where index should be marked as

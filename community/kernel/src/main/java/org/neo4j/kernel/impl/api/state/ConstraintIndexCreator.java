@@ -42,8 +42,9 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -171,9 +172,9 @@ public class ConstraintIndexCreator
     }
 
     private boolean indexStillExists( SchemaReadOperations schemaOps, KernelStatement state, LabelSchemaDescriptor descriptor,
-            SchemaIndexDescriptor index )
+            IndexDescriptor index )
     {
-        SchemaIndexDescriptor existingIndex = schemaOps.indexGetForSchema( state, descriptor );
+        IndexDescriptor existingIndex = schemaOps.indexGetForSchema( state, descriptor );
         return existingIndex != null && existingIndex.equals( index );
     }
 

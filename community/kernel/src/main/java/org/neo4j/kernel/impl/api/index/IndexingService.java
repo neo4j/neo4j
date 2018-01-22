@@ -50,8 +50,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -114,19 +115,19 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public interface Monitor
     {
-        void populationCompleteOn( SchemaIndexDescriptor descriptor );
+        void populationCompleteOn( IndexDescriptor descriptor );
 
         void indexPopulationScanStarting();
 
         void indexPopulationScanComplete();
 
-        void awaitingPopulationOfRecoveredIndex( long indexId, SchemaIndexDescriptor descriptor );
+        void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor );
     }
 
     public static class MonitorAdapter implements Monitor
     {
         @Override
-        public void populationCompleteOn( SchemaIndexDescriptor descriptor )
+        public void populationCompleteOn( IndexDescriptor descriptor )
         {   // Do nothing
         }
 
@@ -141,7 +142,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
 
         @Override
-        public void awaitingPopulationOfRecoveredIndex( long indexId, SchemaIndexDescriptor descriptor )
+        public void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor )
         {   // Do nothing
         }
     }
@@ -303,7 +304,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         rebuildingDescriptors.visitEntries(
                 (PrimitiveLongObjectVisitor<RebuildingIndexDescriptor,Exception>) ( indexId, descriptor ) ->
                 {
-                    if ( descriptor.getSchemaIndexDescriptor().type() != SchemaIndexDescriptor.Type.UNIQUE )
+                    if ( descriptor.getSchemaIndexDescriptor().type() != IndexDescriptor.Type.UNIQUE )
                     {
                         // It's not a uniqueness constraint, so don't wait for it to be rebuilt
                         return false;
@@ -665,7 +666,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         populationJobController.startIndexPopulation( job );
     }
 
-    private String indexStateInfo( String tag, Long indexId, InternalIndexState state, SchemaIndexDescriptor descriptor )
+    private String indexStateInfo( String tag, Long indexId, InternalIndexState state, IndexDescriptor descriptor )
     {
         return format( "IndexingService.%s: index %d on %s is %s", tag, indexId,
                 descriptor.schema().userDescription( tokenNameLookup ), state.name() );
@@ -767,9 +768,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private static final class IndexLogRecord
     {
         private final long indexId;
-        private final SchemaIndexDescriptor descriptor;
+        private final IndexDescriptor descriptor;
 
-        IndexLogRecord( long indexId, SchemaIndexDescriptor descriptor )
+        IndexLogRecord( long indexId, IndexDescriptor descriptor )
         {
             this.indexId = indexId;
             this.descriptor = descriptor;
@@ -780,7 +781,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             return indexId;
         }
 
-        public SchemaIndexDescriptor getDescriptor()
+        public IndexDescriptor getDescriptor()
         {
             return descriptor;
         }

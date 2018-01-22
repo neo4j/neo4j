@@ -138,7 +138,7 @@ public class StoreMigration
             // Add the kernel store migrator
             life.start();
 
-            AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+            AllByPrioritySelectionStrategy<IndexProvider<?>> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
             IndexProvider defaultIndexProvider = kernelExtensions.resolveDependency( IndexProvider.class,
                     indexProviderSelection );
             SchemaIndexProviderMap schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( defaultIndexProvider,

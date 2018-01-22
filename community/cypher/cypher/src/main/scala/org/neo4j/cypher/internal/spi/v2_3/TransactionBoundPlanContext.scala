@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor
+import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type
 import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
@@ -59,7 +60,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     val propertyKeyId = getPropertyKeyId(propertyKey)
     val schema = tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
 
-    if (schema.`type`() == KernelIndexDescriptor.Type.UNIQUE) getOnlineIndex(schema)
+    if (schema.`type`() == Type.UNIQUE) getOnlineIndex(schema)
     else None
   }
 

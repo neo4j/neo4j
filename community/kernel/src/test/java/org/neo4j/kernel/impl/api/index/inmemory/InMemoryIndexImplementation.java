@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.values.storable.Value;
 
-abstract class InMemoryIndexImplementation extends AbstractIndexReader implements BoundedIterable<Long>
+abstract class InMemoryIndexImplementation extends AbstractIndexReader<SchemaIndexDescriptor> implements BoundedIterable<Long>
 {
     InMemoryIndexImplementation( SchemaIndexDescriptor descriptor )
     {

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -38,7 +39,7 @@ public interface IndexReaderFactory
 
     class Caching implements IndexReaderFactory
     {
-        private Map<SchemaIndexDescriptor,IndexReader> indexReaders;
+        private Map<IndexDescriptor,IndexReader> indexReaders;
         private final IndexingService indexingService;
 
         public Caching( IndexingService indexingService )

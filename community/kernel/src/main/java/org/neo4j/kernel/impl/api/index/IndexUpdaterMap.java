@@ -31,7 +31,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -76,7 +76,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     @Override
     public void close() throws UnderlyingStorageException
     {
-        Set<Pair<SchemaIndexDescriptor, UnderlyingStorageException>> exceptions = null;
+        Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions = null;
 
         for ( Map.Entry<LabelSchemaDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {

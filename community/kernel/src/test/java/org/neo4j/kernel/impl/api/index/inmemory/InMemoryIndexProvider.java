@@ -34,9 +34,9 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
-public class InMemoryIndexProvider extends IndexProvider
+public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
     private final Map<Long, InMemoryIndex> indexes;
 

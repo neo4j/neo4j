@@ -47,7 +47,7 @@ import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class NumberIndexProvider extends IndexProvider
+public class NumberIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );

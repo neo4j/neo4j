@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -76,7 +76,7 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
+        IndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
@@ -94,7 +94,7 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
+        IndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
@@ -112,7 +112,7 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
+        IndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then

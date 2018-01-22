@@ -40,7 +40,7 @@ public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
     }
 
     public DefaultSchemaIndexProviderMap( IndexProvider defaultIndexProvider,
-            Iterable<IndexProvider> additionalIndexProviders )
+            Iterable<IndexProvider<?>> additionalIndexProviders )
     {
         this.defaultIndexProvider = defaultIndexProvider;
         indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );

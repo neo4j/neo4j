@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -45,7 +46,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link IndexProvider} for a\
- * {@link #getPopulator(long, SchemaIndexDescriptor, IndexSamplingConfig) batch index writer}.
+ * {@link #getPopulator(long, IndexDescriptor, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -90,10 +91,10 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(long, SchemaIndexDescriptor, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(long, IndexDescriptor, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
-public abstract class IndexProvider extends LifecycleAdapter implements Comparable<IndexProvider>
+public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends LifecycleAdapter implements Comparable<IndexProvider<?>>
 {
     public interface Monitor
     {
@@ -102,19 +103,19 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
         class Adaptor implements Monitor
         {
             @Override
-            public void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause )
+            public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
             {   // no-op
             }
 
             @Override
-            public void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data )
+            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
             {   // no-op
             }
         }
 
-        void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
+        void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
 
-        void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data );
+        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
     }
 
     public static final IndexProvider NO_INDEX_PROVIDER =
@@ -124,27 +125,27 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
 
                 @Override
-                public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
+                public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
                                                         IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
+                public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
                                                     IndexSamplingConfig samplingConfig )
                 {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+                public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
                 {
                     return InternalIndexState.POPULATING;
                 }
 
                 @Override
-                public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+                public IndexCapability getCapability( IndexDescriptor indexDescriptor )
                 {
                     return IndexCapability.NO_CAPABILITY;
                 }
@@ -192,13 +193,13 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
+    public abstract IndexPopulator getPopulator( long indexId, DESCRIPTOR descriptor,
                                                  IndexSamplingConfig samplingConfig );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
+    public abstract IndexAccessor getOnlineAccessor( long indexId, DESCRIPTOR descriptor,
                                                      IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
@@ -214,14 +215,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */
-    public abstract InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor );
+    public abstract InternalIndexState getInitialState( long indexId, DESCRIPTOR descriptor );
 
     /**
      * Return {@link IndexCapability} for this index provider for a given {@link SchemaIndexDescriptor}.
      *
-     * @param schemaIndexDescriptor {@link SchemaIndexDescriptor} to get IndexCapability for.
+     * @param indexDescriptor {@link SchemaIndexDescriptor} to get IndexCapability for.
      */
-    public abstract IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor );
+    public abstract IndexCapability getCapability( DESCRIPTOR indexDescriptor );
 
     /**
      * @return a description of this index provider

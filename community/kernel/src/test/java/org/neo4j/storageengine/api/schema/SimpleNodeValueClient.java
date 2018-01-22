@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
@@ -40,7 +40,7 @@ public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
     }
 
     @Override
-    public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
     {
         this.progressor = progressor;
     }

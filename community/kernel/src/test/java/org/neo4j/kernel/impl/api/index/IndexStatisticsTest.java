@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -672,10 +673,10 @@ public class IndexStatisticsTest
 
     private static class IndexOnlineMonitor extends IndexingService.MonitorAdapter
     {
-        private final Set<SchemaIndexDescriptor> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+        private final Set<IndexDescriptor> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
         @Override
-        public void populationCompleteOn( SchemaIndexDescriptor descriptor )
+        public void populationCompleteOn( IndexDescriptor descriptor )
         {
             onlineIndexes.add( descriptor );
         }

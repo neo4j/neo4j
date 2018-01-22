@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -79,8 +80,8 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 
 public class BuiltInProceduresTest
 {
-    private final List<SchemaIndexDescriptor> indexes = new LinkedList<>();
-    private final List<SchemaIndexDescriptor> uniqueIndexes = new LinkedList<>();
+    private final List<IndexDescriptor> indexes = new LinkedList<>();
+    private final List<IndexDescriptor> uniqueIndexes = new LinkedList<>();
     private final List<ConstraintDescriptor> constraints = new LinkedList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
@@ -403,7 +404,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( labelId, propId );
+        IndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( labelId, propId );
         indexes.add( index );
     }
 
@@ -412,7 +413,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        IndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }
