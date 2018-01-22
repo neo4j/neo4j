@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.index.internal.gbptree.misc;
 
-import org.neo4j.index.internal.gbptree.misc.TestLayout;
-import org.neo4j.test.rule.RandomRule;
-
-public class GBPTreeRecoveryDynamicSizeIT extends GBPTreeRecoveryITBase<RawBytes,RawBytes>
+interface KeyValueSeeder<KEY, VALUE>
 {
-    @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout( RandomRule random )
-    {
-        return new SimpleByteArrayLayout();
-    }
+    KEY keyWithSeed( KEY key, long seed );
+
+    VALUE valueWithSeed( VALUE value, long seed );
+
+    KEY key( long seed );
+
+    VALUE value( long seed );
+
+    long keySeed( KEY key );
+
+    long valueSeed( VALUE value );
 }

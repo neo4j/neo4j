@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.index.internal.gbptree.misc;
 
-interface KeyValueSeeder<KEY, VALUE>
+public class AdaptableKey
 {
-    KEY key( long seed );
+    static int SIZE = Long.BYTES;
+    long value;
 
-    VALUE value( long seed );
-
-    long keySeed( KEY key );
-
-    long valueSeed( VALUE value );
+    @Override
+    public String toString()
+    {
+        return Long.toString(  value );
+    }
 }

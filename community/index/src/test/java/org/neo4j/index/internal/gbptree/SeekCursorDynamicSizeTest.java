@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.index.internal.gbptree.misc.TestLayout;
+
 public class SeekCursorDynamicSizeTest extends SeekCursorTestBase<RawBytes,RawBytes>
 {
     @Override

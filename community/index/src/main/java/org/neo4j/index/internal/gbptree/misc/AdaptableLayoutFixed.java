@@ -17,16 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.index.internal.gbptree.misc;
 
-import org.neo4j.index.internal.gbptree.misc.TestLayout;
-import org.neo4j.test.rule.RandomRule;
-
-public class GBPTreeRecoveryDynamicSizeIT extends GBPTreeRecoveryITBase<RawBytes,RawBytes>
+/**
+ * USED BY EXTERNAL BENCHMARKING
+ */
+@SuppressWarnings( "unused" )
+public class AdaptableLayoutFixed extends AdaptableLayout
 {
-    @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout( RandomRule random )
+    public AdaptableLayoutFixed( int keySize, int valueSize )
     {
-        return new SimpleByteArrayLayout();
+        super( keySize, valueSize );
+    }
+
+    @Override
+    String layoutString()
+    {
+        return "FixedLayout";
+    }
+
+    @Override
+    public boolean fixedSize()
+    {
+        return true;
     }
 }

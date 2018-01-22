@@ -21,6 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
+import org.neo4j.index.internal.gbptree.misc.TestLayout;
+
 public class InternalTreeLogicFixedSizeTest extends InternalTreeLogicTestBase<MutableLong,MutableLong>
 {
     SimpleLongLayout layout = new SimpleLongLayout();

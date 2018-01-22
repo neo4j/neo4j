@@ -17,9 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.index.internal.gbptree.misc;
 
-abstract class TestLayout<KEY,VALUE> extends Layout.Adapter<KEY,VALUE> implements KeyValueSeeder<KEY,VALUE>
+/**
+ * USED BY EXTERNAL BENCHMARKING
+ */
+@SuppressWarnings( "unused" )
+public class AdaptableLayoutDynamic extends AdaptableLayout
 {
-    abstract int compareValue( VALUE v1, VALUE v2 );
+    public AdaptableLayoutDynamic( int keySize, int valueSize )
+    {
+        super( keySize, valueSize );
+    }
+
+    @Override
+    String layoutString()
+    {
+        return "DynamicLayout";
+    }
+
+    @Override
+    public boolean fixedSize()
+    {
+        return false;
+    }
 }
