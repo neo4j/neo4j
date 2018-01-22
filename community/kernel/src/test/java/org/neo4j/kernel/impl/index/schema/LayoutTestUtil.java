@@ -96,11 +96,6 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 
-    IndexEntryUpdate<IndexDescriptor>[] someSpatialUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( SOME_POINTS );
-    }
-
     IndexEntryUpdate<IndexDescriptor>[] someSpatialUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( SOME_POINTS, SOME_POINTS ) );

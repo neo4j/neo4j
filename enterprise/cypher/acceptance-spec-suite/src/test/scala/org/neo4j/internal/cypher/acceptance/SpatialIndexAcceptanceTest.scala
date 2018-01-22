@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.neo4j.graphdb.spatial.Point
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
 
@@ -64,8 +63,9 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
 
   test("persisted indexed point should be readable from node property") {
     graph.createIndex("Place", "location")
+    createLabeledNode("Place")
 
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
 
@@ -148,23 +148,19 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
   }
 
   private def testPointRead(query: String, expected: PointValue*): Unit = {
-
-    val result = graph.execute(query)
-
-    val plan = result.getExecutionPlanDescription.toString
-    plan should include ("NodeIndexSeek")
-    plan should include (":Place(location)")
-
-    val points = result.columnAs("point").stream().collect(Collectors.toSet)
-    expected.foreach(p => assert(points.contains(p)))
-    points.size() should be(expected.size)
+    testPointScanOrRead(query, seek = true, expected)
   }
 
   private def testPointScan(query: String, expected: PointValue*): Unit = {
+    testPointScanOrRead(query, seek = false, expected)
+  }
+
+  private def testPointScanOrRead(query: String, seek: Boolean, expected: Seq[PointValue]): Unit = {
     val result = graph.execute(query)
 
     val plan = result.getExecutionPlanDescription.toString
-    plan should include ("NodeIndexScan")
+    if (seek) plan should include("NodeIndexSeek")
+    else plan should include("NodeIndexScan")
     plan should include (":Place(location)")
 
     val points = result.columnAs("point").stream().collect(Collectors.toSet)

@@ -251,8 +251,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    val optNumericRange: Option[InequalitySeekRange[Number]] = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
-    val optStringRange: Option[InequalitySeekRange[String]] = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
+    val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
+    val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
     val optGeometricRange = groupedRanges.get(classOf[PointValue]).map(_.asInstanceOf[InequalitySeekRange[PointValue]])
     val anyRange = groupedRanges.get(classOf[Any])
 
