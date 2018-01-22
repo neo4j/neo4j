@@ -346,7 +346,7 @@ public class SpaceFillingCurveTest
     public void shouldGet2DHilbertSearchTilesForWideRangeAtManyLevels()
     {
         Envelope envelope = new Envelope( -180, 180, -90, 90 );
-        for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
+        for ( int level = 1; level <= 11; level++ )  // 12 takes 6s, 13 takes 25s, 14 takes 100s, 15 takes over 400s
         {
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
             System.out.print( "Testing hilbert query at level " + level );
