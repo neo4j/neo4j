@@ -57,9 +57,9 @@ import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 {
     private final int pageSize = 256;
-    private final SimpleIdProvider id = new SimpleIdProvider();
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
     private final PageAwareByteArrayCursor readCursor = cursor.duplicate();
+    private final SimpleIdProvider id = new SimpleIdProvider( cursor::duplicate );
 
     private TestLayout<KEY,VALUE> layout;
     private TreeNode<KEY,VALUE> node;
