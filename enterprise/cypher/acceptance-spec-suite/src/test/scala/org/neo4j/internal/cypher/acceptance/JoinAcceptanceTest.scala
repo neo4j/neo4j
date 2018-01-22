@@ -67,6 +67,6 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     val expectSucceed = Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1
     executeWith(expectSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeOuterHashJoin"), expectPlansToFail))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeLeftOuterHashJoin"), expectPlansToFail))
   }
 }

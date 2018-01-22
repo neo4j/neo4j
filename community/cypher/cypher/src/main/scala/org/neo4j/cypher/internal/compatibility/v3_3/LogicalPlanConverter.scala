@@ -88,6 +88,12 @@ object LogicalPlanConverter {
             plan.maxLength,
             children.last.asInstanceOf[Seq[(expressionsV3_4.LogicalVariable,expressionsV3_4.Expression)]]
           )(SameId(Id(plan.assignedId.underlying)))
+        case (plan: plansV3_3.OuterHashJoin, children: Seq[AnyRef]) =>
+          plansV3_4.LeftOuterHashJoin(
+            children(0).asInstanceOf[Set[String]],
+            children(1).asInstanceOf[LogicalPlanV3_4],
+            children(2).asInstanceOf[LogicalPlanV3_4]
+          )(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, SameId(Id(plan.assignedId.underlying)), classOf[IdGen])
 
