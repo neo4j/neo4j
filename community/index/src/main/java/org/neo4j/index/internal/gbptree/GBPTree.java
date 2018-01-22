@@ -750,7 +750,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // This index was created with another page size, re-open with that actual page size
         if ( pageSize != pageCache.pageSize() )
         {
-            if ( pageSize > pageCache.pageSize() )
+            if ( pageSize > pageCache.pageSize() || pageSize < 0 )
             {
                 throw new MetadataMismatchException(
                         "Tried to create tree with page size %d, but page cache used to open it this time " +
