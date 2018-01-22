@@ -60,6 +60,8 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -159,6 +161,10 @@ public class Operations implements Write, ExplicitIndexWrite
     public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode ) throws EntityNotFoundException
     {
         ktx.assertOpen();
+
+        sharedRelationshipTypeLock( relationshipLabel );
+        lockRelationshipNodes( sourceNode, targetNode );
+
         nodeExists( sourceNode );
         nodeExists( targetNode );
 
@@ -176,6 +182,10 @@ public class Operations implements Write, ExplicitIndexWrite
 
         if ( relationshipCursor.next() )
         {
+            lockRelationshipNodes( relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            acquireExclusiveRelationshipLock( relationship );
+            ktx.assertOpen();
+
             autoIndexing.relationships().entityRemoved( this, relationship );
             ktx.txState().relationshipDoDelete( relationship, relationshipCursor.getType(),
                     relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
@@ -582,9 +592,32 @@ public class Operations implements Write, ExplicitIndexWrite
         }
     }
 
+    private void acquireExclusiveRelationshipLock( long relationshipId )
+    {
+        if ( !ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx( relationshipId ) )
+        {
+            ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+        }
+    }
+
     private void acquireSharedLabelLock( int labelId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+    }
+
+    private void sharedRelationshipTypeLock( long typeId )
+    {
+        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
+    }
+
+    private void lockRelationshipNodes( long startNodeId, long endNodeId )
+    {
+        // Order the locks to lower the risk of deadlocks with other threads creating/deleting rels concurrently
+        acquireExclusiveNodeLock( min( startNodeId, endNodeId ) );
+        if ( startNodeId != endNodeId )
+        {
+            acquireExclusiveNodeLock( max( startNodeId, endNodeId ) );
+        }
     }
 
     private boolean propertyHasChanged( Value lhs, Value rhs )

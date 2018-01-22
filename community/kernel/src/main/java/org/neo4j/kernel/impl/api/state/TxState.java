@@ -93,7 +93,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
  * into one component. Now that that work is done, this class should be refactored to increase transparency in how it
  * works.
  */
-public final class TxState implements TransactionState, RelationshipVisitor.Home
+public class TxState implements TransactionState, RelationshipVisitor.Home
 {
     private static final LabelState.Defaults LABEL_STATE = new TransactionLabelState();
     private static final NodeStateImpl.Defaults NODE_STATE = new TransactionNodeState();
