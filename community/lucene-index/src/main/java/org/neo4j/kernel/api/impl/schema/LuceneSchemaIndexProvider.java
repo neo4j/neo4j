@@ -156,7 +156,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = getIndexStorage( indexId ).getStoredIndexFailure();
         if ( failure == null )

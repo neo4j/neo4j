@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -98,6 +97,14 @@ public class NumberSchemaIndexProvider extends SchemaIndexProvider
             long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         File storeFile = nativeIndexFileFromIndexId( indexId );
+        NumberLayout layout = layout( descriptor );
+        return new NumberSchemaIndexAccessor<>(
+                pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId,
+                samplingConfig );
+    }
+
+    private NumberLayout layout( IndexDescriptor descriptor )
+    {
         NumberLayout layout;
         switch ( descriptor.type() )
         {
@@ -110,17 +117,15 @@ public class NumberSchemaIndexProvider extends SchemaIndexProvider
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
         }
-        return new NumberSchemaIndexAccessor<>(
-                pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId,
-                samplingConfig );
+        return layout;
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {
-            String failureMessage = readPopulationFailure( indexId );
+            String failureMessage = readPopulationFailure( indexId, descriptor );
             if ( failureMessage == null )
             {
                 throw new IllegalStateException( "Index " + indexId + " isn't failed" );
@@ -133,11 +138,10 @@ public class NumberSchemaIndexProvider extends SchemaIndexProvider
         }
     }
 
-    private String readPopulationFailure( long indexId ) throws IOException
+    private String readPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), new ReadOnlyMetaNumberLayout(),
-                headerReader );
+        GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ), headerReader );
         return headerReader.failureMessage;
     }
 
@@ -147,7 +151,7 @@ public class NumberSchemaIndexProvider extends SchemaIndexProvider
         try
         {
             NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-            GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), new ReadOnlyMetaNumberLayout(),
+            GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ),
                     headerReader );
             switch ( headerReader.state )
             {
@@ -190,20 +194,6 @@ public class NumberSchemaIndexProvider extends SchemaIndexProvider
     private static String indexFileName( long indexId )
     {
         return "index-" + indexId;
-    }
-
-    private class ReadOnlyMetaNumberLayout extends Layout.ReadOnlyMetaLayout
-    {
-        @Override
-        public boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion )
-        {
-            return (layoutIdentifier == NumberLayoutUnique.IDENTIFIER &&
-                    majorVersion == NumberLayoutUnique.MAJOR_VERSION &&
-                    minorVersion == NumberLayoutUnique.MINOR_VERSION) ||
-                    (layoutIdentifier == NumberLayoutNonUnique.IDENTIFIER &&
-                            majorVersion == NumberLayoutNonUnique.MAJOR_VERSION &&
-                            minorVersion == NumberLayoutNonUnique.MINOR_VERSION);
-        }
     }
 
     private static class NativeIndexCapability implements IndexCapability
