@@ -451,7 +451,7 @@ public class CompositePageCursor extends PageCursor
     @Override
     public void shiftBytes( int sourceOffset, int length, int shift )
     {
-        throw new UnsupportedOperationException( "Composite cursor does not support copyTo functionality." );
+        throw new UnsupportedOperationException( "Composite cursor does not support shiftBytes functionality... yet." );
     }
 
     @Override
