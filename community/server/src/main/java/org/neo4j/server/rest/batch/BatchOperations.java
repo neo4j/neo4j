@@ -46,6 +46,8 @@ import org.neo4j.server.web.WebServer;
 
 public abstract class BatchOperations
 {
+    private static final Pattern PLACHOLDER_PATTERN = Pattern.compile( "\\{(\\d{1,10})}" );
+
     protected static final String ID_KEY = "id";
     protected static final String METHOD_KEY = "method";
     protected static final String BODY_KEY = "body";
@@ -102,8 +104,6 @@ public abstract class BatchOperations
 
         return baseUri.resolve( "." + requestedPath );
     }
-
-    private static final Pattern PLACHOLDER_PATTERN = Pattern.compile( "\\{(\\d{1,10})\\}" );
 
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )

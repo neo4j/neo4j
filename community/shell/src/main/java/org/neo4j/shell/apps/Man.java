@@ -198,10 +198,9 @@ public class Man extends AbstractApp
         return availableCommands;
     }
 
-    private static synchronized String availableCommandsAsString(
-        ShellServer server )
+    private static synchronized String availableCommandsAsString( ShellServer server )
     {
-        StringBuffer commands = new StringBuffer();
+        StringBuilder commands = new StringBuilder();
         for ( String command : getAvailableCommands( server ) )
         {
             if ( commands.length() > 0 )
