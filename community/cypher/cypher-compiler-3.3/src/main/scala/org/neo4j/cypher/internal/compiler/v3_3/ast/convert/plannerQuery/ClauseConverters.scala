@@ -489,7 +489,13 @@ object ClauseConverters {
           SetPropertyPattern(variable, propertyKey, Null()(propertyKey.position))
         ))
 
-      case (builder, other) =>
+      // REMOVE CASE WHEN ... THEN a ELSE b END.prop
+      case (builder, RemovePropertyItem(Property(caseExpr: CaseExpression, propertyKey))) =>
+        builder.amendQueryGraph(_.addMutatingPatterns(
+          SetPropertyPattern(caseExpr, propertyKey, Null()(propertyKey.position))
+        ))
+
+      case (_, other) =>
         throw new InternalException(s"REMOVE $other not supported in cost planner yet")
     }
   }
