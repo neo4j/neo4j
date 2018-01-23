@@ -20,8 +20,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   test("remove with case expression should work gh #10831") {
     // given
@@ -32,7 +33,9 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
       """MATCH (a:Person {name: 'Alice'})-[:KNOWS]->(b:Person {name: 'Bob'})
         |REMOVE CASE WHEN a.age>b.age THEN a ELSE b END.age
         |RETURN a.age, b.age""".stripMargin
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+
+    // Fixed in 3.2.10
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost3_2 - Configs.Cost3_1 - Configs.Cost2_3, query)
 
     // then
     result.toList should equal(List(Map("a.age" -> 23, "b.age" -> null)))
