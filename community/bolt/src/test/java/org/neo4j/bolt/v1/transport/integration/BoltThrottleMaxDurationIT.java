@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -38,52 +37,36 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
-import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
-import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.assertion.Assert;
-import org.neo4j.test.matchers.CommonMatchers;
-import org.neo4j.test.matchers.ExceptionMessageMatcher;
-import org.neo4j.test.mockito.matcher.LogMatchers;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
+import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
 
+@RunWith( Parameterized.class )
 public class BoltThrottleMaxDurationIT
 {
     private AssertableLogProvider logProvider;
@@ -95,10 +78,18 @@ public class BoltThrottleMaxDurationIT
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
     @Rule
     public OtherThreadRule<Void> otherThread = new OtherThreadRule<>( 5, TimeUnit.MINUTES );
-
-    public TransportConnection connection = new SocketConnection();
+    @Parameterized.Parameter
+    public Factory<TransportConnection> cf;
 
     private HostnamePort address;
+    private TransportConnection client;
+
+    @Parameterized.Parameters
+    public static Collection<Factory<TransportConnection>> transports()
+    {
+        // we're not running with WebSocketChannels because of their duplex communication model
+        return asList( SocketConnection::new, SecureSocketConnection::new );
+    }
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
@@ -107,10 +98,8 @@ public class BoltThrottleMaxDurationIT
         logProvider = new AssertableLogProvider();
 
         factory.setInternalLogProvider( logProvider );
-        //factory.setUserLogProvider( logProvider );
 
         return factory;
-
     }
 
     protected Consumer<Map<String, String>> getSettingsFunction()
@@ -125,15 +114,16 @@ public class BoltThrottleMaxDurationIT
     @Before
     public void setup() throws Exception
     {
+        client = cf.newInstance();
         address = server.lookupDefaultConnector();
     }
 
     @After
     public void after() throws Exception
     {
-        if ( connection != null )
+        if ( client != null )
         {
-            connection.disconnect();
+            client.disconnect();
         }
     }
 
@@ -143,19 +133,19 @@ public class BoltThrottleMaxDurationIT
         int numberOfRunDiscardPairs = 10_000;
         String largeString = StringUtils.repeat( " ", 8 * 1024  );
 
-        connection.connect( address )
+        client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
                         init( "TestClient/1.1", emptyMap() ) ) );
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( connection, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
 
         Future sender = otherThread.execute( state ->
         {
             for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
             {
-                connection.send( TransportTestUtil.chunk(
+                client.send( TransportTestUtil.chunk(
                         run( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
                         pullAll()
                 ) );
@@ -167,6 +157,8 @@ public class BoltThrottleMaxDurationIT
         try
         {
             otherThread.get().awaitFuture( sender );
+
+            fail( "should throw ExecutionException instead" );
         }
         catch ( ExecutionException e )
         {

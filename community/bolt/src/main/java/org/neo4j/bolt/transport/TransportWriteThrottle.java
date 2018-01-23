@@ -76,6 +76,8 @@ public class TransportWriteThrottle implements TransportThrottle
     @Override
     public void acquire( Channel channel ) throws TransportThrottleException
     {
+        // if this channel's max lock duration is already exceeded, we'll allow the protocol to
+        // (at least) try to communicate the error to the client before aborting the connection
         if ( !isDurationAlreadyExceeded( channel ) )
         {
             ThrottleLock lock = channel.attr( LOCK_KEY ).get();
@@ -110,6 +112,7 @@ public class TransportWriteThrottle implements TransportThrottle
                 catch ( InterruptedException ex )
                 {
                     Thread.currentThread().interrupt();
+                    throw new RuntimeException( ex );
                 }
             }
         }
