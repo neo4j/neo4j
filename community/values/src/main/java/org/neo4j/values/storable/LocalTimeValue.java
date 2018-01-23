@@ -19,12 +19,18 @@
  */
 package org.neo4j.values.storable;
 
+import java.lang.invoke.MethodHandle;
+import java.time.Clock;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.Integer.parseInt;
@@ -61,6 +67,40 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     public static LocalTimeValue parse( TextValue text )
     {
         return parse( LocalTimeValue.class, PATTERN, LocalTimeValue::parse, text );
+    }
+
+    public static StructureBuilder<AnyValue,LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
+    {
+        return new TimeValue.TimeBuilder<AnyValue,LocalTimeValue>()
+        {
+            @Override
+            protected ZoneId timezone( AnyValue timezone )
+            {
+                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
+            }
+
+            @Override
+            protected LocalTimeValue selectTime( AnyValue temporal )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected LocalTimeValue constructTime(
+                    AnyValue hour,
+                    AnyValue minute,
+                    AnyValue second,
+                    AnyValue millisecond,
+                    AnyValue microsecond,
+                    AnyValue nanosecond )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+        };
+    }
+
+    public abstract static class Compiler<Input> extends TimeValue.TimeBuilder<Input,MethodHandle>
+    {
     }
 
     private final LocalTime value;

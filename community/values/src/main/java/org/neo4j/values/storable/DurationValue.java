@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import java.lang.invoke.MethodHandle;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Period;
@@ -27,11 +28,13 @@ import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Long.parseLong;
 import static java.time.temporal.ChronoField.EPOCH_DAY;
@@ -96,6 +99,57 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
     public static DurationValue parse( TextValue text )
     {
         return TemporalValue.parse( DurationValue.class, PATTERN, DurationValue::parse, text );
+    }
+
+    public static DurationValue build( Map<String,? extends AnyValue> input )
+    {
+        StructureBuilder<AnyValue,DurationValue> builder = builder();
+        for ( Map.Entry<String,? extends AnyValue> entry : input.entrySet() )
+        {
+            builder.add( entry.getKey(), entry.getValue() );
+        }
+        return builder.build();
+    }
+
+    public static DurationValue build( MapValue map )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    public static StructureBuilder<AnyValue,DurationValue> builder()
+    {
+        return new DurationBuilder<AnyValue,DurationValue>()
+        {
+            @Override
+            DurationValue create(
+                    AnyValue years,
+                    AnyValue months,
+                    AnyValue weeks,
+                    AnyValue days,
+                    AnyValue hours,
+                    AnyValue minutes,
+                    AnyValue seconds,
+                    AnyValue milliseconds,
+                    AnyValue microseconds,
+                    AnyValue nanoseconds )
+            {
+                return duration(
+                        unpackInteger( "years", years ) * 12
+                                + unpackInteger( "months", months ),
+                        unpackInteger( "weeks", weeks ) * 7
+                                + unpackInteger( "days", days ),
+                        unpackInteger( "hours", hours ) * 3600
+                                + unpackInteger( "minutes", minutes ) * 60
+                                + unpackInteger( "seconds", seconds ),
+                        unpackInteger( "milliseconds", milliseconds ) * 1_000_000
+                                + unpackInteger( "microseconds", microseconds ) * 1_000
+                                + unpackInteger( "nanoseconds", nanoseconds ) );
+            }
+        };
+    }
+
+    public abstract static class Compiler<Input> extends DurationBuilder<Input,MethodHandle>
+    {
     }
 
     private static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );

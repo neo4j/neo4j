@@ -19,16 +19,21 @@
  */
 package org.neo4j.values.storable;
 
+import java.lang.invoke.MethodHandle;
+import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.Integer.parseInt;
@@ -63,6 +68,60 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     public static TimeValue parse( TextValue text, Supplier<ZoneId> defaultZone )
     {
         return parse( TimeValue.class, PATTERN, TimeValue::parse, text, defaultZone );
+    }
+
+    public static StructureBuilder<AnyValue,TimeValue> builder( Supplier<ZoneId> defaultZone )
+    {
+        return new TimeBuilder<AnyValue,TimeValue>()
+        {
+            @Override
+            protected ZoneId timezone( AnyValue timezone )
+            {
+                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
+            }
+
+            @Override
+            protected TimeValue selectTime( AnyValue temporal )
+            {
+                OffsetTime time = offsetTime( temporal );
+                return time != null ? time( time ) : null;
+            }
+
+            @Override
+            protected TimeValue constructTime(
+                    AnyValue hour,
+                    AnyValue minute,
+                    AnyValue second,
+                    AnyValue millisecond,
+                    AnyValue microsecond,
+                    AnyValue nanosecond )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            private OffsetTime offsetTime( AnyValue value )
+            {
+                if ( value instanceof TemporalValue )
+                {
+                    try
+                    {
+                        return OffsetTime.from( ((TemporalValue) value).temporal() );
+                    }
+                    catch ( DateTimeException e )
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        };
+    }
+
+    public abstract static class Compiler<Input> extends TimeBuilder<Input,MethodHandle>
+    {
     }
 
     private final OffsetTime value;
@@ -173,5 +232,168 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     private static ZoneOffset zoneOffset( ZoneId zoneId )
     {
         return zoneId instanceof ZoneOffset ? (ZoneOffset) zoneId : zoneId.getRules().getOffset( Instant.now() );
+    }
+
+    abstract static class TimeBuilder<Input, Result> extends Builder<Input,Result>
+    {
+        @Override
+        protected final boolean supportsDate()
+        {
+            return false;
+        }
+
+        @Override
+        protected final boolean supportsTime()
+        {
+            return true;
+        }
+
+        @Override
+        protected Result selectDateTime( Input temporal )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result selectDateAndTime( Input date, Input time )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result selectDateWithConstructedTime(
+                Input date,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result selectDate( Input temporal )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructYear( Input year )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructCalendarDate( Input year, Input month, Input day )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructCalendarDateWithSelectedTime( Input year, Input month, Input day, Input time )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructCalendarDateWithConstructedTime(
+                Input year,
+                Input month,
+                Input day,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructWeekDate( Input year, Input week, Input dayOfWeek )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructWeekDateWithSelectedTime( Input year, Input week, Input dayOfWeek, Input time )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructWeekDateWithConstructedTime(
+                Input year,
+                Input week,
+                Input dayOfWeek,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructQuarterDate( Input year, Input quarter, Input dayOfQuarter )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructQuarterDateWithSelectedTime(
+                Input year,
+                Input quarter,
+                Input dayOfQuarter,
+                Input time )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructQuarterDateWithConstructedTime(
+                Input year,
+                Input quarter,
+                Input dayOfQuarter,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructOrdinalDate( Input year, Input ordinalDay )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructOrdinalDateWithSelectedTime( Input year, Input ordinalDay, Input time )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
+
+        @Override
+        protected Result constructOrdinalDateWithConstructedTime(
+                Input year,
+                Input ordinalDay,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "date not supported" );
+        }
     }
 }

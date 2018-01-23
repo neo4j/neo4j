@@ -19,14 +19,20 @@
  */
 package org.neo4j.values.storable;
 
+import java.lang.invoke.MethodHandle;
+import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.Integer.parseInt;
@@ -73,6 +79,58 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     public static DateValue parse( TextValue text )
     {
         return parse( DateValue.class, PATTERN, DateValue::parse, text );
+    }
+
+    public static StructureBuilder<AnyValue,DateValue> builder( Supplier<ZoneId> defaulZone )
+    {
+        return new DateBuilder<AnyValue,DateValue>()
+        {
+            @Override
+            protected ZoneId timezone( AnyValue timezone )
+            {
+                return timezone == null ? defaulZone.get() : timezoneOf( timezone );
+            }
+
+            @Override
+            protected DateValue selectDate( AnyValue temporal )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateValue constructYear( AnyValue year )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateValue constructQuarterDate( AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateValue constructOrdinalDate( AnyValue year, AnyValue ordinalDay )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+        };
+    }
+
+    public abstract static class Compiler<Input> extends DateBuilder<Input,MethodHandle>
+    {
     }
 
     private final LocalDate value;
@@ -306,5 +364,145 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         return yearDate
                 .with( IsoFields.QUARTER_OF_YEAR, quarter )
                 .with( IsoFields.DAY_OF_QUARTER, dayOfQuarter );
+    }
+
+    private abstract static class DateBuilder<Input, Result> extends Builder<Input,Result>
+    {
+        @Override
+        protected final boolean supportsDate()
+        {
+            return true;
+        }
+
+        @Override
+        protected final boolean supportsTime()
+        {
+            return false;
+        }
+
+        @Override
+        protected final Result selectDateTime( Input temporal )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result selectDateAndTime( Input date, Input time )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result selectDateWithConstructedTime(
+                Input date,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result selectTime( Input temporal )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructCalendarDateWithSelectedTime( Input year, Input month, Input day, Input time )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructCalendarDateWithConstructedTime(
+                Input year,
+                Input month,
+                Input day,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructWeekDateWithSelectedTime( Input year, Input week, Input dayOfWeek, Input time )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructWeekDateWithConstructedTime(
+                Input year,
+                Input week,
+                Input dayOfWeek,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructQuarterDateWithSelectedTime(
+                Input year,
+                Input quarter,
+                Input dayOfQuarter,
+                Input time )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructQuarterDateWithConstructedTime(
+                Input year,
+                Input quarter,
+                Input dayOfQuarter,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructOrdinalDateWithSelectedTime( Input year, Input ordinalDay, Input time )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructOrdinalDateWithConstructedTime(
+                Input year,
+                Input ordinalDay,
+                Input hour,
+                Input minute,
+                Input second,
+                Input millisecond,
+                Input microsecond,
+                Input nanosecond )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
+
+        @Override
+        protected final Result constructTime(
+                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
+        {
+            throw new IllegalStateException( "time not supported" );
+        }
     }
 }

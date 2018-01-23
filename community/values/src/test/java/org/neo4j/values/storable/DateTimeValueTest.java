@@ -19,8 +19,10 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,15 +32,20 @@ import org.junit.Test;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.values.storable.AssertingStructureBuilder.asserting;
+import static org.neo4j.values.storable.DateTimeValue.builder;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateTimeValue.parse;
 import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.FrozenClockRule.assertEqualTemporal;
+import static org.neo4j.values.storable.InputMappingStructureBuilder.fromValues;
 import static org.neo4j.values.storable.LocalDateTimeValue.inUTC;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.TimeValueTest.inUTC;
 import static org.neo4j.values.storable.TimeValueTest.orFail;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class DateTimeValueTest
 {
@@ -98,5 +105,75 @@ public class DateTimeValueTest
             assertEquals( singletonList( value ), values );
             assertEquals( singletonList( inUTC( value ) ), locals );
         }
+    }
+
+    @Test
+    @FrozenClockRule.TimeZone( "Europe/Stockholm" )
+    public void shouldAcquireCurrentDateTime() throws Exception
+    {
+        assertEqualTemporal(
+                datetime( ZonedDateTime.now( clock ) ),
+                DateTimeValue.now( clock ) );
+
+        assertEqualTemporal( // Using the named UTC timezone
+                datetime( ZonedDateTime.now( clock.withZone( "UTC" ) ) ),
+                DateTimeValue.now( clock, "UTC" ) );
+
+        assertEqualTemporal( // Using the timezone defined as 0 hours offset from UTC
+                datetime( ZonedDateTime.now( clock.withZone( UTC ) ) ),
+                DateTimeValue.now( clock, "Z" ) );
+    }
+
+    @Test
+    @FrozenClockRule.TimeZone( {"Europe/Stockholm", "America/Los_Angeles"} )
+    public void shouldCopyDateTime() throws Exception
+    {
+        assertEqualTemporal(
+                datetime( ZonedDateTime.now( clock ) ),
+                builder( clock ).add( "datetime", datetime( ZonedDateTime.now( clock ) ) ).build() );
+        assertEqualTemporal( // TODO: change some stuff here...
+                datetime( ZonedDateTime.now( clock ) ),
+                builder( clock )
+                        .add( "datetime", localDateTime( LocalDateTime.now( clock ) ) )
+                        .build() );
+        assertEqualTemporal(
+                datetime( ZonedDateTime.now( clock ).withZoneSameLocal( ZoneId.of( "America/New_York" ) ) ),
+                builder( clock )
+                        .add( "datetime", localDateTime( LocalDateTime.now( clock ) ) )
+                        .add( "timezone", stringValue( "America/New_York" ) )
+                        .build() );
+    }
+
+    @Test
+    @FrozenClockRule.TimeZone( "Europe/Stockholm" )
+    public void shouldConstructDateTimeFromComponents() throws Exception
+    {
+        assertEqualTemporal(
+                parse( "2018-01-10T10:35:57", clock::getZone ),
+                fromValues( builder( clock ) )
+                        .add( "year", 2018 )
+                        .add( "month", 1 )
+                        .add( "day", 10 )
+                        .add( "hour", 10 )
+                        .add( "minute", 35 )
+                        .add( "second", 57 )
+                        .build() );
+    }
+
+    @Test
+    public void shouldRejectInvalidFieldCombinations() throws Exception
+    {
+        asserting( fromValues( builder( clock ) ) )
+                .add( "year", 2018 )
+                .add( "month", 12 )
+                .add( "dayOfWeek", 5 )
+                .assertThrows( IllegalArgumentException.class, "Cannot assign dayOfWeek to calendar date." );
+        // TODO: more assertions
+    }
+
+    @Test
+    public void shouldRejectInvalidComponentValues() throws Exception
+    {
+        // TODO: add assertions
     }
 }

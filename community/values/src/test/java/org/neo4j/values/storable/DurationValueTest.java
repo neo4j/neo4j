@@ -32,8 +32,14 @@ import org.neo4j.helpers.collection.Pair;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.HOURS;
+import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
+import static java.time.temporal.ChronoUnit.WEEKS;
+import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -409,8 +415,8 @@ public class DurationValueTest
         assertEquals( duration( 0, 0, -10623, 0 ), durationBetween(
                 localTime( 14, 27, 55, 0 ), time( 11, 30, 52, 0, ofHours( 17 ) ) ) );
 
-        //        assertEquals( duration( 0, 1, 0, 0 ), days.between(
-        //                time( 14, 30, 22, 0, ofHours( -12 ) ), time( 14, 30, 22, 0, ofHours( 12 ) ) ) );
+        //        assertEquals( duration( 0, 1, 0, 0 ), between(
+        //                DAYS, time( 14, 30, 22, 0, ofHours( -12 ) ), time( 14, 30, 22, 0, ofHours( 12 ) ) ) );
     }
 
     @Test

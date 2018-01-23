@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import java.lang.invoke.MethodHandle;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -29,11 +31,15 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.TemporalQueries;
+import java.time.temporal.TemporalUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.time.Instant.ofEpochSecond;
 import static java.time.ZonedDateTime.ofInstant;
@@ -86,6 +92,221 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     public static DateTimeValue parse( TextValue text, Supplier<ZoneId> defaultZone )
     {
         return parse( DateTimeValue.class, PATTERN, DateTimeValue::parse, text, defaultZone );
+    }
+
+    public static DateTimeValue now( Clock clock )
+    {
+        return new DateTimeValue( ZonedDateTime.now( clock ) );
+    }
+
+    public static DateTimeValue now( Clock clock, String timezone )
+    {
+        return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static DateTimeValue build( MapValue map )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    public static DateTimeValue truncate(
+            TemporalUnit unit,
+            AnyValue input,
+            MapValue fields,
+            Supplier<ZoneId> defaultZone )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    public static StructureBuilder<AnyValue,DateTimeValue> builder( Supplier<ZoneId> defaultZone )
+    {
+        return new DateTimeBuilder<AnyValue,DateTimeValue>()
+        {
+            @Override
+            protected ZoneId timezone( AnyValue timezone )
+            {
+                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
+            }
+
+            @Override
+            protected DateTimeValue selectDateTime( AnyValue temporal )
+            {
+                if ( temporal instanceof DateTimeValue )
+                {
+                    DateTimeValue value = (DateTimeValue) temporal;
+                    ZoneId zone = optionalTimezone();
+                    return zone == null ? value : new DateTimeValue(
+                            ZonedDateTime.of( value.temporal().toLocalDateTime(), zone ) );
+                }
+                if ( temporal instanceof LocalDateTimeValue )
+                {
+                    return new DateTimeValue( ZonedDateTime.of(
+                            ((LocalDateTimeValue) temporal).temporal(), timezone() ) );
+                }
+                throw new IllegalArgumentException( "Cannot select datetime from: " + temporal );
+            }
+
+            @Override
+            protected DateTimeValue selectDateAndTime( AnyValue date, AnyValue time )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue selectDateWithConstructedTime(
+                    AnyValue date,
+                    AnyValue hour,
+                    AnyValue minute,
+                    AnyValue second,
+                    AnyValue millisecond,
+                    AnyValue microsecond,
+                    AnyValue nanosecond )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue selectDate( AnyValue temporal )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructYear( AnyValue year )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructCalendarDateWithSelectedTime(
+                    AnyValue year, AnyValue month, AnyValue day, AnyValue time )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructCalendarDateWithConstructedTime(
+                    AnyValue year,
+                    AnyValue month,
+                    AnyValue day,
+                    AnyValue hour,
+                    AnyValue minute,
+                    AnyValue second,
+                    AnyValue millisecond,
+                    AnyValue microsecond,
+                    AnyValue nanosecond )
+            {
+                return datetime(
+                        (int) unpackInteger( "year", year ),
+                        (int) unpackInteger( "month", month ),
+                        (int) unpackInteger( "day", day ),
+                        (int) unpackInteger( "hour", hour ),
+                        (int) unpackInteger( "minute", minute ),
+                        (int) unpackInteger( "second", second ),
+                        nano( millisecond, microsecond, nanosecond ),
+                        timezone() );
+            }
+
+            private int nano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
+            {
+                return (int) unpackInteger( "millisecond", millisecond ) * 1000_000 +
+                        (int) unpackInteger( "microsecond", microsecond ) * 1000 +
+                        (int) unpackInteger( "nanosecond", nanosecond );
+            }
+
+            @Override
+            protected DateTimeValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructWeekDateWithSelectedTime(
+                    AnyValue year, AnyValue week, AnyValue dayOfWeek, AnyValue time )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructWeekDateWithConstructedTime(
+                    AnyValue year,
+                    AnyValue week,
+                    AnyValue dayOfWeek,
+                    AnyValue hour,
+                    AnyValue minute,
+                    AnyValue second,
+                    AnyValue millisecond,
+                    AnyValue microsecond,
+                    AnyValue nanosecond )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructQuarterDate( AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructQuarterDateWithSelectedTime(
+                    AnyValue year, AnyValue quarter, AnyValue dayOfQuarter, AnyValue time )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructQuarterDateWithConstructedTime(
+                    AnyValue year,
+                    AnyValue quarter,
+                    AnyValue dayOfQuarter,
+                    AnyValue hour,
+                    AnyValue minute,
+                    AnyValue second,
+                    AnyValue millisecond,
+                    AnyValue microsecond,
+                    AnyValue nanosecond )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructOrdinalDate( AnyValue year, AnyValue ordinalDay )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructOrdinalDateWithSelectedTime(
+                    AnyValue year, AnyValue ordinalDay, AnyValue time )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            protected DateTimeValue constructOrdinalDateWithConstructedTime(
+                    AnyValue year,
+                    AnyValue ordinalDay,
+                    AnyValue hour,
+                    AnyValue minute,
+                    AnyValue second,
+                    AnyValue millisecond,
+                    AnyValue microsecond,
+                    AnyValue nanosecond )
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+        };
+    }
+
+    public abstract static class Compiler<Input> extends DateTimeBuilder<Input,MethodHandle>
+    {
     }
 
     private final ZonedDateTime value;
@@ -208,8 +429,36 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return new DateTimeValue( ZonedDateTime.of( local, zone ) );
     }
 
-    private static ZoneId parseZoneName( String zoneName )
+    static ZoneId parseZoneName( String zoneName )
     {
         return ZONE_NAME_PARSER.parse( zoneName.replace( ' ', '_' ) ).query( TemporalQueries.zoneId() );
+    }
+
+    abstract static class DateTimeBuilder<Input, Result> extends Builder<Input,Result>
+    {
+        @Override
+        protected final boolean supportsDate()
+        {
+            return true;
+        }
+
+        @Override
+        protected final boolean supportsTime()
+        {
+            return true;
+        }
+
+        @Override
+        protected final Result selectTime( Input temporal )
+        {
+            throw new IllegalStateException( "Cannot select time without date for datetime." );
+        }
+
+        @Override
+        protected final Result constructTime(
+                Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
+        {
+            throw new IllegalStateException( "Cannot construct time without date for datetime." );
+        }
     }
 }
