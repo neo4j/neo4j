@@ -162,7 +162,7 @@ public class TransactionStatusResultTest
         return new ExecutingQuery( queryId, getTestConnectionInfo(), "testUser", "testQuery", VirtualValues.EMPTY_MAP,
                 Collections.emptyMap(), () -> 1L, PageCursorTracer.NULL,
                 Thread.currentThread().getId(), Thread.currentThread().getName(),
-                new CountingSystemNanoClock(), new CountingCpuClock(), new CountingHeapAllocation() );
+                new CountingNanoClock(), new CountingCpuClock(), new CountingHeapAllocation() );
     }
 
     private HttpConnectionInfo getTestConnectionInfo()
@@ -215,7 +215,7 @@ public class TransactionStatusResultTest
         }
     }
 
-    private static class CountingSystemNanoClock extends SystemNanoClock
+    private static class CountingNanoClock extends SystemNanoClock
     {
         private long time;
 
