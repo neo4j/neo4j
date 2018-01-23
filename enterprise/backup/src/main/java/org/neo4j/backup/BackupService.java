@@ -274,7 +274,6 @@ class BackupService
         return tempDbConfig;
     }
 
-
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
             ConsistencyCheck consistencyCheck, Config config, long timeout, boolean forensics )
     {
