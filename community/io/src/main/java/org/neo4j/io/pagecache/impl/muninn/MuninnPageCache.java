@@ -191,7 +191,6 @@ public class MuninnPageCache implements PageCache
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
-
     /**
      * Create page cache
      * @param swapperFactory page cache swapper factory

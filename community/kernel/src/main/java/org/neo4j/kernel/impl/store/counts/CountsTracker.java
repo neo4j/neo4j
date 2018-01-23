@@ -94,8 +94,9 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
                           File baseFile, SystemNanoClock clock, VersionContextSupplier versionContextSupplier )
     {
-        super( fs, pages, baseFile, new CountsTrackerRotationMonitor( logProvider ), new RotationTimerFactory( clock,
-                config.get( counts_store_rotation_timeout ).toMillis() ), versionContextSupplier,16, 16, HEADER_FIELDS );
+        super( fs, pages, baseFile, new CountsTrackerRotationMonitor( logProvider ),
+                new RotationTimerFactory( clock, config.get( counts_store_rotation_timeout ).toMillis() ),
+                versionContextSupplier, 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )
