@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.backup.impl.BackupHelpOutput;
-import org.neo4j.backup.impl.ParameterisedOutsideWorld;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.rule.SuppressOutput;
 
