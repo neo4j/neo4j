@@ -53,11 +53,12 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("ValueHashJoin"), expectPlansToFail))
   }
 
-  test("should handle node outer hash join") {
+  test("should handle node left outer hash join") {
     val a = createLabeledNode(Map[String, Any]("name" -> "a"), "A")
+    createLabeledNode(Map[String, Any]("name" -> "a2"), "A")
     for(i <- 0 until 10) {
       val b = createLabeledNode(Map[String, Any]("name" -> s"${i}b"), "B")
-      relate(a, b)
+      if(i != 0) relate(a, b)
     }
 
     val query = """MATCH (a:A)
@@ -68,5 +69,23 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
     val expectSucceed = Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1
     executeWith(expectSucceed, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeLeftOuterHashJoin"), expectPlansToFail))
+  }
+
+  test("should handle node right outer hash join") {
+    val b = createLabeledNode(Map[String, Any]("name" -> "b"), "B")
+    createLabeledNode(Map[String, Any]("name" -> "b2"), "B")
+    for(i <- 0 until 10) {
+      val a = createLabeledNode(Map[String, Any]("name" -> s"${i}a"), "A")
+      if(i == 0) relate(a, b)
+    }
+
+    val query = """MATCH (a:A)
+                  |OPTIONAL MATCH (a)-->(b:B)
+                  |USING JOIN ON a
+                  |RETURN a.name, b.name""".stripMargin
+
+    val expectSucceed = Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1
+    executeWith(expectSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.BackwardsCompatibility))
   }
 }

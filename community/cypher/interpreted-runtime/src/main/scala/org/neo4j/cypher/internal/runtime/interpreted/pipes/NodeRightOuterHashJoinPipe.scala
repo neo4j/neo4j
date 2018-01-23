@@ -40,7 +40,7 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs
             case Some(joinKey) =>
               val seq = probeTable(joinKey)
               if(seq.nonEmpty) {
-                seq.map(lhsRow => executionContextFactory.copyWith(lhsRow).mergeWith(rhsRow))
+                seq.map(lhsRow => executionContextFactory.copyWith(rhsRow).mergeWith(lhsRow))
               } else {
                 Seq(addNulls(rhsRow))
               }

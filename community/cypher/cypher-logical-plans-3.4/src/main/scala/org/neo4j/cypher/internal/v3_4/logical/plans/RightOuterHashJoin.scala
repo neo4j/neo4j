@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 case class RightOuterHashJoin(nodes: Set[String],
                              left: LogicalPlan,
                              right: LogicalPlan)
-                            (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with NodeJoin {
+                            (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
