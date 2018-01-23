@@ -298,7 +298,8 @@ public class IndexStatisticsTest
         double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
-        assertCorrectIndexUpdates( updatesTracker.createdAfterPopulation(), indexUpdates( index ) );
+        int expectedIndexUpdates = updatesTracker.createdAfterPopulation() + updatesTracker.updatedAfterPopulation();
+        assertCorrectIndexUpdates( expectedIndexUpdates, indexUpdates( index ) );
     }
 
     @Test
@@ -617,7 +618,7 @@ public class IndexStatisticsTest
             notifyIfPopulationCompleted( index, updatesTracker );
 
             // delete if allowed
-            if ( allowDeletions && updatesTracker.created() % 5 == 0 )
+            if ( allowDeletions && updatesTracker.created() % 24 == 0 )
             {
                 long nodeId = nodes[random.nextInt( nodes.length )];
                 try
@@ -633,7 +634,7 @@ public class IndexStatisticsTest
             }
 
             // update if allowed
-            if ( allowUpdates && updatesTracker.created() % 5 == 0 )
+            if ( allowUpdates && updatesTracker.created() % 24 == 0 )
             {
                 int randomIndex = random.nextInt( nodes.length );
                 try
