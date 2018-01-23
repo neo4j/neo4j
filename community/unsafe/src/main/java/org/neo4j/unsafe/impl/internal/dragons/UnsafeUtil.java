@@ -308,6 +308,32 @@ public final class UnsafeUtil
     }
 
     /**
+     * Atomically exchanges provided <code>newValue</code> with the current value of field or array element, with
+     * provided <code>offset</code>.
+     */
+    public static long getAndSetLong( Object object, long offset, long newValue )
+    {
+        return unsafe.getAndSetLong( object, offset, newValue );
+    }
+
+    /**
+     * Atomically set field or array element to a maximum between current value and provided <code>newValue</code>
+     */
+    public static void compareAndSetMaxLong( Object object, long fieldOffset, long newValue )
+    {
+        long currentValue;
+        do
+        {
+            currentValue = UnsafeUtil.getLong( object, fieldOffset );
+            if ( currentValue >= newValue )
+            {
+                return;
+            }
+        }
+        while ( !UnsafeUtil.compareAndSwapLong( object, fieldOffset, currentValue, newValue ) );
+    }
+
+    /**
      * Create a string with a char[] that you know is not going to be modified, so avoid the copy constructor.
      *
      * @param chars array that will back the new string

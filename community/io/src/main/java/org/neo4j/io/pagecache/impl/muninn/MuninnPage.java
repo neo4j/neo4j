@@ -51,7 +51,7 @@ final class MuninnPage extends SequenceLock implements Page
     private long pointer;
 
     // max transaction id that updated this page
-    @SuppressWarnings( "unused" )
+    @SuppressWarnings( "unused" ) // accessed using unsafe
     private volatile long lastModifiedTxId = UNBOUND_LAST_MODIFIED_TX_ID;
 
     // Optimistically incremented; occasionally truncated to a max of 4.
@@ -91,30 +91,22 @@ final class MuninnPage extends SequenceLock implements Page
         return pointer;
     }
 
-    public long getLastModifiedTxId()
+    long getLastModifiedTxId()
     {
-        return lastModifiedTxId;
+        return UnsafeUtil.getLongVolatile( this, lastModifiedTxIdOffset );
     }
 
-    public long resetLastModifiedTxId()
+    /**
+     * @return return current value of {@link #lastModifiedTxId} and resets it to {@link #UNBOUND_LAST_MODIFIED_TX_ID}
+     */
+    long getAndResetLastModifiedTransactionId()
     {
-        long value = lastModifiedTxId;
-        lastModifiedTxId = UNBOUND_LAST_MODIFIED_TX_ID;
-        return value;
+        return UnsafeUtil.getAndSetLong( this, lastModifiedTxIdOffset, UNBOUND_LAST_MODIFIED_TX_ID );
     }
 
-    public void setLastModifiedTxId( long modifierTxId )
+    void setLastModifiedTxId( long modifierTxId )
     {
-        long pageLatestModifier;
-        do
-        {
-            pageLatestModifier = this.lastModifiedTxId;
-            if ( pageLatestModifier >= modifierTxId )
-            {
-                return;
-            }
-        }
-        while ( !UnsafeUtil.compareAndSwapLong( this, lastModifiedTxIdOffset, pageLatestModifier, modifierTxId ) );
+        UnsafeUtil.compareAndSetMaxLong( this, lastModifiedTxIdOffset, modifierTxId );
     }
 
     /**

@@ -24,6 +24,8 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import static java.lang.System.currentTimeMillis;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
@@ -33,9 +35,59 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static java.lang.System.currentTimeMillis;
-
-import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.*;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allocateMemory;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.arrayBaseOffset;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.arrayIndexScale;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.arrayOffset;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.assertHasUnsafe;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.compareAndSetMaxLong;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.compareAndSwapLong;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.compareAndSwapObject;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.free;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getAndAddInt;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getAndSetLong;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getAndSetObject;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getBoolean;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getBooleanVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getByte;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getByteVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getChar;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getCharVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getDouble;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getDoubleVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getFieldOffset;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getFloat;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getFloatVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getInt;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getIntVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getLong;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getLongVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getObject;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getObjectVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getShort;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getShortVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.initDirectByteBuffer;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.newDirectByteBuffer;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.pageSize;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putBoolean;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putBooleanVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putByte;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putByteVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putChar;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putCharVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putDouble;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putDoubleVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putFloat;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putFloatVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putInt;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putIntVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putLong;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putLongVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putObject;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putObjectVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putShort;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putShortVolatile;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.setMemory;
 
 public class UnsafeUtilTest
 {
@@ -345,6 +397,29 @@ public class UnsafeUtilTest
         assertThat( getAndSetObject( obj, objectOffset, obj ), is( nullValue() ) );
         assertThat( getAndSetObject( obj, objectOffset, null ), sameInstance( (Object) obj ) );
         assertThat( obj, is( new Obj() ) );
+    }
+
+    @Test
+    public void getAndSetLongField()
+    {
+        Obj obj = new Obj();
+        long offset = getFieldOffset( Obj.class, "aLong" );
+        assertThat( getAndSetLong( obj, offset, 42L ), equalTo( 0L ) );
+        assertThat( getAndSetLong( obj, offset, -1 ), equalTo( 42L ) );
+    }
+
+    @Test
+    public void compareAndSetMaxLongField()
+    {
+        Obj obj = new Obj();
+        long offset = getFieldOffset( Obj.class, "aLong" );
+        assertThat( getAndSetLong( obj, offset, 42L ), equalTo( 0L ) );
+
+        compareAndSetMaxLong( obj, offset, 5 );
+        assertEquals( 42, getLong( obj, offset ) );
+
+        compareAndSetMaxLong( obj, offset, 105 );
+        assertEquals( 105, getLong( obj, offset ) );
     }
 
     @Test

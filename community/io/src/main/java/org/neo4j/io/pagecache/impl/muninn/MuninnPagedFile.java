@@ -77,6 +77,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
 
     // max modifier transaction id among evicted pages for this file
     private static final long evictedTransactionIdOffset = UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "highestEvictedTransactionId" );
+    @SuppressWarnings( "unused" ) // accessed using unsafe
     private volatile long highestEvictedTransactionId;
 
     /**
@@ -612,21 +613,12 @@ final class MuninnPagedFile implements PagedFile, Flushable
 
     void setHighestEvictedTransactionId( long modifiedTransactionId )
     {
-        long highestModifier;
-        do
-        {
-            highestModifier = this.highestEvictedTransactionId;
-            if ( highestModifier >= modifiedTransactionId )
-            {
-                return;
-            }
-        }
-        while ( !UnsafeUtil.compareAndSwapLong( this, evictedTransactionIdOffset, highestModifier, modifiedTransactionId ) );
+        UnsafeUtil.compareAndSetMaxLong( this, evictedTransactionIdOffset, modifiedTransactionId );
     }
 
     long getHighestEvictedTransactionId()
     {
-        return highestEvictedTransactionId;
+        return UnsafeUtil.getLongVolatile( this, evictedTransactionIdOffset );
     }
 
     /**

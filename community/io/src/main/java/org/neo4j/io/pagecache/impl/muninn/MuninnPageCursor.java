@@ -131,15 +131,29 @@ abstract class MuninnPageCursor extends PageCursor
     void verifyContext()
     {
         VersionContext versionContext = versionContextSupplier.getVersionContext();
-        if ( versionContext.lastClosedTransactionId() == Long.MAX_VALUE )
+        long lastClosedTransactionId = versionContext.lastClosedTransactionId();
+        if ( lastClosedTransactionId == Long.MAX_VALUE )
         {
             return;
         }
-        if ( page.getLastModifiedTxId() > versionContext.lastClosedTransactionId() ||
-                pagedFile.getHighestEvictedTransactionId() > versionContext.lastClosedTransactionId() )
+        if ( isPotentiallyReadingDirtyData( lastClosedTransactionId ) )
         {
             versionContext.markAsDirty();
         }
+    }
+
+    /**
+     * We reading potentially dirty data in case if our page last modification version is higher then
+     * requested lastClosedTransactionId; or for this page file we already evict some page with version that is higher
+     * then requested lastClosedTransactionId. In this case we can't be sure that data of current page satisfying
+     * visibility requirements and we pessimistically will assume that we reading dirty data.
+     * @param lastClosedTransactionId last closed transaction id
+     * @return true in case if we reading potentially dirty data for requested lastClosedTransactionId.
+     */
+    private boolean isPotentiallyReadingDirtyData( long lastClosedTransactionId )
+    {
+        return page.getLastModifiedTxId() > lastClosedTransactionId ||
+                pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId;
     }
 
     @Override
