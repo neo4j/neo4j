@@ -21,6 +21,12 @@ package org.neo4j.kernel.impl.proc;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAmount;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,12 +50,18 @@ import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTDate;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTDateTime;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTDuration;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTFloat;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTLocalDateTime;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTLocalTime;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNumber;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTTime;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntBoolean;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntFloat;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntInteger;
@@ -126,6 +138,12 @@ public class TypeMappers extends DefaultValueMapper
         registerType( Map.class, TO_MAP );
         registerType( List.class, TO_LIST );
         registerType( Object.class, TO_ANY );
+        registerType( ZonedDateTime.class, new DefaultValueConverter( NTDateTime, ZonedDateTime.class ) );
+        registerType( LocalDateTime.class, new DefaultValueConverter( NTLocalDateTime, LocalDateTime.class ) );
+        registerType( LocalDate.class, new DefaultValueConverter( NTDate, LocalDate.class ) );
+        registerType( OffsetTime.class, new DefaultValueConverter( NTTime, OffsetTime.class ) );
+        registerType( LocalTime.class, new DefaultValueConverter( NTLocalTime, LocalTime.class ) );
+        registerType( TemporalAmount.class, new DefaultValueConverter( NTDuration, TemporalAmount.class ) );
     }
 
     public AnyType toNeo4jType( Type type ) throws ProcedureException

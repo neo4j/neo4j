@@ -189,6 +189,12 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
     case Neo4jTypes.NTGeometry => symbols.CTGeometry
     case Neo4jTypes.NTMap => symbols.CTMap
     case Neo4jTypes.NTAny => symbols.CTAny
+    case Neo4jTypes.NTDateTime => symbols.CTAny
+    case Neo4jTypes.NTLocalDateTime => symbols.CTAny
+    case Neo4jTypes.NTDate => symbols.CTAny
+    case Neo4jTypes.NTTime => symbols.CTAny
+    case Neo4jTypes.NTLocalTime => symbols.CTAny
+    case Neo4jTypes.NTDuration => symbols.CTAny
   }
 
   override def notificationLogger(): InternalNotificationLogger = logger

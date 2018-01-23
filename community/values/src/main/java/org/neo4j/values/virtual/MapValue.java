@@ -73,8 +73,13 @@ public final class MapValue extends VirtualValue
 
     public ListValue keys()
     {
-        String[] strings = map.keySet().toArray( new String[map.size()] );
+        String[] strings = keySet().toArray( new String[map.size()] );
         return VirtualValues.fromArray( Values.stringArray( strings ) );
+    }
+
+    public Set<String> keySet()
+    {
+        return map.keySet();
     }
 
     @Override
@@ -95,7 +100,7 @@ public final class MapValue extends VirtualValue
         int compare = Integer.compare( size(), otherMap.size() );
         if ( compare == 0 )
         {
-            String[] thisKeys = map.keySet().toArray( new String[size] );
+            String[] thisKeys = keySet().toArray( new String[size] );
             Arrays.sort( thisKeys, String::compareTo );
             String[] thatKeys = otherMap.keySet().toArray( new String[size] );
             Arrays.sort( thatKeys, String::compareTo );
@@ -138,7 +143,7 @@ public final class MapValue extends VirtualValue
         {
             return false;
         }
-        String[] thisKeys = map.keySet().toArray( new String[size] );
+        String[] thisKeys = keySet().toArray( new String[size] );
         Arrays.sort( thisKeys, String::compareTo );
         String[] thatKeys = otherMap.keySet().toArray( new String[size] );
         Arrays.sort( thatKeys, String::compareTo );

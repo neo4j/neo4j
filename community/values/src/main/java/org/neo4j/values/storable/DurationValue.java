@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.IsoFields;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
@@ -114,6 +115,44 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
     public static DurationValue build( MapValue map )
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    public static DurationValue between( TemporalUnit unit, Temporal from, Temporal to )
+    {
+        if ( unit == null )
+        {
+            return durationBetween( from, to );
+        }
+        else if ( unit instanceof ChronoUnit )
+        {
+            switch ( (ChronoUnit) unit )
+            {
+            case YEARS:
+                return newDuration( from.until( to, unit ) * 12, 0, 0, 0 );
+            case MONTHS:
+                return newDuration( from.until( to, unit ), 0, 0, 0 );
+            case WEEKS:
+                return newDuration( 0, from.until( to, unit ) * 7, 0, 0 );
+            case DAYS:
+                return newDuration( 0, from.until( to, unit ), 0, 0 );
+            case HOURS:
+                return newDuration( 0, 0, from.until( to, unit ) * 3600, 0 );
+            case MINUTES:
+                return newDuration( 0, 0, from.until( to, unit ) * 60, 0 );
+            case SECONDS:
+                return difference( 0, 0, from, to );
+            default:
+                throw new IllegalArgumentException( "Unsupported unit: " + unit );
+            }
+        }
+        else if ( unit == IsoFields.QUARTER_YEARS )
+        {
+            return newDuration( from.until( to, unit ) * 3, 0, 0, 0 );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unsupported unit: " + unit );
+        }
     }
 
     public static StructureBuilder<AnyValue,DurationValue> builder()
@@ -356,68 +395,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
         return value == null ? 0 : parseLong( value );
     }
 
-    /**
-     * Compute the duration from one {@link Temporal} to another. If one temporal has a date and the other one does
-     * not, the one without a date is treated as being the same date as the one with date. If one temporal has a time
-     * and the other one does not, the one without a time is treated as midnight at the start of its date. If one
-     * temporal has a timezone and the other one does not, the one without a timezone is treated as having the same
-     * timezone as the one with a timezone.
-     */
-    private static DurationValue durationBetween( Difference type, Temporal from, Temporal to )
-    {
-        switch ( type )
-        {
-        case DEFAULT:
-            return durationBetween( from, to );
-        case years:
-            return yearsBetween( from, to );
-        case months:
-            return monthsBetween( from, to );
-        case weeks:
-            return weeksBetween( from, to );
-        case days:
-            return daysBetween( from, to );
-        case hours:
-            return hoursBetween( from, to );
-        case minutes:
-            return minutesBetween( from, to );
-        case seconds:
-            return difference( 0, 0, from, to );
-        default:
-            throw new UnsupportedOperationException( type.name() );
-        }
-    }
-
-    private static DurationValue yearsBetween( Temporal from, Temporal to )
-    {
-        return newDuration( from.until( to, YEARS ) * 12, 0, 0, 0 );
-    }
-
-    private static DurationValue monthsBetween( Temporal from, Temporal to )
-    {
-        return newDuration( from.until( to, MONTHS ), 0, 0, 0 );
-    }
-
-    private static DurationValue weeksBetween( Temporal from, Temporal to )
-    {
-        return newDuration( 0, from.until( to, WEEKS ) * 7, 0, 0 );
-    }
-
-    private static DurationValue daysBetween( Temporal from, Temporal to )
-    {
-        return newDuration( 0, from.until( to, DAYS ), 0, 0 );
-    }
-
-    private static DurationValue hoursBetween( Temporal from, Temporal to )
-    {
-        return newDuration( 0, 0, from.until( to, HOURS ) * 3600, 0 );
-    }
-
-    private static DurationValue minutesBetween( Temporal from, Temporal to )
-    {
-        return newDuration( 0, 0, from.until( to, MINUTES ) * 60, 0 );
-    }
-
     static DurationValue durationBetween( Temporal from, Temporal to )
     {
         long months = 0;
@@ -484,45 +461,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
             nanos = to.getLong( NANO_OF_SECOND );
         }
         return duration( months, days, seconds, nanos );
-    }
-
-    enum Difference
-    {
-        DEFAULT,
-        years,
-        months,
-        weeks,
-        days,
-        hours,
-        minutes,
-        seconds,;
-
-        public DurationValue between( Temporal from, Temporal to )
-        {
-            return durationBetween( this, from, to );
-        }
-
-        private Temporal temporal( String field, AnyValue value )
-        {
-            if ( value instanceof TemporalValue )
-            {
-                return ((TemporalValue) value).temporal();
-            }
-            else
-            {
-                StringBuilder message = new StringBuilder().append( "'" );
-                if ( this == DEFAULT )
-                {
-                    message.append( field );
-                }
-                else
-                {
-                    message.append( name() ).append( Character.toUpperCase( field.charAt( 0 ) ) );
-                    message.append( field, 1, field.length() );
-                }
-                throw new IllegalArgumentException( message.append( "' must be a temporal value" ).toString() );
-            }
-        }
     }
 
     @Override

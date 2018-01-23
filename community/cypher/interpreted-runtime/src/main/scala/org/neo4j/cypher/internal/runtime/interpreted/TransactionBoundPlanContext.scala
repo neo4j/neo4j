@@ -185,6 +185,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     case Neo4jTypes.NTNumber => CTNumber
     case Neo4jTypes.NTBoolean => CTBoolean
     case l: Neo4jTypes.ListType => CTList(asCypherType(l.innerType()))
+    case Neo4jTypes.NTDateTime => CTDateTime
+    case Neo4jTypes.NTLocalDateTime => CTLocalDateTime
+    case Neo4jTypes.NTDate => CTDate
+    case Neo4jTypes.NTTime => CTTime
+    case Neo4jTypes.NTLocalTime => CTLocalTime
+    case Neo4jTypes.NTDuration => CTDuration
     case Neo4jTypes.NTPoint => CTPoint
     case Neo4jTypes.NTNode => CTNode
     case Neo4jTypes.NTRelationship => CTRelationship

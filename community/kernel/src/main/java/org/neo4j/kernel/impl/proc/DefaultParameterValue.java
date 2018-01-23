@@ -75,7 +75,7 @@ public class DefaultParameterValue
         return new DefaultParameterValue( value, Neo4jTypes.NTList( inner ) );
     }
 
-    static DefaultParameterValue nullValue( Neo4jTypes.AnyType type )
+    public static DefaultParameterValue nullValue( Neo4jTypes.AnyType type )
     {
         return new DefaultParameterValue( null, type );
     }

@@ -47,13 +47,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
-import static org.neo4j.values.storable.DurationValue.Difference.days;
-import static org.neo4j.values.storable.DurationValue.Difference.hours;
-import static org.neo4j.values.storable.DurationValue.Difference.minutes;
-import static org.neo4j.values.storable.DurationValue.Difference.months;
-import static org.neo4j.values.storable.DurationValue.Difference.seconds;
-import static org.neo4j.values.storable.DurationValue.Difference.weeks;
-import static org.neo4j.values.storable.DurationValue.Difference.years;
+import static org.neo4j.values.storable.DurationValue.between;
 import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.DurationValue.durationBetween;
 import static org.neo4j.values.storable.DurationValue.parse;
@@ -370,11 +364,11 @@ public class DurationValueTest
     public void shouldComputeDurationBetweenDates() throws Exception
     {
         assertEquals( duration( 22, 23, 0, 0 ), durationBetween( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        assertEquals( duration( 0, 693, 0, 0 ), days.between( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        assertEquals( duration( 0, 693, 0, 0 ), weeks.between( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        assertEquals( duration( 22, 0, 0, 0 ), months.between( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        assertEquals( duration( 12, 0, 0, 0 ), years.between( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        //        assertEquals( duration( 0, 0, 0, 0 ), hours.between( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
+        assertEquals( duration( 0, 693, 0, 0 ), between(DAYS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
+        assertEquals( duration( 0, 693, 0, 0 ), between(WEEKS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
+        assertEquals( duration( 22, 0, 0, 0 ), between(MONTHS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
+        assertEquals( duration( 12, 0, 0, 0 ), between(YEARS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
+        //        assertEquals( duration( 0, 0, 0, 0 ), between( HOURS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
     }
 
     @Test
@@ -382,14 +376,14 @@ public class DurationValueTest
     {
         assertEquals( duration( 0, 0, 10623, 0 ), durationBetween(
                 localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
-        //        assertEquals( duration( 0,0,0,0 ), days.between(
-        //                localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
-        assertEquals( duration( 0, 0, 7200, 0 ), hours.between(
-                localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
-        assertEquals( duration( 0, 0, 10620, 0 ), minutes.between(
-                localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
-        assertEquals( duration( 0, 0, 10623, 0 ), seconds.between(
-                localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
+        //        assertEquals( duration( 0,0,0,0 ), between(
+        //                DAYS, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
+        assertEquals( duration( 0, 0, 7200, 0 ), between(
+                HOURS, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
+        assertEquals( duration( 0, 0, 10620, 0 ), between(
+                MINUTES, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
+        assertEquals( duration( 0, 0, 10623, 0 ), between(
+                SECONDS, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
     }
 
     @Test
@@ -399,12 +393,12 @@ public class DurationValueTest
                 time( 11, 30, 52, 0, ofHours( 18 ) ), time( 14, 27, 55, 0, ofHours( -18 ) ) ) );
         //        assertEquals( duration( 0,0,0,0 ), days.between(
         //                time( 11, 30, 52, 0, UTC ), time( 14, 27, 55, 0, UTC ) ) );
-        assertEquals( duration( 0, 0, 0, 0 ), hours.between(
-                time( 11, 30, 52, 0, ofHours( -1 ) ), time( 14, 27, 55, 0, ofHours( 1 ) ) ) );
-        assertEquals( duration( 0, 0, 3420, 0 ), minutes.between(
-                time( 11, 30, 52, 0, ofHours( 2 ) ), time( 14, 27, 55, 0, ofHours( 4 ) ) ) );
-        assertEquals( duration( 0, 0, 10623, 0 ), seconds.between(
-                time( 11, 30, 52, 0, UTC ), time( 14, 27, 55, 0, UTC ) ) );
+        assertEquals( duration( 0, 0, 0, 0 ), between(
+                HOURS, time( 11, 30, 52, 0, ofHours( -1 ) ), time( 14, 27, 55, 0, ofHours( 1 ) ) ) );
+        assertEquals( duration( 0, 0, 3420, 0 ), between(
+                MINUTES, time( 11, 30, 52, 0, ofHours( 2 ) ), time( 14, 27, 55, 0, ofHours( 4 ) ) ) );
+        assertEquals( duration( 0, 0, 10623, 0 ), between(
+                SECONDS, time( 11, 30, 52, 0, UTC ), time( 14, 27, 55, 0, UTC ) ) );
 
         assertEquals( duration( 0, 0, 10623, 0 ), durationBetween(
                 time( 11, 30, 52, 0, UTC ), localTime( 14, 27, 55, 0 ) ) );
@@ -475,8 +469,8 @@ public class DurationValueTest
             // when
             DurationValue diffAB = durationBetween( a, b );
             DurationValue diffBA = durationBetween( b, a );
-            DurationValue diffABs = seconds.between( a, b );
-            DurationValue diffBAs = seconds.between( b, a );
+            DurationValue diffABs = between( SECONDS, a, b );
+            DurationValue diffBAs = between( SECONDS, b, a );
 
             // then
             assertEquals( diffAB.prettyPrint(), b, a.plus( diffAB ) );
