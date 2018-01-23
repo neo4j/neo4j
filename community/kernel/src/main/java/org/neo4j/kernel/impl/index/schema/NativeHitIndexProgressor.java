@@ -54,7 +54,6 @@ public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends
                 Value[] values = client.needsValues() ? new Value[]{ key.asValue()} : null;
                 if ( client.acceptNode( key.getEntityId(), values ) )
                 {
-                    // TODO this part fails for SpatialSchemaKey.asValue()
                     return true;
                 }
             }
