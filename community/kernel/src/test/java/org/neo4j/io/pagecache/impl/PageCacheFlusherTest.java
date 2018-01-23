@@ -46,12 +46,12 @@ public class PageCacheFlusherTest
         // GIVEN
         PageCache pageCache = mock( PageCache.class );
         Barrier.Control barrier = new Barrier.Control();
+        PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
         doAnswer( invocation ->
         {
             barrier.reached();
             return null;
-        } ).when( pageCache ).flushAndForce();
-        PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
+        } ).when( pageCache ).flushAndForce( flusher );
         flusher.start();
 
         // WHEN
