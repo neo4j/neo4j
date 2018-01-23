@@ -60,6 +60,8 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -83,6 +85,7 @@ public class Operations implements Write, ExplicitIndexWrite
     private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
     private PropertyCursor propertyCursor;
+    private RelationshipScanCursor relationshipCursor;
     private final Cursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
 
@@ -110,6 +113,7 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
+        this.relationshipCursor = cursors.allocateRelationshipScanCursor();
     }
 
     @Override
@@ -154,17 +158,42 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode )
+    public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode ) throws EntityNotFoundException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+
+        sharedRelationshipTypeLock( relationshipLabel );
+        lockRelationshipNodes( sourceNode, targetNode );
+
+        nodeExists( sourceNode );
+        nodeExists( targetNode );
+
+        long id = statement.reserveRelationship();
+        ktx.txState().relationshipDoCreate( id, relationshipLabel, sourceNode, targetNode );
+        return id;
     }
 
     @Override
-    public void relationshipDelete( long relationship )
+    public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+
+        allStoreHolder.singleRelationship( relationship, relationshipCursor ); // tx-state aware
+
+        if ( relationshipCursor.next() )
+        {
+            lockRelationshipNodes( relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            acquireExclusiveRelationshipLock( relationship );
+            ktx.assertOpen();
+
+            autoIndexing.relationships().entityRemoved( this, relationship );
+            ktx.txState().relationshipDoDelete( relationship, relationshipCursor.getType(),
+                    relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            return true;
+        }
+
+        // tried to delete relationship that does not exist
+        return false;
     }
 
     @Override
@@ -563,9 +592,32 @@ public class Operations implements Write, ExplicitIndexWrite
         }
     }
 
+    private void acquireExclusiveRelationshipLock( long relationshipId )
+    {
+        if ( !ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx( relationshipId ) )
+        {
+            ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+        }
+    }
+
     private void acquireSharedLabelLock( int labelId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+    }
+
+    private void sharedRelationshipTypeLock( long typeId )
+    {
+        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
+    }
+
+    private void lockRelationshipNodes( long startNodeId, long endNodeId )
+    {
+        // Order the locks to lower the risk of deadlocks with other threads creating/deleting rels concurrently
+        acquireExclusiveNodeLock( min( startNodeId, endNodeId ) );
+        if ( startNodeId != endNodeId )
+        {
+            acquireExclusiveNodeLock( max( startNodeId, endNodeId ) );
+        }
     }
 
     private boolean propertyHasChanged( Value lhs, Value rhs )
@@ -574,6 +626,14 @@ public class Operations implements Write, ExplicitIndexWrite
         //so by only checking for equality users cannot change type of property without also "changing" the value.
         //Hence the extra type check here.
         return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
+    }
+
+    private void nodeExists( long sourceNode ) throws EntityNotFoundException
+    {
+        if ( !allStoreHolder.nodeExists( sourceNode ) )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, sourceNode );
+        }
     }
 
     public ExplicitIndexRead indexRead()

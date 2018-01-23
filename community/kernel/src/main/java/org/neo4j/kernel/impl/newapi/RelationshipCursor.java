@@ -19,16 +19,30 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Set;
+
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor
+import static java.util.Collections.emptySet;
+
+abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor, RelationshipVisitor<RuntimeException>
 {
     Read read;
+    private HasChanges hasChanges = HasChanges.MAYBE;
+    Set<Long> addedRelationships;
 
     RelationshipCursor()
     {
         super( NO_ID );
+    }
+
+    protected void init( Read read )
+    {
+        this.read = read;
+        this.hasChanges = HasChanges.MAYBE;
+        this.addedRelationships = emptySet();
     }
 
     @Override
@@ -83,5 +97,53 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     public long propertiesReference()
     {
         return getNextProp();
+    }
+
+    protected abstract boolean shouldGetAddedTxStateSnapshot();
+
+    /**
+     * RelationshipCursor should only see changes that are there from the beginning
+     * otherwise it will not be stable.
+     */
+    protected boolean hasChanges()
+    {
+        switch ( hasChanges )
+        {
+        case MAYBE:
+            boolean changes = read.hasTxStateWithChanges();
+            if ( changes )
+            {
+                if ( shouldGetAddedTxStateSnapshot() )
+                {
+                    addedRelationships = read.txState().addedAndRemovedRelationships().getAddedSnapshot();
+                }
+                hasChanges = HasChanges.YES;
+            }
+            else
+            {
+                hasChanges = HasChanges.NO;
+            }
+            return changes;
+        case YES:
+            return true;
+        case NO:
+            return false;
+        default:
+            throw new IllegalStateException( "Style guide, why are you making me do this" );
+        }
+    }
+
+    // Load transaction state using RelationshipVisitor
+    protected void loadFromTxState( long reference )
+    {
+        read.txState().relationshipVisit( reference, this );
+    }
+
+    // used to visit transaction state
+    @Override
+    public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId )
+    {
+        setId( relationshipId );
+        initialize( true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false );
     }
 }

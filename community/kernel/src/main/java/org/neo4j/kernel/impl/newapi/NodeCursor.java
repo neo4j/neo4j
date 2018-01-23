@@ -48,13 +48,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private HasChanges hasChanges = HasChanges.MAYBE;
     private Set<Long> addedNodes;
 
-    private enum HasChanges
-    {
-        MAYBE,
-        YES,
-        NO
-    }
-
     NodeCursor()
     {
         super( NO_ID );
@@ -203,6 +196,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             {
                 read.node( this, next++, pageCursor );
             }
+
             if ( next > highMark )
             {
                 if ( isSingle() )
