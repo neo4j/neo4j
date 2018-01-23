@@ -492,7 +492,7 @@ public class RelationshipChangesForNode
         return getRelationships( direction, typeFilter( types ) );
     }
 
-    public PrimitiveLongIterator getRawRelationships()
+    public PrimitiveLongIterator getRelationships()
     {
         return PrimitiveLongCollections.concat(
                 primitiveIds( incoming ),
@@ -500,7 +500,7 @@ public class RelationshipChangesForNode
                 primitiveIds( loops ) );
     }
 
-    public PrimitiveLongIterator getRawRelationships( RelationshipDirection direction, int type )
+    public PrimitiveLongIterator getRelationships( RelationshipDirection direction, int type )
     {
         switch ( direction )
         {

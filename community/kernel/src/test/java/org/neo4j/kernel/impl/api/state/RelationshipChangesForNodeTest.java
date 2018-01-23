@@ -73,7 +73,7 @@ public class RelationshipChangesForNodeTest
     }
 
     @Test
-    public void shouldGetRawRelationships() throws Exception
+    public void shouldGetRelationships() throws Exception
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
@@ -87,12 +87,12 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( 5, TYPE, BOTH );
         changes.addRelationship( 6, TYPE, BOTH );
 
-        PrimitiveLongIterator rawRelationships = changes.getRawRelationships();
+        PrimitiveLongIterator rawRelationships = changes.getRelationships();
         assertThat( PrimitiveLongCollections.asArray( rawRelationships ), ids( 1, 2, 3, 4, 5, 6 ) );
     }
 
     @Test
-    public void shouldGetRawRelationshipsByTypeAndDirection() throws Exception
+    public void shouldGetRelationshipsByTypeAndDirection() throws Exception
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
@@ -112,15 +112,15 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( 12, DECOY_TYPE, BOTH );
 
         PrimitiveLongIterator rawIncoming =
-                changes.getRawRelationships( RelationshipDirection.INCOMING, TYPE );
+                changes.getRelationships( RelationshipDirection.INCOMING, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawIncoming ), ids( 1 ) );
 
         PrimitiveLongIterator rawOutgoing =
-                changes.getRawRelationships( RelationshipDirection.OUTGOING, TYPE );
+                changes.getRelationships( RelationshipDirection.OUTGOING, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawOutgoing ), ids( 2, 3 ) );
 
         PrimitiveLongIterator rawLoops =
-                changes.getRawRelationships( RelationshipDirection.LOOP, TYPE );
+                changes.getRelationships( RelationshipDirection.LOOP, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawLoops ), ids( 4, 5, 6 ) );
     }
 

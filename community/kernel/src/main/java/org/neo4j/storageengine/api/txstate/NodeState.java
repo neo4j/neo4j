@@ -56,13 +56,15 @@ public interface NodeState extends PropertyContainerState
 
     long getId();
 
+    @Deprecated
     PrimitiveLongIterator getAddedRelationships( Direction direction );
 
+    @Deprecated
     PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
 
-    PrimitiveLongIterator getAddedRawRelationships();
+    PrimitiveLongIterator getAddedRelationships();
 
-    PrimitiveLongIterator getAddedRawRelationships( RelationshipDirection direction, int relType );
+    PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType );
 
     boolean hasRelationshipChanges();
 }

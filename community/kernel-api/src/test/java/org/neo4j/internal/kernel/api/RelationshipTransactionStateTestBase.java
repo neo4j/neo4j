@@ -356,20 +356,20 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             List<RelationshipTestSupport.StartRelationship> rs = kv.getValue();
             RelationshipTestSupport.StartRelationship head = rs.get( 0 );
-            int label = session.token().relationshipType( head.type.name() );
+            int type = session.token().relationshipType( head.type.name() );
             switch ( head.direction )
             {
             case INCOMING:
-                tx.dataWrite().relationshipCreate( tx.dataWrite().nodeCreate(), label, start.id );
-                tx.dataWrite().relationshipCreate( tx.dataWrite().nodeCreate(), label, start.id );
+                tx.dataWrite().relationshipCreate( tx.dataWrite().nodeCreate(), type, start.id );
+                tx.dataWrite().relationshipCreate( tx.dataWrite().nodeCreate(), type, start.id );
                 break;
             case OUTGOING:
-                tx.dataWrite().relationshipCreate( start.id, label, tx.dataWrite().nodeCreate() );
-                tx.dataWrite().relationshipCreate( start.id, label, tx.dataWrite().nodeCreate() );
+                tx.dataWrite().relationshipCreate( start.id, type, tx.dataWrite().nodeCreate() );
+                tx.dataWrite().relationshipCreate( start.id, type, tx.dataWrite().nodeCreate() );
                 break;
             case BOTH:
-                tx.dataWrite().relationshipCreate( start.id, label, start.id );
-                tx.dataWrite().relationshipCreate( start.id, label, start.id );
+                tx.dataWrite().relationshipCreate( start.id, type, start.id );
+                tx.dataWrite().relationshipCreate( start.id, type, start.id );
                 break;
             default:
                 throw new IllegalStateException( "Oh ye be cursed, foul checkstyle!" );
@@ -378,15 +378,15 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             expectedCounts.put( kv.getKey(), rs.size() + 1 );
         }
 
-        String newLabelName = "NEW";
-        int newLabel = session.token().relationshipTypeGetOrCreateForName( newLabelName );
-        tx.dataWrite().relationshipCreate( tx.dataWrite().nodeCreate(), newLabel, start.id );
-        tx.dataWrite().relationshipCreate( start.id, newLabel, tx.dataWrite().nodeCreate() );
-        tx.dataWrite().relationshipCreate( start.id, newLabel, start.id );
+        String newTypeName = "NEW";
+        int newType = session.token().relationshipTypeGetOrCreateForName( newTypeName );
+        tx.dataWrite().relationshipCreate( tx.dataWrite().nodeCreate(), newType, start.id );
+        tx.dataWrite().relationshipCreate( start.id, newType, tx.dataWrite().nodeCreate() );
+        tx.dataWrite().relationshipCreate( start.id, newType, start.id );
 
-        expectedCounts.put( computeKey( newLabelName, OUTGOING ), 1 );
-        expectedCounts.put( computeKey( newLabelName, INCOMING ), 1 );
-        expectedCounts.put( computeKey( newLabelName, BOTH ), 1 );
+        expectedCounts.put( computeKey( newTypeName, OUTGOING ), 1 );
+        expectedCounts.put( computeKey( newTypeName, INCOMING ), 1 );
+        expectedCounts.put( computeKey( newTypeName, BOTH ), 1 );
 
         return expectedCounts;
     }

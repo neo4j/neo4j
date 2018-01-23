@@ -27,6 +27,8 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
+import static java.lang.String.format;
+
 class RelationshipTraversalCursor extends RelationshipCursor
         implements org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 {
@@ -103,7 +105,8 @@ class RelationshipTraversalCursor extends RelationshipCursor
             case ERROR:
                 throw new IllegalArgumentException( "There has been a RelationshipDirection.ERROR" );
             default:
-                throw new IllegalStateException( "Still poking my eye, dear checkstyle..." );
+                throw new IllegalStateException(
+                        format( "Still poking my eye, dear checkstyle... (cannot filter on direction '%s')", direction ) );
             }
         }
     }
@@ -498,8 +501,8 @@ class RelationshipTraversalCursor extends RelationshipCursor
     {
         NodeState nodeState = read.txState().getNodeState( originNodeReference );
         addedRelationships = hasTxStateFilter() ?
-                             nodeState.getAddedRawRelationships( filterState.direction, filterType ) :
-                             nodeState.getAddedRawRelationships();
+                             nodeState.getAddedRelationships( filterState.direction, filterType ) :
+                             nodeState.getAddedRelationships();
     }
 
     private boolean hasTxStateFilter()
