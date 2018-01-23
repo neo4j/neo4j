@@ -2774,6 +2774,7 @@ class EagerizationAcceptanceTest
         |RETURN size(tags) as nbrTags
       """.stripMargin
 
+    // Fixed in 3.2.10
     val nonBugFixedConfig = Configs.Cost3_2 + Configs.Cost3_1
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.AllRulePlanners, query,
@@ -2796,6 +2797,7 @@ class EagerizationAcceptanceTest
         |RETURN COUNT(t.value) as nbrTags
       """.stripMargin
 
+    // Fixed in 3.2.10
     val nonBugFixedConfig = Configs.Cost3_2 + Configs.Cost3_1 + Configs.AllRulePlanners
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
