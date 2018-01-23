@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.proc;
 
+import java.time.Clock;
+
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -36,6 +38,9 @@ public interface Context
     Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
     Key<SecurityContext> SECURITY_CONTEXT = Key.key( "SecurityContext", SecurityContext.class );
     Key<Thread> THREAD = Key.key( "Thread", Thread.class );
+    Key<Clock> SYSTEM_CLOCK = Key.key( "SystemClock", Clock.class );
+    Key<Clock> STATEMENT_CLOCK = Key.key( "StatementClock", Clock.class );
+    Key<Clock> TRANSACTION_CLOCK = Key.key( "TransactionClock", Clock.class );
 
     <T> T get( Key<T> key ) throws ProcedureException;
     <T> T getOrElse( Key<T> key, T orElse );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.time.Clock;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -1516,6 +1517,10 @@ public class OperationsFacade
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
+            ClockContext clocks = statement.clocks();
+            ctx.put( Context.SYSTEM_CLOCK, clocks.systemClock() );
+            ctx.put( Context.STATEMENT_CLOCK, clocks.statementClock() );
+            ctx.put( Context.TRANSACTION_CLOCK, clocks.transactionClock() );
             return procedures.callFunction( ctx, name, input );
         }
     }
