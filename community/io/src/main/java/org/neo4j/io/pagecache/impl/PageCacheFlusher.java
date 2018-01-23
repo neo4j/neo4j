@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.util.Objects;
 
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -41,6 +42,7 @@ public class PageCacheFlusher extends Thread implements IOLimiter
 
     public PageCacheFlusher( PageCache pageCache )
     {
+        Objects.requireNonNull( pageCache );
         this.pageCache = pageCache;
     }
 
