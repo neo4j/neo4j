@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -30,7 +31,7 @@ import org.neo4j.storageengine.api.StorageStatement;
  * This is a temporary implementation of the Kernel API, used to enable early testing. The plan is to merge this
  * class with org.neo4j.kernel.impl.api.Kernel.
  */
-public class NewKernel implements Kernel
+public class NewKernel implements Kernel, Modes
 {
     private final StorageEngine engine;
     private final KernelToken token;
@@ -63,6 +64,12 @@ public class NewKernel implements Kernel
         return new KernelSession( token, kernel, securityContext );
     }
 
+    @Override
+    public Modes modes()
+    {
+        return this;
+    }
+
     public void start()
     {
         statement = engine.storeReadLayer().newStatement();
@@ -79,5 +86,11 @@ public class NewKernel implements Kernel
         statement.close();
         isRunning = false;
         this.cursors = null;
+    }
+
+    @Override
+    public boolean twoLayerTransactionState()
+    {
+        return false;
     }
 }

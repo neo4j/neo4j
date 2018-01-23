@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -154,5 +155,11 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     public Session beginSession( SecurityContext securityContext )
     {
         return newKernel.beginSession( securityContext );
+    }
+
+    @Override
+    public Modes modes()
+    {
+        return newKernel;
     }
 }

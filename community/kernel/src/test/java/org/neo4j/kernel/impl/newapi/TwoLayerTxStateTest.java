@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.TwoLayerTxStateTestBase;
 
-/**
- * The Kernel.
- */
-public interface Kernel
+public class TwoLayerTxStateTest extends TwoLayerTxStateTestBase<WriteTestSupport>
 {
-    CursorFactory cursors();
-
-    Session beginSession( SecurityContext securityContext );
-
-    Modes modes();
+    @Override
+    public WriteTestSupport newTestSupport()
+    {
+        return new WriteTestSupport();
+    }
 }
