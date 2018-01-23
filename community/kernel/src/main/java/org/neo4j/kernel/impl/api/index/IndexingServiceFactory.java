@@ -41,7 +41,7 @@ public class IndexingServiceFactory
 
     public static IndexingService createIndexingService( Config config,
                                           JobScheduler scheduler,
-                                          SchemaIndexProviderMap providerMap,
+                                          IndexProviderMap providerMap,
                                           IndexStoreView storeView,
                                           TokenNameLookup tokenNameLookup,
                                           Iterable<IndexRule> indexRules,
@@ -49,7 +49,7 @@ public class IndexingServiceFactory
                                           IndexingService.Monitor monitor,
                                           SchemaState schemaState )
     {
-        if ( providerMap == null || providerMap.getDefaultProvider() == null )
+        if ( providerMap == null || providerMap.getDefaultSchemaIndexProvider() == null )
         {
             throw new IllegalStateException( "You cannot run the database without an index provider, " +
                                              "please make sure that a valid provider (subclass of " + IndexProvider.class.getName() +

@@ -81,7 +81,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -140,7 +140,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
@@ -185,7 +185,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final BatchTokenHolder relationshipTypeTokens;
     private final BatchTokenHolder labelTokens;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final SchemaIndexProviderMap schemaIndexProviders;
+    private final IndexProviderMap schemaIndexProviders;
     private final LabelScanStore labelScanStore;
     private final Log msgLog;
     private final SchemaCache schemaCache;
@@ -300,7 +300,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         IndexProvider provider = extensions.resolveDependency( IndexProvider.class,
                 HighestSelectionStrategy.INSTANCE );
-        schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
+        schemaIndexProviders = new DefaultIndexProviderMap( provider );
         labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );
@@ -470,7 +470,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexRule schemaRule = IndexRule.indexRule(
                 schemaStore.nextId(),
                 SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ),
-                schemaIndexProviders.getDefaultProvider().getProviderDescriptor() );
+                schemaIndexProviders.getDefaultSchemaIndexProvider().getProviderDescriptor() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {
@@ -611,7 +611,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexRule indexRule =
                 IndexRule.constraintIndexRule(
                         indexRuleId, schemaIndexDescriptor,
-                        this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
+                        this.schemaIndexProviders.getDefaultSchemaIndexProvider().getProviderDescriptor(),
                         constraintRuleId
                 );
         ConstraintRule constraintRule =

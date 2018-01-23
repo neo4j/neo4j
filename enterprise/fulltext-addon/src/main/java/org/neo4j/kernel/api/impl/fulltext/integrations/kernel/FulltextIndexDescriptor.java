@@ -17,20 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
-import org.neo4j.values.storable.Value;
-
-class LuceneFulltextFieldEncoding
+public class FulltextIndexDescriptor extends IndexDescriptor
 {
-    static Field encodeField( String name, Value value )
-    {
-        String stringValue = value.prettyPrint();
+    public static final int NO_LABEL = -1;
 
-        TextField field = new TextField( name, stringValue, Field.Store.NO );
-        return field;
+    FulltextIndexDescriptor( SchemaDescriptor schema, Type type )
+    {
+        super( schema, type );
+    }
+
+    public FulltextIndexDescriptor( int label, int... propertyIds )
+    {
+        super( null, null );
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +40,8 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.impl.fulltext.FulltextIndexType;
+import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -75,10 +77,8 @@ public class FulltextProviderImpl implements FulltextProvider
      * @param storeDir Store directory of the database.
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
      */
-    public FulltextProviderImpl( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard,
-                             JobScheduler scheduler, TransactionIdStore transactionIdStore,
-                             FileSystemAbstraction fileSystem, File storeDir,
-                             String analyzerClassName ) throws IOException
+    public FulltextProviderImpl( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard, JobScheduler scheduler,
+            TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName ) throws IOException
     {
         this.db = db;
         this.log = log;
@@ -103,16 +103,14 @@ public class FulltextProviderImpl implements FulltextProvider
     private boolean matchesConfiguration( WritableFulltext index ) throws IOException
     {
         long txId = transactionIdStore.getLastCommittedTransactionId();
-        FulltextIndexConfiguration currentConfig =
-                new FulltextIndexConfiguration( index.getAnalyzerName(), index.getProperties(), txId );
+        FulltextIndexConfiguration currentConfig = new FulltextIndexConfiguration( index.getAnalyzerName(), index.getProperties(), txId );
 
         FulltextIndexConfiguration storedConfig;
         try ( ReadOnlyFulltext indexReader = index.getIndexReader() )
         {
             storedConfig = indexReader.getConfigurationDocument();
         }
-        return storedConfig == null && index.getProperties().isEmpty() ||
-               storedConfig != null && storedConfig.equals( currentConfig );
+        return storedConfig == null && index.getProperties().isEmpty() || storedConfig != null && storedConfig.equals( currentConfig );
     }
 
     @Override
@@ -140,8 +138,7 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     @Override
-    public void createIndex( String identifier, FulltextIndexType type, List<String> properties )
-            throws IOException
+    public void createIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
     {
         LuceneFulltext index = factory.createFulltextIndex( identifier, type, properties );
         register( index );
@@ -239,8 +236,7 @@ public class FulltextProviderImpl implements FulltextProvider
         return applyToMatchingIndex( identifier, type, WritableFulltext::getProperties );
     }
 
-    private <E> E applyToMatchingIndex(
-            String identifier, FulltextIndexType type, Function<WritableFulltext,E> function )
+    private <E> E applyToMatchingIndex( String identifier, FulltextIndexType type, Function<WritableFulltext,E> function )
     {
         if ( type == FulltextIndexType.NODES )
         {
@@ -297,8 +293,7 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     @Override
-    public void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys )
-            throws IOException, InvalidArgumentsException
+    public void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys ) throws IOException, InvalidArgumentsException
     {
         configurationLock.writeLock().lock();
         try
@@ -306,8 +301,7 @@ public class FulltextProviderImpl implements FulltextProvider
             if ( propertyKeys.stream().anyMatch( s -> s.startsWith( FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX ) ) )
             {
                 throw new InvalidArgumentsException(
-                        "It is not possible to index property keys starting with " +
-                        FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX );
+                        "It is not possible to index property keys starting with " + FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX );
             }
             Set<String> currentProperties = getProperties( identifier, type );
             if ( !currentProperties.containsAll( propertyKeys ) || !propertyKeys.containsAll( currentProperties ) )
@@ -345,5 +339,4 @@ public class FulltextProviderImpl implements FulltextProvider
         writableNodeIndices.values().forEach( fulltextCloser );
         writableRelationshipIndices.values().forEach( fulltextCloser );
     }
-
 }

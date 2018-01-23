@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StorageLayer;
@@ -137,7 +137,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final LabelScanStore labelScanStore;
-    private final SchemaIndexProviderMap schemaIndexProviderMap;
+    private final IndexProviderMap indexProviderMap;
     private final ExplicitIndexApplierLookup explicitIndexApplierLookup;
     private final SchemaState schemaState;
     private final SchemaStorage schemaStorage;
@@ -169,7 +169,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
             LockService lockService,
-            SchemaIndexProviderMap indexProviderMap,
+            IndexProviderMap indexProviderMap,
             IndexingService.Monitor indexingServiceMonitor,
             DatabaseHealth databaseHealth,
             ExplicitIndexProviderLookup explicitIndexProviderLookup,
@@ -209,8 +209,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     readOnly, monitors, recoveryCleanupWorkCollector );
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
-            schemaIndexProviderMap = indexProviderMap;
-            indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
+            this.indexProviderMap = indexProviderMap;
+            indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, this.indexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() ), logProvider,
                     indexingServiceMonitor, schemaState );
@@ -291,7 +291,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
-                    schemaStorage, constraintSemantics, schemaIndexProviderMap );
+                    schemaStorage, constraintSemantics, indexProviderMap );
             CountsRecordState countsRecordState = new CountsRecordState();
             txStateVisitor = constraintSemantics.decorateTxStateVisitor(
                     storeLayer,
@@ -389,7 +389,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         satisfier.satisfyDependency( explicitIndexApplierLookup );
         satisfier.satisfyDependency( cacheAccess );
-        satisfier.satisfyDependency( schemaIndexProviderMap );
+        satisfier.satisfyDependency( indexProviderMap );
         satisfier.satisfyDependency( integrityValidator );
         satisfier.satisfyDependency( labelScanStore );
         satisfier.satisfyDependency( indexingService );

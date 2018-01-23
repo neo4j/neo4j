@@ -24,11 +24,11 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
-import org.neo4j.kernel.api.impl.fulltext.FulltextProviderImpl;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextProviderImpl;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;

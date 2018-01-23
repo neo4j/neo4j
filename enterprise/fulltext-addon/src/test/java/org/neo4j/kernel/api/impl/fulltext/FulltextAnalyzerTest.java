@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextTestSupport;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;

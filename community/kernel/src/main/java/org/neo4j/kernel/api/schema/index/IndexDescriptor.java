@@ -75,7 +75,7 @@ public class IndexDescriptor implements SchemaDescriptor.Supplier
     private final SchemaDescriptor schema;
     private final IndexDescriptor.Type type;
 
-    IndexDescriptor( SchemaDescriptor schema, Type type )
+    protected IndexDescriptor( SchemaDescriptor schema, Type type )
     {
         this.schema = schema;
         this.type = type;

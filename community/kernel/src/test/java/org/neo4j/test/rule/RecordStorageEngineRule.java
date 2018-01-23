@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -110,15 +110,14 @@ public class RecordStorageEngineRule extends ExternalResource
         Config config = Config.defaults();
 
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                        new CommunityIdTypeConfigurationProvider() );
-        return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs,
-                NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
-                mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
-                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
-                new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
-                new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
-                RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
+                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
+        return life.add(
+                new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs, NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ),
+                        mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
+                        scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProvider, IndexingService.NO_MONITOR, databaseHealth,
+                        explicitIndexProviderLookup, indexConfigStore, new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
+                        new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
+                        RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
     }
 
     @Override
@@ -206,7 +205,7 @@ public class RecordStorageEngineRule extends ExternalResource
         {
             super( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
                     relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
-                    lockService, new DefaultSchemaIndexProviderMap( indexProvider ),
+                    lockService, new DefaultIndexProviderMap( indexProvider ),
                     indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
                     idController, monitors, recoveryCleanupWorkCollector, operationalMode );
             this.transactionApplierTransformer = transactionApplierTransformer;

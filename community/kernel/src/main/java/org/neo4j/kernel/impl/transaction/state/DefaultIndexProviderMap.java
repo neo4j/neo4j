@@ -25,22 +25,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 
-public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
+public class DefaultIndexProviderMap implements IndexProviderMap
 {
     private final IndexProvider defaultIndexProvider;
     private final Map<IndexProvider.Descriptor,IndexProvider> indexProviders = new HashMap<>();
 
-    public DefaultSchemaIndexProviderMap( IndexProvider defaultIndexProvider )
+    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider )
     {
         this( defaultIndexProvider, Collections.emptyList() );
     }
 
-    public DefaultSchemaIndexProviderMap( IndexProvider defaultIndexProvider,
-            Iterable<IndexProvider<?>> additionalIndexProviders )
+    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider, Iterable<IndexProvider<?>> additionalIndexProviders )
     {
         this.defaultIndexProvider = defaultIndexProvider;
         indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
@@ -51,16 +52,34 @@ public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
             IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
             if ( existing != null )
             {
-                throw new IllegalArgumentException( "Tried to load multiple schema index providers with the same provider descriptor " +
-                        providerDescriptor + ". First loaded " + existing + " then " + provider );
+                throw new IllegalArgumentException(
+                        "Tried to load multiple index providers with the same provider descriptor " + providerDescriptor + ". First loaded " + existing +
+                                " then " + provider );
             }
         }
     }
 
     @Override
-    public IndexProvider getDefaultProvider()
+    public IndexProvider getDefaultSchemaIndexProvider()
     {
         return defaultIndexProvider;
+    }
+
+    @Override
+    public IndexProvider getProviderFor( IndexDescriptor descriptor )
+    {
+        if ( defaultIndexProvider.compatible( descriptor ) )
+        {
+            return defaultIndexProvider;
+        }
+        for ( IndexProvider indexProvider : indexProviders.values() )
+        {
+            if ( indexProvider.compatible( descriptor ) )
+            {
+                return indexProvider;
+            }
+        }
+        return IndexProvider.NO_INDEX_PROVIDER;
     }
 
     @Override
@@ -72,9 +91,9 @@ public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
             return provider;
         }
 
-        throw new IllegalArgumentException( "Tried to get index provider for an existing index with provider " +
-                descriptor + " whereas available providers in this session being " + indexProviders +
-                ", and default being " + defaultIndexProvider );
+        throw new IllegalArgumentException(
+                "Tried to get index provider for an existing index with provider " + descriptor + " whereas available providers in this session being " +
+                        indexProviders + ", and default being " + defaultIndexProvider );
     }
 
     @Override

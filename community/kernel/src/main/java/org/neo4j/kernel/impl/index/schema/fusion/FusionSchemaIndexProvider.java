@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
@@ -148,6 +149,12 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
                 return super.orderCapability( valueGroups );
             }
         };
+    }
+
+    @Override
+    public boolean compatible( IndexDescriptor indexDescriptor )
+    {
+        return nativeProvider.compatible( indexDescriptor ) && luceneProvider.compatible( indexDescriptor );
     }
 
     @Override

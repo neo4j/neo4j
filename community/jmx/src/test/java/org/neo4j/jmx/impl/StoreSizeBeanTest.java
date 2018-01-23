@@ -41,11 +41,11 @@ import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -98,7 +98,7 @@ public class StoreSizeBeanTest
         DataSourceManager dataSourceManager = new DataSourceManager();
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        SchemaIndexProviderMap schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider,
+        IndexProviderMap indexProviderMap = new DefaultIndexProviderMap( indexProvider,
                 Collections.singleton( indexProvider2 ) );
 
         // Setup all dependencies
@@ -107,7 +107,7 @@ public class StoreSizeBeanTest
         dependencies.satisfyDependencies( dataSourceManager );
         dependencies.satisfyDependency( logFiles );
         dependencies.satisfyDependency( explicitIndexProviderLookup );
-        dependencies.satisfyDependency( schemaIndexProviderMap );
+        dependencies.satisfyDependency( indexProviderMap );
         dependencies.satisfyDependency( labelScanStore );
         when( db.getDependencyResolver() ).thenReturn( dependencies );
         when( dataSource.getDependencyResolver() ).thenReturn( dependencies );

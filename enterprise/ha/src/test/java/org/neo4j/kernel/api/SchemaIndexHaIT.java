@@ -528,6 +528,12 @@ public class SchemaIndexHaIT
         }
 
         @Override
+        public boolean compatible( IndexDescriptor indexDescriptor )
+        {
+            return delegate.compatible( indexDescriptor );
+        }
+
+        @Override
         public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
         {
             return delegate.storeMigrationParticipant( fs, pageCache );

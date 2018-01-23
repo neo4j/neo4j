@@ -23,13 +23,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
-public interface SchemaIndexProviderMap extends Function<IndexProvider.Descriptor,IndexProvider>
+public interface IndexProviderMap extends Function<IndexProvider.Descriptor,IndexProvider>
 {
     @Override
     IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
 
-    IndexProvider getDefaultProvider();
+    IndexProvider<SchemaIndexDescriptor> getDefaultSchemaIndexProvider();
+
+    IndexProvider getProviderFor( IndexDescriptor descriptor );
 
     void accept( Consumer<IndexProvider> visitor );
 }

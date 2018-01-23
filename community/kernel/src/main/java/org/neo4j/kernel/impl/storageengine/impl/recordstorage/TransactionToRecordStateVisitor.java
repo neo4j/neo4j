@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -48,17 +48,17 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private final SchemaState schemaState;
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
-    private final SchemaIndexProviderMap schemaIndexProviderMap;
+    private final IndexProviderMap indexProviderMap;
 
     public TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState,
                                             SchemaStorage schemaStorage, ConstraintSemantics constraintSemantics,
-                                            SchemaIndexProviderMap schemaIndexProviderMap )
+                                            IndexProviderMap indexProviderMap )
     {
         this.recordState = recordState;
         this.schemaState = schemaState;
         this.schemaStorage = schemaStorage;
         this.constraintSemantics = constraintSemantics;
-        this.schemaIndexProviderMap = schemaIndexProviderMap;
+        this.indexProviderMap = indexProviderMap;
     }
 
     @Override
@@ -184,7 +184,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     {
         // TODO HEJ
         IndexProvider.Descriptor providerDescriptor =
-                schemaIndexProviderMap.getDefaultProvider().getProviderDescriptor();
+                indexProviderMap.getDefaultSchemaIndexProvider().getProviderDescriptor();
         IndexRule rule = IndexRule.indexRule( schemaStorage.newRuleId(), index, providerDescriptor );
         recordState.createSchemaRule( rule );
     }

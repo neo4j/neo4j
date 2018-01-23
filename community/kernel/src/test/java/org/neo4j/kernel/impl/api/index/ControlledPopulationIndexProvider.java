@@ -116,6 +116,12 @@ public class ControlledPopulationIndexProvider extends IndexProvider
         return IndexCapability.NO_CAPABILITY;
     }
 
+    @Override
+    public boolean compatible( IndexDescriptor indexDescriptor )
+    {
+        return true;
+    }
+
     public void setInitialIndexState( InternalIndexState initialIndexState )
     {
         this.initialIndexState = initialIndexState;

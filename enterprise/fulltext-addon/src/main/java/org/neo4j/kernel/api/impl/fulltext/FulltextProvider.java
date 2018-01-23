@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
 
 public interface FulltextProvider extends AutoCloseable
 {

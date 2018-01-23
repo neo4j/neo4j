@@ -17,18 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.fulltext.lucene;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 
-import static java.util.Collections.singletonList;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
+import org.neo4j.values.storable.Value;
 
-public class StubLuceneFulltext extends LuceneFulltext
+class LuceneFulltextFieldEncoding
 {
-    StubLuceneFulltext()
+    static Field encodeField( String name, Value value )
     {
-        super( null, null, singletonList( "props" ), new StandardAnalyzer(), BLOOM_NODES, NODES );
+        String stringValue = value.prettyPrint();
+
+        TextField field = new TextField( name, stringValue, Field.Store.NO );
+        return field;
     }
 }

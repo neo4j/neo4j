@@ -77,7 +77,7 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -353,7 +353,7 @@ public class IndexingServiceTest
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
-        SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
+        IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         IndexRule onlineIndex     = indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
@@ -393,7 +393,7 @@ public class IndexingServiceTest
         // given
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
+        IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         IndexRule onlineIndex     = indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
@@ -915,7 +915,7 @@ public class IndexingServiceTest
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
-        SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
+        IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         List<IndexRule> indexes = new ArrayList<>();
@@ -963,7 +963,7 @@ public class IndexingServiceTest
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
-        SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
+        IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         List<IndexRule> indexes = new ArrayList<>();
@@ -1217,7 +1217,7 @@ public class IndexingServiceTest
 
         return life.add( IndexingServiceFactory.createIndexingService( config,
                         life.add( new Neo4jJobScheduler() ),
-                        new DefaultSchemaIndexProviderMap( indexProvider ),
+                        new DefaultIndexProviderMap( indexProvider ),
                         storeView,
                         nameLookup,
                         loop( iterator( rules ) ),
@@ -1386,7 +1386,7 @@ public class IndexingServiceTest
 
     private IndexingService createIndexServiceWithCustomIndexMap( IndexMapReference indexMapReference )
     {
-        return new IndexingService( mock( IndexProxyCreator.class ), mock( SchemaIndexProviderMap.class ),
+        return new IndexingService( mock( IndexProxyCreator.class ), mock( IndexProviderMap.class ),
                 indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
                 mock( IndexSamplingController.class ), mock( TokenNameLookup.class ),
                 mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),

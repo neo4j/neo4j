@@ -151,6 +151,12 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                 }
 
                 @Override
+                public boolean compatible( IndexDescriptor indexDescriptor )
+                {
+                    return false;
+                }
+
+                @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
                         PageCache pageCache )
                 {
@@ -224,6 +230,8 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
      */
     public abstract IndexCapability getCapability( DESCRIPTOR indexDescriptor );
 
+
+    public abstract boolean compatible( IndexDescriptor indexDescriptor );
     /**
      * @return a description of this index provider
      */

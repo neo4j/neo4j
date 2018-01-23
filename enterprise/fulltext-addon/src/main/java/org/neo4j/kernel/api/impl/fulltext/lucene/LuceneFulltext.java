@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
 
@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.impl.fulltext.FulltextIndexType;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -47,8 +48,7 @@ class LuceneFulltext extends AbstractLuceneIndex
     private volatile InternalIndexState state;
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, Collection<String> properties, Analyzer analyzer,
-            String identifier,
-                    FulltextIndexType type )
+            String identifier, FulltextIndexType type )
     {
         super( indexStorage, partitionFactory );
         this.properties = Collections.unmodifiableSet( new HashSet<>( properties ) );

@@ -40,13 +40,13 @@ class IndexProxyCreator
 {
     private final IndexSamplingConfig samplingConfig;
     private final IndexStoreView storeView;
-    private final SchemaIndexProviderMap providerMap;
+    private final IndexProviderMap providerMap;
     private final TokenNameLookup tokenNameLookup;
     private final LogProvider logProvider;
 
     IndexProxyCreator( IndexSamplingConfig samplingConfig,
             IndexStoreView storeView,
-            SchemaIndexProviderMap providerMap,
+            IndexProviderMap providerMap,
             TokenNameLookup tokenNameLookup,
             LogProvider logProvider )
     {
