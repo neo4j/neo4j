@@ -199,7 +199,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
-                procedures, accessCapability, lockTracer, statementOperations );
+                procedures, accessCapability, lockTracer, statementOperations, new ClockContext( clock ) );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();

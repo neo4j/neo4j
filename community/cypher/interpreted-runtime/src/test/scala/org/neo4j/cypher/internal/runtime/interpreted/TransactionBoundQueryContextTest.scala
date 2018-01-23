@@ -37,7 +37,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AnonymousContext
-import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
+import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.CanWrite
@@ -69,7 +69,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val storeStatement = mock[StorageStatement]
     val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
     statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures(), new CanWrite(),
-      LockTracer.NONE, operations)
+      LockTracer.NONE, operations, new ClockContext())
     statement.initialize(null, PageCursorTracerSupplier.NULL.get())
     statement.acquire()
   }

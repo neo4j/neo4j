@@ -95,6 +95,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     private volatile ExecutingQueryList executingQueryList;
     private final LockTracer systemLockTracer;
     private final Deque<StackTraceElement[]> statementOpenCloseCalls;
+    private final ClockContext clockContext;
 
     public KernelStatement( KernelTransactionImplementation transaction,
                             TxStateHolder txStateHolder,
@@ -102,7 +103,8 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
                             Procedures procedures,
                             AccessCapability accessCapability,
                             LockTracer systemLockTracer,
-                            StatementOperationParts statementOperations )
+                            StatementOperationParts statementOperations,
+                            ClockContext clockContext )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
@@ -112,6 +114,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
+        this.clockContext = clockContext;
     }
 
     @Override
@@ -218,6 +221,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     {
         this.statementLocks = statementLocks;
         this.pageCursorTracer = pageCursorCounters;
+        this.clockContext.initializeTransaction();
     }
 
     public StatementLocks locks()
@@ -241,6 +245,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         if ( referenceCount++ == 0 )
         {
             storeStatement.acquire();
+            clockContext.initializeStatement();
         }
         recordOpenCloseMethods();
     }
@@ -336,6 +341,11 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             statementOpenCloseCalls.add( Arrays.copyOfRange(stackTrace, 2, stackTrace.length) );
         }
+    }
+
+    public ClockContext clocks()
+    {
+        return clockContext;
     }
 
     static class StatementNotClosedException extends IllegalStateException
