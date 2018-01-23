@@ -82,8 +82,21 @@ public final class GrabAllocator implements MemoryAllocator
     {
         if ( alignment <= 0 )
         {
-            throw new IllegalArgumentException( "Invalid alignment: " + alignment + "; alignment must be positive" );
+            throw new IllegalArgumentException( "Invalid alignment: " + alignment + ". Alignment must be positive." );
         }
+        try
+        {
+            return innerAllocateAligned( bytes, alignment );
+        }
+        catch ( NativeMemoryAllocationRefusedError nmare )
+        {
+            nmare.setAlreadyAllocatedBytes( usedMemory() );
+            throw nmare;
+        }
+    }
+
+    private long innerAllocateAligned( long bytes, long alignment )
+    {
         if ( bytes > GRAB_SIZE )
         {
             // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.

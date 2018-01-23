@@ -21,18 +21,41 @@ package org.neo4j.io.mem;
 
 public class NativeMemoryAllocationRefusedError extends OutOfMemoryError
 {
-    private final long size;
+    private final long attemptedAllocationSizeBytes;
+    private boolean hasAlreadyAllocatedBytes;
+    private long alreadyAllocatedBytes;
 
     public NativeMemoryAllocationRefusedError( long size )
     {
-        this.size = size;
+        this.attemptedAllocationSizeBytes = size;
     }
 
     @Override
     public String getMessage()
     {
         String message = super.getMessage();
-        return "Failed to allocate " + size + " bytes; allocation refused by the operating system" +
-               (message == null ? "." : ": " + message);
+        StringBuilder sb = new StringBuilder();
+        sb.append( "Failed to allocate " ).append( attemptedAllocationSizeBytes ).append( " bytes. " );
+        if ( hasAlreadyAllocatedBytes )
+        {
+            sb.append( "So far " ).append( alreadyAllocatedBytes );
+            sb.append( " bytes have already been successfully allocated. " );
+        }
+        sb.append( "The allocation was refused by the operating system" );
+        if ( message != null )
+        {
+            sb.append( ": " ).append( message );
+        }
+        else
+        {
+            sb.append( '.' );
+        }
+        return sb.toString();
+    }
+
+    public void setAlreadyAllocatedBytes( long alreadyAllocatedBytes )
+    {
+        hasAlreadyAllocatedBytes = true;
+        this.alreadyAllocatedBytes = alreadyAllocatedBytes;
     }
 }
