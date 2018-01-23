@@ -60,6 +60,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -258,15 +259,17 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public Node createNode( Label... labels )
     {
-        try ( Statement statement = statementContext.get() )
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            long nodeId = statement.dataWriteOperations().nodeCreate();
+            Write write = transaction.dataWrite();
+            long nodeId = write.nodeCreate();
             for ( Label label : labels )
             {
-                int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
+                int labelId = transaction.tokenWrite().labelGetOrCreateForName( label.name() );
                 try
                 {
-                    statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
+                    write.nodeAddLabel( nodeId, labelId );
                 }
                 catch ( EntityNotFoundException e )
                 {
@@ -283,7 +286,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             throw new IllegalArgumentException( e );
         }
-        catch ( InvalidTransactionTypeKernelException e )
+        catch ( KernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
