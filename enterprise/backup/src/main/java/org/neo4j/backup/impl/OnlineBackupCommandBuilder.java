@@ -202,7 +202,7 @@ public class OnlineBackupCommandBuilder
     private OutsideWorld resolveOutsideWorld()
     {
         Optional<OutputStream> output = Optional.ofNullable( this.output );
-        return new ParametrisedOutsideWorld(
+        return new ParameterisedOutsideWorld(
                 System.console(), output.orElse( System.out ),
                 output.orElse( System.err ),
                 System.in, new DefaultFileSystemAbstraction() );

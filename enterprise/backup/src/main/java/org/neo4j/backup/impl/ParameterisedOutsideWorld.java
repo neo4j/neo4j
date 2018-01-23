@@ -32,7 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 /**
  * An outside world where you can pick and choose which input/output are dummies.
  */
-public class ParametrisedOutsideWorld implements OutsideWorld
+public class ParameterisedOutsideWorld implements OutsideWorld
 {
 
     private final PrintStream stdout;
@@ -41,7 +41,7 @@ public class ParametrisedOutsideWorld implements OutsideWorld
     private final InputStream stdin;
     private final FileSystemAbstraction fileSystemAbstraction;
 
-    public ParametrisedOutsideWorld( Console console, OutputStream stdout, OutputStream stderr, InputStream stdin, FileSystemAbstraction fileSystemAbstraction )
+    public ParameterisedOutsideWorld( Console console, OutputStream stdout, OutputStream stderr, InputStream stdin, FileSystemAbstraction fileSystemAbstraction )
     {
         this.stdout = new PrintStream( stdout );
         this.stderr = new PrintStream( stderr );

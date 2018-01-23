@@ -31,8 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.backup.impl.BackupHelpOutput;
-import org.neo4j.backup.impl.OnlineBackupCommandProvider;
-import org.neo4j.backup.impl.ParametrisedOutsideWorld;
+import org.neo4j.backup.impl.ParameterisedOutsideWorld;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -97,8 +96,8 @@ public class BackupUsageTest
 
     private String runBackup( boolean debug, String... args ) throws UnsupportedEncodingException
     {
-        ParametrisedOutsideWorld outsideWorld = // ParametrisedOutsideWorld used for suppressing #close() doing System.exit()
-                new ParametrisedOutsideWorld( System.console(), System.out, System.err, System.in, new DefaultFileSystemAbstraction() );
+        ParameterisedOutsideWorld outsideWorld = // ParameterisedOutsideWorld used for suppressing #close() doing System.exit()
+                new ParameterisedOutsideWorld( System.console(), System.out, System.err, System.in, new DefaultFileSystemAbstraction() );
         AdminTool subject = new AdminTool( commandLocator, cmd -> new ArrayList<>(  ), outsideWorld, debug );
         Path homeDir = HERE;
         Path configDir = HERE;
