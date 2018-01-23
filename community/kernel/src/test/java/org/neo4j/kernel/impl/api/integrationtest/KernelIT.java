@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;

@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
