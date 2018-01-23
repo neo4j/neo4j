@@ -164,6 +164,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     executeBefore()
     val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
     baseScenario.checkResultForSuccess(query, baseResult)
+    planComparisonStrategy.compare(expectSucceedEffective, baseScenario, baseResult)
 
     positiveResults.foreach {
       case (scenario, result) =>
