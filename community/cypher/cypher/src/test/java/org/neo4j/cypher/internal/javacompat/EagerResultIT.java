@@ -71,7 +71,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class EagerResultITTest
+public class EagerResultIT
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();

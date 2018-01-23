@@ -56,7 +56,7 @@ public class ConfiguringPageCacheFactory
      * @param config page swapper configuration
      * @param pageCacheTracer global page cache tracer
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
-* thread local page cache statistics
+     * thread local page cache statistics
      * @param log page cache factory log
      * @param versionContextSupplier cursor context factory
      */

@@ -39,7 +39,6 @@ public class EmptyVersionContext implements VersionContext
     @Override
     public void initWrite( long committingTransactionId )
     {
-
     }
 
     @Override
@@ -57,7 +56,6 @@ public class EmptyVersionContext implements VersionContext
     @Override
     public void markAsDirty()
     {
-
     }
 
     @Override

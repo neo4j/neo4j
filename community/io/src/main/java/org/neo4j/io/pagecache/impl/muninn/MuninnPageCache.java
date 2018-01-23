@@ -196,8 +196,8 @@ public class MuninnPageCache implements PageCache
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
-    private PageCursorTracerSupplier pageCursorTracerSupplier;
-    private VersionContextSupplier versionContextSupplier;
+    private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
 
     /**
      * Create page cache
