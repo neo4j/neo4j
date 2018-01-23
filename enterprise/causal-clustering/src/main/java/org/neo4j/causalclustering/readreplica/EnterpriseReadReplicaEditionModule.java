@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
+import org.neo4j.causalclustering.catchup.storecopy.CatchupServerApplication;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -41,6 +44,9 @@ import org.neo4j.causalclustering.catchup.tx.BatchingTxApplier;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.client.NioEventLoopClientContextSupplier;
+import org.neo4j.causalclustering.common.server.NioEventLoopServerContextSupplier;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
@@ -58,6 +64,7 @@ import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -202,8 +209,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         PipelineHandlerAppender handlerAppender = appenderFactory.create( config, dependencies, logProvider );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient =
-                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, handlerAppender ) );
+        CatchUpClient catchUpClient = new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, handlerAppender );
+        life.add( new NettyApplication<>( catchUpClient, new NioEventLoopClientContextSupplier( new NamedThreadFactory( "catchup-client" ) ) ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -271,18 +278,21 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, upstreamDatabaseStrategySelector, retryStrategy, logProvider,
                 platformModule.logging.getUserLogProvider(), storeCopyProcess, topologyService ) );
 
-        CatchupServer catchupServer =
-                new CatchupServer( platformModule.logging.getInternalLogProvider(), platformModule.logging.getUserLogProvider(), localDatabase::storeId,
-                        platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                        platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
-                        null, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache,
-                        platformModule.storeCopyCheckPointMutex, handlerAppender );
+        NioEventLoopServerContextSupplier catchupServerExecutor = new NioEventLoopServerContextSupplier( new NamedThreadFactory( "catchupServer" ) );
 
-        servicesToStopOnStoreCopy.add( catchupServer );
+        CatchupServer<NioServerSocketChannel> catchupServer = new CatchupServer<>( localDatabase::storeId,
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ),
+                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable, null,
+                platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
+                platformModule.storeCopyCheckPointMutex, handlerAppender, logProvider,
+                config, userLogProvider );
+
+        CatchupServerApplication<NioServerSocketChannel> catchupServerApplication = new CatchupServerApplication<>( catchupServer, catchupServerExecutor );
+        servicesToStopOnStoreCopy.add( catchupServerApplication );
 
         dependencies.satisfyDependency( createSessionTracker() );
 
-        life.add( catchupServer ); // must start last and stop first, since it handles external requests
+        life.add( servicesToStopOnStoreCopy ); // must start last and stop first, since it handles external requests
     }
 
     protected void configureDiscoveryService( DiscoveryServiceFactory discoveryServiceFactory, Dependencies dependencies,

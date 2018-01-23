@@ -38,7 +38,6 @@ class NonBlockingChannel
 
     private final Log log;
     private final Bootstrap bootstrap;
-    private final EventLoop eventLoop;
     private final SocketAddress destination;
 
     private volatile Channel channel;
@@ -46,10 +45,9 @@ class NonBlockingChannel
 
     private volatile boolean disposed;
 
-    NonBlockingChannel( Bootstrap bootstrap, EventLoop eventLoop, final SocketAddress destination, final Log log )
+    NonBlockingChannel( Bootstrap bootstrap, final SocketAddress destination, final Log log )
     {
         this.bootstrap = bootstrap;
-        this.eventLoop = eventLoop;
         this.destination = destination;
         this.log = log;
     }
@@ -110,7 +108,7 @@ class NonBlockingChannel
         }
         else
         {
-            Promise<Void> promise = eventLoop.newPromise();
+            Promise<Void> promise = channel.newPromise();
             deferredWrite( msg, fChannel, promise, true );
             return promise;
         }

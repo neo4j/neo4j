@@ -22,7 +22,6 @@ package org.neo4j.backup.impl;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
@@ -32,22 +31,22 @@ import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedE
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Simplifies the process of performing a backup over the transaction protocol by wrapping all the necessary classes
  * and delegating methods to the correct instances.
  */
-class BackupDelegator extends LifecycleAdapter
+class BackupDelegator extends LifeSupport
 {
     private final RemoteStore remoteStore;
-    private final CatchUpClient catchUpClient;
     private final StoreCopyClient storeCopyClient;
 
-    BackupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient )
+    BackupDelegator( RemoteStore remoteStore, Lifecycle lifecycle, StoreCopyClient storeCopyClient )
     {
         this.remoteStore = remoteStore;
-        this.catchUpClient = catchUpClient;
+        add( lifecycle );
         this.storeCopyClient = storeCopyClient;
     }
 
@@ -73,18 +72,6 @@ class BackupDelegator extends LifecycleAdapter
         {
             throw new StoreCopyFailedException( e );
         }
-    }
-
-    @Override
-    public void start()
-    {
-        catchUpClient.start();
-    }
-
-    @Override
-    public void stop()
-    {
-        catchUpClient.stop();
     }
 
     public StoreId fetchStoreId( AdvertisedSocketAddress fromAddress ) throws StoreIdDownloadFailedException

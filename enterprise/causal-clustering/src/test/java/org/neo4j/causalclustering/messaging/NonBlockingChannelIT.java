@@ -69,7 +69,7 @@ public class NonBlockingChannelIT
     {
         elg = new NioEventLoopGroup( 0 );
         Bootstrap bootstrap = new Bootstrap().channel( NioSocketChannel.class ).group( elg ).handler( VOID_HANDLER );
-        channel = new NonBlockingChannel( bootstrap, elg.next(), serverAddress, log );
+        channel = new NonBlockingChannel( bootstrap, serverAddress, log );
     }
 
     @After

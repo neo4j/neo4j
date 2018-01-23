@@ -88,7 +88,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final Lifecycle startStopOnStoreCopy;
     private final StoreCopyProcess storeCopyProcess;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
-    private final CatchUpClient catchUpClient;
+    private final CatchUpClient<?> catchUpClient;
     private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
     private final TimerService timerService;
     private final long txPullIntervalMillis;

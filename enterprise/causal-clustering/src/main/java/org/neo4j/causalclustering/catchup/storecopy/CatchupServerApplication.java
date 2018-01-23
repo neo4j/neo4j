@@ -19,27 +19,18 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import org.neo4j.causalclustering.catchup.RequestMessageType;
-import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.CatchUpRequest;
+import io.netty.channel.ServerChannel;
 
-public class GetStoreRequest implements CatchUpRequest
+import java.util.function.Supplier;
+
+import org.neo4j.causalclustering.catchup.CatchupServer;
+import org.neo4j.causalclustering.common.EventLoopContext;
+import org.neo4j.causalclustering.common.NettyApplication;
+
+public class CatchupServerApplication<C extends ServerChannel> extends NettyApplication<C>
 {
-    private final StoreId expectedStoreId;
-
-    public GetStoreRequest( StoreId expectedStoreId )
+    public CatchupServerApplication( CatchupServer<C> catchupServer, Supplier<EventLoopContext<C>> eventLoopContextSupplier )
     {
-        this.expectedStoreId = expectedStoreId;
-    }
-
-    @Override
-    public RequestMessageType messageType()
-    {
-        return RequestMessageType.STORE;
-    }
-
-    public StoreId expectedStoreId()
-    {
-        return expectedStoreId;
+        super( catchupServer, eventLoopContextSupplier );
     }
 }

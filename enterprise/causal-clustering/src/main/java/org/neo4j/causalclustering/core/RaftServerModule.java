@@ -19,9 +19,13 @@
  */
 package org.neo4j.causalclustering.core;
 
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.common.NettyApplication;
+import org.neo4j.causalclustering.common.server.NioEventLoopServerContextSupplier;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
@@ -37,6 +41,7 @@ import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.causalclustering.messaging.LoggingInbound;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -70,18 +75,23 @@ public class RaftServerModule
         createRaftServer( coreServerModule, messageHandlerChain );
     }
 
-    private void createRaftServer( CoreServerModule coreServerModule, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> messageHandlerChain )
+    private void createRaftServer( CoreServerModule coreServerModule,
+            LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> messageHandlerChain )
     {
-        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), pipelineHandlerAppender, platformModule.config, logProvider,
-                platformModule.logging.getUserLogProvider(), monitors, platformModule.clock );
+        NioEventLoopServerContextSupplier nioEventLoopServerContextSupplier = new NioEventLoopServerContextSupplier( new
+                NamedThreadFactory( "raft-server" ), 0 );
+        RaftServer<NioServerSocketChannel> raftServer =
+                new RaftServer<>( new CoreReplicatedContentMarshal(), pipelineHandlerAppender, platformModule.config,
+                        logProvider, platformModule.logging.getUserLogProvider(), monitors, platformModule.clock );
 
         LoggingInbound<ReceivedInstantClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
                 messageLogger, identityModule.myself() );
         loggingRaftInbound.registerHandler( messageHandlerChain );
 
-        platformModule.life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
+        // must start before core state so that it can trigger snapshot downloads when necessary
+        platformModule.life.add( new NettyApplication<>( raftServer, nioEventLoopServerContextSupplier ));
         platformModule.life.add( coreServerModule.createCoreLife( messageHandlerChain ) );
-        platformModule.life.add( coreServerModule.catchupServer() ); // must start last and stop first, since it handles external requests
+        platformModule.life.add( coreServerModule.getCatchupServerLifeCycle() );
         platformModule.life.add( coreServerModule.downloadService() );
     }
 

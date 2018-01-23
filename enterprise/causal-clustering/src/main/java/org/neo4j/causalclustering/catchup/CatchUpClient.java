@@ -19,55 +19,52 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.time.Clock;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
+import java.time.Clock;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
+import org.neo4j.causalclustering.common.ChannelService;
+import org.neo4j.causalclustering.common.EventLoopContext;
+import org.neo4j.causalclustering.common.client.ClientConnector;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 
-public class CatchUpClient extends LifecycleAdapter
+public class CatchUpClient<C extends Channel> implements ChannelService<Bootstrap, C>
 {
-    private final LogProvider logProvider;
     private final Log log;
     private final Clock clock;
-    private final Monitors monitors;
-    private final PipelineHandlerAppender pipelineAppender;
     private final long inactivityTimeoutMillis;
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
+    private final ClientConnector<C> clientConnector;
 
-    private NioEventLoopGroup eventLoopGroup;
+    private final CatchupClientBootstrapper catchupClientBootstrapper;
 
     public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors,
-                          PipelineHandlerAppender pipelineAppender )
+            PipelineHandlerAppender pipelineAppender )
     {
-        this.logProvider = logProvider;
+        catchupClientBootstrapper = new CatchupClientBootstrapper( logProvider, monitors, pipelineAppender );
+        clientConnector = new ClientConnector<>( catchupClientBootstrapper.bootstrapper() );
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
-        this.monitors = monitors;
-        this.pipelineAppender = pipelineAppender;
     }
 
-    public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler )
+    public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request,
+            CatchUpResponseCallback<T> responseHandler )
             throws CatchUpClientException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
@@ -95,6 +92,24 @@ public class CatchUpClient extends LifecycleAdapter
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }
 
+    @Override
+    public void bootstrap( EventLoopContext<C> eventLoopContext )
+    {
+        clientConnector.bootstrap( eventLoopContext );
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        clientConnector.start();
+    }
+
+    @Override
+    public void closeChannels() throws Throwable
+    {
+        clientConnector.closeChannels();
+    }
+
     private class CatchUpChannel implements CatchUpChannelPool.Channel
     {
         private final TrackingResponseHandler handler;
@@ -104,18 +119,10 @@ public class CatchUpClient extends LifecycleAdapter
         CatchUpChannel( AdvertisedSocketAddress destination )
         {
             this.destination = destination;
-            handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
-            Bootstrap bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( new ChannelInitializer<SocketChannel>()
-            {
-                @Override
-                protected void initChannel( SocketChannel ch ) throws Exception
-                {
-                    CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, pipelineAppender );
-                }
-            } );
-
-            ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
-            nettyChannel = channelFuture.awaitUninterruptibly().channel();
+            this.handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
+            this.nettyChannel = clientConnector
+                    .connect( destination.socketAddress(), catchupClientBootstrapper.addHandler( handler ) );
+            nettyChannel.isActive();
         }
 
         void setResponseHandler( CatchUpResponseCallback responseHandler, CompletableFuture<?> requestOutcomeSignal )
@@ -147,24 +154,37 @@ public class CatchUpClient extends LifecycleAdapter
         }
     }
 
-    @Override
-    public void start()
+    class CatchupClientBootstrapper
     {
-        eventLoopGroup = new NioEventLoopGroup( 0, new NamedThreadFactory( "catch-up-client" ) );
-    }
+        private final LogProvider logProvider;
+        private final Monitors monitors;
+        private final PipelineHandlerAppender pipelineAppender;
 
-    @Override
-    public void stop()
-    {
-        log.info( "CatchUpClient stopping" );
-        try
+        CatchupClientBootstrapper( LogProvider logProvider, Monitors monitors,
+                PipelineHandlerAppender pipelineAppender )
         {
-            pool.close();
-            eventLoopGroup.shutdownGracefully( 0, 0, MICROSECONDS ).sync();
+            this.logProvider = logProvider;
+            this.monitors = monitors;
+            this.pipelineAppender = pipelineAppender;
         }
-        catch ( InterruptedException e )
+
+        Function<EventLoopContext<C>,Bootstrap> bootstrapper()
         {
-            log.warn( "Interrupted while stopping catch up client." );
+            return eventLoopContext -> new Bootstrap().group( eventLoopContext.eventExecutors() )
+                    .channel( eventLoopContext.channelClass() );
+        }
+
+        Function<Bootstrap,Bootstrap> addHandler( TrackingResponseHandler handler )
+        {
+            return bootstrap -> bootstrap.handler( new ChannelInitializer<C>()
+            {
+                @Override
+                protected void initChannel( C ch ) throws Exception
+                {
+                    CatchUpClientChannelPipeline
+                            .initChannel( ch, handler, logProvider, monitors, pipelineAppender );
+                }
+            } );
         }
     }
 }

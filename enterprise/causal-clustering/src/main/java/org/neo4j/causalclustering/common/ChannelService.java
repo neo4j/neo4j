@@ -17,29 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup.storecopy;
+package org.neo4j.causalclustering.common;
 
-import org.neo4j.causalclustering.catchup.RequestMessageType;
-import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.CatchUpRequest;
+import io.netty.bootstrap.AbstractBootstrap;
+import io.netty.channel.Channel;
 
-public class GetStoreRequest implements CatchUpRequest
+/*
+Needs to be bootstrapped before starting
+*/
+public interface ChannelService<T extends AbstractBootstrap, C extends Channel>
 {
-    private final StoreId expectedStoreId;
+    void bootstrap( EventLoopContext<C>  eventLoopContext );
 
-    public GetStoreRequest( StoreId expectedStoreId )
-    {
-        this.expectedStoreId = expectedStoreId;
-    }
+    void start() throws Throwable;
 
-    @Override
-    public RequestMessageType messageType()
-    {
-        return RequestMessageType.STORE;
-    }
-
-    public StoreId expectedStoreId()
-    {
-        return expectedStoreId;
-    }
+    void closeChannels() throws Throwable;
 }
