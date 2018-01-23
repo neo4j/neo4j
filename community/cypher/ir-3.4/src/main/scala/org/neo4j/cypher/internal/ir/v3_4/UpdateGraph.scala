@@ -159,11 +159,16 @@ trait UpdateGraph {
         case p: Property => p
       }.toSet
 
+      val allPatternRelationshipsRead = horizon.dependingExpressions.collect {
+        case p: PatternComprehension => p.pattern.element.relationship
+      }.toSet
+
       val maybeNode: Property => Boolean = maybeType(semanticTable, CTNode.invariant)
       val maybeRel: Property => Boolean = maybeType(semanticTable, CTRelationship.invariant)
 
       setNodePropertyOverlap(propertiesReadInHorizon.filter(maybeNode).map(_.propertyKey)) ||
-      setRelPropertyOverlap(propertiesReadInHorizon.filter(maybeRel).map(_.propertyKey))
+      setRelPropertyOverlap(propertiesReadInHorizon.filter(maybeRel).map(_.propertyKey))||
+      createRelationshipOverlapHorizon(allPatternRelationshipsRead)
     } || ((labelsToSet.nonEmpty || removeLabelPatterns.nonEmpty) && usesLabelsFunction(horizon)))
 
   def writeOnlyHeadOverlaps(qg: QueryGraph): Boolean = {
@@ -218,24 +223,41 @@ trait UpdateGraph {
    * and those being created here
    */
   def createRelationshipOverlap(qg: QueryGraph): Boolean = {
+    //CREATE () MATCH ()-->()
+    (allRelPatternsWrittenNonEmpty && qg.allPatternRelationshipsRead.nonEmpty) && qg.allPatternRelationshipsRead.exists(r => {
+      val readProps = qg.allKnownPropertiesOnIdentifier(r.name).map(_.propertyKey)
+      relationshipOverlap(r.types.toSet, readProps)
+    })
+  }
+
+  def createRelationshipOverlapHorizon(allRelPatternsRead: Set[RelationshipPattern]): Boolean = {
+    //CREATE () MATCH ()-->()
+    (allRelPatternsWrittenNonEmpty && allRelPatternsRead.nonEmpty) && allRelPatternsRead.exists(r => {
+      r.properties match {
+        case Some(MapExpression(items)) =>
+          val propKeyNames = items.map(_._1).toSet
+          relationshipOverlap(r.types.toSet, propKeyNames)
+        case _ => false
+      }
+    })
+  }
+
+  private def allRelPatternsWrittenNonEmpty: Boolean = {
+    val allRelPatternsWritten = createRelationshipPatterns ++ mergeRelationshipPatterns.flatMap(_.createRelPatterns)
+    allRelPatternsWritten.nonEmpty
+  }
+
+  private def relationshipOverlap(readRelTypes: Set[RelTypeName], readRelProperties: Set[PropertyKeyName]): Boolean = {
     def typesOverlap(typesToRead: Set[RelTypeName], typesToWrite: Set[RelTypeName]): Boolean = {
       typesToRead.isEmpty || (typesToRead intersect typesToWrite).nonEmpty
     }
     def propsOverlap(propsToRead: Set[PropertyKeyName], propsToWrite: CreatesPropertyKeys) = {
       propsToRead.isEmpty || propsToRead.exists(propsToWrite.overlaps)
     }
-
-    val allRelPatternsWritten = createRelationshipPatterns ++ mergeRelationshipPatterns.flatMap(_.createRelPatterns)
-    val allRelPatternsRead = qg.allPatternRelationshipsRead
-
-    //CREATE () MATCH ()-->()
-    (allRelPatternsWritten.nonEmpty && qg.patternRelationships.nonEmpty) && allRelPatternsRead.exists(r => {
-      val readProps = qg.allKnownPropertiesOnIdentifier(r.name).map(_.propertyKey)
-      // CREATE ()-[]->() MATCH ()-[]-()?
-      r.types.isEmpty && readProps.isEmpty ||
-        // CREATE ()-[:T {prop:...}]->() MATCH ()-[:T {prop:{}]-()?
-        (typesOverlap(r.types.toSet, createRelTypes) && propsOverlap(readProps, createRelProperties))
-    })
+    // CREATE ()-[]->() MATCH ()-[]-()?
+    readRelTypes.isEmpty && readRelProperties.isEmpty ||
+      // CREATE ()-[:T {prop:...}]->() MATCH ()-[:T {prop:{}]-()?
+      (typesOverlap(readRelTypes, createRelTypes) && propsOverlap(readRelProperties, createRelProperties))
   }
 
 
