@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal, ShortestPathExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.util.v3_4.{Eagerly, InternalException}
@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Equals => ASTEquals, Expressi
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -217,7 +217,17 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
         val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name, expressionConverters).head
-        ShortestPathPipe(source, legacyShortestPath, predicates.map(p => buildPredicate(p)), withFallBack, disallowSameNode)(id = id)
+
+        val pathVariables = Set(legacyShortestPath.pathName, legacyShortestPath.relIterator.getOrElse(""))
+        val (perStepPredicates, fullPathPredicates) = predicates.partition {
+          case p =>
+            (p.dependencies.map(_.name) intersect pathVariables).isEmpty
+        }
+        val commandPerStepPredicates = perStepPredicates.map(p => buildPredicate(p))
+        val commandFullPathPredicates = fullPathPredicates.map(p => buildPredicate(p))
+
+        val commandExpression = ShortestPathExpression(legacyShortestPath, commandPerStepPredicates, commandFullPathPredicates, withFallBack, disallowSameNode)
+        ShortestPathPipe(source, commandExpression, withFallBack, disallowSameNode)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable)(id = id)

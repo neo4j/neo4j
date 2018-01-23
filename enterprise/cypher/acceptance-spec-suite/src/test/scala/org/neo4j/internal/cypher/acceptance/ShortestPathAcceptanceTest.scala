@@ -497,7 +497,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) AS nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
@@ -512,7 +512,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) as nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Mickey"))),
       Map("nodes" -> List(nodes("Donald"), nodes("Mickey"), nodes("Minnie"))),
@@ -530,7 +530,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) as nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Mickey"))),
       Map("nodes" -> List(nodes("Donald"), nodes("Mickey"), nodes("Minnie"))),
