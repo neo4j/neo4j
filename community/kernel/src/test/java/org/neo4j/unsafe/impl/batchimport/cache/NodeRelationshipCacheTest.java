@@ -503,6 +503,24 @@ public class NodeRelationshipCacheTest
         assertEquals( highCount + 1, nextHighCount );
     }
 
+    @Test
+    public void shouldFailFastOnTooHighNodeCount() throws Exception
+    {
+        // given
+        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1 );
+
+        try
+        {
+            // when
+            cache.setNodeCount( 2L << (5 * Byte.SIZE) );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // then good
+        }
+    }
+
     private void testNode( NodeRelationshipCache link, long node, Direction direction )
     {
         int typeId = 0; // doesn't matter here because it's all sparse

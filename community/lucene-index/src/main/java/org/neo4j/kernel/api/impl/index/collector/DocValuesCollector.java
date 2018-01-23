@@ -352,6 +352,12 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
+        public float currentScore()
+        {
+            return 0;
+        }
+
+        @Override
         public long getValue( String field )
         {
             if ( ensureValidDisi() )
@@ -800,6 +806,12 @@ public class DocValuesCollector extends SimpleCollector
         public long current()
         {
             return index;
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return scoreDocs.getCurrentDoc().score;
         }
 
         @Override

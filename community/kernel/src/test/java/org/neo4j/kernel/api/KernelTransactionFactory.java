@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -100,7 +101,7 @@ public class KernelTransactionFactory
                 Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
-                storageEngine, new CanWrite(), new Cursors(), AutoIndexing.UNSUPPORTED, mock(
+                storageEngine, new CanWrite(), new KernelToken( storeReadLayer ), new Cursors(), AutoIndexing.UNSUPPORTED, mock(
                 ExplicitIndexStore.class) );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );

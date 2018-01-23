@@ -43,6 +43,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
+
+import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -419,6 +421,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
 
+        boolean success = false;
         try
         {
             this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
@@ -447,19 +450,19 @@ public class GBPTree<KEY,VALUE> implements Closeable
             forceState();
             cleaning = createCleanupJob( needsCleaning );
             recoveryCleanupWorkCollector.add( cleaning );
+            success = true;
         }
         catch ( Throwable t )
         {
             appendTreeInformation( t );
-            try
+            throw t;
+        }
+        finally
+        {
+            if ( !success )
             {
                 close();
             }
-            catch ( Throwable e )
-            {
-                t.addSuppressed( e );
-            }
-            throw t;
         }
     }
 
@@ -511,23 +514,24 @@ public class GBPTree<KEY,VALUE> implements Closeable
         PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
         // This index already exists, verify meta data aligns with expectations
 
+        boolean success = false;
         try
         {
             int pageSize = readMeta( layout, pagedFile );
             pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, pageSize );
+            success = true;
             return pagedFile;
         }
-        catch ( Throwable t )
+        catch ( IllegalStateException e )
         {
-            try
+            throw new IOException( "Index is not fully initialized since it's missing the meta page", e );
+        }
+        finally
+        {
+            if ( !success )
             {
                 pagedFile.close();
             }
-            catch ( IOException e )
-            {
-                t.addSuppressed( e );
-            }
-            throw t;
         }
     }
 
@@ -552,7 +556,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void loadState( PagedFile pagedFile, Header.Reader headerReader ) throws IOException
     {
-        Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+        Pair<TreeState,TreeState> states = loadStatePages( pagedFile );
         TreeState state = TreeStatePair.selectNewestValidState( states );
         try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
         {
@@ -586,13 +590,21 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, layout ) )
         {
-            Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+            Pair<TreeState,TreeState> states = loadStatePages( pagedFile );
             TreeState state = TreeStatePair.selectNewestValidState( states );
             try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
             {
                 PageCursorUtil.goTo( cursor, "header data", state.pageId() );
                 doReadHeader( headerReader, cursor );
             }
+        }
+        catch ( Throwable t )
+        {
+            // Decorate outgoing exceptions with basic tree information. This is similar to how the constructor
+            // appends its information, but the constructor has read more information at that point so this one
+            // is a bit more sparse on information.
+            withMessage( t, t.getMessage() + " | " + format( "GBPTree[file:%s, layout:%s]", indexFile, layout ) );
+            throw t;
         }
     }
 
@@ -674,6 +686,31 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private static TreeState other( Pair<TreeState,TreeState> states, TreeState state )
     {
         return states.getLeft() == state ? states.getRight() : states.getLeft();
+    }
+
+    /**
+     * Basically {@link #readStatePages(PagedFile)} with some more checks, suitable for when first opening an index file,
+     * not while running it and check pointing.
+     *
+     * @param pagedFile {@link PagedFile} to read the state pages from.
+     * @return both read state pages.
+     * @throws IOException if state pages are missing (file is smaller than that) or if they are both empty.
+     */
+    private static Pair<TreeState,TreeState> loadStatePages( PagedFile pagedFile ) throws IOException
+    {
+        try
+        {
+            Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+            if ( states.getLeft().isEmpty() && states.getRight().isEmpty() )
+            {
+                throw new IOException( "Index is not fully initialized since its state pages are empty" );
+            }
+            return states;
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new IOException( "Index is not fully initialized since it's missing state pages", e );
+        }
     }
 
     private static Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile ) throws IOException
@@ -948,7 +985,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void internalIndexClose() throws IOException
     {
-        if ( !changesSinceLastCheckpoint && !cleaning.needed() )
+        if ( cleaning != null && !changesSinceLastCheckpoint && !cleaning.needed() )
         {
             clean = true;
             forceState();

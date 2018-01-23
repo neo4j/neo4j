@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
  *
  */
-class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor implements IndexProgressor, Resource
+public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor implements IndexProgressor, Resource
 {
 
     private final NodeLabelClient client;

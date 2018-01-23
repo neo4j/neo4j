@@ -77,6 +77,7 @@ public class Operations implements Write, ExplicitIndexWrite
 {
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
+    private final KernelToken token;
     private final StorageStatement statement;
     private final AutoIndexing autoIndexing;
     private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
@@ -90,8 +91,12 @@ public class Operations implements Write, ExplicitIndexWrite
             IndexTxStateUpdater updater,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors, AutoIndexing autoIndexing, NodeSchemaMatcher schemaMatcher )
+            KernelToken token,
+            Cursors cursors,
+            AutoIndexing autoIndexing,
+            NodeSchemaMatcher schemaMatcher )
     {
+        this.token = token;
         this.autoIndexing = autoIndexing;
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
@@ -547,7 +552,7 @@ public class Operations implements Write, ExplicitIndexWrite
 
     public Token token()
     {
-        return allStoreHolder;
+        return token;
     }
 
     private void acquireExclusiveNodeLock( long node )

@@ -44,7 +44,7 @@ public interface DataWriteOperations extends ExplicitIndexWrite
             throws KernelException;
 
     long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
-            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
+            throws EntityNotFoundException;
 
     void relationshipDelete( long relationshipId )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException;

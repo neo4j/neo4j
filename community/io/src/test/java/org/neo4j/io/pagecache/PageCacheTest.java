@@ -4333,6 +4333,301 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    @Test
+    public void shiftBytesMustNotRaiseOutOfBoundsOnLengthWithinPageBoundary() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( 0, filePageSize, 0 );
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+            cursor.shiftBytes( 0, filePageSize - 1, 1 );
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+            cursor.shiftBytes( 1, filePageSize - 1, -1 );
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnLengthLargerThanPageSize() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( 0, filePageSize + 1, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnNegativeLength() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( 1, -1, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnNegativeSource() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( -1, 10, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnOverSizedSource() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( filePageSize, 1, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+            cursor.shiftBytes( filePageSize + 1, 0, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnBufferUnderflow() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( 0, 1, -1 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnBufferOverflow() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( filePageSize - 1, 1, 1 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustThrowOnReadCursor() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() );
+            assertTrue( reader.next() );
+
+            expectedException.expect( IllegalStateException.class );
+            reader.shiftBytes( 0, 0, 0 );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustShiftBytesToTheRightOverlapping() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            byte[] bytes = new byte[30];
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] = (byte) (i + 1);
+            }
+
+            int srcOffset = 10;
+            cursor.setOffset( srcOffset );
+            cursor.putBytes( bytes );
+
+            int shift = 5;
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.shiftBytes( srcOffset, bytes.length, shift );
+
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length + shift, filePageSize - srcOffset - bytes.length - shift );
+
+            cursor.setOffset( srcOffset );
+            for ( int i = 0; i < shift; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustShiftBytesToTheRightNotOverlapping() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            byte[] bytes = new byte[30];
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] = (byte) (i + 1);
+            }
+
+            int srcOffset = 10;
+            cursor.setOffset( srcOffset );
+            cursor.putBytes( bytes );
+
+            int gap = 5;
+            int shift = bytes.length + gap;
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.shiftBytes( srcOffset, bytes.length, shift );
+
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length + shift, filePageSize - srcOffset - bytes.length - shift );
+
+            cursor.setOffset( srcOffset );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+            assertZeroes( cursor, srcOffset + bytes.length + shift, gap );
+            cursor.setOffset( srcOffset + shift );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustShiftBytesToTheLeftOverlapping() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            byte[] bytes = new byte[30];
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] = (byte) (i + 1);
+            }
+
+            int srcOffset = 10;
+            cursor.setOffset( srcOffset );
+            cursor.putBytes( bytes );
+
+            int shift = -5;
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.shiftBytes( srcOffset, bytes.length, shift );
+
+            assertZeroes( cursor, 0, srcOffset + shift );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.setOffset( srcOffset + shift );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+            for ( int i = shift; i < 0; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (bytes.length + i + 1) ) );
+            }
+
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustShiftBytesToTheLeftNotOverlapping() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            byte[] bytes = new byte[30];
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] = (byte) (i + 1);
+            }
+
+            int srcOffset = filePageSize - bytes.length - 10;
+            cursor.setOffset( srcOffset );
+            cursor.putBytes( bytes );
+
+            int gap = 5;
+            int shift = -bytes.length - gap;
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.shiftBytes( srcOffset, bytes.length, shift );
+
+            assertZeroes( cursor, 0, srcOffset + shift );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.setOffset( srcOffset + shift );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+            assertZeroes( cursor, srcOffset + bytes.length + shift, gap );
+            cursor.setOffset( srcOffset );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    private void assertZeroes( PageCursor cursor, int offset, int length )
+    {
+        for ( int i = 0; i < length; i++ )
+        {
+            assertThat( cursor.getByte( offset + i ), is( (byte) 0 ) );
+        }
+    }
+
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void readCursorsCanOpenLinkedCursor() throws Exception
     {

@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -81,13 +82,15 @@ public class RotatableCsvOutputIT
                 ( newValue, currentValue ) -> newValue >= currentValue );
         assertEquals( 1, committedTransactions );
 
-        File metricsFile2 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
+        metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode();
             transaction.success();
         }
-        long oldCommittedTransactions = readLongValueAndAssert( metricsFile2,
+        // Since we rotated twice, file 3 is actually the original file
+        File metricsFile3 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 2 );
+        long oldCommittedTransactions = readLongValueAndAssert( metricsFile3,
                 ( newValue, currentValue ) -> newValue >= currentValue );
         assertEquals( 1, oldCommittedTransactions );
     }

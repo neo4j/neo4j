@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.operations;
 
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface KeyWriteOperations

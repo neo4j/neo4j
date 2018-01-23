@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.schema;
+package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -53,7 +53,7 @@ public abstract class SchemaKernelException extends KernelException
         super( statusCode, message );
     }
 
-    static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
+    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
             LabelSchemaDescriptor descriptor )
     {
         int[] propertyIds = descriptor.getPropertyIds();

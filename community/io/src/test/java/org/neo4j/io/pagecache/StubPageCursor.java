@@ -130,6 +130,12 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        throw new UnsupportedOperationException( "Stub cursor does not support this method... yet" );
+    }
+
+    @Override
     public boolean checkAndClearBoundsFlag()
     {
         boolean overflow = observedOverflow;

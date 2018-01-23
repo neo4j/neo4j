@@ -21,12 +21,16 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
 import java.util.function.LongFunction;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongCollisionValues;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongEncoder;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Radix;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringCollisionValues;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringEncoder;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
@@ -85,6 +89,12 @@ public class IdMappers
         {
             return 0;
         }
+
+        @Override
+        public PrimitiveLongIterator leftOverDuplicateNodesIds()
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
     }
 
     private IdMappers()
@@ -110,7 +120,8 @@ public class IdMappers
      */
     public static IdMapper strings( NumberArrayFactory cacheFactory, Groups groups )
     {
-        return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic(), groups );
+        return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic(), groups,
+                numberOfCollisions -> new StringCollisionValues( cacheFactory, numberOfCollisions ) );
     }
 
     /**
@@ -122,6 +133,7 @@ public class IdMappers
      */
     public static IdMapper longs( NumberArrayFactory cacheFactory, Groups groups )
     {
-        return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic(), groups );
+        return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic(), groups,
+                numberOfCollisions -> new LongCollisionValues( cacheFactory, numberOfCollisions ) );
     }
 }

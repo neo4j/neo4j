@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 
 public interface TokenWrite
 {
@@ -27,19 +28,13 @@ public interface TokenWrite
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
      */
-    int labelGetOrCreateForName( String labelName ) throws KernelException;
+    int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException;
+    int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
 
-    int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException;
-
-    void labelCreateForName( String labelName, int id ) throws KernelException;
-
-    void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException;
-
-    void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws KernelException;
+    int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
 }

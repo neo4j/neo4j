@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -179,7 +180,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
             Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing,
+            StorageEngine storageEngine, AccessCapability accessCapability, KernelToken token, Cursors cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore )
     {
         this.statementOperations = statementOperations;
@@ -211,7 +212,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         allStoreHolder,
                         new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
                         storageStatement,
-                        this, cursors, autoIndexing, matcher );
+                        this, token, cursors, autoIndexing, matcher );
     }
 
     /**

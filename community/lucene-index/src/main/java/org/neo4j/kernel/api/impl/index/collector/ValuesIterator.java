@@ -49,6 +49,12 @@ public abstract class ValuesIterator extends PrimitiveLongCollections.PrimitiveL
         }
 
         @Override
+        public float currentScore()
+        {
+            return 0;
+        }
+
+        @Override
         public long getValue( String field )
         {
             return 0;
@@ -57,6 +63,12 @@ public abstract class ValuesIterator extends PrimitiveLongCollections.PrimitiveL
 
     protected final int size;
     protected int index;
+
+    /**
+     * Gets the score for the current iterator position.
+     * @return The score of the value, or 0 if scoring is not kept or applicable.
+     */
+    public abstract float currentScore();
 
     ValuesIterator( int size )
     {

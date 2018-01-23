@@ -19,16 +19,17 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.function.LongFunction;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.HighestId;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
+import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -45,7 +46,6 @@ import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
-import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
@@ -92,7 +92,7 @@ public class EncodingIdMapper implements IdMapper
         /**
          * @param count Number of eIds that have been marked as collisions.
          */
-        void numberOfCollisions( int count );
+        void numberOfCollisions( long count );
     }
 
     public static final Monitor NO_MONITOR = count ->
@@ -104,8 +104,9 @@ public class EncodingIdMapper implements IdMapper
     // This bit is the least significant in the most significant byte of the encoded values,
     // where the 7 most significant bits in that byte denotes length of original string.
     // See StringEncoder.
-    private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 56, 1 );
-    private static int DEFAULT_CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
+    private static final LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 56, 1 );
+    private static final int DEFAULT_CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
+    private static final int COLLISION_ENTRY_SIZE = 5/*nodeId*/ + 6/*offset*/;
     // Using 0 as gap value, i.e. value for a node not having an id, i.e. not present in dataCache is safe
     // because the current set of Encoder implementations will always set some amount of bits higher up in
     // the long value representing the length of the id.
@@ -132,11 +133,9 @@ public class EncodingIdMapper implements IdMapper
     private final int processorsForParallelWork;
     private final Comparator comparator;
 
-    private final List<Object> collisionValues = new ArrayList<>();
-    private final LongArray collisionNodeIdCache;
+    private ByteArray collisionNodeIdCache;
     // These 3 caches below are needed only during duplicate input id detection, but referenced here so
     // that the memory visitor can see them when they are active.
-    private LongArray collisionSourceDataCache;
     private Tracker collisionTrackerCache;
 
     private boolean readyForUse;
@@ -145,23 +144,26 @@ public class EncodingIdMapper implements IdMapper
     private final Monitor monitor;
     private final Groups groups;
 
-    private int numberOfCollisions;
+    private long numberOfCollisions;
+    private final LongFunction<CollisionValues> collisionValuesFactory;
+    private CollisionValues collisionValues;
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
-            Monitor monitor, TrackerFactory trackerFactory, Groups groups )
+            Monitor monitor, TrackerFactory trackerFactory, Groups groups, LongFunction<CollisionValues> collisionValuesFactory )
     {
-        this( cacheFactory, encoder, radixFactory, monitor, trackerFactory, groups, DEFAULT_CACHE_CHUNK_SIZE,
+        this( cacheFactory, encoder, radixFactory, monitor, trackerFactory, groups, collisionValuesFactory, DEFAULT_CACHE_CHUNK_SIZE,
                 Runtime.getRuntime().availableProcessors() - 1, DEFAULT );
     }
 
     EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
-            Monitor monitor, TrackerFactory trackerFactory, Groups groups, int chunkSize, int processorsForParallelWork,
-            Comparator comparator )
+            Monitor monitor, TrackerFactory trackerFactory, Groups groups, LongFunction<CollisionValues> collisionValuesFactory,
+            int chunkSize, int processorsForParallelWork, Comparator comparator )
     {
         this.radixFactory = radixFactory;
         this.monitor = monitor;
         this.cacheFactory = cacheFactory;
         this.trackerFactory = trackerFactory;
+        this.collisionValuesFactory = collisionValuesFactory;
         this.comparator = comparator;
         this.processorsForParallelWork = max( processorsForParallelWork, 1 );
         this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE );
@@ -169,7 +171,6 @@ public class EncodingIdMapper implements IdMapper
         this.groups = groups;
         this.encoder = encoder;
         this.radix = radixFactory.newInstance();
-        this.collisionNodeIdCache = cacheFactory.newDynamicLongArray( chunkSize, ID_NOT_FOUND );
     }
 
     /**
@@ -230,7 +231,7 @@ public class EncodingIdMapper implements IdMapper
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
                     processorsForParallelWork, progress, comparator ).run();
 
-            int pessimisticNumberOfCollisions = detectAndMarkCollisions( progress );
+            long pessimisticNumberOfCollisions = detectAndMarkCollisions( progress );
             if ( pessimisticNumberOfCollisions > 0 )
             {
                 buildCollisionInfo( inputIdLookup, pessimisticNumberOfCollisions, collector, progress );
@@ -413,7 +414,7 @@ public class EncodingIdMapper implements IdMapper
      * races between detector workers. This is not a problem though, this value serves as a pessimistic value
      * for allocating arrays to hold collision data to later sort and use to discover duplicates.
      */
-    private int detectAndMarkCollisions( ProgressListener progress )
+    private long detectAndMarkCollisions( ProgressListener progress )
     {
         progress.started( "DETECT" );
         long totalCount = highestSetIndex + 1;
@@ -471,21 +472,32 @@ public class EncodingIdMapper implements IdMapper
         return true;
     }
 
-    private void buildCollisionInfo( LongFunction<Object> inputIdLookup, int pessimisticNumberOfCollisions,
+    private void unmarkAsCollision( long dataIndex )
+    {
+        long eId = dataCache.get( dataIndex );
+        boolean isMarked = isCollision( eId );
+        if ( isMarked )
+        {
+            dataCache.set( dataIndex, clearCollision( eId ) );
+        }
+    }
+
+    private void buildCollisionInfo( LongFunction<Object> inputIdLookup, long pessimisticNumberOfCollisions,
             Collector collector, ProgressListener progress )
             throws InterruptedException
     {
         progress.started( "RESOLVE (~" + pessimisticNumberOfCollisions + " collisions)" );
         Radix radix = radixFactory.newInstance();
-        collisionSourceDataCache = cacheFactory.newLongArray( pessimisticNumberOfCollisions, ID_NOT_FOUND );
+        collisionNodeIdCache = cacheFactory.newByteArray( pessimisticNumberOfCollisions, new byte[COLLISION_ENTRY_SIZE] );
         collisionTrackerCache = trackerFactory.create( cacheFactory, pessimisticNumberOfCollisions );
+        collisionValues = collisionValuesFactory.apply( pessimisticNumberOfCollisions );
         for ( long nodeId = 0; nodeId <= highestSetIndex; nodeId++ )
         {
             long eId = dataCache.get( nodeId );
             if ( isCollision( eId ) )
             {
                 // Store this collision input id for matching later in get()
-                numberOfCollisions++;
+                long collisionIndex = numberOfCollisions++;
                 Object id = inputIdLookup.apply( nodeId );
                 long eIdFromInputId = encode( id );
                 long eIdWithoutCollisionBit = clearCollision( eId );
@@ -493,9 +505,11 @@ public class EncodingIdMapper implements IdMapper
                         "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
                         "%d when put, but was now encoded into %d",
                         id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId );
-                int collisionIndex = collisionValues.size();
-                collisionValues.add( id );
-                collisionNodeIdCache.set( collisionIndex, nodeId );
+                long offset = collisionValues.add( id );
+                collisionNodeIdCache.set5ByteLong( collisionIndex, 0, nodeId );
+                collisionNodeIdCache.set6ByteLong( collisionIndex, 5, offset );
+
+                // The base of our sorting this time is going to be node id, so register that in the radix
                 radix.registerRadixOf( eIdWithoutCollisionBit );
             }
             progress.add( 1 );
@@ -503,16 +517,14 @@ public class EncodingIdMapper implements IdMapper
         progress.done();
 
         // Detect input id duplicates within the same group, with source information, line number and the works
-        detectDuplicateInputIds( radix, numberOfCollisions, collector, progress );
+        detectDuplicateInputIds( radix, collector, progress );
 
         // We won't be needing these anymore
-        collisionSourceDataCache.close();
-        collisionSourceDataCache = null;
         collisionTrackerCache.close();
         collisionTrackerCache = null;
     }
 
-    private void detectDuplicateInputIds( Radix radix, int numberOfCollisions, Collector collector, ProgressListener progress )
+    private void detectDuplicateInputIds( Radix radix, Collector collector, ProgressListener progress )
             throws InterruptedException
     {
         // We do this collision sort using ParallelSort which has the data cache and the tracker cache,
@@ -561,7 +573,7 @@ public class EncodingIdMapper implements IdMapper
             }
         };
 
-        new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions - 1,
+        new ParallelSort( radix, as5ByteLongArray( collisionNodeIdCache ), numberOfCollisions - 1,
                 collisionTrackerCache, processorsForParallelWork, progress, duplicateComparator ).run();
 
         // Here we have a populated C
@@ -573,7 +585,8 @@ public class EncodingIdMapper implements IdMapper
         for ( int i = 0; i < numberOfCollisions; i++ )
         {
             long collisionIndex = collisionTrackerCache.get( i );
-            long nodeId = collisionNodeIdCache.get( collisionIndex );
+            long nodeId = collisionNodeIdCache.get5ByteLong( collisionIndex, 0 );
+            long offset = collisionNodeIdCache.get6ByteLong( collisionIndex, 5 );
             long eid = dataCache.get( nodeId );
             int groupId = groupOf( nodeId );
             // collisions of same eId AND groupId are always together
@@ -584,14 +597,13 @@ public class EncodingIdMapper implements IdMapper
             }
 
             // Potential duplicate
-            // We cast the collision index to an int here. This means that we can't support > int-range
-            // number of collisions. But that's probably alright since the data structures and
-            // actual collisions values for all these collisions wouldn't fit in a heap anyway.
-            Object inputId = collisionValues.get( safeCastLongToInt( collisionIndex ) );
-            int detectorIndex = detector.add( inputId );
-            if ( detectorIndex != -1 )
+            Object inputId = collisionValues.get( offset );
+            long nonDuplicateNodeId = detector.add( nodeId, inputId );
+            if ( nonDuplicateNodeId != -1 )
             {   // Duplicate
                 collector.collectDuplicateNode( inputId, nodeId, groups.get( groupId ).name() );
+                trackerCache.markAsDuplicate( nodeId );
+                unmarkAsCollision( nonDuplicateNodeId );
             }
 
             previousEid = eid;
@@ -601,26 +613,77 @@ public class EncodingIdMapper implements IdMapper
         progress.done();
     }
 
+    private LongArray as5ByteLongArray( ByteArray byteArray )
+    {
+        return new LongArray()
+        {
+            @Override
+            public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
+            {
+                byteArray.acceptMemoryStatsVisitor( visitor );
+            }
+
+            @Override
+            public long length()
+            {
+                return byteArray.length();
+            }
+
+            @Override
+            public void close()
+            {
+                byteArray.close();
+            }
+
+            @Override
+            public void clear()
+            {
+                byteArray.clear();
+            }
+
+            @Override
+            public LongArray at( long index )
+            {
+                return null;
+            }
+
+            @Override
+            public void set( long index, long value )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public long get( long index )
+            {
+                return byteArray.get5ByteLong( index, 0 );
+            }
+        };
+    }
+
     private static class SameInputIdDetector
     {
+        private long[] nodeIdArray = new long[10]; // grows on demand
         private Object[] inputIdArray = new Object[10]; // grows on demand
         private int cursor;
 
-        int add( Object inputId )
+        long add( long nodeId, Object inputId )
         {
             for ( int i = 0; i < cursor; i++ )
             {
                 if ( inputIdArray[i].equals( inputId ) )
                 {
-                    return i;
+                    return nodeIdArray[i];
                 }
             }
 
             if ( cursor == inputIdArray.length )
             {
                 inputIdArray = Arrays.copyOf( inputIdArray, cursor * 2 );
+                nodeIdArray = Arrays.copyOf( nodeIdArray, cursor * 2 );
             }
             inputIdArray[cursor] = inputId;
+            nodeIdArray[cursor] = nodeId;
             cursor++;
             return -1;
         }
@@ -654,11 +717,12 @@ public class EncodingIdMapper implements IdMapper
                 // of its kind. Not all values that there are duplicates of are considered collisions,
                 // read more in detectAndMarkCollisions(). So regardless we need to check previous/next
                 // if they are the same value.
-                if ( (mid > 0 && unsignedCompare( x, dataValue( mid - 1 ), CompareType.EQ )) ||
-                     (mid < highestSetIndex && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
+                boolean leftEq = mid > 0 && unsignedCompare( x, dataValue( mid - 1 ), CompareType.EQ );
+                boolean rightEq = mid < highestSetIndex && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ );
+                if ( leftEq || rightEq )
                 {   // OK so there are actually multiple equal data values here, we need to go through them all
                     // to be sure we find the correct one.
-                    return findFromEIdRange( mid, midValue, inputId, x, groupId );
+                    return findFromEIdRange( leftEq ? mid - 1 : mid, rightEq ? mid + 1 : mid, midValue, inputId, x, groupId );
                 }
                 // This is the only value here, let's do a simple comparison with correct group id and return
                 return groupOf( dataIndex ) == groupId ? dataIndex : ID_NOT_FOUND;
@@ -686,7 +750,7 @@ public class EncodingIdMapper implements IdMapper
         while ( low <= high )
         {
             long mid = (low + high) / 2;
-            long midValue = collisionNodeIdCache.get( mid );
+            long midValue = collisionNodeIdCache.get5ByteLong( mid, 0 );
             switch ( unsignedDifference( midValue, value ) )
             {
             case EQ: return mid;
@@ -701,21 +765,19 @@ public class EncodingIdMapper implements IdMapper
         return ID_NOT_FOUND;
     }
 
-    private long findFromEIdRange( long index, long val, Object inputId, long x, int groupId )
+    private long findFromEIdRange( long fromIndex, long toIndex, long val, Object inputId, long x, int groupId )
     {
         val = clearCollision( val );
         assert val == x;
 
-        while ( index > 0 && unsignedCompare( val, dataValue( index - 1 ), CompareType.EQ ) )
+        while ( fromIndex > 0 && unsignedCompare( val, dataValue( fromIndex - 1 ), CompareType.EQ ) )
         {
-            index--;
+            fromIndex--;
         }
-        long fromIndex = index;
-        while ( index < highestSetIndex && unsignedCompare( val, dataValue( index + 1 ), CompareType.EQ ) )
+        while ( toIndex < highestSetIndex && unsignedCompare( val, dataValue( toIndex + 1 ), CompareType.EQ ) )
         {
-            index++;
+            toIndex++;
         }
-        long toIndex = index;
 
         return findFromEIdRange( fromIndex, toIndex, groupId, inputId );
     }
@@ -731,17 +793,21 @@ public class EncodingIdMapper implements IdMapper
             {
                 long eId = dataCache.get( nodeId );
                 if ( isCollision( eId ) )
-                {   // We found a data value for our group, but there are collisions within this group.
-                    // We need to consult the collision cache and original input id
-                    int collisionIndex = safeCastLongToInt( findCollisionIndex( nodeId ) );
-                    Object value = collisionValues.get( collisionIndex );
-                    if ( inputId.equals( value ) )
-                    {
-                        // :)
-                        lowestFound = lowestFound == ID_NOT_FOUND ? nodeId : min( lowestFound, nodeId );
-                        // continue checking so that we can find the lowest one. It's not up to us here to
-                        // consider multiple equal ids in this group an error or not. That should have been
-                        // decided in #prepare.
+                {
+                    if ( !trackerCache.isMarkedAsDuplicate( nodeId ) )
+                    {   // We found a data value for our group, but there are collisions within this group.
+                        // We need to consult the collision cache and original input id
+                        long collisionIndex = findCollisionIndex( nodeId );
+                        long offset = collisionNodeIdCache.get6ByteLong( collisionIndex, 5 );
+                        Object value = collisionValues.get( offset );
+                        if ( inputId.equals( value ) )
+                        {
+                            // :)
+                            lowestFound = lowestFound == ID_NOT_FOUND ? nodeId : min( lowestFound, nodeId );
+                            // continue checking so that we can find the lowest one. It's not up to us here to
+                            // consider multiple equal ids in this group an error or not. That should have been
+                            // decided in #prepare.
+                        }
                     }
                 }
                 else
@@ -764,8 +830,8 @@ public class EncodingIdMapper implements IdMapper
         nullSafeAcceptMemoryStatsVisitor( visitor, dataCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, trackerCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionTrackerCache );
-        nullSafeAcceptMemoryStatsVisitor( visitor, collisionSourceDataCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionNodeIdCache );
+        nullSafeAcceptMemoryStatsVisitor( visitor, collisionValues );
     }
 
     private void nullSafeAcceptMemoryStatsVisitor( MemoryStatsVisitor visitor, MemoryStatsVisitor.Visitable mem )
@@ -790,18 +856,50 @@ public class EncodingIdMapper implements IdMapper
         {
             trackerCache.close();
         }
-        if ( collisionSourceDataCache != null )
+        if ( collisionNodeIdCache != null )
         {
-            collisionTrackerCache.close();
-            collisionSourceDataCache.close();
+            collisionNodeIdCache.close();
         }
-        collisionNodeIdCache.close();
+        if ( collisionValues != null )
+        {
+            collisionValues.close();
+        }
     }
 
     @Override
     public long calculateMemoryUsage( long numberOfNodes )
     {
-        int trackerSize = numberOfNodes > TrackerFactories.HIGHEST_ID_FOR_SMALL_TRACKER ? BigIdTracker.ID_SIZE : IntTracker.ID_SIZE;
+        int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
         return numberOfNodes * (Long.BYTES /*data*/ + trackerSize /*tracker*/);
+    }
+
+    @Override
+    public PrimitiveLongIterator leftOverDuplicateNodesIds()
+    {
+        if ( numberOfCollisions == 0 )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        // Scans duplicate marks in tracker cache. There is no bit left in dataCache to store this bit so we use
+        // the tracker cache as if each index into it was the node id.
+        return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
+        {
+            private long nodeId;
+
+            @Override
+            protected boolean fetchNext()
+            {
+                while ( nodeId <= highestSetIndex )
+                {
+                    long candidate = nodeId++;
+                    if ( trackerCache.isMarkedAsDuplicate( candidate ) )
+                    {
+                        return next( candidate );
+                    }
+                }
+                return false;
+            }
+        };
     }
 }

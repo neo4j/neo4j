@@ -19,9 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-
 /**
  * Collects items and is {@link #close() closed} after any and all items have been collected.
  * The {@link Collector} is responsible for closing whatever closeable resource received from the importer.
@@ -41,13 +38,6 @@ public interface Collector extends AutoCloseable
     boolean isCollectingBadRelationships();
 
     /**
-     * @return iterator of node ids that were found to be duplicates of already imported nodes.
-     * Returned node ids was imported, but never used to connect any relationship to, and should
-     * be deleted. Must be returned sorted in ascending id order.
-     */
-    PrimitiveLongIterator leftOverDuplicateNodesIds();
-
-    /**
      * Flushes whatever changes to the underlying resource supplied from the importer.
      */
     @Override
@@ -55,12 +45,6 @@ public interface Collector extends AutoCloseable
 
     Collector EMPTY = new Collector()
     {
-        @Override
-        public PrimitiveLongIterator leftOverDuplicateNodesIds()
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
         @Override
         public void collectExtraColumns( String source, long row, String value )
         {

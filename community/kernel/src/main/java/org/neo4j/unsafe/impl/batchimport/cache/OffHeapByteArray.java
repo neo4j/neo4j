@@ -167,12 +167,23 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     }
 
     @Override
+    public long get5ByteLong( long index, int offset )
+    {
+        long address = address( index, offset );
+        long low4b = getInt( address ) & 0xFFFFFFFFL;
+        long high1b = UnsafeUtil.getByte( address + Integer.BYTES ) & 0xFF;
+        long result = low4b | (high1b << 32);
+        return result == 0xFFFFFFFFFFL ? -1 : result;
+    }
+
+    @Override
     public long get6ByteLong( long index, int offset )
     {
         long address = address( index, offset );
         long low4b = getInt( address ) & 0xFFFFFFFFL;
-        long high2b = getShort( address + Integer.BYTES );
-        return low4b | (high2b << 32);
+        long high2b = getShort( address + Integer.BYTES ) & 0xFFFF;
+        long result = low4b | (high2b << 32);
+        return result == 0xFFFFFFFFFFFFL ? -1 : result;
     }
 
     @Override
@@ -250,6 +261,14 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     }
 
     @Override
+    public void set5ByteLong( long index, int offset, long value )
+    {
+        long address = address( index, offset );
+        putInt( address, (int) value );
+        UnsafeUtil.putByte( address + Integer.BYTES, (byte) (value >>> 32) );
+    }
+
+    @Override
     public void set6ByteLong( long index, int offset, long value )
     {
         long address = address( index, offset );
@@ -281,8 +300,9 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     {
         long address = address( index, offset );
         int lowWord = UnsafeUtil.getShort( address ) & 0xFFFF;
-        byte highByte = UnsafeUtil.getByte( address + Short.BYTES );
-        return lowWord | (highByte << Short.SIZE);
+        int highByte = UnsafeUtil.getByte( address + Short.BYTES ) & 0xFF;
+        int result = lowWord | (highByte << Short.SIZE);
+        return result == 0xFFFFFF ? -1 : result;
     }
 
     @Override

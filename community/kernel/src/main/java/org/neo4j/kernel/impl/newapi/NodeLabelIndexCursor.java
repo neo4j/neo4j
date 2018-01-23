@@ -19,24 +19,28 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeLabelClient;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class NodeLabelIndexCursor extends IndexCursor
+class NodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgressor>
         implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor, NodeLabelClient
 {
     private Read read;
     private long node;
     private LabelSet labels;
     private PrimitiveLongIterator added;
-    private ReadableDiffSets<Long> changes;
+    private Set<Long> removed;
 
     NodeLabelIndexCursor()
     {
@@ -44,25 +48,22 @@ class NodeLabelIndexCursor extends IndexCursor
     }
 
     @Override
-    public void scan( IndexProgressor progressor, boolean providesLabels, int label )
+    public void scan( LabelScanValueIndexProgressor progressor, boolean providesLabels, int label )
     {
         super.initialize( progressor );
         if ( read.hasTxStateWithChanges() )
         {
-            changes = read.txState().nodesWithLabelChanged( label );
+            ReadableDiffSets<Long> changes =
+                    read.txState().nodesWithLabelChanged( label );
             added = changes.augment( PrimitiveLongCollections.emptyIterator() );
+            removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
+            removed.addAll( changes.getRemoved() );
         }
     }
 
     @Override
     public void unionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
     {
-        super.initialize( progressor );
-        if ( read.hasTxStateWithChanges() )
-        {
-            changes = read.txState().nodesWithAnyOfLabelsChanged( labels );
-            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
-        }
         //TODO: Currently we don't have a good way of handling this in the tx state
         //The problem is this case:
         //Given a node with label :A
@@ -75,7 +76,6 @@ class NodeLabelIndexCursor extends IndexCursor
     @Override
     public void intersectionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
     {
-        super.initialize( progressor );
         //TODO: Currently we don't have a good way of handling this in the tx state
         //The problem is for the nodes where some - but not all of the labels - are
         //added in the transaction. For these we need to go to disk and check if they
@@ -143,6 +143,7 @@ class NodeLabelIndexCursor extends IndexCursor
         node = NO_ID;
         labels = null;
         read = null;
+        removed = null;
     }
 
     @Override
@@ -167,7 +168,6 @@ class NodeLabelIndexCursor extends IndexCursor
 
     private boolean isRemoved( long reference )
     {
-        return (changes != null && changes.isRemoved( reference ) ) ||
-               (read.hasTxStateWithChanges() && read.txState().addedAndRemovedNodes().isRemoved( reference ));
+        return removed != null && removed.contains( reference );
     }
 }

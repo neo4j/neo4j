@@ -56,26 +56,24 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( Collection<String> terms, boolean matchAll )
+    public ScoreEntityIterator query( Collection<String> terms, boolean matchAll )
     {
         return partitionedOperation( reader -> innerQuery( reader, matchAll, terms ) );
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
+    public ScoreEntityIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
     {
         return partitionedOperation( reader -> innerFuzzyQuery( reader, matchAll, terms ) );
     }
 
-    private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
+    private ScoreEntityIterator innerQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
     {
-
         return reader.query( query, matchAll );
     }
 
-    private PrimitiveLongIterator innerFuzzyQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
+    private ScoreEntityIterator innerFuzzyQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
     {
-
         return reader.fuzzyQuery( query, matchAll );
     }
 
@@ -106,8 +104,8 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         return null;
     }
 
-    private PrimitiveLongIterator partitionedOperation( Function<ReadOnlyFulltext,PrimitiveLongIterator> readerFunction )
+    private ScoreEntityIterator partitionedOperation( Function<ReadOnlyFulltext,ScoreEntityIterator> readerFunction )
     {
-        return PrimitiveLongCollections.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
+        return ScoreEntityIterator.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
     }
 }

@@ -185,6 +185,12 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
+    public void shiftBytes( int sourceStart, int length, int shift )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
+    }
+
+    @Override
     public void zapPage()
     {
         throw new IllegalStateException( "Cannot write to read-locked page" );
