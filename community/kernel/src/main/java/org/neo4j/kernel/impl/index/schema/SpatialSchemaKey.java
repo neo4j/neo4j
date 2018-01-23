@@ -39,8 +39,6 @@ class SpatialSchemaKey implements NativeSchemaKey
 {
     static final int SIZE =
             Long.BYTES + /* raw value bits */
-
-            // TODO this could use 6 bytes instead and have the highest 2 bits stored in the type byte
             Long.BYTES;  /* entityId */
 
     private long entityId;
@@ -162,7 +160,6 @@ class SpatialSchemaKey implements NativeSchemaKey
         return (PointValue) values[0];
     }
 
-    // TODO this should change
     private void extractRawBitsAndType( PointValue value )
     {
         writePoint( value.getCoordinateReferenceSystem(), value.coordinate() );

@@ -263,7 +263,6 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            // TODO Handle pointvalue here?
             return exactValue.equals( value );
         }
 
@@ -412,7 +411,7 @@ public abstract class IndexQuery
             else if ( value instanceof LongValue )
             {
                 // This is called from the hilbert space filling curve index which decomposed 2D range into 1D long curve index
-                // TODO: Filter with property lookup
+                // This will return false positives that need to be filtered later
                 return true;
             }
             return false;

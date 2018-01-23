@@ -41,7 +41,6 @@ public class SpatialLayoutUnique extends SpatialLayout
     @Override
     public long identifier()
     {
-        // todo Is Number.Value.SIZE a good checksum?
         return IDENTIFIER;
     }
 
