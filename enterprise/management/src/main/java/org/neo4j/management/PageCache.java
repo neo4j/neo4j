@@ -58,6 +58,9 @@ public interface PageCache
                   "Otherwise it could indicate drive failure, storage space, or permission problems." )
     long getEvictionExceptions();
 
-    @Description( "The percentage of used pages." )
-    double getUsageRatio();
+    @Description( "The percentage of used pages. Will return NaN if it cannot be determined." )
+    default double getUsageRatio()
+    {
+        return Double.NaN;
+    }
 }
