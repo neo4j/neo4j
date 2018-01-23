@@ -143,6 +143,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     @Override
     public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId )
     {
+        setId( relationshipId );
         initialize( true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false );
     }
 }

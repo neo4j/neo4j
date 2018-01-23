@@ -37,15 +37,16 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             n1 = tx.dataWrite().nodeCreate();
             n2 = tx.dataWrite().nodeCreate();
+
+            // setup extra relationship to challenge the implementation
             long decoyNode = tx.dataWrite().nodeCreate();
-            label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ); // to have >1 relationship in the db
+            label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             tx.dataWrite().relationshipCreate( n2, label, decoyNode );
             tx.success();
         }
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
             try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
             {
