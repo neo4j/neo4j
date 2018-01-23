@@ -462,8 +462,23 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
-  //TODO: unignore once Cypher can plan a post-index filtering
-  ignore("indexed points close together in WGS84 - range query greaterThan") {
+  test("indexed points close together in WGS84 - equality query") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.700001, longitude: 12.7800001, crs: 'WGS-84'})")
+
+    // When
+    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    println(plan)
+    plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+  }
+
+  test("indexed points close together in WGS84 - range query greaterThan") {
     // Given
     graph.createIndex("Place", "location")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
@@ -481,8 +496,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
-  //TODO: unignore once Cypher can plan a post-index filtering
-  ignore("indexed points close together in WGS84 - range query greaterThanOrEqualTo") {
+  test("indexed points close together in WGS84 - range query greaterThanOrEqualTo") {
     // Given
     graph.createIndex("Place", "location")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
@@ -500,8 +514,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
-  //TODO: unignore once Cypher can plan a post-index filtering
-  ignore("indexed points close together in WGS84 - range query greaterThan with no results") {
+  test("indexed points close together in WGS84 - range query greaterThan with no results") {
     // Given
     graph.createIndex("Place", "location")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
@@ -519,8 +532,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     assert(result.isEmpty)
   }
 
-  //TODO: unignore once Cypher can plan a post-index filtering
-  ignore("indexed points close together in WGS84 - range query greaterThan with multiple CRS") {
+  test("indexed points close together in WGS84 - range query greaterThan with multiple CRS") {
     // Given
     graph.createIndex("Place", "location")
     graph.execute("CREATE (p:Place) SET p.location = point({y: 56.7, x: 12.78, crs: 'cartesian'})")
@@ -539,8 +551,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
-  //TODO: unignore once Cypher can plan a post-index filtering
-  ignore("indexed points close together in WGS84 - range query within") {
+  test("indexed points close together in WGS84 - range query within") {
     // Given
     graph.createIndex("Place", "location")
     graph.execute("CREATE (p:Place) SET p.location = point({y: 55.7, x: 11.78, crs: 'cartesian'})")

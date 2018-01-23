@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions, IsList, makeValueNeoSafe}
+import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.{PointValue, Values}
 import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.GenTraversableOnce
@@ -42,8 +42,19 @@ object indexQuery extends GraphElementPropertyFunctions {
 
     // Index exact value seek on single value
     case SingleQueryExpression(inner) =>
+      assert(1 == propertyNames.size)
       val value: AnyValue = inner(m, state)
-      lookupNodes(Seq(value), index)
+      val indexValues = lookupNodes(Seq(value), index)
+      value match {
+        case _: PointValue =>
+          val propertyKeyId = state.query.getPropertyKeyId(propertyNames.head)
+          indexValues.filter { nv =>
+            val propertyValue = state.query.nodeOps.getProperty(nv.id(), propertyKeyId)
+            value.equals(propertyValue)
+          }
+        case _ =>
+          indexValues
+      }
 
     // Index exact value seek on multiple values, by combining the results of multiple index seeks
     case ManyQueryExpression(inner) =>
@@ -77,7 +88,16 @@ object indexQuery extends GraphElementPropertyFunctions {
         case InequalitySeekRangeExpression(innerRange) =>
           innerRange.mapBounds(expression => makeValueNeoSafe(expression(m, state)).asObject())
       }
-      index(Seq(range)).toIterator
+      range match {
+        case r:InequalitySeekRange[PointValue] if r.existsBound { value => value.isInstanceOf[PointValue] } =>
+          val propertyKeyId = state.query.getPropertyKeyId(propertyNames.head)
+          index(Seq(range)).toIterator.filter { nv =>
+            val propertyValue = state.query.nodeOps.getProperty(nv.id(), propertyKeyId).asInstanceOf[PointValue]
+            r.includes(propertyValue)(CypherOrdering.BY_POINT)
+          }
+        case _ =>
+          index(Seq(range)).toIterator
+      }
   }
 
   private def lookupNodes(values: Seq[AnyValue], index: Seq[Any] => GenTraversableOnce[NodeValue]): Iterator[NodeValue] = {
