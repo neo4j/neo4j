@@ -47,8 +47,7 @@ public class BackupUsageTest
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    OnlineBackupCommandProvider onlineBackupCommandProvider = new OnlineBackupCommandProvider();
-    CommandLocator commandLocator = AugmentedCommandLocator.fromFixedArray( onlineBackupCommandProvider );
+    private final CommandLocator commandLocator = CommandLocator.fromServiceLocator();
 
     @Test
     public void outputMatchesExpectedForMissingBackupDir() throws UnsupportedEncodingException
