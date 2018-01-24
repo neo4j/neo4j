@@ -22,7 +22,6 @@ test_expect_success "should delegate unknown commands to the Java tool" "
 
 test_expect_success "should specify heap size when given" "
   HEAP_SIZE=666m neo4j-home/bin/neo4j-admin backup &&
-  test_expect_java_arg '-Xms666m' &&
   test_expect_java_arg '-Xmx666m'
 "
 
