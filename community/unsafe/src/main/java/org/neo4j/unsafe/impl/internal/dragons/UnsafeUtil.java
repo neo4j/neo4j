@@ -336,7 +336,7 @@ public final class UnsafeUtil
         long currentValue;
         do
         {
-            currentValue = UnsafeUtil.getLong( object, fieldOffset );
+            currentValue = UnsafeUtil.getLongVolatile( object, fieldOffset );
             if ( currentValue >= newValue )
             {
                 return;
