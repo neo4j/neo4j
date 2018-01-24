@@ -24,11 +24,13 @@ import java.net.URI
 import java.util.Collection
 
 import cypher.features.ScenarioTestHelper._
-import org.junit.jupiter.api.{DynamicTest, TestFactory}
+import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.{DynamicTest, Test, TestFactory}
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
 class AcceptanceTest {
 
+  // these two should be empty on commit!
   val featureToRun = ""
   val scenarioToRun = ""
 
@@ -61,8 +63,8 @@ class AcceptanceTest {
   //  Morsel engine is not complete and executes tests very slowly
   // eg. MorselExecutionContext.createClone is not implemented
   //  @TestFactory
-  //  def runAcceptanceTestsCostMorsel() = {
-  // TODO: once Morsel is complete, generate blacklist with: printComputedBlacklist(scenarios, CostMorselTestConfig)
+  //  def runAcceptanceTestsCostMorsel(): Collection[DynamicTest] = {
+  // TODO: once Morsel is complete, generate blacklist with: generateBlacklistAcceptanceCostMorsel further down
   //    createTests(scenarios, CostMorselTestConfig)
   //  }
 
@@ -88,6 +90,74 @@ class AcceptanceTest {
 
   @TestFactory
   def runAcceptanceTestsCompatibility23(): Collection[DynamicTest] = {
-    createTests(scenarios, Compatibility23TestConfig)
+    def isFlakyOn23(scenario: Scenario): Boolean = { //TODO: Investigate
+      scenario.name == "STARTS WITH should handle null prefix" && scenario.featureName == "IndexAcceptance"
+    }
+    createTests(scenarios.filterNot(isFlakyOn23), Compatibility23TestConfig)
   }
+
+  @Test
+  def debugTokensNeedToBeEmpty(): Unit = {
+    // besides the obvious reason this test is also here (and not using assert)
+    // to ensure that any import optimizer doesn't remove the correct import for fail (used by the commented out methods further down)
+    if (!scenarioToRun.equals(""))
+      fail("scenarioToRun is only for debugging and should not be committed")
+
+    if (!featureToRun.equals(""))
+      fail("featureToRun is only for debugging and should not be committed")
+  }
+
+  /*
+  All methods for generating blacklists. Comment them out for commit
+   */
+/*
+  @Test
+  def generateBlacklistAcceptanceDefault(): Unit = {
+    printComputedBlacklist(scenarios, DefaultTestConfig)
+    fail("Do not forget to comment this method out")
+  }
+
+  @Test
+  def generateBlacklistAcceptanceCostSlotted(): Unit = {
+    printComputedBlacklist(scenarios, CostSlottedTestConfig)
+    fail("Do not forget to comment this method out")
+  }
+
+  //  Morsel engine is not complete and executes tests very slowly
+  // eg. MorselExecutionContext.createClone is not implemented
+  //  @Test
+  //  def generateBlacklistAcceptanceCostMorsel(): Unit = {
+  //    printComputedBlacklist(scenarios, CostMorselTestConfig)
+  //    fail("Do not forget to comment this method out")
+  //  }
+
+  @Test
+  def generateBlacklistAcceptanceCostCompiled(): Unit = {
+    printComputedBlacklist(scenarios, CostCompiledTestConfig)
+    fail("Do not forget to comment this method out")
+  }
+
+  @Test
+  def generateBlacklistAcceptanceCost(): Unit = {
+    printComputedBlacklist(scenarios, CostTestConfig)
+    fail("Do not forget to comment this method out")
+  }
+
+  @Test
+  def generateBlacklistAcceptanceCompatibility33(): Unit = {
+    printComputedBlacklist(scenarios, Compatibility33TestConfig)
+    fail("Do not forget to comment this method out")
+  }
+
+  @Test
+  def generateBlacklistAcceptanceCompatibility31(): Unit = {
+    printComputedBlacklist(scenarios, Compatibility31TestConfig)
+    fail("Do not forget to comment this method out")
+  }
+  @Test
+  def generateBlacklistAcceptanceCompatibility23(): Unit = {
+    printComputedBlacklist(scenarios, Compatibility23TestConfig)
+    fail("Do not forget to comment this method out")
+  }
+*/
 }

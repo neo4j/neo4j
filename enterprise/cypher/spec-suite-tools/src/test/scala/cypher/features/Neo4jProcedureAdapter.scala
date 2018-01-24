@@ -33,10 +33,27 @@ import org.opencypher.tools.tck.values.CypherValue
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
+case class Neo4jValueRecords(header: List[String], rows: List[Array[AnyRef]]) {}
+
+object Neo4jValueRecords {
+  def apply(record: CypherValueRecords): Neo4jValueRecords = {
+    val tableValues = record.rows.map {
+      row: Map[String, CypherValue] =>
+        record.header.map { columnName =>
+          val value = row(columnName)
+          val convertedValue = TCKValueToNeo4jValue(value)
+          convertedValue
+        }.toArray
+    }
+    Neo4jValueRecords(record.header, tableValues)
+  }
+}
+
 trait Neo4jProcedureAdapter extends ProcedureSupport {
   self: Graph =>
 
   protected def instance: GraphDatabaseAPI
+
   protected val parser = new ProcedureSignatureParser
 
   override def registerProcedure(signature: String, values: CypherValueRecords): Unit = {
@@ -50,28 +67,23 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
 
   private def buildProcedure(parsedSignature: ProcedureSignature, values: CypherValueRecords) = {
     val signatureFields = parsedSignature.fields
-    val tableColumns = values.header
-    val tableValues: Seq[Array[AnyRef]] = values.rows.map {
-      row: Map[String, CypherValue] =>
-        tableColumns.map { columnName =>
-          val value = row(columnName)
-          val convertedValue = TCKValueToNeo4jValue(value)
-          convertedValue
-        }.toArray
-    }
-    if (tableColumns != signatureFields)
+    val neo4jValues = Neo4jValueRecords(values)
+    if (neo4jValues.header != signatureFields)
       throw new scala.IllegalArgumentException(
-        s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: $tableColumns Expected: $signatureFields)"
+        s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: ${neo4jValues.rows} Expected: $signatureFields)"
       )
     val kernelSignature = asKernelSignature(parsedSignature)
     val kernelProcedure = new BasicProcedure(kernelSignature) {
       override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
-        val scalaIterator = tableValues
-          .filter { row => input.indices.forall { index => row(index) == input(index) } }
-          .map { row => row.drop(input.length).clone() }
-          .toIterator
+        // For example of usage see ProcedureCallAcceptance.feature e.g. "Standalone call to procedure with explicit arguments"
+        val rowsWithMatchingInput = neo4jValues.rows.filter { row =>
+          row.startsWith(input)
+        }
+        val extractResultsFromRows = rowsWithMatchingInput.map { row =>
+          row.drop(input.length)
+        }
 
-        val rawIterator = RawIterator.wrap[Array[AnyRef], ProcedureException](scalaIterator.asJava)
+        val rawIterator = RawIterator.wrap[Array[AnyRef], ProcedureException](extractResultsFromRows.toIterator.asJava)
         rawIterator
       }
     }
@@ -89,7 +101,7 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
     builder.build()
   }
 
-  private def asKernelType(tpe: CypherType):  Neo4jTypes.AnyType = tpe match {
+  private def asKernelType(tpe: CypherType): Neo4jTypes.AnyType = tpe match {
     case CTMap => Neo4jTypes.NTMap
     case CTNode => Neo4jTypes.NTNode
     case CTRelationship => Neo4jTypes.NTRelationship
