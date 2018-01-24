@@ -20,11 +20,14 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongConsumer;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -36,19 +39,29 @@ public class LogPruningImpl implements LogPruning
 {
     private final Lock pruneLock = new ReentrantLock();
     private final FileSystemAbstraction fs;
-    private final LogPruneStrategy pruneStrategy;
     private final LogFiles logFiles;
     private final Log msgLog;
+    private final LogPruneStrategyFactory strategyFactory;
+    private final Clock clock;
+    private volatile LogPruneStrategy pruneStrategy;
 
     public LogPruningImpl( FileSystemAbstraction fs,
-                           LogPruneStrategy pruneStrategy,
                            LogFiles logFiles,
-                           LogProvider logProvider )
+                           LogProvider logProvider,
+                           LogPruneStrategyFactory strategyFactory,
+                           Clock clock,
+                           Config config )
     {
         this.fs = fs;
-        this.pruneStrategy = pruneStrategy;
         this.logFiles = logFiles;
         this.msgLog = logProvider.getLog( getClass() );
+        this.strategyFactory = strategyFactory;
+        this.clock = clock;
+        this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, clock, config.get( GraphDatabaseSettings.keep_logical_logs ) );
+
+        // Register listener for updates
+        config.registerDynamicUpdateListener( GraphDatabaseSettings.keep_logical_logs,
+                ( prev, update ) -> updateConfiguration( update ) );
     }
 
     private static class CountingDeleter implements LongConsumer
@@ -90,6 +103,12 @@ public class LogPruningImpl implements LogPruning
                        ", last checkpoint was made in version " + upToVersion;
             }
         }
+    }
+
+    private void updateConfiguration( String pruningConf )
+    {
+        this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, clock, pruningConf );
+        msgLog.info( "Retention policy updated, value will take effect during the next evaluation." );
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -28,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 
 class TransactionLogFilesContext
 {
-    private final long rotationThreshold;
+    private final AtomicLong rotationThreshold;
     private final LogEntryReader logEntryReader;
     private final LongSupplier lastCommittedTransactionIdSupplier;
     private final LongSupplier committingTransactionIdSupplier;
@@ -36,7 +37,7 @@ class TransactionLogFilesContext
     private final LogFileCreationMonitor logFileCreationMonitor;
     private final FileSystemAbstraction fileSystem;
 
-    TransactionLogFilesContext( long rotationThreshold, LogEntryReader logEntryReader,
+    TransactionLogFilesContext( AtomicLong rotationThreshold, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier,
             LogFileCreationMonitor logFileCreationMonitor, Supplier<LogVersionRepository> logVersionRepositorySupplier,
             FileSystemAbstraction fileSystem )
@@ -50,7 +51,7 @@ class TransactionLogFilesContext
         this.fileSystem = fileSystem;
     }
 
-    long getRotationThreshold()
+    AtomicLong getRotationThreshold()
     {
         return rotationThreshold;
     }

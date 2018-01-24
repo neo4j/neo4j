@@ -45,6 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
 
@@ -74,7 +75,7 @@ public class GraphDatabaseSettingsTest
         {
             if ( field.getType() == Setting.class )
             {
-                Setting setting = (Setting) field.get( null );
+                Setting<?> setting = (Setting<?>) field.get( null );
 
                 assertFalse(
                         String.format( "'%s' in %s has already been defined in %s", setting.name(), field.getName(),
@@ -415,5 +416,32 @@ public class GraphDatabaseSettingsTest
         assertEquals( 1, config.enabledHttpConnectors().size() );
         assertEquals( new ListenSocketAddress( "127.0.0.1", 9000 ),
                 config.get( config.enabledHttpConnectors().get( 0 ).listen_address ) );
+    }
+
+    @Test
+    public void validateRetentionPolicy()
+    {
+        String[] validSet =
+                new String[]{"true", "keep_all", "false", "keep_none", "10 files", "10k files", "10K size", "10m txs",
+                        "10M entries", "10g hours", "10G days"};
+
+        String[] invalidSet = new String[]{"invalid", "all", "10", "10k", "10k a"};
+
+        for ( String valid : validSet )
+        {
+            assertEquals( valid, Config.defaults( keep_logical_logs, valid ).get( keep_logical_logs ) );
+        }
+
+        for ( String invalid : invalidSet )
+        {
+            try
+            {
+                Config.defaults( keep_logical_logs, invalid );
+                fail( "Value \"" + invalid + "\" should be considered invalid" );
+            }
+            catch ( InvalidSettingException ignored )
+            {
+            }
+        }
     }
 }
