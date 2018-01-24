@@ -48,7 +48,7 @@ public class IndexSimpleValueValidatorTest
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage(
-                "Property value bytes length: 35000 is longer then 32766, " +
+                "Property value bytes length: 35000 is longer than 32766, " +
                         "which is maximum supported length of indexed property value." );
         getValidator().validate( RandomStringUtils.randomAlphabetic( 35000 ) );
     }
@@ -58,7 +58,7 @@ public class IndexSimpleValueValidatorTest
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage(
-                "Property value bytes length: 32767 is longer then 32766, " +
+                "Property value bytes length: 32767 is longer than 32766, " +
                         "which is maximum supported length of indexed property value." );
         getValidator().validate( RandomStringUtils.randomAlphabetic( IndexValueLengthValidator.MAX_TERM_LENGTH + 1 ) );
     }
