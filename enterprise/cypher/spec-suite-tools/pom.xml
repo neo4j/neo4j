@@ -45,7 +45,7 @@
   </licenses>
 
   <properties>
-    <opencypher.version>1.0.0-M08</opencypher.version>
+    <opencypher.version>1.0.0-M09</opencypher.version>
   </properties>
 
   <build>
@@ -63,7 +63,7 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>tck</artifactId>
+      <artifactId>tck-api</artifactId>
       <version>${opencypher.version}</version>
     </dependency>
 
