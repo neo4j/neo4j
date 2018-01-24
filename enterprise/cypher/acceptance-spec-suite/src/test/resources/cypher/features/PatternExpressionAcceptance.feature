@@ -544,3 +544,21 @@ Feature: PatternExpressionAcceptance
       | result | s |
       | [[[:HAS_ALBUM {}], (:Album {name: 'Reload'}), [[[:HAS_ALBUM {}], (:Artist {name: 'Metallica'})]], [], [[[:RECORDED_AT {}], (:Studio {name: 'The Plant Studios in Sausalito'})]]]] | (:Studio {name: 'The Plant Studios in Sausalito'}) |
     And no side effects
+
+  Scenario: Nested pattern comprehensions 4
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:Artist {name:"Metallica"})-[:HAS_ALBUM]->(r:Album {name:"Reload"})-[:RECORDED_AT]->(s:Studio {name:"The Plant Studios in Sausalito"})
+      """
+    When executing query:
+      """
+      MATCH ()-[r0:HAS_ALBUM]->()
+      WITH r0, STARTNODE(r0) AS n, ENDNODE(r0) AS m
+      RETURN r0, n, [ [ (n)-[r_p1:HAS_ALBUM]-(i1:Album) | [ r_p1, i1, [ [ (i1)-[r_p2:HAS_ALBUM]-(i2:Album) | [ r_p2, i2 ] ] ] ] ] ] as pattern1,
+        m, [ [ (m)-[r_p1:HAS_ALBUM]-(i1:`Artist`) | [ r_p1, i1, [ [ (i1)-[r_p2:HAS_ALBUM]-(i2:Artist) | [ r_p2, i2 ] ] ] ] ] ] as pattern2
+      """
+    Then the result should be:
+      | r0              | n | pattern1 | m | pattern2 |
+      | [:HAS_ALBUM {}] | (:Artist {name: 'Metallica'}) | [[[[:HAS_ALBUM {}], (:Album {name: 'Reload'}), [[]]]]] | (:Album {name: 'Reload'}) | [[[[:HAS_ALBUM {}], (:Artist {name: 'Metallica'}), [[]]]]] |
+    And no side effects

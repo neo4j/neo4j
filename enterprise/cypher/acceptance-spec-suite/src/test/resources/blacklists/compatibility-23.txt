@@ -48,6 +48,7 @@ Get node degree via length of pattern expression that specifies a relationship t
 Nested pattern comprehensions
 Nested pattern comprehensions 2
 Nested pattern comprehensions 3
+Nested pattern comprehensions 4
 
 //OrderByAcceptance.feature - Unsupported orderability
 ORDER BY nodes should return null results last in ascending order
