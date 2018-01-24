@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 
 /**
  * This implementation of {@link EditionModule} creates the implementations of services
@@ -76,7 +76,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     static Predicate<String> enterpriseNonClusterFileWatcherFileNameFilter()
     {
         return Predicates.any(
-                fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),
+                fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF ),
                 filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF_TMP )

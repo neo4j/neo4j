@@ -19,31 +19,30 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -134,7 +133,7 @@ public class PageCacheWarmerTest
             warmer.reheat();
 
             pageCache.reportEvents();
-            assertThat( cacheTracer.faults(), is( initialFaults + 2L ) );
+            assertThat( cacheTracer.faults(), is( initialFaults + 4L ) );
 
             try ( PageCursor reader = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
             {
@@ -144,54 +143,7 @@ public class PageCacheWarmerTest
 
             // No additional faults must have been reported.
             pageCache.reportEvents();
-            assertThat( cacheTracer.faults(), is( initialFaults + 2L ) );
-        }
-    }
-
-    @Test
-    public void reheatingMustWorkOnLargeNumberOfPages() throws Exception
-    {
-        int maxPagesInMemory = 1_000;
-        int[] pageIds = randomSortedPageIds( maxPagesInMemory );
-
-        String pageCacheMemory = String.valueOf( maxPagesInMemory * ByteUnit.kibiBytes( 9 ) );
-        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg.withMemory( pageCacheMemory ) );
-              PagedFile pf = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
-        {
-            try ( PageCursor writer = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
-            {
-                for ( int pageId : pageIds )
-                {
-                    assertTrue( writer.next( pageId ) );
-                }
-            }
-            pf.flushAndForce();
-            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
-            warmer.profile();
-        }
-
-        long initialFaults = cacheTracer.faults();
-        clearTracerCounts();
-        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
-              PagedFile pf = pageCache.map( file, pageCache.pageSize() ) )
-        {
-            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
-            warmer.reheat();
-
-            pageCache.reportEvents();
-            assertThat( cacheTracer.faults(), is( initialFaults + pageIds.length ) );
-
-            try ( PageCursor reader = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
-            {
-                for ( int pageId : pageIds )
-                {
-                    assertTrue( reader.next( pageId ) );
-                }
-            }
-
-            // No additional faults must have been reported.
-            pageCache.reportEvents();
-            assertThat( cacheTracer.faults(), is( initialFaults + pageIds.length ) );
+            assertThat( cacheTracer.faults(), is( initialFaults + 4L ) );
         }
     }
 

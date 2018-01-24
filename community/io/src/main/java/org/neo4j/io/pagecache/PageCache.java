@@ -79,7 +79,6 @@ public interface PageCache extends AutoCloseable
      */
     Optional<PagedFile> getExistingMapping( File file ) throws IOException;
 
-
     /**
      * List a snapshot of the current file mappings.
      * <p>

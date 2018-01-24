@@ -392,7 +392,6 @@ public class MuninnPageCache implements PageCache
         return Optional.empty();
     }
 
-
     @Override
     public synchronized List<PagedFile> listExistingMappings() throws IOException
     {

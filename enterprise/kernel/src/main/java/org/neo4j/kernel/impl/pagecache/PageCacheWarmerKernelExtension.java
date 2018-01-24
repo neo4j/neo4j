@@ -35,6 +35,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.pageCacheIOHelper;
 
 class PageCacheWarmerKernelExtension extends LifecycleAdapter
 {
