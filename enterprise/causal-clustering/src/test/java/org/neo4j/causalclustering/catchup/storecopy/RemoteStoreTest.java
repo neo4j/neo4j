@@ -60,7 +60,7 @@ public class RemoteStoreTest
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
+                mock( PageCache.class ), storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
@@ -90,7 +90,7 @@ public class RemoteStoreTest
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
+                mock( PageCache.class ), storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
         remoteStore.copy( localhost, wantedStoreId, new File( "destination" ) );
@@ -109,8 +109,8 @@ public class RemoteStoreTest
         TxPullClient txPullClient = mock( TxPullClient.class );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
-        RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null,
+        RemoteStore remoteStore = new RemoteStore(
+                NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ), mock( PageCache.class ),
                 storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         doThrow( StoreCopyFailedException.class ).when( txPullClient )
