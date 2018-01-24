@@ -657,7 +657,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         UnsafeUtil.putIntVolatile( chunk, chunkOffset, UNMAPPED_TTE );
     }
 
-    void setHighestEvictedTransactionId( long modifiedTransactionId )
+    private void setHighestEvictedTransactionId( long modifiedTransactionId )
     {
         UnsafeUtil.compareAndSetMaxLong( this, evictedTransactionIdOffset, modifiedTransactionId );
     }
