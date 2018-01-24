@@ -89,6 +89,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         if ( args == null || args.length == 0 )
         {
             System.err.println( "SYNTAX: [file[:id[,id]*]]+" );
+            System.err.println( "where 'id' can be single id or range like: lowId-highId" );
             return;
         }
 
