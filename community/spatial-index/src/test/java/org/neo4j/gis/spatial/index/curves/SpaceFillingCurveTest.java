@@ -334,11 +334,11 @@ public class SpaceFillingCurveTest
     @Test
     public void shouldGet2DHilbertSearchTilesForWideRangeAtManyLevels()
     {
+        boolean verbose = false;
         Envelope envelope = new Envelope( -180, 180, -90, 90 );
-        for ( int level = 1; level <= 11; level++ )  // 12 takes 6s, 13 takes 25s, 14 takes 100s, 15 takes over 400s
+        for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )  // 12 takes 6s, 13 takes 25s, 14 takes 100s, 15 takes over 400s
         {
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-            System.out.print( "Testing hilbert query at level " + level );
             double halfTile = curve.getTileWidth( 0, level ) / 2.0;
             long start = System.currentTimeMillis();
             // Bottom left should give 1/4 of all tiles started at index 0
@@ -353,7 +353,32 @@ public class SpaceFillingCurveTest
             // Bottom right should give 1/4 of all tiles started at index 3/4
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 0, envelope.getMax( 0 ), envelope.getMin( 1 ), 0 - halfTile ) ),
                     new SpaceFillingCurve.LongRange( 3 * curve.getValueWidth() / 4, curve.getValueWidth() - 1 ) );
-            System.out.println( ", took " + (System.currentTimeMillis() - start) + "ms" );
+
+            // Now use a sliding window of moderate size (1/8 width and 1/8 height) to test many non-aligned positions
+            double eighthWidth = envelope.getWidth( 0 ) / 8.0;
+            double eighthHeight = envelope.getWidth( 1 ) / 8.0;
+            double left = envelope.getMin( 0 );
+            double bottom = envelope.getMin( 1 );
+            while ( left < envelope.getMax( 0 ) - eighthWidth )
+            {
+                Envelope eighth = new Envelope( left, left + eighthWidth, bottom, bottom + eighthHeight );
+                SpaceFillingCurve.RecursionStats stats = new SpaceFillingCurve.RecursionStats( curve.getMaxLevel() );
+                curve.getTilesIntersectingEnvelope( eighth, stats );
+                int expectedMaxDepth = Math.max( 10, level / 1 );
+                assertThat( "Expected to not recurse deeper than " + expectedMaxDepth + " for level " + level, stats.maxDepth,
+                        lessThanOrEqualTo( expectedMaxDepth ) );
+                if ( verbose )
+                {
+                    System.out.println( "Recursed to max-depth: " + stats.maxDepth );
+                    for ( int i = 0; i <= stats.maxDepth; i++ )
+                    {
+                        System.out.println( "\t" + i + "\t" + stats.counts[i] );
+                    }
+                }
+                left += eighthWidth / 5.12;
+                bottom += eighthHeight / 5.12;
+            }
+            System.out.println( "Tested hilbert query at level " + level + ", took " + (System.currentTimeMillis() - start) + "ms" );
         }
     }
 
