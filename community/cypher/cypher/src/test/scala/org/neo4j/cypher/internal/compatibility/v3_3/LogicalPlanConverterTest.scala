@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition, NonEmptyList, symbols => symbolsV3_4}
@@ -195,7 +194,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     def isImportant(expression: astV3_3.Expression): Boolean = false
 
     val var3_3 = astV3_3.Variable("n")(pos3_3)
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
     val l3_3 = plansV3_3.Limit(a3_3, var3_3, plansV3_3.IncludeTies)(solved3_3)
     l3_3.assignIds()
 
@@ -207,7 +206,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     def isImportant(expression: astV3_3.Expression): Boolean = true
 
     val var3_3 = astV3_3.Variable("n")(pos3_3)
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
     val l3_3 = plansV3_3.Limit(a3_3, var3_3, plansV3_3.IncludeTies)(solved3_3)
     l3_3.assignIds()
 
@@ -222,7 +221,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
     val var3_3a = astV3_3.Variable("n")(InputPositionV3_3(0, 0, 0))
     val var3_3b = astV3_3.Variable("n")(InputPositionV3_3(1, 1, 1))
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
     val l3_3a = plansV3_3.Limit(a3_3, var3_3a, plansV3_3.IncludeTies)(solved3_3)
     val l3_3b = plansV3_3.Limit(l3_3a, var3_3b, plansV3_3.IncludeTies)(solved3_3)
     l3_3b.assignIds()
@@ -236,7 +235,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
   test("should provide minimal implementation of solved after plan conversion") {
     val solved = irV3_3.CardinalityEstimation.lift(irV3_3.PlannerQuery.empty, irV3_3.Cardinality(5.0))
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved)
     a3_3.assignIds()
 
     val solveds = new Solveds
@@ -247,7 +246,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
   }
 
   test("should convert AllNodeScan and keep id") {
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
     a3_3.assignIds()
     val id3_3 = a3_3.assignedId
     val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)
@@ -258,7 +257,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
   }
 
   test("should convert Aggregation and keep ids") {
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
     val i3_3a = astV3_3.SignedDecimalIntegerLiteral("2")(pos3_3)
     val i3_3b = astV3_3.SignedDecimalIntegerLiteral("5")(pos3_3)
     val ag3_3 = plansV3_3.Aggregation(a3_3, Map("a" -> i3_3a), Map("b" -> i3_3b))(solved3_3)
@@ -295,7 +294,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
   }
 
   test("should convert ErrorPlan") {
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
     val e3_3 = plansV3_3.ErrorPlan(a3_3, new frontendV3_3.ExhaustiveShortestPathForbiddenException)(solved3_3)
     e3_3.assignIds()
 
@@ -309,8 +308,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
   test("should convert NodeIndexSeek") {
     val var3_3 = astV3_3.Variable("n")(pos3_3)
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
-    val n3_3 = plansV3_3.NodeIndexSeek(IdNameV3_3("a"),
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
+    val n3_3 = plansV3_3.NodeIndexSeek("a",
       astV3_3.LabelToken("b", frontendV3_3.LabelId(2)),
       Seq(astV3_3.PropertyKeyToken("c", frontendV3_3.PropertyKeyId(3))),
       plansV3_3.ScanQueryExpression(var3_3), Set.empty)(solved3_3)
@@ -328,7 +327,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
   test("should convert ProcedureCall") {
     val var3_3 = astV3_3.Variable("n")(pos3_3)
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
     val inputv3_3 = plansV3_3.FieldSignature("d", symbolsV3_3.CTString, Some(plansV3_3.CypherValue("e", symbolsV3_3.CTString)))
     val sigv3_3 = plansV3_3.ProcedureSignature(plansV3_3.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv3_3), None, None, plansV3_3.ProcedureReadWriteAccess(Array("foo", "bar")))
     val pres3_3 = astV3_3.ProcedureResultItem(Some(astV3_3.ProcedureOutput("f")(pos3_3)), var3_3)(pos3_3)
@@ -349,8 +348,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
   }
 
   test("should convert Sort") {
-    val a3_3 = plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
-    val s3_3 = plansV3_3.Sort(a3_3, Seq(plansV3_3.Ascending(IdNameV3_3("n"))))(solved3_3)
+    val a3_3 = plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
+    val s3_3 = plansV3_3.Sort(a3_3, Seq(plansV3_3.Ascending("n")))(solved3_3)
     s3_3.assignIds()
 
     val a3_4 = plansV3_4.AllNodesScan("n", Set.empty)
@@ -441,10 +440,10 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "InequalitySeekRange" => compilerV3_3.RangeGreaterThan(frontendV3_3.helpers.NonEmptyList(frontendV3_3.InclusiveBound(variable)))
       case "PrefixRange" => compilerV3_3.PrefixRange(variable)
 
-      case "LogicalPlan" => plansV3_3.AllNodesScan(IdNameV3_3("n"), Set.empty)(solved3_3)
+      case "LogicalPlan" => plansV3_3.AllNodesScan("n", Set.empty)(solved3_3)
       case "PlannerQuery" => solved3_3
       case "Exception" => new frontendV3_3.ExhaustiveShortestPathForbiddenException
-      case "IdName" => IdNameV3_3("n")
+      case "IdName" => "n"
       case "LabelName" => astV3_3.LabelName("n")(pos3_3)
       case "LabelToken" => astV3_3.LabelToken("a", argumentProvider(classOf[frontendV3_3.LabelId]))
       case "LabelId" => frontendV3_3.LabelId(5)
@@ -459,7 +458,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "SeekableArgs" => plansV3_3.SingleSeekableArg(variable)
       case "ExpansionMode" => plansV3_3.ExpandAll
       case "ShortestPathPattern" => irV3_3.ShortestPathPattern(None, argumentProvider(classOf[irV3_3.PatternRelationship]), single = true)(argumentProvider(classOf[astV3_3.ShortestPaths]))
-      case "PatternRelationship" => irV3_3.PatternRelationship(IdNameV3_3("n"), (IdNameV3_3("n"), IdNameV3_3("n")), frontendV3_3.SemanticDirection.OUTGOING, Seq.empty, irV3_3.SimplePatternLength)
+      case "PatternRelationship" => irV3_3.PatternRelationship("n", ("n", "n"), frontendV3_3.SemanticDirection.OUTGOING, Seq.empty, irV3_3.SimplePatternLength)
       case "PatternLength" => irV3_3.SimplePatternLength
       case "Ties" => plansV3_3.IncludeTies
       case "CSVFormat" => irV3_3.HasHeaders
