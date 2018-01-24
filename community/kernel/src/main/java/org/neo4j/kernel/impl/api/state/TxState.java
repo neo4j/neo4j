@@ -697,7 +697,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             NodeState nodeState,
             Direction direction )
     {
-        return nodeState.hasPropertyChanges() || nodeState.hasRelationshipChanges()
+        return nodeState.hasRelationshipChanges()
                ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction ) )
                : cursor;
     }
@@ -707,7 +707,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             Direction direction,
             int[] relTypes )
     {
-        return nodeState.hasPropertyChanges() || nodeState.hasRelationshipChanges()
+        return nodeState.hasRelationshipChanges()
                ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction, relTypes ) )
                : cursor;
     }

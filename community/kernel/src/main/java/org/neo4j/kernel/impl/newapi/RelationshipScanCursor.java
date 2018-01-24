@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Set;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+
+import static java.util.Collections.emptySet;
 
 class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.internal.kernel.api.RelationshipScanCursor
 {
@@ -28,6 +32,7 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
     private long next;
     private long highMark;
     private PageCursor pageCursor;
+    Set<Long> addedRelationships;
 
     void scan( int label, Read read )
     {
@@ -43,6 +48,7 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
         this.label = label;
         highMark = read.relationshipHighMark();
         init( read );
+        this.addedRelationships = emptySet();
     }
 
     void single( long reference, Read read )
@@ -59,6 +65,7 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
         label = -1;
         highMark = NO_ID;
         init( read );
+        this.addedRelationships = emptySet();
     }
 
     @Override
@@ -172,8 +179,11 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
         return highMark == NO_ID;
     }
 
-    protected boolean shouldGetAddedTxStateSnapshot()
+    protected void collectAddedTxStateSnapshot()
     {
-        return !isSingle();
+        if ( !isSingle() )
+        {
+            addedRelationships = read.txState().addedAndRemovedRelationships().getAddedSnapshot();
+        }
     }
 }

@@ -252,7 +252,7 @@ abstract class Read implements TxStateHolder,
     public final void relationships(
             long nodeReference, long reference, org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
-        /* TODO: There are actually five (5!) different ways a relationship traversal cursor can be initialized:
+        /* There are 5 different ways a relationship traversal cursor can be initialized:
          *
          * 1. From a batched group in a detached way. This happens when the user manually retrieves the relationships
          *    references from the group cursor and passes it to this method and if the group cursor was based on having
@@ -282,7 +282,8 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
         if ( reference == NO_ID ) // there are no relationships for this node
         {
-            cursor.close();
+            // still initiate cursor in case there are tx-state additions
+            ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference, this );
         }
         else if ( hasGroupFlag( reference ) ) // this reference is actually to a group record
         {

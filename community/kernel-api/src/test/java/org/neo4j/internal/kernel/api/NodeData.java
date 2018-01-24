@@ -23,13 +23,13 @@ import java.util.Map;
 
 import org.neo4j.values.storable.Value;
 
-class Node
+class NodeData
 {
     final long id;
     private final long[] labels;
     final Map<Integer,Value> properties;
 
-    Node( long id, long[] labels, Map<Integer,Value> properties )
+    NodeData( long id, long[] labels, Map<Integer,Value> properties )
     {
         this.id = id;
         this.labels = labels;
