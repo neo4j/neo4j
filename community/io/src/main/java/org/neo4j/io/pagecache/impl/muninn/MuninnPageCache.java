@@ -258,6 +258,9 @@ public class MuninnPageCache implements PageCache
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
         int maxPages = calculatePageCount( memoryAllocator, cachePageSize );
 
+        // Expose the total number of pages
+        pageCacheTracer.maxPages( maxPages );
+
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
