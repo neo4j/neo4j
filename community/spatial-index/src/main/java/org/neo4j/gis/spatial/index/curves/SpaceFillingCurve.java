@@ -268,7 +268,12 @@ public abstract class SpaceFillingCurve
         SearchEnvelope search = new SearchEnvelope( this, referenceEnvelope );
         ArrayList<LongRange> results = new ArrayList<>(1000);
 
-        addTilesIntersectingEnvelopeAt( stats, 0, search, new SearchEnvelope( 0, this.getWidth(), nbrDim ), rootCurve(), 0, this.getValueWidth(), results );
+        double searchRatio = referenceEnvelope.getArea() / this.range.getArea();
+        int maxDepth = (int) (Math.log( (1 / searchRatio) ) / Math.log( Math.pow( 2, nbrDim ) )) + 1;
+        // System.out.println( "For ratio " + searchRatio + " and max level " + maxLevel + " maxDepth is " + maxDepth );
+
+        addTilesIntersectingEnvelopeAt( stats, 0, search, new SearchEnvelope( 0, this.getWidth(), nbrDim ), rootCurve(), 0, this.getValueWidth(), results,
+                maxDepth );
         return results;
     }
 
@@ -287,8 +292,11 @@ public abstract class SpaceFillingCurve
         }
     }
 
+    private static double TOP_THRESHOLD = 0.99;
+    private static double BOTTOM_THRESHOLD = 0.5;
+
     private void addTilesIntersectingEnvelopeAt( RecursionStats stats, int depth, SearchEnvelope search, SearchEnvelope currentExtent, CurveRule curve, long left, long right,
-            ArrayList<LongRange> results )
+            ArrayList<LongRange> results, int maxDepth )
     {
         if ( right - left == 1 )
         {
@@ -310,8 +318,11 @@ public abstract class SpaceFillingCurve
         }
         else if ( search.intersects( currentExtent ) )
         {
+            // TODO remove parts that end up unused
             double overlap = search.fractionOf( currentExtent );
-            if ( overlap >= 0.99 )
+            double slope = (BOTTOM_THRESHOLD - TOP_THRESHOLD) / maxDepth;
+            double threshold = slope * depth + TOP_THRESHOLD;
+            if ( overlap >=  0.99 || depth >= maxDepth )
             {
                 // Note that LongRange upper bound is inclusive, hence the '-1' in several places
                 LongRange current = (results.size() > 0) ? results.get( results.size() - 1 ) : null;
@@ -334,7 +345,7 @@ public abstract class SpaceFillingCurve
                     int npoint = curve.npointForIndex( i );
 
                     SearchEnvelope quadrant = currentExtent.quadrant( bitValues( npoint ) );
-                    addTilesIntersectingEnvelopeAt( stats, depth + 1, search, quadrant, curve.childAt( i ), left + i * width, left + (i + 1) * width, results );
+                    addTilesIntersectingEnvelopeAt( stats, depth + 1, search, quadrant, curve.childAt( i ), left + i * width, left + (i + 1) * width, results, maxDepth );
                 }
             }
         }

@@ -363,13 +363,14 @@ public class SpaceFillingCurveTest
             {
                 Envelope eighth = new Envelope( left, left + eighthWidth, bottom, bottom + eighthHeight );
                 SpaceFillingCurve.RecursionStats stats = new SpaceFillingCurve.RecursionStats( curve.getMaxLevel() );
-                curve.getTilesIntersectingEnvelope( eighth, stats );
+                final List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( eighth, stats );
                 int expectedMaxDepth = Math.max( 10, level / 1 );
                 assertThat( "Expected to not recurse deeper than " + expectedMaxDepth + " for level " + level, stats.maxDepth,
                         lessThanOrEqualTo( expectedMaxDepth ) );
                 if ( verbose )
                 {
                     System.out.println( "Recursed to max-depth: " + stats.maxDepth );
+                    System.out.println( "Ranges: " + ranges.size() );
                     for ( int i = 0; i <= stats.maxDepth; i++ )
                     {
                         System.out.println( "\t" + i + "\t" + stats.counts[i] );

@@ -99,6 +99,8 @@ class SearchEnvelope
         return true;
     }
 
+    /** Only valid for intersecting envelopes
+     */
     double fractionOf( SearchEnvelope other )
     {
         double fraction = 1.0;
