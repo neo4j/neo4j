@@ -26,7 +26,11 @@ import org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.neo4j.kernel.impl.newapi.References.setFilterFlag;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncomingRels;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
 
 class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
 {
@@ -176,7 +180,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
         {
             return bufferedGroup.outgoingCount;
         }
-        return count( outgoingReference() );
+        return count( outgoingRawId() );
     }
 
     @Override
@@ -186,7 +190,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
         {
             return bufferedGroup.incomingCount;
         }
-        return count( incomingReference() );
+        return count( incomingRawId() );
     }
 
     @Override
@@ -196,7 +200,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
         {
             return bufferedGroup.loopsCount;
         }
-        return count( loopsReference() );
+        return count( loopsRawId() );
     }
 
     private int count( long reference )
@@ -225,7 +229,8 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     {
         if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), bufferedGroup.outgoing, read );
+            ((RelationshipTraversalCursor) cursor).buffered(
+                    getOwningNode(), bufferedGroup.outgoing, RelationshipDirection.OUTGOING, bufferedGroup.label, read );
         }
         else
         {
@@ -238,7 +243,8 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     {
         if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), bufferedGroup.incoming, read );
+            ((RelationshipTraversalCursor) cursor).buffered(
+                    getOwningNode(), bufferedGroup.incoming, RelationshipDirection.INCOMING, bufferedGroup.label, read );
         }
         else
         {
@@ -251,7 +257,8 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     {
         if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), bufferedGroup.loops, read );
+            ((RelationshipTraversalCursor) cursor).buffered(
+                    getOwningNode(), bufferedGroup.loops, RelationshipDirection.LOOP, bufferedGroup.label, read );
         }
         else
         {
@@ -262,19 +269,22 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     @Override
     public long outgoingReference()
     {
-        return getFirstOut();
+        long outgoing = getFirstOut();
+        return outgoing == NO_ID ? encodeNoOutgoingRels( getType() ) : encodeRelationshipReference( outgoing );
     }
 
     @Override
     public long incomingReference()
     {
-        return getFirstIn();
+        long incoming = getFirstIn();
+        return incoming == NO_ID ? encodeNoIncomingRels( getType() ) : encodeRelationshipReference( incoming );
     }
 
     @Override
     public long loopsReference()
     {
-        return getFirstLoop();
+        long loops = getFirstLoop();
+        return loops == NO_ID ? encodeNoLoopRels( getType() ) : encodeRelationshipReference( loops );
     }
 
     @Override
@@ -305,9 +315,39 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
         }
     }
 
+    /**
+     * Implementation detail which provides the raw non-encoded outgoing relationship id
+     */
+    long outgoingRawId()
+    {
+        return getFirstOut();
+    }
+
+    /**
+     * Implementation detail which provides the raw non-encoded incoming relationship id
+     */
+    long incomingRawId()
+    {
+        return getFirstIn();
+    }
+
+    /**
+     * Implementation detail which provides the raw non-encoded loops relationship id
+     */
+    long loopsRawId()
+    {
+        return getFirstLoop();
+    }
+
     private boolean isBuffered()
     {
         return bufferedGroup != null;
+    }
+
+    private long encodeRelationshipReference( long relationshipId )
+    {
+        assert relationshipId != NO_ID;
+        return isBuffered() ? encodeForFiltering( relationshipId ) : encodeForTxStateFiltering( relationshipId );
     }
 
     static class BufferedGroup
@@ -362,17 +402,17 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
 
         long outgoing()
         {
-            return setFilterFlag( firstOut );
+            return firstOut;
         }
 
         long incoming()
         {
-            return setFilterFlag( firstIn );
+            return firstIn;
         }
 
         long loops()
         {
-            return setFilterFlag( firstLoop );
+            return firstLoop;
         }
     }
 }

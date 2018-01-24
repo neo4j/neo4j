@@ -158,18 +158,18 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode ) throws EntityNotFoundException
+    public long relationshipCreate( long sourceNode, int relationshipType, long targetNode ) throws EntityNotFoundException
     {
         ktx.assertOpen();
 
-        sharedRelationshipTypeLock( relationshipLabel );
+        sharedRelationshipTypeLock( relationshipType );
         lockRelationshipNodes( sourceNode, targetNode );
 
         nodeExists( sourceNode );
         nodeExists( targetNode );
 
         long id = statement.reserveRelationship();
-        ktx.txState().relationshipDoCreate( id, relationshipLabel, sourceNode, targetNode );
+        ktx.txState().relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
         return id;
     }
 

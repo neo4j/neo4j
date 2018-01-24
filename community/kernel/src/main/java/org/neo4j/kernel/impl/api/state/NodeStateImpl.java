@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
+import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
@@ -232,6 +233,20 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             PrimitiveLongCollections.emptyIterator();
     }
 
+    @Override
+    public PrimitiveLongIterator getAddedRelationships()
+    {
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships() :
+               PrimitiveLongCollections.emptyIterator();
+    }
+
+    @Override
+    public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
+    {
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType ) :
+               PrimitiveLongCollections.emptyIterator();
+    }
+
     public abstract static class Defaults extends StateDefaults<NodeState, NodeStateImpl>
     {
         @Override
@@ -362,6 +377,18 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
 
             @Override
             public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
+            {
+                return null;
+            }
+
+            @Override
+            public PrimitiveLongIterator getAddedRelationships()
+            {
+                return null;
+            }
+
+            @Override
+            public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
             {
                 return null;
             }
