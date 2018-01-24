@@ -265,7 +265,7 @@ public abstract class SpaceFillingCurve
      */
     List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope, RecursionStats stats )
     {
-        SearchEnvelope search = new SearchEnvelope( referenceEnvelope );
+        SearchEnvelope search = new SearchEnvelope( this, referenceEnvelope );
         ArrayList<LongRange> results = new ArrayList<>(1000);
 
         addTilesIntersectingEnvelopeAt( stats, 0, search, new SearchEnvelope( 0, this.getWidth(), nbrDim ), rootCurve(), 0, this.getValueWidth(), results );
@@ -311,7 +311,7 @@ public abstract class SpaceFillingCurve
         else if ( search.intersects( currentExtent ) )
         {
             double overlap = search.fractionOf( currentExtent );
-            if ( overlap >= 0.50 )
+            if ( overlap >= 0.99 )
             {
                 // Note that LongRange upper bound is inclusive, hence the '-1' in several places
                 LongRange current = (results.size() > 0) ? results.get( results.size() - 1 ) : null;
@@ -358,7 +358,7 @@ public abstract class SpaceFillingCurve
     /**
      * Given a coordinate, find the corresponding normalized coordinate
      */
-    private long[] getNormalizedCoord( double[] coord )
+    long[] getNormalizedCoord( double[] coord )
     {
         long[] normalizedCoord = new long[nbrDim];
 
@@ -461,147 +461,6 @@ public abstract class SpaceFillingCurve
         public String toString()
         {
             return "LongRange(" + min + "," + max + ")";
-        }
-    }
-
-    /**
-     * N-dimensional searchEnvelope
-     */
-    private class SearchEnvelope
-    {
-        long[] min; // inclusive lower bounds
-        long[] max; // exclusive upper bounds
-        int nbrDim;
-
-        private SearchEnvelope( Envelope referenceEnvelope )
-        {
-            this.min = getNormalizedCoord( referenceEnvelope.getMin() );
-            this.max = getNormalizedCoord( referenceEnvelope.getMax() );
-            this.nbrDim = referenceEnvelope.getDimension();
-            for ( int i = 0; i < nbrDim; i++ )
-            {
-                this.max[i] += 1;
-            }
-        }
-
-        private SearchEnvelope( long[] min, long[] max )
-        {
-            this.min = min;
-            this.max = max;
-            this.nbrDim = min.length;
-        }
-
-        private SearchEnvelope( long min, long max, int nbrDim )
-        {
-            this.nbrDim = nbrDim;
-            this.min = new long[nbrDim];
-            this.max = new long[nbrDim];
-
-            for ( int dim = 0; dim < nbrDim; dim++ )
-            {
-                this.min[dim] = min;
-                this.max[dim] = max;
-            }
-        }
-
-        private SearchEnvelope quadrant( int[] quadNbrs )
-        {
-            long[] newMin = new long[nbrDim];
-            long[] newMax = new long[nbrDim];
-
-            for ( int dim = 0; dim < nbrDim; dim++ )
-            {
-                long extent = (max[dim] - min[dim]) / 2;
-                newMin[dim] = this.min[dim] + quadNbrs[dim] * extent;
-                newMax[dim] = this.min[dim] + (quadNbrs[dim] + 1) * extent;
-            }
-            return new SearchEnvelope( newMin, newMax );
-        }
-
-        private boolean contains( long[] coord )
-        {
-            for ( int dim = 0; dim < nbrDim; dim++ )
-            {
-                if ( coord[dim] < min[dim] || coord[dim] >= max[dim] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private boolean intersects( SearchEnvelope other )
-        {
-            for ( int dim = 0; dim < nbrDim; dim++ )
-            {
-                if ( this.max[dim] <= other.min[dim] || other.max[dim] <= this.min[dim] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        /**
-         * The smallest possible envelope has unit area 1
-         */
-        public double getArea()
-        {
-            long area = 1;
-            for ( int i = 0; i < min.length; i++ )
-            {
-                area *= max[i] - min[i];
-            }
-            return area;
-        }
-
-        public double fractionOf( SearchEnvelope other )
-        {
-            SearchEnvelope intersection = this.intersection(other);
-            return intersection == null ? 0.0 : intersection.getArea() / other.getArea();
-        }
-
-        /**
-         * Returns true for the smallest possible envelope, of area 1
-         */
-        public boolean isUnit()
-        {
-            for ( int i = 0; i < min.length; i++ )
-            {
-                if ( max[i] - min[i] > 1 )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        public SearchEnvelope intersection( SearchEnvelope other )
-        {
-            if ( nbrDim == other.nbrDim )
-            {
-                long[] i_min = new long[this.min.length];
-                long[] i_max = new long[this.min.length];
-                boolean result = true;
-                for ( int i = 0; i < min.length && result; i++ )
-                {
-                    if ( other.min[i] < this.max[i] && this.min[i] < other.max[i] )
-                    {
-                        i_min[i] = Math.max(this.min[i], other.min[i]);
-                        i_max[i] = Math.min(this.max[i], other.max[i]);
-                    }
-                    else
-                    {
-                        result = false;
-                    }
-                }
-                return result ? new SearchEnvelope( i_min, i_max ) : null;
-            }
-            else
-            {
-                throw new IllegalArgumentException(
-                        "Cannot calculate intersection of Envelopes with different dimensions: " + this.nbrDim + " != " + other.nbrDim );
-            }
         }
     }
 }
