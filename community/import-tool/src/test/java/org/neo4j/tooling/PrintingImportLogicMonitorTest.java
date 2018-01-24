@@ -19,7 +19,6 @@
  */
 package org.neo4j.tooling;
 
-import org.junit.After;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -43,13 +42,6 @@ public class PrintingImportLogicMonitorTest
     private final ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
     private final PrintStream err = new PrintStream( errBuffer );
     private final ImportLogic.Monitor monitor = new PrintingImportLogicMonitor( out, err );
-
-    @After
-    public void after()
-    {
-        System.out.println( "out " + outBuffer );
-        System.out.println( "err " + errBuffer );
-    }
 
     @Test
     public void mayExceedNodeIdCapacity() throws Exception

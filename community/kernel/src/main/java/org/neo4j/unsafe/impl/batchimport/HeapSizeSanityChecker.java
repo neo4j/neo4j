@@ -34,7 +34,7 @@ import static org.neo4j.unsafe.impl.batchimport.ImportMemoryCalculator.optimalMi
  * Sanity checking of {@link org.neo4j.unsafe.impl.batchimport.input.Input.Estimates} against heap size and free memory.
  * Registers warnings onto a {@link ImportLogic.Monitor}.
  */
-public class HeapSizeSanityChecker
+class HeapSizeSanityChecker
 {
     private final ImportLogic.Monitor monitor;
     private final LongSupplier freeMemoryLookup;
@@ -45,14 +45,14 @@ public class HeapSizeSanityChecker
         this( monitor, OsBeanUtil::getFreePhysicalMemory, Runtime.getRuntime()::maxMemory );
     }
 
-    public HeapSizeSanityChecker( ImportLogic.Monitor monitor, LongSupplier freeMemoryLookup, LongSupplier actualHeapSizeLookup )
+    HeapSizeSanityChecker( ImportLogic.Monitor monitor, LongSupplier freeMemoryLookup, LongSupplier actualHeapSizeLookup )
     {
         this.monitor = monitor;
         this.freeMemoryLookup = freeMemoryLookup;
         this.actualHeapSizeLookup = actualHeapSizeLookup;
     }
 
-    public void sanityCheck( Input.Estimates inputEstimates, RecordFormats recordFormats, MemoryStatsVisitor.Visitable baseMemory,
+    void sanityCheck( Input.Estimates inputEstimates, RecordFormats recordFormats, MemoryStatsVisitor.Visitable baseMemory,
             MemoryStatsVisitor.Visitable... memoryVisitables )
     {
         // At this point in time the store hasn't started so it won't show up in free memory reported from OS,
@@ -78,7 +78,7 @@ public class HeapSizeSanityChecker
         }
 
         // Check if heap size could be tweaked
-        if ( ((freeMemoryIsKnown && freeMemory < estimatedCacheSize) || !freeMemoryIsKnown) && actualHeapSize > optimalMinimalHeapSize * 1.2 )
+        if ( (!freeMemoryIsKnown || freeMemory < estimatedCacheSize) && actualHeapSize > optimalMinimalHeapSize * 1.2 )
         {
             monitor.abundantHeapSize( optimalMinimalHeapSize, actualHeapSize );
         }
