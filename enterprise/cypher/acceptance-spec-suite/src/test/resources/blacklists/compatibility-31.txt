@@ -15,4 +15,3 @@ Feature "OrderByAcceptance": Scenario "ORDER BY node problem"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
 Feature "ReturnAcceptance": Scenario "LIMIT 0 should stop side effects"
-

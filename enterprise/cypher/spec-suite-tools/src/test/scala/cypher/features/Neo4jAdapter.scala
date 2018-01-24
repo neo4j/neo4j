@@ -22,7 +22,7 @@ package cypher.features
 import cypher.features.Neo4jExceptionToExecutionFailed._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.{cypher_hints_error, cypher_planner, cypher_runtime}
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.graphdb.{Result => Neo4jResult}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -55,7 +55,7 @@ class Neo4jAdapter(service: GraphDatabaseCypherService, executionPrefix: String)
     val tx = instance.beginTx
     val queryToExecute = if (meta == ExecQuery) {
       s"$executionPrefix $query"
-    }else query
+    } else query
     val result: Result = Try(instance.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
       case Success(converted) =>
         tx.success()
