@@ -17,9 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.io.pagecache.impl;
+
+import java.io.Flushable;
+import java.io.IOException;
+import java.util.Objects;
 
 import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -28,16 +33,17 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  * A dedicated thread which constantly call {@link PageCache#flushAndForce()} until a call to {@link #halt()} is made.
  * Must be started manually by calling {@link #start()}.
  */
-class PageCacheFlusher extends Thread
+public class PageCacheFlusher extends Thread implements IOLimiter
 {
     private final PageCache pageCache;
     private final BinaryLatch halt = new BinaryLatch();
     private volatile boolean halted;
     private volatile Throwable error;
 
-    PageCacheFlusher( PageCache pageCache )
+    public PageCacheFlusher( PageCache pageCache )
     {
         super( "PageCacheFlusher" );
+        Objects.requireNonNull( pageCache );
         this.pageCache = pageCache;
     }
 
@@ -50,7 +56,11 @@ class PageCacheFlusher extends Thread
             {
                 try
                 {
-                    pageCache.flushAndForce();
+                    pageCache.flushAndForce( this );
+                }
+                catch ( HaltFlushException ignore )
+                {
+                    break; // This exception means we've been asked to stop flushing.
                 }
                 catch ( Throwable e )
                 {
@@ -70,7 +80,7 @@ class PageCacheFlusher extends Thread
      * will complete before exiting this method call. If there was an error in the thread doing the flushes
      * that exception will be thrown from this method as a {@link RuntimeException}.
      */
-    void halt()
+    public void halt()
     {
         halted = true;
         halt.await();
@@ -78,5 +88,19 @@ class PageCacheFlusher extends Thread
         {
             throw launderedException( error );
         }
+    }
+
+    @Override
+    public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException
+    {
+        if ( halted )
+        {
+            throw new HaltFlushException();
+        }
+        return 0;
+    }
+
+    private static final class HaltFlushException extends IOException
+    {
     }
 }
