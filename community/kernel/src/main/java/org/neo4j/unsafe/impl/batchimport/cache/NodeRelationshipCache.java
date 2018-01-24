@@ -889,8 +889,15 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         return numberOfDenseNodes;
     }
 
-    public long calculateMemoryUsage( long numberOfNodes )
+    public MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
     {
-        return ID_AND_COUNT_SIZE * numberOfNodes;
+        return new MemoryStatsVisitor.Visitable()
+        {
+            @Override
+            public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
+            {
+                visitor.offHeapUsage( ID_AND_COUNT_SIZE * numberOfNodes );
+            }
+        };
     }
 }

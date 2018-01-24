@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import static java.lang.Long.max;
+
 import static org.neo4j.helpers.Format.bytes;
 
 /**
@@ -70,5 +72,15 @@ public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
             memoryUser.acceptMemoryStatsVisitor( memoryVisitor );
         }
         return memoryVisitor.getTotalUsage();
+    }
+
+    public static long highestMemoryUsageOf( MemoryStatsVisitor.Visitable... memoryUsers )
+    {
+        long max = 0;
+        for ( MemoryStatsVisitor.Visitable visitable : memoryUsers )
+        {
+            max = max( max, totalMemoryUsageOf( visitable ) );
+        }
+        return max;
     }
 }

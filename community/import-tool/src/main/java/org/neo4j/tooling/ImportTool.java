@@ -83,7 +83,6 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
-import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
@@ -111,12 +110,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
  */
 public class ImportTool
 {
-    /**
-     * A high heap size that no import should need to go beyond. Also it's small enough such that object pointers
-     * can be compressed to 4 bytes.
-     */
-    private static final long RECOMMENDED_MAX_HEAP_SIZE = gibiBytes( 28 );
-
     private static final String INPUT_FILES_DESCRIPTION =
             "Multiple files will be logically seen as one big file " +
             "from the perspective of the importer. " +
@@ -392,11 +385,6 @@ public class ImportTool
     {
         System.err.println( format( "WARNING: neo4j-import is deprecated and support for it will be removed in a future%n" +
                 "version of Neo4j; please use neo4j-admin import instead." ) );
-        if ( Runtime.getRuntime().maxMemory() > RECOMMENDED_MAX_HEAP_SIZE )
-        {
-            System.err.println( format( "WARNING: heap size is unnecessarily big, potentially causing garbage collection issues and%n" +
-                    "less room for importer off-heap caches. A heap of maximum %s is recommended", bytes( RECOMMENDED_MAX_HEAP_SIZE ) ) );
-        }
 
         PrintStream out = System.out;
         PrintStream err = System.err;
