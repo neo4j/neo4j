@@ -50,7 +50,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -875,19 +874,19 @@ public class ImportToolTest
                            nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                            nodeData2.getAbsolutePath() );
 
-        // THEN
+        // THEN there should not be duplicates of any node
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        Set<String> expectedNodeIds = new HashSet<>( nodeIds );
         try ( Transaction tx = db.beginTx() )
         {
-            // there should not be duplicates of any node
-            Iterator<Node> nodes = db.getAllNodes().iterator();
-            Iterator<String> expectedIds = FilteringIterator.noDuplicates( nodeIds.iterator() );
-            while ( expectedIds.hasNext() )
+            Set<String> foundNodesIds = new HashSet<>();
+            for ( Node node : db.getAllNodes() )
             {
-                assertTrue( nodes.hasNext() );
-                assertEquals( expectedIds.next(), nodes.next().getProperty( "id" ) );
+                String id = (String) node.getProperty( "id" );
+                assertTrue( id + ", " + foundNodesIds, foundNodesIds.add( id ) );
+                assertTrue( expectedNodeIds.contains( id ) );
             }
-            assertFalse( nodes.hasNext() );
+            assertEquals( expectedNodeIds, foundNodesIds );
 
             // also all nodes in the label index should exist
             for ( int i = 0; i < MAX_LABEL_ID; i++ )
