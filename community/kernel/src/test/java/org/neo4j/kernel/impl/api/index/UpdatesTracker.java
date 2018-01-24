@@ -128,6 +128,9 @@ public class UpdatesTracker
                ", createdDuringPopulation=" + createdDuringPopulation +
                ", updatedDuringPopulation=" + updatedDuringPopulation +
                ", deletedDuringPopulation=" + deletedDuringPopulation +
+               ", createdAfterPopulation=" + createdAfterPopulation() +
+               ", updatedAfterPopulation=" + updatedAfterPopulation() +
+               ", deletedAfterPopulation=" + deletedAfterPopulation() +
                ", populationCompleted=" + populationCompleted +
                '}';
     }
