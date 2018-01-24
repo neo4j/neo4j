@@ -134,6 +134,7 @@ public interface PageCache extends AutoCloseable
 
     /**
      * Get the {@link FileSystemAbstraction} that represents the filesystem where the paged files reside.
+     *
      * @return the filesystem that the page cache is using.
      */
     FileSystemAbstraction getCachedFileSystem();
