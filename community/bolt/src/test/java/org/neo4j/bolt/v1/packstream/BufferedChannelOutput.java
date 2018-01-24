@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.logging.Log;
+
 public class BufferedChannelOutput implements PackOutput
 {
     private final ByteBuffer buffer;
@@ -70,7 +72,7 @@ public class BufferedChannelOutput implements PackOutput
         {
             if ( buffer.remaining() == 0 )
             {
-                flush();
+                flush( );
             }
 
             int oldLimit = data.limit();

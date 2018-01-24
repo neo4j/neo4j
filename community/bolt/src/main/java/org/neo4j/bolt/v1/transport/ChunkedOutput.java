@@ -19,17 +19,18 @@
  */
 package org.neo4j.bolt.v1.transport;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageBoundaryHook;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.logging.Log;
 
 import static java.lang.Math.max;
 
@@ -43,6 +44,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     public static final int MESSAGE_BOUNDARY = 0;
 
     private final int bufferSize;
+    private final Log log;
     private final int maxChunkSize;
     private final AtomicBoolean closed = new AtomicBoolean( false );
 
@@ -53,10 +55,11 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
 
-    public ChunkedOutput( Channel ch, int bufferSize )
+    public ChunkedOutput( Channel ch, int bufferSize, Log log )
     {
         this.channel = ch;
         this.bufferSize = max( 16, bufferSize );
+        this.log = log;
         this.maxChunkSize = this.bufferSize - CHUNK_HEADER_SIZE;
         this.buffer = channel.alloc().buffer( this.bufferSize, this.bufferSize );
     }
@@ -198,7 +201,13 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         // If we wanted to, we can optimize this further and restrict memory usage by using our own ByteBuf impl. Each Output instance would have, say, 3
         // buffers that it rotates. Fill one up, send it to be async flushed, fill the next one up, etc. When release is called by Netty, push buffer back
         // onto our local stack. That way there are no global data structures for managing memory, no fragmentation and a fixed amount of RAM per session used.
+        long start = System.currentTimeMillis();
         buffer = channel.alloc().buffer( bufferSize, bufferSize );
+        long duration = System.currentTimeMillis() - start;
+        if ( duration > 10 )
+        {
+            log.info( "Took " + duration + " to get a buffer from the pool" );
+        }
         chunkOpen = false;
     }
 

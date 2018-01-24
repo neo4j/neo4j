@@ -19,14 +19,6 @@
  */
 package org.neo4j.bolt.v1.transport.socket;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelPromise;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -37,9 +29,18 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPromise;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -60,7 +61,7 @@ public class ChunkedOutputTest
     public void setUp()
     {
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        this.out = new ChunkedOutput( ch, 16 );
+        this.out = new ChunkedOutput( ch, 16, mock( Log.class ) );
     }
 
     @After

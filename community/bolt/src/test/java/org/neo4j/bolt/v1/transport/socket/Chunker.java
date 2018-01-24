@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v1.transport.socket;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -26,10 +29,8 @@ import io.netty.channel.ChannelPromise;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
+import org.neo4j.logging.Log;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -57,7 +58,7 @@ public class Chunker
             }
         } );
 
-        ChunkedOutput out = new ChunkedOutput( ch, maxChunkSize + 2 /* for chunk header */ );
+        ChunkedOutput out = new ChunkedOutput( ch, maxChunkSize + 2 /* for chunk header */, mock( Log.class ) );
 
         for ( byte[] message : messages )
         {

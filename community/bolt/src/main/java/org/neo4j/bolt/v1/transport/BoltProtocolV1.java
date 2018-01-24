@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.v1.transport;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
@@ -58,10 +58,10 @@ public class BoltProtocolV1 implements BoltProtocol
 
     public BoltProtocolV1( BoltWorker worker, Channel outputChannel, LogService logging )
     {
-        this.chunkedOutput = new ChunkedOutput( outputChannel, DEFAULT_OUTPUT_BUFFER_SIZE );
+        this.log = logging.getInternalLog( getClass() );
+        this.chunkedOutput = new ChunkedOutput( outputChannel, DEFAULT_OUTPUT_BUFFER_SIZE, log );
         this.packer = new BoltResponseMessageWriter( new Neo4jPack.Packer( chunkedOutput ), chunkedOutput );
         this.worker = worker;
-        this.log = logging.getInternalLog( getClass() );
         this.dechunker = createDechunker( packer, worker, log );
     }
 
