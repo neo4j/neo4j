@@ -606,12 +606,21 @@ final class MuninnPagedFile implements PagedFile, Flushable
         int chunkId = computeChunkId( filePageId );
         long chunkOffset = computeChunkOffset( filePageId );
         Object[] chunk = translationTable[chunkId];
-        Object element = UnsafeUtil.getAndSetObject( chunk, chunkOffset, null );
-        assert element instanceof MuninnPage : "Expected to evict a MuninnPage but found " + element;
-        return (MuninnPage) element;
+        Object element = UnsafeUtil.getObjectVolatile( chunk, chunkOffset );
+        if ( element instanceof MuninnPage )
+        {
+            MuninnPage page = (MuninnPage) element;
+            setHighestEvictedTransactionId( page.getAndResetLastModifiedTransactionId() );
+            UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
+            return page;
+        }
+        else
+        {
+            throw new IllegalStateException( "Expected to evict a MuninnPage but found " + element );
+        }
     }
 
-    void setHighestEvictedTransactionId( long modifiedTransactionId )
+    private void setHighestEvictedTransactionId( long modifiedTransactionId )
     {
         UnsafeUtil.compareAndSetMaxLong( this, evictedTransactionIdOffset, modifiedTransactionId );
     }

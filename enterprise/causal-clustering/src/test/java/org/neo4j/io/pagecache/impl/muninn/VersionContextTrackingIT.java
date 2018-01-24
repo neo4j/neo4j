@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
@@ -43,9 +44,12 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.causalclustering.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class VersionContextTrackingIT
 {
@@ -75,14 +79,17 @@ public class VersionContextTrackingIT
     }
 
     @Test
-    public void readReplicateTransactionIdPageTracking() throws Exception
+    public void readReplicatesTransactionIdPageTracking() throws Exception
     {
         long baseTxId = getBaseTransactionId();
         for ( int i = 1; i < 4; i++ )
         {
             generateData();
-            dataMatchesEventually( anyCoreClusterMember(), cluster.readReplicas() );
-            assertEquals( getExpectedLatestPageVersion( baseTxId, i ), getLatestPageVersion( getAnyReadReplica() ) );
+            long expectedLatestPageVersion = getExpectedLatestPageVersion( baseTxId, i );
+            ThrowingSupplier<Long,Exception> replicateVersionSupplier =
+                    () -> getLatestPageVersion( getAnyReadReplica() );
+            assertEventually( "Read replica page version should match to core page version.", replicateVersionSupplier,
+                    is( expectedLatestPageVersion ), 2, MINUTES );
         }
     }
 
@@ -113,7 +120,7 @@ public class VersionContextTrackingIT
         return cluster.findAnyReadReplica().database();
     }
 
-    private long getLatestPageVersion( GraphDatabaseFacade databaseFacade ) throws IOException
+    private static long getLatestPageVersion( GraphDatabaseFacade databaseFacade ) throws IOException
     {
         DependencyResolver dependencyResolver = databaseFacade.getDependencyResolver();
         PageCache pageCache = dependencyResolver.resolveDependency( PageCache.class );
@@ -150,7 +157,7 @@ public class VersionContextTrackingIT
         }
     }
 
-    private class CursorPageAccessor extends MuninnPageCursor
+    private static class CursorPageAccessor extends MuninnPageCursor
     {
 
         private MuninnPageCursor delegate;
