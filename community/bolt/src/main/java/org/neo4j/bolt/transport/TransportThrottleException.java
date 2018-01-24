@@ -17,24 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.transport;
 
-import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 
-/**
- * Creates {@link BoltWorker}s. Implementations of this interface can decorate queues and their jobs
- * to monitor activity and enforce constraints.
- */
-public interface WorkerFactory
+public class TransportThrottleException extends BoltConnectionFatality
 {
-    default BoltWorker newWorker( BoltChannel boltChannel )
+
+    public TransportThrottleException( String message )
     {
-        return newWorker( boltChannel, null );
+        super( message );
     }
 
-    /**
-     * @param boltChannel channel over which Bolt messages can be exchanged
-     * @return a new job queue
-     */
-    BoltWorker newWorker( BoltChannel boltChannel, BoltWorkerQueueMonitor queueMonitor );
 }

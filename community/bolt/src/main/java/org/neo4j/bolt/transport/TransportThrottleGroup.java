@@ -20,10 +20,8 @@
 package org.neo4j.bolt.transport;
 
 import io.netty.channel.Channel;
-import io.netty.util.AttributeKey;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Clock;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -45,9 +43,9 @@ public class TransportThrottleGroup
         this.writeThrottle = NoOpTransportThrottle.INSTANCE;
     }
 
-    public TransportThrottleGroup( Config config )
+    public TransportThrottleGroup( Config config, Clock clock )
     {
-        this.writeThrottle = createWriteThrottle( config );
+        this.writeThrottle = createWriteThrottle( config, clock );
     }
 
     public TransportThrottle writeThrottle()
@@ -65,12 +63,13 @@ public class TransportThrottleGroup
         writeThrottle.uninstall( channel );
     }
 
-    private static TransportThrottle createWriteThrottle( Config config )
+    private static TransportThrottle createWriteThrottle( Config config, Clock clock )
     {
         if ( config.get( GraphDatabaseSettings.bolt_write_throttle ) )
         {
             return new TransportWriteThrottle( config.get( GraphDatabaseSettings.bolt_write_buffer_low_water_mark ),
-                    config.get( GraphDatabaseSettings.bolt_write_buffer_high_water_mark ) );
+                    config.get( GraphDatabaseSettings.bolt_write_buffer_high_water_mark ), clock,
+                    config.get( GraphDatabaseSettings.bolt_write_throttle_max_duration ) );
         }
 
         return NoOpTransportThrottle.INSTANCE;

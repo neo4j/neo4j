@@ -22,7 +22,6 @@ package org.neo4j.bolt.v1.runtime;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -47,13 +46,13 @@ public class MonitoredWorkerFactory implements WorkerFactory
     }
 
     @Override
-    public BoltWorker newWorker( BoltChannel boltChannel )
+    public BoltWorker newWorker( BoltChannel boltChannel, BoltWorkerQueueMonitor queueMonitor )
     {
         if ( monitors.hasListeners( SessionMonitor.class ) )
         {
-            return new MonitoredBoltWorker( monitor, delegate.newWorker( boltChannel ), clock );
+            return new MonitoredBoltWorker( monitor, delegate.newWorker( boltChannel, queueMonitor ), clock );
         }
-        return delegate.newWorker( boltChannel );
+        return delegate.newWorker( boltChannel, queueMonitor );
     }
 
     static class MonitoredBoltWorker implements BoltWorker

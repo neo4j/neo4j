@@ -17,24 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.test.matchers;
 
-import org.neo4j.bolt.BoltChannel;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 
-/**
- * Creates {@link BoltWorker}s. Implementations of this interface can decorate queues and their jobs
- * to monitor activity and enforce constraints.
- */
-public interface WorkerFactory
+public class ExceptionMessageMatcher extends TypeSafeMatcher<Throwable>
 {
-    default BoltWorker newWorker( BoltChannel boltChannel )
+    private final Matcher<? super String> matcher;
+
+    public ExceptionMessageMatcher( Matcher<? super String> matcher )
     {
-        return newWorker( boltChannel, null );
+        this.matcher = matcher;
     }
 
-    /**
-     * @param boltChannel channel over which Bolt messages can be exchanged
-     * @return a new job queue
-     */
-    BoltWorker newWorker( BoltChannel boltChannel, BoltWorkerQueueMonitor queueMonitor );
+    @Override
+    protected boolean matchesSafely( Throwable throwable )
+    {
+        return matcher.matches( throwable.getMessage() );
+    }
+
+    @Override
+    public void describeTo( Description description )
+    {
+        description.appendText( "expect message to be " ).appendDescriptionOf( matcher );
+    }
+
 }
