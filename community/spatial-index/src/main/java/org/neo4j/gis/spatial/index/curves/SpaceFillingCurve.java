@@ -547,7 +547,7 @@ public abstract class SpaceFillingCurve
          */
         public double getArea()
         {
-            double area = 1.0;
+            long area = 1;
             for ( int i = 0; i < min.length; i++ )
             {
                 area *= max[i] - min[i];
@@ -583,7 +583,7 @@ public abstract class SpaceFillingCurve
                 long[] i_min = new long[this.min.length];
                 long[] i_max = new long[this.min.length];
                 boolean result = true;
-                for ( int i = 0; i < min.length; i++ )
+                for ( int i = 0; i < min.length && result; i++ )
                 {
                     if ( other.min[i] < this.max[i] && this.min[i] < other.max[i] )
                     {
