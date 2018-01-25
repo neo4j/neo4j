@@ -21,11 +21,14 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
@@ -53,7 +56,7 @@ public class PageCacheFlusher extends Thread implements IOLimiter
         {
             try
             {
-                pageCache.flushAndForce( this );
+                flush();
             }
             catch ( HaltFlushException ignore )
             {
@@ -64,6 +67,22 @@ public class PageCacheFlusher extends Thread implements IOLimiter
                 errorRef.set( e );
                 break;
             }
+        }
+    }
+
+    private void flush() throws IOException
+    {
+        List<PagedFile> files = pageCache.listExistingMappings();
+        try
+        {
+            for ( PagedFile file : files )
+            {
+                file.flushAndForce( this );
+            }
+        }
+        finally
+        {
+            IOUtils.closeAll( files );
         }
     }
 

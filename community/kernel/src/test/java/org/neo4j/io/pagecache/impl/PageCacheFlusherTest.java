@@ -22,15 +22,18 @@ package org.neo4j.io.pagecache.impl;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.concurrent.Future;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * This test is in the kernel module because the OtherThreadRule is really convenient here.
@@ -45,13 +48,15 @@ public class PageCacheFlusherTest
     {
         // GIVEN
         PageCache pageCache = mock( PageCache.class );
+        PagedFile file = mock( PagedFile.class );
+        when( pageCache.listExistingMappings() ).thenReturn( Collections.singletonList( file ) );
         Barrier.Control barrier = new Barrier.Control();
         PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
         doAnswer( invocation ->
         {
             barrier.reached();
             return null;
-        } ).when( pageCache ).flushAndForce( flusher );
+        } ).when( file ).flushAndForce( flusher );
         flusher.start();
 
         // WHEN
