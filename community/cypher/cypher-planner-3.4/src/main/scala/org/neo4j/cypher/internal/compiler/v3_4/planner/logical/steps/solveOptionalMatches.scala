@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.frontend.v3_4.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
@@ -38,48 +39,39 @@ case object applyOptional extends OptionalSolver {
   }
 }
 
-case object leftOuterHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
+abstract class outerHashJoin extends OptionalSolver {
+  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
     val joinNodes = optionalQg.argumentIds
     val hintsToIgnore = optionalQg.hints.filter { hint =>
       val hintDependencies = joinNodes -- hint.variables.map(_.name).toSet
       hintDependencies.isEmpty
     }
-    val rhs = context.strategy.plan(optionalQg.withoutArguments().withoutHints(hintsToIgnore), context, solveds, cardinalities)
+    val side2 = context.strategy.plan(optionalQg.withoutArguments().withoutHints(hintsToIgnore), context, solveds, cardinalities)
 
     if (joinNodes.nonEmpty &&
-      joinNodes.forall(lhs.availableSymbols) &&
+      joinNodes.forall(side1.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
       val solvedHints = optionalQg.joinHints.filter { hint =>
         joinNodes == hint.variables.map(_.name).toSet
       }
 
-      Some(context.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context))
+      Some(produceJoin(context, joinNodes, side1, side2, solvedHints))
     } else {
       None
     }
   }
+
+  def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], side1: LogicalPlan, side2: LogicalPlan, solvedHints: Set[UsingJoinHint]): LogicalPlan
 }
 
-case object rightOuterHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, rhs: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
-    val joinNodes = optionalQg.argumentIds
-    val hintsToIgnore = optionalQg.hints.filter { hint =>
-      val hintDependencies = joinNodes -- hint.variables.map(_.name).toSet
-      hintDependencies.isEmpty
-    }
-    val lhs = context.strategy.plan(optionalQg.withoutArguments().withoutHints(hintsToIgnore), context, solveds, cardinalities)
+case object leftOuterHashJoin extends outerHashJoin {
+  override def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], lhs: LogicalPlan, rhs: LogicalPlan, solvedHints: Set[UsingJoinHint]) = {
+    context.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
+  }
+}
 
-    if (joinNodes.nonEmpty &&
-      joinNodes.forall(rhs.availableSymbols) &&
-      joinNodes.forall(optionalQg.patternNodes)) {
-      val solvedHints = optionalQg.joinHints.filter { hint =>
-        joinNodes == hint.variables.map(_.name).toSet
-      }
-
-      Some(context.logicalPlanProducer.planRightOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context))
-    } else {
-      None
-    }
+case object rightOuterHashJoin extends outerHashJoin {
+  override def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], rhs: LogicalPlan, lhs: LogicalPlan, solvedHints: Set[UsingJoinHint]) = {
+    context.logicalPlanProducer.planRightOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
   }
 }

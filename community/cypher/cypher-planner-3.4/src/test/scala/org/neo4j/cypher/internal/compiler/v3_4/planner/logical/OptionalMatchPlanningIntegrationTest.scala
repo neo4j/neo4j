@@ -77,10 +77,10 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
           // TODO proper lookup from semantic table somehow
           // X = 0, Y = 1
-          if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) /*toLabel.exists(_.id == 2)*/ {
+          if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) {
             // low from a to b
             100.0
-          } else if (/*fromLabel.exists(_.id == 2)*/ fromLabel.isEmpty && relTypeId.isEmpty && toLabel.exists(_.id == 1)) {
+          } else if (fromLabel.isEmpty && relTypeId.isEmpty && toLabel.exists(_.id == 1)) {
             // high from b to c
             1000000000.0
           } else {
@@ -107,10 +107,10 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
           // TODO proper lookup from semantic table somehow
           // X = 0, Y = 1
-          if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) /*toLabel.exists(_.id == 2)*/ {
+          if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) {
             // high from a to b
             1000000000.0
-          } else if (/*fromLabel.exists(_.id == 2)*/ fromLabel.isEmpty && relTypeId.isEmpty && toLabel.exists(_.id == 1)) {
+          } else if ( fromLabel.isEmpty && relTypeId.isEmpty && toLabel.exists(_.id == 1)) {
             // low from b to c
             100.0
           } else {
