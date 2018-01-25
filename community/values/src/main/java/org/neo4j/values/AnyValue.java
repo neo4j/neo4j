@@ -23,8 +23,10 @@ public abstract class AnyValue
 {
     private int hash;
 
+    // this should be final, but Mockito barfs if it is,
+    // so we need to just manually ensure it isn't overridden
     @Override
-    public final boolean equals( Object other )
+    public boolean equals( Object other )
     {
         return this == other || other != null && eq( other );
     }
