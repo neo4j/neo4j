@@ -857,41 +857,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void deleteRelsWithCommitInMiddle() throws Exception
-    {
-        Node node = getGraphDb().createNode();
-        Node otherNode = getGraphDb().createNode();
-        RelationshipType[] types =
-                new RelationshipType[]{withName( "r1" ), withName( "r2" ), withName( "r3" ), withName( "r4" )};
-        int count = 30; // 30*4 > 100 (rel grabSize)
-        for ( int i = 0; i < types.length * count; i++ )
-        {
-            node.createRelationshipTo( otherNode, types[i % types.length] );
-        }
-        newTransaction();
-        int delCount = 0;
-        int loopCount = 0;
-        while ( delCount < count )
-        {
-            loopCount++;
-            ResourceIterable<Relationship> relationships = (ResourceIterable<Relationship>) node.getRelationships( types[1] );
-            ResourceIterator<Relationship> iterator = relationships.iterator();
-            while ( iterator.hasNext() )
-            {
-                Relationship rel = iterator.next();
-                rel.delete();
-                if ( ++delCount == count / 2 )
-                {
-                    iterator.close();
-                    newTransaction();
-                }
-            }
-        }
-        assertEquals( 1, loopCount );
-        assertEquals( count, delCount );
-    }
-
-    @Test
     public void getAllRelationships() throws Exception
     {
         Set<Relationship> existingRelationships =
