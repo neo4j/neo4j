@@ -473,7 +473,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
     // Then
     val plan = result.executionPlanDescription()
-    println(plan)
     plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
