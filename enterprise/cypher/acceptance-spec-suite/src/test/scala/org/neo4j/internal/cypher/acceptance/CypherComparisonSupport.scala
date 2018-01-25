@@ -632,6 +632,16 @@ object CypherComparisonSupport {
 
     def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
 
+    /**
+      * Handy configs for things only supported from 3.3 (not rule) and for checking plans
+      */
+    def OldAndRule: TestConfiguration = Cost2_3 + Cost3_1 + AllRulePlanners
+
+    /**
+      * Configs which support CREATE, DELETE, SET, REMOVE, MERGE etc.
+      */
+    def UpdateConf: TestConfiguration = Interpreted - Cost2_3
+
     /*
     If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
     interesting scenarios.

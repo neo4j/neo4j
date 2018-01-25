@@ -57,7 +57,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should fail to to drop composite uniqueness constraints") {
     // When
-    failWithError(singlePropertyUniquenessFailConf + Configs.Morsel + TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema),
+    failWithError(singlePropertyUniquenessFailConf + Configs.Morsel + Configs.Procs,
       "DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
       List("Only single property uniqueness constraints are supported"))
 

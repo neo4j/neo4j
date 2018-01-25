@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.util.v3_4.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, ExhaustiveShortestPathForbiddenException}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -34,13 +34,9 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
   override def databaseConfig(): Map[Setting[_], String] =
     Map(GraphDatabaseSettings.forbid_exhaustive_shortestpath -> "true")
 
-  val allPossibleConfigs = Configs.All + TestConfiguration(Versions.Default, Planners.Default,
-    Runtimes(Runtimes.Default, Runtimes.ProcedureOrSchema, Runtimes.CompiledSource, Runtimes.CompiledBytecode))
-
   test("should fail at run time when using the shortest path fallback") {
     // when
-
-    failWithError(allPossibleConfigs - Configs.AllRulePlanners - Configs.Cost2_3,
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Cost2_3,
       s"""MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin,
