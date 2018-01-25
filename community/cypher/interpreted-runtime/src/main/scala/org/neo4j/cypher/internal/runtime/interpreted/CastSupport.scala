@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.time.temporal.{Temporal, TemporalAmount}
+import java.time.{ZoneId, ZoneOffset}
+
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.{ArrayValue, _}
@@ -215,6 +218,27 @@ object CastSupport {
 
     override def writePoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Unit =
       write(Values.pointValue(crs, coordinate: _*))
+
+    override def writeDuration(months: Long, days: Long, seconds: Long, nanos: Int): Unit =
+      write(DurationValue.duration(months, days, seconds, nanos))
+
+    override def writeDate(epochDay: Long): Unit =
+      write(DateValue.epochDate(epochDay).asObject())
+
+    override def writeLocalTime(nanoOfDay: Long): Unit =
+      write(LocalTimeValue.localTime(nanoOfDay).asObject())
+
+    override def writeTime(nanosOfDayUTC: Long, offsetSeconds: Int): Unit =
+      write(TimeValue.time(nanosOfDayUTC, ZoneOffset.ofTotalSeconds(offsetSeconds)).asObject())
+
+    override def writeLocalDateTime(epochSecond: Long, nano: Int): Unit =
+      write(LocalDateTimeValue.localDateTime(epochSecond,nano).asObject())
+
+    override def writeDateTime(epochSecondUTC: Long, nano: Int, offsetSeconds: Int): Unit =
+      write(DateTimeValue.datetime(epochSecondUTC, nano, ZoneOffset.ofTotalSeconds(offsetSeconds)).asObject())
+
+    override def writeDateTime(epochSecondUTC: Long, nano: Int, zoneId: String): Unit =
+      write(DateTimeValue.datetime(epochSecondUTC, nano, ZoneId.of(zoneId)).asObject())
   }
 
 }

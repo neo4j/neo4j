@@ -23,6 +23,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -32,6 +34,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
@@ -216,6 +219,36 @@ public class DurationValueTest
             return;
         }
         fail( "should not be able to parse: " + text );
+    }
+
+    @Test
+    public void shouldWriteDuration() throws Exception
+    {
+        // given
+        for ( DurationValue duration : new DurationValue[] {
+                duration( 0, 0, 0, 0 ),
+                duration( 1, 0, 0, 0 ),
+                duration( 0, 1, 0, 0 ),
+                duration( 0, 0, 1, 0 ),
+                duration( 0, 0, 0, 1 ),
+        } )
+        {
+            List<DurationValue> values = new ArrayList<>( 1 );
+            ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
+            {
+                @Override
+                public void writeDuration( long months, long days, long seconds, int nanos )
+                {
+                    values.add( duration( months, days, seconds, nanos ) );
+                }
+            };
+
+            // when
+            duration.writeTo( writer );
+
+            // then
+            assertEquals( singletonList( duration ), values );
+        }
     }
 
     @Test

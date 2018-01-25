@@ -20,9 +20,12 @@
 package org.neo4j.values.storable;
 
 import java.time.DateTimeException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.LocalTimeValue.parse;
@@ -75,6 +78,35 @@ public class LocalTimeValueTest
         assertCannotParse( "1760" );
         assertCannotParse( "173260" );
         assertCannotParse( "173250.0000000001" );
+    }
+
+    @Test
+    public void shouldWriteLocalTime() throws Exception
+    {
+        // given
+        for ( LocalTimeValue value : new LocalTimeValue[] {
+                localTime( 0, 0, 0, 0 ),
+                localTime( 11, 22, 33, 123456789 ),
+                localTime( 2, 3, 4, 5 ),
+                localTime( 23, 59, 59, 999999999 ),
+        } )
+        {
+            List<LocalTimeValue> values = new ArrayList<>( 1 );
+            ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
+            {
+                @Override
+                public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+                {
+                    values.add( localTime( nanoOfDay ) );
+                }
+            };
+
+            // when
+            value.writeTo( writer );
+
+            // then
+            assertEquals( singletonList( value ), values );
+        }
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

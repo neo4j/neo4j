@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.util;
 
 import java.lang.reflect.Array;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,10 +40,16 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
@@ -398,6 +406,48 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     public void writeByteArray( byte[] value ) throws RuntimeException
     {
         writeValue( value );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos )
+    {
+        writeValue( DurationValue.duration( months, days, seconds, nanos ) );
+    }
+
+    @Override
+    public void writeDate( long epochDay ) throws RuntimeException
+    {
+        writeValue( DateValue.epochDate( epochDay ) );
+    }
+
+    @Override
+    public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+    {
+        writeValue( LocalTimeValue.localTime( nanoOfDay ) );
+    }
+
+    @Override
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    {
+        writeValue( TimeValue.time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+    }
+
+    @Override
+    public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+    {
+        writeValue( LocalDateTimeValue.localDateTime( epochSecond, nano ) );
+    }
+
+    @Override
+    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+    {
+        writeValue( DateTimeValue.datetime( epochSecondUTC, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+    }
+
+    @Override
+    public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
+    {
+        writeValue( DateTimeValue.datetime( epochSecondUTC, nano, ZoneId.of( zoneId ) ) );
     }
 
     private interface Writer

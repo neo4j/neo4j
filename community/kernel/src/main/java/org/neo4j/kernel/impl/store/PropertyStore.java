@@ -521,6 +521,48 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
                 throw new UnsupportedFormatCapabilityException( Capability.POINT_PROPERTIES );
             }
         }
+
+        @Override
+        public void writeDuration( long months, long days, long seconds, int nanos ) throws IllegalArgumentException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDate( long epochDay ) throws IllegalArgumentException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeLocalTime( long nanoOfDay ) throws IllegalArgumentException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IllegalArgumentException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeLocalDateTime( long epochSecond, int nano ) throws IllegalArgumentException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IllegalArgumentException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IllegalArgumentException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
     }
 
     public static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )

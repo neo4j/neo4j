@@ -89,7 +89,11 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        int offset = value.getOffset().getTotalSeconds();
+        long seconds = value.getLong( ChronoField.SECOND_OF_DAY );
+        seconds = ((-offset % SECONDS_PER_DAY) + seconds + SECONDS_PER_DAY) % SECONDS_PER_DAY;
+        long nano = seconds * DurationValue.NANOS_PER_SECOND + value.getNano();
+        writer.writeTime( nano, offset );
     }
 
     @Override

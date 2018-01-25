@@ -96,7 +96,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        writer.writeLocalDateTime( value.toEpochSecond( UTC ), value.getNano() );
     }
 
     @Override

@@ -23,14 +23,18 @@ import java.time.DateTimeException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.IsoFields;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.DateValue.ordinalDate;
 import static org.neo4j.values.storable.DateValue.parse;
 import static org.neo4j.values.storable.DateValue.quarterDate;
@@ -158,6 +162,33 @@ public class DateValueTest
     {
         assertCannotParse( "2015W54" ); // no year should have more than 53 weeks (2015 had 53 weeks)
         assertCannotParse( "2017W53" ); // 2017 only has 52 weeks
+    }
+
+    @Test
+    public void shouldWriteDate() throws Exception
+    {
+        // given
+        for ( DateValue value : new DateValue[] {
+                date( 2016, 2, 29 ),
+                date( 2017, 12, 22 ),
+        } )
+        {
+            List<DateValue> values = new ArrayList<>( 1 );
+            ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
+            {
+                @Override
+                public void writeDate( long epochDay ) throws RuntimeException
+                {
+                    values.add( epochDate( epochDay ) );
+                }
+            };
+
+            // when
+            value.writeTo( writer );
+
+            // then
+            assertEquals( singletonList( value ), values );
+        }
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

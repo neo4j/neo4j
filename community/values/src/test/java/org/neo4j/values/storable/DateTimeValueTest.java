@@ -19,14 +19,23 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 
 import static java.time.ZoneOffset.UTC;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateTimeValue.parse;
 import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.LocalDateTimeValue.inUTC;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.TimeValueTest.inUTC;
 import static org.neo4j.values.storable.TimeValueTest.orFail;
@@ -48,5 +57,46 @@ public class DateTimeValueTest
         assertEquals(
                 datetime( date( 2017, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
                 parse( "2017-12-17T17:14:35.123456789+0000", orFail ) );
+    }
+
+    @Test
+    public void shouldWriteDateTime() throws Exception
+    {
+        // given
+        for ( DateTimeValue value : new DateTimeValue[] {
+                datetime( date( 2017, 3, 26 ), localTime( 1, 0, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ),
+                datetime( date( 2017, 3, 26 ), localTime( 2, 0, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ),
+                datetime( date( 2017, 3, 26 ), localTime( 3, 0, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ),
+                datetime( date( 2017, 10, 29 ), localTime( 2, 0, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ),
+                datetime( date( 2017, 10, 29 ), localTime( 3, 0, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ),
+                datetime( date( 2017, 10, 29 ), localTime( 4, 0, 0, 0 ), ZoneId.of( "Europe/Stockholm" ) ),
+        } )
+        {
+            List<DateTimeValue> values = new ArrayList<>( 1 );
+            List<LocalDateTimeValue> locals = new ArrayList<>( 1 );
+            ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
+            {
+                @Override
+                public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+                {
+                    values.add( datetime( epochSecondUTC, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+                    locals.add( localDateTime( epochSecondUTC, nano ) );
+                }
+
+                @Override
+                public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
+                {
+                    values.add( datetime( epochSecondUTC, nano, ZoneId.of( zoneId ) ) );
+                    locals.add( localDateTime( epochSecondUTC, nano ) );
+                }
+            };
+
+            // when
+            value.writeTo( writer );
+
+            // then
+            assertEquals( singletonList( value ), values );
+            assertEquals( singletonList( inUTC( value ) ), locals );
+        }
     }
 }

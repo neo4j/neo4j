@@ -521,7 +521,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        writer.writeDuration( months, days, seconds, nanos );
     }
 
     @Override

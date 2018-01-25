@@ -85,7 +85,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        writer.writeLocalTime( value.getLong( ChronoField.NANO_OF_DAY ) );
     }
 
     @Override

@@ -97,7 +97,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        writer.writeDate( value.toEpochDay() );
     }
 
     @Override

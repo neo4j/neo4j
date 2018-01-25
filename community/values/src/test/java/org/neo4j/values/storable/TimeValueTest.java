@@ -21,12 +21,19 @@ package org.neo4j.values.storable;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.Test;
 
 import static java.time.ZoneOffset.UTC;
+import static java.time.ZoneOffset.ofHours;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.values.storable.LocalTimeValue.inUTC;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.parse;
 import static org.neo4j.values.storable.TimeValue.time;
 
@@ -84,6 +91,39 @@ public class TimeValueTest
         assertCannotParse( "1760" );
         assertCannotParse( "173260" );
         assertCannotParse( "173250.0000000001" );
+    }
+
+    @Test
+    public void shouldWriteTime() throws Exception
+    {
+        // given
+        for ( TimeValue time : new TimeValue[] {
+                time( 11, 30, 4, 112233440, ofHours( 3 ) ),
+                time( 23, 59, 59, 999999999, ofHours( 18 ) ),
+                time( 23, 59, 59, 999999999, ofHours( -18 ) ),
+                time( 0, 0, 0, 0, ofHours( -18 ) ),
+                time( 0, 0, 0, 0, ofHours( 18 ) ),
+        } )
+        {
+            List<TimeValue> values = new ArrayList<>( 1 );
+            List<LocalTimeValue> locals = new ArrayList<>( 1 );
+            ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
+            {
+                @Override
+                public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+                {
+                    values.add( time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+                    locals.add( localTime( nanosOfDayUTC ) );
+                }
+            };
+
+            // when
+            time.writeTo( writer );
+
+            // then
+            assertEquals( singletonList( time ), values );
+            assertEquals( singletonList( inUTC( time ) ), locals );
+        }
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

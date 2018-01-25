@@ -19,8 +19,12 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
@@ -35,5 +39,36 @@ public class LocalDateTimeValueTest
         assertEquals(
                 localDateTime( date( 2017, 12, 17 ), localTime( 17, 14, 35, 123456789 ) ),
                 parse( "2017-12-17T17:14:35.123456789" ) );
+    }
+
+    @Test
+    public void shouldWriteDateTime() throws Exception
+    {
+        // given
+        for ( LocalDateTimeValue value : new LocalDateTimeValue[] {
+                localDateTime( date( 2017, 3, 26 ), localTime( 1, 0, 0, 0 ) ),
+                localDateTime( date( 2017, 3, 26 ), localTime( 2, 0, 0, 0 ) ),
+                localDateTime( date( 2017, 3, 26 ), localTime( 3, 0, 0, 0 ) ),
+                localDateTime( date( 2017, 10, 29 ), localTime( 2, 0, 0, 0 ) ),
+                localDateTime( date( 2017, 10, 29 ), localTime( 3, 0, 0, 0 ) ),
+                localDateTime( date( 2017, 10, 29 ), localTime( 4, 0, 0, 0 ) ),
+        } )
+        {
+            List<LocalDateTimeValue> values = new ArrayList<>( 1 );
+            ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
+            {
+                @Override
+                public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+                {
+                    values.add( localDateTime( epochSecond, nano ) );
+                }
+            };
+
+            // when
+            value.writeTo( writer );
+
+            // then
+            assertEquals( singletonList( value ), values );
+        }
     }
 }

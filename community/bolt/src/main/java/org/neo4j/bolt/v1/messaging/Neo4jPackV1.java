@@ -294,6 +294,48 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
+        public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDate( long epochDay ) throws IOException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeLocalTime( long nanoOfDay ) throws IOException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeLocalDateTime( long epochSecond, int nano ) throws IOException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IOException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IOException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
         public void writeNull() throws IOException
         {
             packNull();
