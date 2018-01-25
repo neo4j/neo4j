@@ -60,10 +60,7 @@ sealed trait PlannerQuery {
     case None => queryGraph.allHints
   }
 
-  def numHints: Int = tail match {
-    case Some(tailPlannerQuery) => queryGraph.numHints + tailPlannerQuery.numHints
-    case None => queryGraph.numHints
-  }
+  def numHints: Int = allHints.size
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQuery = withQueryGraph(f(queryGraph))
 
