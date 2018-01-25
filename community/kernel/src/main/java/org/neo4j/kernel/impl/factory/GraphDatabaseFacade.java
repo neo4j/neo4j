@@ -56,27 +56,29 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
@@ -120,7 +122,6 @@ import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 /**
  * Implementation of the GraphDatabaseService/GraphDatabaseService interfaces - the "Core API". Given an {@link SPI}
@@ -166,8 +167,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         /**
          * Begin a new kernel transaction with specified timeout in milliseconds.
-         * If a transaction is already associated to the current context
-         * (meaning, non-null is returned from {@link #currentTransaction()}), this should fail.
+         * If a transaction is already associated to the current context, this should fail.
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
          * @see SPI#beginTransaction(KernelTransaction.Type, SecurityContext)
@@ -614,56 +614,37 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Value value )
     {
-        Statement statement = statementContext.get();
-
-        ReadOperations readOps = statement.readOperations();
-        int propertyId = readOps.propertyKeyGetForName( key );
-        int labelId = readOps.labelGetForName( myLabel.name() );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        Statement statement = transaction.acquireStatement();
+        Read read = transaction.dataRead();
+        TokenRead tokenRead = transaction.tokenRead();
+        int propertyId = tokenRead.propertyKey( key );
+        int labelId = tokenRead.nodeLabel( myLabel.name() );
 
         if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
         {
             statement.close();
             return emptyResourceIterator();
         }
-
-        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
-
-        try
+        CapableIndexReference index = transaction.schemaRead().index( labelId, propertyId );
+        if ( index != CapableIndexReference.NO_INDEX )
         {
-            if ( null != descriptor )
+            // Ha! We found an index - let's use it to find matching nodes
+            try
             {
-                // Ha! We found an index - let's use it to find matching nodes
-                IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.schema().getPropertyId(), value );
-                PrimitiveLongResourceIterator indexResult = readOps.indexQuery( descriptor, query );
-                return map2nodes( indexResult, statement, indexResult );
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+                IndexQuery.ExactPredicate query = IndexQuery.exact( propertyId, value );
+                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, query );
+
+                return new NodeCursorResourceIterator<>( cursor, statement );
             }
-        }
-        catch ( KernelException e )
-        {
-            // weird at this point but ignore and fallback to a label scan
+            catch ( KernelException e )
+            {
+                // weird at this point but ignore and fallback to a label scan
+            }
         }
 
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
-    }
-
-    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
-    {
-        try
-        {
-            IndexDescriptor descriptor =
-                    readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
-
-            if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
-            {
-                // Ha! We found an index - let's use it to find matching nodes
-                return descriptor;
-            }
-        }
-        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
-        {
-            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
-        }
-        return null;
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Value value,
@@ -688,7 +669,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new NodeCursorResourceIterator( cursor, statement );
+        return new NodeCursorResourceIterator<>( cursor, statement );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )
@@ -899,16 +880,19 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         return new GraphPropertiesProxy( this );
     }
+    private static final long UNINITIALIZED = -2L;
+    private static final long NO_ID = -1L;
 
-    private final class NodeCursorResourceIterator implements ResourceIterator<Node>
+    private final class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> implements ResourceIterator<Node>
     {
-        private final NodeLabelIndexCursor cursor;
+
+        private final CURSOR cursor;
         private final Statement statement;
         private long next;
         private boolean closed;
         private static final long NOT_INITIALIZED = -2L;
 
-        NodeCursorResourceIterator( NodeLabelIndexCursor cursor, Statement statement )
+        NodeCursorResourceIterator( CURSOR cursor, Statement statement )
         {
             this.cursor = cursor;
             this.statement = statement;
@@ -956,8 +940,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             if ( !closed )
             {
                 next = NO_ID;
-                statement.close();
-                cursor.close();
+                IOUtils.closeAllSilently( statement, cursor );
                 closed = true;
             }
         }
