@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -48,6 +49,7 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.newapi.References.clearFlags;
 import static org.neo4j.kernel.impl.newapi.References.hasDirectFlag;
@@ -74,7 +76,7 @@ abstract class Read implements TxStateHolder,
             org.neo4j.internal.kernel.api.IndexReference index,
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
             IndexOrder indexOrder,
-            IndexQuery... query ) throws IndexNotApplicableKernelException
+            IndexQuery... query ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
 
@@ -97,7 +99,7 @@ abstract class Read implements TxStateHolder,
                     break;
                 case exact:
                     Value value = ((IndexQuery.ExactPredicate) q).value();
-                    if ( value.valueGroup() == ValueGroup.NUMBER )
+                    if ( value.valueGroup() == ValueGroup.NUMBER || Values.isArrayValue( value ) )
                     {
                         if ( !reader.hasFullNumberPrecision( q ) )
                         {
@@ -434,7 +436,8 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
     }
 
-    abstract IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index );
+    abstract IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
+            throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();
 

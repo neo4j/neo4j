@@ -122,19 +122,12 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
+    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index ) throws IndexNotFoundKernelException
     {
-        try
-        {
-            IndexDescriptor indexDescriptor = index.isUnique() ?
-                                              IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
-                                              IndexDescriptorFactory.forLabel( index.label(), index.properties() );
-            return statement.getIndexReader( indexDescriptor );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new IllegalStateException( e );
-        }
+        IndexDescriptor indexDescriptor = index.isUnique() ?
+                                          IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
+                                          IndexDescriptorFactory.forLabel( index.label(), index.properties() );
+        return statement.getIndexReader( indexDescriptor );
     }
 
     @Override
