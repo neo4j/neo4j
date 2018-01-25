@@ -140,6 +140,18 @@ object CastSupport {
       transform(new ArrayConverterWriter(classOf[PointValue], a => Values.pointArray(a.asInstanceOf[Array[PointValue]]))))
     case _: Point => Converter(
       transform(new ArrayConverterWriter(classOf[Point], a => Values.pointArray(a.asInstanceOf[Array[Point]]))))
+    case _: DurationValue => Converter(
+      transform(new ArrayConverterWriter(classOf[DurationValue], a => Values.durationArray(a.asInstanceOf[Array[TemporalAmount]]))))
+    case _: DateValue => Converter(
+      transform(new ArrayConverterWriter(classOf[DateValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
+    case _: LocalTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalTimeValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
+    case _: TimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[TimeValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
+    case _: LocalDateTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalDateTimeValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
+    case _: DateTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[DateTimeValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
     case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
 
