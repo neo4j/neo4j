@@ -372,7 +372,8 @@ public abstract class SpaceFillingCurve
         for ( int dim = 0; dim < nbrDim; dim++ )
         {
             double value = clamp( coord[dim], range.getMin( dim ), range.getMax( dim ) );
-            if ( value == range.getMax( dim ) )
+            // Avoiding awkward rounding errors
+            if ( value - range.getMin( dim ) == range.getMax( dim ) - range.getMin( dim ) )
             {
                 normalizedCoord[dim] = width - 1;
             }
