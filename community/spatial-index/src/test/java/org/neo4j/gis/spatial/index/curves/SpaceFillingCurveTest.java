@@ -368,7 +368,7 @@ public class SpaceFillingCurveTest
     @Test
     public void shouldHaveReasonableCoveredArea()
     {
-        boolean verbose = false;
+        final boolean verbose = false;
         final int xmin = -100;
         final int xmax = 100;
         final int ymin = -100;
@@ -378,8 +378,10 @@ public class SpaceFillingCurveTest
 
         Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
         // For all levels
-        for ( int level = 1; level <= 1; level++ )
+        for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
+            double ratios = 0;
+            int numRums = 0;
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
 
             // For differently shaped rectangles
@@ -398,30 +400,43 @@ public class SpaceFillingCurveTest
                             final double yStart = ymin + yOffset;
                             final double yEnd = yStart + yExtent;
                             Envelope searchEnvelope = new Envelope( xStart, xEnd, yStart, yEnd );
+                            final long start = System.currentTimeMillis();
                             List<SpaceFillingCurve.LongRange> ranges =
                                     curve.getTilesIntersectingEnvelope( searchEnvelope, new StandardConfiguration(), monitor );
+                            final long end = System.currentTimeMillis();
                             if ( verbose )
                             {
-                                System.out.printf( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd );
-                                System.out.printf( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() );
-                                System.out.println( "Ranges: " + ranges.size() );
+                                System.out.printf(
+                                        "Results for level %d, with x=[%f,%f] y=[%f,%f]. Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
+                                        level, xStart, xEnd, yStart, yEnd, monitor.getSearchArea(), monitor.getCoveredArea(),
+                                        (double)(monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start );
                                 int[] counts = monitor.getCounts();
-                                for ( int i = 0; i <= curve.getMaxLevel(); i++ )
+                                for ( int i = 0; i <= monitor.getHighestDepth(); i++ )
                                 {
                                     System.out.println( "\t" + i + "\t" + counts[i] );
                                 }
                             }
+                            ratios += (double)(monitor.getCoveredArea()) / monitor.getSearchArea();
+                            ++numRums;
+
                             assertThat( String.format( "Search size was bigger than covered size for level %d, with x=[%s,%s] y=[%s,%s]", level,
                                     Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ), Double.toHexString( yEnd ) ),
                                     monitor.getSearchArea(), lessThanOrEqualTo( monitor.getCoveredArea() ) );
+//                            assertThat( String.format( "Covered size was more than twice the search size for level %d, with x=[%s,%s] y=[%s,%s]", level,
+//                                    Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ), Double.toHexString( yEnd ) ),
+//                                    monitor.getCoveredArea(), lessThanOrEqualTo( 2 * monitor.getSearchArea() ) );
                         }
                     }
                 }
             }
+
+            // Average over all runs on this level
+            double avgRatio = ratios / numRums;
+            System.out.printf( "Level %d: average ratio covered/search is %f\n", level, avgRatio );
         }
     }
 
-    @Test
+    @Ignore
     public void debugSingle()
     {
         final int xmin = -100;
