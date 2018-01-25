@@ -31,9 +31,9 @@ import org.neo4j.gis.spatial.index.Envelope;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointLeft;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointRight;
 
@@ -366,35 +366,88 @@ public class SpaceFillingCurveTest
     }
 
     @Test
-    public void toDo()
+    public void shouldHaveReasonableCoveredArea()
     {
-        boolean verbose = true;
-        Envelope envelope = new Envelope( -180, 180, -90, 90 );
-        for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
+        boolean verbose = false;
+        final int xmin = -100;
+        final int xmax = 100;
+        final int ymin = -100;
+        final int ymax = 100;
+        final int rectangleStepsPerDimension = 10;
+        final double extensionFactor = 10;
+
+        Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
+        // For all levels
+        for ( int level = 1; level <= 1; level++ )
         {
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-            // Use a sliding window of moderate size (1/8 width and 1/8 height) to test many non-aligned positions
-            double eighthWidth = envelope.getWidth( 0 ) / 8.0;
-            double eighthHeight = envelope.getWidth( 1 ) / 8.0;
-            double left = envelope.getMin( 0 );
-            double bottom = envelope.getMin( 1 );
-            while ( left < envelope.getMax( 0 ) - eighthWidth )
+
+            // For differently shaped rectangles
+            for ( double xExtent = 0.00001; xExtent <= xmax; xExtent *= extensionFactor )
             {
-                HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
-                Envelope eighth = new Envelope( left, left + eighthWidth, bottom, bottom + eighthHeight );
-                final List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( eighth, new StandardConfiguration(), monitor );
-                if ( verbose )
+                for ( double yExtent = 0.00001; yExtent <= ymax; yExtent *= extensionFactor )
                 {
-                    System.out.println( "Ranges: " + ranges.size() );
-                    int[] counts = monitor.getCounts();
-                    for ( int i = 0; i <= curve.getMaxLevel(); i++ )
+                    // For different positions of the rectangle
+                    for ( double xOffset = 0; xmin + xOffset + xExtent <= xmax; xOffset += (xmax - xmin - xExtent) / rectangleStepsPerDimension )
                     {
-                        System.out.println( "\t" + i + "\t" + counts[i] );
+                        for ( double yOffset = 0; xmin + yOffset + yExtent <= ymax; yOffset += (ymax - ymin - yExtent) / rectangleStepsPerDimension )
+                        {
+                            HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
+                            final double xStart = xmin + xOffset;
+                            final double xEnd = xStart + xExtent;
+                            final double yStart = ymin + yOffset;
+                            final double yEnd = yStart + yExtent;
+                            Envelope searchEnvelope = new Envelope( xStart, xEnd, yStart, yEnd );
+                            List<SpaceFillingCurve.LongRange> ranges =
+                                    curve.getTilesIntersectingEnvelope( searchEnvelope, new StandardConfiguration(), monitor );
+                            if ( verbose )
+                            {
+                                System.out.printf( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd );
+                                System.out.printf( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() );
+                                System.out.println( "Ranges: " + ranges.size() );
+                                int[] counts = monitor.getCounts();
+                                for ( int i = 0; i <= curve.getMaxLevel(); i++ )
+                                {
+                                    System.out.println( "\t" + i + "\t" + counts[i] );
+                                }
+                            }
+                            assertThat( String.format( "Search size was bigger than covered size for level %d, with x=[%s,%s] y=[%s,%s]", level,
+                                    Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ), Double.toHexString( yEnd ) ),
+                                    monitor.getSearchArea(), lessThanOrEqualTo( monitor.getCoveredArea() ) );
+                        }
                     }
                 }
-                left += eighthWidth / 5.12;
-                bottom += eighthHeight / 5.12;
             }
+        }
+    }
+
+    @Test
+    public void debugSingle()
+    {
+        final int xmin = -100;
+        final int xmax = 100;
+        final int ymin = -100;
+        final int ymax = 100;
+
+        final int level = 1;
+        final double xStart = -0x1.9p6;
+        final double xEnd = -0x1.8ffffd60e94eep6;
+        final double yStart = 0x1.8ff5c28f5c28ep6;
+        final double yEnd = 0x1.8ffffffffffffp6;
+
+        Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
+        HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
+        Envelope searchEnvelope = new Envelope( xStart, xEnd, yStart, yEnd );
+        HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
+        List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, new StandardConfiguration(), monitor );
+
+        System.out.printf( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd );
+        System.out.printf( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() );
+        System.out.println( "Ranges: " + ranges.size() );
+        int[] counts = monitor.getCounts();
+        for ( int i = 0; i <= curve.getMaxLevel(); i++ )
+        {
+            System.out.println( "\t" + i + "\t" + counts[i] );
         }
     }
 

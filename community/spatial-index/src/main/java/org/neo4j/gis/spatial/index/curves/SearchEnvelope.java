@@ -113,4 +113,17 @@ class SearchEnvelope
         }
         return fraction;
     }
+
+    /**
+     * The smallest possible envelope has unit area 1
+     */
+    public long getArea()
+    {
+        long area = 1;
+        for ( int i = 0; i < min.length; i++ )
+        {
+            area *= max[i] - min[i];
+        }
+        return area;
+    }
 }
