@@ -161,6 +161,7 @@ public class QuickImport
             }
             else
             {
+                System.out.println( "Seed " + randomSeed );
                 consumer = BatchImporterFactory.withHighestPriority().instantiate( dir, fileSystem, null, importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR );

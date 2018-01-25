@@ -85,9 +85,9 @@ public class IdMappers
         }
 
         @Override
-        public long calculateMemoryUsage( long numberOfNodes )
+        public MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
         {
-            return 0;
+            return MemoryStatsVisitor.NONE;
         }
 
         @Override

@@ -73,6 +73,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
+import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
 
@@ -382,8 +383,9 @@ public class ImportTool
      */
     public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
-        System.err.println("WARNING: neo4j-import is deprecated and support for it will be removed in a future\n" +
-                "version of Neo4j; please use neo4j-admin import instead.\n");
+        System.err.println( format( "WARNING: neo4j-import is deprecated and support for it will be removed in a future%n" +
+                "version of Neo4j; please use neo4j-admin import instead." ) );
+
         PrintStream out = System.out;
         PrintStream err = System.err;
         Args args = Args.parse( incomingArguments );

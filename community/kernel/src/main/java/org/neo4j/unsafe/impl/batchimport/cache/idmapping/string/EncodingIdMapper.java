@@ -34,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor.Visitable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -45,7 +46,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
@@ -867,10 +867,17 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public long calculateMemoryUsage( long numberOfNodes )
+    public Visitable memoryEstimation( long numberOfNodes )
     {
-        int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
-        return numberOfNodes * (Long.BYTES /*data*/ + trackerSize /*tracker*/);
+        return new Visitable()
+        {
+            @Override
+            public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
+            {
+                int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
+                visitor.offHeapUsage( numberOfNodes * (Long.BYTES /*data*/ + trackerSize /*tracker*/) );
+            }
+        };
     }
 
     @Override

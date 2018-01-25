@@ -85,12 +85,12 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable
     void close();
 
     /**
-     * Calculates memory required to keep {@code numberOfNodes}.
+     * Returns instance capable of returning memory usage estimation of given {@code numberOfNodes}.
      *
      * @param numberOfNodes number of nodes to calculate memory for.
-     * @return memory usage for the given number of nodes.
+     * @return instance capable of calculating memory usage for the given number of nodes.
      */
-    long calculateMemoryUsage( long numberOfNodes );
+    MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes );
 
     PrimitiveLongIterator leftOverDuplicateNodesIds();
 }
