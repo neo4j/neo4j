@@ -636,19 +636,9 @@ object CypherComparisonSupport {
     If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
     interesting scenarios.
      */
-    def All: TestConfiguration =
-      TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-        TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+    def All: TestConfiguration = AbsolutelyAll - Procs
 
-    def AllExceptSlotted: TestConfiguration =
-      TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes.Interpreted) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-        TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+    def AllExceptSlotted: TestConfiguration = All - SlottedInterpreted
 
     /**
       * These are all configurations that will be executed even if not explicitly expected to succeed or fail.
