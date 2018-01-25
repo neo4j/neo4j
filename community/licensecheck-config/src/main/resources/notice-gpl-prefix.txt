@@ -21,5 +21,3 @@ software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
 Full license texts are found in LICENSES.txt.
-
-

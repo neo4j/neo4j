@@ -598,7 +598,7 @@ State of California (excluding conflict-of-law provisions). Any
 litigation relating to this License shall be subject to the jurisdiction 
 of the Federal Courts of the Northern District of California and the 
 state courts of the State of California, with venue lying in Santa Clara 
-County, California. 
+County, California.
 
 
 
