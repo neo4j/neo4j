@@ -257,46 +257,28 @@ public abstract class SpaceFillingCurve
      */
     public List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope )
     {
-        return getTilesIntersectingEnvelope( referenceEnvelope, new RecursionStats( this.maxLevel ) );
+        return getTilesIntersectingEnvelope( referenceEnvelope, new StandardConfiguration(), null );
     }
 
     /**
      * Given an envelope, find a collection of LongRange of tiles intersecting it on maxLevel and merge adjacent ones
      */
-    List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope, RecursionStats stats )
+    List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope, SpaceFillingCurveConfiguration config, SpaceFillingCurveMonitor monitor )
     {
         SearchEnvelope search = new SearchEnvelope( this, referenceEnvelope );
+        SearchEnvelope wholeExtent = new SearchEnvelope( 0, this.getWidth(), nbrDim );
         ArrayList<LongRange> results = new ArrayList<>(1000);
 
-        double searchRatio = referenceEnvelope.getArea() / this.range.getArea();
-        int maxDepth = (int) (Math.log( (1 / searchRatio) ) / Math.log( Math.pow( 2, nbrDim ) )) + 1;
-        // System.out.println( "For ratio " + searchRatio + " and max level " + maxLevel + " maxDepth is " + maxDepth );
-
-        addTilesIntersectingEnvelopeAt( stats, 0, search, new SearchEnvelope( 0, this.getWidth(), nbrDim ), rootCurve(), 0, this.getValueWidth(), results,
-                maxDepth );
+        addTilesIntersectingEnvelopeAt( config, monitor, 0, config.maxDepth( referenceEnvelope, this.range, nbrDim, maxLevel ), search,
+                wholeExtent, rootCurve(), 0, this.getValueWidth(), results );
         return results;
-    }
-
-    public static class RecursionStats
-    {
-        int maxDepth=0;
-        int[] counts;
-        RecursionStats(int maxLevel)
-        {
-            this.counts = new int[maxLevel + 1];
-        }
-        void mark(int depth)
-        {
-            maxDepth = Math.max( maxDepth, depth );
-            counts[depth] ++;
-        }
     }
 
     private static double TOP_THRESHOLD = 0.99;
     private static double BOTTOM_THRESHOLD = 0.5;
 
-    private void addTilesIntersectingEnvelopeAt( RecursionStats stats, int depth, SearchEnvelope search, SearchEnvelope currentExtent, CurveRule curve, long left, long right,
-            ArrayList<LongRange> results, int maxDepth )
+    private void addTilesIntersectingEnvelopeAt( SpaceFillingCurveConfiguration config, SpaceFillingCurveMonitor monitor, int depth, int maxDepth,
+            SearchEnvelope search, SearchEnvelope currentExtent, CurveRule curve, long left, long right, ArrayList<LongRange> results )
     {
         if ( right - left == 1 )
         {
@@ -314,7 +296,10 @@ public abstract class SpaceFillingCurve
                     results.add( current );
                 }
             }
-            stats.mark( depth );
+            if(monitor != null)
+            {
+                monitor.addRangeAtDepth( depth );
+            }
         }
         else if ( search.intersects( currentExtent ) )
         {
@@ -322,7 +307,7 @@ public abstract class SpaceFillingCurve
             double overlap = search.fractionOf( currentExtent );
             double slope = (BOTTOM_THRESHOLD - TOP_THRESHOLD) / maxDepth;
             double threshold = slope * depth + TOP_THRESHOLD;
-            if ( overlap >=  0.99 || depth >= maxDepth )
+            if ( config.stopAtThisDepth( overlap, depth, maxDepth ) )
             {
                 // Note that LongRange upper bound is inclusive, hence the '-1' in several places
                 LongRange current = (results.size() > 0) ? results.get( results.size() - 1 ) : null;
@@ -335,7 +320,10 @@ public abstract class SpaceFillingCurve
                     current = new LongRange( left, right - 1 );
                     results.add( current );
                 }
-                stats.mark( depth );
+                if(monitor != null)
+                {
+                    monitor.addRangeAtDepth( depth );
+                }
             }
             else
             {
@@ -345,7 +333,8 @@ public abstract class SpaceFillingCurve
                     int npoint = curve.npointForIndex( i );
 
                     SearchEnvelope quadrant = currentExtent.quadrant( bitValues( npoint ) );
-                    addTilesIntersectingEnvelopeAt( stats, depth + 1, search, quadrant, curve.childAt( i ), left + i * width, left + (i + 1) * width, results, maxDepth );
+                    addTilesIntersectingEnvelopeAt( config, monitor, depth + 1, maxDepth, search, quadrant, curve.childAt( i ), left + i * width,
+                            left + (i + 1) * width, results );
                 }
             }
         }

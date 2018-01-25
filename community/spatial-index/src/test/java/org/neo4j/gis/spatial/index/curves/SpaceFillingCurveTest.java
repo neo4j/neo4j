@@ -334,58 +334,74 @@ public class SpaceFillingCurveTest
     @Test
     public void shouldGet2DHilbertSearchTilesForWideRangeAtManyLevels()
     {
-        boolean verbose = false;
-        Envelope envelope = new Envelope( -180, 180, -90, 90 );
-        for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )  // 12 takes 6s, 13 takes 25s, 14 takes 100s, 15 takes over 400s
+        final int xmin = -100;
+        final int xmax = 100;
+        final int ymin = -100;
+        final int ymax = 100;
+        Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
+        for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-            double halfTile = curve.getTileWidth( 0, level ) / 2.0;
-            long start = System.currentTimeMillis();
+            final int delta = 1;
+            final int xhalf = xmin + (xmax - xmin) / 2;
+            final int yhalf = ymin + (ymax - ymin) / 2;
+            Envelope q1 = new Envelope( xmin, xhalf - delta, ymin, yhalf - delta);
+            Envelope q2 = new Envelope( xmin, xhalf - delta, yhalf, ymax );
+            Envelope q3 = new Envelope( xhalf, xmax, yhalf, ymax );
+            Envelope q4 = new Envelope( xhalf, xmax, ymin, yhalf - delta );
+
             // Bottom left should give 1/4 of all tiles started at index 0
-            assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( envelope.getMin( 0 ), 0 - halfTile, envelope.getMin( 1 ), 0 - halfTile ) ),
+            assertTiles( curve.getTilesIntersectingEnvelope( q1 ),
                     new SpaceFillingCurve.LongRange( 0, curve.getValueWidth() / 4 - 1 ) );
             // Top left should give 1/4 of all tiles started at index 1/4
-            assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( envelope.getMin( 0 ), 0 - halfTile, 0, envelope.getMax( 1 ) ) ),
+            assertTiles( curve.getTilesIntersectingEnvelope( q2 ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() / 4, curve.getValueWidth() / 2 - 1 ) );
             // Top right should give 1/4 of all tiles started at index 1/2
-            assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 0, envelope.getMax( 0 ), 0, envelope.getMax( 1 ) ) ),
+            assertTiles( curve.getTilesIntersectingEnvelope( q3 ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() / 2, 3 * curve.getValueWidth() / 4 - 1 ) );
             // Bottom right should give 1/4 of all tiles started at index 3/4
-            assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 0, envelope.getMax( 0 ), envelope.getMin( 1 ), 0 - halfTile ) ),
+            assertTiles( curve.getTilesIntersectingEnvelope( q4 ),
                     new SpaceFillingCurve.LongRange( 3 * curve.getValueWidth() / 4, curve.getValueWidth() - 1 ) );
+        }
+    }
 
-            // Now use a sliding window of moderate size (1/8 width and 1/8 height) to test many non-aligned positions
+    @Test
+    public void toDo()
+    {
+        boolean verbose = true;
+        Envelope envelope = new Envelope( -180, 180, -90, 90 );
+        for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
+        {
+            HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
+            // Use a sliding window of moderate size (1/8 width and 1/8 height) to test many non-aligned positions
             double eighthWidth = envelope.getWidth( 0 ) / 8.0;
             double eighthHeight = envelope.getWidth( 1 ) / 8.0;
             double left = envelope.getMin( 0 );
             double bottom = envelope.getMin( 1 );
             while ( left < envelope.getMax( 0 ) - eighthWidth )
             {
+                HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
                 Envelope eighth = new Envelope( left, left + eighthWidth, bottom, bottom + eighthHeight );
-                SpaceFillingCurve.RecursionStats stats = new SpaceFillingCurve.RecursionStats( curve.getMaxLevel() );
-                final List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( eighth, stats );
-                int expectedMaxDepth = Math.max( 10, level / 1 );
-                assertThat( "Expected to not recurse deeper than " + expectedMaxDepth + " for level " + level, stats.maxDepth,
-                        lessThanOrEqualTo( expectedMaxDepth ) );
+                final List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( eighth, new StandardConfiguration(), monitor );
                 if ( verbose )
                 {
-                    System.out.println( "Recursed to max-depth: " + stats.maxDepth );
                     System.out.println( "Ranges: " + ranges.size() );
-                    for ( int i = 0; i <= stats.maxDepth; i++ )
+                    int[] counts = monitor.getCounts();
+                    for ( int i = 0; i <= curve.getMaxLevel(); i++ )
                     {
-                        System.out.println( "\t" + i + "\t" + stats.counts[i] );
+                        System.out.println( "\t" + i + "\t" + counts[i] );
                     }
                 }
                 left += eighthWidth / 5.12;
                 bottom += eighthHeight / 5.12;
             }
-            System.out.println( "Tested hilbert query at level " + level + ", took " + (System.currentTimeMillis() - start) + "ms" );
         }
     }
 
     @Test
-    public void shouldGet2DHilbertSearchTilesForWideRangeAndManyTilesAtManyLevels()
+    public void shouldGet2DHilbertSearchTilesForCenterRangeAndTraverseToBottom()
     {
+        TraverseToBottomConfiguration configuration = new TraverseToBottomConfiguration();
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         for ( int level = 2; level <= 11; level++ )  // 12 takes 6s, 13 takes 25s, 14 takes 100s, 15 takes over 400s
         {
@@ -395,7 +411,7 @@ public class SpaceFillingCurveTest
             Envelope centerWithoutOuterRing = new Envelope( envelope.getMin( 0 ) + fullTile + halfTile, envelope.getMax( 0 ) - fullTile - halfTile,
                     envelope.getMin( 1 ) + fullTile + halfTile, envelope.getMax( 1 ) - fullTile - halfTile );
             long start = System.currentTimeMillis();
-            List<SpaceFillingCurve.LongRange> result = curve.getTilesIntersectingEnvelope( centerWithoutOuterRing );
+            List<SpaceFillingCurve.LongRange> result = curve.getTilesIntersectingEnvelope( centerWithoutOuterRing, configuration, null );
             System.out.println(
                     "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms to produce " + result.size() + " tiles" );
             assertTiles( result, tilesNotTouchingOuterRing( curve ).toArray( new SpaceFillingCurve.LongRange[0] ) );
