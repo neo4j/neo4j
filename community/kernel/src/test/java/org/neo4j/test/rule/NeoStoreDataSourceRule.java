@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import java.io.File;
 import java.util.function.Function;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -145,7 +147,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new CanWrite(), new StoreCopyCheckPointMutex(),
                 new BufferedIdController(
                         new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                                idConfigurationProvider ), jobScheduler ));
+                                idConfigurationProvider ), jobScheduler ), new TransactionVersionContextSupplier() );
 
         return dataSource;
     }

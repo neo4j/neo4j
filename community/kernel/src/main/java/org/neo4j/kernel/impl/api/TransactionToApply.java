@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.function.LongConsumer;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -66,6 +68,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     // These fields are provided by user
     private final TransactionRepresentation transactionRepresentation;
     private long transactionId;
+    private final VersionContext versionContext;
     private TransactionToApply nextTransactionInBatch;
 
     // These fields are provided by commit process, storage engine, or recovery process
@@ -78,17 +81,28 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
      */
     public TransactionToApply( TransactionRepresentation transactionRepresentation )
     {
-        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED );
+        this( transactionRepresentation, EmptyVersionContext.INSTANCE );
     }
 
     /**
-     * Used as convenience when committing a transaction that has already gotten a transaction id assigned,
-     * i.e. when replicating a transaction.
+     * Used when committing a transaction that hasn't already gotten a transaction id assigned.
      */
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, VersionContext versionContext )
+    {
+        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, versionContext );
+    }
+
     public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId )
+    {
+        this( transactionRepresentation, transactionId, EmptyVersionContext.INSTANCE );
+    }
+
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId,
+            VersionContext versionContext )
     {
         this.transactionRepresentation = transactionRepresentation;
         this.transactionId = transactionId;
+        this.versionContext = versionContext;
     }
 
     // These methods are called by the user when building a batch
@@ -130,6 +144,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     {
         this.commitment = commitment;
         this.transactionId = transactionId;
+        this.versionContext.initWrite( transactionId );
     }
 
     public void logPosition( LogPosition position )

@@ -32,6 +32,8 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -185,7 +187,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer,
-                DefaultPageCursorTracerSupplier.INSTANCE );
+                DefaultPageCursorTracerSupplier.INSTANCE, EmptyVersionContextSupplier.INSTANCE );
 
         BatchingNeoStores batchingNeoStores =
                 new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
@@ -213,10 +215,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,
-            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
+            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier contextSupplier )
     {
         return new ConfiguringPageCacheFactory( fileSystem, config, tracer, cursorTracerSupplier,
-                log.getLog( BatchingNeoStores.class ) ).getOrCreatePageCache();
+                log.getLog( BatchingNeoStores.class ), contextSupplier ).getOrCreatePageCache();
     }
 
     private boolean alreadyContainsData( NeoStores neoStores )
@@ -228,7 +230,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         return new StoreFactory( storeDir, name, neo4jConfig,
                 new BatchingIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,
-                openOptions );
+                EmptyVersionContextSupplier.INSTANCE, openOptions );
     }
 
     /**

@@ -21,12 +21,12 @@ package cypher.feature.parser
 
 import java.util.Collections
 
-import cypher.MapRow
 import cypher.feature.parser.matchers.ResultMatcher
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.javacompat.MapRow
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.scalatest.junit.JUnitRunner

@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Log;
@@ -45,6 +46,7 @@ public class ConfiguringPageCacheFactory
     private final Config config;
     private final PageCacheTracer pageCacheTracer;
     private final Log log;
+    private final VersionContextSupplier versionContextSupplier;
     private PageCache pageCache;
     private PageCursorTracerSupplier pageCursorTracerSupplier;
 
@@ -56,10 +58,13 @@ public class ConfiguringPageCacheFactory
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
      * @param log page cache factory log
+     * @param versionContextSupplier cursor context factory
      */
     public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier, Log log )
+            PageCursorTracerSupplier pageCursorTracerSupplier, Log log,
+            VersionContextSupplier versionContextSupplier )
     {
+        this.versionContextSupplier = versionContextSupplier;
         this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
         this.config = config;
         this.pageCacheTracer = pageCacheTracer;
@@ -111,7 +116,7 @@ public class ConfiguringPageCacheFactory
         return new MuninnPageCache(
                 swapperFactory,
                 maxPages,
-                cachePageSize, pageCacheTracer, pageCursorTracerSupplier );
+                cachePageSize, pageCacheTracer, pageCursorTracerSupplier, versionContextSupplier );
     }
 
     public int calculateMaxPages( Config config, int cachePageSize )

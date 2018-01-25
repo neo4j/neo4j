@@ -24,6 +24,8 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.kvstore.State;
 import org.neo4j.logging.LogProvider;
@@ -34,7 +36,7 @@ public class ReadOnlyCountsTracker extends CountsTracker
     public ReadOnlyCountsTracker( LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache,
                                   Config config, File baseFile )
     {
-        super( logProvider, fileSystem, pageCache, config, baseFile );
+        super( logProvider, fileSystem, pageCache, config, baseFile, EmptyVersionContextSupplier.INSTANCE );
     }
 
     @Override

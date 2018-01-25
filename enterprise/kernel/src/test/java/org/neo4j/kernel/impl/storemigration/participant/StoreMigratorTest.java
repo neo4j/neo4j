@@ -30,6 +30,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -74,7 +75,7 @@ public class StoreMigratorTest
 
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, NULL,
-                      PageCursorTracerSupplier.NULL, NullLog.getInstance() )
+                      PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE )
                      .getOrCreatePageCache() )
         {
             // For test code sanity

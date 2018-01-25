@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -68,7 +69,7 @@ public abstract class StorageLayerTest
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
         this.state = new KernelStatement( null, null, disk.newStatement(), new Procedures(), new CanWrite(),
-                LockTracer.NONE );
+                LockTracer.NONE, EmptyVersionContextSupplier.INSTANCE );
     }
 
     protected GraphDatabaseService createGraphDatabase()

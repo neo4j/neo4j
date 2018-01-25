@@ -397,7 +397,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             {
                 close();
             }
-            catch ( IOException e )
+            catch ( Throwable e )
             {
                 t.addSuppressed( e );
             }

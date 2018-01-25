@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -69,42 +70,46 @@ public class StoreFactory
     private final PageCache pageCache;
     private final RecordFormats recordFormats;
     private final OpenOption[] openOptions;
+    private final VersionContextSupplier versionContextSupplier;
 
-    public StoreFactory( File storeDir, PageCache pageCache, FileSystemAbstraction fileSystem, LogProvider logProvider )
+    public StoreFactory( File storeDir, PageCache pageCache, FileSystemAbstraction fileSystem, LogProvider
+            logProvider, VersionContextSupplier versionContextSupplier )
     {
         this( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                logProvider );
+                logProvider, versionContextSupplier );
     }
 
     public StoreFactory( File storeDir, PageCache pageCache, FileSystemAbstraction fileSystem,
-            RecordFormats recordFormats, LogProvider logProvider )
+            RecordFormats recordFormats, LogProvider logProvider, VersionContextSupplier versionContextSupplier )
     {
         this( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                recordFormats, logProvider );
+                recordFormats, logProvider, versionContextSupplier );
     }
 
     public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
+            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, VersionContextSupplier versionContextSupplier )
     {
         this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 RecordFormatSelector.selectForStoreOrConfig( config, storeDir, fileSystemAbstraction, pageCache, logProvider ),
-                logProvider );
+                logProvider, versionContextSupplier );
     }
 
     public StoreFactory( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider )
+            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider,
+            VersionContextSupplier versionContextSupplier )
     {
         this( storeDir, MetaDataStore.DEFAULT_NAME, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                recordFormats, logProvider );
+                recordFormats, logProvider, versionContextSupplier );
     }
 
     public StoreFactory( File storeDir, String storeName, Config config, IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats,
-            LogProvider logProvider, OpenOption... openOptions )
+            LogProvider logProvider, VersionContextSupplier versionContextSupplier, OpenOption... openOptions )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
+        this.versionContextSupplier = versionContextSupplier;
         this.recordFormats = recordFormats;
         this.openOptions = openOptions;
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
@@ -167,6 +172,7 @@ public class StoreFactory
             }
         }
         return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
-                fileSystemAbstraction, recordFormats, createStoreIfNotExists, storeTypes, openOptions );
+                fileSystemAbstraction, versionContextSupplier, recordFormats, createStoreIfNotExists, storeTypes,
+                openOptions );
     }
 }

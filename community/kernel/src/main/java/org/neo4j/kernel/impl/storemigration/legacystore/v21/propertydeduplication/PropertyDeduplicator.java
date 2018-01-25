@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -70,7 +71,8 @@ public class PropertyDeduplicator
 
     public void deduplicateProperties() throws IOException
     {
-        StoreFactory factory = new StoreFactory( workingDir, pageCache, fileSystem, NullLogProvider.getInstance() );
+        StoreFactory factory = new StoreFactory( workingDir, pageCache, fileSystem, NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.INSTANCE );
         try ( NeoStores neoStores = factory.openNeoStores( StoreType.PROPERTY, StoreType.NODE, StoreType.SCHEMA) )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();

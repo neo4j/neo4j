@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -91,7 +92,7 @@ public class KernelTransactionFactory
                 NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
-                storageEngine, new CanWrite() );
+                storageEngine, new CanWrite(), EmptyVersionContextSupplier.INSTANCE );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

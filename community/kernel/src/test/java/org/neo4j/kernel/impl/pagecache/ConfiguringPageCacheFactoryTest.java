@@ -27,6 +27,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
@@ -66,7 +67,7 @@ public class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance() );
+                NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
@@ -88,7 +89,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config,
-                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log );
+                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.INSTANCE );
 
         // Then
         try ( PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
@@ -111,7 +112,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, log );
+                PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.INSTANCE );
 
         // Then
         assertThat( PageSwapperFactoryForTesting.countCreatedPageSwapperFactories(), is( 1 ) );
@@ -129,7 +130,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, NullLog.getInstance() );
+                PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE );
     }
 
     @Test
@@ -145,7 +146,7 @@ public class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance() );
+                NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )

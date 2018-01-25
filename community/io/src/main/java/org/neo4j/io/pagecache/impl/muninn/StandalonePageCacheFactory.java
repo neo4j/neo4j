@@ -26,6 +26,8 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -42,16 +44,18 @@ public final class StandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
-        return createPageCache( fileSystem, null, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        return createPageCache( fileSystem, null, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE,
+                EmptyVersionContextSupplier.INSTANCE );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Integer pageSize )
     {
-        return createPageCache( fileSystem, pageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        return createPageCache( fileSystem, pageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE,
+                EmptyVersionContextSupplier.INSTANCE );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Integer pageSize,
-            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
+            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier versionContextSupplier )
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.setFileSystemAbstraction( fileSystem );
@@ -59,6 +63,7 @@ public final class StandalonePageCacheFactory
         int cachePageSize = pageSize != null ? pageSize : factory.getCachePageSizeHint();
         long pageCacheMemory = ByteUnit.mebiBytes( 8 );
         long pageCount = pageCacheMemory / cachePageSize;
-        return new MuninnPageCache( factory, (int) pageCount, cachePageSize, tracer, cursorTracerSupplier );
+        return new MuninnPageCache( factory, (int) pageCount, cachePageSize, tracer, cursorTracerSupplier,
+                versionContextSupplier );
     }
 }

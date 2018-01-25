@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -560,7 +562,8 @@ public class KernelTransactionsTest
                 null, statementOperationsContianer, null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard,
-                tracers, storageEngine, new Procedures(), transactionIdStore, clock, new CanWrite() );
+                tracers, storageEngine, new Procedures(), transactionIdStore, clock, new CanWrite(),
+                EmptyVersionContextSupplier.INSTANCE );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -572,7 +575,7 @@ public class KernelTransactionsTest
                 null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new CanWrite() );
+                new CanWrite(), EmptyVersionContextSupplier.INSTANCE );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -621,13 +624,13 @@ public class KernelTransactionsTest
                 LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, Clock clock,
-                AccessCapability accessCapability )
+                AccessCapability accessCapability, VersionContextSupplier versionContextSupplier )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperationsContianer, schemaWriteGuard,
                     txHeaderFactory, transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks,
                     transactionMonitor, availabilityGuard, tracers, storageEngine, procedures, transactionIdStore,
                     clock,
-                    accessCapability );
+                    accessCapability, versionContextSupplier );
         }
 
         @Override

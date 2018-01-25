@@ -32,6 +32,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -75,7 +76,7 @@ public class StoreFactoryTest
         LogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats recordFormats = selectForStoreOrConfig( config, storeDir, fsRule.get(), pageCache, logProvider );
         return new StoreFactory( storeDir, DEFAULT_NAME, config, idGeneratorFactory, pageCache, fsRule.get(),
-                recordFormats, logProvider, openOptions );
+                recordFormats, logProvider, EmptyVersionContextSupplier.INSTANCE, openOptions );
     }
 
     private File directory( String name )

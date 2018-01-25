@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -112,7 +113,8 @@ public class MetaDataStoreTest
     private MetaDataStore newMetaDataStore() throws IOException
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( STORE_DIR, pageCacheWithFakeOverflow, fs, logProvider );
+        StoreFactory storeFactory = new StoreFactory( STORE_DIR, pageCacheWithFakeOverflow, fs, logProvider,
+                EmptyVersionContextSupplier.INSTANCE );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 

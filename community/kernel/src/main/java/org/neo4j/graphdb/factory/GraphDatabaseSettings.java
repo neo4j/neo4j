@@ -460,6 +460,17 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> rebuild_idgenerators_fast = setting("unsupported.dbms.id_generator_fast_rebuild_enabled", BOOLEAN, TRUE );
 
+    @Description( "Specifies if engine should run cypher query based on a snapshot of accessed data. " +
+            "Query will be restarted in case if concurrent modification of data will be detected." )
+    @Internal
+    public static final Setting<Boolean> snapshot_query = setting( "unsupported.dbms.query.snapshot", BOOLEAN, FALSE );
+
+    @Description( "Specifies number or retries that query engine will do to execute query based on " +
+            "stable accessed data snapshot before giving up." )
+    @Internal
+    public static final Setting<Integer> snapshot_query_retries = setting( "unsupported.dbms.query.snapshot.retries",
+            INTEGER, "5", range( 1, Integer.MAX_VALUE ) );
+
     // Store memory settings
     @Description("Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
                  "depending on the storage device used.")

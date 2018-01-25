@@ -32,6 +32,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -106,7 +107,7 @@ public class ResponsePackerIT
     {
         File storeDir = new File( "/store/" );
         fs.mkdirs( storeDir );
-        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
         return storeFactory.openAllNeoStores( true );
     }
 }

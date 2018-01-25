@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -283,7 +284,7 @@ public class StorePropertyCursorTest
                 fs.deleteRecursively( storeDir );
             }
             fs.mkdirs( storeDir );
-            neoStores = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() )
+            neoStores = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE )
                     .openAllNeoStores( true );
             propertyStore = neoStores.getPropertyStore();
         }

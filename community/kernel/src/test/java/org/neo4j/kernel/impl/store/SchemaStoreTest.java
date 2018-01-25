@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.stream.IntStream;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -70,7 +71,7 @@ public class SchemaStoreTest
         config = Config.empty();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
         storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
-                fs.get(), NullLogProvider.getInstance() );
+                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getSchemaStore();
     }
