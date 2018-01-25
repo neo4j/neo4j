@@ -89,11 +89,12 @@ object indexQuery extends GraphElementPropertyFunctions {
           innerRange.mapBounds(expression => makeValueNeoSafe(expression(m, state)).asObject())
       }
       range match {
-        case r:InequalitySeekRange[PointValue] if r.existsBound { value => value.isInstanceOf[PointValue] } =>
+        case r:InequalitySeekRange[_] if r.existsBound { value => value.isInstanceOf[PointValue] } =>
+          val correctlyTypedRange = r.asInstanceOf[InequalitySeekRange[PointValue]]
           val propertyKeyId = state.query.getPropertyKeyId(propertyNames.head)
           index(Seq(range)).toIterator.filter { nv =>
             val propertyValue = state.query.nodeOps.getProperty(nv.id(), propertyKeyId).asInstanceOf[PointValue]
-            r.includes(propertyValue)(CypherOrdering.BY_POINT)
+            correctlyTypedRange.includes(propertyValue)(CypherOrdering.BY_POINT)
           }
         case _ =>
           index(Seq(range)).toIterator
