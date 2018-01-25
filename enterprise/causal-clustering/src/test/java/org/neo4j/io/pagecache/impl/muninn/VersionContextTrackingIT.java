@@ -43,8 +43,6 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -70,8 +68,11 @@ public class VersionContextTrackingIT
         for ( int i = 1; i < 4; i++ )
         {
             generateData();
-            dataMatchesEventually( anyCoreClusterMember(), cluster.coreMembers() );
-            assertEquals( getExpectedLatestPageVersion( baseTxId, i ), getLatestPageVersion( getAnyCore() ) );
+            long expectedLatestPageVersion = getExpectedLatestPageVersion( baseTxId, i );
+            ThrowingSupplier<Long,Exception> anyCoreSupplier =
+                    () -> getLatestPageVersion( getAnyCore() );
+            assertEventually( "Any core page version should match to expected page version.", anyCoreSupplier,
+                    is( expectedLatestPageVersion ), 2, MINUTES );
         }
     }
 
