@@ -23,18 +23,50 @@ import org.neo4j.gis.spatial.index.Envelope;
 
 public class StandardConfiguration implements SpaceFillingCurveConfiguration
 {
+    public static final int DEFAULT_EXTRA_LEVELS = 1;
+    protected int extraLevels;
 
+    StandardConfiguration()
+    {
+        this( DEFAULT_EXTRA_LEVELS );
+    }
+
+    StandardConfiguration( int extraLevels )
+    {
+        this.extraLevels = extraLevels;
+    }
+
+    /**
+     * This simply stops at the maxDepth calculated in the maxDepth() function, or
+     * if the overlap is over 99%.
+     * <p>
+     * {@inheritDoc}
+     */
     @Override
     public boolean stopAtThisDepth( double overlap, int depth, int maxDepth )
     {
         return overlap >= 0.99 || depth >= maxDepth;
     }
 
+    /**
+     * If the search area is exactly one of the finest grained tiles (tile at maxLevel), then
+     * we want the search to traverse to maxLevel, however, for each area that is 4x larger, we would
+     * traverse one level shallower. This is achieved by a log of the ration of areas,
+     * to the base of 4 (for 2D).
+     * <p>
+     * {@inheritDoc}
+     */
     @Override
     public int maxDepth( Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel )
     {
-        double searchRatio = referenceEnvelope.getArea() / range.getArea();
-        final int i = (int) (Math.log( (1 / searchRatio) ) / Math.log( Math.pow( 2, nbrDim ) )) + 1;
+        double searchRatio = range.getArea() / referenceEnvelope.getArea();
+        final int i = (int) (Math.log( searchRatio ) / Math.log( Math.pow( 2, nbrDim ) )) + extraLevels;
         return i;
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "(" + extraLevels + ")";
     }
 }

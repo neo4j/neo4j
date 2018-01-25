@@ -34,4 +34,10 @@ public class TraverseToBottomConfiguration implements SpaceFillingCurveConfigura
     {
         return maxLevel;
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
 }

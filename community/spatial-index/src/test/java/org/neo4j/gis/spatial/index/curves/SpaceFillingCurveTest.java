@@ -345,7 +345,7 @@ public class SpaceFillingCurveTest
             final int delta = 1;
             final int xhalf = xmin + (xmax - xmin) / 2;
             final int yhalf = ymin + (ymax - ymin) / 2;
-            Envelope q1 = new Envelope( xmin, xhalf - delta, ymin, yhalf - delta);
+            Envelope q1 = new Envelope( xmin, xhalf - delta, ymin, yhalf - delta );
             Envelope q2 = new Envelope( xmin, xhalf - delta, yhalf, ymax );
             Envelope q3 = new Envelope( xhalf, xmax, yhalf, ymax );
             Envelope q4 = new Envelope( xhalf, xmax, ymin, yhalf - delta );
@@ -365,74 +365,146 @@ public class SpaceFillingCurveTest
         }
     }
 
+    private static class MonitorStats
+    {
+        long total = 0;
+        long min = Long.MAX_VALUE;
+        long max = 0;
+        int count = 0;
+
+        void add( long value )
+        {
+            total += value;
+            min = Math.min( min, value );
+            max = Math.max( max, value );
+            count++;
+        }
+
+        double avg()
+        {
+            return (double) total / (double) count;
+        }
+    }
+
+    private static class MonitorDoubleStats
+    {
+        double total = 0;
+        double min = Double.MAX_VALUE;
+        double max = 0;
+        int count = 0;
+
+        void add( double value )
+        {
+            total += value;
+            min = Math.min( min, value );
+            max = Math.max( max, value );
+            count++;
+        }
+
+        double avg()
+        {
+            return total / count;
+        }
+    }
+
     @Test
     public void shouldHaveReasonableCoveredArea()
     {
         final boolean verbose = false;
+        final double minExtent = 0.000001;
+        final double maxAspect = 10.0;
         final int xmin = -100;
         final int xmax = 100;
         final int ymin = -100;
         final int ymax = 100;
-        final int rectangleStepsPerDimension = 10;
+        final double rectangleStepsPerDimension = 9.789;
         final double extensionFactor = 10;
+        String formatHeader1 = "Level  Depth Limitation Configuration                  Area Ratio              Ranges                  Depth";
+        String formatHeader2 = "                                                        avg    min    max       avg    min    max       avg    min    max";
+        String formatBody = "%5d  %-42s   %7.2f%7.2f%7.2f   %7.2f%7d%7d   %7.2f%7d%7d\n";
 
         Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
         // For all levels
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
-            double ratios = 0;
-            int numRums = 0;
-            HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-
-            // For differently shaped rectangles
-            for ( double xExtent = 0.00001; xExtent <= xmax; xExtent *= extensionFactor )
+            System.out.println();
+            System.out.println(formatHeader1);
+            System.out.println(formatHeader2);
+            for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{
+                    new StandardConfiguration( 1 ),
+                    new StandardConfiguration( 2 ),
+                    new StandardConfiguration( 3 ),
+                    new StandardConfiguration( 4 ),
+                    new PartialOverlapConfiguration( 1, 0.99, 0.1 ),
+                    new PartialOverlapConfiguration( 1, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 2, 0.99, 0.1 ),
+                    new PartialOverlapConfiguration( 2, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 3, 0.99, 0.1 ),
+                    new PartialOverlapConfiguration( 3, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 4, 0.99, 0.1 ),
+                    new PartialOverlapConfiguration( 4, 0.99, 0.5 )
+            } )
             {
-                for ( double yExtent = 0.00001; yExtent <= ymax; yExtent *= extensionFactor )
-                {
-                    // For different positions of the rectangle
-                    for ( double xOffset = 0; xmin + xOffset + xExtent <= xmax; xOffset += (xmax - xmin - xExtent) / rectangleStepsPerDimension )
-                    {
-                        for ( double yOffset = 0; xmin + yOffset + yExtent <= ymax; yOffset += (ymax - ymin - yExtent) / rectangleStepsPerDimension )
-                        {
-                            HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
-                            final double xStart = xmin + xOffset;
-                            final double xEnd = xStart + xExtent;
-                            final double yStart = ymin + yOffset;
-                            final double yEnd = yStart + yExtent;
-                            Envelope searchEnvelope = new Envelope( xStart, xEnd, yStart, yEnd );
-                            final long start = System.currentTimeMillis();
-                            List<SpaceFillingCurve.LongRange> ranges =
-                                    curve.getTilesIntersectingEnvelope( searchEnvelope, new StandardConfiguration(), monitor );
-                            final long end = System.currentTimeMillis();
-                            if ( verbose )
-                            {
-                                System.out.printf(
-                                        "Results for level %d, with x=[%f,%f] y=[%f,%f]. Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
-                                        level, xStart, xEnd, yStart, yEnd, monitor.getSearchArea(), monitor.getCoveredArea(),
-                                        (double)(monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start );
-                                int[] counts = monitor.getCounts();
-                                for ( int i = 0; i <= monitor.getHighestDepth(); i++ )
-                                {
-                                    System.out.println( "\t" + i + "\t" + counts[i] );
-                                }
-                            }
-                            ratios += (double)(monitor.getCoveredArea()) / monitor.getSearchArea();
-                            ++numRums;
+                MonitorDoubleStats areaStats = new MonitorDoubleStats();
+                MonitorStats rangeStats = new MonitorStats();
+                MonitorStats maxDepthStats = new MonitorStats();
+                HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
 
-                            assertThat( String.format( "Search size was bigger than covered size for level %d, with x=[%s,%s] y=[%s,%s]", level,
-                                    Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ), Double.toHexString( yEnd ) ),
-                                    monitor.getSearchArea(), lessThanOrEqualTo( monitor.getCoveredArea() ) );
+                // For differently shaped rectangles
+                for ( double xExtent = minExtent; xExtent <= xmax; xExtent *= extensionFactor )
+                {
+                    for ( double yExtent = minExtent; yExtent <= ymax; yExtent *= extensionFactor )
+                    {
+                        double aspect = xExtent > yExtent ? xExtent / yExtent : yExtent / xExtent;
+                        if ( aspect < maxAspect )
+                        {
+                            // For different positions of the rectangle
+                            for ( double xOffset = 0; xmin + xOffset + xExtent <= xmax; xOffset += (xmax - xmin - xExtent) / rectangleStepsPerDimension )
+                            {
+                                for ( double yOffset = 0; xmin + yOffset + yExtent <= ymax; yOffset += (ymax - ymin - yExtent) / rectangleStepsPerDimension )
+                                {
+                                    HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
+                                    final double xStart = xmin + xOffset;
+                                    final double xEnd = xStart + xExtent;
+                                    final double yStart = ymin + yOffset;
+                                    final double yEnd = yStart + yExtent;
+                                    Envelope searchEnvelope = new Envelope( xStart, xEnd, yStart, yEnd );
+                                    final long start = System.currentTimeMillis();
+                                    List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, config, monitor );
+                                    final long end = System.currentTimeMillis();
+                                    if ( verbose )
+                                    {
+                                        System.out.printf(
+                                                "Results for level %d, with x=[%f,%f] y=[%f,%f]. Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
+                                                level, xStart, xEnd, yStart, yEnd, monitor.getSearchArea(), monitor.getCoveredArea(),
+                                                (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start );
+                                        int[] counts = monitor.getCounts();
+                                        for ( int i = 0; i <= monitor.getHighestDepth(); i++ )
+                                        {
+                                            System.out.println( "\t" + i + "\t" + counts[i] );
+                                        }
+                                    }
+                                    areaStats.add((double) (monitor.getCoveredArea()) / monitor.getSearchArea());
+                                    rangeStats.add(ranges.size());
+                                    maxDepthStats.add(monitor.getHighestDepth());
+
+                                    assertThat( String.format( "Search size was bigger than covered size for level %d, with x=[%s,%s] y=[%s,%s]", level, Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ),
+                                            Double.toHexString( yEnd ) ), monitor.getSearchArea(), lessThanOrEqualTo( monitor.getCoveredArea() ) );
 //                            assertThat( String.format( "Covered size was more than twice the search size for level %d, with x=[%s,%s] y=[%s,%s]", level,
 //                                    Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ), Double.toHexString( yEnd ) ),
 //                                    monitor.getCoveredArea(), lessThanOrEqualTo( 2 * monitor.getSearchArea() ) );
+                                }
+                            }
                         }
                     }
                 }
-            }
 
-            // Average over all runs on this level
-            double avgRatio = ratios / numRums;
-            System.out.printf( "Level %d: average ratio covered/search is %f\n", level, avgRatio );
+                // Average over all runs on this level
+                System.out.printf( formatBody, level, config.toString(),
+                        areaStats.avg(), areaStats.min, areaStats.max,
+                        rangeStats.avg(), rangeStats.min, rangeStats.max,
+                        maxDepthStats.avg(), maxDepthStats.min, maxDepthStats.max );
+            }
         }
     }
 

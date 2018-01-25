@@ -279,9 +279,6 @@ public abstract class SpaceFillingCurve
         return results;
     }
 
-    private static double TOP_THRESHOLD = 0.99;
-    private static double BOTTOM_THRESHOLD = 0.5;
-
     private void addTilesIntersectingEnvelopeAt( SpaceFillingCurveConfiguration config, SpaceFillingCurveMonitor monitor, int depth, int maxDepth,
             SearchEnvelope search, SearchEnvelope currentExtent, CurveRule curve, long left, long right, ArrayList<LongRange> results )
     {
@@ -309,10 +306,7 @@ public abstract class SpaceFillingCurve
         }
         else if ( search.intersects( currentExtent ) )
         {
-            // TODO remove parts that end up unused
             double overlap = search.fractionOf( currentExtent );
-            double slope = (BOTTOM_THRESHOLD - TOP_THRESHOLD) / maxDepth;
-            double threshold = slope * depth + TOP_THRESHOLD;
             if ( config.stopAtThisDepth( overlap, depth, maxDepth ) )
             {
                 // Note that LongRange upper bound is inclusive, hence the '-1' in several places
@@ -326,7 +320,7 @@ public abstract class SpaceFillingCurve
                     current = new LongRange( left, right - 1 );
                     results.add( current );
                 }
-                if(monitor != null)
+                if ( monitor != null )
                 {
                     monitor.addRangeAtDepth( depth );
                     monitor.addToCoveredArea( currentExtent.getArea() );

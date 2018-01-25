@@ -19,8 +19,6 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-import org.neo4j.gis.spatial.index.Envelope;
-
 public interface SpaceFillingCurveMonitor
 {
     /**

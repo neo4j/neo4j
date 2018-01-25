@@ -23,7 +23,6 @@ import org.neo4j.gis.spatial.index.Envelope;
 
 public interface SpaceFillingCurveConfiguration
 {
-
     /**
      * Decides whether to stop at this depth or recurse deeper.
      *
