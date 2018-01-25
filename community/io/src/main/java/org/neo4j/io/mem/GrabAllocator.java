@@ -21,6 +21,7 @@ package org.neo4j.io.mem;
 
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
 
 /**
@@ -32,7 +33,7 @@ public final class GrabAllocator implements MemoryAllocator
     /**
      * The amount of memory, in bytes, to grab in each Grab.
      */
-    private static final long GRAB_SIZE = getInteger( GrabAllocator.class, "GRAB_SIZE", 512 * 1024 ); // 512 KiB
+    private static final long GRAB_SIZE = getInteger( GrabAllocator.class, "GRAB_SIZE", (int) kibiBytes( 512 ) );
 
     /**
      * The amount of memory that this memory manager can still allocate.
@@ -84,55 +85,77 @@ public final class GrabAllocator implements MemoryAllocator
         {
             throw new IllegalArgumentException( "Invalid alignment: " + alignment + ". Alignment must be positive." );
         }
+        long grabSize = Math.min( GRAB_SIZE, memoryReserve );
         try
         {
-            return innerAllocateAligned( bytes, alignment );
+            if ( bytes > GRAB_SIZE )
+            {
+                // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
+                grabSize = bytes;
+                Grab nextGrab = grabs == null ? null : grabs.next;
+                Grab allocationGrab = new Grab( nextGrab, grabSize );
+                if ( !allocationGrab.canAllocate( bytes ) )
+                {
+                    allocationGrab.free();
+                    grabSize = bytes + alignment;
+                    allocationGrab = new Grab( nextGrab, grabSize );
+                }
+                long allocation = allocationGrab.allocate( bytes, alignment );
+                grabs = grabs == null ? allocationGrab : grabs.setNext( allocationGrab );
+                memoryReserve -= bytes;
+                return allocation;
+            }
+
+            if ( grabs == null || !grabs.canAllocate( bytes ) )
+            {
+                if ( grabSize < bytes )
+                {
+                    grabSize = bytes;
+                    Grab grab = new Grab( grabs, grabSize );
+                    if ( grab.canAllocate( bytes ) )
+                    {
+                        memoryReserve -= grabSize;
+                        grabs = grab;
+                        return grabs.allocate( bytes, alignment );
+                    }
+                    grab.free();
+                    grabSize = bytes + alignment;
+                }
+                grabs = new Grab( grabs, grabSize );
+                memoryReserve -= grabSize;
+            }
+            return grabs.allocate( bytes, alignment );
         }
-        catch ( NativeMemoryAllocationRefusedError nmare )
+        catch ( OutOfMemoryError oome )
         {
-            nmare.setAlreadyAllocatedBytes( usedMemory() );
-            throw nmare;
+            NativeMemoryAllocationRefusedError error =
+                    new NativeMemoryAllocationRefusedError( grabSize, usedMemory() );
+            initCause( error, oome );
+            throw error;
         }
     }
 
-    private long innerAllocateAligned( long bytes, long alignment )
+    private void initCause( NativeMemoryAllocationRefusedError error, OutOfMemoryError cause )
     {
-        if ( bytes > GRAB_SIZE )
+        try
         {
-            // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
-            Grab nextGrab = grabs == null ? null : grabs.next;
-            Grab allocationGrab = new Grab( nextGrab, bytes );
-            if ( !allocationGrab.canAllocate( bytes ) )
-            {
-                allocationGrab.free();
-                allocationGrab = new Grab( nextGrab, bytes + alignment );
-            }
-            long allocation = allocationGrab.allocate( bytes, alignment );
-            grabs = grabs == null ? allocationGrab : grabs.setNext( allocationGrab );
-            memoryReserve -= bytes;
-            return allocation;
+            error.initCause( cause );
         }
-
-        if ( grabs == null || !grabs.canAllocate( bytes ) )
+        catch ( Throwable ignore )
         {
-            long desiredGrabSize = Math.min( GRAB_SIZE, memoryReserve );
-            if ( desiredGrabSize < bytes )
+            // This can only happen if our NMARE somehow already has a cause initialised, which should not
+            // be the case, but it could if the JDK decided to inject a default cause in some future version.
+            // To avoid loosing the ability to trace this cause back, we'll add it as a suppressed exception
+            // instead.
+            try
             {
-                desiredGrabSize = bytes;
-                Grab grab = new Grab( grabs, desiredGrabSize );
-                if ( grab.canAllocate( bytes ) )
-                {
-                    memoryReserve -= desiredGrabSize;
-                    grabs = grab;
-                    return grabs.allocate( bytes, alignment );
-                }
-                grab.free();
-                desiredGrabSize = bytes + alignment;
+                error.addSuppressed( cause );
             }
-            memoryReserve -= desiredGrabSize;
-            grabs = new Grab( grabs, desiredGrabSize );
+            catch ( Throwable ignore2 )
+            {
+                // Okay, we tried.
+            }
         }
-        return grabs.allocate( bytes, alignment );
     }
 
     @Override
@@ -148,38 +171,6 @@ public final class GrabAllocator implements MemoryAllocator
         }
     }
 
-    private static long allocateNativeMemory( long size )
-    {
-        try
-        {
-            return UnsafeUtil.allocateMemory( size );
-        }
-        catch ( OutOfMemoryError e )
-        {
-            NativeMemoryAllocationRefusedError error = new NativeMemoryAllocationRefusedError( size );
-            try
-            {
-                error.initCause( e );
-            }
-            catch ( Throwable ignore )
-            {
-                // This can only happen if our NMARE somehow already has a cause initialised, which should not
-                // be the case, but it could if the JDK decided to inject a default cause in some future version.
-                // To avoid loosing the ability to trace this cause back, we'll add it as a suppressed exception
-                // instead.
-                try
-                {
-                    error.addSuppressed( e );
-                }
-                catch ( Throwable ignore2 )
-                {
-                    // Okay, we tried.
-                }
-            }
-            throw error;
-        }
-    }
-
     private static class Grab
     {
         public final Grab next;
@@ -190,7 +181,7 @@ public final class GrabAllocator implements MemoryAllocator
         Grab( Grab next, long size )
         {
             this.next = next;
-            this.address = allocateNativeMemory( size );
+            this.address = UnsafeUtil.allocateMemory( size );;
             this.limit = address + size;
 
             nextPointer = address;

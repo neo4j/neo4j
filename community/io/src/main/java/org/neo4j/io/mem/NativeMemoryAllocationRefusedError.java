@@ -27,12 +27,12 @@ import static org.neo4j.io.os.OsBeanUtil.getTotalPhysicalMemory;
 public class NativeMemoryAllocationRefusedError extends OutOfMemoryError
 {
     private final long attemptedAllocationSizeBytes;
-    private boolean hasAlreadyAllocatedBytes;
-    private long alreadyAllocatedBytes;
+    private final long alreadyAllocatedBytes;
 
-    public NativeMemoryAllocationRefusedError( long size )
+    NativeMemoryAllocationRefusedError( long size, long alreadyAllocatedBytes )
     {
         this.attemptedAllocationSizeBytes = size;
+        this.alreadyAllocatedBytes = alreadyAllocatedBytes;
     }
 
     @Override
@@ -41,12 +41,8 @@ public class NativeMemoryAllocationRefusedError extends OutOfMemoryError
         String message = super.getMessage();
         StringBuilder sb = new StringBuilder();
         sb.append( "Failed to allocate " ).append( attemptedAllocationSizeBytes ).append( " bytes. " );
-        if ( hasAlreadyAllocatedBytes )
-        {
-            sb.append( "So far " ).append( alreadyAllocatedBytes );
-            sb.append( " bytes have already been successfully allocated. " );
-        }
-
+        sb.append( "So far " ).append( alreadyAllocatedBytes );
+        sb.append( " bytes have already been successfully allocated. " );
         sb.append( "The system currently has " );
         appendBytes( sb, getTotalPhysicalMemory() ).append( " total physical memory, " );
         appendBytes( sb, getCommittedVirtualMemory() ).append( " committed virtual memory, and " );
@@ -75,11 +71,5 @@ public class NativeMemoryAllocationRefusedError extends OutOfMemoryError
             sb.append( bytes ).append( " bytes" );
         }
         return sb;
-    }
-
-    public void setAlreadyAllocatedBytes( long alreadyAllocatedBytes )
-    {
-        hasAlreadyAllocatedBytes = true;
-        this.alreadyAllocatedBytes = alreadyAllocatedBytes;
     }
 }
