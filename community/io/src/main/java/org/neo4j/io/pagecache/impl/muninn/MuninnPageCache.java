@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -474,6 +475,25 @@ public class MuninnPageCache implements PageCache
         {
             throw new FileIsMappedException( file, operation );
         }
+    }
+
+    @Override
+    public synchronized List<PagedFile> listExistingMappings() throws IOException
+    {
+        assertHealthy();
+        ensureThreadsInitialised();
+
+        List<PagedFile> list = new ArrayList<>();
+        FileMapping current = mappedFiles;
+
+        while ( current != null )
+        {
+            MuninnPagedFile pagedFile = current.pagedFile;
+            pagedFile.incrementRefCount();
+            list.add( pagedFile );
+            current = current.next;
+        }
+        return list;
     }
 
     /**
