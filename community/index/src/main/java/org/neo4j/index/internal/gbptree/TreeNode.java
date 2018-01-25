@@ -201,27 +201,36 @@ abstract class TreeNode<KEY,VALUE>
     // BODY METHODS
 
     /**
-     * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
-     * from pos - itemCount.
-     * itemCount is keyCount for key and value, but keyCount+1 for children.
+     * Moves data from left to right to open up a gap where data can later be written without overwriting anything.
+     * Key count is NOT updated!
+     *
+     * @param cursor Write cursor on relevant page
+     * @param pos Logical position where slots should be inserted, pos is based on baseOffset and slotSize.
+     * @param numberOfSlots How many slots to be inserted.
+     * @param totalSlotCount How many slots there are in total. (Usually keyCount for keys and values or keyCount+1 for children).
+     * @param baseOffset Offset to slot in logical position 0.
+     * @param slotSize Size of one single slot.
      */
-    static void insertSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int itemCount, int baseOffset,
-            int itemSize )
+
+    static void insertSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int totalSlotCount, int baseOffset,
+            int slotSize )
     {
-        for ( int posToMoveRight = itemCount - 1, offset = baseOffset + posToMoveRight * itemSize;
-              posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
-        {
-            cursor.copyTo( offset, cursor, offset + itemSize * numberOfSlots, itemSize );
-        }
+        cursor.shiftBytes( baseOffset + pos * slotSize, (totalSlotCount - pos) * slotSize, numberOfSlots * slotSize );
     }
 
-    static void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
+    /**
+     * Moves data from right to left to remove a slot where data that should be deleted currently sits.
+     * Key count is NOT updated!
+     *
+     * @param cursor Write cursor on relevant page
+     * @param pos Logical position where slots should be inserted, pos is based on baseOffset and slotSize.
+     * @param totalSlotCount How many slots there are in total. (Usually keyCount for keys and values or keyCount+1 for children).
+     * @param baseOffset Offset to slot in logical position 0.
+     * @param slotSize Size of one single slot.
+     */
+    static void removeSlotAt( PageCursor cursor, int pos, int totalSlotCount, int baseOffset, int slotSize )
     {
-        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
-              posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
-        {
-            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
-        }
+        cursor.shiftBytes( baseOffset + (pos + 1) * slotSize, (totalSlotCount - (pos + 1)) * slotSize, -slotSize );
     }
 
     abstract KEY keyAt( PageCursor cursor, KEY into, int pos, Type type );
