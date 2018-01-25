@@ -19,7 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Set;
+
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.txstate.TransactionState;
+
+import static java.util.Collections.emptySet;
 
 class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.internal.kernel.api.RelationshipScanCursor
 {
@@ -27,6 +32,7 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
     private long next;
     private long highMark;
     private PageCursor pageCursor;
+    Set<Long> addedRelationships;
 
     void scan( int label, Read read )
     {
@@ -41,7 +47,8 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
         next = 0;
         this.label = label;
         highMark = read.relationshipHighMark();
-        this.read = read;
+        init( read );
+        this.addedRelationships = emptySet();
     }
 
     void single( long reference, Read read )
@@ -57,44 +64,71 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
         next = reference;
         label = -1;
         highMark = NO_ID;
-        this.read = read;
+        init( read );
+        this.addedRelationships = emptySet();
     }
 
     @Override
     public boolean next()
     {
+        if ( next == NO_ID )
+        {
+            reset();
+            return false;
+        }
+
+        // Check tx state
+        boolean hasChanges = hasChanges();
+        TransactionState txs = hasChanges ? read.txState() : null;
+
         do
         {
-            if ( next == NO_ID )
+            if ( hasChanges && containsRelationship( txs ) )
             {
-                reset();
-                return false;
+                loadFromTxState( next++ );
+                setInUse( true );
             }
-            do
+            else if ( hasChanges && txs.relationshipIsDeletedInThisTx( next ) )
+            {
+                next++;
+                setInUse( false );
+            }
+            else
             {
                 read.relationship( this, next++, pageCursor );
-                if ( next > highMark )
+            }
+
+            if ( next > highMark )
+            {
+                if ( isSingle() )
                 {
-                    if ( highMark == NO_ID )
+                    next = NO_ID;
+                    return isWantedLabelAndInUse();
+                }
+                else
+                {
+                    highMark = read.relationshipHighMark();
+                    if ( next > highMark )
                     {
                         next = NO_ID;
-                        return (label == -1 || label() == label) && inUse();
-                    }
-                    else
-                    {
-                        highMark = read.relationshipHighMark();
-                        if ( next > highMark )
-                        {
-                            next = NO_ID;
-                            return (label == -1 || label() == label) && inUse();
-                        }
+                        return isWantedLabelAndInUse();
                     }
                 }
             }
-            while ( !inUse() );
         }
-        while ( label != -1 && label() != label );
+        while ( !isWantedLabelAndInUse() );
+
         return true;
+    }
+
+    private boolean isWantedLabelAndInUse()
+    {
+        return (label == -1 || label() == label) && inUse();
+    }
+
+    private boolean containsRelationship( TransactionState txs )
+    {
+        return isSingle() ? txs.relationshipIsAddedInThisTx( next ) : addedRelationships.contains( next );
     }
 
     @Override
@@ -137,6 +171,19 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
         {
             return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", label=" + label +
                     ", underlying record=" + super.toString() + " ]";
+        }
+    }
+
+    private boolean isSingle()
+    {
+        return highMark == NO_ID;
+    }
+
+    protected void collectAddedTxStateSnapshot()
+    {
+        if ( !isSingle() )
+        {
+            addedRelationships = read.txState().addedAndRemovedRelationships().getAddedSnapshot();
         }
     }
 }

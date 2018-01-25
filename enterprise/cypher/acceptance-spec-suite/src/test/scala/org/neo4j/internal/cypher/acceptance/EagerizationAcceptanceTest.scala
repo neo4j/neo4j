@@ -2764,6 +2764,52 @@ class EagerizationAcceptanceTest
     assertStats(result, labelsRemoved = 2)
   }
 
+  test("merge and pattern comprehension readwrite conflict requires eager") {
+    val query =
+      """
+        |CREATE (node)
+        |WITH node
+        |UNWIND [{ value: 'apples' }, { value: 'oranges' }] as tags
+        |MERGE (tag { value: tags.value})
+        |MERGE (node)-[:HAS_TAG {relProp1: 'relProp1', relProp2: 'relProp2'}]->(tag)
+        |WITH DISTINCT node
+        |WITH [(node)-[:HAS_TAG {relProp1: 'relProp1', relProp2: 'relProp2'}]->(t) | t.value] as tags
+        |RETURN size(tags) as nbrTags
+      """.stripMargin
+
+    // Fixed in 3.3.3
+    val nonBugFixedConfig = Configs.Version3_3 + Configs.Cost3_1
+
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.AllRulePlanners, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, nonBugFixedConfig),
+      expectedDifferentResults = nonBugFixedConfig)
+
+    result.toList should equal(List(Map("nbrTags" -> 2)))
+  }
+
+  test("merge and optional match readwrite conflict requires eager") {
+    val query =
+      """
+        |CREATE (node:Node {id: 'xyzzy'})
+        |WITH node
+        |UNWIND [{ value: 'apples' }, { value: 'oranges' }] as tags
+        |MERGE (tag:Tag { value: tags.value})
+        |MERGE (node)-[:HAS_TAG]->(tag)
+        |WITH DISTINCT node
+        |OPTIONAL MATCH (node)-[:HAS_TAG]->(t:Tag)
+        |RETURN COUNT(t.value) as nbrTags
+      """.stripMargin
+
+    // Fixed in 3.3.3
+    val nonBugFixedConfig = Configs.Version3_3 + Configs.Cost3_1 + Configs.AllRulePlanners
+
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, nonBugFixedConfig),
+      expectedDifferentResults = nonBugFixedConfig)
+
+    result.toList should equal(List(Map("nbrTags" -> 2)))
+  }
+
   private def testEagerPlanComparisonStrategy(expectedEagerCount: Int,
                                               expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
                                               optimalEagerCount: Int = -1) = {

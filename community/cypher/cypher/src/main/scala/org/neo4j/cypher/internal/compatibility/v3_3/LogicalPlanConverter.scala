@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalit
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
@@ -77,17 +76,6 @@ object LogicalPlanConverter {
             targetId = children(4).asInstanceOf[String])(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, procedureOrSchemaIdGen, classOf[IdGen])
-        case (plan: plansV3_3.FullPruningVarExpand, children: Seq[AnyRef]) => // Remove when we update to 3.3.2
-          plansV3_4.PruningVarExpand(
-            children(0).asInstanceOf[LogicalPlanV3_4],
-            plan.from.name,
-            children(2).asInstanceOf[expressionsV3_4.SemanticDirection],
-            children(3).asInstanceOf[Seq[expressionsV3_4.RelTypeName]],
-            plan.to.name,
-            plan.minLength,
-            plan.maxLength,
-            children.last.asInstanceOf[Seq[(expressionsV3_4.LogicalVariable,expressionsV3_4.Expression)]]
-          )(SameId(Id(plan.assignedId.underlying)))
         case (plan: plansV3_3.OuterHashJoin, children: Seq[AnyRef]) =>
           plansV3_4.LeftOuterHashJoin(
             children(0).asInstanceOf[Set[String]],
@@ -112,8 +100,6 @@ object LogicalPlanConverter {
           convertVersion("v3_3", "v3_4", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
         case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
           convertVersion("frontend.v3_3.ast", "v3_4.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
-        case (IdNameV3_3(name), _) => name
-
         case (symbolsV3_3.CTAny, _) => symbolsV3_4.CTAny
         case (symbolsV3_3.CTBoolean, _) => symbolsV3_4.CTBoolean
         case (symbolsV3_3.CTFloat, _) => symbolsV3_4.CTFloat

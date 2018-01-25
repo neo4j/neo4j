@@ -73,9 +73,9 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     private InternalTreeLogic<KEY,VALUE> treeLogic;
     private StructurePropagation<KEY> structurePropagation;
 
-    private final SimpleIdProvider id = new SimpleIdProvider();
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final PageAwareByteArrayCursor utilCursor = cursor.duplicate();
+    private final SimpleIdProvider id = new SimpleIdProvider( cursor::duplicate );
 
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
     private static long unstableGeneration = stableGeneration + 1;

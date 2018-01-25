@@ -19,13 +19,26 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.TransactionStateTestBase;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-public class TransactionStateTest extends TransactionStateTestBase<WriteTestSupport>
+class GroupReferenceEncoding
 {
-    @Override
-    public WriteTestSupport newTestSupport()
+    private static final long DIRECT = 0x1000_0000_0000_0000L;
+
+    /**
+     * Encode a relationship id as a group reference.
+     */
+    static long encodeRelationship( long relationshipId )
     {
-        return new WriteTestSupport();
+        return relationshipId | DIRECT | References.FLAG_MARKER;
+    }
+
+    /**
+     * Check whether a group reference is an encoded relationship id.
+     */
+    static boolean isRelationship( long groupReference )
+    {
+        assert groupReference != NO_ID;
+        return (groupReference & References.FLAG_MASK) == DIRECT;
     }
 }

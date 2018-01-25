@@ -35,8 +35,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Collections.emptySet;
-import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
 
 class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.NodeCursor
 {
@@ -47,13 +45,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private long highMark;
     private HasChanges hasChanges = HasChanges.MAYBE;
     private Set<Long> addedNodes;
-
-    private enum HasChanges
-    {
-        MAYBE,
-        YES,
-        NO
-    }
 
     NodeCursor()
     {
@@ -160,13 +151,13 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public long relationshipGroupReference()
     {
-        return isDense() ? getNextRel() : setDirectFlag( getNextRel() );
+        return isDense() ? getNextRel() : GroupReferenceEncoding.encodeRelationship( getNextRel() );
     }
 
     @Override
     public long allRelationshipsReference()
     {
-        return isDense() ? setGroupFlag( getNextRel() ) : getNextRel();
+        return isDense() ? RelationshipReferenceEncoding.encodeGroup( getNextRel() ) : getNextRel();
     }
 
     @Override
@@ -183,10 +174,11 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             reset();
             return false;
         }
+
         // Check tx state
         boolean hasChanges = hasChanges();
-
         TransactionState txs = hasChanges ? read.txState() : null;
+
         do
         {
             if ( hasChanges && containsNode( txs ) )
@@ -203,6 +195,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             {
                 read.node( this, next++, pageCursor );
             }
+
             if ( next > highMark )
             {
                 if ( isSingle() )

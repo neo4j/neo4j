@@ -55,6 +55,7 @@ import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_HIT_RATIO;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_PAGE_FAULTS;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_PINS;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_UNPINS;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_USAGE_RATIO;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class PageCacheMetricsIT
@@ -112,6 +113,12 @@ public class PageCacheMetricsIT
         assertEventually(
                 "Metrics report should include page cache hit ratio",
                 () -> readDoubleValue( metricsCsv( metricsDirectory, PC_HIT_RATIO ) ),
+                lessThanOrEqualTo( 1.0 ),
+                5, SECONDS );
+
+        assertEventually(
+                "Metrics report should include page cache usage ratio",
+                () -> readDoubleValue( metricsCsv( metricsDirectory, PC_USAGE_RATIO ) ),
                 lessThanOrEqualTo( 1.0 ),
                 5, SECONDS );
     }

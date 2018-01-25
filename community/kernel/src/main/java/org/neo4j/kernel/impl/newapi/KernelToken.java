@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 public class KernelToken implements Token
@@ -50,7 +51,7 @@ public class KernelToken implements Token
     @Override
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
-        return store.propertyKeyGetOrCreateForName( checkValidTokenName( relationshipTypeName ) );
+        return store.relationshipTypeGetOrCreateForName( checkValidTokenName( relationshipTypeName ) );
     }
 
     @Override
@@ -69,6 +70,12 @@ public class KernelToken implements Token
     public int relationshipType( String name )
     {
         return store.relationshipTypeGetForName( name );
+    }
+
+    @Override
+    public String relationshipTypeName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException
+    {
+        return store.relationshipTypeGetName( relationshipTypeId );
     }
 
     @Override

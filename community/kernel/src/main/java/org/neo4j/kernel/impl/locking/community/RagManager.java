@@ -177,7 +177,7 @@ public class RagManager
     {
         if ( lockingTx.equals( waitingTx ) )
         {
-            StringBuffer circle = null;
+            StringBuilder circle = null;
             Object resource;
             do
             {
@@ -185,7 +185,7 @@ public class RagManager
                 resource = graphStack.pop();
                 if ( circle == null )
                 {
-                    circle = new StringBuffer();
+                    circle = new StringBuilder();
                     circle.append( lockingTx ).append( " <-[:HELD_BY]- " ).append( resource );
                 }
                 else

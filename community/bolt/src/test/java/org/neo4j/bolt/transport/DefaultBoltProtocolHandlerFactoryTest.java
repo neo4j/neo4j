@@ -29,8 +29,11 @@ import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -47,7 +50,7 @@ public class DefaultBoltProtocolHandlerFactoryTest
         WorkerFactory workerFactory = mock( WorkerFactory.class );
 
         BoltWorker worker = mock( BoltWorker.class );
-        when( workerFactory.newWorker( boltChannel ) ).thenReturn( worker );
+        when( workerFactory.newWorker( same( boltChannel ), any() ) ).thenReturn( worker );
 
         BoltProtocolHandlerFactory factory = new DefaultBoltProtocolHandlerFactory( workerFactory,
                 TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
@@ -57,7 +60,7 @@ public class DefaultBoltProtocolHandlerFactoryTest
         // handler is actually created
         assertNotNull( handler );
         // it uses the expected worker
-        verify( workerFactory ).newWorker( boltChannel );
+        verify( workerFactory ).newWorker( same( boltChannel ), any() );
 
         // and halts this same worker when closed
         verify( worker, never() ).halt();

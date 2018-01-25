@@ -250,6 +250,7 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
               entities += key -> materializeNode(nodeRef.id())
             case relRef: RelationshipReference =>
               entities += key -> materializeRelationship(relRef.id())
+            case _ => // Do nothing
           }
         }
       case (key, LongSlot(offset, false, CTNode)) =>

@@ -151,6 +151,12 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public double usageRatio()
+    {
+        return 0d;
+    }
+
+    @Override
     public void pins( long pins )
     {
     }
@@ -192,6 +198,11 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     @Override
     public void flushes( long flushes )
+    {
+    }
+
+    @Override
+    public void maxPages( long maxPages )
     {
     }
 }

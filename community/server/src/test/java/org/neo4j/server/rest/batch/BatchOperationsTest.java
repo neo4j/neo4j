@@ -99,7 +99,7 @@ public class BatchOperationsTest
 
         // When & then
         assertEquals( "127.0.0.1", req.getRemoteAddr());
-        assertException( () -> req.getRemoteHost(), UnsupportedOperationException.class,
+        assertException( req::getRemoteHost, UnsupportedOperationException.class,
                 "Remote host-name lookup might prove expensive, this should be explicitly considered." );
         assertTrue( req.isSecure() );
         assertEquals( 1, req.getRemotePort());

@@ -32,6 +32,8 @@ import org.neo4j.time.FakeClock;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
@@ -49,7 +51,7 @@ public class MonitoredBoltWorkerFactoryTest
 
         WorkerFactory delegate = mock( WorkerFactory.class );
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        when( delegate.newWorker( boltChannel ) )
+        when( delegate.newWorker( same( boltChannel ), any() ) )
                 .thenReturn( new BoltWorker()
                 {
                     @Override
@@ -132,7 +134,7 @@ public class MonitoredBoltWorkerFactoryTest
         // after monitor listeners are added
         WorkerFactory workerFactory = mock( WorkerFactory.class );
         BoltWorker boltWorker = mock( BoltWorker.class );
-        when( workerFactory.newWorker( boltChannel ) ).thenReturn( boltWorker );
+        when( workerFactory.newWorker( boltChannel, null ) ).thenReturn( boltWorker );
 
         Monitors monitors = new Monitors();
         MonitoredWorkerFactory monitoredWorkerFactory = new MonitoredWorkerFactory( monitors, workerFactory, Clocks.fakeClock() );

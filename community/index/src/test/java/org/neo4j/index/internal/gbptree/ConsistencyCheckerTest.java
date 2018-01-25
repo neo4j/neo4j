@@ -79,9 +79,9 @@ public class ConsistencyCheckerTest
         TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( pageSize, layout );
         long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;
-        SimpleIdProvider idProvider = new SimpleIdProvider();
+        PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
+        SimpleIdProvider idProvider = new SimpleIdProvider( cursor::duplicate );
         InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout );
-        PageCursor cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
         node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         logic.initialize( cursor );
