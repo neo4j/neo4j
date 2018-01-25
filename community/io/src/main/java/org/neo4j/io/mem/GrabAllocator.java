@@ -181,9 +181,8 @@ public final class GrabAllocator implements MemoryAllocator
         Grab( Grab next, long size )
         {
             this.next = next;
-            this.address = UnsafeUtil.allocateMemory( size );;
+            this.address = UnsafeUtil.allocateMemory( size );
             this.limit = address + size;
-
             nextPointer = address;
         }
 
