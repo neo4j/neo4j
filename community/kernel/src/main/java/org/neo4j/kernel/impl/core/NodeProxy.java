@@ -42,6 +42,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -125,30 +126,9 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( final Direction dir )
+    public ResourceIterable<Relationship> getRelationships( final Direction direction )
     {
-        assertInUnterminatedTransaction();
-        return () ->
-        {
-            Statement statement = spi.statement();
-            try
-            {
-                RelationshipConversion result = new RelationshipConversion( spi );
-                result.iterator = statement.readOperations().nodeGetRelationships( nodeId, dir );
-                result.statement = statement;
-                return result;
-            }
-            catch ( EntityNotFoundException e )
-            {
-                statement.close();
-                throw new NotFoundException( format( "Node %d not found", nodeId ), e );
-            }
-            catch ( Throwable e )
-            {
-                statement.close();
-                throw e;
-            }
-        };
+        return innerGetRelationships( direction, null );
     }
 
     @Override
@@ -171,25 +151,31 @@ public class NodeProxy implements Node
         {
             typeIds = relTypeIds( types, statement );
         }
+        return innerGetRelationships( direction, typeIds );
+    }
+
+    private ResourceIterable<Relationship> innerGetRelationships( final Direction direction, int[] typeIds )
+    {
+        assertInUnterminatedTransaction();
         return () ->
         {
-            Statement statement = spi.statement();
+            KernelTransaction transaction = safeAcquireTransaction();
+            NodeCursor node = transaction.nodeCursor();
+            transaction.dataRead().singleNode( getId(), node );
+            if ( !node.next() )
+            {
+                throw new NotFoundException( format( "Node %d not found", nodeId ) );
+            }
+
+            RelationshipTraversalCursor relationship = transaction.cursors().allocateRelationshipTraversalCursor();
             try
             {
-                RelationshipConversion result = new RelationshipConversion( spi );
-                result.iterator = statement.readOperations().nodeGetRelationships(
-                        nodeId, direction, typeIds );
-                result.statement = statement;
-                return result;
-            }
-            catch ( EntityNotFoundException e )
-            {
-                statement.close();
-                throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+                node.allRelationships( relationship );
+                return new RelationshipConversion( spi, relationship, direction, typeIds );
             }
             catch ( Throwable e )
             {
-                statement.close();
+                relationship.close();
                 throw e;
             }
         };

@@ -22,59 +22,66 @@ package org.neo4j.kernel.impl.core;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class RelationshipConversionTest
 {
 
     private EmbeddedProxySPI nodeActions = mock( EmbeddedProxySPI.class );
-    private Statement statement = mock( Statement.class );
     private RelationshipConversion relationshipConversion;
+    private RelationshipTraversalCursor cursor;
 
     @Before
     public void setUp()
     {
-        relationshipConversion = new RelationshipConversion( nodeActions );
-        relationshipConversion.statement = statement;
+        when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
+                .thenReturn( new RelationshipProxy( null, 1 ) );
+
+        cursor = mock( RelationshipTraversalCursor.class );
+        relationshipConversion = new RelationshipConversion( nodeActions, cursor, Direction.BOTH, null );
     }
 
     @Test
     public void closeStatementOnClose() throws Exception
     {
+        when( cursor.next() ).thenReturn( false );
+
         relationshipConversion.close();
 
-        verify( statement ).close();
+        verify( cursor ).close();
     }
 
     @Test
     public void closeStatementWhenIterationIsOver()
     {
-        relationshipConversion.iterator = new ArrayRelationshipVisitor( new long[]{1L, 8L} );
+        when( cursor.next() ).thenReturn( true, true, false );
 
         assertTrue( relationshipConversion.hasNext() );
         relationshipConversion.next();
-        verify( statement, never() ).close();
+        verify( cursor, never() ).close();
 
         assertTrue( relationshipConversion.hasNext() );
         relationshipConversion.next();
-        verify( statement, never() ).close();
+        verify( cursor, never() ).close();
 
         assertFalse( relationshipConversion.hasNext() );
-        verify( statement ).close();
+        verify( cursor ).close();
     }
 
     @Test
     public void closeStatementOnlyOnce()
     {
-        relationshipConversion.iterator = new ArrayRelationshipVisitor( new long[]{1L} );
+        when( cursor.next() ).thenReturn( true, false );
 
         assertTrue( relationshipConversion.hasNext() );
         relationshipConversion.next();
@@ -85,31 +92,6 @@ public class RelationshipConversionTest
         relationshipConversion.close();
         relationshipConversion.close();
 
-        verify( statement ).close();
-    }
-
-    private static class ArrayRelationshipVisitor extends RelationshipIterator.BaseIterator
-    {
-        private final long[] ids;
-        private int position;
-
-        ArrayRelationshipVisitor( long[] ids )
-        {
-            this.ids = ids;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            return ids.length > position && next( ids[position++] );
-        }
-
-        @Override
-        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
-        {
-            visitor.visit( relationshipId, 1, 1L, 1L );
-            return false;
-        }
+        verify( cursor ).close();
     }
 }
