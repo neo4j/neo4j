@@ -151,8 +151,9 @@ abstract class MuninnPageCursor extends PageCursor
      */
     private boolean isPotentiallyReadingDirtyData( long lastClosedTransactionId )
     {
-        return page.getLastModifiedTxId() > lastClosedTransactionId ||
-                pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId;
+//        return page.getLastModifiedTxId() > lastClosedTransactionId ||
+//                pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId;
+        return false;
     }
 
     @Override

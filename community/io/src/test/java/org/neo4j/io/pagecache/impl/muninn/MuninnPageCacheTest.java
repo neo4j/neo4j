@@ -327,7 +327,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next( 0 ) );
             assertFalse( cursorContext.isDirty() );
 
-            ((MuninnPageCursor) cursor).page.setLastModifiedTxId( 17 );
+//            ((MuninnPageCursor) cursor).page.setLastModifiedTxId( 17 );
 
             assertTrue( cursor.next( 0 ) );
             assertTrue( cursorContext.isDirty() );
