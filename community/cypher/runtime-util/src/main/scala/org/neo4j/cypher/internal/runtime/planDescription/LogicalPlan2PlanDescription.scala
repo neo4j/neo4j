@@ -81,7 +81,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
         val entityByIdRhs = EntityByIdRhs(relIds)
-        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(entityByIdRhs), variables)
+        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeek", NoChildren, Seq(entityByIdRhs), variables)
 
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", NoChildren, Seq.empty, variables)
