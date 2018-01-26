@@ -24,10 +24,15 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.gis.spatial.index.Envelope;
+import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.HilbertCurve3D;
+import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.SubCurve3D;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -39,6 +44,27 @@ import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.Bina
 
 public class SpaceFillingCurveTest
 {
+    private static final boolean verbose = true;
+    private static final boolean debug = false;
+
+    private static void log( String line )
+    {
+        if ( verbose )
+        {
+            //TODO: Consider adding timestamp to all lines
+            System.out.println( line );
+        }
+    }
+
+    private static void debug( String line )
+    {
+        if ( debug )
+        {
+            //TODO: Consider adding timestamp to all lines
+            System.out.println( line );
+        }
+    }
+
     //
     // Set of tests for 2D ZOrderCurve at various levels
     //
@@ -113,6 +139,7 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= ZOrderSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
             ZOrderSpaceFillingCurve2D curve = new ZOrderSpaceFillingCurve2D( envelope, level );
+            log( "Max value at level " + level + ": " + curve.getValueWidth() );
             assertAtLevel( curve, envelope );
             assertRange( (int) curve.getWidth(), 0, curve, 0, (int) curve.getWidth() - 1 );
             assertRange( (int) curve.getWidth(), curve.getValueWidth() - 1, curve, (int) curve.getWidth() - 1, 0 );
@@ -153,14 +180,15 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= ZOrderSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
             ZOrderSpaceFillingCurve2D curve = new ZOrderSpaceFillingCurve2D( envelope, level );
-            System.out.print( "Testing hilbert query at level " + level );
             double halfTile = curve.getTileWidth( 0, level ) / 2.0;
+            long start = System.currentTimeMillis();
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( -8, -8 + halfTile, 8 - halfTile, 8 ) ),
                     new SpaceFillingCurve.LongRange( 0, 0 ) );
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 8 - halfTile, 8, -8, -8 + halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() - 1, curve.getValueWidth() - 1 ) );
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 8 - halfTile, 8, 0, 0 + halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() / 2 - 1, curve.getValueWidth() / 2 - 1 ) );
+            log( "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms" );
         }
     }
 
@@ -235,6 +263,7 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
+            log( "Max value at level " + level + ": " + curve.getValueWidth() );
             assertAtLevel( curve, envelope );
             assertRange( (int) curve.getWidth(), 0, curve, 0, 0 );
             assertRange( (int) curve.getWidth(), curve.getValueWidth() - 1, curve, (int) curve.getWidth() - 1, 0 );
@@ -322,12 +351,14 @@ public class SpaceFillingCurveTest
         {
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
             double halfTile = curve.getTileWidth( 0, level ) / 2.0;
+            long start = System.currentTimeMillis();
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( -8, -8 + halfTile, -8, -8 + halfTile ) ),
                     new SpaceFillingCurve.LongRange( 0, 0 ) );
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 8 - halfTile, 8, -8, -8 + halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() - 1, curve.getValueWidth() - 1 ) );
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 0, halfTile, 0, halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() / 2, curve.getValueWidth() / 2 ) );
+            log( "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms" );
         }
     }
 
@@ -410,26 +441,25 @@ public class SpaceFillingCurveTest
     @Test
     public void shouldHaveReasonableCoveredArea()
     {
-        final boolean verbose = false;
         final double minExtent = 0.000001;
-        final double maxAspect = 10.0;
+        final double maxAspect = 100.0;
         final int xmin = -100;
         final int xmax = 100;
         final int ymin = -100;
         final int ymax = 100;
         final double rectangleStepsPerDimension = 9.789;
-        final double extensionFactor = 10;
+        final double extensionFactor = 5;
         String formatHeader1 = "Level  Depth Limitation Configuration                  Area Ratio              Ranges                  Depth";
         String formatHeader2 = "                                                        avg    min    max       avg    min    max       avg    min    max";
-        String formatBody = "%5d  %-42s   %7.2f%7.2f%7.2f   %7.2f%7d%7d   %7.2f%7d%7d\n";
+        String formatBody = "%5d  %-42s   %7.2f%7.2f%7.2f   %7.2f%7d%7d   %7.2f%7d%7d";
 
         Envelope envelope = new Envelope( xmin, xmax, ymin, ymax );
         // For all levels
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
-            System.out.println();
-            System.out.println(formatHeader1);
-            System.out.println(formatHeader2);
+            log("");
+            log(formatHeader1);
+            log(formatHeader2);
             for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{
                     new StandardConfiguration( 1 ),
                     new StandardConfiguration( 2 ),
@@ -472,16 +502,16 @@ public class SpaceFillingCurveTest
                                     final long start = System.currentTimeMillis();
                                     List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, config, monitor );
                                     final long end = System.currentTimeMillis();
-                                    if ( verbose )
+                                    if ( debug )
                                     {
-                                        System.out.printf(
+                                        debug( String.format(
                                                 "Results for level %d, with x=[%f,%f] y=[%f,%f]. Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
                                                 level, xStart, xEnd, yStart, yEnd, monitor.getSearchArea(), monitor.getCoveredArea(),
-                                                (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start );
+                                                (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start ) );
                                         int[] counts = monitor.getCounts();
                                         for ( int i = 0; i <= monitor.getHighestDepth(); i++ )
                                         {
-                                            System.out.println( "\t" + i + "\t" + counts[i] );
+                                            debug( "\t" + i + "\t" + counts[i] );
                                         }
                                     }
                                     areaStats.add((double) (monitor.getCoveredArea()) / monitor.getSearchArea());
@@ -500,10 +530,10 @@ public class SpaceFillingCurveTest
                 }
 
                 // Average over all runs on this level
-                System.out.printf( formatBody, level, config.toString(),
+                log( String.format( formatBody, level, config.toString(),
                         areaStats.avg(), areaStats.min, areaStats.max,
                         rangeStats.avg(), rangeStats.min, rangeStats.max,
-                        maxDepthStats.avg(), maxDepthStats.min, maxDepthStats.max );
+                        maxDepthStats.avg(), maxDepthStats.min, maxDepthStats.max ) );
             }
         }
     }
@@ -528,13 +558,16 @@ public class SpaceFillingCurveTest
         HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
         List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, new StandardConfiguration(), monitor );
 
-        System.out.printf( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd );
-        System.out.printf( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() );
-        System.out.println( "Ranges: " + ranges.size() );
-        int[] counts = monitor.getCounts();
-        for ( int i = 0; i <= curve.getMaxLevel(); i++ )
+        if ( verbose )
         {
-            System.out.println( "\t" + i + "\t" + counts[i] );
+            System.out.printf( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd );
+            System.out.printf( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() );
+            System.out.println( "Ranges: " + ranges.size() );
+            int[] counts = monitor.getCounts();
+            for ( int i = 0; i <= curve.getMaxLevel(); i++ )
+            {
+                System.out.println( "\t" + i + "\t" + counts[i] );
+            }
         }
     }
 
@@ -552,13 +585,13 @@ public class SpaceFillingCurveTest
                     envelope.getMin( 1 ) + fullTile + halfTile, envelope.getMax( 1 ) - fullTile - halfTile );
             long start = System.currentTimeMillis();
             List<SpaceFillingCurve.LongRange> result = curve.getTilesIntersectingEnvelope( centerWithoutOuterRing, configuration, null );
-            System.out.println(
+            log(
                     "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms to produce " + result.size() + " tiles" );
             assertTiles( result, tilesNotTouchingOuterRing( curve ).toArray( new SpaceFillingCurve.LongRange[0] ) );
         }
     }
 
-    @Ignore // TODO un-ignore when optimizations are merged
+    @Test
     public void shouldGiveRangesWithinMaxValuesWhenMatchingWholeEnvelopeAtMaxLevel()
     {
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
@@ -732,6 +765,7 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= HilbertSpaceFillingCurve3D.MAX_LEVEL; level++ )
         {
             HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, level );
+            log( "Max value at level " + level + ": " + curve.getValueWidth() );
             assertAtLevel( curve, envelope );
             assertRange( (int) curve.getWidth(), 0, curve, 0, 0, 0 );
             assertRange( (int) curve.getWidth(), curve.getValueWidth() - 1, curve, (int) curve.getWidth() - 1, 0, 0 );
@@ -830,8 +864,8 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= HilbertSpaceFillingCurve3D.MAX_LEVEL; level++ )
         {
             HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, level );
-            System.out.print( "Testing hilbert query at level " + level );
             double halfTile = curve.getTileWidth( 0, level ) / 2.0;
+            long start = System.currentTimeMillis();
             assertTiles(
                     curve.getTilesIntersectingEnvelope( new Envelope( new double[]{-8, -8, -8}, new double[]{-8 + halfTile, -8 + halfTile, -8 + halfTile} ) ),
                     new SpaceFillingCurve.LongRange( 0, 0 ) );
@@ -842,6 +876,7 @@ public class SpaceFillingCurveTest
             // Suggestion to fix this with shallower traversals
             //assertTiles(curve.getTilesIntersectingEnvelope(new Envelope(new double[]{-8, -8, -8}, new double[]{8, 8, 8})),
             // new HilbertSpaceFillingCurve.LongRange(0, curve.getValueWidth() - 1));
+            log( "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms" );
         }
     }
 
@@ -905,11 +940,62 @@ public class SpaceFillingCurveTest
         int badness = (int) (100 * badCount / (curve.getValueWidth() - 1));
         assertThat( "Bad distance percentage should never be greater than " + badnessThresholdPercentage + "%", badness,
                 lessThanOrEqualTo( badnessThresholdPercentage ) );
+        log( String.format( "Bad distance count for level: %d (%d/%d = %d%%)", level, badCount, curve.getValueWidth() - 1, badness ) );
     }
 
     //
     // Test utilities and grouped/complex assertions for 2D and 3D Hilbert Curves
     //
+
+    private void populateChildren( SpaceFillingCurve.CurveRule c, int level )
+    {
+        int sizeBefore = HilbertSpaceFillingCurve3D.curves.size();
+        for ( int i = 0; i < c.length(); ++i )
+        {
+            SpaceFillingCurve.CurveRule curve = c.childAt( i );
+            int sizeAfter = HilbertSpaceFillingCurve3D.curves.size();
+            if ( sizeAfter - sizeBefore > 0 )
+            {
+                populateChildren( curve, level + 1 );
+            }
+        }
+    }
+
+    private void printMapping()
+    {
+        HashMap<Integer,Map<SubCurve3D,HilbertCurve3D>> map = new HashMap<>();
+        for ( Map.Entry<SubCurve3D,HilbertCurve3D> entry : HilbertSpaceFillingCurve3D.curves.entrySet() )
+        {
+            int start = entry.getValue().npointForIndex( 0 );
+            Map<SubCurve3D,HilbertCurve3D> mapEntry;
+            if ( map.containsKey( start ) )
+            {
+                mapEntry = map.get( start );
+            }
+            else
+            {
+                mapEntry = new HashMap<>();
+                map.put( start, mapEntry );
+            }
+            mapEntry.put( entry.getKey(), entry.getValue() );
+        }
+        ArrayList<Integer> sortedKeys = new ArrayList<>();
+        sortedKeys.addAll( map.keySet() );
+        Collections.sort( sortedKeys );
+        for ( Integer start : sortedKeys )
+        {
+            log( HilbertCurve3D.binaryString( start ) + ":\t" + map.get( start ).size() );
+            for ( Map.Entry<SubCurve3D,HilbertCurve3D> mapEntry : map.get( start ).entrySet() )
+            {
+                log( "\t" + mapEntry.getKey() + ":\t" + Arrays.toString( mapEntry.getValue().children ) );
+            }
+        }
+    }
+
+    private void assertTiles( List<SpaceFillingCurve.LongRange> results, List<SpaceFillingCurve.LongRange> expected )
+    {
+        assertTiles( results, expected.toArray( new SpaceFillingCurve.LongRange[expected.size()] ) );
+    }
 
     private void assertTiles( List<SpaceFillingCurve.LongRange> results, SpaceFillingCurve.LongRange... expected )
     {
