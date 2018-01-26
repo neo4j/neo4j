@@ -60,9 +60,10 @@ public class PropertyValueComparison
         OTHER( 0 ),
         STRING( 1 ),
         BOOLEAN( 2 ),
+        GEOMETRY( 3 ),
 
         // Keep this last so that Double.NaN is the largest value
-        NUMBER( 3 );
+        NUMBER( 4 );
 
         public final int typeId;
 
@@ -100,6 +101,10 @@ public class PropertyValueComparison
             {
                 return STRING;
             }
+            else if ( value instanceof PointValue )
+            {
+                return GEOMETRY;
+            }
 
             return OTHER;
         }
@@ -126,6 +131,9 @@ public class PropertyValueComparison
 
                     case BOOLEAN:
                         return Boolean.compare( (Boolean) left, (Boolean) right );
+
+                    case GEOMETRY:
+                        return COMPARE_POINTS.compare( (PointValue) left, (PointValue) right );
 
                     // case OTHER:
                     default:
