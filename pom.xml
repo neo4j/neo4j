@@ -90,6 +90,7 @@
     <asm.version>6.0</asm.version>
     <metrics.version>4.0.2</metrics.version>
     <scala.java9.arg/>
+    <checkstyle.strict>true</checkstyle.strict>
   </properties>
 
   <modules>
@@ -626,8 +627,8 @@
           <configLocation>build/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <logViolationsToConsole>true</logViolationsToConsole>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
+          <failsOnError>${checkstyle.strict}</failsOnError>
+          <failOnViolation>${checkstyle.strict}</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <dependencies>
