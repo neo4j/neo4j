@@ -71,7 +71,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, mode );
+        return SpatialFusionIndexUpdater.updaterForAccessor( indexMap, indexId, indexFactory, descriptor, samplingConfig, mode );
     }
 
     @Override

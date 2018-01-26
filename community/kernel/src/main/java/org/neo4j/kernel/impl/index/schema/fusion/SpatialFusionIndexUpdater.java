@@ -48,8 +48,20 @@ class SpatialFusionIndexUpdater implements IndexUpdater
     private final IndexUpdateMode mode;
     private final PropertyAccessor accessor;
 
-    SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, SpatialKnownIndex.Factory indexFactory,
-            IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexUpdateMode mode )
+    static SpatialFusionIndexUpdater updaterForAccessor( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
+            SpatialKnownIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexUpdateMode mode )
+    {
+        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, mode, null );
+    }
+
+    static SpatialFusionIndexUpdater updaterForPopulator( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
+            SpatialKnownIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, PropertyAccessor accessor )
+    {
+        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, null, accessor );
+    }
+
+    private SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, SpatialKnownIndex.Factory indexFactory,
+            IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexUpdateMode mode, PropertyAccessor accessor )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
@@ -57,18 +69,6 @@ class SpatialFusionIndexUpdater implements IndexUpdater
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
         this.mode = mode;
-        this.accessor = null;
-    }
-
-    SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, SpatialKnownIndex.Factory indexFactory,
-            IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, PropertyAccessor accessor )
-    {
-        this.indexMap = indexMap;
-        this.indexId = indexId;
-        this.indexFactory = indexFactory;
-        this.descriptor = descriptor;
-        this.samplingConfig = samplingConfig;
-        this.mode = null;
         this.accessor = accessor;
     }
 

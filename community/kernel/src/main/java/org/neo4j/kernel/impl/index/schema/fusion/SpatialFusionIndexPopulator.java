@@ -109,7 +109,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
-        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, accessor );
+        return SpatialFusionIndexUpdater.updaterForPopulator( indexMap, indexId, indexFactory, descriptor, samplingConfig, accessor );
     }
 
     @Override

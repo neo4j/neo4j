@@ -80,9 +80,10 @@ public class SpatialFusionIndexUpdaterTest
             when( populatorMap.get( crs ).newPopulatingUpdater( any() ) ).thenReturn( updaterMap.get( crs ) );
         }
 
-        fusionIndexAccessorUpdater = new SpatialFusionIndexUpdater( indexMap, 0, indexFactory, mock( IndexDescriptor.class ), null, IndexUpdateMode.ONLINE );
-        fusionIndexPopulatorUpdater =
-                new SpatialFusionIndexUpdater( indexMap, 0, indexFactory, mock( IndexDescriptor.class ), null, mock( PropertyAccessor.class ) );
+        fusionIndexAccessorUpdater = SpatialFusionIndexUpdater.updaterForAccessor(
+                indexMap, 0, indexFactory, mock( IndexDescriptor.class ), null, IndexUpdateMode.ONLINE );
+        fusionIndexPopulatorUpdater = SpatialFusionIndexUpdater.updaterForPopulator(
+                indexMap, 0, indexFactory, mock( IndexDescriptor.class ), null, mock( PropertyAccessor.class ) );
     }
 
     @Test
