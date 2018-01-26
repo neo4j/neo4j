@@ -19,6 +19,7 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -30,6 +31,8 @@ import org.neo4j.gis.spatial.index.Envelope;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointLeft;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointRight;
@@ -371,6 +374,17 @@ public class SpaceFillingCurveTest
                     "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms to produce " + result.size() + " tiles" );
             assertTiles( result, tilesNotTouchingOuterRing( curve ).toArray( new SpaceFillingCurve.LongRange[0] ) );
         }
+    }
+
+    @Ignore // TODO un-ignore when optimizations are merged
+    public void shouldGiveRangesWithinMaxValuesWhenMatchingWholeEnvelopeAtMaxLevel()
+    {
+        Envelope envelope = new Envelope( -8, 8, -8, 8 );
+        HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope );
+        List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope );
+        assertThat( ranges.size(), equalTo( 1 ) );
+        assertThat( ranges.get( 0 ).max, lessThan( Long.MAX_VALUE ) );
+        assertThat( ranges.get( 0 ).min, greaterThan( Long.MIN_VALUE ) );
     }
 
     private List<SpaceFillingCurve.LongRange> tilesNotTouchingOuterRing( SpaceFillingCurve curve )
