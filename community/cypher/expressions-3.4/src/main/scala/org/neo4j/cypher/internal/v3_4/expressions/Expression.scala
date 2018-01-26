@@ -33,7 +33,7 @@ object Expression {
   final case class TreeAcc[A](data: A, stack: Stack[Set[LogicalVariable]] = Stack.empty) {
     def mapData(f: A => A): TreeAcc[A] = copy(data = f(data))
 
-    def inScope(variable: Variable) = stack.exists(_.contains(variable))
+    def inScope(variable: LogicalVariable) = stack.exists(_.contains(variable))
     def variablesInScope: Set[LogicalVariable] = stack.toSet.flatten
 
     def pushScope(newVariable: LogicalVariable): TreeAcc[A] = pushScope(Set(newVariable))
@@ -87,7 +87,7 @@ abstract class Expression extends ASTNode {
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
           (newAcc, Some((x) => x.popScope))
-      case id: Variable => acc => {
+      case id: LogicalVariable => acc => {
         val newAcc = if (acc.inScope(id)) acc else acc.mapData(_ + id)
         (newAcc, Some(identity))
       }

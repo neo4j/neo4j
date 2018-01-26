@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode, SortItem}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ShortestPathExpression, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
@@ -80,7 +80,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     when(n1.getRelationships).thenReturn(Iterable.empty[Relationship].asJava)
     val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> n1, "end" -> n1))
     val src = new FakePipe(iter, "start" -> CTNode, "end" -> CTNode)
-    val pipe = new ShortestPathPipe(src, shortestPath)()
+    val pipe = new ShortestPathPipe(src, ShortestPathExpression(shortestPath))()
     (pipe, iter)
   }
 
