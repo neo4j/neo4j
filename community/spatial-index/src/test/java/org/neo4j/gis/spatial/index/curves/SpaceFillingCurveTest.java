@@ -44,7 +44,7 @@ import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.Bina
 
 public class SpaceFillingCurveTest
 {
-    private static final boolean verbose = true;
+    private static final boolean verbose = false;
     private static final boolean debug = false;
 
     private static void log( String line )
@@ -457,23 +457,15 @@ public class SpaceFillingCurveTest
         // For all levels
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
-            log("");
-            log(formatHeader1);
-            log(formatHeader2);
-            for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{
-                    new StandardConfiguration( 1 ),
-                    new StandardConfiguration( 2 ),
-                    new StandardConfiguration( 3 ),
-                    new StandardConfiguration( 4 ),
-                    new PartialOverlapConfiguration( 1, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 1, 0.99, 0.5 ),
-                    new PartialOverlapConfiguration( 2, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 2, 0.99, 0.5 ),
-                    new PartialOverlapConfiguration( 3, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 3, 0.99, 0.5 ),
-                    new PartialOverlapConfiguration( 4, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 4, 0.99, 0.5 )
-            } )
+            log( "" );
+            log( formatHeader1 );
+            log( formatHeader2 );
+            for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{new StandardConfiguration( 1 ), new StandardConfiguration( 2 ),
+                    new StandardConfiguration( 3 ), new StandardConfiguration( 4 ), new PartialOverlapConfiguration( 1, 0.99, 0.1 ),
+                    new PartialOverlapConfiguration( 1, 0.99, 0.5 ), new PartialOverlapConfiguration( 2, 0.99, 0.1 ),
+                    new PartialOverlapConfiguration( 2, 0.99, 0.5 ), new PartialOverlapConfiguration( 3, 0.99, 0.1 ),
+                    new PartialOverlapConfiguration( 3, 0.99, 0.5 ), new PartialOverlapConfiguration( 4, 0.99, 0.1 ),
+                    new PartialOverlapConfiguration( 4, 0.99, 0.5 )} )
             {
                 MonitorDoubleStats areaStats = new MonitorDoubleStats();
                 MonitorStats rangeStats = new MonitorStats();
@@ -485,6 +477,7 @@ public class SpaceFillingCurveTest
                 {
                     for ( double yExtent = minExtent; yExtent <= ymax; yExtent *= extensionFactor )
                     {
+                        // Filter out very thin rectangles
                         double aspect = xExtent > yExtent ? xExtent / yExtent : yExtent / xExtent;
                         if ( aspect < maxAspect )
                         {
@@ -502,27 +495,23 @@ public class SpaceFillingCurveTest
                                     final long start = System.currentTimeMillis();
                                     List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, config, monitor );
                                     final long end = System.currentTimeMillis();
-                                    if ( debug )
+                                    debug( String.format(
+                                            "Results for level %d, with x=[%f,%f] y=[%f,%f]. Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
+                                            level, xStart, xEnd, yStart, yEnd, monitor.getSearchArea(), monitor.getCoveredArea(),
+                                            (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start ) );
+                                    int[] counts = monitor.getCounts();
+                                    for ( int i = 0; i <= monitor.getHighestDepth(); i++ )
                                     {
-                                        debug( String.format(
-                                                "Results for level %d, with x=[%f,%f] y=[%f,%f]. Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
-                                                level, xStart, xEnd, yStart, yEnd, monitor.getSearchArea(), monitor.getCoveredArea(),
-                                                (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start ) );
-                                        int[] counts = monitor.getCounts();
-                                        for ( int i = 0; i <= monitor.getHighestDepth(); i++ )
-                                        {
-                                            debug( "\t" + i + "\t" + counts[i] );
-                                        }
+                                        debug( "\t" + i + "\t" + counts[i] );
                                     }
-                                    areaStats.add((double) (monitor.getCoveredArea()) / monitor.getSearchArea());
-                                    rangeStats.add(ranges.size());
-                                    maxDepthStats.add(monitor.getHighestDepth());
 
-                                    assertThat( String.format( "Search size was bigger than covered size for level %d, with x=[%s,%s] y=[%s,%s]", level, Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ),
+                                    areaStats.add( (double) (monitor.getCoveredArea()) / monitor.getSearchArea() );
+                                    rangeStats.add( ranges.size() );
+                                    maxDepthStats.add( monitor.getHighestDepth() );
+
+                                    assertThat( String.format( "Search size was bigger than covered size for level %d, with x=[%s,%s] y=[%s,%s]", level,
+                                            Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ),
                                             Double.toHexString( yEnd ) ), monitor.getSearchArea(), lessThanOrEqualTo( monitor.getCoveredArea() ) );
-//                            assertThat( String.format( "Covered size was more than twice the search size for level %d, with x=[%s,%s] y=[%s,%s]", level,
-//                                    Double.toHexString( xStart ), Double.toHexString( xEnd ), Double.toHexString( yStart ), Double.toHexString( yEnd ) ),
-//                                    monitor.getCoveredArea(), lessThanOrEqualTo( 2 * monitor.getSearchArea() ) );
                                 }
                             }
                         }
@@ -558,16 +547,13 @@ public class SpaceFillingCurveTest
         HistogramMonitor monitor = new HistogramMonitor( curve.getMaxLevel() );
         List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, new StandardConfiguration(), monitor );
 
-        if ( verbose )
+        log( String.format( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd ) );
+        log( String.format( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() ) );
+        log( "Ranges: " + ranges.size() );
+        int[] counts = monitor.getCounts();
+        for ( int i = 0; i <= curve.getMaxLevel(); i++ )
         {
-            System.out.printf( "Results for level %d, with x=[%f,%f] y=[%f,%f]\n", level, xStart, xEnd, yStart, yEnd );
-            System.out.printf( "Search size vs covered size: %d vs %d\n", monitor.getSearchArea(), monitor.getCoveredArea() );
-            System.out.println( "Ranges: " + ranges.size() );
-            int[] counts = monitor.getCounts();
-            for ( int i = 0; i <= curve.getMaxLevel(); i++ )
-            {
-                System.out.println( "\t" + i + "\t" + counts[i] );
-            }
+            log( "\t" + i + "\t" + counts[i] );
         }
     }
 
@@ -585,8 +571,7 @@ public class SpaceFillingCurveTest
                     envelope.getMin( 1 ) + fullTile + halfTile, envelope.getMax( 1 ) - fullTile - halfTile );
             long start = System.currentTimeMillis();
             List<SpaceFillingCurve.LongRange> result = curve.getTilesIntersectingEnvelope( centerWithoutOuterRing, configuration, null );
-            log(
-                    "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms to produce " + result.size() + " tiles" );
+            log( "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms to produce " + result.size() + " tiles" );
             assertTiles( result, tilesNotTouchingOuterRing( curve ).toArray( new SpaceFillingCurve.LongRange[0] ) );
         }
     }
