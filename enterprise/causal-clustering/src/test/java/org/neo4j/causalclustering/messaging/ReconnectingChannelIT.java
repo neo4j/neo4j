@@ -28,10 +28,13 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.Future;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.logging.Log;
@@ -40,12 +43,10 @@ import org.neo4j.ports.allocation.PortAuthority;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class NonBlockingChannelIT
+public class ReconnectingChannelIT
 {
     private static final int PORT = PortAuthority.allocatePort();
     private static final ChannelHandler VOID_HANDLER = new ChannelInitializer<SocketChannel>()
@@ -62,14 +63,14 @@ public class NonBlockingChannelIT
     private final TestServer server = new TestServer( PORT );
 
     private EventLoopGroup elg;
-    private NonBlockingChannel channel;
+    private ReconnectingChannel channel;
 
     @Before
     public void before()
     {
         elg = new NioEventLoopGroup( 0 );
         Bootstrap bootstrap = new Bootstrap().channel( NioSocketChannel.class ).group( elg ).handler( VOID_HANDLER );
-        channel = new NonBlockingChannel( bootstrap, elg.next(), serverAddress, log );
+        channel = new ReconnectingChannel( bootstrap, serverAddress, log, SimpleChannelInterceptor.getInstance() );
     }
 
     @After
@@ -89,11 +90,10 @@ public class NonBlockingChannelIT
         channel.start();
 
         // when
-        Future<Void> fSend = channel.send( emptyBuffer() );
+        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
-        // then
-        assertTrue( fSend.await( DEFAULT_TIMEOUT_MS ) );
-        assertNull( fSend.cause() );
+        // then will be successfully completed
+        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
     @Test
@@ -107,26 +107,23 @@ public class NonBlockingChannelIT
         // this is benign in the sense that the test will pass in the condition where it was already connected as well
 
         // when
-        Future<Void> fSend = channel.send( emptyBuffer() );
+        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
-        // then
-        assertTrue( fSend.await( DEFAULT_TIMEOUT_MS ) );
-        assertNull( fSend.cause() );
-        assertTrue( fSend.isSuccess() );
+        // then will be successfully completed
+        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
-    @Test
+    @Test( expected = ExecutionException.class )
     public void shouldFailSendWhenNoServer() throws Exception
     {
         // given
         channel.start();
 
         // when
-        Future<Void> fSend = channel.send( emptyBuffer() );
+        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
-        // then
-        assertTrue( fSend.await( DEFAULT_TIMEOUT_MS ) );
-        assertFalse( fSend.isSuccess() );
+        // then will throw
+        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
     @Test
@@ -137,27 +134,32 @@ public class NonBlockingChannelIT
         channel.start();
 
         // when
-        Future<Void> fSend = channel.send( emptyBuffer() );
+        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
-        // then
-        assertTrue( fSend.awaitUninterruptibly( DEFAULT_TIMEOUT_MS ) );
-        assertNull( fSend.cause() );
+        // then will not throw
+        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
 
         // when
         server.stop();
-        fSend = channel.send( emptyBuffer() );
+        fSend = channel.writeAndFlush( emptyBuffer() );
 
-        // then
-        assertTrue( fSend.await( DEFAULT_TIMEOUT_MS ) );
-        assertFalse( fSend.isSuccess() );
+        // then will throw
+        try
+        {
+            fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+            fail( "Expected failure to send" );
+        }
+        catch ( ExecutionException ex )
+        {
+            // pass
+        }
 
         // when
         server.start();
-        fSend = channel.send( emptyBuffer() );
+        fSend = channel.writeAndFlush( emptyBuffer() );
 
-        // then
-        assertTrue( fSend.await( DEFAULT_TIMEOUT_MS ) );
-        assertTrue( fSend.isSuccess() );
+        // then will not throw
+        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
     @Test
@@ -168,9 +170,8 @@ public class NonBlockingChannelIT
         channel.start();
 
         // ensure we are connected
-        Future<Void> fSend = channel.send( emptyBuffer() );
-        fSend.await( DEFAULT_TIMEOUT_MS );
-        assertTrue( fSend.isSuccess() );
+        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
+        fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
         assertEventually( "", server::childCount, equalTo( 1 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
 
         // when
@@ -178,7 +179,7 @@ public class NonBlockingChannelIT
 
         try
         {
-            channel.send( emptyBuffer() );
+            channel.writeAndFlush( emptyBuffer() );
         }
         catch ( IllegalStateException e )
         {

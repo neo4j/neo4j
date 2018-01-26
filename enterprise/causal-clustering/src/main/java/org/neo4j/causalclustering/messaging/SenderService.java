@@ -20,15 +20,15 @@
 package org.neo4j.causalclustering.messaging;
 
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.Future;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
@@ -43,9 +43,9 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
 {
-    private NonBlockingChannels nonBlockingChannels;
+    private ReconnectingChannels channels;
 
-    private final ChannelInitializer<SocketChannel> channelInitializer;
+    private final ChannelInitializer channelInitializer;
     private final ReadWriteLock serviceLock = new ReentrantReadWriteLock();
     private final Log log;
     private final Monitors monitors;
@@ -55,18 +55,18 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private Bootstrap bootstrap;
     private NioEventLoopGroup eventLoopGroup;
 
-    public SenderService( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, Monitors monitors )
+    public SenderService( ChannelInitializer channelInitializer, LogProvider logProvider, Monitors monitors )
     {
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
-        this.nonBlockingChannels = new NonBlockingChannels();
+        this.channels = new ReconnectingChannels();
     }
 
     @Override
     public void send( AdvertisedSocketAddress to, Message message, boolean block )
     {
-        Future<Void> future;
+        AtomicReference<CompletableFuture<Void>> future = new AtomicReference<>( new CompletableFuture<>() );
         serviceLock.readLock().lock();
         try
         {
@@ -75,7 +75,9 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 return;
             }
 
-            future = channel( to ).send( message );
+            Channel channel = channel( to );
+
+            future.set( channel.writeAndFlush( message ) );
         }
         finally
         {
@@ -84,34 +86,34 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( block )
         {
-            future.awaitUninterruptibly();
+            future.get().join();
         }
     }
 
-    private NonBlockingChannel channel( AdvertisedSocketAddress to )
+    private Channel channel( AdvertisedSocketAddress destination )
     {
-        MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
-        NonBlockingChannel nonBlockingChannel = nonBlockingChannels.get( to );
+        MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, ReconnectingChannel.class );
+        ReconnectingChannel channel = channels.get( destination );
 
-        if ( nonBlockingChannel == null )
+        if ( channel == null )
         {
-            nonBlockingChannel = new NonBlockingChannel( bootstrap, eventLoopGroup.next(), to, log );
-            nonBlockingChannel.start();
-            NonBlockingChannel existingNonBlockingChannel = nonBlockingChannels.putIfAbsent( to, nonBlockingChannel );
+            channel = new ReconnectingChannel( bootstrap, destination, log, HandshakeGate::new );
+            channel.start();
+            ReconnectingChannel existingNonBlockingChannel = channels.putIfAbsent( destination, channel );
 
             if ( existingNonBlockingChannel != null )
             {
-                nonBlockingChannel.dispose();
-                nonBlockingChannel = existingNonBlockingChannel;
+                channel.dispose();
+                channel = existingNonBlockingChannel;
             }
             else
             {
-                log.info( "Creating channel to: [%s] ", to );
+                log.info( "Creating channel to: [%s] ", destination );
             }
         }
 
-        monitor.register( to );
-        return nonBlockingChannel;
+        monitor.register( destination );
+        return channel;
     }
 
     @Override
@@ -148,10 +150,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 jobHandle = null;
             }
 
-            Iterator<NonBlockingChannel> itr = nonBlockingChannels.values().iterator();
+            Iterator<ReconnectingChannel> itr = channels.values().iterator();
             while ( itr.hasNext() )
             {
-                NonBlockingChannel timestampedChannel = itr.next();
+                Channel timestampedChannel = itr.next();
                 timestampedChannel.dispose();
                 itr.remove();
             }

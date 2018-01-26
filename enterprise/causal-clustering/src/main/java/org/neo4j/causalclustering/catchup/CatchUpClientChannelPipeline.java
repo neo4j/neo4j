@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -47,7 +48,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotResponseHandle
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -58,13 +59,16 @@ class CatchUpClientChannelPipeline
     }
 
     static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider,
-                             Monitors monitors, PipelineHandlerAppender pipelineHandlerAppender ) throws Exception
+                             Monitors monitors, PipelineWrapper pipelineWrapper ) throws Exception
     {
         CatchupClientProtocol protocol = new CatchupClientProtocol();
 
         ChannelPipeline pipeline = ch.pipeline();
 
-        pipelineHandlerAppender.addPipelineHandlerForClient( pipeline, ch );
+        for ( ChannelHandler wrappingHandler : pipelineWrapper.handlersFor( ch ) )
+        {
+            pipeline.addLast( wrappingHandler );
+        }
 
         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
         pipeline.addLast( new LengthFieldPrepender( 4 ) );

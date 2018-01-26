@@ -54,7 +54,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -94,12 +94,12 @@ public class CoreServerModule
     private final JobScheduler jobScheduler;
     private final LogProvider logProvider;
     private final PlatformModule platformModule;
-    private final PipelineHandlerAppender pipelineAppender;
+    private final PipelineWrapper clientPipelineWrapper;
 
     public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
             CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule, ReplicationModule replicationModule,
             LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier,
-            File clusterStateDirectory, PipelineHandlerAppender pipelineAppender )
+            File clusterStateDirectory, PipelineWrapper serverPipelineWrapper, PipelineWrapper clientPipelineWrapper )
     {
         this.identityModule = identityModule;
         this.coreStateMachinesModule = coreStateMachinesModule;
@@ -108,7 +108,7 @@ public class CoreServerModule
         this.localDatabase = localDatabase;
         this.dbHealthSupplier = dbHealthSupplier;
         this.platformModule = platformModule;
-        this.pipelineAppender = pipelineAppender;
+        this.clientPipelineWrapper = clientPipelineWrapper;
 
         this.config = platformModule.config;
         this.jobScheduler = platformModule.jobScheduler;
@@ -161,7 +161,7 @@ public class CoreServerModule
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                platformModule.storeCopyCheckPointMutex, pipelineAppender );
+                platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
 
         RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
         dependencies.satisfyDependency( raftLogPruner );
@@ -179,7 +179,7 @@ public class CoreServerModule
     {
         long inactivityTimeoutMillis = platformModule.config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = platformModule.life.add(
-                new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors, pipelineAppender ) );
+                new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors, clientPipelineWrapper ) );
 
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, platformModule.fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
