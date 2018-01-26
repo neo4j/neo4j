@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDenseSelectionCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.RelationshipSparseSelectionCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -162,99 +163,21 @@ public class NodeProxy implements Node
         assertInUnterminatedTransaction();
         return () ->
         {
-            KernelTransaction transaction = safeAcquireTransaction();
-            NodeCursor node = transaction.nodeCursor();
-            transaction.dataRead().singleNode( getId(), node );
-            if ( !node.next() )
-            {
-                throw new NotFoundException( format( "Node %d not found", nodeId ) );
-            }
-
-            if ( node.isDense() )
-            {
-                RelationshipTraversalCursor relationship = transaction.cursors().allocateRelationshipTraversalCursor();
-                RelationshipGroupCursor relationshipGroup = transaction.cursors().allocateRelationshipGroupCursor();
-                try
-                {
-                    node.relationships( relationshipGroup );
-                    RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-
-                    switch ( direction )
-                    {
-                    case OUTGOING:
-                        selectionCursor.outgoing( relationshipGroup, relationship, typeIds );
-                        break;
-
-                    case INCOMING:
-                        selectionCursor.incoming( relationshipGroup, relationship, typeIds );
-                        break;
-
-                    case BOTH:
-                        selectionCursor.all( relationshipGroup, relationship, typeIds );
-                        break;
-
-                        default:
-                            throw new IllegalStateException( "Unsupported direction: "+direction );
-                    }
-
-                    return new RelationshipConversion( spi, selectionCursor );
-                }
-                catch ( Throwable e )
-                {
-                    relationshipGroup.close();
-                    throw e;
-                }
-            }
-            else
-            {
-                RelationshipTraversalCursor relationship = transaction.cursors().allocateRelationshipTraversalCursor();
-                try
-                {
-                    node.allRelationships( relationship );
-                    RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-
-                    switch ( direction )
-                    {
-                    case OUTGOING:
-                        selectionCursor.outgoing( relationship, typeIds );
-                        break;
-
-                    case INCOMING:
-                        selectionCursor.incoming( relationship, typeIds );
-                        break;
-
-                    case BOTH:
-                        selectionCursor.all( relationship, typeIds );
-                        break;
-
-                    default:
-                        throw new IllegalStateException( "Unsupported direction: "+direction );
-                    }
-
-                    return new RelationshipConversion( spi, selectionCursor );
-                }
-                catch ( Throwable e )
-                {
-                    relationship.close();
-                    throw e;
-                }
-            }
+            RelationshipSelectionCursor selectionCursor = getRelationshipSelectionCursor( direction, typeIds );
+            return new RelationshipConversion( spi, selectionCursor );
         };
     }
 
     @Override
     public boolean hasRelationship()
     {
-        return hasRelationship( Direction.BOTH );
+        return innerHasRelationships( Direction.BOTH, null );
     }
 
     @Override
-    public boolean hasRelationship( Direction dir )
+    public boolean hasRelationship( Direction direction )
     {
-        try ( ResourceIterator<Relationship> rels = getRelationships( dir ).iterator() )
-        {
-            return rels.hasNext();
-        }
+        return innerHasRelationships( direction, null );
     }
 
     @Override
@@ -266,16 +189,27 @@ public class NodeProxy implements Node
     @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        try ( ResourceIterator<Relationship> rels = getRelationships( direction, types ).iterator() )
+        final int[] typeIds;
+        try ( Statement statement = spi.statement() )
         {
-            return rels.hasNext();
+            typeIds = relTypeIds( types, statement );
         }
+        return innerHasRelationships( direction, typeIds );
     }
 
     @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
         return hasRelationship( dir, type );
+    }
+
+    private boolean innerHasRelationships( final Direction direction, int[] typeIds )
+    {
+        assertInUnterminatedTransaction();
+        try ( RelationshipSelectionCursor selectionCursor = getRelationshipSelectionCursor( direction, typeIds ) )
+        {
+            return selectionCursor.next();
+        }
     }
 
     @Override
@@ -824,6 +758,89 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( "Node not found.", e );
         }
+    }
+
+    private RelationshipSelectionCursor getRelationshipSelectionCursor( Direction direction, int[] typeIds )
+    {
+        RelationshipSelectionCursor selectionCursor;
+        KernelTransaction transaction = safeAcquireTransaction();
+        NodeCursor node = transaction.nodeCursor();
+        transaction.dataRead().singleNode( getId(), node );
+        if ( !node.next() )
+        {
+            throw new NotFoundException( format( "Node %d not found", nodeId ) );
+        }
+
+        if ( node.isDense() )
+        {
+            RelationshipTraversalCursor relationship = transaction.cursors().allocateRelationshipTraversalCursor();
+            RelationshipGroupCursor relationshipGroup = transaction.cursors().allocateRelationshipGroupCursor();
+            try
+            {
+                node.relationships( relationshipGroup );
+                RelationshipDenseSelectionCursor denseCursor = new RelationshipDenseSelectionCursor();
+
+                switch ( direction )
+                {
+                case OUTGOING:
+                    denseCursor.outgoing( relationshipGroup, relationship, typeIds );
+                    break;
+
+                case INCOMING:
+                    denseCursor.incoming( relationshipGroup, relationship, typeIds );
+                    break;
+
+                case BOTH:
+                    denseCursor.all( relationshipGroup, relationship, typeIds );
+                    break;
+
+                default:
+                    throw new IllegalStateException( "Unsupported direction: " + direction );
+                }
+
+                selectionCursor = denseCursor;
+            }
+            catch ( Throwable e )
+            {
+                relationshipGroup.close();
+                throw e;
+            }
+        }
+        else
+        {
+            RelationshipTraversalCursor relationship = transaction.cursors().allocateRelationshipTraversalCursor();
+            try
+            {
+                node.allRelationships( relationship );
+                RelationshipSparseSelectionCursor sparseCursor = new RelationshipSparseSelectionCursor();
+
+                switch ( direction )
+                {
+                case OUTGOING:
+                    sparseCursor.outgoing( relationship, typeIds );
+                    break;
+
+                case INCOMING:
+                    sparseCursor.incoming( relationship, typeIds );
+                    break;
+
+                case BOTH:
+                    sparseCursor.all( relationship, typeIds );
+                    break;
+
+                default:
+                    throw new IllegalStateException( "Unsupported direction: " + direction );
+                }
+
+                selectionCursor = sparseCursor;
+            }
+            catch ( Throwable e )
+            {
+                relationship.close();
+                throw e;
+            }
+        }
+        return selectionCursor;
     }
 
     private int[] relTypeIds( RelationshipType[] types, Statement statement )
