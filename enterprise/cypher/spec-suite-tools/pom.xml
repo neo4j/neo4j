@@ -44,10 +44,6 @@
     </license>
   </licenses>
 
-  <properties>
-    <opencypher.version>1.0.0-M09</opencypher.version>
-  </properties>
-
   <build>
     <plugins>
       <plugin>

@@ -60,7 +60,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>tck</artifactId>
-      <version>1.0.0-M09</version>
+      <version>${opencypher.version}</version>
     </dependency>
 
     <!-- scala -->

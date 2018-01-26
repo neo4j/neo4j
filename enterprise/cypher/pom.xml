@@ -20,6 +20,7 @@
   <properties>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <license-text.header>AGPL-3-header.txt</license-text.header>
+    <opencypher.version>1.0.0-M09</opencypher.version>
   </properties>
 
   <scm>
