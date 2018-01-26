@@ -318,9 +318,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(Optional(inputPlan, ids), solved, context)
   }
 
-  def planOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
+  def planLeftOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).amendQueryGraph(_.withAddedOptionalMatch(solveds.get(right.id).queryGraph.addHints(hints)))
-    annotate(OuterHashJoin(nodes, left, right), solved, context)
+    annotate(LeftOuterHashJoin(nodes, left, right), solved, context)
+  }
+
+  def planRightOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(right.id).amendQueryGraph(_.withAddedOptionalMatch(solveds.get(left.id).queryGraph.addHints(hints)))
+    annotate(RightOuterHashJoin(nodes, left, right), solved, context)
   }
 
   def planSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {

@@ -23,15 +23,15 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Variant of NodeHashJoin. Also builds a hash table using 'left' and produces merged left and right rows using this
-  * table. In addition, also produces left and right rows with missing key values, and right rows that do not match
+  * table. In addition, also produces left and right rows with missing key values, and left rows that were not matched
   * in the hash table. In these additional rows, variables from the opposing stream are set to NO_VALUE.
   *
-  * This is equivalent to an outer join in relational algebra.
+  * This is equivalent to a right outer join in relational algebra.
   */
-case class OuterHashJoin(nodes: Set[String],
-                         left: LogicalPlan,
-                         right: LogicalPlan)
-                        (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with NodeJoin {
+case class RightOuterHashJoin(nodes: Set[String],
+                             left: LogicalPlan,
+                             right: LogicalPlan)
+                            (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

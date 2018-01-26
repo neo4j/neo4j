@@ -32,7 +32,7 @@ class HintAcceptanceTest
     executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeHashJoin"), expectPlansToFail = Configs.AllRulePlanners))
   }
 
-  test("should not plan multiple joins for one hint") {
+  test("should not plan multiple joins for one hint - left outer join") {
     val a = createLabeledNode(Map[String, Any]("name" -> "a"), "A")
     for(i <- 0 until 10) {
       val b = createLabeledNode(Map[String, Any]("name" -> s"${i}b"), "B")
@@ -45,7 +45,25 @@ class HintAcceptanceTest
                   |RETURN a.name, b.name""".stripMargin
 
     executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
-      p should useOperators("NodeOuterHashJoin")
+      p should useOperators("NodeLeftOuterHashJoin")
+      p should not(useOperators("NodeHashJoin"))
+    }, expectPlansToFail = Configs.AllRulePlanners + Configs.BackwardsCompatibility))
+  }
+
+  test("should not plan multiple joins for one hint - right outer join") {
+    val b = createLabeledNode(Map[String, Any]("name" -> "b"), "B")
+    for(i <- 0 until 10) {
+      val a = createLabeledNode(Map[String, Any]("name" -> s"${i}a"), "A")
+      if(i == 0) relate(a, b)
+    }
+
+    val query = """MATCH (a:A)
+                  |OPTIONAL MATCH (a)-->(b:B)
+                  |USING JOIN ON a
+                  |RETURN a.name, b.name""".stripMargin
+
+    executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
+      p should useOperators("NodeRightOuterHashJoin")
       p should not(useOperators("NodeHashJoin"))
     }, expectPlansToFail = Configs.AllRulePlanners + Configs.BackwardsCompatibility))
   }

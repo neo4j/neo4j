@@ -27,6 +27,7 @@ sealed trait Slot {
   def typ: CypherType
   def isTypeCompatibleWith(other: Slot): Boolean
   def isLongSlot: Boolean
+  def asNullable: Slot
 }
 
 case class LongSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot {
@@ -37,6 +38,8 @@ case class LongSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slo
   }
 
   override def isLongSlot: Boolean = true
+
+  override def asNullable = LongSlot(offset, true, typ)
 }
 
 case class RefSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot {
@@ -47,6 +50,8 @@ case class RefSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot
   }
 
   override def isLongSlot: Boolean = false
+
+  override def asNullable = RefSlot(offset, true, typ)
 }
 
 sealed trait SlotWithAliases {

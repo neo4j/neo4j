@@ -697,22 +697,22 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         verify(monitor).startIDPIterationFor(omQG)
         verify(monitor).endIDPIterationFor(omQG, expandAtoB)
 
-        verify(monitor, times(2)).foundPlanAfter(0) // 1 time here
+        verify(monitor, times(3)).foundPlanAfter(0) // 1 time here
 
         verify(monitor).startConnectingComponents(omQG)
         verify(monitor).endConnectingComponents(omQG, expandAtoB)
 
-        // outer hash joins
+        // outer hash joins (left and right)
         val omQGWithoutArguments = omQG.withoutArguments()
 
-        verify(monitor).initTableFor(omQGWithoutArguments)
-        verify(monitor).startIDPIterationFor(omQGWithoutArguments)
-        verify(monitor).endIDPIterationFor(omQGWithoutArguments, expandAtoB2)
+        verify(monitor, times(2)).initTableFor(omQGWithoutArguments)
+        verify(monitor, times(2)).startIDPIterationFor(omQGWithoutArguments)
+        verify(monitor, times(2)).endIDPIterationFor(omQGWithoutArguments, expandAtoB2)
 
-        verify(monitor, times(2)).foundPlanAfter(0) // 1 time here
+        verify(monitor, times(3)).foundPlanAfter(0) // 1 time here
 
-        verify(monitor).startConnectingComponents(omQGWithoutArguments)
-        verify(monitor).endConnectingComponents(omQGWithoutArguments, expandAtoB2)
+        verify(monitor, times(2)).startConnectingComponents(omQGWithoutArguments)
+        verify(monitor, times(2)).endConnectingComponents(omQGWithoutArguments, expandAtoB2)
       }
 
       // final result
@@ -728,7 +728,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     new given {
       cost = {
-        case (_: OuterHashJoin, _, _) => 20.0
+        case (_: LeftOuterHashJoin, _, _) => 20.0
         case _ => Double.MaxValue
       }
 
@@ -743,7 +743,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
       queryGraphSolver.plan(cfg.qg, ctx, solveds, cardinalities) should equal(
-        OuterHashJoin(
+        LeftOuterHashJoin(
           Set("a", "b"),
           CartesianProduct(
             AllNodesScan("a", Set.empty),
