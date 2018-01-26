@@ -127,10 +127,10 @@ class SpatialFusionIndexUpdater implements IndexUpdater
         }
     }
 
-    private IndexUpdater remember( CoordinateReferenceSystem crs, IndexUpdater indexUpdader )
+    private IndexUpdater remember( CoordinateReferenceSystem crs, IndexUpdater indexUpdater )
     {
-        currentUpdaters.put( crs, indexUpdader );
-        return indexUpdader;
+        currentUpdaters.put( crs, indexUpdater );
+        return indexUpdater;
     }
 
     @Override

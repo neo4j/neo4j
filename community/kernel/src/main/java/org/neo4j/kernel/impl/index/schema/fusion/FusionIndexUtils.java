@@ -50,13 +50,13 @@ public abstract class FusionIndexUtils
      * </pre>
      *
      * @param actionable lambda function to call on each object passed
-     * @param accessors varargs array of objects to call the function on
+     * @param subjects varargs array of objects to call the function on
      * @param <E> the type of exception anticipated, inferred from the lambda
      * @throws E
      */
-    public static <E extends Exception> void forAll( ActionAble actionable, Object... accessors ) throws E
+    public static <E extends Exception> void forAll( ActionAble actionable, Object... subjects ) throws E
     {
-        List<E> error = Arrays.stream( accessors ).map( accessor ->
+        List<E> error = Arrays.stream( subjects ).map( accessor ->
         {
             try
             {

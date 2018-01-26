@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
-import org.neo4j.kernel.impl.index.schema.SpatialSchemaIndexReader;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -102,8 +101,7 @@ class SpatialFusionIndexReader implements IndexReader
             int i = 0;
             for ( IndexReader reader : readerMap.values() )
             {
-                iterators[i] = reader.query( predicates[0] );
-                ++i;
+                iterators[i++] = reader.query( predicates[0] );
             }
             return PrimitiveLongResourceCollections.concat( iterators );
         }

@@ -209,14 +209,6 @@ public abstract class SpaceFillingCurve
     /**
      * Given a derived key, find the normalized coordinate it corresponds to on a specific level
      */
-    public long[] normalizedCoordinateFor( long derivedValue )
-    {
-        return normalizedCoordinateFor( derivedValue, maxLevel );
-    }
-
-    /**
-     * Given a derived key, find the normalized coordinate it corresponds to on a specific level
-     */
     long[] normalizedCoordinateFor( long derivedValue, int level )
     {
         assertValidLevel( level );

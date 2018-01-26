@@ -63,7 +63,8 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
 
     private Map<Long,Map<CoordinateReferenceSystem,SpatialKnownIndex>> indexes = new HashMap<>();
 
-    public SpatialFusionSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
+    public SpatialFusionSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
