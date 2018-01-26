@@ -19,34 +19,23 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipSelectionCursor;
 
 public class RelationshipConversion implements ResourceIterator<Relationship>
 {
     private final EmbeddedProxySPI actions;
-    private final RelationshipTraversalCursor cursor;
-    private final Direction direction;
-    private final int[] typeIds;
+    private final RelationshipSelectionCursor cursor;
     private Relationship next;
     private boolean closed;
 
-    public RelationshipConversion(
-            EmbeddedProxySPI actions,
-            RelationshipTraversalCursor cursor,
-            Direction direction,
-            int[] typeIds)
+    RelationshipConversion( EmbeddedProxySPI actions, RelationshipSelectionCursor cursor )
     {
         this.actions = actions;
         this.cursor = cursor;
-        this.direction = direction;
-        this.typeIds = typeIds;
     }
 
     @Override
@@ -54,33 +43,18 @@ public class RelationshipConversion implements ResourceIterator<Relationship>
     {
         if ( next == null && !closed )
         {
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
-                if ( correctDirection() && correctType() )
-                {
-                    next = actions.newRelationshipProxy(
+                next = actions.newRelationshipProxy(
                             cursor.relationshipReference(),
                             cursor.sourceNodeReference(),
                             cursor.label(),
                             cursor.targetNodeReference() );
                     return true;
-                }
             }
             close();
         }
         return next != null;
-    }
-
-    private boolean correctDirection()
-    {
-        return direction == Direction.BOTH ||
-                (direction == Direction.OUTGOING && cursor.originNodeReference() == cursor.sourceNodeReference()) ||
-                (direction == Direction.INCOMING && cursor.originNodeReference() == cursor.targetNodeReference());
-    }
-
-    private boolean correctType()
-    {
-        return typeIds == null || ArrayUtils.contains( typeIds, cursor.label() );
     }
 
     @Override

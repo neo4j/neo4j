@@ -270,7 +270,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
             //  - Return first relationship if it's not deleted
             // Subsequent relationships need to have same type and direction
 
-            read.relationship( this, next, pageCursor );
+            read.relationshipFull( this, next, pageCursor );
             setupFilterState();
 
             hasChanges = hasChanges();
@@ -312,7 +312,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
                 return false;
             }
 
-            read.relationship( this, next, pageCursor );
+            read.relationshipFull( this, next, pageCursor );
             computeNext();
 
         } while ( ( filterStore && !correctTypeAndDirection() ) ||
@@ -444,7 +444,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
         }
         else
         {
-            throw new IllegalStateException( "NOT PART OF CHAIN" );
+            throw new IllegalStateException( "NOT PART OF CHAIN! " + this );
         }
     }
 

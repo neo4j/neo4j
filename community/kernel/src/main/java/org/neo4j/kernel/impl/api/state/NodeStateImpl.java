@@ -372,25 +372,25 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             @Override
             public PrimitiveLongIterator getAddedRelationships( Direction direction )
             {
-                return null;
+                return PrimitiveLongCollections.emptyIterator();
             }
 
             @Override
             public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
             {
-                return null;
+                return PrimitiveLongCollections.emptyIterator();
             }
 
             @Override
             public PrimitiveLongIterator getAddedRelationships()
             {
-                return null;
+                return PrimitiveLongCollections.emptyIterator();
             }
 
             @Override
             public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
             {
-                return null;
+                return PrimitiveLongCollections.emptyIterator();
             }
 
         };

@@ -37,8 +37,10 @@ import static org.junit.Assert.assertTrue;
 /**
  * Testing on database level that creating and deleting relationships over the the same two nodes
  * doesn't create unnecessary deadlock scenarios, i.e. that locking order is predictable and symmetrical
+ *
+ * Also test that relationship chains are consistently read during concurrent updates.
  */
-public class RelationshipCreateDeleteLockOrderingIT
+public class RelationshipCreateDeleteIT
 {
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
@@ -46,7 +48,7 @@ public class RelationshipCreateDeleteLockOrderingIT
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldNotDeadlockWhenConcurrentCreateAndDeleteRelationships() throws Throwable
+    public void shouldNotDeadlockOrCrashFromInconsistency() throws Throwable
     {
         // GIVEN (A) -[R]-> (B)
         final Node a;
@@ -64,22 +66,25 @@ public class RelationshipCreateDeleteLockOrderingIT
         {
             race.addContestant( () ->
             {
-                try ( Transaction tx = db.beginTx() )
+                for ( int j = 0; j < 10; j++ )
                 {
-                    Node node = random.nextBoolean() ? a : b;
-                    for ( Relationship relationship : node.getRelationships() )
+                    try ( Transaction tx = db.beginTx() )
                     {
-                        try
+                        Node node = random.nextBoolean() ? a : b;
+                        for ( Relationship relationship : node.getRelationships() )
                         {
-                            relationship.delete();
+                            try
+                            {
+                                relationship.delete();
+                            }
+                            catch ( NotFoundException e )
+                            {
+                                // This is OK and expected since there are multiple threads deleting
+                                assertTrue( e.getMessage().contains( "already deleted" ) );
+                            }
                         }
-                        catch ( NotFoundException e )
-                        {
-                            // This is OK and expected since there are multiple threads deleting
-                            assertTrue( e.getMessage().contains( "already deleted" ) );
-                        }
+                        tx.success();
                     }
-                    tx.success();
                 }
             } );
         }
@@ -89,13 +94,16 @@ public class RelationshipCreateDeleteLockOrderingIT
         {
             race.addContestant( () ->
             {
-                try ( Transaction tx = db.beginTx() )
+                for ( int j = 0; j < 10; j++ )
                 {
-                    boolean order = random.nextBoolean();
-                    Node start = order ? a : b;
-                    Node end = order ? b : a;
-                    start.createRelationshipTo( end, MyRelTypes.TEST );
-                    tx.success();
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        boolean order = random.nextBoolean();
+                        Node start = order ? a : b;
+                        Node end = order ? b : a;
+                        start.createRelationshipTo( end, MyRelTypes.TEST );
+                        tx.success();
+                    }
                 }
             } );
         }
