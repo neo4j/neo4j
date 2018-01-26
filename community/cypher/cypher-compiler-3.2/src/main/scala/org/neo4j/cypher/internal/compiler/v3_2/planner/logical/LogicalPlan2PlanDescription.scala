@@ -74,7 +74,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
 
       case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
         val entityByIdRhs = EntityByIdRhs(relIds.asCommandSeekArgs)
-        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(entityByIdRhs), variables)
+        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeek", NoChildren, Seq(entityByIdRhs), variables)
 
       case _: LegacyNodeIndexSeek | _: LegacyRelationshipIndexSeek =>
         PlanDescriptionImpl(id, "LegacyIndexSeek", NoChildren, Seq.empty, variables)
