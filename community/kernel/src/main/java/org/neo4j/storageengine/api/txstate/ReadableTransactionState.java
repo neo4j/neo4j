@@ -38,6 +38,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.ValueTuple;
 
 /**
@@ -145,7 +146,8 @@ public interface ReadableTransactionState
                                                              Number upper, boolean includeUpper );
 
     PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor index,
-            IndexQuery.GeometryRangePredicate geometryRangePredicate );
+                                                             PointValue lower, boolean includeLower,
+                                                             PointValue upper, boolean includeUpper );
 
     PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor index,
                                                              String lower, boolean includeLower,

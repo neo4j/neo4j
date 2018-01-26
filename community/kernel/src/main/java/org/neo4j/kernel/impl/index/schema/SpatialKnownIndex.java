@@ -72,7 +72,8 @@ public class SpatialKnownIndex
     private SpaceFillingCurve curve;
 
     /**
-     * Create a representation of a spatial index for a specific coordinate reference system. This constructure should be used for first time creation.
+     * Create a representation of a spatial index for a specific coordinate reference system.
+     * This constructor should be used for first time creation.
      */
     public SpatialKnownIndex( IndexDirectoryStructure directoryStructure, CoordinateReferenceSystem crs, long indexId, PageCache pageCache,
             FileSystemAbstraction fs, SchemaIndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
@@ -87,7 +88,8 @@ public class SpatialKnownIndex
         // Depends on crs
         SchemaIndexProvider.Descriptor crsDescriptor =
                 new SchemaIndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
-        IndexDirectoryStructure indexDir = IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
+        IndexDirectoryStructure indexDir =
+                IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
         indexFile = new File( indexDir.directoryForIndex( indexId ), indexFileName( indexId ) );
         curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 8 );
     }
@@ -119,7 +121,7 @@ public class SpatialKnownIndex
         return fs.fileExists( indexFile );
     }
 
-    public String readPopupationFailure() throws IOException
+    public String readPopulationFailure() throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
         GBPTree.readHeader( pageCache, indexFile, new SpatialFusionSchemaIndexProvider.ReadOnlyMetaNumberLayout(), headerReader );

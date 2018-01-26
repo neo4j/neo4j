@@ -1014,16 +1014,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
         }
 
-        if ( geometryRangePredicate.from() == null && geometryRangePredicate.to() == null )
-        {
-            throw new IllegalArgumentException( "Cannot access TxState with invalid GeometryRangePredicate" );
-        }
-
-        PointValue lower = geometryRangePredicate.from();
-        PointValue upper = geometryRangePredicate.to();
-        boolean includeLower = geometryRangePredicate.fromInclusive();
-        boolean includeUpper = geometryRangePredicate.toInclusive();
-
         ValueTuple selectedLower;
         boolean selectedIncludeLower;
 
@@ -1057,12 +1047,18 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor descriptor,
-            IndexQuery.GeometryRangePredicate geometryRangePredicate )
+                                                                PointValue lower, boolean includeLower,
+                                                                PointValue upper, boolean includeUpper )
     {
         TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
             return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
+        }
+
+        if ( lower == null && upper == null )
+        {
+            throw new IllegalArgumentException( "Cannot access TxState with invalid GeometryRangePredicate" );
         }
 
         ValueTuple selectedLower;

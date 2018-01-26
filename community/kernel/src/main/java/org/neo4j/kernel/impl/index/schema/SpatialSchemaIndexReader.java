@@ -76,6 +76,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
         throw new UnsupportedOperationException( "Cannot initialize 1D range in multidimensional spatial index reader" );
     }
 
+    @Override
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
     {
         validateQuery( indexOrder, predicates );

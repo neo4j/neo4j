@@ -262,7 +262,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         if ( read.hasTxStateWithChanges() )
         {
-            changes = read.txState().indexUpdatesForRangeSeekByGeometry( descriptor, predicate );
+            changes = read.txState().indexUpdatesForRangeSeekByGeometry(
+                    descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
+                    predicate.toInclusive() );
             added = changes.augment( emptyIterator() );
         }
     }

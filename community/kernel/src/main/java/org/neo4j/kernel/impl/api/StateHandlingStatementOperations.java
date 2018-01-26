@@ -877,7 +877,9 @@ public class StateHandlingStatementOperations implements
         case rangeGeometric:
             assertSinglePredicate( predicates );
             IndexQuery.GeometryRangePredicate geomPred = (IndexQuery.GeometryRangePredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByGeometry( state, index, geomPred, exactMatches );
+            return filterIndexStateChangesForRangeSeekByGeometry(
+                    state, index, geomPred.from(), geomPred.fromInclusive(), geomPred.to(),
+                    geomPred.toInclusive(), exactMatches );
 
         case rangeString:
         {
@@ -989,26 +991,25 @@ public class StateHandlingStatementOperations implements
             return nodes.augmentWithRemovals( labelPropertyChangesForNumber.augment( nodeIds ) );
         }
         return nodeIds;
-
     }
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByGeometry( KernelStatement state,
             IndexDescriptor index,
-            IndexQuery.GeometryRangePredicate geometryRangePredicate,
+            PointValue lower, boolean includeLower,
+            PointValue upper, boolean includeUpper,
             PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
             TransactionState txState = state.txState();
             PrimitiveLongReadableDiffSets labelPropertyChangesForGeometry =
-                    txState.indexUpdatesForRangeSeekByGeometry( index, geometryRangePredicate );
+                    txState.indexUpdatesForRangeSeekByGeometry( index, lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForGeometry.augment( nodeIds ) );
         }
         return nodeIds;
-
     }
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
@@ -1028,7 +1029,6 @@ public class StateHandlingStatementOperations implements
             return nodes.augmentWithRemovals( labelPropertyChangesForString.augment( nodeIds ) );
         }
         return nodeIds;
-
     }
 
     private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByPrefix( KernelStatement state,

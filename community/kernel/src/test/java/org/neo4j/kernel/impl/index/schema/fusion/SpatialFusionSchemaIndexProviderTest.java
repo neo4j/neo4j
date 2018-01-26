@@ -99,7 +99,7 @@ public class SpatialFusionSchemaIndexProviderTest
         // ... no failure
         for ( SpatialKnownIndex index : indexMap.values() )
         {
-            when( index.readPopupationFailure() ).thenReturn( null );
+            when( index.readPopulationFailure() ).thenReturn( null );
         }
         // then
         try

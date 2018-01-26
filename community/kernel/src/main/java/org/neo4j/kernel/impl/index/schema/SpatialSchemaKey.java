@@ -33,7 +33,6 @@ import static java.lang.String.format;
 /**
  * Includes value and entity id (to be able to handle non-unique values).
  * A value can be any {@link PointValue} and is represented as a {@code long} to store the 1D mapped version
- * and a type describing the geomtry type and number of dimensions.
  */
 class SpatialSchemaKey implements NativeSchemaKey
 {
@@ -81,7 +80,7 @@ class SpatialSchemaKey implements NativeSchemaKey
     @Override
     public void from( long entityId, Value... values )
     {
-        extractRawBitsAndType( assertValidValue( values ) );
+        extractRawBits( assertValidValue( values ) );
         this.entityId = entityId;
         entityIdIsSpecialTieBreaker = false;
     }
@@ -108,7 +107,7 @@ class SpatialSchemaKey implements NativeSchemaKey
         //TODO: Get dimension
         double[] limit = new double[2];
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
-        writePoint( crs, limit );
+        writePoint( limit );
         entityId = Long.MIN_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
@@ -119,7 +118,7 @@ class SpatialSchemaKey implements NativeSchemaKey
         //TODO: Get dimension
         // These coords will generate the largest value on the spacial curve
         double[] limit = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
-        writePoint( crs, limit );
+        writePoint( limit );
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
@@ -160,15 +159,15 @@ class SpatialSchemaKey implements NativeSchemaKey
         return (PointValue) values[0];
     }
 
-    private void extractRawBitsAndType( PointValue value )
+    private void extractRawBits( PointValue value )
     {
-        writePoint( value.getCoordinateReferenceSystem(), value.coordinate() );
+        writePoint( value.coordinate() );
     }
 
     /**
-     * Extracts raw bits and type from a {@link PointValue} and store as state of this {@link SpatialSchemaKey} instance.
+     * Extracts raw bits from a {@link PointValue} and store as state of this {@link SpatialSchemaKey} instance.
      */
-    private void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
+    private void writePoint( double[] coordinate )
     {
         rawValueBits = curve.derivedValueFor( coordinate );
     }

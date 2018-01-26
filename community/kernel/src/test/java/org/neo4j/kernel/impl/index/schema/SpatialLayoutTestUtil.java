@@ -77,7 +77,7 @@ class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,NativeSchema
     @Override
     Value asValue( Number value )
     {
-        // multiply value with 5 to make sure the points aren't too close together, avoiding false positives that will be filtered in higher level later
+        // multiply value to make sure the points aren't too close together, avoiding false positives that will be filtered in higher level later
         return Values.pointValue( CoordinateReferenceSystem.WGS84, 3 * value.doubleValue(), 3 * value.doubleValue() );
     }
 

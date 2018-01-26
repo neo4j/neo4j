@@ -25,14 +25,14 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
- * {@link Layout} for numbers where numbers doesn't need to be unique.
+ * {@link Layout} for PointValues where they don't need to be unique.
  */
-public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchemaValue>
+abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchemaValue>
 {
+    private SpaceFillingCurve curve;
     CoordinateReferenceSystem crs;
-    SpaceFillingCurve curve;
 
-    public SpatialLayout( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
+    SpatialLayout( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
         this.crs = crs;
         this.curve = curve;
@@ -50,8 +50,7 @@ public abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,Nati
     }
 
     @Override
-    public SpatialSchemaKey copyKey( SpatialSchemaKey key,
-            SpatialSchemaKey into )
+    public SpatialSchemaKey copyKey( SpatialSchemaKey key, SpatialSchemaKey into )
     {
         into.rawValueBits = key.rawValueBits;
         into.setEntityId( key.getEntityId() );

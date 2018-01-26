@@ -105,7 +105,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
             // We find the first failed index failure message
             for ( SpatialKnownIndex index : indexesFor( indexId ).values() )
             {
-                String indexFailure = index.readPopupationFailure();
+                String indexFailure = index.readPopulationFailure();
                 if ( indexFailure != null )
                 {
                     return indexFailure;
