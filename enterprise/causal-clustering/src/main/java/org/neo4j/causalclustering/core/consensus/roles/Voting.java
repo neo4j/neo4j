@@ -73,6 +73,7 @@ public class Voting
                 willVoteForCandidate ) ) );
     }
 
+    @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
     public static boolean shouldVoteFor( MemberId candidate, long contextTerm, long requestTerm,
                                          long contextLastLogTerm, long requestLastLogTerm,
                                          long contextLastAppended, long requestLastLogIndex,
