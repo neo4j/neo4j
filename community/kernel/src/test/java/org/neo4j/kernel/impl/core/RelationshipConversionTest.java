@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.core;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipSelectionCursor;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -39,7 +38,7 @@ public class RelationshipConversionTest
 
     private EmbeddedProxySPI nodeActions = mock( EmbeddedProxySPI.class );
     private RelationshipConversion relationshipConversion;
-    private RelationshipTraversalCursor cursor;
+    private RelationshipSelectionCursor cursor;
 
     @Before
     public void setUp()
@@ -47,8 +46,8 @@ public class RelationshipConversionTest
         when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) )
                 .thenReturn( new RelationshipProxy( null, 1 ) );
 
-        cursor = mock( RelationshipTraversalCursor.class );
-        relationshipConversion = new RelationshipConversion( nodeActions, cursor, Direction.BOTH, null );
+        cursor = mock( RelationshipSelectionCursor.class );
+        relationshipConversion = new RelationshipConversion( nodeActions, cursor );
     }
 
     @Test
