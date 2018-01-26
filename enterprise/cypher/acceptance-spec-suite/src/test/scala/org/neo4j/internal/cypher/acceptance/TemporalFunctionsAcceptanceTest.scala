@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.ZonedDateTime
+import java.time._
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, FakeClock}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
@@ -36,12 +36,44 @@ class TemporalFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
     now shouldBe a[ZonedDateTime]
   }
 
-  test("should get current 'reawltime' datetime") {
+  test("should get current 'realtime' datetime") {
     val result = executeWith(supported, "RETURN datetime.realtime() as now")
 
     val now = single(result.columnAs[ZonedDateTime]("now"))
 
     now shouldBe a[ZonedDateTime]
+  }
+
+  test("should get current default localdatetime") {
+    val result = executeWith(supported, "RETURN localdatetime() as now")
+
+    val now = single(result.columnAs[LocalDateTime]("now"))
+
+    now shouldBe a[LocalDateTime]
+  }
+
+  test("should get current default date") {
+    val result = executeWith(supported, "RETURN date() as now")
+
+    val now = single(result.columnAs[LocalDate]("now"))
+
+    now shouldBe a[LocalDate]
+  }
+
+  test("should get current default time") {
+    val result = executeWith(supported, "RETURN time() as now")
+
+    val now = single(result.columnAs[OffsetTime]("now"))
+
+    now shouldBe a[OffsetTime]
+  }
+
+  test("should get current default localtime") {
+    val result = executeWith(supported, "RETURN localtime() as now")
+
+    val now = single(result.columnAs[LocalTime]("now"))
+
+    now shouldBe a[LocalTime]
   }
 
   def single[T](values: Iterator[T]):T = {

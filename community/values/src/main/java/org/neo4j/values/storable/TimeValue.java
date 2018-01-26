@@ -28,17 +28,20 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
-import java.util.function.Function;
+import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.DurationValue.SECONDS_PER_DAY;
 import static org.neo4j.values.storable.LocalTimeValue.optInt;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
@@ -48,6 +51,11 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     public static TimeValue time( OffsetTime time )
     {
         return new TimeValue( requireNonNull( time, "OffsetTime" ) );
+    }
+
+    public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, String offset )
+    {
+        return time( hour, minute, second, nanosOfSecond, parseOffset( offset ) );
     }
 
     public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, ZoneOffset offset )
@@ -70,7 +78,31 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return parse( TimeValue.class, PATTERN, TimeValue::parse, text, defaultZone );
     }
 
-    public static StructureBuilder<AnyValue,TimeValue> builder( Supplier<ZoneId> defaultZone )
+    public static TimeValue now( Clock clock )
+    {
+        return new TimeValue( OffsetTime.now( clock ) );
+    }
+
+    public static TimeValue now( Clock clock, String timezone )
+    {
+        return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static TimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
+    {
+        return StructureBuilder.build( builder( defaultZone ), map );
+    }
+
+    public static TimeValue truncate(
+            TemporalUnit unit,
+            TemporalValue input,
+            MapValue fields,
+            Supplier<ZoneId> defaultZone )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    static StructureBuilder<AnyValue,TimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new TimeBuilder<AnyValue,TimeValue>()
         {
@@ -200,6 +232,17 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";
     static final String TIME_PATTERN = LocalTimeValue.TIME_PATTERN + "(?:" + OFFSET_PATTERN + ")?";
     private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN );
+    private static final Pattern OFFSET = Pattern.compile( OFFSET_PATTERN );
+
+    static ZoneOffset parseOffset( String offset )
+    {
+        Matcher matcher = OFFSET.matcher( offset );
+        if ( matcher.matches() )
+        {
+            return parseOffset( matcher );
+        }
+        throw new IllegalArgumentException( "Not a valid offset: " + offset );
+    }
 
     static ZoneOffset parseOffset( Matcher matcher )
     {

@@ -25,17 +25,20 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
-import java.util.function.Function;
+import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 
 public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue>
 {
@@ -69,7 +72,31 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         return parse( LocalTimeValue.class, PATTERN, LocalTimeValue::parse, text );
     }
 
-    public static StructureBuilder<AnyValue,LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
+    public static LocalTimeValue now( Clock clock )
+    {
+        return new LocalTimeValue( LocalTime.now( clock ) );
+    }
+
+    public static LocalTimeValue now( Clock clock, String timezone )
+    {
+        return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static LocalTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
+    {
+        return StructureBuilder.build( builder( defaultZone ), map );
+    }
+
+    public static LocalTimeValue truncate(
+            TemporalUnit unit,
+            TemporalValue input,
+            MapValue fields,
+            Supplier<ZoneId> defaultZone )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    static StructureBuilder<AnyValue,LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new TimeValue.TimeBuilder<AnyValue,LocalTimeValue>()
         {

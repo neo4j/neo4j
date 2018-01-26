@@ -19,8 +19,24 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.AnyValue;
+
 public abstract class IntegralValue extends NumberValue
 {
+    public static long safeCastIntegral( String name, AnyValue value, long defaultValue )
+    {
+        if ( value == null )
+        {
+            return defaultValue;
+        }
+        if ( value instanceof IntegralValue )
+        {
+            return ((IntegralValue) value).longValue();
+        }
+        throw new IllegalArgumentException(
+                name + " must be an integer value, but was a " + value.getClass().getSimpleName() );
+    }
+
     @Override
     public boolean equals( long x )
     {

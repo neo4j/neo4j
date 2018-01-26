@@ -87,7 +87,7 @@ class DurationFunction implements CallableUserFunction
             if ( input[0] instanceof MapValue )
             {
                 MapValue map = (MapValue) input[0];
-                return DurationValue.build(map);
+                return DurationValue.build( map );
             }
         }
         throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );

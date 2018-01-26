@@ -32,12 +32,12 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.TemporalQueries;
 import java.time.temporal.TemporalUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
@@ -46,6 +46,7 @@ import static java.time.ZonedDateTime.ofInstant;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
 import static org.neo4j.values.storable.DateValue.parseDate;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalDateTimeValue.optTime;
 import static org.neo4j.values.storable.TimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.TimeValue.parseOffset;
@@ -110,21 +111,21 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return now( clock.withZone( parseZoneName( timezone ) ) );
     }
 
-    public static DateTimeValue build( MapValue map )
+    public static DateTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return StructureBuilder.build( builder( defaultZone ), map );
     }
 
     public static DateTimeValue truncate(
             TemporalUnit unit,
-            AnyValue input,
+            TemporalValue input,
             MapValue fields,
             Supplier<ZoneId> defaultZone )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    public static StructureBuilder<AnyValue,DateTimeValue> builder( Supplier<ZoneId> defaultZone )
+    static StructureBuilder<AnyValue,DateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new DateTimeBuilder<AnyValue,DateTimeValue>()
         {
@@ -209,21 +210,21 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     AnyValue nanosecond )
             {
                 return datetime(
-                        (int) unpackInteger( "year", year ),
-                        (int) unpackInteger( "month", month ),
-                        (int) unpackInteger( "day", day ),
-                        (int) unpackInteger( "hour", hour ),
-                        (int) unpackInteger( "minute", minute ),
-                        (int) unpackInteger( "second", second ),
+                        (int) safeCastIntegral( "year", year, 0 ),
+                        (int) safeCastIntegral( "month", month, 1 ),
+                        (int) safeCastIntegral( "day", day, 1 ),
+                        (int) safeCastIntegral( "hour", hour, 0 ),
+                        (int) safeCastIntegral( "minute", minute, 0 ),
+                        (int) safeCastIntegral( "second", second, 0 ),
                         nano( millisecond, microsecond, nanosecond ),
                         timezone() );
             }
 
             private int nano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
             {
-                return (int) unpackInteger( "millisecond", millisecond ) * 1000_000 +
-                        (int) unpackInteger( "microsecond", microsecond ) * 1000 +
-                        (int) unpackInteger( "nanosecond", nanosecond );
+                return (int) safeCastIntegral( "millisecond", millisecond, 0 ) * 1000_000 +
+                        (int) safeCastIntegral( "microsecond", microsecond, 0 ) * 1000 +
+                        (int) safeCastIntegral( "nanosecond", nanosecond, 0 );
             }
 
             @Override

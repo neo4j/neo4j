@@ -826,26 +826,46 @@ public class UserFunctionIT
                 "--------------------------------------------------------------------------------------------------" +
                 "--------------------------------------------------------------------------------------------------" +
                 "----------------------------------+%n" +
+                "| \"date\"                                              | \"date(input = null :: ANY?) :: " +
+                "(DATE?)\"                                                                                 " +
+                "                                     | \"Create a Date instant.\"                         " +
+                "                                                                |%n" +
+                "| \"date.realtime\"                                     | \"date.realtime(timezone = null " +
+                ":: STRING?) :: (DATE?)\"                                                                  " +
+                "                                     | \"Get the current Date instant using the realtime " +
+                "clock.\"                                                         |%n" +
+                "| \"date.statement\"                                    | \"date.statement(timezone = null" +
+                " :: STRING?) :: (DATE?)\"                                                                 " +
+                "                                     | \"Get the current Date instant using the statement " +
+                "clock.\"                                                        |%n" +
+                "| \"date.transaction\"                                  | \"date.transaction(timezone = " +
+                "null :: STRING?) :: (DATE?)\"                                                             " +
+                "                                       | \"Get the current Date instant using the " +
+                "transaction clock.\"                                                      |%n" +
+                "| \"date.truncate\"                                     | \"date.truncate(unit :: STRING?," +
+                " input :: ANY?, fields = null :: MAP?) :: (DATE?)\"                                       " +
+                "                                     | \"Truncate the input temporal value to a Date " +
+                "instant using the specified unit.\"                                  |%n" +
                 "| \"datetime\"                                          | \"datetime(input = null :: ANY?) :: " +
                 "(DATETIME?)\"                                                                                     " +
-                "                         | \"Construct a DateTime instant.\"                                      " +
+                "                         | \"Create a DateTime instant.\"                                         " +
                 "                                            |%n" +
                 "| \"datetime.realtime\"                                 | \"datetime.realtime(timezone = null :: " +
                 "STRING?) :: (DATETIME?)\"                                                                         " +
-                "                      | \"Get the current DateTime instant.\"                                     " +
+                "                      | \"Get the current DateTime instant using the realtime clock.\"            " +
                 "                                         |%n" +
                 "| \"datetime.statement\"                                | \"datetime.statement(timezone = null :: " +
                 "STRING?) :: (DATETIME?)\"                                                                         " +
-                "                     | \"Get the current DateTime instant.\"                                      " +
+                "                     | \"Get the current DateTime instant using the statement clock.\"            " +
                 "                                        |%n" +
                 "| \"datetime.transaction\"                              | \"datetime.transaction(timezone = null " +
                 ":: STRING?) :: (DATETIME?)\"                                                                      " +
-                "                      | \"Get the current DateTime instant.\"                                     " +
+                "                      | \"Get the current DateTime instant using the transaction clock.\"         " +
                 "                                         |%n" +
                 "| \"datetime.truncate\"                                 | \"datetime.truncate(unit :: STRING?, " +
                 "input :: ANY?, fields = null :: MAP?) :: (DATETIME?)\"                                            " +
-                "                        | \"Truncate to a DateTime instant.\"                                     " +
-                "                                           |%n" +
+                "                        | \"Truncate the input temporal value to a DateTime instant using the " +
+                "specified unit.\"                              |%n" +
                 "| \"duration\"                                          | \"duration(input :: ANY?) :: (DURATION?)" +
                 "\"                                                                                                " +
                 "                     | \"Construct a Duration value.\"                                            " +
@@ -886,6 +906,46 @@ public class UserFunctionIT
                 "ANY?) :: (DURATION?)\"                                                                            " +
                 "                        | \"Compute the duration between the 'form' instant (inclusive) and the " +
                 "'to' instant (exclusive) in years.\"         |%n" +
+                "| \"localdatetime\"                                     | \"localdatetime(input = null :: " +
+                "ANY?) :: (LOCALDATETIME?)\"                                                               " +
+                "                                     | \"Create a LocalDateTime instant.\"                " +
+                "                                                                |%n" +
+                "| \"localdatetime.realtime\"                            | \"localdatetime.realtime" +
+                "(timezone = null :: STRING?) :: (LOCALDATETIME?)\"                                        " +
+                "                                             | \"Get the current LocalDateTime instant " +
+                "using the realtime clock.\"                                                |%n" +
+                "| \"localdatetime.statement\"                           | \"localdatetime.statement" +
+                "(timezone = null :: STRING?) :: (LOCALDATETIME?)\"                                        " +
+                "                                            | \"Get the current LocalDateTime instant " +
+                "using the statement clock.\"                                               |%n" +
+                "| \"localdatetime.transaction\"                         | \"localdatetime.transaction" +
+                "(timezone = null :: STRING?) :: (LOCALDATETIME?)\"                                        " +
+                "                                          | \"Get the current LocalDateTime instant using " +
+                "the transaction clock.\"                                             |%n" +
+                "| \"localdatetime.truncate\"                            | \"localdatetime.truncate(unit ::" +
+                " STRING?, input :: ANY?, fields = null :: MAP?) :: (LOCALDATETIME?)\"                     " +
+                "                                     | \"Truncate the input temporal value to a " +
+                "LocalDateTime instant using the specified unit.\"                         |%n" +
+                "| \"localtime\"                                         | \"localtime(input = null :: " +
+                "ANY?) :: (LOCALTIME?)\"                                                                   " +
+                "                                         | \"Create a LocalTime instant.\"                " +
+                "                                                                    |%n" +
+                "| \"localtime.realtime\"                                | \"localtime.realtime(timezone = " +
+                "null :: STRING?) :: (LOCALTIME?)\"                                                        " +
+                "                                     | \"Get the current LocalTime instant using the " +
+                "realtime clock.\"                                                    |%n" +
+                "| \"localtime.statement\"                               | \"localtime.statement(timezone =" +
+                " null :: STRING?) :: (LOCALTIME?)\"                                                       " +
+                "                                     | \"Get the current LocalTime instant using the " +
+                "statement clock.\"                                                   |%n" +
+                "| \"localtime.transaction\"                             | \"localtime.transaction(timezone" +
+                " = null :: STRING?) :: (LOCALTIME?)\"                                                     " +
+                "                                     | \"Get the current LocalTime instant using the " +
+                "transaction clock.\"                                                 |%n" +
+                "| \"localtime.truncate\"                                | \"localtime.truncate(unit :: " +
+                "STRING?, input :: ANY?, fields = null :: MAP?) :: (LOCALTIME?)\"                          " +
+                "                                        | \"Truncate the input temporal value to a " +
+                "LocalTime instant using the specified unit.\"                             |%n" +
                 "| \"org.neo4j.procedure.avgDoubleList\"                 | \"org.neo4j.procedure.avgDoubleList" +
                 "(someValue :: LIST? OF FLOAT?) :: (FLOAT?)\"                                                      " +
                 "                          | \"\"                                                                  " +
@@ -994,11 +1054,31 @@ public class UserFunctionIT
                 " OF NUMBER?) :: (NUMBER?)\"                                                                       " +
                 "                     | \"\"                                                                       " +
                 "                                        |%n" +
+                "| \"time\"                                              | \"time(input = null :: ANY?) :: " +
+                "(TIME?)\"                                                                                 " +
+                "                                     | \"Create a Time instant.\"                         " +
+                "                                                                |%n" +
+                "| \"time.realtime\"                                     | \"time.realtime(timezone = null " +
+                ":: STRING?) :: (TIME?)\"                                                                  " +
+                "                                     | \"Get the current Time instant using the realtime " +
+                "clock.\"                                                         |%n" +
+                "| \"time.statement\"                                    | \"time.statement(timezone = null" +
+                " :: STRING?) :: (TIME?)\"                                                                 " +
+                "                                     | \"Get the current Time instant using the statement " +
+                "clock.\"                                                        |%n" +
+                "| \"time.transaction\"                                  | \"time.transaction(timezone = " +
+                "null :: STRING?) :: (TIME?)\"                                                             " +
+                "                                       | \"Get the current Time instant using the " +
+                "transaction clock.\"                                                      |%n" +
+                "| \"time.truncate\"                                     | \"time.truncate(unit :: STRING?," +
+                " input :: ANY?, fields = null :: MAP?) :: (TIME?)\"                                       " +
+                "                                     | \"Truncate the input temporal value to a Time " +
+                "instant using the specified unit.\"                                  |%n" +
                 "+-------------------------------------------------------------------------------------------------" +
                 "--------------------------------------------------------------------------------------------------" +
                 "--------------------------------------------------------------------------------------------------" +
                 "----------------------------------+%n" +
-                "42 rows%n" );
+                "62 rows%n" );
 
         assertThat( res.resultAsString(), equalTo(expected) );
     }

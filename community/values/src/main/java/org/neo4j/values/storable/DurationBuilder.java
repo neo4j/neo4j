@@ -19,7 +19,9 @@
  */
 package org.neo4j.values.storable;
 
-abstract class DurationBuilder<Input, Result> extends StructureBuilder<Input,Result>
+import org.neo4j.values.StructureBuilder;
+
+abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input,Result>
 {
     private Input years;
     private Input months;

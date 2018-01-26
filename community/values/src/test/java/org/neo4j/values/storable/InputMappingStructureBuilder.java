@@ -21,7 +21,9 @@ package org.neo4j.values.storable;
 
 import java.util.function.Function;
 
-public final class InputMappingStructureBuilder<Input, Internal, Result> extends StructureBuilder<Input,Result>
+import org.neo4j.values.StructureBuilder;
+
+public final class InputMappingStructureBuilder<Input, Internal, Result> implements StructureBuilder<Input,Result>
 {
     public static <R> StructureBuilder<Object,R> fromValues( StructureBuilder<? super Value,R> builder )
     {

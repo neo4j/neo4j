@@ -27,17 +27,20 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
-import java.util.function.Function;
+import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 
 public final class DateValue extends TemporalValue<LocalDate,DateValue>
 {
@@ -81,14 +84,38 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         return parse( DateValue.class, PATTERN, DateValue::parse, text );
     }
 
-    public static StructureBuilder<AnyValue,DateValue> builder( Supplier<ZoneId> defaulZone )
+    public static DateValue now( Clock clock )
+    {
+        return new DateValue( LocalDate.now( clock ) );
+    }
+
+    public static DateValue now( Clock clock, String timezone )
+    {
+        return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static DateValue build( MapValue map, Supplier<ZoneId> defaultZone )
+    {
+        return StructureBuilder.build( builder( defaultZone ), map );
+    }
+
+    public static DateValue truncate(
+            TemporalUnit unit,
+            TemporalValue input,
+            MapValue fields,
+            Supplier<ZoneId> defaultZone )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    static StructureBuilder<AnyValue,DateValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new DateBuilder<AnyValue,DateValue>()
         {
             @Override
             protected ZoneId timezone( AnyValue timezone )
             {
-                return timezone == null ? defaulZone.get() : timezoneOf( timezone );
+                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
             }
 
             @Override

@@ -25,18 +25,21 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.function.Function;
+import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.time.Instant.ofEpochSecond;
 import static java.time.LocalDateTime.ofInstant;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
 import static org.neo4j.values.storable.DateValue.parseDate;
 import static org.neo4j.values.storable.LocalTimeValue.TIME_PATTERN;
@@ -80,7 +83,31 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         return parse( LocalDateTimeValue.class, PATTERN, LocalDateTimeValue::parse, text );
     }
 
-    public static StructureBuilder<AnyValue,LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
+    public static LocalDateTimeValue now( Clock clock )
+    {
+        return new LocalDateTimeValue( LocalDateTime.now( clock ) );
+    }
+
+    public static LocalDateTimeValue now( Clock clock, String timezone )
+    {
+        return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static LocalDateTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
+    {
+        return StructureBuilder.build( builder( defaultZone ), map );
+    }
+
+    public static LocalDateTimeValue truncate(
+            TemporalUnit unit,
+            TemporalValue input,
+            MapValue fields,
+            Supplier<ZoneId> defaultZone )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    static StructureBuilder<AnyValue,LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
         return new DateTimeValue.DateTimeBuilder<AnyValue,LocalDateTimeValue>()
         {

@@ -39,6 +39,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.StructureBuilder;
 
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
@@ -259,7 +260,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return name.substring( 0, name.length() - /*"Value" is*/5/*characters*/ );
     }
 
-    abstract static class Builder<Input, Result> extends StructureBuilder<Input,Result>
+    abstract static class Builder<Input, Result> implements StructureBuilder<Input,Result>
     {
         private BuilderState<Input> state;
         private Input timezone;

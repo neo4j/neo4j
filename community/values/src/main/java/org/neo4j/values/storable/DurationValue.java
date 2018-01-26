@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
@@ -43,17 +44,14 @@ import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.OFFSET_SECONDS;
 import static java.time.temporal.ChronoField.SECOND_OF_DAY;
 import static java.time.temporal.ChronoUnit.DAYS;
-import static java.time.temporal.ChronoUnit.HOURS;
-import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
-import static java.time.temporal.ChronoUnit.WEEKS;
-import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 
 /**
@@ -102,7 +100,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
         return TemporalValue.parse( DurationValue.class, PATTERN, DurationValue::parse, text );
     }
 
-    public static DurationValue build( Map<String,? extends AnyValue> input )
+    static DurationValue build( Map<String,? extends AnyValue> input )
     {
         StructureBuilder<AnyValue,DurationValue> builder = builder();
         for ( Map.Entry<String,? extends AnyValue> entry : input.entrySet() )
@@ -114,7 +112,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
 
     public static DurationValue build( MapValue map )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return StructureBuilder.build( builder(), map );
     }
 
     public static DurationValue between( TemporalUnit unit, Temporal from, Temporal to )
@@ -155,7 +153,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
         }
     }
 
-    public static StructureBuilder<AnyValue,DurationValue> builder()
+    static StructureBuilder<AnyValue,DurationValue> builder()
     {
         return new DurationBuilder<AnyValue,DurationValue>()
         {
@@ -173,16 +171,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
                     AnyValue nanoseconds )
             {
                 return duration(
-                        unpackInteger( "years", years ) * 12
-                                + unpackInteger( "months", months ),
-                        unpackInteger( "weeks", weeks ) * 7
-                                + unpackInteger( "days", days ),
-                        unpackInteger( "hours", hours ) * 3600
-                                + unpackInteger( "minutes", minutes ) * 60
-                                + unpackInteger( "seconds", seconds ),
-                        unpackInteger( "milliseconds", milliseconds ) * 1_000_000
-                                + unpackInteger( "microseconds", microseconds ) * 1_000
-                                + unpackInteger( "nanoseconds", nanoseconds ) );
+                        safeCastIntegral( "years", years, 0 ) * 12
+                                + safeCastIntegral( "months", months, 0 ),
+                        safeCastIntegral( "weeks", weeks, 0 ) * 7
+                                + safeCastIntegral( "days", days, 0 ),
+                        safeCastIntegral( "hours", hours, 0 ) * 3600
+                                + safeCastIntegral( "minutes", minutes, 0 ) * 60
+                                + safeCastIntegral( "seconds", seconds, 0 ),
+                        safeCastIntegral( "milliseconds", milliseconds, 0 ) * 1_000_000
+                                + safeCastIntegral( "microseconds", microseconds, 0 ) * 1_000
+                                + safeCastIntegral( "nanoseconds", nanoseconds, 0 ) );
             }
         };
     }

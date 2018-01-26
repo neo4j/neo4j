@@ -26,60 +26,55 @@ import java.util.function.Supplier;
 
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTDateTime;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTDate;
 
-@Description( "Create a DateTime instant." )
-class DateTimeFunction extends TemporalFunction<DateTimeValue>
+@Description( "Create a Date instant." )
+class DateFunction extends TemporalFunction<DateValue>
 {
-    DateTimeFunction()
+    DateFunction()
     {
-        super( NTDateTime );
+        super( NTDate );
     }
 
     @Override
-    protected DateTimeValue now( Clock clock, String timezone )
+    protected DateValue now( Clock clock, String timezone )
     {
-        return timezone == null ? DateTimeValue.now( clock ) : DateTimeValue.now( clock, timezone );
+        return timezone == null ? DateValue.now( clock ) : DateValue.now( clock, timezone );
     }
 
     @Override
-    protected DateTimeValue parse( TextValue value, Supplier<ZoneId> defaultZone )
+    protected DateValue parse( TextValue value, Supplier<ZoneId> defaultZone )
     {
-        return DateTimeValue.parse( value, defaultZone );
+        return DateValue.parse( value );
     }
 
     @Override
-    protected DateTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
+    protected DateValue build( MapValue map, Supplier<ZoneId> defaultZone )
     {
-        return DateTimeValue.build( map, defaultZone );
+        return DateValue.build( map, defaultZone );
     }
 
     @Override
-    protected DateTimeValue positionalCreate( AnyValue[] input )
+    protected DateValue positionalCreate( AnyValue[] input )
     {
-        if ( input.length != 8 )
+        if ( input.length != 3 )
         {
-            throw new IllegalArgumentException( "expected 8 arguments" );
+            throw new IllegalArgumentException( "expected 3 arguments" );
         }
-        return DateTimeValue.datetime(
+        return DateValue.date(
                 anInt( "year", input[0] ),
                 anInt( "month", input[1] ),
-                anInt( "day", input[2] ),
-                anInt( "hour", input[3] ),
-                anInt( "minute", input[4] ),
-                anInt( "second", input[5] ),
-                anInt( "nanos", input[6] ),
-                aString( "timezone", input[7] ) );
+                anInt( "day", input[2] ) );
     }
 
     @Override
-    protected DateTimeValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
+    protected DateValue truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone )
     {
-        return DateTimeValue.truncate( unit, input, fields, defaultZone );
+        return DateValue.truncate( unit, input, fields, defaultZone );
     }
 }

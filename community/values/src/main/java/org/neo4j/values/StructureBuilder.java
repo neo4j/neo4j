@@ -17,32 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.storable;
+package org.neo4j.values;
 
-import org.neo4j.values.AnyValue;
+import java.util.Map;
 
-public abstract class StructureBuilder<Input, Result>
+import org.neo4j.values.virtual.MapValue;
+
+public interface StructureBuilder<Input, Result>
 {
-    public abstract StructureBuilder<Input,Result> add( String field, Input value );
+    StructureBuilder<Input,Result> add( String field, Input value );
 
-    public abstract Result build();
+    Result build();
 
-    StructureBuilder()
+    static <T> T build( StructureBuilder<AnyValue,T> builder, MapValue map )
     {
-        // Particular subclasses defined in this package
+        return build( builder, map.entrySet() );
     }
 
-    static long unpackInteger( String name, AnyValue value )
+    static <T> T build( StructureBuilder<AnyValue,T> builder, Iterable<Map.Entry<String,AnyValue>> entries )
     {
-        if ( value == null )
+        for ( Map.Entry<String,AnyValue> entry : entries )
         {
-            return 0;
+            builder.add( entry.getKey(), entry.getValue() );
         }
-        if ( value instanceof IntegralValue )
-        {
-            return ((IntegralValue) value).longValue();
-        }
-        throw new IllegalArgumentException(
-                name + " must be an integer value, but was a " + value.getClass().getSimpleName() );
+        return builder.build();
     }
 }

@@ -26,11 +26,13 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import org.neo4j.values.StructureBuilder;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-public final class AssertingStructureBuilder<Input, Result> extends StructureBuilder<Input,Result>
+public final class AssertingStructureBuilder<Input, Result> implements StructureBuilder<Input,Result>
 {
     public static <I, O> AssertingStructureBuilder<I,O> asserting( StructureBuilder<I,O> builder )
     {

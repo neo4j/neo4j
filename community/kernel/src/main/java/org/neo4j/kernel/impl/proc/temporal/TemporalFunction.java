@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc.temporal;
 
-import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -58,6 +58,10 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     public static void registerTemporalFunctions( Procedures procedures ) throws ProcedureException
     {
         register( new DateTimeFunction(), procedures );
+        register( new LocalDateTimeFunction(), procedures );
+        register( new DateFunction(), procedures );
+        register( new TimeFunction(), procedures );
+        register( new LocalTimeFunction(), procedures );
         DurationFunction.register( procedures );
     }
 
@@ -71,18 +75,20 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
     protected abstract T positionalCreate( AnyValue[] input );
 
-    protected abstract T truncate( TemporalUnit unit, AnyValue input, MapValue fields, Supplier<ZoneId> defaultZone );
+    protected abstract T truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone );
 
     private static final List<FieldSignature> INPUT_SIGNATURE = singletonList( inputField(
             "input", Neo4jTypes.NTAny, nullValue( Neo4jTypes.NTAny ) ) );
     private static final String[] ALLOWED = {};
     private final UserFunctionSignature signature;
 
-    TemporalFunction( String name, Neo4jTypes.AnyType result )
+    TemporalFunction( Neo4jTypes.AnyType result )
     {
+        String basename = basename( getClass() );
+        assert result.getClass().getSimpleName().equals( basename + "Type" ) : "result type should match function name";
         Description description = getClass().getAnnotation( Description.class );
         this.signature = new UserFunctionSignature(
-                new QualifiedName( new String[0], name ),
+                new QualifiedName( new String[0], basename.toLowerCase() ),
                 INPUT_SIGNATURE, result, Optional.empty(), ALLOWED,
                 description == null ? Optional.empty() : Optional.of( description.value() ) );
     }
@@ -94,6 +100,11 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         procedures.register( new Now<>( base, "statement" ) );
         procedures.register( new Now<>( base, "realtime" ) );
         procedures.register( new Truncate<>( base ) );
+    }
+
+    private static String basename( Class<? extends TemporalFunction> function )
+    {
+        return function.getSimpleName().replace( "Function", "" );
     }
 
     static int anInt( String name, AnyValue value )
@@ -183,31 +194,12 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         private final UserFunctionSignature signature;
         final TemporalFunction<T> function;
 
-        SubFunction( TemporalFunction<T> base, String name, List<FieldSignature> input )
+        SubFunction( TemporalFunction<T> base, String name, List<FieldSignature> input, String description )
         {
             this.function = base;
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {base.signature.name().name()}, name ),
-                    input, base.signature.outputType(), Optional.empty(), ALLOWED, description( base, getClass() ) );
-        }
-
-        private static Optional<String> description( TemporalFunction<?> base, Class<? extends SubFunction> sub )
-        {
-            StringBuilder name = new StringBuilder( sub.getSimpleName() );
-            name.setCharAt( 0, Character.toLowerCase( name.charAt( 0 ) ) );
-            String methodName = name.toString();
-            for ( Method method : base.getClass().getDeclaredMethods() )
-            {
-                if ( methodName.equals( method.getName() ) )
-                {
-                    Description description = method.getAnnotation( Description.class );
-                    if ( description != null )
-                    {
-                        return Optional.of( description.value() );
-                    }
-                }
-            }
-            return Optional.empty();
+                    input, base.signature.outputType(), Optional.empty(), ALLOWED, Optional.of( description ) );
         }
 
         @Override
@@ -228,7 +220,9 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
         Now( TemporalFunction<T> function, String clock )
         {
-            super( function, clock, SIGNATURE );
+            super( function, clock, SIGNATURE, String.format(
+                    "Get the current %s instant using the %s clock.",
+                    basename( function.getClass() ), clock ) );
             switch ( clock )
             {
             case "transaction":
@@ -274,7 +268,9 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
         Truncate( TemporalFunction<T> function )
         {
-            super( function, "truncate", SIGNATURE );
+            super( function, "truncate", SIGNATURE, String.format(
+                    "Truncate the input temporal value to a %s instant using the specified unit.",
+                    basename( function.getClass() ) ) );
         }
 
         @Override
@@ -285,11 +281,11 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 AnyValue unit = args[0];
                 AnyValue input = args[1];
                 AnyValue fields = args.length == 3 ? args[2] : EMPTY_MAP;
-                if ( unit instanceof TextValue && fields instanceof MapValue )
+                if ( unit instanceof TextValue && input instanceof TemporalValue && fields instanceof MapValue )
                 {
                     return function.truncate(
                             unit( ((TextValue) unit).stringValue() ),
-                            input,
+                            (TemporalValue)input,
                             (MapValue) fields,
                             defaultZone( ctx ) );
                 }
