@@ -28,16 +28,6 @@ public class IsConnectionException implements Predicate<Throwable>
     @Override
     public boolean test( Throwable e )
     {
-        if ( e == null )
-        {
-            return false;
-        }
-
-        if ( e instanceof ConnectException )
-        {
-            return true;
-        }
-
-        return test( e.getCause() );
+        return e != null && (e instanceof ConnectException || test( e.getCause() ));
     }
 }

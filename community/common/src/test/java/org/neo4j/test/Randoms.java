@@ -197,9 +197,8 @@ public class Randoms
 
     private static <T> boolean contains( T[] array, T contains )
     {
-        for ( int i = 0; i < array.length; i++ )
+        for ( T item : array )
         {
-            T item = array[i];
             if ( nullSafeEquals( item, contains ) )
             {
                 return true;
@@ -210,7 +209,7 @@ public class Randoms
 
     private static <T> boolean nullSafeEquals( T first, T other )
     {
-        return first == null ? first == other : first.equals( other );
+        return first == null ? other == null : first.equals( other );
     }
 
     public <T> T among( T[] among )

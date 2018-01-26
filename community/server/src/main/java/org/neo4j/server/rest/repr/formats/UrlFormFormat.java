@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.rest.repr.BadInputException;
@@ -88,7 +87,7 @@ public class UrlFormFormat extends RepresentationFormat
             return result;
         }
 
-        for ( String pair : input.split( "\\&" ) )
+        for ( String pair : input.split( "&" ) )
         {
             String[] fields = pair.split( "=" );
             String key;
@@ -119,7 +118,7 @@ public class UrlFormFormat extends RepresentationFormat
                 }
                 else
                 {
-                    list = new ArrayList<Object>();
+                    list = new ArrayList<>();
                     result.put( key, list );
                     list.add( old );
                 }

@@ -73,14 +73,13 @@ public class UtilsTest
         }
 
         // WHEN
-        for ( int i = 0; i < batches.length; i++ )
+        for ( long[] rBatch : batches )
         {
-            for ( int j = 0; j < batches.length; j++ )
+            for ( long[] lBatch : batches )
             {
                 // THEN
-                assertEquals(
-                        actuallyCollides( batches[i], batches[j] ),
-                        Utils.anyIdCollides( batches[i], batches[i].length, batches[j], batches[j].length ) );
+                assertEquals( actuallyCollides( rBatch, lBatch ),
+                        Utils.anyIdCollides( rBatch, rBatch.length, lBatch, lBatch.length ) );
             }
         }
     }

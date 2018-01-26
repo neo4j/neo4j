@@ -620,9 +620,9 @@ public class BuiltInProcedures
     {
         int[] propertyIds = index.schema().getPropertyIds();
         List<String> propertyNames = new ArrayList<>();
-        for ( int i = 0; i < propertyIds.length; i++ )
+        for ( int propertyId : propertyIds )
         {
-            propertyNames.add( tokens.propertyKeyGetName( propertyIds[i] ) );
+            propertyNames.add( tokens.propertyKeyGetName( propertyId ) );
         }
         return propertyNames;
     }

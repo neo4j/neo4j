@@ -43,7 +43,6 @@ import static java.lang.Integer.min;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.count;
 import static org.neo4j.helpers.Format.date;
@@ -91,7 +90,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         nodeImport,
         relationshipImport,
         linking,
-        postProcessing;
+        postProcessing
     }
 
     private static final String ESTIMATED_REQUIRED_MEMORY_USAGE = "Estimated required memory usage";

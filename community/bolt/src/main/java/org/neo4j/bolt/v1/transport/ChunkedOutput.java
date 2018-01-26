@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.bolt.transport.TransportThrottle;
 import org.neo4j.bolt.transport.TransportThrottleException;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltIOException;
@@ -34,7 +33,6 @@ import org.neo4j.bolt.v1.messaging.BoltResponseMessageBoundaryHook;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.Math.max;

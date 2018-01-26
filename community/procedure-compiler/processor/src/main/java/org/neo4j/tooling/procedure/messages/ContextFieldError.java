@@ -21,7 +21,6 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
-import javax.tools.Diagnostic;
 
 public class ContextFieldError implements CompilationMessage
 {

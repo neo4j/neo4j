@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.event;
 
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;

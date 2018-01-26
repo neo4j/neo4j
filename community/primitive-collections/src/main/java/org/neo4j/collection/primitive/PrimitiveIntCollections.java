@@ -812,9 +812,9 @@ public class PrimitiveIntCollections
 
     public static boolean contains( int[] values, int candidate )
     {
-        for ( int i = 0; i < values.length; i++ )
+        for ( int value : values )
         {
-            if ( values[i] == candidate )
+            if ( value == candidate )
             {
                 return true;
             }

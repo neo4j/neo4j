@@ -19,13 +19,13 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertTrue;
+import common.Neo4jAlgoTestCase;
+import common.SimpleGraphBuilder;
+import org.junit.Test;
 
 import java.util.List;
 
-import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
-import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphalgo.impl.util.DoubleComparator;
@@ -34,8 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
-import common.SimpleGraphBuilder;
+import static org.junit.Assert.assertTrue;
 
 public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
 {

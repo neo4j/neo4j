@@ -208,10 +208,10 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         }
 
         Optional<Status> terminationReason = transaction.getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        terminationReason.ifPresent( status ->
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
-        }
+            throw new TransactionTerminatedException( status );
+        } );
     }
 
     public void initialize( StatementLocks statementLocks, PageCursorTracer pageCursorCounters )

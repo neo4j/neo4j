@@ -185,11 +185,11 @@ public class PingerTest extends LocalServerTestBase
         final Map<String,String> udcFields = new HashMap<String,String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
-        for ( int i = 0; i < expectedSequence.length; i++ )
+        for ( int s : expectedSequence )
         {
             p.ping();
             int count = Integer.parseInt( handler.getQueryMap().get( UdcConstants.PING ) );
-            assertEquals( expectedSequence[i], count );
+            assertEquals( s, count );
         }
     }
 
@@ -201,11 +201,11 @@ public class PingerTest extends LocalServerTestBase
         final Map<String,String> udcFields = new HashMap<String,String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ).withCrash() );
-        for ( int i = 0; i < expectedSequence.length; i++ )
+        for ( int s : expectedSequence )
         {
             p.ping();
             int count = Integer.parseInt( handler.getQueryMap().get( UdcConstants.PING ) );
-            assertEquals( expectedSequence[i], count );
+            assertEquals( s, count );
         }
     }
 }

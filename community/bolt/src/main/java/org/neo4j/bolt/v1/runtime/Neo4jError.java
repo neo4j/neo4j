@@ -90,11 +90,8 @@ public class Neo4jError
 
         Neo4jError that = (Neo4jError) o;
 
-        if ( status != null ? !status.equals( that.status ) : that.status != null )
-        {
-            return false;
-        }
-        return !(message != null ? !message.equals( that.message ) : that.message != null);
+        return (status != null ? status.equals( that.status ) : that.status == null) &&
+                !(message != null ? !message.equals( that.message ) : that.message != null);
 
     }
 

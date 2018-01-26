@@ -192,10 +192,6 @@ public class IndexOperationsIT
             tx.success();
             return node.getId();
         }
-        catch ( Exception e )
-        {
-            throw e;
-        }
     }
 
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )

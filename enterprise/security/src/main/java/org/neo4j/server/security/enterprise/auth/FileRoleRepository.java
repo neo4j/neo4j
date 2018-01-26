@@ -21,8 +21,8 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
@@ -100,7 +100,7 @@ public class FileRoleRepository extends AbstractRoleRepository
         }
         synchronized ( this )
         {
-            return new ListSnapshot<>( lastLoaded.get(), roles.stream().collect( Collectors.toList() ), FROM_MEMORY );
+            return new ListSnapshot<>( lastLoaded.get(), new ArrayList<>( roles ), FROM_MEMORY );
         }
     }
 }

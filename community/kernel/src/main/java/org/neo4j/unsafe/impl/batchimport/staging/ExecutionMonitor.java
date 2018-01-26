@@ -46,7 +46,7 @@ public interface ExecutionMonitor
     void start( StageExecution execution );
 
     /**
-     * Signals the end of the execution previously {@link #start(StageExecution,DependencyResolver) started}.
+     * Signals the end of the execution previously {@link #start(StageExecution) started}.
      */
     void end( StageExecution execution, long totalTimeMillis );
 

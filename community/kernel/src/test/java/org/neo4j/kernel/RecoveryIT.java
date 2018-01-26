@@ -479,7 +479,7 @@ public class RecoveryIT
                 NeoStores store1 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs1 ),
                         pageCache1, fs1, logProvider ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs2 ),
-                        pageCache2, fs2, logProvider ).openAllNeoStores();
+                        pageCache2, fs2, logProvider ).openAllNeoStores()
                 )
         {
             for ( StoreType storeType : StoreType.values() )

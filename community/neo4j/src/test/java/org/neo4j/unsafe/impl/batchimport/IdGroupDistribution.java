@@ -26,7 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
 /**
  * A little utility for randomizing dividing up nodes into {@link Group id spaces}.
- * At least used by {@link RandomDataIterator}. Supplied with number of nodes to divide up and number of groups
+ * Supplied with number of nodes to divide up and number of groups
  * to divide into, the group sizes are randomized and together they will contain all nodes.
  */
 public class IdGroupDistribution

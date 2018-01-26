@@ -178,7 +178,7 @@ public class StreamingBatchOperationResults
 
     private boolean isJson( char[] head )
     {
-        return String.valueOf( head ).matches( "\\s*([\\[\"\\{]|true|false).*" );
+        return String.valueOf( head ).matches( "\\s*([\\[\"{]|true|false).*" );
     }
 
     public Map<Integer,String> getLocations()

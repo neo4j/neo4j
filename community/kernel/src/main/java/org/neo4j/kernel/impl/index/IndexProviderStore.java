@@ -65,10 +65,10 @@ public class IndexProviderStore
             // Read all the records in the file
             channel = fileSystem.open( file, OpenMode.READ_WRITE );
             Long[] records = readRecordsWithNullDefaults( channel, RECORD_COUNT, allowUpgrade );
-            creationTime = records[0].longValue();
-            randomIdentifier = records[1].longValue();
-            version = records[2].longValue();
-            lastCommittedTx = records[3].longValue();
+            creationTime = records[0];
+            randomIdentifier = records[1];
+            version = records[2];
+            lastCommittedTx = records[3];
             Long readIndexVersion = records[4];
             fileChannel = channel;
 
@@ -106,15 +106,15 @@ public class IndexProviderStore
     private boolean compareExpectedVersionWithStoreVersion( long expectedVersion,
             boolean allowUpgrade, Long readIndexVersion )
     {
-        boolean versionDiffers = readIndexVersion == null || readIndexVersion.longValue() != expectedVersion;
+        boolean versionDiffers = readIndexVersion == null || readIndexVersion != expectedVersion;
         if ( versionDiffers )
         {
             // We can throw a more explicit exception if we see that we're trying to run
             // with an older version than the store is.
-            if ( readIndexVersion != null && expectedVersion < readIndexVersion.longValue() )
+            if ( readIndexVersion != null && expectedVersion < readIndexVersion )
             {
                 String expected = versionLongToString( expectedVersion );
-                String readVersion = versionLongToString( readIndexVersion.longValue() );
+                String readVersion = versionLongToString( readIndexVersion );
                 throw new NotCurrentStoreVersionException( expected, readVersion,
                         "Your index has been upgraded to " + readVersion +
                         " and cannot run with an older version " + expected, false );

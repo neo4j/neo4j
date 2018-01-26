@@ -19,8 +19,6 @@
  */
 package org.neo4j.tooling.procedure.validators;
 
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +27,8 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleTypeVisitor8;
 import javax.lang.model.util.Types;
+
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 
 /**
  * This predicate makes sure that a given declared type (record field type,
@@ -90,11 +90,7 @@ public class AllowedTypesValidator implements Predicate<TypeMirror>
             public Boolean visitDeclared( DeclaredType list, Void aVoid )
             {
                 List<? extends TypeMirror> typeArguments = list.getTypeArguments();
-                if ( typeArguments.size() != 1 )
-                {
-                    return false;
-                }
-                return test( typeArguments.get( 0 ) );
+                return typeArguments.size() == 1 && test( typeArguments.get( 0 ) );
             }
         }.visit( typeMirror );
     }
@@ -121,11 +117,8 @@ public class AllowedTypesValidator implements Predicate<TypeMirror>
                 }
 
                 TypeMirror key = typeArguments.get( 0 );
-                if ( !typeUtils.isSameType( key, typeMirrors.typeMirror( String.class ) ) )
-                {
-                    return false;
-                }
-                return test( typeArguments.get( 1 ) );
+                return typeUtils.isSameType( key, typeMirrors.typeMirror( String.class ) ) &&
+                        test( typeArguments.get( 1 ) );
             }
         }.visit( typeMirror );
     }

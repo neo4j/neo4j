@@ -21,7 +21,6 @@ package org.neo4j.test.rule;
 
 import org.junit.rules.ExternalResource;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;

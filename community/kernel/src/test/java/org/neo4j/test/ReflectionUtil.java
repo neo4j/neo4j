@@ -67,7 +67,7 @@ public class ReflectionUtil
         field.set( target, value );
     }
 
-    private static Field getField( String fieldName, Class<? extends Object> type ) throws NoSuchFieldException
+    private static Field getField( String fieldName, Class<?> type ) throws NoSuchFieldException
     {
         if ( type == null )
         {

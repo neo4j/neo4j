@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.util.Validators;
-import org.neo4j.kernel.internal.Version;
 
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
 

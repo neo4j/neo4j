@@ -34,7 +34,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
@@ -66,7 +65,7 @@ public class StringCollisionValuesTest
     public void shouldStoreAndLoadStrings() throws Exception
     {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory, 10_000 ); )
+        try ( StringCollisionValues values = new StringCollisionValues( factory, 10_000 ) )
         {
             // when
             long[] offsets = new long[100];

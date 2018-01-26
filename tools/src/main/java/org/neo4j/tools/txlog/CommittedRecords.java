@@ -29,7 +29,7 @@ import org.neo4j.tools.txlog.checktypes.CheckType;
 
 /**
  * Contains mapping from entity id ({@link NodeRecord#getId()}, {@link PropertyRecord#getId()}, ...) to
- * {@linkplain Abstract64BitRecord record} for records that have been previously seen during transaction log scan.
+ * {@linkplain AbstractBaseRecord record} for records that have been previously seen during transaction log scan.
  * <p/>
  * Can determine if some given record is consistent with previously committed state.
  *

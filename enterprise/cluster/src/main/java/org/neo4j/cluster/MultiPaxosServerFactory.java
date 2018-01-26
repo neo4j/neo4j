@@ -19,7 +19,6 @@
  */
 package org.neo4j.cluster;
 
-import java.net.URI;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.com.message.MessageSender;

@@ -134,7 +134,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     private void waitTransactionToStartWaitingForTheLock() throws InterruptedException
     {
-        while ( !Thread.getAllStackTraces().keySet().stream().anyMatch(
+        while ( Thread.getAllStackTraces().keySet().stream().noneMatch(
                 ThreadingRule.waitingWhileIn( Operations.class, "acquireExclusiveNodeLock" ) ) )
         {
             TimeUnit.MILLISECONDS.sleep( 10 );

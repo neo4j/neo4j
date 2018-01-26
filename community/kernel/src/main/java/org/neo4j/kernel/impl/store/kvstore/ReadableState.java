@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.store.kvstore;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.tracing.AutoCloseablePageCacheTracerEvent;
-
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 
 abstract class ReadableState<Key> implements Closeable

@@ -27,7 +27,7 @@ import static java.lang.Math.max;
  * Encodes String into a long with very small chance of collision, i.e. two different Strings encoded into
  * the same long value.
  *
- * Assumes a single thread making all calls to {@link #encode(String)}.
+ * Assumes a single thread making all calls to {@link #encode(Object)}.
  */
 public class StringEncoder implements Encoder
 {

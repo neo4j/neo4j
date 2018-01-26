@@ -92,7 +92,7 @@ public class TestPriorityMap
         Entry<Integer, Double> top = map.pop();
         assertNull( map.peek() );
         assertEquals( 1, top.getEntity().intValue() );
-        assertEquals( 1.5d, top.getPriority().doubleValue(), 0d );
+        assertEquals( 1.5d, top.getPriority(), 0d );
     }
 
     @Test

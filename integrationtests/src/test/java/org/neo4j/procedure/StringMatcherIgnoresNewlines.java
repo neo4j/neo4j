@@ -44,7 +44,7 @@ public class StringMatcherIgnoresNewlines
             @Override
             protected boolean evalSubstringOf( String s )
             {
-                return clean( s ).indexOf( clean( substring ) ) >= 0;
+                return clean( s ).contains( clean( substring ) );
             }
         };
     }

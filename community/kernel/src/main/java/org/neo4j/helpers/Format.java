@@ -123,11 +123,11 @@ public class Format
         {
             if ( size < stride )
             {
-                return String.format( Locale.ROOT, "%.2f %s", Double.valueOf( size ), suffix );
+                return String.format( Locale.ROOT, "%.2f %s", size, suffix );
             }
             size /= stride;
         }
-        return String.format( Locale.ROOT, "%.2f TB", Double.valueOf( size ) );
+        return String.format( Locale.ROOT, "%.2f TB", size );
     }
 
     public static String duration( long durationMillis )

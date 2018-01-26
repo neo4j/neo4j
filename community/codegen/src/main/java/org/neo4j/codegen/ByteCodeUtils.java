@@ -215,9 +215,7 @@ public final class ByteCodeUtils
             if ( showErasure && !parameters.isEmpty() )
             {
                 builder.append( "<" );
-                parameters
-                        .stream()
-                        .forEach( p -> internalType( builder, p, true ) );
+                parameters.forEach( p -> internalType( builder, p, true ) );
                 builder.append( ">" );
             }
             builder.append( ";" );

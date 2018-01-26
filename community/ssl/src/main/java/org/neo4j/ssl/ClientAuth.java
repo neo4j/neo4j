@@ -23,5 +23,5 @@ public enum ClientAuth
 {
     NONE,
     OPTIONAL,
-    REQUIRE;
+    REQUIRE
 }

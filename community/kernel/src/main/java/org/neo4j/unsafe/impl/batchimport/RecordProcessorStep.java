@@ -45,15 +45,14 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     @Override
     protected void process( T[] batch, BatchSender sender )
     {
-        for ( int i = 0; i < batch.length; i++ )
+        for ( T item : batch )
         {
-            T item = batch[i];
             if ( item != null && item.inUse() )
             {
                 if ( !processor.process( item ) )
                 {
                     // No change for this record
-                    batch[i].setInUse( false );
+                    item.setInUse( false );
                 }
             }
         }

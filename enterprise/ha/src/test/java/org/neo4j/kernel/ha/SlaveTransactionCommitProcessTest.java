@@ -37,10 +37,9 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.ConstantRequestContextFactory;
 import org.neo4j.test.LongResponse;
-import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

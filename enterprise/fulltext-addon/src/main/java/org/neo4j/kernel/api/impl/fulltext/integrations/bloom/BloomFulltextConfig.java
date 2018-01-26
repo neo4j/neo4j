@@ -19,21 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
-import static org.neo4j.kernel.configuration.Settings.matchesAny;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**

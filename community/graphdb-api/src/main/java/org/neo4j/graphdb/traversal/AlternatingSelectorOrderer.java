@@ -39,7 +39,7 @@ public class AlternatingSelectorOrderer extends AbstractSelectorOrderer<Integer>
     {
         TraversalBranch branch = nextBranchFromNextSelector( metadata, true );
         Integer previousDepth = getStateForCurrentSelector();
-        if ( branch != null && branch.length() == previousDepth.intValue() )
+        if ( branch != null && branch.length() == previousDepth )
         {
             return branch;
         }

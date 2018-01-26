@@ -70,18 +70,11 @@ class Workload extends RepeatUntilCallable
 
     private boolean isTransient( Throwable e )
     {
-        if ( e == null )
-        {
-            return false;
-        }
-
-        if ( e instanceof  TimeoutException || e instanceof DatabaseShutdownException ||
-                e instanceof TransactionFailureException )
-        {
-            return true;
-        }
-
-        return isInterrupted( e.getCause() );
+        return e != null &&
+               ( e instanceof TimeoutException ||
+                 e instanceof DatabaseShutdownException ||
+                 e instanceof TransactionFailureException ||
+                 isInterrupted( e.getCause() ) );
     }
 
     private boolean isInterrupted( Throwable e )

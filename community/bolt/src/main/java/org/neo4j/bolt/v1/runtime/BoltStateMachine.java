@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
@@ -34,8 +33,6 @@ import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.graphdb.security.AuthProviderFailedException;
-import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;

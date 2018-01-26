@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.impl.store.format.highlimit.v300.RelationshipGroupRecordFormatV3_0_0;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 

@@ -62,7 +62,7 @@ public class RsdrMain
     private static final Console console = System.console();
     private static final Pattern readCommandPattern = Pattern.compile( "r" + // 'r' means read command
             "((?<lower>\\d+)?,(?<upper>\\d+)?)?\\s+" + // optional record id range bounds, followed by whitespace
-            "(?<fname>[\\w\\.]+)" + // files are a sequence of word characters or literal '.'
+            "(?<fname>[\\w.]+)" + // files are a sequence of word characters or literal '.'
             "(\\s*\\|\\s*(?<regex>.+))?" // a pipe signifies a regex to filter records by
     );
 

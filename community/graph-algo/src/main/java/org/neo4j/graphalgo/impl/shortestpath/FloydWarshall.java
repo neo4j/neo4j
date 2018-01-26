@@ -65,8 +65,6 @@ public class FloydWarshall<CostType>
      * @param infinitelyBad
      *            A cost worse than all others. This is used to initialize the
      *            distance matrix.
-     * @param costRelationType
-     *            The relationship type to traverse.
      * @param relationDirection
      *            The direction in which the paths should follow the
      *            relationships.

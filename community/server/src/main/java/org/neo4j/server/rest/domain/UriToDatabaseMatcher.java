@@ -33,10 +33,8 @@ public class UriToDatabaseMatcher
     public GraphDatabaseName lookup( URI requestUri )
     {
 
-        for ( int i = 0; i < tuples.size(); i++ )
+        for ( Tuple t : tuples )
         {
-            Tuple t = tuples.get( i );
-
             // Matchers aren't thread-safe, so they have to be created
             // per-request
             Matcher matcher = t.pattern.matcher( requestUri.getPath() );

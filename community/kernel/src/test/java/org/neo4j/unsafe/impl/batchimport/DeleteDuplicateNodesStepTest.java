@@ -160,11 +160,11 @@ public class DeleteDuplicateNodesStepTest
     {
         long[] nodeIds = new long[ids.length];
         int cursor = 0;
-        for ( int i = 0; i < ids.length; i++ )
+        for ( Ids id : ids )
         {
             if ( random.nextBoolean() )
             {
-                nodeIds[cursor++] = ids[i].node.getId();
+                nodeIds[cursor++] = id.node.getId();
             }
         }
 

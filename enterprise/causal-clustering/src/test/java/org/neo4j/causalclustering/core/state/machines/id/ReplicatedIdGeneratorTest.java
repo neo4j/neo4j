@@ -19,16 +19,15 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.BooleanSupplier;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
