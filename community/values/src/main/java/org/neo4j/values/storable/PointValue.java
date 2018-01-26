@@ -132,11 +132,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     @Override
     public boolean eq( Object other )
     {
-        return other != null &&
-               (
-                       (other instanceof Value && equals( (Value) other )) ||
-                       (other instanceof Point && equals( (Point) other ))
-               );
+        return other != null && ((other instanceof Value && equals( (Value) other )) || (other instanceof Point && equals( (Point) other )));
     }
 
     public int compareTo( PointValue other )
@@ -158,7 +154,7 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
 
         for ( int i = 0; i < coordinate.length; i++ )
         {
-            int cmpVal = (int) (this.coordinate[i] - other.coordinate[i]);
+            int cmpVal = Double.compare(this.coordinate[i], other.coordinate[i]);
             if ( cmpVal != 0 )
             {
                 return cmpVal;
@@ -211,5 +207,41 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     public CRS getCRS()
     {
         return crs;
+    }
+
+    public boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
+    {
+        boolean checkLower = lower != null;
+        boolean checkUpper = upper != null;
+
+        if ( checkLower && this.crs.getCode() != lower.crs.getCode() )
+        {
+            return false;
+        }
+        if ( checkUpper && this.crs.getCode() != upper.crs.getCode() )
+        {
+            return false;
+        }
+
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            if ( checkLower )
+            {
+                int compareLower = Double.compare( this.coordinate[i], lower.coordinate[i] );
+                if ( compareLower < 0 || compareLower == 0 && !includeLower )
+                {
+                    return false;
+                }
+            }
+            if ( checkUpper )
+            {
+                int compareUpper = Double.compare( this.coordinate[i], upper.coordinate[i] );
+                if ( compareUpper > 0 || compareUpper == 0 && !includeUpper )
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

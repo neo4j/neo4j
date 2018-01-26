@@ -23,6 +23,7 @@ import java.util.Comparator;
 
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.Strings;
+import org.neo4j.values.storable.PointValue;
 
 import static java.lang.String.format;
 
@@ -51,6 +52,8 @@ public class PropertyValueComparison
     public static final PropertyValueComparator<Number> COMPARE_NUMBERS = new NumberPropertyValueComparator();
 
     public static final PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
+
+    public static final PropertyValueComparator<PointValue> COMPARE_POINTS = new PointPropertyValueComparator();
 
     public static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
 
@@ -276,6 +279,16 @@ public class PropertyValueComparison
                         leftClazz, rightClazz
                 ) );
             }
+        }
+    }
+
+    private static class PointPropertyValueComparator extends PropertyValueComparator<PointValue>
+    {
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public int compare( PointValue left, PointValue right )
+        {
+            return left.compareTo( right );
         }
     }
 

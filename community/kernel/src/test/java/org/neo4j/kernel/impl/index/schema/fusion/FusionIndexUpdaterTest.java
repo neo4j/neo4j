@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
@@ -41,15 +42,19 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remo
 public class FusionIndexUpdaterTest
 {
     private IndexUpdater nativeUpdater;
+    private IndexUpdater spatialUpdater;
     private IndexUpdater luceneUpdater;
+    private IndexUpdater[] allUpdaters;
     private FusionIndexUpdater fusionIndexUpdater;
 
     @Before
     public void setup()
     {
         nativeUpdater = mock( IndexUpdater.class );
+        spatialUpdater = mock( IndexUpdater.class );
         luceneUpdater = mock( IndexUpdater.class );
-        fusionIndexUpdater = new FusionIndexUpdater( nativeUpdater, luceneUpdater, new NativeSelector() );
+        allUpdaters = new IndexUpdater[]{nativeUpdater, spatialUpdater, luceneUpdater};
+        fusionIndexUpdater = new FusionIndexUpdater( nativeUpdater, spatialUpdater, luceneUpdater, new NativeSelector() );
     }
 
     /* process */
@@ -59,7 +64,8 @@ public class FusionIndexUpdaterTest
     {
         // given
         Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] supportedBySpatial = FusionIndexTestHelp.valuesSupportedBySpatial();
+        Value[] notSupportedByNativeOrSpatial = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
         // when
@@ -67,14 +73,22 @@ public class FusionIndexUpdaterTest
         for ( Value value : supportedByNative )
         {
             //then
-            verifyAddWithCorrectUpdater( nativeUpdater, luceneUpdater, value );
+            verifyAddWithCorrectUpdater( nativeUpdater, value );
+        }
+
+        // when
+        // ... value supported by spatial
+        for ( Value value : supportedBySpatial )
+        {
+            //then
+            verifyAddWithCorrectUpdater( spatialUpdater, value );
         }
 
         // when
         // ... value not supported by native
-        for ( Value value : notSupportedByNative )
+        for ( Value value : notSupportedByNativeOrSpatial )
         {
-            verifyAddWithCorrectUpdater( luceneUpdater, nativeUpdater, value );
+            verifyAddWithCorrectUpdater( luceneUpdater, value );
         }
 
         // when
@@ -83,7 +97,7 @@ public class FusionIndexUpdaterTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectUpdater( luceneUpdater, nativeUpdater, firstValue, secondValue );
+                verifyAddWithCorrectUpdater( luceneUpdater, firstValue, secondValue );
             }
         }
     }
@@ -93,7 +107,8 @@ public class FusionIndexUpdaterTest
     {
         // given
         Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] supportedBySpatial = FusionIndexTestHelp.valuesSupportedBySpatial();
+        Value[] notSupportedByNativeOrSpatial = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
         // when
@@ -101,14 +116,22 @@ public class FusionIndexUpdaterTest
         for ( Value value : supportedByNative )
         {
             //then
-            verifyRemoveWithCorrectUpdater( nativeUpdater, luceneUpdater, value );
+            verifyRemoveWithCorrectUpdater( nativeUpdater, value );
+        }
+
+        // when
+        // ... value supported by spatial
+        for ( Value value : supportedBySpatial )
+        {
+            //then
+            verifyRemoveWithCorrectUpdater( spatialUpdater, value );
         }
 
         // when
         // ... value not supported by native
-        for ( Value value : notSupportedByNative )
+        for ( Value value : notSupportedByNativeOrSpatial )
         {
-            verifyRemoveWithCorrectUpdater( luceneUpdater, nativeUpdater, value );
+            verifyRemoveWithCorrectUpdater( luceneUpdater, value );
         }
 
         // when
@@ -117,7 +140,7 @@ public class FusionIndexUpdaterTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyRemoveWithCorrectUpdater( luceneUpdater, nativeUpdater, firstValue, secondValue );
+                verifyRemoveWithCorrectUpdater( luceneUpdater, firstValue, secondValue );
             }
         }
     }
@@ -135,7 +158,25 @@ public class FusionIndexUpdaterTest
         {
             for ( Value after : supportedByNative )
             {
-                verifyChangeWithCorrectUpdaterNotMixed( nativeUpdater, luceneUpdater, before, after );
+                verifyChangeWithCorrectUpdaterNotMixed( nativeUpdater, before, after );
+            }
+        }
+    }
+
+    @Test
+    public void processMustSelectCorrectForChangeSupportedBySpatial() throws Exception
+    {
+        // given
+        Value[] supportedBySpatial = FusionIndexTestHelp.valuesSupportedBySpatial();
+
+        // when
+        // ... before - supported
+        // ... after - supported
+        for ( Value before : supportedBySpatial )
+        {
+            for ( Value after : supportedBySpatial )
+            {
+                verifyChangeWithCorrectUpdaterNotMixed( spatialUpdater, before, after );
             }
         }
     }
@@ -144,16 +185,16 @@ public class FusionIndexUpdaterTest
     public void processMustSelectCorrectForChangeNotSupportedByNative() throws Exception
     {
         // given
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] notSupportedByNativeOrSpatial = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
 
         // when
         // ... before - not supported
         // ... after - not supported
-        for ( Value before : notSupportedByNative )
+        for ( Value before : notSupportedByNativeOrSpatial )
         {
-            for ( Value after : notSupportedByNative )
+            for ( Value after : notSupportedByNativeOrSpatial )
             {
-                verifyChangeWithCorrectUpdaterNotMixed( luceneUpdater, nativeUpdater, before, after );
+                verifyChangeWithCorrectUpdaterNotMixed( luceneUpdater, before, after );
             }
         }
     }
@@ -163,12 +204,12 @@ public class FusionIndexUpdaterTest
     {
         // given
         Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] notSupportedByNativeOrSpatial = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
 
         // when
         // ... before - supported
         // ... after - not supported
-        verifyChangeWithCorrectUpdaterMixed( nativeUpdater, luceneUpdater, supportedByNative, notSupportedByNative );
+        verifyChangeWithCorrectUpdaterMixed( nativeUpdater, luceneUpdater, supportedByNative, notSupportedByNativeOrSpatial );
     }
 
     @Test
@@ -176,39 +217,86 @@ public class FusionIndexUpdaterTest
     {
         // given
         Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] notSupportedByNativeOrSpatial = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
 
         // when
         // ... before - not supported
         // ... after - supported
-        verifyChangeWithCorrectUpdaterMixed( luceneUpdater, nativeUpdater, notSupportedByNative, supportedByNative );
+        verifyChangeWithCorrectUpdaterMixed( luceneUpdater, nativeUpdater, notSupportedByNativeOrSpatial, supportedByNative );
     }
 
-    private void verifyAddWithCorrectUpdater( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value... numberValues )
+    @Test
+    public void processMustSelectCorrectForChangeFromNativeToSpatialOrBack() throws Exception
+    {
+        // given
+        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
+        Value[] supportedBySpatial = FusionIndexTestHelp.valuesSupportedBySpatial();
+
+        // when
+        // ... before - supported
+        // ... after - not supported
+        verifyChangeWithCorrectUpdaterMixed( nativeUpdater, spatialUpdater, supportedByNative, supportedBySpatial );
+        verifyChangeWithCorrectUpdaterMixed( spatialUpdater, nativeUpdater, supportedBySpatial, supportedByNative );
+    }
+
+    @Test
+    public void processMustSelectCorrectForChangeFromLuceneToSpatialOrBack() throws Exception
+    {
+        // given
+        Value[] supportedByLucene = FusionIndexTestHelp.valuesNotSupportedByNativeOrSpatial();
+        Value[] supportedBySpatial = FusionIndexTestHelp.valuesSupportedBySpatial();
+
+        // when
+        // ... before - supported
+        // ... after - not supported
+        verifyChangeWithCorrectUpdaterMixed( luceneUpdater, spatialUpdater, supportedByLucene, supportedBySpatial );
+        reset( luceneUpdater, spatialUpdater );
+        verifyChangeWithCorrectUpdaterMixed( spatialUpdater, luceneUpdater, supportedBySpatial, supportedByLucene );
+    }
+
+    private void verifyAddWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = add( numberValues );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        verify( wrongPopulator, times( 0 ) ).process( update );
+        for ( IndexUpdater populator : allUpdaters )
+        {
+            if ( populator != correctPopulator )
+            {
+                verify( populator, times( 0 ) ).process( update );
+            }
+        }
     }
 
-    private void verifyRemoveWithCorrectUpdater( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value... numberValues )
+    private void verifyRemoveWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.remove( numberValues );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        verify( wrongPopulator, times( 0 ) ).process( update );
+        for ( IndexUpdater populator : allUpdaters )
+        {
+            if ( populator != correctPopulator )
+            {
+                verify( populator, times( 0 ) ).process( update );
+            }
+        }
     }
 
-    private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value before,
+    private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater correctPopulator, Value before,
             Value after ) throws IndexEntryConflictException, IOException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.change( before, after );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        verify( wrongPopulator, times( 0 ) ).process( update );
+        for ( IndexUpdater populator : allUpdaters )
+        {
+            if ( populator != correctPopulator )
+            {
+                verify( populator, times( 0 ) ).process( update );
+            }
+        }
     }
 
     private void verifyChangeWithCorrectUpdaterMixed( IndexUpdater expectRemoveFrom, IndexUpdater expectAddTo, Value[] beforeValues,
@@ -241,6 +329,7 @@ public class FusionIndexUpdaterTest
 
         // then
         verify( nativeUpdater, times( 1 ) ).close();
+        verify( spatialUpdater, times( 1 ) ).close();
         verify( luceneUpdater, times( 1 ) ).close();
     }
 
@@ -257,20 +346,32 @@ public class FusionIndexUpdaterTest
     }
 
     @Test
+    public void closeMustThrowIfSpatialThrow() throws Exception
+    {
+        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( spatialUpdater, fusionIndexUpdater );
+    }
+
+    @Test
     public void closeMustCloseNativeIfLuceneThrow() throws Exception
     {
-        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( luceneUpdater, nativeUpdater, fusionIndexUpdater );
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( luceneUpdater, fusionIndexUpdater, nativeUpdater, spatialUpdater );
+    }
+
+    @Test
+    public void closeMustCloseLuceneIfSpatialThrow() throws Exception
+    {
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( spatialUpdater, fusionIndexUpdater, luceneUpdater, nativeUpdater );
     }
 
     @Test
     public void closeMustCloseLuceneIfNativeThrow() throws Exception
     {
-        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( nativeUpdater, luceneUpdater, fusionIndexUpdater );
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( nativeUpdater, fusionIndexUpdater, luceneUpdater, spatialUpdater );
     }
 
     @Test
     public void closeMustThrowIfBothThrow() throws Exception
     {
-        FusionIndexTestHelp.verifyFusionCloseThrowIfBothThrow( nativeUpdater, luceneUpdater, fusionIndexUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow( fusionIndexUpdater, nativeUpdater, luceneUpdater );
     }
 }

@@ -96,6 +96,11 @@ public final class Values
         return value instanceof ArrayValue;
     }
 
+    public static boolean isGeometryValue( Value value )
+    {
+        return value instanceof PointValue;
+    }
+
     public static double coerceToDouble( Value value )
     {
         if ( value instanceof IntegralValue )
@@ -291,6 +296,20 @@ public final class Values
         return new PointValue( crs( point.getCRS() ), coords );
     }
 
+    public static PointValue minPointValue( PointValue reference )
+    {
+        double[] coordinates = new double[reference.coordinate().length];
+        Arrays.fill( coordinates, Double.NEGATIVE_INFINITY );
+        return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
+    }
+
+    public static PointValue maxPointValue( PointValue reference )
+    {
+        double[] coordinates = new double[reference.coordinate().length];
+        Arrays.fill( coordinates, Double.POSITIVE_INFINITY);
+        return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
+    }
+
     public static PointArray pointArray( Point[] points )
     {
         PointValue[] values = new PointValue[points.length];
@@ -298,7 +317,22 @@ public final class Values
         {
             values[i] = Values.point( points[i] );
         }
-        return new PointArray.Direct( values );
+        return pointArray( values );
+    }
+
+    public static PointArray pointArray( Value[] maybePoints )
+    {
+        PointValue[] values = new PointValue[maybePoints.length];
+        for ( int i = 0; i < maybePoints.length; i++ )
+        {
+            Value maybePoint = maybePoints[i];
+            if ( !(maybePoint instanceof PointValue) )
+            {
+                throw new IllegalArgumentException( format( "[%s:%s] is not a supported point value", maybePoint, maybePoint.getClass().getName() ) );
+            }
+            values[i] = Values.point( (PointValue) maybePoint );
+        }
+        return pointArray( values );
     }
 
     public static PointArray pointArray( PointValue[] points )

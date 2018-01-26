@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Queue;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -29,6 +27,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -39,18 +38,21 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class FusionIndexReader implements IndexReader
 {
     private final IndexReader nativeReader;
+    private final IndexReader spatialReader;
     private final IndexReader luceneReader;
     private final Selector selector;
     private final IndexDescriptor descriptor;
 
-    FusionIndexReader( IndexReader nativeReader, IndexReader luceneReader, Selector selector,
+    FusionIndexReader( IndexReader nativeReader, IndexReader spatialReader, IndexReader luceneReader, Selector selector,
             IndexDescriptor descriptor )
     {
         this.nativeReader = nativeReader;
+        this.spatialReader = spatialReader;
         this.luceneReader = luceneReader;
         this.selector = selector;
         this.descriptor = descriptor;
@@ -59,26 +61,19 @@ class FusionIndexReader implements IndexReader
     @Override
     public void close()
     {
-        try
-        {
-            nativeReader.close();
-        }
-        finally
-        {
-            luceneReader.close();
-        }
+        forAll( reader -> ((IndexReader) reader).close(), nativeReader, spatialReader, luceneReader );
     }
 
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        return selector.select( nativeReader, luceneReader, propertyValues ).countIndexedNodes( nodeId, propertyValues );
+        return selector.select( nativeReader, spatialReader, luceneReader, propertyValues ).countIndexedNodes( nodeId, propertyValues );
     }
 
     @Override
     public IndexSampler createSampler()
     {
-        return new FusionIndexSampler( nativeReader.createSampler(), luceneReader.createSampler() );
+        return new FusionIndexSampler( nativeReader.createSampler(), spatialReader.createSampler(), luceneReader.createSampler() );
     }
 
     @Override
@@ -92,7 +87,7 @@ class FusionIndexReader implements IndexReader
         if ( predicates[0] instanceof ExactPredicate )
         {
             ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
-            return selector.select( nativeReader, luceneReader, exactPredicate.value() ).query( predicates );
+            return selector.select( nativeReader, spatialReader, luceneReader, exactPredicate.value() ).query( predicates );
         }
 
         if ( predicates[0] instanceof NumberRangePredicate )
@@ -100,12 +95,18 @@ class FusionIndexReader implements IndexReader
             return nativeReader.query( predicates[0] );
         }
 
+        if ( predicates[0] instanceof GeometryRangePredicate )
+        {
+            return spatialReader.query( predicates[0] );
+        }
+
         // todo: There will be no ordering of the node ids here. Is this a problem?
         if ( predicates[0] instanceof ExistsPredicate )
         {
             PrimitiveLongResourceIterator nativeResult = nativeReader.query( predicates[0] );
+            PrimitiveLongResourceIterator spatialResult = spatialReader.query( predicates[0] );
             PrimitiveLongResourceIterator luceneResult = luceneReader.query( predicates[0] );
-            return PrimitiveLongResourceCollections.concat( nativeResult, luceneResult );
+            return PrimitiveLongResourceCollections.concat( nativeResult, spatialResult, luceneResult );
         }
 
         return luceneReader.query( predicates );
@@ -124,13 +125,19 @@ class FusionIndexReader implements IndexReader
         if ( predicates[0] instanceof ExactPredicate )
         {
             ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
-            selector.select( nativeReader, luceneReader, exactPredicate.value() ).query( cursor, indexOrder, predicates );
+            selector.select( nativeReader, spatialReader, luceneReader, exactPredicate.value() ).query( cursor, indexOrder, predicates );
             return;
         }
 
         if ( predicates[0] instanceof NumberRangePredicate )
         {
             nativeReader.query( cursor, indexOrder, predicates[0] );
+            return;
+        }
+
+        if ( predicates[0] instanceof GeometryRangePredicate )
+        {
+            spatialReader.query( cursor, indexOrder, predicates[0] );
             return;
         }
 
@@ -147,6 +154,7 @@ class FusionIndexReader implements IndexReader
                     descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
             nativeReader.query( multiProgressor, indexOrder, predicates[0] );
+            spatialReader.query( multiProgressor, indexOrder, predicates[0] );
             luceneReader.query( multiProgressor, indexOrder, predicates[0] );
             return;
         }
@@ -168,78 +176,9 @@ class FusionIndexReader implements IndexReader
             Value value = ((ExactPredicate) predicate).value();
             return selector.select(
                     nativeReader.hasFullNumberPrecision( predicates ),
+                    spatialReader.hasFullNumberPrecision( predicates ),
                     luceneReader.hasFullNumberPrecision( predicates ), value );
         }
         return predicates[0] instanceof NumberRangePredicate && nativeReader.hasFullNumberPrecision( predicates );
-    }
-
-    /**
-     * Combine multiple progressor to act like one single logical progressor seen from clients perspective.
-     */
-    private class BridgingIndexProgressor implements IndexProgressor.NodeValueClient, IndexProgressor
-    {
-        private final NodeValueClient client;
-        private final int[] keys;
-        private final Queue<IndexProgressor> progressors;
-        private IndexProgressor current;
-
-        BridgingIndexProgressor( NodeValueClient client, int[] keys )
-        {
-            this.client = client;
-            this.keys = keys;
-            progressors = new ArrayDeque<>();
-        }
-
-        @Override
-        public boolean next()
-        {
-            if ( current == null )
-            {
-                current = progressors.poll();
-            }
-            while ( current != null )
-            {
-                if ( current.next() )
-                {
-                    return true;
-                }
-                else
-                {
-                    current.close();
-                    current = progressors.poll();
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public void close()
-        {
-            progressors.forEach( IndexProgressor::close );
-        }
-
-        @Override
-        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
-        {
-            assertKeysAlign( descriptor.schema().getPropertyIds() );
-            progressors.add( progressor );
-        }
-
-        private void assertKeysAlign( int[] keys )
-        {
-            for ( int i = 0; i < this.keys.length; i++ )
-            {
-                if ( this.keys[i] != keys[i] )
-                {
-                    throw new UnsupportedOperationException( "Can not chain multiple progressors with different key set." );
-                }
-            }
-        }
-
-        @Override
-        public boolean acceptNode( long reference, Value[] values )
-        {
-            return client.acceptNode( reference, values );
-        }
     }
 }

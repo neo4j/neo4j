@@ -35,6 +35,8 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -68,53 +70,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
     {
     }
 
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )
-    {
-        double fractionDuplicates = fractionDuplicates();
-        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
-        {
-            private final Set<Double> uniqueCompareValues = new HashSet<>();
-            private final List<Value> uniqueValues = new ArrayList<>();
-            private long currentEntityId;
-
-            @Override
-            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
-            {
-                Value value;
-                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                        random.nextFloat() < fractionDuplicates )
-                {
-                    value = existingNonUniqueValue( random );
-                }
-                else
-                {
-                    value = newUniqueValue( random );
-                }
-
-                return add( currentEntityId++, value );
-            }
-
-            private Value newUniqueValue( RandomRule randomRule )
-            {
-                Number value;
-                Double compareValue;
-                do
-                {
-                    value = randomRule.numberPropertyValue();
-                    compareValue = value.doubleValue();
-                }
-                while ( !uniqueCompareValues.add( compareValue ) );
-                Value storableValue = asValue( value );
-                uniqueValues.add( storableValue );
-                return storableValue;
-            }
-
-            private Value existingNonUniqueValue( RandomRule randomRule )
-            {
-                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
-            }
-        };
-    }
+    abstract Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random );
 
     Value[] extractValuesFromUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
@@ -140,7 +96,12 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 
-    private IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Number[] values )
+    IndexEntryUpdate<IndexDescriptor>[] someSpatialUpdatesWithDuplicateValues()
+    {
+        return generateAddUpdatesFor( ArrayUtils.addAll( SOME_POINTS, SOME_POINTS ) );
+    }
+
+    private IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Object[] values )
     {
         @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] indexEntryUpdates = new IndexEntryUpdate[values.length];
@@ -150,6 +111,14 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         }
         return indexEntryUpdates;
     }
+
+    private static final PointValue[] SOME_POINTS = new PointValue[]
+            {
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.5, 56.8 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, -38.5, 36.8 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 30.0, -40.0 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, -50, -25 )
+            };
 
     private static final Number[] ALL_EXTREME_VALUES = new Number[]
             {

@@ -44,11 +44,11 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         implements IndexReader
 {
     private final GBPTree<KEY,VALUE> tree;
-    private final Layout<KEY,VALUE> layout;
+    final Layout<KEY,VALUE> layout;
     private final IndexSamplingConfig samplingConfig;
 
-    private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
-    private final IndexDescriptor descriptor;
+    protected final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
+    protected final IndexDescriptor descriptor;
 
     NativeSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig,
@@ -134,7 +134,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
 
     abstract void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
 
-    private void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
@@ -143,8 +143,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         }
         try
         {
-            RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
-            openSeekers.add( seeker );
+            RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
             IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client, openSeekers );
             client.initialize( descriptor, hitProgressor, query );
         }
@@ -152,6 +151,13 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    RawCursor<Hit<KEY,VALUE>,IOException> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo ) throws IOException
+    {
+        RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
+        openSeekers.add( seeker );
+        return seeker;
     }
 
     private void ensureOpenSeekersClosed()

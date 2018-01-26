@@ -46,13 +46,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfBothThrow;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow;
 
 public class FusionIndexAccessorTest
 {
     private IndexAccessor nativeAccessor;
+    private IndexAccessor spatialAccessor;
     private IndexAccessor luceneAccessor;
     private FusionIndexAccessor fusionIndexAccessor;
     private final long indexId = 10;
@@ -62,9 +63,10 @@ public class FusionIndexAccessorTest
     public void setup()
     {
         nativeAccessor = mock( IndexAccessor.class );
+        spatialAccessor = mock( IndexAccessor.class );
         luceneAccessor = mock( IndexAccessor.class );
-        fusionIndexAccessor = new FusionIndexAccessor( nativeAccessor, luceneAccessor, new NativeSelector(), indexId, mock(
-                IndexDescriptor.class ), dropAction );
+        fusionIndexAccessor = new FusionIndexAccessor( nativeAccessor, spatialAccessor, luceneAccessor,
+                new NativeSelector(), indexId, mock( IndexDescriptor.class ), dropAction );
     }
 
     /* drop */
@@ -77,6 +79,7 @@ public class FusionIndexAccessorTest
         fusionIndexAccessor.drop();
         // then
         verify( nativeAccessor, times( 1 ) ).drop();
+        verify( spatialAccessor, times( 1 ) ).drop();
         verify( luceneAccessor, times( 1 ) ).drop();
         verify( dropAction ).drop( indexId );
     }
@@ -86,6 +89,13 @@ public class FusionIndexAccessorTest
     {
         // when
         verifyFailOnSingleDropFailure( nativeAccessor, fusionIndexAccessor );
+    }
+
+    @Test
+    public void dropMustThrowIfDropSpatialFail() throws Exception
+    {
+        // when
+        verifyFailOnSingleDropFailure( spatialAccessor, fusionIndexAccessor );
     }
 
     @Test
@@ -116,8 +126,10 @@ public class FusionIndexAccessorTest
     {
         // given
         IOException nativeFailure = new IOException( "native" );
+        IOException spatialFailure = new IOException( "spatial" );
         IOException luceneFailure = new IOException( "lucene" );
         doThrow( nativeFailure ).when( nativeAccessor ).drop();
+        doThrow( spatialFailure ).when( spatialAccessor ).drop();
         doThrow( luceneFailure ).when( luceneAccessor ).drop();
 
         try
@@ -129,7 +141,7 @@ public class FusionIndexAccessorTest
         catch ( IOException e )
         {
             // then
-            assertThat( e, anyOf( sameInstance( nativeFailure ), sameInstance( luceneFailure ) ) );
+            assertThat( e, anyOf( sameInstance( nativeFailure ), sameInstance( spatialFailure ), sameInstance( luceneFailure ) ) );
         }
     }
 
@@ -144,6 +156,7 @@ public class FusionIndexAccessorTest
 
         // then
         verify( nativeAccessor, times( 1 ) ).close();
+        verify( spatialAccessor, times( 1 ) ).close();
         verify( luceneAccessor, times( 1 ) ).close();
     }
 
@@ -154,27 +167,39 @@ public class FusionIndexAccessorTest
     }
 
     @Test
+    public void closeMustThrowIfSpatialThrow() throws Exception
+    {
+        verifyFusionCloseThrowOnSingleCloseThrow( spatialAccessor, fusionIndexAccessor );
+    }
+
+    @Test
     public void closeMustThrowIfNativeThrow() throws Exception
     {
         verifyFusionCloseThrowOnSingleCloseThrow( nativeAccessor, fusionIndexAccessor );
     }
 
     @Test
-    public void closeMustCloseNativeIfLuceneThrow() throws Exception
+    public void closeMustCloseOthersIfLuceneThrow() throws Exception
     {
-        verifyOtherIsClosedOnSingleThrow( luceneAccessor, nativeAccessor, fusionIndexAccessor );
+        verifyOtherIsClosedOnSingleThrow( luceneAccessor, fusionIndexAccessor, nativeAccessor, spatialAccessor );
     }
 
     @Test
-    public void closeMustCloseLuceneIfNativeThrow() throws Exception
+    public void closeMustCloseOthersIfSpatialThrow() throws Exception
     {
-        verifyOtherIsClosedOnSingleThrow( nativeAccessor, luceneAccessor, fusionIndexAccessor );
+        verifyOtherIsClosedOnSingleThrow( spatialAccessor, fusionIndexAccessor, nativeAccessor, luceneAccessor );
     }
 
     @Test
-    public void closeMustThrowIfBothFail() throws Exception
+    public void closeMustCloseOthersIfNativeThrow() throws Exception
     {
-        verifyFusionCloseThrowIfBothThrow( nativeAccessor, luceneAccessor, fusionIndexAccessor );
+        verifyOtherIsClosedOnSingleThrow( nativeAccessor, fusionIndexAccessor, luceneAccessor, spatialAccessor );
+    }
+
+    @Test
+    public void closeMustThrowIfAllFail() throws Exception
+    {
+        verifyFusionCloseThrowIfAllThrow( fusionIndexAccessor, nativeAccessor, spatialAccessor, luceneAccessor );
     }
 
     // newAllEntriesReader
@@ -249,6 +274,7 @@ public class FusionIndexAccessorTest
     {
         // given
         BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
         BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
 
         // when
@@ -256,6 +282,7 @@ public class FusionIndexAccessorTest
 
         // then
         verify( nativeAllEntriesReader, times( 1 ) ).close();
+        verify( spatialAllEntriesReader, times( 1 ) ).close();
         verify( luceneAllEntriesReader, times( 1 ) ).close();
     }
 
@@ -264,11 +291,25 @@ public class FusionIndexAccessorTest
     {
         // given
         BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
         BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
 
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        verifyOtherIsClosedOnSingleThrow( luceneAllEntriesReader, nativeAllEntriesReader, fusionAllEntriesReader );
+        verifyOtherIsClosedOnSingleThrow( luceneAllEntriesReader, fusionAllEntriesReader, nativeAllEntriesReader, spatialAllEntriesReader );
+    }
+
+    @Test
+    public void allEntriesReaderMustCloseLuceneIfSpatialThrow() throws Exception
+    {
+        // given
+        BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
+        BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+        verifyOtherIsClosedOnSingleThrow( spatialAllEntriesReader, fusionAllEntriesReader, luceneAllEntriesReader, nativeAllEntriesReader );
     }
 
     @Test
@@ -276,11 +317,12 @@ public class FusionIndexAccessorTest
     {
         // given
         BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
         BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
 
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        verifyOtherIsClosedOnSingleThrow( nativeAllEntriesReader, luceneAllEntriesReader, fusionAllEntriesReader );
+        verifyOtherIsClosedOnSingleThrow( nativeAllEntriesReader, fusionAllEntriesReader, luceneAllEntriesReader, spatialAllEntriesReader );
     }
 
     @Test
@@ -288,6 +330,7 @@ public class FusionIndexAccessorTest
     {
         // given
         mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
         BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
 
         // then
@@ -300,6 +343,7 @@ public class FusionIndexAccessorTest
     {
         // given
         BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
         mockSingleAllEntriesReader( luceneAccessor, new long[0] );
 
         // then
@@ -309,10 +353,38 @@ public class FusionIndexAccessorTest
     }
 
     @Test
+    public void allEntriesReaderMustThrowIfSpatialThrow() throws Exception
+    {
+        // given
+        mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
+        mockSingleAllEntriesReader( luceneAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( spatialAllEntriesReader, fusionAllEntriesReader );
+
+    }
+
+    @Test
     public void allEntriesReaderMustReportUnknownMaxCountIfNativeReportUnknownMaxCount() throws Exception
     {
         // given
         mockSingleAllEntriesReaderWithUnknownMaxCount( nativeAccessor, new long[0] );
+        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
+        mockSingleAllEntriesReader( luceneAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+        assertThat( fusionAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
+    }
+
+    @Test
+    public void allEntriesReaderMustReportUnknownMaxCountIfSpatialReportUnknownMaxCount() throws Exception
+    {
+        // given
+        mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        mockSingleAllEntriesReaderWithUnknownMaxCount( spatialAccessor, new long[0] );
         mockSingleAllEntriesReader( luceneAccessor, new long[0] );
 
         // then
@@ -324,8 +396,9 @@ public class FusionIndexAccessorTest
     public void allEntriesReaderMustReportUnknownMaxCountIfLuceneReportUnknownMaxCount() throws Exception
     {
         // given
-        mockSingleAllEntriesReaderWithUnknownMaxCount( luceneAccessor, new long[0] );
         mockSingleAllEntriesReader( nativeAccessor, new long[0] );
+        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
+        mockSingleAllEntriesReaderWithUnknownMaxCount( luceneAccessor, new long[0] );
 
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
@@ -336,14 +409,15 @@ public class FusionIndexAccessorTest
     public void allEntriesReaderMustReportFusionMaxCountOfNativeAndLucene() throws Exception
     {
         mockSingleAllEntriesReader( nativeAccessor, new long[]{1, 2} );
-        mockSingleAllEntriesReader( luceneAccessor, new long[]{3, 4} );
+        mockSingleAllEntriesReader( spatialAccessor, new long[]{3, 4} );
+        mockSingleAllEntriesReader( luceneAccessor, new long[]{5, 6} );
 
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        assertThat( fusionAllEntriesReader.maxCount(), is( 4L ) );
+        assertThat( fusionAllEntriesReader.maxCount(), is( 6L ) );
     }
 
-    private void assertResultContainsAll( Set<Long> result, long[] nativeEntries )
+    static void assertResultContainsAll( Set<Long> result, long[] nativeEntries )
     {
         for ( long nativeEntry : nativeEntries )
         {
@@ -351,41 +425,42 @@ public class FusionIndexAccessorTest
         }
     }
 
-    private void mockAllEntriesReaders( long[] nativeEntries, long[] luceneEntries )
-    {
-        mockSingleAllEntriesReader( nativeAccessor, nativeEntries );
-        mockSingleAllEntriesReader( luceneAccessor, luceneEntries );
-    }
-
-    private BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, long[] entries )
+    static BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, long[] entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReader( entries );
         when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
-    private BoundedIterable<Long> mockedAllEntriesReader( long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReader( long... entries )
     {
         return mockedAllEntriesReader( true, entries );
     }
 
-    private BoundedIterable<Long> mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, long[] entries )
+    static BoundedIterable<Long> mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, long[] entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
         when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
-    private BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( long... entries )
     {
         return mockedAllEntriesReader( false, entries );
     }
 
-    private BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, long... entries )
     {
         BoundedIterable<Long> mockedAllEntriesReader = mock( BoundedIterable.class );
         when( mockedAllEntriesReader.maxCount() ).thenReturn( knownMaxCount ? entries.length : BoundedIterable.UNKNOWN_MAX_COUNT );
         when( mockedAllEntriesReader.iterator() ).thenReturn( Iterators.asIterator(entries ) );
         return mockedAllEntriesReader;
+    }
+
+    private void mockAllEntriesReaders( long[] nativeEntries, long[] luceneEntries )
+    {
+        mockSingleAllEntriesReader( nativeAccessor, nativeEntries );
+        mockSingleAllEntriesReader( spatialAccessor, nativeEntries );
+        mockSingleAllEntriesReader( luceneAccessor, luceneEntries );
     }
 }
