@@ -75,29 +75,14 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
       <artifactId>scalautils_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <!-- neo4j -->
@@ -362,18 +347,6 @@
     <dependency>
         <groupId>com.novus</groupId>
         <artifactId>salat-core_2.11</artifactId>
-        <version>1.9.9</version>
-        <exclusions>
-            <exclusion>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-library</artifactId>
-            </exclusion>
-            <exclusion>
-                <artifactId>scalap</artifactId>
-                <groupId>org.scala-lang</groupId>
-            </exclusion>
-        </exclusions>
-        <scope>test</scope>
     </dependency>
 
     <dependency>

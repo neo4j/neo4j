@@ -286,9 +286,6 @@ BSD License
   Cucumber-JVM Repackaged Dependencies
   ParaNamer Core
   Scala Compiler
-  scala-parser-combinators
-  scala-xml
-  Scalap
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
