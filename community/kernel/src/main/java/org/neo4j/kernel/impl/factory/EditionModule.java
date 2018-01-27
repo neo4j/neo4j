@@ -81,6 +81,7 @@ public abstract class EditionModule
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
+        procedures.registerBuiltInFunctions( org.neo4j.kernel.builtinprocs.BuiltInFunctions.class );
 
         registerEditionSpecificProcedures( procedures );
     }
