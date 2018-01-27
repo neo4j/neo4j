@@ -35,6 +35,7 @@
     <jetty.version>9.2.22.v20170606</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <git.commit>unknown-commit</git.commit>
+    <checkstyle.strict>true</checkstyle.strict>
   </properties>
 
   <modules>
@@ -103,8 +104,8 @@
           <configLocation>build/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <logViolationsToConsole>true</logViolationsToConsole>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
+          <failsOnError>${checkstyle.strict}</failsOnError>
+          <failOnViolation>${checkstyle.strict}</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <executions>
