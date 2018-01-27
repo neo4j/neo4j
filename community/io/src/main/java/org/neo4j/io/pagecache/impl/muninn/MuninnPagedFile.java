@@ -654,6 +654,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         int chunkId = computeChunkId( filePageId );
         long chunkOffset = computeChunkOffset( filePageId );
         int[] chunk = translationTable[chunkId];
+
+        int mappedPageId = UnsafeUtil.getIntVolatile( chunk, chunkOffset );
+        long pageRef = deref( mappedPageId );
+        setHighestEvictedTransactionId( getAndResetLastModifiedTransactionId( pageRef ) );
         UnsafeUtil.putIntVolatile( chunk, chunkOffset, UNMAPPED_TTE );
     }
 
@@ -712,10 +716,5 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     {
         int index = (int) (filePageId & translationTableChunkSizeMask);
         return UnsafeUtil.arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );
-    }
-
-    public void setLastModifiedTxId( long l )
-    {
-
     }
 }

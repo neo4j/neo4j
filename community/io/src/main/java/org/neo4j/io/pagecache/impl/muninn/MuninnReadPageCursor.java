@@ -65,19 +65,6 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         return true;
     }
 
-//    private void verifyContext()
-//    {
-//        if ( versionContext.lastClosedTransactionId() == Long.MAX_VALUE )
-//        {
-//            return;
-//        }
-//        if ( page.getLastModifiedTxId() > versionContext.lastClosedTransactionId() ||
-//             pagedFile.getHighestEvictedTransactionId() > versionContext.lastClosedTransactionId() )
-//        {
-//            versionContext.markAsDirty();
-//        }
-//    }
-
     @Override
     protected boolean tryLockPage( long pageRef )
     {

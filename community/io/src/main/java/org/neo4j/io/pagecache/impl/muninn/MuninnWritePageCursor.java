@@ -126,7 +126,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // be closed and the page lock will be released.
         assertPagedFileStillMappedAndGetIdOfLastPage();
         pagedFile.incrementUsage( pageRef );
-        pagedFile.setLastModifiedTxId( versionContextSupplier.getVersionContext().committingTransactionId() );
+        pagedFile.setLastModifiedTxId( pageRef, versionContextSupplier.getVersionContext().committingTransactionId() );
     }
 
     @Override

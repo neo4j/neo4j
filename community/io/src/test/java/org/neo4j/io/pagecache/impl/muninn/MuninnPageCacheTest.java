@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -238,7 +239,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             assertTrue( cursor.next() );
-//            assertEquals( 7, ((MuninnPageCursor) cursor).page.getLastModifiedTxId() );
+            MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
+            assertEquals( 7, pageCursor.pagedFile.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
             assertEquals( 1, cursor.getLong() );
         }
     }
@@ -271,7 +273,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             assertTrue( cursor.next() );
-//            assertEquals( 7, ((MuninnPageCursor) cursor).page.getLastModifiedTxId() );
+            MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
+            assertEquals( 7, pageCursor.pagedFile.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
             assertEquals( 1, cursor.getLong() );
         }
     }
@@ -307,7 +310,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             assertTrue( cursor.next() );
-//            assertEquals( 12, ((MuninnPageCursor) cursor).page.getLastModifiedTxId() );
+            MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
+            assertEquals( 12, pageCursor.pagedFile.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
             assertEquals( 3, cursor.getLong() );
         }
     }
@@ -327,7 +331,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next( 0 ) );
             assertFalse( cursorContext.isDirty() );
 
-//            ((MuninnPageCursor) cursor).page.setLastModifiedTxId( 17 );
+            MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
+            pageCursor.pagedFile.setLastModifiedTxId( ((MuninnPageCursor) cursor).pinnedPageRef, 17 );
 
             assertTrue( cursor.next( 0 ) );
             assertTrue( cursorContext.isDirty() );
@@ -408,7 +413,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             cursor.putLong( 4 );
         }
-        pageCache.evictPages( 1, 1, EvictionRunEvent.NULL );
+
+        pageCache.pages.tryEvict( pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL ),
+                EvictionRunEvent.NULL );
 
         cursorContext.initRead();
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
@@ -441,7 +448,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             cursor.putLong( 4 );
         }
-        pageCache.evictPages( 1, 1, EvictionRunEvent.NULL );
+
+        pageCache.pages.tryEvict( pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL ),
+                EvictionRunEvent.NULL );
 
         cursorContext.initRead();
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
