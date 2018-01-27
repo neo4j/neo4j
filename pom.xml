@@ -36,6 +36,7 @@
     <findbugs.version>3.0.1</findbugs.version>
     <clirr.comparisonVersion>3.0.1</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
+    <checkstyle.strict>true</checkstyle.strict>
   </properties>
 
   <modules>
@@ -104,8 +105,8 @@
           <configLocation>build/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <logViolationsToConsole>true</logViolationsToConsole>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
+          <failsOnError>${checkstyle.strict}</failsOnError>
+          <failOnViolation>${checkstyle.strict}</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <dependencies>
