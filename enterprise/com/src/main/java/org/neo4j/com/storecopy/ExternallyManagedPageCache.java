@@ -22,6 +22,7 @@ package org.neo4j.com.storecopy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -74,6 +75,12 @@ public class ExternallyManagedPageCache implements PageCache
     public Optional<PagedFile> getExistingMapping( File file ) throws IOException
     {
         return delegate.getExistingMapping( file );
+    }
+
+    @Override
+    public List<PagedFile> listExistingMappings() throws IOException
+    {
+        return delegate.listExistingMappings();
     }
 
     @Override

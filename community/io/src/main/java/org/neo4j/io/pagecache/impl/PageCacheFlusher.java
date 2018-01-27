@@ -21,11 +21,14 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
@@ -36,41 +39,50 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 public class PageCacheFlusher extends Thread implements IOLimiter
 {
     private final PageCache pageCache;
-    private final BinaryLatch halt = new BinaryLatch();
+    private final AtomicReference<Throwable> errorRef;
     private volatile boolean halted;
-    private volatile Throwable error;
 
     public PageCacheFlusher( PageCache pageCache )
     {
         Objects.requireNonNull( pageCache );
         this.pageCache = pageCache;
+        errorRef = new AtomicReference<>();
     }
 
     @Override
-    public void run()
+    public final void run()
     {
+        while ( !halted )
+        {
+            try
+            {
+                flush();
+            }
+            catch ( HaltFlushException ignore )
+            {
+                break; // This exception means we've been asked to stop flushing.
+            }
+            catch ( Throwable e )
+            {
+                errorRef.set( e );
+                break;
+            }
+        }
+    }
+
+    private void flush() throws IOException
+    {
+        List<PagedFile> files = pageCache.listExistingMappings();
         try
         {
-            while ( !halted )
+            for ( PagedFile file : files )
             {
-                try
-                {
-                    pageCache.flushAndForce( this );
-                }
-                catch ( HaltFlushException ignore )
-                {
-                    break; // This exception means we've been asked to stop flushing.
-                }
-                catch ( Throwable e )
-                {
-                    error = e;
-                    break;
-                }
+                file.flushAndForce( this );
             }
         }
         finally
         {
-            halt.release();
+            IOUtils.closeAll( files );
         }
     }
 
@@ -82,7 +94,17 @@ public class PageCacheFlusher extends Thread implements IOLimiter
     public void halt()
     {
         halted = true;
-        halt.await();
+        try
+        {
+            join();
+        }
+        catch ( InterruptedException e )
+        {
+            // We can't quite decide what to do with an interrupt here, and we don't know if it was aimed at us or not,
+            // so let's just pass it on.
+            Thread.currentThread().interrupt();
+        }
+        Throwable error = errorRef.getAndSet( null );
         if ( error != null )
         {
             throw launderedException( error );

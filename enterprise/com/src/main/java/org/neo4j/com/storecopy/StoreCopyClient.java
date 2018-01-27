@@ -183,22 +183,24 @@ public class StoreCopyClient
             // *moves via the PageCache*!
             // We have to move these files via the page cache, because that is the *only way* that we can communicate
             // with any block storage that might have been configured for this instance.
-            List<FileMoveAction> storeFileMoveActions = new ArrayList<>();
+            List<FileMoveAction> moves = new ArrayList<>();
             cleanDirectory( tempStore );
 
             // Request store files and transactions that will need recovery
             monitor.startReceivingStoreFiles();
-            try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
-                    new ToFileStoreWriter( tempStore, fs, monitor, pageCache, storeFileMoveActions ) ) ) )
+            try ( ToFileStoreWriter storeWriter = new ToFileStoreWriter( tempStore, fs, monitor, pageCache, moves ) )
             {
-                monitor.finishReceivingStoreFiles();
-                // Update highest archived log id
-                // Write transactions that happened during the copy to the currently active logical log
-                writeTransactionsToActiveLogFile( tempStore, response );
-            }
-            finally
-            {
-                requester.done();
+                try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator( storeWriter ) ) )
+                {
+                    monitor.finishReceivingStoreFiles();
+                    // Update highest archived log id
+                    // Write transactions that happened during the copy to the currently active logical log
+                    writeTransactionsToActiveLogFile( tempStore, response );
+                }
+                finally
+                {
+                    requester.done();
+                }
             }
 
             // This is a good place to check if the switch has been cancelled
@@ -215,7 +217,7 @@ public class StoreCopyClient
             // Note that the stream is lazy, so the file system traversal won't happen until *after* the store files
             // have been moved. Thus we ensure that we only attempt to move them once.
             Stream<FileMoveAction> moveActionStream = Stream.concat(
-                    storeFileMoveActions.stream(), traverseGenerateMoveActions( tempStore, tempStore ) );
+                    moves.stream(), traverseGenerateMoveActions( tempStore, tempStore ) );
             moveAfterCopy.move( moveActionStream, tempStore, storeDir );
         }
         finally
