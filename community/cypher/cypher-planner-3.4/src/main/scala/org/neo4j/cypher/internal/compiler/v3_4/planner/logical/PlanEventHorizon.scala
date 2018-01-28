@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{PatternExpressionSolver, aggregation, projection, sortSkipAndLimit}
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /*
@@ -31,28 +32,28 @@ away when going from a string query to a QueryGraph. The remaining WITHs are the
 aggregation and UNWIND.
  */
 case object PlanEventHorizon
-  extends ((PlannerQuery, LogicalPlan, LogicalPlanningContext) => LogicalPlan) {
+  extends ((PlannerQuery, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan) {
 
-  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val selectedPlan = context.config.applySelections(plan, query.queryGraph, context)
+  override def apply(query: PlannerQuery, plan: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+    val selectedPlan = context.config.applySelections(plan, query.queryGraph, context, solveds, cardinalities)
 
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, context)
-        sortSkipAndLimit(aggregationPlan, query, context)
+        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, context, solveds, cardinalities)
+        sortSkipAndLimit(aggregationPlan, query, context, solveds, cardinalities)
 
       case queryProjection: RegularQueryProjection =>
-        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query, context)
+        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query, context, solveds, cardinalities)
         if (queryProjection.projections.isEmpty && query.tail.isEmpty)
           context.logicalPlanProducer.planEmptyProjection(plan, context)
         else
-          projection(sortedAndLimited, queryProjection.projections, context)
+          projection(sortedAndLimited, queryProjection.projections, context, solveds, cardinalities)
 
       case queryProjection: DistinctQueryProjection =>
         val projections = queryProjection.projections
-        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, projections, context)
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, projections, context, solveds, cardinalities)
         val distinctPlan = context.logicalPlanProducer.planDistinct(inner, projectionsMap, projections, context)
-        sortSkipAndLimit(distinctPlan, query, context)
+        sortSkipAndLimit(distinctPlan, query, context, solveds, cardinalities)
 
       case UnwindProjection(variable, expression) =>
         context.logicalPlanProducer.planUnwind(plan, variable, expression, context)

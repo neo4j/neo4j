@@ -28,7 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 import static java.lang.Integer.min;
 import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Monitors {@link StageExecution executions} and makes changes as the execution goes:
@@ -51,7 +51,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
 
     public DynamicProcessorAssigner( Configuration config )
     {
-        super( 100, MILLISECONDS );
+        super( 1, SECONDS );
         this.config = config;
         this.availableProcessors = config.maxNumberOfProcessors();
     }

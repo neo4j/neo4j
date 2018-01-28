@@ -57,14 +57,16 @@ public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHand
 
     private final Log internalLog;
 
-    public BoltMessagingProtocolV1Handler( BoltChannel boltChannel, BoltWorker worker, TransportThrottleGroup throttleGroup, LogService logging )
+    public BoltMessagingProtocolV1Handler( BoltChannel boltChannel, Neo4jPack neo4jPack, BoltWorker worker,
+            TransportThrottleGroup throttleGroup, LogService logging )
     {
         this.chunkedOutput = new ChunkedOutput( boltChannel.rawChannel(), DEFAULT_OUTPUT_BUFFER_SIZE, throttleGroup );
         this.packer = new BoltResponseMessageWriter(
-                new Neo4jPack.Packer( chunkedOutput ), chunkedOutput, boltChannel.log() );
+                neo4jPack.newPacker( chunkedOutput ), chunkedOutput, boltChannel.log() );
         this.worker = worker;
         this.internalLog = logging.getInternalLog( getClass() );
         this.dechunker = new BoltV1Dechunker(
+                neo4jPack,
                 new BoltMessageRouter( internalLog, boltChannel.log(), worker, packer, this::onMessageDone ),
                 this::onMessageStarted );
     }

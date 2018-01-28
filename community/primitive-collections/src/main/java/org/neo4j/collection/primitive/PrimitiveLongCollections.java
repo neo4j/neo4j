@@ -47,67 +47,17 @@ public class PrimitiveLongCollections
 {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
+    private static final PrimitiveLongIterator EMPTY = new PrimitiveLongBaseIterator()
+    {
+        @Override
+        protected boolean fetchNext()
+        {
+            return false;
+        }
+    };
+
     private PrimitiveLongCollections()
     {
-    }
-
-    /**
-     * Base iterator for simpler implementations of {@link PrimitiveLongIterator}s.
-     */
-    public abstract static class PrimitiveLongBaseIterator implements PrimitiveLongIterator
-    {
-        private boolean hasNextDecided;
-        private boolean hasNext;
-        protected long next;
-
-        @Override
-        public boolean hasNext()
-        {
-            if ( !hasNextDecided )
-            {
-                hasNext = fetchNext();
-                hasNextDecided = true;
-            }
-            return hasNext;
-        }
-
-        @Override
-        public long next()
-        {
-            if ( !hasNext() )
-            {
-                throw new NoSuchElementException( "No more elements in " + this );
-            }
-            hasNextDecided = false;
-            return next;
-        }
-
-        /**
-         * Fetches the next item in this iterator. Returns whether or not a next item was found. If a next
-         * item was found, that value must have been set inside the implementation of this method
-         * using {@link #next(long)}.
-         */
-        protected abstract boolean fetchNext();
-
-        /**
-         * Called from inside an implementation of {@link #fetchNext()} if a next item was found.
-         * This method returns {@code true} so that it can be used in short-hand conditionals
-         * (TODO what are they called?), like:
-         * <pre>
-         * @Override
-         * protected boolean fetchNext()
-         * {
-         *     return source.hasNext() ? next( source.next() ) : false;
-         * }
-         * </pre>
-         * @param nextItem the next item found.
-         */
-        protected boolean next( long nextItem )
-        {
-            next = nextItem;
-            hasNext = true;
-            return true;
-        }
     }
 
     public static PrimitiveLongIterator iterator( final long... items )
@@ -202,73 +152,21 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static class PrimitiveLongConcatingIterator extends PrimitiveLongBaseIterator
-    {
-        private final Iterator<? extends PrimitiveLongIterator> iterators;
-        private PrimitiveLongIterator currentIterator;
-
-        public PrimitiveLongConcatingIterator( Iterator<? extends PrimitiveLongIterator> iterators )
-        {
-            this.iterators = iterators;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            if ( currentIterator == null || !currentIterator.hasNext() )
-            {
-                while ( iterators.hasNext() )
-                {
-                    currentIterator = iterators.next();
-                    if ( currentIterator.hasNext() )
-                    {
-                        break;
-                    }
-                }
-            }
-            return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
-        }
-
-        protected final PrimitiveLongIterator currentIterator()
-        {
-            return currentIterator;
-        }
-    }
-
-    // Interleave
-    public static class PrimitiveLongInterleavingIterator extends PrimitiveLongBaseIterator
-    {
-        private final Iterable<PrimitiveLongIterator> iterators;
-        private Iterator<PrimitiveLongIterator> currentRound;
-
-        public PrimitiveLongInterleavingIterator( Iterable<PrimitiveLongIterator> iterators )
-        {
-            this.iterators = iterators;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            if ( currentRound == null || !currentRound.hasNext() )
-            {
-                currentRound = iterators.iterator();
-            }
-            while ( currentRound.hasNext() )
-            {
-                PrimitiveLongIterator iterator = currentRound.next();
-                if ( iterator.hasNext() )
-                {
-                    return next( iterator.next() );
-                }
-            }
-            currentRound = null;
-            return false;
-        }
-    }
-
     public static PrimitiveLongIterator filter( PrimitiveLongIterator source, final LongPredicate filter )
     {
         return new PrimitiveLongFilteringIterator( source )
+        {
+            @Override
+            public boolean test( long item )
+            {
+                return filter.test( item );
+            }
+        };
+    }
+
+    public static PrimitiveLongResourceIterator filter( PrimitiveLongResourceIterator source, final LongPredicate filter )
+    {
+        return new PrimitiveLongResourceFilteringIterator( source )
         {
             @Override
             public boolean test( long item )
@@ -323,34 +221,6 @@ public class PrimitiveLongCollections
         };
     }
 
-    public abstract static class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
-            implements LongPredicate
-    {
-        private final PrimitiveLongIterator source;
-
-        public PrimitiveLongFilteringIterator( PrimitiveLongIterator source )
-        {
-            this.source = source;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            while ( source.hasNext() )
-            {
-                long testItem = source.next();
-                if ( test( testItem ) )
-                {
-                    return next( testItem );
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public abstract boolean test( long testItem );
-    }
-
     // Limitinglic
     public static PrimitiveLongIterator limit( final PrimitiveLongIterator source, final int maxItems )
     {
@@ -387,33 +257,6 @@ public class PrimitiveLongCollections
     public static PrimitiveLongIterator range( long start, long end, long stride )
     {
         return new PrimitiveLongRangeIterator( start, end, stride );
-    }
-
-    public static class PrimitiveLongRangeIterator extends PrimitiveLongBaseIterator
-    {
-        private long current;
-        private final long end;
-        private final long stride;
-
-        public PrimitiveLongRangeIterator( long start, long end, long stride )
-        {
-            this.current = start;
-            this.end = end;
-            this.stride = stride;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            try
-            {
-                return current <= end && next( current );
-            }
-            finally
-            {
-                current += stride;
-            }
-        }
     }
 
     public static PrimitiveLongIterator singleton( final long item )
@@ -610,21 +453,17 @@ public class PrimitiveLongCollections
         return true;
     }
 
-    public static PrimitiveLongSet asSet( PrimitiveLongIterator iterator )
+    public static PrimitiveLongSet asSet( Collection<Long> collection )
     {
-        PrimitiveLongSet set = Primitive.longSet();
-        while ( iterator.hasNext() )
+        PrimitiveLongSet set = Primitive.longSet( collection.size() );
+        for ( Long next : collection )
         {
-            long next = iterator.next();
-            if ( !set.add( next ) )
-            {
-                throw new IllegalStateException( "Duplicate " + next + " from " + iterator );
-            }
+            set.add( next );
         }
         return set;
     }
 
-    public static PrimitiveLongSet asSetAllowDuplicates( PrimitiveLongIterator iterator )
+    public static PrimitiveLongSet asSet( PrimitiveLongIterator iterator )
     {
         PrimitiveLongSet set = Primitive.longSet();
         while ( iterator.hasNext() )
@@ -634,6 +473,28 @@ public class PrimitiveLongCollections
         return set;
     }
 
+    public static PrimitiveLongSet asSet( PrimitiveLongSet set )
+    {
+        PrimitiveLongSet result = Primitive.longSet( set.size() );
+        PrimitiveLongIterator iterator = set.iterator();
+        while ( iterator.hasNext() )
+        {
+            result.add( iterator.next() );
+        }
+        return result;
+    }
+
+    public static <T> PrimitiveLongObjectMap<T> copy( PrimitiveLongObjectMap<T> original )
+    {
+        PrimitiveLongObjectMap<T> copy = Primitive.longObjectMap( original.size() );
+        original.visitEntries( ( key, value ) ->
+        {
+            copy.put( key, value );
+            return false;
+        } );
+        return copy;
+    }
+
     public static int count( PrimitiveLongIterator iterator )
     {
         int count = 0;
@@ -641,6 +502,18 @@ public class PrimitiveLongCollections
         {   // Just loop through this
         }
         return count;
+    }
+
+    public static boolean contains( long[] values, long candidate )
+    {
+        for ( int i = 0; i < values.length; i++ )
+        {
+            if ( values[i] == candidate )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static long[] asArray( PrimitiveLongIterator iterator )
@@ -682,15 +555,6 @@ public class PrimitiveLongCollections
         }
         return array;
     }
-
-    private static final PrimitiveLongIterator EMPTY = new PrimitiveLongBaseIterator()
-    {
-        @Override
-        protected boolean fetchNext()
-        {
-            return false;
-        }
-    };
 
     public static PrimitiveLongIterator emptyIterator()
     {
@@ -777,23 +641,6 @@ public class PrimitiveLongCollections
     }
 
     /**
-     * Adds all the items in {@code iterator} to {@code collection}.
-     * @param <C> the type of {@link Collection} to add to items to.
-     * @param iterator the {@link Iterator} to grab the items from.
-     * @param collection the {@link Collection} to add the items to.
-     * @return the {@code collection} which was passed in, now filled
-     * with the items from {@code iterator}.
-     */
-    public static <C extends Collection<Long>> C addToCollection( PrimitiveLongIterator iterator, C collection )
-    {
-        while ( iterator.hasNext() )
-        {
-            collection.add( iterator.next() );
-        }
-        return collection;
-    }
-
-    /**
      * Pulls all items from the {@code iterator} and puts them into a {@link List}, boxing each long.
      *
      * @param iterator {@link PrimitiveLongIterator} to pull values from.
@@ -871,12 +718,21 @@ public class PrimitiveLongCollections
     }
 
     /**
+     * Convert primitive set into a plain old java {@link Set}, boxing each long.
+     *
+     * @param set {@link PrimitiveLongSet} set of primitive values.
+     * @return a {@link Set} containing all items.
+     */
+    public static Set<Long> toSet( PrimitiveLongSet set )
+    {
+        return toSet( set.iterator() );
+    }
+
+    /**
      * Pulls all items from the {@code iterator} and puts them into a {@link Set}, boxing each long.
-     * Any duplicate value will throw {@link IllegalStateException}.
      *
      * @param iterator {@link PrimitiveLongIterator} to pull values from.
      * @return a {@link Set} containing all items.
-     * @throws IllegalStateException for the first encountered duplicate.
      */
     public static Set<Long> toSet( PrimitiveLongIterator iterator )
     {
@@ -923,5 +779,169 @@ public class PrimitiveLongCollections
             }
         }
         return unique < values.length ? Arrays.copyOf( values, unique ) : values;
+    }
+
+    /**
+     * Base iterator for simpler implementations of {@link PrimitiveLongIterator}s.
+     */
+    public abstract static class PrimitiveLongBaseIterator implements PrimitiveLongIterator
+    {
+        private boolean hasNextDecided;
+        private boolean hasNext;
+        protected long next;
+
+        @Override
+        public boolean hasNext()
+        {
+            if ( !hasNextDecided )
+            {
+                hasNext = fetchNext();
+                hasNextDecided = true;
+            }
+            return hasNext;
+        }
+
+        @Override
+        public long next()
+        {
+            if ( !hasNext() )
+            {
+                throw new NoSuchElementException( "No more elements in " + this );
+            }
+            hasNextDecided = false;
+            return next;
+        }
+
+        /**
+         * Fetches the next item in this iterator. Returns whether or not a next item was found. If a next
+         * item was found, that value must have been set inside the implementation of this method
+         * using {@link #next(long)}.
+         */
+        protected abstract boolean fetchNext();
+
+        /**
+         * Called from inside an implementation of {@link #fetchNext()} if a next item was found.
+         * This method returns {@code true} so that it can be used in short-hand conditionals
+         * (TODO what are they called?), like:
+         * <pre>
+         * protected boolean fetchNext()
+         * {
+         *     return source.hasNext() ? next( source.next() ) : false;
+         * }
+         * </pre>
+         * @param nextItem the next item found.
+         */
+        protected boolean next( long nextItem )
+        {
+            next = nextItem;
+            hasNext = true;
+            return true;
+        }
+    }
+
+    public static class PrimitiveLongConcatingIterator extends PrimitiveLongBaseIterator
+    {
+        private final Iterator<? extends PrimitiveLongIterator> iterators;
+        private PrimitiveLongIterator currentIterator;
+
+        public PrimitiveLongConcatingIterator( Iterator<? extends PrimitiveLongIterator> iterators )
+        {
+            this.iterators = iterators;
+        }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            if ( currentIterator == null || !currentIterator.hasNext() )
+            {
+                while ( iterators.hasNext() )
+                {
+                    currentIterator = iterators.next();
+                    if ( currentIterator.hasNext() )
+                    {
+                        break;
+                    }
+                }
+            }
+            return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
+        }
+
+        protected final PrimitiveLongIterator currentIterator()
+        {
+            return currentIterator;
+        }
+    }
+
+    public abstract static class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
+            implements LongPredicate
+    {
+        protected final PrimitiveLongIterator source;
+
+        PrimitiveLongFilteringIterator( PrimitiveLongIterator source )
+        {
+            this.source = source;
+        }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            while ( source.hasNext() )
+            {
+                long testItem = source.next();
+                if ( test( testItem ) )
+                {
+                    return next( testItem );
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public abstract boolean test( long testItem );
+    }
+
+    public abstract static class PrimitiveLongResourceFilteringIterator extends PrimitiveLongFilteringIterator
+            implements PrimitiveLongResourceIterator
+    {
+        PrimitiveLongResourceFilteringIterator( PrimitiveLongIterator source )
+        {
+            super( source );
+        }
+
+        @Override
+        public void close()
+        {
+            if ( source instanceof Resource )
+            {
+                ((Resource) source).close();
+            }
+        }
+    }
+
+    public static class PrimitiveLongRangeIterator extends PrimitiveLongBaseIterator
+    {
+        private long current;
+        private final long end;
+        private final long stride;
+
+        PrimitiveLongRangeIterator( long start, long end, long stride )
+        {
+            this.current = start;
+            this.end = end;
+            this.stride = stride;
+        }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            try
+            {
+                return current <= end && next( current );
+            }
+            finally
+            {
+                current += stride;
+            }
+        }
     }
 }

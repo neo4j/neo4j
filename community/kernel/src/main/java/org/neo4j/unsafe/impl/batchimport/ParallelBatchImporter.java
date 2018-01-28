@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
@@ -43,7 +44,7 @@ import static org.neo4j.unsafe.impl.batchimport.ImportLogic.instantiateNeoStores
  * Goes through multiple stages where each stage has one or more steps executing in parallel, passing
  * batches between these steps through each stage, i.e. passing batches downstream.
  */
-public class ParallelBatchImporter implements BatchImporter
+public class ParallelBatchImporter extends LifecycleAdapter implements BatchImporter
 {
     private final PageCache externalPageCache;
     private final File storeDir;
@@ -54,10 +55,11 @@ public class ParallelBatchImporter implements BatchImporter
     private final RecordFormats recordFormats;
     private final ExecutionMonitor executionMonitor;
     private final AdditionalInitialIds additionalInitialIds;
+    private final ImportLogic.Monitor monitor;
 
     public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, PageCache externalPageCache,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats )
+            AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor )
     {
         this.externalPageCache = externalPageCache;
         this.storeDir = storeDir;
@@ -68,6 +70,7 @@ public class ParallelBatchImporter implements BatchImporter
         this.recordFormats = recordFormats;
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
+        this.monitor = monitor;
     }
 
     @Override
@@ -76,7 +79,7 @@ public class ParallelBatchImporter implements BatchImporter
         try ( BatchingNeoStores store = instantiateNeoStores( fileSystem, storeDir, externalPageCache, recordFormats,
                       config, logService, additionalInitialIds, dbConfig );
               ImportLogic logic = new ImportLogic( storeDir, fileSystem, store, config, logService,
-                      executionMonitor, recordFormats ) )
+                      executionMonitor, recordFormats, monitor ) )
         {
             store.createNew();
             logic.initialize( input );

@@ -59,6 +59,7 @@
     <module>procedure-compiler</module>
     <module>values</module>
     <module>ssl</module>
+    <module>spatial-index</module>
   </modules>
 
   <licenses>

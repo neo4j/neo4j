@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 

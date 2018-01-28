@@ -22,12 +22,13 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -68,9 +69,9 @@ public class TransactionStatusResultTest
     {
         snapshotsMap.put( transactionHandle, singletonList( createQuerySnapshot( 7L ) ) );
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap );
+                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
 
-        checkTransactionStatus( statusResult, "testQuery", "query-7" );
+        checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T00:00:01.984Z" );
     }
 
     @Test
@@ -78,7 +79,7 @@ public class TransactionStatusResultTest
     {
         snapshotsMap.put( transactionHandle, emptyList() );
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap );
+                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
 
         checkTransactionStatusWithoutQueries( statusResult );
     }
@@ -88,9 +89,19 @@ public class TransactionStatusResultTest
     {
         snapshotsMap.put( transactionHandle, asList( createQuerySnapshot( 7L ), createQuerySnapshot( 8L ) ) );
         TransactionStatusResult statusResult =
-                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap );
+                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC" ) );
 
-        checkTransactionStatus( statusResult, "testQuery", "query-7" );
+        checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T00:00:01.984Z" );
+    }
+
+    @Test
+    public void statusOfTransactionWithDifferentTimeZone() throws InvalidArgumentsException
+    {
+        snapshotsMap.put( transactionHandle, singletonList( createQuerySnapshot( 7L ) ) );
+        TransactionStatusResult statusResult =
+                new TransactionStatusResult( transactionHandle, blockerResolver, snapshotsMap, ZoneId.of( "UTC+1" ) );
+
+        checkTransactionStatus( statusResult, "testQuery", "query-7", "1970-01-01T01:00:01.984+01:00" );
     }
 
     private void checkTransactionStatusWithoutQueries( TransactionStatusResult statusResult )
@@ -111,18 +122,18 @@ public class TransactionStatusResultTest
         assertEquals( Long.valueOf( 1L ), statusResult.cpuTimeMillis );
         assertEquals( 0L, statusResult.waitTimeMillis );
         assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
-        assertEquals( Long.valueOf( 0 ), statusResult.allocatedBytes );
+        assertEquals( Long.valueOf( 1 ), statusResult.allocatedBytes );
         assertEquals( 0L, statusResult.pageHits );
         assertEquals( 0L, statusResult.pageFaults );
     }
 
     private void checkTransactionStatus( TransactionStatusResult statusResult, String currentQuery,
-            String currentQueryId )
+            String currentQueryId, String startTime )
     {
         assertEquals( "transaction-8", statusResult.transactionId );
         assertEquals( "testUser", statusResult.username );
         assertEquals( Collections.emptyMap(), statusResult.metaData );
-        assertEquals( "1970-01-01T00:00:01.984Z", statusResult.startTime );
+        assertEquals( startTime, statusResult.startTime );
         assertEquals( "https", statusResult.protocol );
         assertEquals( "localhost:1000", statusResult.clientAddress );
         assertEquals( "https://localhost:1001/path", statusResult.requestUri );
@@ -135,7 +146,7 @@ public class TransactionStatusResultTest
         assertEquals( Long.valueOf( 1 ), statusResult.cpuTimeMillis );
         assertEquals( 0L, statusResult.waitTimeMillis );
         assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
-        assertEquals( Long.valueOf( 0 ), statusResult.allocatedBytes );
+        assertEquals( Long.valueOf( 1 ), statusResult.allocatedBytes );
         assertEquals( 0, statusResult.pageHits );
         assertEquals( 0, statusResult.pageFaults );
     }
@@ -178,12 +189,29 @@ public class TransactionStatusResultTest
         public TransactionExecutionStatistic transactionStatistic()
         {
             KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-            KernelTransactionImplementation.Statistics statistics =
-                    new KernelTransactionImplementation.Statistics( transaction, new CountingCpuClock(), new CountingHeapAllocation() );
-            when( transaction.getStatistics() ).thenReturn(
-                    statistics );
+            TestStatistics statistics =
+                    new TestStatistics( transaction, new AtomicReference<>( new CountingCpuClock() ),
+                            new AtomicReference<>( new CountingHeapAllocation() ) );
+            statistics.init( Thread.currentThread().getId(), PageCursorTracer.NULL );
+            when( transaction.getStatistics() ).thenReturn( statistics );
             return new TransactionExecutionStatistic( transaction, Clocks.fakeClock().forward( 2010, MILLISECONDS ),
                     200 );
+        }
+    }
+
+    private static class TestStatistics extends KernelTransactionImplementation.Statistics
+    {
+        @Override
+        protected void init( long threadId, PageCursorTracer pageCursorTracer )
+        {
+            super.init( threadId, pageCursorTracer );
+        }
+
+        TestStatistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef,
+                AtomicReference<HeapAllocation> heapAllocationRef )
+        {
+            super( transaction, cpuClockRef, heapAllocationRef );
+
         }
     }
 

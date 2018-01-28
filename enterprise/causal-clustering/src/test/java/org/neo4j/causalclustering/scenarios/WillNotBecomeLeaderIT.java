@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 
 public class WillNotBecomeLeaderIT

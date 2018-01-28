@@ -107,6 +107,10 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with C
     }
   }
 
+  test("Double var expand") {
+    assertQuery("MATCH (:L1)-[:T1 *..1 {p1: 1}]->(n2 :L2 {p2: 7})-[r2s :T2 *..2]->(:L3) RETURN 42")
+  }
+
   case class Identifier( name:String, isSingleEntity:Boolean)
 
   case class Pattern(startNode:NodePattern, tail:Option[(RelPattern, Pattern)]) {

@@ -471,11 +471,6 @@ public class PackStream
             this.in = in;
         }
 
-        public boolean hasNext() throws IOException
-        {
-            return in.hasMoreData();
-        }
-
         // TODO: This currently returns the number of fields in the struct. In 99% of cases we will look at the struct
         // signature to determine how to read it, suggest we make that what we return here,
         // and have the number of fields available through some alternate optional mechanism.

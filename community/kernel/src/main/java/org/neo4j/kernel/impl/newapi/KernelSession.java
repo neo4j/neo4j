@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.storageengine.api.StorageEngine;
 
 /**
  * Implements a Kernel API Session.
@@ -36,11 +35,11 @@ class KernelSession implements Session
     private final SecurityContext securityContext;
     private final KernelToken token;
 
-    KernelSession( StorageEngine engine, InwardKernel kernel, SecurityContext securityContext )
+    KernelSession( KernelToken token, InwardKernel kernel, SecurityContext securityContext )
     {
         this.kernel = kernel;
         this.securityContext = securityContext;
-        this.token = new KernelToken( engine );
+        this.token = token;
     }
 
     @Override

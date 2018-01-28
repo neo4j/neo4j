@@ -29,7 +29,7 @@ import org.neo4j.values.storable.Value;
 public class StubNodeCursor implements NodeCursor
 {
     private int offset = -1;
-    private List<Node> nodes = new ArrayList<>();
+    private List<NodeData> nodes = new ArrayList<>();
 
     void single( long reference )
     {
@@ -50,19 +50,19 @@ public class StubNodeCursor implements NodeCursor
 
     public StubNodeCursor withNode( long id )
     {
-        nodes.add( new Node( id, new long[]{}, Collections.emptyMap() ) );
+        nodes.add( new NodeData( id, new long[]{}, Collections.emptyMap() ) );
         return this;
     }
 
     public StubNodeCursor withNode( long id, long... labels )
     {
-        nodes.add( new Node( id, labels, Collections.emptyMap() ) );
+        nodes.add( new NodeData( id, labels, Collections.emptyMap() ) );
         return this;
     }
 
     public StubNodeCursor withNode( long id, long[] labels, Map<Integer,Value> properties )
     {
-        nodes.add( new Node( id, labels, properties ) );
+        nodes.add( new NodeData( id, labels, properties ) );
         return this;
     }
 
@@ -119,7 +119,7 @@ public class StubNodeCursor implements NodeCursor
     {
         if ( offset >= 0 && offset < nodes.size() )
         {
-            Node node = nodes.get( offset );
+            NodeData node = nodes.get( offset );
             if ( !node.properties.isEmpty() )
             {
                 return node.id;
@@ -158,54 +158,4 @@ public class StubNodeCursor implements NodeCursor
         return false;
     }
 
-    static class Node
-    {
-        final long id;
-        final long[] labels;
-        final Map<Integer,Value> properties;
-
-        Node( long id, long[] labels, Map<Integer,Value> properties )
-        {
-            this.id = id;
-            this.labels = labels;
-            this.properties = properties;
-        }
-
-        LabelSet labelSet()
-        {
-            return new LabelSet()
-            {
-                @Override
-                public int numberOfLabels()
-                {
-                    return labels.length;
-                }
-
-                @Override
-                public int label( int offset )
-                {
-                    return labels.length;
-                }
-
-                @Override
-                public boolean contains( int labelToken )
-                {
-                    for ( long label : labels )
-                    {
-                        if ( label == labelToken )
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
-                @Override
-                public long[] all()
-                {
-                    return labels;
-                }
-            };
-        }
-    }
 }

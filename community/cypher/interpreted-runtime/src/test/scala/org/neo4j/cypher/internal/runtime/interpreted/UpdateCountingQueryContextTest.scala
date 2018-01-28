@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatist
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
@@ -40,7 +40,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   val relId = 42
 
   val nodeOps = mock[Operations[NodeValue]]
-  val relOps = mock[Operations[EdgeValue]]
+  val relOps = mock[Operations[RelationshipValue]]
 
   when(inner.nodeOps).thenReturn(nodeOps)
   when(inner.relationshipOps).thenReturn(relOps)

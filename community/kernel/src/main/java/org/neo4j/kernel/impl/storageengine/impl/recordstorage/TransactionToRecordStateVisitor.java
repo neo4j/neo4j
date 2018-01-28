@@ -192,7 +192,10 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     public void visitRemovedIndex( IndexDescriptor index )
     {
         IndexRule rule = schemaStorage.indexGetForSchema( index );
-        recordState.dropSchemaRule( rule );
+        if ( rule != null )
+        {
+            recordState.dropSchemaRule( rule );
+        }
     }
 
     @Override

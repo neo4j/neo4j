@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Relationship
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with CypherComparisonSupport {
@@ -59,5 +59,38 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
       labelB.name() shouldEqual ("B")
       labelC.name() shouldEqual ("C")
     }
+  }
+
+  private val supportMerge = Configs.Interpreted - Configs.Cost2_3
+  // TODO: Change this setting when the bugfix #10771 merged to earlier 3.x versions is included as a dependency
+  private val doNotYetHaveBugFix = Configs.Cost3_1
+
+  test("Merging with self loop and relationship uniqueness") {
+    graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
+    val result = executeWith(supportMerge, "MERGE (a)-[:X]->(b)-[:X]->(c) RETURN 42")
+    assertStats(result, relationshipsCreated = 2, nodesCreated = 3)
+  }
+
+  test("Merging with self loop and relationship uniqueness - no stats") {
+    graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
+    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)-[r2:X]->(c) RETURN id(r1) = id(r2) as sameEdge",
+      expectedDifferentResults = doNotYetHaveBugFix)
+    result.columnAs[Boolean]("sameEdge").toList should equal(List(false))
+  }
+
+  test("Merging with self loop and relationship uniqueness - no stats - reverse direction") {
+    graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
+    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge",
+      expectedDifferentResults = doNotYetHaveBugFix)
+    result.columnAs[Boolean]("sameEdge").toList should equal(List(false))
+  }
+
+  test("Merging with non-self-loop but require relationship uniqueness") {
+    val a = createLabeledNode(Map("name" -> "a"), "A")
+    val b = createLabeledNode(Map("name" -> "b"), "B")
+    relate(a, b, "X")
+    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge, c.name as name",
+      expectedDifferentResults = doNotYetHaveBugFix)
+    result.toList should equal(List(Map("sameEdge" -> false, "name" -> null)))
   }
 }

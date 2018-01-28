@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecu
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.Values
 
 case class ConditionalApplySlottedPipe(lhs: Pipe,
@@ -33,7 +33,7 @@ case class ConditionalApplySlottedPipe(lhs: Pipe,
                                        refOffsets: Seq[Int],
                                        negated: Boolean,
                                        slots: SlotConfiguration)
-                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                      (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(lhs) with Pipe {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =

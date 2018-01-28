@@ -22,7 +22,7 @@ package org.neo4j.values;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueWriter;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
@@ -35,9 +35,9 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void writeNode( long nodeId, TextArray labels, MapValue properties ) throws E;
 
-    void writeEdgeReference( long edgeId ) throws E;
+    void writeRelationshipReference( long relId ) throws E;
 
-    void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties ) throws E;
+    void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties ) throws E;
 
     void beginMap( int size ) throws E;
 
@@ -47,14 +47,14 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void endList() throws E;
 
-    void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws E;
+    void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws E;
 
     default void writeVirtualNodeHack( Object node )
     {
         // do nothing, this is an ugly hack.
     }
 
-    default void writeVirtualEdgeHack( Object relationship )
+    default void writeVirtualRelationshipHack( Object relationship )
     {
         // do nothing, this is an ugly hack.
     }

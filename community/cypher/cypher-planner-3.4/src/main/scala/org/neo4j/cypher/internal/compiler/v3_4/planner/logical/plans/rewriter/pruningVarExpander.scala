@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, FunctionInvocation}
 
 import scala.collection.mutable
@@ -84,7 +85,7 @@ case object pruningVarExpander extends Rewriter {
   // When the distinct horizon needs the path that includes the var length relationship,
   // we can't use DistinctVarExpand - we need all the paths
   def distinctNeedsRelsFromExpand(inDistinctLand: Option[Set[String]], expand: VarExpand): Boolean = {
-    inDistinctLand.forall(vars => vars(expand.relName.name))
+    inDistinctLand.forall(vars => vars(expand.relName))
   }
 
   private def isDistinct(e: Expression) = e match {
@@ -98,14 +99,10 @@ case object pruningVarExpander extends Rewriter {
         val distinctSet = findDistinctSet(plan)
 
         val innerRewriter = topDown(Rewriter.lift {
-          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, ExpandAll, _, _, _, _, predicates) if distinctSet(expand) =>
-            if (length.min >= 4 && length.max.get >= 5)
-              // These constants were selected by benchmarking on randomized graphs, with different
-              // degrees of interconnection.
-              FullPruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
-            else if (length.max.get > 1)
-              PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
-            else expand
+          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, ExpandAll, _, _, _, _, predicates) if distinctSet(expand.selfThis) =>
+            if (length.max.get > 1)
+              PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(SameId(expand.id))
+            else expand.selfThis
         })
         plan.endoRewrite(innerRewriter)
 

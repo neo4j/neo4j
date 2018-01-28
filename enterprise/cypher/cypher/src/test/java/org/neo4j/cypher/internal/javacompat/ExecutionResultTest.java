@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
@@ -35,6 +36,7 @@ import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -134,12 +136,9 @@ public class ExecutionResultTest
         // Given
         createNode();
 
-        // When
-        try ( Result ignore = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
-        {
-            // Then
-            // just close result without consuming it
-        }
+        // Then
+        // just close result without consuming it
+        db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ).close();
     }
 
     @Test
@@ -285,6 +284,55 @@ public class ExecutionResultTest
 
         // Then
         assertThat( result, CoreMatchers.instanceOf( String[].class ) );
+    }
+
+    @Test
+    public void shouldContainCompletePlanFromFromLegacyVersions()
+    {
+        for ( String version : new String[]{"2.3", "3.1", "3.3", "3.4"} )
+        {
+            // Given
+            Result result = db.execute( String.format( "EXPLAIN CYPHER %s MATCH (n) RETURN n", version ) );
+
+            // When
+            ExecutionPlanDescription description = result.getExecutionPlanDescription();
+
+            // Then
+            assertThat( description.getName(), equalTo( "ProduceResults" ) );
+            assertThat( description.getChildren().get( 0 ).getName(), equalTo( "AllNodesScan" ) );
+        }
+    }
+
+    @Test
+    public void shouldContainCompleteProfileFromFromLegacyVersions()
+    {
+        // Given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+
+            tx.success();
+        }
+
+        for ( String version : new String[]{"2.3", "3.1", "3.3", "3.4"} )
+        {
+            // When
+            Result result = db.execute( String.format( "PROFILE CYPHER %s MATCH (n) RETURN n", version ) );
+            result.resultAsString();
+            ExecutionPlanDescription.ProfilerStatistics stats =
+                    result.getExecutionPlanDescription()//ProduceResult
+                            .getChildren().get( 0 ) //AllNodesScan
+                            .getProfilerStatistics();
+
+            // Then
+            assertThat( "Mismatching db-hits for version " + version, stats.getDbHits(), equalTo( 2L ) );
+            assertThat( "Mismatching rows for version " + version, stats.getRows(), equalTo( 1L ) );
+
+            //These stats are not available in older versions, but should at least return 0, and >0 for newer
+            assertThat( "Mismatching page cache hits for version " + version, stats.getPageCacheHits(), greaterThanOrEqualTo( 0L ) );
+            assertThat( "Mismatching page cache misses for version " + version, stats.getPageCacheMisses(), greaterThanOrEqualTo( 0L ) );
+            assertThat( "Mismatching page cache hit ratio for version " + version, stats.getPageCacheHitRatio(), greaterThanOrEqualTo( 0.0 ) );
+        }
     }
 
     private void createNode()

@@ -27,6 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allInReversed;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.RECYCLE_BATCHES;
 
 /**
  * Scans {@link RelationshipGroupRecord} from store in reverse, this because during import the relationships
@@ -44,9 +45,9 @@ public class ScanAndCacheGroupsStage extends Stage
     public ScanAndCacheGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
             RelationshipGroupCache cache, StatsProvider... additionalStatsProviders )
     {
-        super( NAME, null, config, 0 );
+        super( NAME, null, config, RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allInReversed( store, config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store, null ) );
+        add( new ReadRecordsStep<>( control(), config, false, store ) );
         add( new CacheGroupsStep( control(), config, cache, additionalStatsProviders ) );
     }
 }

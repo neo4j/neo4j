@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold.DEFAULT_CHECKING_FREQUENCY_MILLIS;
 
 public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
 {
@@ -203,8 +204,9 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     @Test
     public void timeBasedThresholdMustSuggestSchedulingFrequency() throws Exception
     {
-        long defaultInterval = intervalTime.toMillis();
-        assertThat( createThreshold().checkFrequencyMillis(), is( defaultInterval ) );
+        // By default, the transaction count based threshold wants a higher check frequency than the time based
+        // default threshold.
+        assertThat( createThreshold().checkFrequencyMillis(), is( DEFAULT_CHECKING_FREQUENCY_MILLIS ) );
 
         withIntervalTime( "100ms" );
         assertThat( createThreshold().checkFrequencyMillis(), is( 100L ) );

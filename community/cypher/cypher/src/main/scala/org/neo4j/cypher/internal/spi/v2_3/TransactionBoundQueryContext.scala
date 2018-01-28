@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
 import org.neo4j.kernel.api.{exceptions, _}
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.storable.Values
 
 import scala.collection.JavaConverters._
@@ -59,7 +59,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
-  private val nodeManager = tc.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+  private val proxySpi = tc.graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
 
   def isOpen = tc.isOpen
 
@@ -123,7 +123,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       case Some(typeIds) =>
         tc.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
     }
-    new BeansAPIRelationshipIterator(relationships, nodeManager)
+    new BeansAPIRelationshipIterator(relationships, proxySpi)
   }
 
   def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) =

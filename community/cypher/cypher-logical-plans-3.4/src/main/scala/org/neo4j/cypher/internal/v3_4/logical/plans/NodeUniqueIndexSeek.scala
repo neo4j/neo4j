@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelToken, PropertyKeyToken}
 
 /**
@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LabelToken, Prope
   * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
   * node is guaranteed.
   */
-case class NodeUniqueIndexSeek(idName: IdName,
+case class NodeUniqueIndexSeek(idName: String,
                                label: LabelToken,
                                propertyKeys: Seq[PropertyKeyToken],
                                valueExpr: QueryExpression[Expression],
-                               argumentIds: Set[IdName])
-                              (val solved: PlannerQuery with CardinalityEstimation) extends IndexLeafPlan {
-  def availableSymbols: Set[IdName] = argumentIds + idName
+                               argumentIds: Set[String])
+                              (implicit idGen: IdGen) extends IndexLeafPlan(idGen) {
+  override val availableSymbols: Set[String] = argumentIds + idName
 }

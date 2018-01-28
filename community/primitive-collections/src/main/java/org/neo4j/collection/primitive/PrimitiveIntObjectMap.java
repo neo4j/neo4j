@@ -19,6 +19,9 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.Objects;
+import java.util.function.IntFunction;
+
 public interface PrimitiveIntObjectMap<VALUE> extends PrimitiveIntCollection
 {
     VALUE put( int key, VALUE value );
@@ -33,4 +36,20 @@ public interface PrimitiveIntObjectMap<VALUE> extends PrimitiveIntCollection
      * Visit the entries of this map, until all have been visited or the visitor returns 'true'.
      */
     <E extends Exception> void visitEntries( PrimitiveIntObjectVisitor<VALUE, E> visitor ) throws E;
+
+    default VALUE computeIfAbsent( int key, IntFunction<VALUE> function )
+    {
+        Objects.requireNonNull( function );
+        VALUE value = get( key );
+        if ( value != null )
+        {
+            return value;
+        }
+        else
+        {
+            VALUE newValue = function.apply( key );
+            put( key, newValue );
+            return newValue;
+        }
+    }
 }

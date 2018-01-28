@@ -29,8 +29,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -58,7 +59,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     public void shouldBeAbleToReferToIdsBeyondMaxInt() throws Exception
     {
         // GIVEN
-        RelationshipActions actions = mock( RelationshipActions.class );
+        EmbeddedProxySPI actions = mock( EmbeddedProxySPI.class );
         when( actions.newNodeProxy( anyLong() ) ).then(
                 invocation -> nodeWithId( invocation.getArgument( 0 ) ) );
         when( actions.getRelationshipTypeById( anyInt() ) ).then(
@@ -196,7 +197,33 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         }
     }
 
-    private void verifyIds( RelationshipActions actions, long relationshipId, long nodeId1, int typeId, long nodeId2 )
+    @Test
+    public void shouldBeAbleToForceTypeChangeOfProperty()
+    {
+        // Given
+        Relationship relationship;
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationship = db.createNode().createRelationshipTo( db.createNode(), withName( "R" ) );
+            relationship.setProperty( "prop", 1337 );
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationship.setProperty( "prop", 1337.0 );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction ignore = db.beginTx() )
+        {
+            assertThat( relationship.getProperty( "prop" ), instanceOf( Double.class ) );
+        }
+    }
+
+    private void verifyIds( EmbeddedProxySPI actions, long relationshipId, long nodeId1, int typeId, long nodeId2 )
     {
         RelationshipProxy proxy = new RelationshipProxy( actions, relationshipId, nodeId1, typeId, nodeId2 );
         assertEquals( relationshipId, proxy.getId() );
@@ -214,7 +241,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
 
     private Node nodeWithId( long id )
     {
-        Node node = mock( Node.class );
+        NodeProxy node = mock( NodeProxy.class );
         when( node.getId() ).thenReturn( id );
         return node;
     }

@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanner, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object argumentLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
     val ids = qg.patternNodes ++ qg.patternRelationships.map(_.name)
     if ((qg.argumentIds intersect ids).isEmpty)
       Seq.empty

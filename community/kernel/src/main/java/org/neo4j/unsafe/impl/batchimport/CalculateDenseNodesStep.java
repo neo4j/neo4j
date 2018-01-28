@@ -43,16 +43,18 @@ public class CalculateDenseNodesStep extends ForkedProcessorStep<RelationshipRec
     @Override
     protected void forkedProcess( int id, int processors, RelationshipRecord[] batch )
     {
-        for ( int i = 0; i < batch.length; i++ )
+        for ( RelationshipRecord record : batch )
         {
-            RelationshipRecord relationship = batch[i];
-            long startNodeId = relationship.getFirstNode();
-            long endNodeId = relationship.getSecondNode();
-            processNodeId( id, processors, startNodeId );
-            if ( startNodeId != endNodeId ) // avoid counting loops twice
+            if ( record.inUse() )
             {
-                // Loops only counts as one
-                processNodeId( id, processors, endNodeId );
+                long startNodeId = record.getFirstNode();
+                long endNodeId = record.getSecondNode();
+                processNodeId( id, processors, startNodeId );
+                if ( startNodeId != endNodeId ) // avoid counting loops twice
+                {
+                    // Loops only counts as one
+                    processNodeId( id, processors, endNodeId );
+                }
             }
         }
     }

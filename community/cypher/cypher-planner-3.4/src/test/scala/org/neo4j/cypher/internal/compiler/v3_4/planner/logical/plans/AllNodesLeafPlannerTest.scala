@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.allNodesLeafPlanner
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.v3_4.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.v3_4.expressions.PatternExpression
 
@@ -33,17 +33,17 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("simple all nodes scan") {
     // given
-    val queryGraph = QueryGraph(patternNodes = Set(IdName("n")))
+    val queryGraph = QueryGraph(patternNodes = Set("n"))
 
     implicit val planContext = newMockedPlanContext
-    val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = planContext,
       metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator]))
 
     // when
-    val resultPlans = allNodesLeafPlanner(queryGraph, context)
+    val resultPlans = allNodesLeafPlanner(queryGraph, context, solveds, cardinalities)
 
     // then
-    resultPlans should equal(Seq(AllNodesScan(IdName("n"), Set.empty)(solved)))
+    resultPlans should equal(Seq(AllNodesScan("n", Set.empty)))
   }
 }

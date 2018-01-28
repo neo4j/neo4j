@@ -66,7 +66,7 @@ public class PopulatingIndexProxy implements IndexProxy
                 return new PopulatingIndexUpdater()
                 {
                     @Override
-                    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+                    public void process( IndexEntryUpdate<?> update )
                     {
                         job.update( update );
                     }

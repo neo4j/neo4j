@@ -41,6 +41,7 @@ public class Empty
     public static final PrimitiveLongObjectMap EMPTY_PRIMITIVE_LONG_OBJECT_MAP = new EmptyPrimitiveLongObjectMap<>();
     public static final PrimitiveIntSet EMPTY_PRIMITIVE_INT_SET = new EmptyPrimitiveIntSet();
     public static final PrimitiveLongCollection EMPTY_PRIMITIVE_LONG_COLLECTION = new EmptyPrimitiveLongCollection();
+    public static final PrimitiveLongSet EMPTY_PRIMITIVE_LONG_SET = new EmptyPrimitiveLongSet();
 
     private Empty()
     {
@@ -118,8 +119,6 @@ public class Empty
             return false;
         }
     }
-
-    public static final PrimitiveLongSet EMPTY_PRIMITIVE_LONG_SET = new EmptyPrimitiveLongSet();
 
     public static class EmptyPrimitiveIntCollection extends EmptyPrimitiveCollection
         implements PrimitiveIntCollection

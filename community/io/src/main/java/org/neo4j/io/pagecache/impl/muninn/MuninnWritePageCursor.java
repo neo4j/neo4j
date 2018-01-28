@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
@@ -53,7 +52,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
                 pagedFile.unlockWrite( pinnedPageRef );
             }
         }
-        clearPageState();
+        clearPageCursorState();
     }
 
     private void eagerlyFlushAndUnlockPage()
@@ -84,7 +83,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         }
         if ( nextPageId > lastPageId )
         {
-            if ( (pf_flags & PagedFile.PF_NO_GROW) != 0 )
+            if ( noGrow )
             {
                 return false;
             }
@@ -93,9 +92,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor
                 pagedFile.increaseLastPageIdTo( nextPageId );
             }
         }
-        pin( nextPageId, true );
         currentPageId = nextPageId;
         nextPageId++;
+        pin( currentPageId, true );
         return true;
     }
 

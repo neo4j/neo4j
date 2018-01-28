@@ -28,7 +28,6 @@ import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntStack;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
@@ -58,10 +57,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -102,6 +101,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -540,9 +540,8 @@ public class StateHandlingStatementOperations implements
         PrimitiveLongResourceIterator committed = storeLayer.nodesGetForLabel( state.getStoreStatement(), labelId );
         if ( state.hasTxStateWithChanges() )
         {
-            PrimitiveLongIterator wLabelChanges = state.txState().nodesWithLabelChanged( labelId ).augment( committed );
-            return PrimitiveLongCollections
-                    .resourceIterator( state.txState().addedAndRemovedNodes().augmentWithRemovals( wLabelChanges ), committed );
+            PrimitiveLongResourceIterator wLabelChanges = state.txState().nodesWithLabelChanged( labelId ).augment( committed );
+            return state.txState().addedAndRemovedNodes().augmentWithRemovals( wLabelChanges );
         }
 
         return committed;
@@ -846,7 +845,7 @@ public class StateHandlingStatementOperations implements
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
         PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
-        PrimitiveLongIterator exactMatches = reader.hasFullNumberPrecision( query )
+        PrimitiveLongResourceIterator exactMatches = reader.hasFullNumberPrecision( query )
                 ? committed : LookupFilter.exactIndexMatches( this, state, committed, query );
         PrimitiveLongIterator changesFiltered =
                 filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
@@ -860,51 +859,44 @@ public class StateHandlingStatementOperations implements
         StorageStatement storeStatement = state.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
         PrimitiveLongResourceIterator committed = reader.query( predicates );
-        PrimitiveLongIterator exactMatches = reader.hasFullNumberPrecision( predicates )
+        PrimitiveLongResourceIterator exactMatches = reader.hasFullNumberPrecision( predicates )
                 ? committed : LookupFilter.exactIndexMatches( this, state, committed, predicates );
 
-        PrimitiveLongIterator result;
         IndexQuery firstPredicate = predicates[0];
         switch ( firstPredicate.type() )
         {
         case exact:
             IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( predicates );
-            result = filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( exactPreds ) );
-            break;
+            return filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( exactPreds ) );
 
         case stringSuffix:
         case stringContains:
         case exists:
-            result = filterIndexStateChangesForScan( state, exactMatches, index );
-            break;
+            return filterIndexStateChangesForScan( state, exactMatches, index );
 
         case rangeNumeric:
             assertSinglePredicate( predicates );
             IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) firstPredicate;
-            result = filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
+            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
                     numPred.fromInclusive(), numPred.to(), numPred.toInclusive(), exactMatches );
-            break;
 
         case rangeString:
         {
             assertSinglePredicate( predicates );
             IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) firstPredicate;
-            result = filterIndexStateChangesForRangeSeekByString(
+            return filterIndexStateChangesForRangeSeekByString(
                     state, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
                     strPred.toInclusive(), committed );
-            break;
         }
         case stringPrefix:
         {
             assertSinglePredicate( predicates );
             IndexQuery.StringPrefixPredicate strPred = (IndexQuery.StringPrefixPredicate) firstPredicate;
-            result = filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
-            break;
+            return filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
         }
         default:
             throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
         }
-        return PrimitiveLongCollections.resourceIterator( result, committed );
     }
 
     public static IndexQuery.ExactPredicate[] assertOnlyExactPredicates( IndexQuery[] predicates )
@@ -950,12 +942,12 @@ public class StateHandlingStatementOperations implements
         return reader.countIndexedNodes( nodeId, value );
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForScan(
-            KernelStatement state, PrimitiveLongIterator nodeIds, IndexDescriptor index )
+    private PrimitiveLongResourceIterator filterIndexStateChangesForScan(
+            KernelStatement state, PrimitiveLongResourceIterator nodeIds, IndexDescriptor index )
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChanges =
+            PrimitiveLongReadableDiffSets labelPropertyChanges =
                     state.txState().indexUpdatesForScan( index );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
@@ -965,13 +957,13 @@ public class StateHandlingStatementOperations implements
         return nodeIds;
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForSeek(
-            KernelStatement state, PrimitiveLongIterator nodeIds, IndexDescriptor index,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForSeek(
+            KernelStatement state, PrimitiveLongResourceIterator nodeIds, IndexDescriptor index,
             ValueTuple propertyValues )
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChanges =
+            PrimitiveLongReadableDiffSets labelPropertyChanges =
                     state.txState().indexUpdatesForSeek( index, propertyValues );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
@@ -981,18 +973,18 @@ public class StateHandlingStatementOperations implements
         return nodeIds;
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByNumber( KernelStatement state,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByNumber( KernelStatement state,
             IndexDescriptor index,
             Number lower, boolean includeLower,
             Number upper, boolean includeUpper,
-            PrimitiveLongIterator nodeIds )
+            PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForNumber =
-                    state.txState().indexUpdatesForRangeSeekByNumber(
-                            index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            TransactionState txState = state.txState();
+            PrimitiveLongReadableDiffSets labelPropertyChangesForNumber =
+                    txState.indexUpdatesForRangeSeekByNumber( index, lower, includeLower, upper, includeUpper );
+            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForNumber.augment( nodeIds ) );
@@ -1001,18 +993,18 @@ public class StateHandlingStatementOperations implements
 
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
             IndexDescriptor index,
             String lower, boolean includeLower,
             String upper, boolean includeUpper,
-            PrimitiveLongIterator nodeIds )
+            PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForString =
-                    state.txState().indexUpdatesForRangeSeekByString(
+            TransactionState txState = state.txState();
+            PrimitiveLongReadableDiffSets labelPropertyChangesForString = txState.indexUpdatesForRangeSeekByString(
                             index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForString.augment( nodeIds ) );
@@ -1021,16 +1013,17 @@ public class StateHandlingStatementOperations implements
 
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByPrefix( KernelStatement state,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByPrefix( KernelStatement state,
             IndexDescriptor index,
             String prefix,
-            PrimitiveLongIterator nodeIds )
+            PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForPrefix =
-                    state.txState().indexUpdatesForRangeSeekByPrefix( index, prefix );
-            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+            TransactionState txState = state.txState();
+            PrimitiveLongReadableDiffSets labelPropertyChangesForPrefix =
+                    txState.indexUpdatesForRangeSeekByPrefix( index, prefix );
+            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChangesForPrefix.augment( nodeIds ) );
@@ -1068,7 +1061,7 @@ public class StateHandlingStatementOperations implements
             }
             else
             {
-                if ( !value.equals( existingValue ) )
+                if ( propertyHasChanged( value, existingValue ) )
                 {
                     state.txState().nodeDoChangeProperty( node.id(), propertyKeyId, existingValue, value );
                     indexTxStateUpdater.onPropertyChange( state, node, propertyKeyId, existingValue, value );
@@ -1100,7 +1093,7 @@ public class StateHandlingStatementOperations implements
                             ops, relationshipId, propertyKeyId, existingValue, value );
                 }
             }
-            if ( !value.equals( existingValue ) )
+            if ( propertyHasChanged( value, existingValue ) )
             {
                 state.txState().relationshipDoReplaceProperty(
                         relationship.id(), propertyKeyId, existingValue, value );
@@ -1817,5 +1810,13 @@ public class StateHandlingStatementOperations implements
                           ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
                           : storeLayer.nodeGetRelationships( storeStatement, node, direction, t -> t == relType ) );
         }
+    }
+
+    private boolean propertyHasChanged( Value lhs, Value rhs )
+    {
+        //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
+        //so by only checking for equality users cannot change type of property without also "changing" the value.
+        //Hence the extra type check here.
+        return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
     }
 }

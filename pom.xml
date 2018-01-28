@@ -65,8 +65,8 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
-    <lucene.version>5.5.0</lucene.version>
-    <bouncycastle.version>1.53</bouncycastle.version>
+    <lucene.version>5.5.5</lucene.version>
+    <bouncycastle.version>1.59</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
@@ -88,7 +88,9 @@
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <asm.version>6.0</asm.version>
+    <metrics.version>4.0.2</metrics.version>
     <scala.java9.arg/>
+    <checkstyle.strict>true</checkstyle.strict>
   </properties>
 
   <modules>
@@ -251,6 +253,9 @@
                     <include>
                       <item>org\.neo4j\.helpers\.collection\.BoundedIterable</item>
                     </include>
+                    <exclude>
+                      <item>org\.neo4j\.graphdb\.Path</item>
+                    </exclude>
                   </classes>
                   <packages>
                     <regex>true</regex>
@@ -286,6 +291,11 @@
                 <item>
                   <!-- Ignore for now since some are already published, should be removed in 4.0 -->
                   <code>java.class.nonPublicPartOfAPI</code>
+                </item>
+                <item>
+                  <code>java.class.noLongerImplementsInterface</code>
+                  <class>org.neo4j.graphalgo.WeightedPath</class>
+                  <justification>Cleanup accidental Path exposure as a Resource.</justification>
                 </item>
               </revapi.ignore>
               <revapi.semver.ignore>
@@ -578,6 +588,26 @@
           <artifactId>license-maven-plugin</artifactId>
           <version>3</version>
         </plugin>
+        <plugin>
+          <groupId>org.owasp</groupId>
+          <artifactId>dependency-check-maven</artifactId>
+          <version>3.1.0</version>
+          <dependencies>
+            <!-- https://mvnrepository.com/artifact/org.owasp/dependency-check-maven -->
+            <dependency>
+              <groupId>org.owasp</groupId>
+              <artifactId>dependency-check-maven</artifactId>
+              <version>3.1.0</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <goals>
+                <goal>aggregate</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -597,8 +627,8 @@
           <configLocation>build/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <logViolationsToConsole>true</logViolationsToConsole>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
+          <failsOnError>${checkstyle.strict}</failsOnError>
+          <failOnViolation>${checkstyle.strict}</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
         </configuration>
         <dependencies>
@@ -864,17 +894,17 @@
       <dependency>
         <groupId>com.github.ben-manes.caffeine</groupId>
         <artifactId>caffeine</artifactId>
-        <version>2.3.3</version>
+        <version>2.6.1</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-nop</artifactId>
-        <version>1.7.22</version>
+        <version>1.7.25</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.7</version>
+        <version>1.7.25</version>
       </dependency>
 
       <!-- testing -->
@@ -893,7 +923,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava-testlib</artifactId>
-        <version>19.0</version>
+        <version>23.6-jre</version>
         <scope>test</scope>
       </dependency>
 
@@ -916,7 +946,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-log4j12</artifactId>
-        <version>1.7.7</version>
+        <version>1.7.25</version>
         <scope>test</scope>
       </dependency>
 
@@ -950,14 +980,14 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.10.0</version>
+        <version>2.13.0</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.9</version>
+        <version>1.11</version>
         <scope>test</scope>
       </dependency>
 
@@ -978,16 +1008,72 @@
         <version>${scala.version}</version>
       </dependency>
 
+      <!-- scala test dependencies -->
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_2.11</artifactId>
+        <version>2.2.5</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalautils</groupId>
+        <artifactId>scalautils_2.11</artifactId>
+        <version>2.1.7</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalacheck</groupId>
+        <artifactId>scalacheck_2.11</artifactId>
+        <version>1.12.5</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.novus</groupId>
+        <artifactId>salat-core_2.11</artifactId>
+        <version>1.9.9</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scalap</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
       <!-- other -->
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.2.4</version>
+        <version>2.8.2</version>
       </dependency>
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.4</version>
+        <version>2.6</version>
       </dependency>
       <dependency>
         <groupId>commons-configuration</groupId>
@@ -1025,7 +1111,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.5</version>
+        <version>3.7</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -1035,7 +1121,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.12</version>
+        <version>1.15</version>
       </dependency>
 
       <!-- Netty is used by three components: Com, Cluster and Bolt Socket Transport.
@@ -1064,7 +1150,7 @@
       <dependency>
         <groupId>org.codehaus.janino</groupId>
         <artifactId>janino</artifactId>
-        <version>2.6.1</version>
+        <version>3.0.8</version>
       </dependency>
       <dependency>
         <groupId>net.sf.opencsv</groupId>
@@ -1167,12 +1253,23 @@
       <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
-        <version>3.1.2</version>
+        <version>${metrics.version}</version>
       </dependency>
       <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-graphite</artifactId>
-        <version>3.1.2</version>
+        <version>${metrics.version}</version>
+        <exclusions>
+          <exclusion>
+              <groupId>com.rabbitmq</groupId>
+              <artifactId>amqp-client</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.jprocesses</groupId>
+        <artifactId>jProcesses</artifactId>
+        <version>1.6.4</version>
       </dependency>
 
       <dependency>
@@ -1184,7 +1281,7 @@
       <dependency>
         <groupId>com.google.testing.compile</groupId>
         <artifactId>compile-testing</artifactId>
-        <version>0.13</version>
+        <version>0.15</version>
         <scope>test</scope>
       </dependency>
     </dependencies>

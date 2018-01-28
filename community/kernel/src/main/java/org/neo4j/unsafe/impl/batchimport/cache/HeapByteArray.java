@@ -124,6 +124,12 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     }
 
     @Override
+    public long get5ByteLong( long index, int offset )
+    {
+        return get5BLongFromByteBuffer( buffer, index( index, offset ) );
+    }
+
+    @Override
     public long get6ByteLong( long index, int offset )
     {
         return get6BLongFromByteBuffer( buffer, index( index, offset ) );
@@ -132,15 +138,25 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     protected static int get3ByteIntFromByteBuffer( ByteBuffer buffer, int address )
     {
         int lowWord = buffer.getShort( address ) & 0xFFFF;
-        int highByte = buffer.get( address + Short.BYTES );
-        return lowWord | (highByte << Short.SIZE);
+        int highByte = buffer.get( address + Short.BYTES ) & 0xFF;
+        int result = lowWord | (highByte << Short.SIZE);
+        return result == 0xFFFFFF ? -1 : result;
+    }
+
+    protected static long get5BLongFromByteBuffer( ByteBuffer buffer, int startOffset )
+    {
+        long low4b = buffer.getInt( startOffset ) & 0xFFFFFFFFL;
+        long high1b = buffer.get( startOffset + Integer.BYTES ) & 0xFF;
+        long result = low4b | (high1b << 32);
+        return result == 0xFFFFFFFFFFL ? -1 : result;
     }
 
     protected static long get6BLongFromByteBuffer( ByteBuffer buffer, int startOffset )
     {
         long low4b = buffer.getInt( startOffset ) & 0xFFFFFFFFL;
-        long high2b = buffer.getShort( startOffset + Integer.BYTES );
-        return low4b | (high2b << 32);
+        long high2b = buffer.getShort( startOffset + Integer.BYTES ) & 0xFFFF;
+        long result = low4b | (high2b << 32);
+        return result == 0xFFFFFFFFFFFFL ? -1 : result;
     }
 
     @Override
@@ -171,6 +187,14 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     public void setInt( long index, int offset, int value )
     {
         buffer.putInt( index( index, offset ), value );
+    }
+
+    @Override
+    public void set5ByteLong( long index, int offset, long value )
+    {
+        int absIndex = index( index, offset );
+        buffer.putInt( absIndex, (int) value );
+        buffer.put( absIndex + Integer.BYTES, (byte) (value >>> 32) );
     }
 
     @Override

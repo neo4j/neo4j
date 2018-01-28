@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.NumberSchemaIndexProvider;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -46,7 +46,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySu
 public class NativeLuceneFusionSchemaIndexProviderFactory
         extends KernelExtensionFactory<NativeLuceneFusionSchemaIndexProviderFactory.Dependencies>
 {
-    public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NativeSchemaNumberIndexProvider.KEY;
+    public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NumberSchemaIndexProvider.KEY;
     private static final int PRIORITY = LuceneSchemaIndexProvider.PRIORITY + 1;
 
     public static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "1.0" );
@@ -85,8 +85,8 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = isReadOnly( config, operationalMode );
-        NativeSchemaNumberIndexProvider nativeProvider =
-                new NativeSchemaNumberIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        NumberSchemaIndexProvider nativeProvider =
+                new NumberSchemaIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
                 operationalMode );
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );

@@ -28,7 +28,7 @@ import java.util.List;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class FieldInjectionsTest
 {

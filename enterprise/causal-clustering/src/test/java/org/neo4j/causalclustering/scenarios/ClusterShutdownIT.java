@@ -40,8 +40,8 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static junit.framework.TestCase.assertTrue;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith( Parameterized.class )
 public class ClusterShutdownIT

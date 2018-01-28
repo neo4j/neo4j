@@ -29,14 +29,14 @@ import java.util.Map;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
@@ -61,7 +61,7 @@ import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
@@ -69,20 +69,20 @@ import static org.neo4j.values.virtual.VirtualValues.path;
 
 public class ParameterConverterTest
 {
-    private ParameterConverter converter = new ParameterConverter( mock( NodeManager.class ) );
+    private ParameterConverter converter = new ParameterConverter( mock( EmbeddedProxySPI.class ) );
 
     @Before
     public void setup()
     {
-        NodeManager manager = mock( NodeManager.class );
-        when( manager.newNodeProxyById( anyLong() ) ).thenAnswer( invocationOnMock ->
+        EmbeddedProxySPI manager = mock( EmbeddedProxySPI.class );
+        when( manager.newNodeProxy( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );
             NodeProxy mock = mock( NodeProxy.class );
             when( mock.getId() ).thenReturn( id );
             return mock;
         } );
-        when( manager.newRelationshipProxyById( anyLong() ) ).thenAnswer( invocationOnMock ->
+        when( manager.newRelationshipProxy( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );
             RelationshipProxy mock = mock( RelationshipProxy.class );
@@ -135,14 +135,14 @@ public class ParameterConverterTest
     }
 
     @Test
-    public void shouldHandleEdges()
+    public void shouldHandleRelationships()
     {
         // Given
-        EdgeValue edgeValue = edgeValue( 1L, nodeValue( 42L, stringArray( "L" ), EMPTY_MAP ),
+        RelationshipValue relValue = relationshipValue( 1L, nodeValue( 42L, stringArray( "L" ), EMPTY_MAP ),
                 nodeValue( 42L, stringArray( "L" ), EMPTY_MAP ), stringValue( "R" ), EMPTY_MAP );
 
         // When
-        edgeValue.writeTo( converter );
+        relValue.writeTo( converter );
 
         // Then
         assertThat( converter.value(), equalTo( new RelationshipIdWrapperImpl( 1L ) ) );
@@ -165,7 +165,7 @@ public class ParameterConverterTest
         NodeValue n2 = nodeValue( 43L, stringArray( "L" ), EMPTY_MAP );
         PathValue p = path(
                 new NodeValue[]{n1, n2},
-                new EdgeValue[]{edgeValue( 1L, n1, n2, stringValue( "T" ), EMPTY_MAP )} );
+                new RelationshipValue[]{relationshipValue( 1L, n1, n2, stringValue( "T" ), EMPTY_MAP )} );
 
         // When
         p.writeTo( converter );

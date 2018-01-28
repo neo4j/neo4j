@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLon
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
 
 case class NodeIndexScanSlottedPipe(ident: String,
@@ -34,7 +34,7 @@ case class NodeIndexScanSlottedPipe(ident: String,
                                     propertyKey: PropertyKeyToken,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
-                                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                   (val id: Id = Id.INVALID_ID)
   extends Pipe {
 
   private val offset = slots.getLongOffsetFor(ident)

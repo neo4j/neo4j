@@ -60,7 +60,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
                     executingQuery
                 );
 
-        return new Neo4jTransactionalContextFactory( spi::currentStatement, contextCreator );
+        return new Neo4jTransactionalContextFactory( txBridge, contextCreator );
     }
 
     @Deprecated

@@ -21,12 +21,13 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
@@ -38,11 +39,6 @@ public class BoltRequestMessageReader
     public BoltRequestMessageReader( Neo4jPack.Unpacker unpacker )
     {
         this.unpacker = unpacker;
-    }
-
-    public boolean hasNext() throws IOException
-    {
-        return unpacker.hasNext();
     }
 
     /**
@@ -64,8 +60,8 @@ public class BoltRequestMessageReader
                 {
                 case INIT:
                     String clientName = unpacker.unpackString();
-                    Map<String,Object> credentials = unpacker.unpackToRawMap();
-                    handler.onInit( clientName, credentials );
+                    Map<String,Object> authToken = readAuthToken( unpacker );
+                    handler.onInit( clientName, authToken );
                     break;
                 case ACK_FAILURE:
                     handler.onAckFailure();
@@ -76,10 +72,10 @@ public class BoltRequestMessageReader
                 case RUN:
                     String statement = unpacker.unpackString();
                     MapValue params = unpacker.unpackMap();
-                    Optional<Neo4jError> error = unpacker.consumeError();
-                    if ( error.isPresent() )
+                    Neo4jError error = unpacker.consumeError();
+                    if ( error != null )
                     {
-                        handler.onExternalError( error.get() );
+                        handler.onExternalError( error );
                     }
                     else
                     {
@@ -108,5 +104,14 @@ public class BoltRequestMessageReader
             throw new BoltIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
                                                                      "Error was: " + e.getMessage(), e );
         }
+    }
+
+    private static Map<String,Object> readAuthToken( Neo4jPack.Unpacker unpacker ) throws IOException
+    {
+        MapValue authTokenValue = unpacker.unpackMap();
+        AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
+        return authTokenValue.entrySet()
+                .stream()
+                .collect( toMap( Map.Entry::getKey, entry -> writer.valueAsObject( entry.getValue() ) ) );
     }
 }

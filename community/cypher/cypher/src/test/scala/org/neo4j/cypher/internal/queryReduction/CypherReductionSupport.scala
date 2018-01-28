@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper, ValueConversion}
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.{CompilerEngineDelegator, ExecutionPlan, RewindableExecutionResult}
 import org.neo4j.internal.kernel.api.Transaction
@@ -137,7 +139,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   }
 
   private def queryToParsingBaseState(query: String): BaseState = {
-    val startState = LogicalPlanState(query, None, PlannerNameFor(IDPPlannerName.name))
+    val startState = LogicalPlanState(query, None, PlannerNameFor(IDPPlannerName.name), new Solveds, new Cardinalities)
     val parsingContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, null, null)
     CompilationPhases.parsing(CypherReductionSupport.stepSequencer).transform(startState, parsingContext)
   }
@@ -189,7 +191,8 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
                             planContext: PlanContext,
                             queryGraphSolver: IDPQueryGraphSolver) = {
     // TODO enterpriseContext
+    val logicalPlanIdGen = new SequentialIdGen()
     CommunityRuntimeContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
-      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, evaluator = null)
+      None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, logicalPlanIdGen, evaluator = null)
   }
 }

@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
@@ -52,7 +52,7 @@ public class Support
     }
 
     // Helper to produce literal list of relationships
-    public static EdgeValue[] edges( EdgeValue... edgeValues )
+    public static RelationshipValue[] edges( RelationshipValue... edgeValues )
     {
         return edgeValues;
     }

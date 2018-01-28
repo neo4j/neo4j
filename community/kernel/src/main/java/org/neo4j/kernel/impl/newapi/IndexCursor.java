@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-abstract class IndexCursor
+abstract class IndexCursor<T extends IndexProgressor>
 {
-    private IndexProgressor progressor;
+    private T progressor;
 
-    final void initialize( IndexProgressor progressor )
+    final void initialize( T progressor )
     {
         if ( this.progressor != null )
         {
@@ -34,14 +34,14 @@ abstract class IndexCursor
         this.progressor = progressor;
     }
 
-    public boolean next()
-    {
-        return progressor != null && progressor.next();
-    }
-
     public final boolean shouldRetry()
     {
         return false;
+    }
+
+    final boolean innerNext()
+    {
+        return progressor != null && progressor.next();
     }
 
     void close()

@@ -24,10 +24,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslContext;
 
-import java.util.Map;
-import java.util.function.Function;
-
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.LogProvider;
@@ -43,12 +39,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
     private final TransportThrottleGroup throttleGroup;
-    private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions;
+    private final BoltProtocolHandlerFactory handlerFactory;
 
     public SocketTransport( ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
                             LogProvider logging, BoltMessageLogging boltLogging,
                             TransportThrottleGroup throttleGroup,
-                            Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions )
+                            BoltProtocolHandlerFactory handlerFactory )
     {
         this.address = address;
         this.sslCtx = sslCtx;
@@ -56,7 +52,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         this.logging = logging;
         this.boltLogging = boltLogging;
         this.throttleGroup = throttleGroup;
-        this.protocolVersions = protocolVersions;
+        this.handlerFactory = handlerFactory;
     }
 
     @Override
@@ -75,9 +71,10 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 // add a close listener that will uninstall throttles
                 ch.closeFuture().addListener( future -> throttleGroup.uninstall( ch ) );
 
-                ch.pipeline().addLast(
-                        new TransportSelectionHandler( sslCtx, encryptionRequired, false, logging, protocolVersions,
-                                boltLogging ) );
+                TransportSelectionHandler transportSelectionHandler = new TransportSelectionHandler( sslCtx,
+                        encryptionRequired, false, logging, handlerFactory, boltLogging );
+
+                ch.pipeline().addLast( transportSelectionHandler );
             }
         };
     }

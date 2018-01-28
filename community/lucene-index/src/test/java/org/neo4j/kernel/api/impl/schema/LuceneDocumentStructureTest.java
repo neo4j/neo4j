@@ -33,9 +33,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -118,7 +118,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue() );
+        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue(), 0.001 );
     }
 
     @Test
@@ -165,8 +165,8 @@ public class LuceneDocumentStructureTest
         NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) constantScoreQuery.getQuery();
 
         // then
-        assertEquals( 12.0, query.getMin() );
-        assertEquals( 12.0, query.getMax() );
+        assertEquals( 12.0, query.getMin(), 0.001 );
+        assertEquals( 12.0, query.getMax(),0.001 );
     }
 
     @Test
@@ -202,8 +202,8 @@ public class LuceneDocumentStructureTest
         // then
         assertEquals( "true", boolTermQuery.getTerm().text() );
         assertEquals( "Characters", stringTermQuery.getTerm().text() );
-        assertEquals( 12.0, numericRangeQuery.getMin() );
-        assertEquals( 12.0, numericRangeQuery.getMax() );
+        assertEquals( 12.0, numericRangeQuery.getMin(), 0.001 );
+        assertEquals( 12.0, numericRangeQuery.getMax(), 0.001 );
         assertEquals( "D1.0|2.0|3.0|", arrayTermQuery.getTerm().text() );
     }
 
@@ -215,7 +215,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "number", query.getField() );
-        assertEquals( 12.0, query.getMin() );
+        assertEquals( 12.0, query.getMin(), 0.001 );
         assertEquals( true, query.includesMin() );
         assertEquals( null, query.getMax() );
         assertEquals( true, query.includesMax() );

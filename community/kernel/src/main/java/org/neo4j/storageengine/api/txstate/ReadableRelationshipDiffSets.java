@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 /**
  * {@link SuperReadableDiffSets} with added method for filtering added relationships.
  */
-public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T,RelationshipIterator>
+public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T,RelationshipIterator, RelationshipIterator>
 {
     @Override
     ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter );

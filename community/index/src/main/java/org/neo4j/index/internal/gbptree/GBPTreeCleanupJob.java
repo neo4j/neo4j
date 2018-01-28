@@ -57,6 +57,12 @@ class GBPTreeCleanupJob implements CleanupJob
     }
 
     @Override
+    public void close()
+    {
+        gbpTreeLock.cleanerUnlock();
+    }
+
+    @Override
     public void run()
     {
         try
@@ -67,10 +73,6 @@ class GBPTreeCleanupJob implements CleanupJob
         catch ( Exception e )
         {
             failure = e;
-        }
-        finally
-        {
-            gbpTreeLock.cleanerUnlock();
         }
     }
 }

@@ -340,7 +340,7 @@ case class Match(
   }
 }
 
-case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: InputPosition) extends UpdateClause {
+case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition) extends UpdateClause {
   override def name = "MERGE"
 
   override def semanticCheck: SemanticCheck =

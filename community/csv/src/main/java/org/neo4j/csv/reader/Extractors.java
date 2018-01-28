@@ -144,7 +144,7 @@ public class Extractors
 
     public void add( Extractor<?> extractor )
     {
-        instances.put( extractor.toString().toUpperCase(), extractor );
+        instances.put( extractor.name().toUpperCase(), extractor );
     }
 
     public Extractor<?> valueOf( String name )
@@ -244,17 +244,17 @@ public class Extractors
 
     private abstract static class AbstractExtractor<T> implements Extractor<T>
     {
-        private final String toString;
+        private final String name;
 
-        AbstractExtractor( String toString )
+        AbstractExtractor( String name )
         {
-            this.toString = toString;
+            this.name = name;
         }
 
         @Override
-        public String toString()
+        public String name()
         {
-            return toString;
+            return name;
         }
 
         @Override

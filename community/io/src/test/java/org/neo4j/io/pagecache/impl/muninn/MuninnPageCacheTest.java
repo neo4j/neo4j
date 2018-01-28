@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
@@ -222,7 +223,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         writeInitialDataTo( file( "a" ) );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 2,
-                PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
               PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             Future<?> task = executor.submit( () ->
@@ -286,7 +287,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         };
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 2,
-                PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
               PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
             // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever even

@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.values.AnyValue
 
 import scala.collection.{immutable, mutable}
 
@@ -156,6 +158,9 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
   private val aliases: mutable.Set[String] = mutable.Set()
   private val slotAliases = new mutable.HashMap[Slot, mutable.Set[String]] with mutable.MultiMap[Slot, String]
 
+  private val getters: mutable.Map[String, ExecutionContext => AnyValue] = new mutable.HashMap[String, ExecutionContext => AnyValue]()
+  private val setters: mutable.Map[String, (ExecutionContext, AnyValue) => Unit] = new mutable.HashMap[String, (ExecutionContext, AnyValue) => Unit]()
+
   def size() = SlotConfiguration.Size(numberOfLongs, numberOfReferences)
 
   def addAlias(newKey: String, existingKey: String): SlotConfiguration = {
@@ -265,6 +270,27 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     case Some(s: LongSlot) => s.offset
     case Some(s) => throw new InternalException(s"Uh oh... There was no long slot for `$name`. It was a $s")
     case _ => throw new InternalException(s"Uh oh... There was no slot for `$name`")
+  }
+
+  def updateAccessorFunctions(key: String, getter: ExecutionContext => AnyValue, setter: (ExecutionContext, AnyValue) => Unit) = {
+    getters += key -> getter
+    setters += key -> setter
+  }
+
+  def getter(key: String): ExecutionContext => AnyValue = {
+    getters(key)
+  }
+
+  def setter(key: String): (ExecutionContext, AnyValue) => Unit = {
+    setters(key)
+  }
+
+  def maybeGetter(key: String): Option[ExecutionContext => AnyValue] = {
+    getters.get(key)
+  }
+
+  def maybeSetter(key: String): Option[(ExecutionContext, AnyValue) => Unit] = {
+    setters.get(key)
   }
 
   // NOTE: This will give duplicate slots when we have aliases

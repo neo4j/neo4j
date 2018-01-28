@@ -26,7 +26,6 @@ import java.io.File;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;

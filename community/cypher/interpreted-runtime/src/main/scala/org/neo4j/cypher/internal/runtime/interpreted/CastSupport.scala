@@ -169,10 +169,10 @@ object CastSupport {
     override def writeNode(nodeId: Long, labels: TextArray,
                            properties: MapValue): Unit = fail()
 
-    override def writeEdgeReference(edgeId: Long): Unit = fail()
+    override def writeRelationshipReference(relId: Long): Unit = fail()
 
-    override def writeEdge(edgeId: Long, startNodeId: Long, endNodeId: Long, `type`: TextValue,
-                           properties: MapValue): Unit = fail()
+    override def writeRelationship(relId: Long, startNodeId: Long, endNodeId: Long, `type`: TextValue,
+                                   properties: MapValue): Unit = fail()
 
     override def beginMap(size: Int): Unit = fail()
 
@@ -183,7 +183,7 @@ object CastSupport {
     override def endList(): Unit = {}
 
     override def writePath(nodes: Array[NodeValue],
-                           edges: Array[EdgeValue]): Unit = fail()
+                           relationships: Array[RelationshipValue]): Unit = fail()
 
     override def writeNull(): Unit = fail()
 

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{ListValue, PathValue, VirtualValues}
 
@@ -33,12 +33,12 @@ import scala.collection.JavaConverters._
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  */
-case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
+case class ShortestPathPipe(source: Pipe, shortestPathExpression: ShortestPathExpression,
                             withFallBack: Boolean = false, disallowSameNode: Boolean = true)
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
+  private val shortestPathCommand = shortestPathExpression.shortestPathPattern
   private def pathName = shortestPathCommand.pathName
-  private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates, withFallBack, disallowSameNode)
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) =
     input.flatMap(ctx => {
@@ -52,7 +52,7 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
         case Some(relName) =>
           result.iterator().asScala.map {
             case path: PathValue =>
-              val relations = VirtualValues.list(path.edges(): _*)
+              val relations = VirtualValues.list(path.relationships(): _*)
               executionContextFactory.copyWith(ctx, pathName, path, relName, relations)
 
             case value =>

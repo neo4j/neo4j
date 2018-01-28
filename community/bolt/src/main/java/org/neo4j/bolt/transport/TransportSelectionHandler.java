@@ -31,10 +31,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.logging.LogProvider;
 
@@ -51,10 +48,10 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final boolean isEncrypted;
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
-    private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions;
+    private final BoltProtocolHandlerFactory handlerFactory;
 
     TransportSelectionHandler( SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
-                               Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions,
+                               BoltProtocolHandlerFactory handlerFactory,
                                BoltMessageLogging boltLogging )
     {
         this.sslCtx = sslCtx;
@@ -62,7 +59,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         this.isEncrypted = isEncrypted;
         this.logging = logging;
         this.boltLogging = boltLogging;
-        this.protocolVersions = protocolVersions;
+        this.handlerFactory = handlerFactory;
     }
 
     @Override
@@ -121,7 +118,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
         p.addLast( new TransportSelectionHandler( null, encryptionRequired, true, logging,
-                protocolVersions, boltLogging ) );
+                handlerFactory, boltLogging ) );
         p.remove( this );
     }
 
@@ -147,7 +144,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
 
     private SocketTransportHandler newSocketTransportHandler()
     {
-        BoltHandshakeProtocolHandler protocolHandler = new BoltHandshakeProtocolHandler( protocolVersions,
+        BoltHandshakeProtocolHandler protocolHandler = new BoltHandshakeProtocolHandler( handlerFactory,
                 encryptionRequired, isEncrypted );
         return new SocketTransportHandler( protocolHandler, logging, boltLogging );
     }

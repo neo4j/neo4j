@@ -20,7 +20,7 @@
 package org.neo4j.causalclustering.core;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import java.time.Instant;
@@ -84,7 +84,7 @@ public class ClusterBindingHandlerTest
         ) );
 
         // then
-        verify( delegate, Mockito.never() ).handle( Matchers.any( RaftMessages.ReceivedInstantClusterIdAwareMessage.class ) );
+        verify( delegate, Mockito.never() ).handle( ArgumentMatchers.any( RaftMessages.ReceivedInstantClusterIdAwareMessage.class ) );
     }
 
     @Test

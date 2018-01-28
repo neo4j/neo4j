@@ -26,10 +26,8 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
@@ -42,7 +40,6 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
@@ -55,13 +52,9 @@ import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
@@ -105,8 +98,6 @@ public class DataSourceModule
 {
     public final ThreadToStatementContextBridge threadToTransactionBridge;
 
-    public final NodeManager nodeManager;
-
     public final NeoStoreDataSource neoStoreDataSource;
 
     public final Supplier<InwardKernel> kernelAPI;
@@ -140,16 +131,8 @@ public class DataSourceModule
 
         threadToTransactionBridge = deps.satisfyDependency( life.add( new ThreadToStatementContextBridge() ) );
 
-        nodeManager = deps.satisfyDependency( new NodeManager( graphDatabaseFacade,
-                threadToTransactionBridge, relationshipTypeTokenHolder ) );
-
-        NodeProxy.NodeActions nodeActions = deps.satisfyDependency( createNodeActions( graphDatabaseFacade,
-                threadToTransactionBridge, nodeManager ) );
-        RelationshipProxy.RelationshipActions relationshipActions = deps.satisfyDependency(
-                createRelationshipActions( graphDatabaseFacade, threadToTransactionBridge, nodeManager,
-                        relationshipTypeTokenHolder ) );
-
-        transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions );
+        deps.satisfyDependency( graphDatabaseFacade );
+        transactionEventHandlers = new TransactionEventHandlers( graphDatabaseFacade );
 
         diagnosticsManager.prependProvider( config );
 
@@ -224,8 +207,6 @@ public class DataSourceModule
 
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );
 
-        life.add( nodeManager );
-
         life.add( new PublishPageCacheTracerMetricsAfterStart( platformModule.tracers.pageCursorTracerSupplier ) );
 
         life.add( new DatabaseAvailability( platformModule.availabilityGuard, platformModule.transactionMonitor,
@@ -240,107 +221,8 @@ public class DataSourceModule
         this.kernelAPI = neoStoreDataSource::getKernel;
 
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, deps,
-                editionModule.coreAPIAvailabilityGuard );
+                editionModule.coreAPIAvailabilityGuard, editionModule.relationshipTypeTokenHolder );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
-    }
-
-    protected RelationshipProxy.RelationshipActions createRelationshipActions(
-            final GraphDatabaseService graphDatabaseService,
-            final ThreadToStatementContextBridge threadToStatementContextBridge,
-            final NodeManager nodeManager,
-            final RelationshipTypeTokenHolder relationshipTypeTokenHolder )
-    {
-        return new RelationshipProxy.RelationshipActions()
-        {
-            @Override
-            public GraphDatabaseService getGraphDatabaseService()
-            {
-                return graphDatabaseService;
-            }
-
-            @Override
-            public void failTransaction()
-            {
-                threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true ).failure();
-            }
-
-            @Override
-            public void assertInUnterminatedTransaction()
-            {
-                threadToStatementContextBridge.assertInUnterminatedTransaction();
-            }
-
-            @Override
-            public Statement statement()
-            {
-                return threadToStatementContextBridge.get();
-            }
-
-            @Override
-            public Node newNodeProxy( long nodeId )
-            {
-                // only used by relationship already checked as valid in cache
-                return nodeManager.newNodeProxyById( nodeId );
-            }
-
-            @Override
-            public RelationshipType getRelationshipTypeById( int type )
-            {
-                try
-                {
-                    return relationshipTypeTokenHolder.getTokenById( type );
-                }
-                catch ( TokenNotFoundException e )
-                {
-                    throw new NotFoundException( e );
-                }
-            }
-        };
-    }
-
-    protected NodeProxy.NodeActions createNodeActions( final GraphDatabaseService graphDatabaseService,
-            final ThreadToStatementContextBridge threadToStatementContextBridge,
-            final NodeManager nodeManager )
-    {
-        return new NodeProxy.NodeActions()
-        {
-            @Override
-            public Statement statement()
-            {
-                return threadToStatementContextBridge.get();
-            }
-
-            @Override
-            public KernelTransaction kernelTransaction()
-            {
-                return threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true );
-            }
-
-            @Override
-            public GraphDatabaseService getGraphDatabase()
-            {
-                // TODO This should be wrapped as well
-                return graphDatabaseService;
-            }
-
-            @Override
-            public void assertInUnterminatedTransaction()
-            {
-                threadToStatementContextBridge.assertInUnterminatedTransaction();
-            }
-
-            @Override
-            public void failTransaction()
-            {
-                threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true ).failure();
-            }
-
-            @Override
-            public Relationship newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
-            {
-                return nodeManager.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
-            }
-        };
     }
 
     private Guard createGuard( Dependencies deps, Clock clock, LogService logging )

@@ -20,12 +20,11 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
 /**
  * Factory for the {@link Data data} provided by an {@link Input}.
  */
-public interface DataFactory<ENTITY extends InputEntity>
+public interface DataFactory
 {
-    Data<ENTITY> create( Configuration config );
+    Data create( Configuration config );
 }

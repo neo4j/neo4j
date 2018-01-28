@@ -29,8 +29,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.logging.NullLog;
 
-import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;

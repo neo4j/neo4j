@@ -20,18 +20,17 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For each input row, delete the entity specified by 'expression'. Entity can be a node, relationship or path.
   */
-case class DeleteExpression(source: LogicalPlan, expression: Expression)
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+case class DeleteExpression(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
 

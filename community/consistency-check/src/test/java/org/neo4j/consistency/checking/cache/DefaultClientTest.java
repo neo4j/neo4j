@@ -30,7 +30,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.consistency.statistics.DefaultCounts;
 
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class DefaultClientTest

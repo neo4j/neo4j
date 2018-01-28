@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.IndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AsDynamicPropertyNonScannable, AsStringRangeNonSeekable, LogicalPlan}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
@@ -58,7 +58,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     }
   }
 
-  override def apply(qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
     val resultPlans = qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg, context).toSeq.flatMap(_.plans))
 
     if (resultPlans.isEmpty) {
@@ -78,13 +78,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         None
     }.toSet
 
-  type PlanProducer = (IdName, LabelToken, PropertyKeyToken, Seq[Expression], Option[UsingIndexHint], Set[IdName]) => LogicalPlan
+  type PlanProducer = (String, LabelToken, PropertyKeyToken, Seq[Expression], Option[UsingIndexHint], Set[String]) => LogicalPlan
 
   private def produce(variableName: String, propertyKeyName: String, qg: QueryGraph, property: LogicalProperty,
                       predicate: Expression, planProducer: PlanProducer, context: LogicalPlanningContext): Set[LogicalPlan] = {
     val semanticTable = context.semanticTable
-    val labelPredicates: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
-    val idName = IdName(variableName)
+    val labelPredicates: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
+    val idName = variableName
 
     for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
          labelName <- labelPredicate.labels;

@@ -36,9 +36,10 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, InternalPlanDescription => InternalPlanDescription3_4}
 import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, ProfileMode, QueryStatistics}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsv3_4}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
+import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb
@@ -145,7 +146,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
         val procName = QualifiedName(procedureName.namespace, procedureName.name)
         Arguments.Signature(procName, Seq.empty, results.map(pair => (pair._1, lift(pair._2))))
     }
-    PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.variables)
+    PlanDescriptionImpl(Id.INVALID_ID, name, children, arguments, planDescription.variables)
   }
 
   private def lift(cypherType: symbols3_1.CypherType): symbolsv3_4.CypherType = cypherType match {

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
@@ -37,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
@@ -44,7 +46,8 @@ import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, Sing
 import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, _}
 import org.neo4j.cypher.internal.util.v3_4.TaskCloser
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.virtual.MapValue
@@ -72,8 +75,10 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
       context.notificationLogger.log(
         ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
                                           "not recommended to be run on production systems"))
+      val readOnlies = new ReadOnlies
+      from.solveds.mapTo(readOnlies, _.readOnly)
       val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
-                                             dispatcher, context.notificationLogger)
+                                             dispatcher, context.notificationLogger, readOnlies, from.cardinalities)
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Success(execPlan))
     } catch {
@@ -94,17 +99,19 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
   case class VectorizedExecutionPlan(plannerUsed: PlannerName,
                                      operators: Pipeline,
-                                     slots: Map[LogicalPlanId, SlotConfiguration],
+                                     slots: SlotConfigurations,
                                      physicalPlan: LogicalPlan,
                                      fieldNames: Array[String],
                                      dispatcher: Dispatcher,
-                                     notificationLogger: InternalNotificationLogger) extends executionplan.ExecutionPlan {
+                                     notificationLogger: InternalNotificationLogger,
+                                     readOnlies: ReadOnlies,
+                                     cardinalities: Cardinalities) extends executionplan.ExecutionPlan {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       val planDescription =
-        () => LogicalPlan2PlanDescription(physicalPlan, plannerUsed)
+        () => LogicalPlan2PlanDescription(physicalPlan, plannerUsed, readOnlies, cardinalities)
           .addArgument(Runtime(MorselRuntimeName.toTextOutput))
           .addArgument(RuntimeImpl(MorselRuntimeName.name))
 

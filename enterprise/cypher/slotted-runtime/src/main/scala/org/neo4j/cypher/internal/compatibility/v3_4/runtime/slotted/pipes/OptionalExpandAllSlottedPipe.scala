@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -41,7 +41,7 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
                                         types: LazyTypes,
                                         predicate: Predicate,
                                         slots: SlotConfiguration)
-                                       (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with Pipe {
+                                       (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
 
   //===========================================================================
   // Compile-time initializations

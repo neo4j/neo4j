@@ -19,47 +19,51 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.ProcedureCallProjection
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_4.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
+import org.neo4j.cypher.internal.ir.v3_4.{RegularPlannerQuery, RegularQueryProjection}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
-import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.v3_4.expressions.{Namespace, ProcedureName, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-class PlanEventHorizonTest extends CypherFunSuite {
-
-  val pos = DummyPosition(1)
-  val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel], LogicalPlan.LOWEST_TX_LAYER),
-    mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
+class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should do projection if necessary") {
     // Given
-    val literal = SignedDecimalIntegerLiteral("42")(pos)
-    val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal)))
-    val inputPlan = Argument()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))
+    new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
+      val literal = SignedDecimalIntegerLiteral("42")(pos)
+      val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal)))
+      val inputPlan = Argument()
 
-    // When
-    val producedPlan = PlanEventHorizon(pq, inputPlan, context)
+      // When
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
 
-    // Then
-    producedPlan should equal(Projection(inputPlan, Map("a" -> literal))(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1))))
+      // Then
+      producedPlan should equal(Projection(inputPlan, Map("a" -> literal)))
+    }
   }
 
   test("should plan procedure calls") {
     // Given
-    val literal = SignedDecimalIntegerLiteral("42")(pos)
-    val call = mock[ResolvedCall]
-    val pq = RegularPlannerQuery(horizon = ProcedureCallProjection(call))
-    val inputPlan = Argument()(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1)))
+    new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
+      val ns = Namespace(List("my", "proc"))(pos)
+    val name = ProcedureName("foo")(pos)
+    val qualifiedName = QualifiedName(ns.parts, name.name)
+    val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
+    val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
+    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty))
+    val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
 
-    // When
-    val producedPlan = PlanEventHorizon(pq, inputPlan, context)
+      val call =  ResolvedCall(signature, Seq.empty, callResults)(pos)
+      val pq = RegularPlannerQuery(horizon = ProcedureCallProjection(call))
+      val inputPlan = Argument()
 
-    // Then
-    producedPlan should equal(ProcedureCall(inputPlan, call)(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1))))
+      // When
+      val producedPlan = PlanEventHorizon(pq, inputPlan, context, new StubSolveds, new StubCardinalities)
+
+      // Then
+      producedPlan should equal(ProcedureCall(inputPlan, call))
+    }
   }
 }

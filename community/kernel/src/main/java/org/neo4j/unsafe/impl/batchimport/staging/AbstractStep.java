@@ -48,7 +48,7 @@ public abstract class AbstractStep<T> implements Step<T>
 {
     public static final ParkStrategy PARK = new ParkStrategy.Park( IS_OS_WINDOWS ? 10_000 : 500, MICROSECONDS );
 
-    private final StageControl control;
+    protected final StageControl control;
     private volatile String name;
     @SuppressWarnings( "rawtypes" )
     protected volatile Step downstream;

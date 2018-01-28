@@ -24,6 +24,7 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -101,8 +102,8 @@ public class LookupFilter
      *
      * used in "normal" operation
      */
-    public static PrimitiveLongIterator exactIndexMatches( EntityOperations operations, KernelStatement state,
-            PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
+    public static PrimitiveLongResourceIterator exactIndexMatches( EntityOperations operations, KernelStatement state,
+            PrimitiveLongResourceIterator indexedNodeIds, IndexQuery... predicates )
     {
         if ( !indexedNodeIds.hasNext() )
         {

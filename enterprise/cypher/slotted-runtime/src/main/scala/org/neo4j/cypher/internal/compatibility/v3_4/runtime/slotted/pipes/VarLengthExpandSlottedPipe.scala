@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyTypes, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, VirtualValues}
+import org.neo4j.values.virtual.{RelationshipValue, VirtualValues}
 import org.neo4j.values.storable.Values
 
 import scala.collection.mutable
@@ -53,7 +53,7 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
                                       nodePredicate: Predicate,
                                       edgePredicate: Predicate,
                                       argumentSize: SlotConfiguration.Size)
-                                     (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
+                                     (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
   type LNode = Long
 
   //===========================================================================
@@ -71,17 +71,17 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
 
   private def varLengthExpand(node: LNode,
                               state: QueryState,
-                              row: ExecutionContext): Iterator[(LNode, Seq[EdgeValue])] = {
-    val stack = new mutable.Stack[(LNode, Seq[EdgeValue])]
+                              row: ExecutionContext): Iterator[(LNode, Seq[RelationshipValue])] = {
+    val stack = new mutable.Stack[(LNode, Seq[RelationshipValue])]
     stack.push((node, Seq.empty))
 
-    new Iterator[(LNode, Seq[EdgeValue])] {
-      override def next(): (LNode, Seq[EdgeValue]) = {
+    new Iterator[(LNode, Seq[RelationshipValue])] {
+      override def next(): (LNode, Seq[RelationshipValue]) = {
         val (fromNode, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue)) {
           val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
 
-          var relationship: EdgeValue = null
+          var relationship: RelationshipValue = null
 
           val relVisitor = new RelationshipVisitor[InternalException] {
             override def visit(relationshipId: Long, typeId: Int, startNodeId: LNode, endNodeId: LNode): Unit = {
@@ -141,9 +141,9 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
           inputRow.setLongAt(tempNodeOffset, fromNode)
           if (nodePredicate.isTrue(inputRow, state)) {
 
-            val paths: Iterator[(LNode, Seq[EdgeValue])] = varLengthExpand(fromNode, state, inputRow)
+            val paths: Iterator[(LNode, Seq[RelationshipValue])] = varLengthExpand(fromNode, state, inputRow)
             paths collect {
-              case (toNode: LNode, rels: Seq[EdgeValue])
+              case (toNode: LNode, rels: Seq[RelationshipValue])
                 if rels.length >= min && isToNodeValid(inputRow, toNode) =>
                 val resultRow = SlottedExecutionContext(slots)
                 resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)

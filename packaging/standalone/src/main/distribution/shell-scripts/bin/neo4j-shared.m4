@@ -26,12 +26,19 @@ setup_heap() {
   JAVA_MEMORY_OPTS=()
   if [[ -n "${HEAP_SIZE:-}" ]]; then
     JAVA_MEMORY_OPTS+=("-Xmx${HEAP_SIZE}")
-    JAVA_MEMORY_OPTS+=("-Xms${HEAP_SIZE}")
   fi
 }
 
 build_classpath() {
   CLASSPATH="${NEO4J_PLUGINS}:${NEO4J_CONF}:${NEO4J_LIB}/*:${NEO4J_PLUGINS}/*"
+
+  # augment with tools.jar, will need JDK
+  if [ "${JAVA_HOME:-}" ]; then
+    JAVA_TOOLS="${JAVA_HOME}/lib/tools.jar"
+    if [ -e $JAVA_TOOLS ]; then
+      CLASSPATH="${CLASSPATH}:${JAVA_TOOLS}"
+    fi
+  fi
 }
 
 detect_os() {

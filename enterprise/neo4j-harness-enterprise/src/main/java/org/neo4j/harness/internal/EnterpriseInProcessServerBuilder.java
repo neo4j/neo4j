@@ -26,7 +26,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.AbstractNeoServer;
-import org.neo4j.server.enterprise.EnterpriseNeoServer;
+import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 
 public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBuilder
 {
@@ -49,6 +49,6 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
     protected AbstractNeoServer createNeoServer( Map<String,String> config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider )
     {
-        return new EnterpriseNeoServer( Config.defaults( config ), dependencies, userLogProvider );
+        return new OpenEnterpriseNeoServer( Config.defaults( config ), dependencies, userLogProvider );
     }
 }

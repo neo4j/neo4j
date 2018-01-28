@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.util.function.BiConsumer
 
-import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
+import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, MapValue}
@@ -43,7 +43,7 @@ object valueHelper {
       map.toMap
     }
     case n: NodeProxyWrappingNodeValue => n.nodeProxy()
-    case n: RelationshipProxyWrappingEdgeValue => n.relationshipProxy()
+    case n: RelationshipProxyWrappingValue => n.relationshipProxy()
     case a: ListValue => Vector(a.asArray().map(fromValue): _*)
     case Values.NO_VALUE => null
   }

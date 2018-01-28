@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -37,7 +39,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 /**
  * Default implementation of {@link StageControl}
  */
-public class StageExecution implements StageControl
+public class StageExecution implements StageControl, AutoCloseable
 {
     private final String stageName;
     private final String part;
@@ -46,6 +48,8 @@ public class StageExecution implements StageControl
     private long startTime;
     private final int orderingGuarantees;
     private volatile Throwable panic;
+    private final boolean shouldRecycle;
+    private final ConcurrentLinkedQueue<Object> recycled;
 
     public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline,
             int orderingGuarantees )
@@ -55,6 +59,8 @@ public class StageExecution implements StageControl
         this.config = config;
         this.pipeline = pipeline;
         this.orderingGuarantees = orderingGuarantees;
+        this.shouldRecycle = (orderingGuarantees & Step.RECYCLE_BATCHES) != 0;
+        this.recycled = shouldRecycle ? new ConcurrentLinkedQueue<>() : null;
     }
 
     public boolean stillExecuting()
@@ -189,5 +195,39 @@ public class StageExecution implements StageControl
     public String toString()
     {
         return getClass().getSimpleName() + "[" + name() + "]";
+    }
+
+    @Override
+    public void recycle( Object batch )
+    {
+        if ( shouldRecycle )
+        {
+            recycled.offer( batch );
+        }
+    }
+
+    @Override
+    public <T> T reuse( Supplier<T> fallback )
+    {
+        if ( shouldRecycle )
+        {
+            @SuppressWarnings( "unchecked" )
+            T result = (T) recycled.poll();
+            if ( result != null )
+            {
+                return result;
+            }
+        }
+
+        return fallback.get();
+    }
+
+    @Override
+    public void close()
+    {
+        if ( shouldRecycle )
+        {
+            recycled.clear();
+        }
     }
 }

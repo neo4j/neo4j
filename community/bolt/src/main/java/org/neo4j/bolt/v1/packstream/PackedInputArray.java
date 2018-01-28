@@ -35,12 +35,6 @@ public class PackedInputArray implements PackInput
     }
 
     @Override
-    public boolean hasMoreData() throws IOException
-    {
-        return data.available() >= 1;
-    }
-
-    @Override
     public byte readByte() throws IOException
     {
         return data.readByte();

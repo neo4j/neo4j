@@ -31,7 +31,7 @@ trait PlannerQuery {
   val horizon: QueryHorizon
   val tail: Option[PlannerQuery]
 
-  def dependencies: Set[IdName]
+  def dependencies: Set[String]
 
   def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
 
@@ -61,10 +61,7 @@ trait PlannerQuery {
     case None => queryGraph.allHints
   }
 
-  def numHints: Int = tail match {
-    case Some(tailPlannerQuery) => queryGraph.numHints + tailPlannerQuery.numHints
-    case None => queryGraph.numHints
-  }
+  def numHints: Int = allHints.size
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQuery = withQueryGraph(f(queryGraph))
 
@@ -154,15 +151,15 @@ trait PlannerQuery {
     loop(Seq.empty, Some(this))
   }
 
-  def labelInfo: Map[IdName, Set[LabelName]] = {
+  def labelInfo: Map[String, Set[LabelName]] = {
     val labelInfo = lastQueryGraph.selections.labelInfo
     val projectedLabelInfo = lastQueryHorizon match {
       case projection: QueryProjection =>
         projection.projections.collect {
-          case (projectedName, Variable(name)) if labelInfo.contains(IdName(name)) =>
-              IdName(projectedName) -> labelInfo(IdName(name))
+          case (projectedName, Variable(name)) if labelInfo.contains(name) =>
+              projectedName -> labelInfo(name)
         }
-      case _ => Map.empty[IdName, Set[LabelName]]
+      case _ => Map.empty[String, Set[LabelName]]
     }
     labelInfo ++ projectedLabelInfo
   }
@@ -171,7 +168,7 @@ trait PlannerQuery {
 object PlannerQuery {
   val empty = RegularPlannerQuery()
 
-  def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
+  def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]) = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
   }
@@ -186,26 +183,9 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                               tail: Option[PlannerQuery] = tail) =
     RegularPlannerQuery(queryGraph, horizon, tail)
 
-  override def dependencies: Set[IdName] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
+  override def dependencies: Set[String] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 }
 
-trait CardinalityEstimation {
-  self: PlannerQuery =>
-
-  def estimatedCardinality: Cardinality
-}
-
-object CardinalityEstimation {
-
-  def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) = plannerQuery match {
-    case _: RegularPlannerQuery =>
-      new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.horizon, plannerQuery.tail)
-        with CardinalityEstimation {
-        val estimatedCardinality = cardinality
-      }
-  }
-}
-
-case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName], periodicCommit: Option[PeriodicCommit]) {
+case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[String], periodicCommit: Option[PeriodicCommit]) {
   def readOnly: Boolean = queries.forall(_.readOnly)
 }

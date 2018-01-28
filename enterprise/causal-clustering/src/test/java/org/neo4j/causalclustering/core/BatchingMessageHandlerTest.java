@@ -19,6 +19,10 @@
  */
 package org.neo4j.causalclustering.core;
 
+import org.junit.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -26,10 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.Mockito;
 
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -205,7 +205,7 @@ public class BatchingMessageHandlerTest
         batchHandler.run();
 
         // then
-        verify( downstreamHandler, never() ).handle( Matchers.any( RaftMessages.ReceivedInstantClusterIdAwareMessage.class ) );
+        verify( downstreamHandler, never() ).handle( ArgumentMatchers.any( RaftMessages.ReceivedInstantClusterIdAwareMessage.class ) );
         logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( BatchingMessageHandler.class )
                 .debug( "This handler has been stopped, dropping the message: %s", message ) );
     }

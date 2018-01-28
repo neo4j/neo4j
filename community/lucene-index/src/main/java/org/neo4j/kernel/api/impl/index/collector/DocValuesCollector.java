@@ -49,6 +49,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -322,7 +323,7 @@ public class DocValuesCollector extends SimpleCollector
      * is crossed; one thread might think it is reading from one segment while another thread has
      * already advanced this Iterator to the next segment, having raced the first thread.
      */
-    public static class LongValuesIterator extends ValuesIterator
+    public static class LongValuesIterator extends ValuesIterator implements PrimitiveLongResourceIterator
     {
         private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
         private final String field;
@@ -348,6 +349,12 @@ public class DocValuesCollector extends SimpleCollector
         public long current()
         {
             return next;
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return 0;
         }
 
         @Override
@@ -432,6 +439,12 @@ public class DocValuesCollector extends SimpleCollector
             {
                 throw new RuntimeException( e );
             }
+        }
+
+        @Override
+        public void close()
+        {
+            //nothing to close
         }
     }
 
@@ -793,6 +806,12 @@ public class DocValuesCollector extends SimpleCollector
         public long current()
         {
             return index;
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return scoreDocs.getCurrentDoc().score;
         }
 
         @Override

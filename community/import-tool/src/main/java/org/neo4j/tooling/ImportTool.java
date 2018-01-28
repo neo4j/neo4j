@@ -59,14 +59,12 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
@@ -75,6 +73,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
+import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
 
@@ -98,7 +97,7 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.canDetectFreeMemor
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -384,8 +383,9 @@ public class ImportTool
      */
     public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
-        System.err.println("WARNING: neo4j-import is deprecated and support for it will be removed in a future\n" +
-                "version of Neo4j; please use neo4j-admin import instead.\n");
+        System.err.println( format( "WARNING: neo4j-import is deprecated and support for it will be removed in a future%n" +
+                "version of Neo4j; please use neo4j-admin import instead." ) );
+
         PrintStream out = System.out;
         PrintStream err = System.err;
         Args args = Args.parse( incomingArguments );
@@ -472,8 +472,7 @@ public class ImportTool
                     allowCacheOnHeap, defaultHighIO );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
-                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
-                    configuration.maxNumberOfProcessors(), !skipBadRelationships );
+                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
 
             doImport( out, err, in, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
@@ -559,7 +558,7 @@ public class ImportTool
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
 
         life.start();
-        BatchImporter importer = new ParallelBatchImporter( storeDir,
+        BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( storeDir,
                 fs,
                 null, // no external page cache
                 configuration,
@@ -567,7 +566,8 @@ public class ImportTool
                 ExecutionMonitors.defaultVisible( in ),
                 EMPTY,
                 dbConfig,
-                RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ) );
+                RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
+                new PrintingImportLogicMonitor( out, err ) );
         printOverview( storeDir, nodesFiles, relationshipsFiles, configuration, out );
         success = false;
         try
@@ -843,30 +843,30 @@ public class ImportTool
         }
     }
 
-    public static Iterable<DataFactory<InputRelationship>>
+    public static Iterable<DataFactory>
             relationshipData( final Charset encoding, Collection<Option<File[]>> relationshipsFiles )
     {
-        return new IterableWrapper<DataFactory<InputRelationship>,Option<File[]>>( relationshipsFiles )
+        return new IterableWrapper<DataFactory,Option<File[]>>( relationshipsFiles )
         {
             @Override
-            protected DataFactory<InputRelationship> underlyingObjectToObject( Option<File[]> group )
+            protected DataFactory underlyingObjectToObject( Option<File[]> group )
             {
                 return data( defaultRelationshipType( group.metadata() ), encoding, group.value() );
             }
         };
     }
 
-    public static Iterable<DataFactory<InputNode>> nodeData( final Charset encoding,
+    public static Iterable<DataFactory> nodeData( final Charset encoding,
             Collection<Option<File[]>> nodesFiles )
     {
-        return new IterableWrapper<DataFactory<InputNode>,Option<File[]>>( nodesFiles )
+        return new IterableWrapper<DataFactory,Option<File[]>>( nodesFiles )
         {
             @Override
-            protected DataFactory<InputNode> underlyingObjectToObject( Option<File[]> input )
+            protected DataFactory underlyingObjectToObject( Option<File[]> input )
             {
-                Decorator<InputNode> decorator = input.metadata() != null
+                Decorator decorator = input.metadata() != null
                         ? additiveLabels( input.metadata().split( ":" ) )
-                        : NO_NODE_DECORATOR;
+                        : NO_DECORATOR;
                 return data( decorator, encoding, input.value() );
             }
         };

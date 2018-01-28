@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.string.UTF8;
 
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.neo4j.helpers.ArrayUtil.contains;
@@ -713,7 +712,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
-            byte[] expectedLegacyVersionBytes = UTF8.encode( typeDescriptor + " " + storeVersion );
             long nextPageId = storeFile.getLastPageId();
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
@@ -733,15 +731,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                         long recordId = (cursor.getCurrentPageId() * recordsPerPage) + currentRecord;
                         if ( isInUse( cursor ) )
                         {
-                            boolean justLegacyStoreTrailer = isJustLegacyStoreTrailer( cursor, offset,
-                                    expectedLegacyVersionBytes, recordSize );
-                            if ( !justLegacyStoreTrailer )
-                            {
-                                // We've found the highest id in use
-                                highestId = recordId + 1 /*+1 since we return the high id*/;
-                                found = true;
-                                break;
-                            }
+                            // We've found the highest id in use
+                            highestId = recordId + 1 /*+1 since we return the high id*/;
+                            found = true;
+                            break;
                         }
                     }
                 }
@@ -759,57 +752,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             throw new UnderlyingStorageException(
                     "Unable to find high id by scanning backwards " + getStorageFileName(), e );
-        }
-    }
-
-    /**
-     * {@link CommonAbstractStore} doesn't use version trailers in the end of the stores after a clean shutdown
-     * anymore. Although {@link RecordFormat} is now pluggable and so a {@link CommonAbstractStore} may be used
-     * to open an older version of the store, one which might have version trailers. This method is used
-     * during opening a store to figure out the highest id by scanning from the end. It's very convenient
-     * if we were aware of the existence of version trailers as to support opening older versions without
-     * problems in this regard. A version trailer may span multiple records in a store which has record size
-     * smaller than the trailer length and so the matching takes that into account in that it can figure
-     * out all possible subsets of the trailer to compare with. Without this method the scan which figures
-     * out highest in use id may mistake version trailer "records" for inUse records, if the inUse bit
-     * happened to be set and so would report too high highest id and reading those higher/trailer records,
-     * trying to interpret them as normal records would fail in random and interesting ways.
-     *
-     * @param cursor {@link PageCursor} to read and compare trailer bytes with.
-     * @param offset offset to start reading the record bytes from the cursor.
-     * @param expectedVersionBytes the whole version trailer as a {@code byte[]}.
-     * @param recordSize record size of records in this store.
-     * @return {@code true} if the record at the offset was just a version trailer "record", otherwise
-     * {@code false} where the id of this record will be set as the highest inUse record in this store.
-     */
-    private boolean isJustLegacyStoreTrailer( PageCursor cursor, int offset, byte[] expectedVersionBytes,
-            int recordSize )
-    {
-        try
-        {
-            for ( int i = 0; i < expectedVersionBytes.length; )
-            {
-                // If the version bytes are bigger than record size then we must also compare with subsets
-                // of those bytes in recordSize chunks
-                boolean mismatch = false;
-                for ( int j = 0; i < expectedVersionBytes.length && j < recordSize; i++, j++ )
-                {
-                    byte b = cursor.getByte( offset + j );
-                    if ( b != expectedVersionBytes[i] )
-                    {
-                        mismatch = true;
-                    }
-                }
-                if ( !mismatch )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch ( IndexOutOfBoundsException e )
-        {
-            return false;
         }
     }
 

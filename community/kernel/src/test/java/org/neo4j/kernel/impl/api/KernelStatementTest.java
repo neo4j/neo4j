@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -106,7 +107,7 @@ public class KernelStatementTest
         Procedures procedures = mock( Procedures.class );
 
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
-                CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE );
+                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ) );
         when( transaction.getStatistics() ).thenReturn( statistics );
         when( transaction.executingQueries() ).thenReturn( ExecutingQueryList.EMPTY );
 

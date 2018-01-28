@@ -35,7 +35,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.metrics.MetricsSettings.prometheusEnabled;
 import static org.neo4j.metrics.MetricsSettings.prometheusEndpoint;
 import static org.neo4j.metrics.source.db.EntityCountMetrics.COUNTS_NODE;

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Phase}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.ReadOnlies
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
@@ -59,7 +60,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
 
-  override def description = "create interpreted execution plan"
+  override def description = "create slotted execution plan"
 
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
@@ -85,18 +86,22 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
                                                               expressionConverters = converters,
                                                               pipeBuilderFactory = pipeBuilderFactory)
+      val readOnlies = new ReadOnlies
+      from.solveds.mapTo(readOnlies, _.readOnly)
       val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(),
-                                                         from.plannerName)
+                                                         from.plannerName, readOnlies, from.cardinalities)
       val pipeInfo = executionPlanBuilder
         .build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
       val columns = from.statement().returnColumns
       val resultBuilderFactory =
         new SlottedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, physicalPlan.slotConfigurations)
-      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating,
+      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
-                                                                        SlottedRuntimeName)
+                                                                        SlottedRuntimeName,
+                                                                        readOnlies,
+                                                                        from.cardinalities)
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage

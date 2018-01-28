@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLon
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 case class AllNodesScanSlottedPipe(ident: String, slots: SlotConfiguration, argumentSize: Size)
-                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+                                  (val id: Id = Id.INVALID_ID) extends Pipe {
 
   private val offset = slots.getLongOffsetFor(ident)
 

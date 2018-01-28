@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.ir.v3_4.Selections
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
-object unsolvedPreds extends ((Selections, LogicalPlan) => Seq[Expression]) {
+case class unsolvedPreds(solveds: Solveds) extends ((Selections, LogicalPlan) => Seq[Expression]) {
   def apply(s: Selections, l: LogicalPlan): Seq[Expression] =
     s.scalarPredicatesGiven(l.availableSymbols)
-    .filterNot(predicate => l.solved.exists(_.queryGraph.selections.contains(predicate)))
+    .filterNot(predicate => solveds.get(l.id).exists(_.queryGraph.selections.contains(predicate)))
 }
 
 

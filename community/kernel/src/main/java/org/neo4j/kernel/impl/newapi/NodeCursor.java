@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
+
+import static java.util.Collections.emptySet;
 
 class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.NodeCursor
 {
@@ -45,13 +45,6 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private long highMark;
     private HasChanges hasChanges = HasChanges.MAYBE;
     private Set<Long> addedNodes;
-
-    private enum HasChanges
-    {
-        MAYBE,
-        YES,
-        NO
-    }
 
     NodeCursor()
     {
@@ -72,7 +65,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.highMark = read.nodeHighMark();
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = null;
+        this.addedNodes = emptySet();
     }
 
     void single( long reference, Read read )
@@ -90,7 +83,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.highMark = NO_ID;
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = null;
+        this.addedNodes = emptySet();
     }
 
     @Override
@@ -105,10 +98,10 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            if ( txState.nodeIsAddedInThisTx( nodeReference() ) )
+            if ( txState.nodeIsAddedInThisTx( getId() ) )
             {
                 //Node just added, no reason to go down to store and check
-                return Labels.from( txState.nodeStateLabelDiffSets( nodeReference() ).getAdded() );
+                return Labels.from( txState.nodeStateLabelDiffSets( getId() ).getAdded() );
             }
             else
             {
@@ -121,7 +114,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
                 }
 
                 //Augment what was found in store with what we have in tx state
-                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( nodeReference() ) ) );
+                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( getId() ) ) );
             }
         }
         else
@@ -140,31 +133,31 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public void relationships( RelationshipGroupCursor cursor )
     {
-        read.relationshipGroups( nodeReference(), relationshipGroupReference(), cursor );
+        read.relationshipGroups( getId(), relationshipGroupReference(), cursor );
     }
 
     @Override
     public void allRelationships( RelationshipTraversalCursor cursor )
     {
-        read.relationships( nodeReference(), allRelationshipsReference(), cursor );
+        read.relationships( getId(), allRelationshipsReference(), cursor );
     }
 
     @Override
     public void properties( PropertyCursor cursor )
     {
-        read.nodeProperties( nodeReference(), propertiesReference(), cursor );
+        read.nodeProperties( getId(), propertiesReference(), cursor );
     }
 
     @Override
     public long relationshipGroupReference()
     {
-        return isDense() ? getNextRel() : setDirectFlag( getNextRel() );
+        return isDense() ? getNextRel() : GroupReferenceEncoding.encodeRelationship( getNextRel() );
     }
 
     @Override
     public long allRelationshipsReference()
     {
-        return isDense() ? setGroupFlag( getNextRel() ) : getNextRel();
+        return isDense() ? RelationshipReferenceEncoding.encodeGroup( getNextRel() ) : getNextRel();
     }
 
     @Override
@@ -181,13 +174,14 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             reset();
             return false;
         }
+
         // Check tx state
         boolean hasChanges = hasChanges();
-
         TransactionState txs = hasChanges ? read.txState() : null;
+
         do
         {
-            if ( hasChanges && addedNodes.contains( next ) )
+            if ( hasChanges && containsNode( txs ) )
             {
                 setId( next++ );
                 setInUse( true );
@@ -201,6 +195,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             {
                 read.node( this, next++, pageCursor );
             }
+
             if ( next > highMark )
             {
                 if ( isSingle() )
@@ -232,6 +227,11 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         return true;
     }
 
+    private boolean containsNode( TransactionState txs )
+    {
+        return isSingle() ? txs.nodeIsAddedInThisTx( next ) : addedNodes.contains( next );
+    }
+
     @Override
     public boolean shouldRetry()
     {
@@ -254,7 +254,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             labelCursor = null;
         }
         hasChanges = HasChanges.MAYBE;
-        addedNodes = null;
+        addedNodes = emptySet();
         reset();
     }
 
@@ -276,7 +276,10 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             boolean changes = read.hasTxStateWithChanges();
             if ( changes )
             {
-                addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
+                if ( !isSingle() )
+                {
+                    addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
+                }
                 hasChanges = HasChanges.YES;
             }
             else

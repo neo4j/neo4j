@@ -40,8 +40,8 @@ import static java.util.Collections.newSetFromMap;
  * Super class of readable diffsets where use of {@link PrimitiveLongIterator} can be parameterized
  * to a specific subclass instead.
  */
-abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
-        implements SuperReadableDiffSets<T,LONGITERATOR>
+abstract class SuperDiffSets<T,LONGITERATOR_OUT extends PrimitiveLongIterator, LONGITERATOR_IN extends PrimitiveLongIterator>
+        implements SuperReadableDiffSets<T,LONGITERATOR_OUT, LONGITERATOR_IN>
 {
     private Set<T> addedElements;
     private Set<T> removedElements;

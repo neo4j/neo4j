@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import java.util.concurrent.TimeUnit;
-
 class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
 {
     private final int notificationThreshold;
@@ -54,10 +52,8 @@ class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
     @Override
     public long checkFrequencyMillis()
     {
-        // This threshold is usually combined with the TimeCheckPointThreshold, which we expect to have a much higher
-        // frequency (as in, checks more often, e.g. every 15 minutes) than this.
-        // We effectively put an upper bound on how long we can go without checking if a check-point is needed.
-        // However, at least one check per day does sound like the bare minimum that we should do anyway.
-        return TimeUnit.DAYS.toMillis( 1 );
+        // Transaction counts can change at any time, so we need to check fairly regularly to see if a checkpoint
+        // should be triggered.
+        return DEFAULT_CHECKING_FREQUENCY_MILLIS;
     }
 }

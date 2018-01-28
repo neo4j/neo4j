@@ -65,11 +65,9 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     {
         createGraph();
         PathFinder<Path> finder = newFinder();
-        try ( Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) ) )
-        {
-            assertNotNull( path );
-            assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" );
-        }
+        Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) );
+        assertNotNull( path );
+        assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" );
     }
 
     @Test

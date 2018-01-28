@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.QueryExecutionEvent
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.javacompat.ResultRecord
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy, RelationshipProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
 
@@ -82,7 +82,7 @@ object Methods {
   val equals = method[Object, Boolean]("equals", typeRef[Object])
   val or = method[CompiledConversionUtils, java.lang.Boolean]("or", typeRef[Object], typeRef[Object])
   val not = method[CompiledConversionUtils, java.lang.Boolean]("not", typeRef[Object])
-  val loadParameter = method[CompiledConversionUtils, Object]("loadParameter", typeRef[AnyValue], typeRef[NodeManager])
+  val loadParameter = method[CompiledConversionUtils, Object]("loadParameter", typeRef[AnyValue], typeRef[EmbeddedProxySPI])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
   val relationshipTypeGetName = method[ReadOperations, String]("relationshipTypeGetName", typeRef[Int])
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
@@ -98,14 +98,14 @@ object Methods {
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
   val fetchNextRelationship = method[RelationshipIterator, Long]("next")
-  val newNodeProxyById = method[NodeManager, NodeProxy]("newNodeProxyById", typeRef[Long])
-  val newRelationshipProxyById = method[NodeManager, RelationshipProxy]("newRelationshipProxyById", typeRef[Long])
-  val materializeAnyResult = method[CompiledConversionUtils, Object]("materializeAnyResult", typeRef[NodeManager], typeRef[Object])
+  val newNodeProxyById = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])
+  val newRelationshipProxyById = method[EmbeddedProxySPI, RelationshipProxy]("newRelationshipProxy", typeRef[Long])
+  val materializeAnyResult = method[CompiledConversionUtils, Object]("materializeAnyResult", typeRef[EmbeddedProxySPI], typeRef[Object])
   val nodeId = method[NodeIdWrapper, Long]("id")
   val relId = method[RelationshipIdWrapper, Long]("id")
   val set = method[ResultRecord, Unit]("set", typeRef[Int], typeRef[AnyValue])
   val visit = method[QueryResultVisitor[_], Boolean]("visit", typeRef[Record])
-  val executeOperator = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[LogicalPlanId])
+  val executeOperator = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[Id])
   val dbHit = method[QueryExecutionEvent, Unit]("dbHit")
   val row = method[QueryExecutionEvent, Unit]("row")
   val unboxInteger = method[java.lang.Integer, Int]("intValue")

@@ -462,11 +462,7 @@ public class Args
     private void put( Function<String,Option<String>> optionParser, String key, String value )
     {
         Option<String> option = optionParser.apply( key );
-        List<Option<String>> values = map.get( option.value() );
-        if ( values == null )
-        {
-            map.put( option.value(), values = new ArrayList<>() );
-        }
+        List<Option<String>> values = map.computeIfAbsent( option.value(), k -> new ArrayList<>() );
         values.add( new Option<>( value, option.metadata() ) );
     }
 

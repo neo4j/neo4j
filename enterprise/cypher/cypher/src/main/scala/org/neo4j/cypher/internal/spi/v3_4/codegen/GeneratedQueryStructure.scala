@@ -37,15 +37,15 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Compl
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read}
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
@@ -97,7 +97,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   override def generateQuery(className: String,
                              columns: Seq[String],
-                             operatorIds: Map[String, LogicalPlanId],
+                             operatorIds: Map[String, Id],
                              conf: CodeGenConfiguration)
                             (methodStructure: MethodStructure[_] => Unit)
                             (implicit codeGenContext: CodeGenContext): GeneratedQueryStructureResult = {
@@ -190,9 +190,9 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     clazz.generate(Templates.FIELD_NAMES)
   }
 
-  private def setOperatorIds(clazz: ClassGenerator, operatorIds: Map[String, LogicalPlanId]) = {
+  private def setOperatorIds(clazz: ClassGenerator, operatorIds: Map[String, Id]) = {
     operatorIds.keys.foreach { opId =>
-      clazz.staticField(typeRef[LogicalPlanId], opId)
+      clazz.staticField(typeRef[Id], opId)
     }
   }
 
@@ -203,7 +203,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     Fields(
       closer = clazz.field(typeRef[TaskCloser], "closer"),
       ro = clazz.field(typeRef[ReadOperations], "ro"),
-      entityAccessor = clazz.field(typeRef[NodeManager], "nodeManager"),
+      entityAccessor = clazz.field(typeRef[EmbeddedProxySPI], "proxySpi"),
       executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
       description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
       tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),

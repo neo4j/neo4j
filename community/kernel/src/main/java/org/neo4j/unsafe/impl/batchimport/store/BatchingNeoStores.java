@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.PageCacheFlusher;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
@@ -72,6 +73,9 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
@@ -225,7 +229,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private NeoStores instantiateTempStores()
     {
-        return newStoreFactory( TEMP_NEOSTORE_NAME ).openNeoStores( true, RELATIONSHIP_GROUP );
+        return newStoreFactory( TEMP_NEOSTORE_NAME ).openNeoStores( true, RELATIONSHIP_GROUP, PROPERTY, PROPERTY_ARRAY, PROPERTY_STRING );
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
@@ -279,6 +283,14 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public RecordStore<RelationshipGroupRecord> getTemporaryRelationshipGroupStore()
     {
         return temporaryNeoStores.getRelationshipGroupStore();
+    }
+
+    /**
+     * @return temporary property store which will be deleted in {@link #close()}.
+     */
+    public PropertyStore getTemporaryPropertyStore()
+    {
+        return temporaryNeoStores.getPropertyStore();
     }
 
     public IoTracer getIoTracer()

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.Map
 
@@ -47,7 +47,7 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
   def createInitialHistory: InitialHistory = {
 
     val relationshipsInContextButNotInPattern = source.collect {
-      case (key, r: EdgeValue) if !boundRels.contains(key) && variablesInClause.contains(key) => r
+      case (key, r: RelationshipValue) if !boundRels.contains(key) && variablesInClause.contains(key) => r
     }.toIndexedSeq
 
     new InitialHistory(source, relationshipsInContextButNotInPattern)

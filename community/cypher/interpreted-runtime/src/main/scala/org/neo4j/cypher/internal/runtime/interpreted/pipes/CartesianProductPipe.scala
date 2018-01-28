@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
-                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+                               (val id: Id = Id.INVALID_ID) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     for (outer <- lhs.createResults(state);
          inner <- rhs.createResults(state))

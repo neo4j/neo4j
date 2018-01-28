@@ -25,9 +25,9 @@ import java.util
 import org.neo4j.cypher.internal.util.v3_4.LoadExternalResourceException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.ir.v3_4.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.runtime.{ArrayBackedMap, QueryContext}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values._
 import org.neo4j.values.storable.{TextValue, Value, Values}
 import org.neo4j.values.virtual.VirtualValues
@@ -40,7 +40,7 @@ case class LoadCSVPipe(source: Pipe,
                        variable: String,
                        fieldTerminator: Option[String],
                        legacyCsvQuoteEscaping: Boolean)
-                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                      (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
   urlExpression.registerOwningPipe(this)

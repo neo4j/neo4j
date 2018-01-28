@@ -104,7 +104,7 @@ class CoerceToTest extends CypherFunSuite {
 
   test("RELATIONSHIP") {
     testedTypes
-      .coerce(edgeValue(11L, nodeValue(11L, stringArray("L"), EMPTY_MAP), nodeValue(12L, stringArray("L"), EMPTY_MAP),
+      .coerce(relationshipValue(11L, nodeValue(11L, stringArray("L"), EMPTY_MAP), nodeValue(12L, stringArray("L"), EMPTY_MAP),
                         stringValue("T"), EMPTY_MAP))
       .to(CTAny).unchanged
       .to(CTRelationship).unchanged

@@ -38,10 +38,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionC
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Templates._
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, MapValue, NodeValue}
 
 import scala.collection.mutable
 
@@ -119,6 +119,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def nodeFromNodeCursor(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), method[NodeCursor, Long]("nodeReference")))
 
+  override def nodeFromNodeLabelIndexCursor(targetVar: String, iterVar: String) =
+    generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), method[NodeLabelIndexCursor, Long]("nodeReference")))
+
   override def createRelExtractor(relVar: String) =
     generator.assign(typeRef[RelationshipDataExtractor], relExtractor(relVar), newRelationshipDataExtractor)
 
@@ -162,9 +165,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.expression(invoke(dataRead, method[Read, Unit]("allNodesScan", typeRef[NodeCursor]), generator.load(iterVar) ))
   }
 
-  override def labelScan(iterVar: String, labelIdVar: String) =
-    generator.assign(typeRef[PrimitiveLongIterator], iterVar,
-                     invoke(readOperations, nodesGetForLabel, generator.load(labelIdVar)))
+  override def labelScan(iterVar: String, labelIdVar: String) = {
+    generator.assign(typeRef[NodeLabelIndexCursor], iterVar, invoke(cursors, method[CursorFactory, NodeLabelIndexCursor]("allocateNodeLabelIndexCursor")))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[NodeLabelIndexCursor, Unit]("close"))))
+    generator.expression(invoke(dataRead, method[Read, Unit]("nodeLabelScan", typeRef[Int], typeRef[NodeLabelIndexCursor]),
+                                generator.load(labelIdVar), generator.load(iterVar) ))
+  }
 
   override def lookupLabelId(labelIdVar: String, labelName: String) =
     generator.assign(typeRef[Int], labelIdVar,
@@ -184,6 +192,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def advanceNodeCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[NodeCursor, Boolean]("next"))
+
+  override def advanceNodeLabelIndexCursor(iterVar: String) =
+    invoke(generator.load(iterVar), method[NodeLabelIndexCursor, Boolean]("next"))
 
   override def hasNextRelationship(iterVar: String) =
     invoke(generator.load(iterVar), hasMoreRelationship)
@@ -272,10 +283,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case CypherCodeGenType(CTNode, _) =>
       invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]), cast(typeRef[Node], expression))
     case CodeGenType.primitiveRel =>
-      invoke(method[ValueUtils, EdgeValue]("fromRelationshipProxy", typeRef[Node]),
+      invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Node]),
              invoke(nodeManager, newRelationshipProxyById, expression))
     case CypherCodeGenType(CTRelationship, _) =>
-      invoke(method[ValueUtils, EdgeValue]("fromRelationshipProxy", typeRef[Relationship]),
+      invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Relationship]),
              cast(typeRef[Relationship], expression))
     case CodeGenType.primitiveInt =>
       invoke(method[Values, LongValue]("longValue", typeRef[Long]), expression)
@@ -379,7 +390,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def traceEvent(planStepId: String) =
     invoke(tracer, executeOperator,
-           getStatic(FieldReference.staticField(generator.owner(), typeRef[LogicalPlanId], planStepId)))
+           getStatic(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
 
   override def incrementDbHits() = if (tracing) generator.expression(invoke(loadEvent, Methods.dbHit))
 

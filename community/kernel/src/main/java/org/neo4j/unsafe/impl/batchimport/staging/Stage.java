@@ -92,9 +92,16 @@ public class Stage
                 }
             }
         }
+        execution.close();
         if ( exception != null )
         {
             throw launderedException( exception );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return execution.getStageName();
     }
 }

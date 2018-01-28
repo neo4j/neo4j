@@ -119,11 +119,11 @@ trait CypherComparisonSupport extends CypherTestSupport {
         case Failure(e: CypherException) =>
           if (expectedToFailWithSpecificMessage) {
             if (e.getMessage == null || !message.exists(e.getMessage.contains(_))) {
-              fail("Correctly failed in " + thisScenario.name + " but instead of one of the given messages, the error message was '" + e.getMessage + "'")
+              fail("Correctly failed in " + thisScenario.name + " but instead of one of the given messages, the error message was '" + e.getMessage + "'", e)
             }
           } else {
             if (message.exists(e.getMessage.contains(_))) {
-              fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?")
+              fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?", e)
             }
             // It failed like expected, and we did not specify any message for this config
           }
@@ -164,6 +164,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     executeBefore()
     val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
     baseScenario.checkResultForSuccess(query, baseResult)
+    planComparisonStrategy.compare(expectSucceedEffective, baseScenario, baseResult)
 
     positiveResults.foreach {
       case (scenario, result) =>
@@ -346,8 +347,8 @@ object CypherComparisonSupport {
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
-    val oldest = orderedVersions.head
-    val latest = orderedVersions.last
+    val oldest: Version = orderedVersions.head
+    val latest: Version = orderedVersions.last
     val all = Versions(orderedVersions: _*)
 
     object V2_3 extends Version("2.3")

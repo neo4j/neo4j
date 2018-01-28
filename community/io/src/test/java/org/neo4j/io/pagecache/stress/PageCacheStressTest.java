@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -106,7 +105,7 @@ public class PageCacheStressTest
         int numberOfCachePages = 1000;
 
         PageCacheTracer tracer = NULL;
-        PageCursorTracerSupplier pageCursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        PageCursorTracerSupplier pageCursorTracerSupplier = PageCursorTracerSupplier.NULL;
         Condition condition;
 
         File workingDirectory;

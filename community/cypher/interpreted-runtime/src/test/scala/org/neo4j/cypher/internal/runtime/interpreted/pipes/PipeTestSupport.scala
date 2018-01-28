@@ -25,9 +25,9 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.scalatest.mock.MockitoSugar
@@ -40,7 +40,7 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     protected def internalCreateResults(state: QueryState) = f(state)
 
     // Used by profiling to identify where to report dbhits and rows
-    override def id: LogicalPlanId = LogicalPlanId.DEFAULT
+    override def id(): Id = Id.INVALID_ID
   }
 
   def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)

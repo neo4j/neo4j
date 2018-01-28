@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -723,8 +724,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         KernelTransactionImplementation transaction = newTransaction( 100 );
         KernelTransactionImplementation.Statistics statistics =
-                new KernelTransactionImplementation.Statistics( transaction, new ThreadBasedCpuClock(),
-                        new ThreadBasedAllocation() );
+                new KernelTransactionImplementation.Statistics( transaction, new AtomicReference<>( new ThreadBasedCpuClock() ),
+                        new AtomicReference<>( new ThreadBasedAllocation() ) );
         PredictablePageCursorTracer tracer = new PredictablePageCursorTracer();
         statistics.init( 2, tracer );
 

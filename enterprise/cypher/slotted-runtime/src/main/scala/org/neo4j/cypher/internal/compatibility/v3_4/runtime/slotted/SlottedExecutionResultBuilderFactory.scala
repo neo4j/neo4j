@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{BaseExecutionResultBuilderFactory, ExecutionResultBuilder, PipeInfo}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
@@ -29,16 +29,15 @@ import scala.collection.mutable
 class SlottedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                                            columns: List[String],
                                            logicalPlan: LogicalPlan,
-                                           pipelines: Map[LogicalPlanId, SlotConfiguration])
+                                           pipelines: SlotConfigurations)
   extends BaseExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan) {
 
   override def create(): ExecutionResultBuilder =
     new SlottedExecutionWorkflowBuilder()
 
   class SlottedExecutionWorkflowBuilder() extends BaseExecutionWorkflowBuilder {
-    override protected def createQueryState(params: MapValue, queryId: AnyRef) = {
+    override protected def createQueryState(params: MapValue) = {
       new SlottedQueryState(queryContext, externalResource, params, pipeDecorator,
-        queryId = queryId,
         triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
     }
   }

@@ -23,12 +23,11 @@ package org.neo4j.csv.reader;
  * Provides information about a source of data.
  *
  * An example usage would be reading a text file where {@link #sourceDescription()} would say the name of the file,
- * {@link #lineNumber()} the line number and {@link #position()} the byte position the reader is currently at.
+ * and {@link #position()} the byte offset the reader is currently at.
  *
  * Another example could be reading from a relationship db table where {@link #sourceDescription()} would
- * say the name of the database and table, or similar, {@link #lineNumber()} the ordinal of the row we're
- * currently at and {@link #position()} some sort of absolute position saying how many bytes we've read from the
- * data source.
+ * say the name of the database and table and {@link #position()} some sort of absolute position saying
+ * the byte offset to the field.
  */
 public interface SourceTraceability
 {
@@ -38,25 +37,12 @@ public interface SourceTraceability
     String sourceDescription();
 
     /**
-     * 1-based line number of the current data source.
-     *
-     * @return current line number in the current data source.
-     */
-    long lineNumber();
-
-    /**
-     * @return a low-level byte-like position of f.ex. total number of read bytes.
+     * @return a low-level byte-like position e.g. byte offset.
      */
     long position();
 
     abstract class Adapter implements SourceTraceability
     {
-        @Override
-        public long lineNumber()
-        {
-            return 1;
-        }
-
         @Override
         public long position()
         {

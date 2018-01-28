@@ -32,9 +32,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource,
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.util.v3_4.TaskCloser
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, ProcedureSignature}
+import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
 
@@ -114,13 +115,13 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   }
 
   private def createNormalPlan =
-    PlanDescriptionImpl(LogicalPlanId.DEFAULT, "ProcedureCall", NoChildren,
+    PlanDescriptionImpl(Id.INVALID_ID, "ProcedureCall", NoChildren,
                         arguments,
                         resultSymbols.map(_._1).toSet
     )
 
   private def createProfilePlanGenerator(rowCounter: Counter) = () =>
-    PlanDescriptionImpl(LogicalPlanId.DEFAULT, "ProcedureCall", NoChildren,
+    PlanDescriptionImpl(Id.INVALID_ID, "ProcedureCall", NoChildren,
                         Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted)) ++ arguments,
                         resultSymbols.map(_._1).toSet
     )

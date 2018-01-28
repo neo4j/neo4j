@@ -26,8 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
@@ -56,16 +56,17 @@ public class ImportLogicTest
             cache.setCount( i, count, random.nextInt( numberOfTypes ), random.among( directions ) );
         }
         cache.countingCompleted();
-        List<Pair<Object,Long>> types = new ArrayList<>();
+        List<RelationshipTypeCount> types = new ArrayList<>();
         int numberOfRelationships = 0;
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             int count = random.nextInt( 1, 100 );
-            types.add( Pair.of( "TYPE" + i, (long) count ) );
+            types.add( new RelationshipTypeCount( i, count ) );
             numberOfRelationships += count;
         }
-        types.sort( ( t1, t2 ) -> Long.compare( t2.other(), t1.other() ) );
-        DataStatistics typeDistribution = new DataStatistics( 0, 0, types.stream().toArray( Pair[]::new ) );
+        types.sort( ( t1, t2 ) -> Long.compare( t2.getCount(), t1.getCount() ) );
+        DataStatistics typeDistribution =
+                new DataStatistics( 0, 0, types.toArray( new RelationshipTypeCount[types.size()] ) );
 
         // WHEN enough memory for all types
         {

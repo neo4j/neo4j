@@ -64,7 +64,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     private LongSupplier recoverFromIndexSupplier;
     private RaftMembershipState state;
 
-    private final int expectedClusterSize;
+    private final int minimumConsensusGroupSize;
 
     private volatile Set<MemberId> votingMembers = Collections.unmodifiableSet( new HashSet<>() );
     // votingMembers + additionalReplicationMembers
@@ -74,13 +74,13 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     private Set<MemberId> additionalReplicationMembers = new HashSet<>();
 
     public RaftMembershipManager( SendToMyself sendToMyself, RaftGroup.Builder<MemberId> memberSetBuilder,
-            ReadableRaftLog raftLog, LogProvider logProvider, int expectedClusterSize, long electionTimeout,
+            ReadableRaftLog raftLog, LogProvider logProvider, int minimumConsensusGroupSize, long electionTimeout,
             Clock clock, long catchupTimeout, StateStorage<RaftMembershipState> membershipStorage )
     {
         this.sendToMyself = sendToMyself;
         this.memberSetBuilder = memberSetBuilder;
         this.raftLog = raftLog;
-        this.expectedClusterSize = expectedClusterSize;
+        this.minimumConsensusGroupSize = minimumConsensusGroupSize;
         this.storage = membershipStorage;
         this.log = logProvider.getLog( getClass() );
         this.membershipChanger =
@@ -183,7 +183,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     private boolean isSafeToRemoveMember()
     {
         Set<MemberId> votingMembers = votingMembers();
-        boolean safeToRemoveMember = votingMembers != null && votingMembers.size() > expectedClusterSize;
+        boolean safeToRemoveMember = votingMembers != null && votingMembers.size() > minimumConsensusGroupSize;
 
         if ( !safeToRemoveMember )
         {
@@ -192,7 +192,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
             log.info( "Not safe to remove %s %s because it would reduce the number of voting members below the expected " +
                             "cluster size of %d. Voting members: %s",
                     membersToRemove.size() > 1 ? "members" : "member",
-                    membersToRemove, expectedClusterSize, votingMembers  );
+                    membersToRemove, minimumConsensusGroupSize, votingMembers  );
         }
 
         return safeToRemoveMember;
@@ -216,7 +216,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
         {
             membershipChanger.onMissingMember( first( missingMembers() ) );
         }
-        else if ( superfluousMembers().size() > 0 && isSafeToRemoveMember(  ) )
+        else if ( superfluousMembers().size() > 0 && isSafeToRemoveMember() )
         {
             membershipChanger.onSuperfluousMember( first( superfluousMembers() ) );
         }

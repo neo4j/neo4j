@@ -40,7 +40,7 @@ public class StubRead implements Read
     @Override
     public void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
     {
-        throw new UnsupportedOperationException();
+        ((StubNodeLabelIndexCursor) cursor).initalize( label );
     }
 
     @Override

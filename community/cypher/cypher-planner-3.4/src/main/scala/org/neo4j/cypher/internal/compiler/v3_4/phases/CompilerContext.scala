@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{Metrics, QueryGr
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 class CompilerContext(val exceptionCreator: (String, InputPosition) => CypherException,
                       val tracer: CompilationPhaseTracer,
@@ -38,7 +39,8 @@ class CompilerContext(val exceptionCreator: (String, InputPosition) => CypherExc
                       val queryGraphSolver: QueryGraphSolver,
                       val updateStrategy: UpdateStrategy,
                       val debugOptions: Set[String],
-                      val clock: Clock) extends BaseContext {
+                      val clock: Clock,
+                      val logicalPlanIdGen: IdGen) extends BaseContext {
 
   override def errorHandler =
     (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw exceptionCreator(e.msg, e.position))

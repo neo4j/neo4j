@@ -46,22 +46,26 @@ public class PropertyDeleter
 
             // TODO forChanging/forReading piggy-backing
             PropertyRecord propRecord = propertyChange.forChangingData();
-            for ( PropertyBlock block : propRecord )
-            {
-                for ( DynamicRecord valueRecord : block.getValueRecords() )
-                {
-                    assert valueRecord.inUse();
-                    valueRecord.setInUse( false );
-                    propRecord.addDeletedRecord( valueRecord );
-                }
-            }
+            deletePropertyRecordIncludingValueRecords( propRecord );
             nextProp = propRecord.getNextProp();
-            propRecord.setInUse( false );
             propRecord.setChanged( primitive );
-            // We do not remove them individually, but all together here
-            propRecord.clearPropertyBlocks();
         }
         primitive.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+    }
+
+    public static void deletePropertyRecordIncludingValueRecords( PropertyRecord record )
+    {
+        for ( PropertyBlock block : record )
+        {
+            for ( DynamicRecord valueRecord : block.getValueRecords() )
+            {
+                assert valueRecord.inUse();
+                valueRecord.setInUse( false );
+                record.addDeletedRecord( valueRecord );
+            }
+        }
+        record.clearPropertyBlocks();
+        record.setInUse( false );
     }
 
     /**

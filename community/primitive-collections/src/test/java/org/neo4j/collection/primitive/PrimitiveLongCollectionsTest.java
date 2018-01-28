@@ -22,7 +22,9 @@ package org.neo4j.collection.primitive;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,9 +32,11 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBase
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -481,29 +485,6 @@ public class PrimitiveLongCollectionsTest
         assertTrue( set.contains( 2 ) );
         assertTrue( set.contains( 3 ) );
         assertFalse( set.contains( 4 ) );
-        try
-        {
-            PrimitiveLongCollections.asSet( PrimitiveLongCollections.iterator( 1, 2, 1 ) );
-            fail( "Should fail on duplicates" );
-        }
-        catch ( IllegalStateException e )
-        {   // good
-        }
-    }
-
-    @Test
-    public void iteratorAsSetAllowDuplicates() throws Exception
-    {
-        // GIVEN
-        PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 1 );
-
-        // WHEN
-        PrimitiveLongSet set = PrimitiveLongCollections.asSetAllowDuplicates( items );
-
-        // THEN
-        assertTrue( set.contains( 1 ) );
-        assertTrue( set.contains( 2 ) );
-        assertFalse( set.contains( 3 ) );
     }
 
     @Test
@@ -569,6 +550,53 @@ public class PrimitiveLongCollectionsTest
         assertFalse( iterator.hasNext() );
         assertFalse( iterator.hasNext() );
         assertEquals( -1L, count.get() );
+    }
+
+    @Test
+    public void copyPrimitiveSet()
+    {
+        PrimitiveLongSet longSet = PrimitiveLongCollections.setOf( 1L, 3L, 5L );
+        PrimitiveLongSet copySet = PrimitiveLongCollections.asSet( longSet );
+        assertNotSame( copySet, longSet );
+
+        assertTrue( copySet.contains( 1L ) );
+        assertTrue( copySet.contains( 3L ) );
+        assertTrue( copySet.contains( 5L ) );
+        assertEquals( 3, copySet.size() );
+    }
+
+    @Test
+    public void convertJavaCollectionToSetOfPrimitives()
+    {
+        List<Long> longs = asList( 1L, 4L, 7L );
+        PrimitiveLongSet longSet = PrimitiveLongCollections.asSet( longs );
+        assertTrue( longSet.contains( 1L ) );
+        assertTrue( longSet.contains( 4L ) );
+        assertTrue( longSet.contains( 7L ) );
+        assertEquals( 3, longSet.size() );
+    }
+
+    @Test
+    public void convertPrimitiveSetToJavaSet()
+    {
+        PrimitiveLongSet longSet = PrimitiveLongCollections.setOf( 1L, 3L, 5L );
+        Set<Long> longs = PrimitiveLongCollections.toSet( longSet );
+        assertThat( longs, containsInAnyOrder(1L, 3L, 5L) );
+    }
+
+    @Test
+    public void copyMap()
+    {
+        PrimitiveLongObjectMap<Object> originalMap = Primitive.longObjectMap();
+        originalMap.put( 1L, "a" );
+        originalMap.put( 2L, "b" );
+        originalMap.put( 3L, "c" );
+        PrimitiveLongObjectMap<Object> copyMap = PrimitiveLongCollections.copy( originalMap );
+        assertNotSame( originalMap, copyMap );
+        assertEquals( 3, copyMap.size() );
+        assertEquals( "a", copyMap.get( 1L ) );
+        assertEquals( "b", copyMap.get( 2L ) );
+        assertEquals( "c", copyMap.get( 3L ) );
     }
 
     private void assertNoMoreItems( PrimitiveLongIterator iterator )

@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanFinder, LogicalPlanningContext, QueryPlannerConfiguration}
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object leafPlanOptions extends LeafPlanFinder {
 
-  def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph, context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val queryPlannerKit = config.toKit(context)
-    val pickBest = config.pickBestCandidate(context)
+  def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Set[LogicalPlan] = {
+    val queryPlannerKit = config.toKit(context, solveds, cardinalities)
+    val pickBest = config.pickBestCandidate(context, solveds, cardinalities)
 
-    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, context = context)
+    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, context = context, solveds = solveds, cardinalities = cardinalities)
     val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
     val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
     bestLeafPlans.map(context.leafPlanUpdater).toSet

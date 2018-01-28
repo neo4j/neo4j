@@ -19,27 +19,36 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.util.Collections
-
-import org.junit.Assert.assertEquals
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.graphdb.{GraphDatabaseService, Path, Result, Transaction}
-import org.neo4j.helpers.collection.Iterators
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.impl.proc.Procedures
 
-class ProceduresAcceptanceTest extends ExecutionEngineFunSuite {
+class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+
+  private val expectSucceed = Configs.Interpreted - Configs.AllRulePlanners - Configs.Version2_3
+
+  test("should return result") {
+    registerTestProcedures()
+
+    val result = executeWith(expectSucceed,
+      "CALL org.neo4j.stream123() YIELD count, name RETURN count, name ORDER BY count")
+
+    result.toList should equal(List(
+      Map("count" -> 1, "name" -> "count1" ),
+      Map("count" -> 2, "name" -> "count2" ),
+      Map("count" -> 3, "name" -> "count3" )
+    ))
+  }
 
   test("should call cypher from procedure") {
     registerTestProcedures()
 
     graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
 
-    testResult(graph.getGraphDatabaseService,
-      "CALL org.neo4j.aNodeWithLabel( 'Cat' )",
-      result => {
-        val maps = Iterators.asList(result)
-        assertEquals(1, maps.size)
-      })
+    val result = executeWith(expectSucceed,
+      "CALL org.neo4j.aNodeWithLabel( 'Cat' ) YIELD node RETURN node")
+
+    result.size should equal(1)
   }
 
   test("should recursively call cypher and procedure") {
@@ -47,12 +56,10 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite {
 
     graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
 
-    testResult(graph.getGraphDatabaseService,
-      "CALL org.neo4j.recurseN( 3 )",
-      result => {
-        val maps = Iterators.asList(result)
-        assertEquals(1, maps.size)
-      })
+    val result = executeWith(expectSucceed,
+      "CALL org.neo4j.recurseN( 3 ) YIELD node RETURN node")
+
+    result.size should equal(1)
   }
 
   test("should call Core API") {
@@ -61,12 +68,10 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite {
     graph.execute("UNWIND [1,2,3] AS i CREATE (a:Cat)")
     graph.execute("UNWIND [1,2] AS i CREATE (a:Mouse)")
 
-    testResult(graph.getGraphDatabaseService,
-      "CALL org.neo4j.findNodesWithLabel( 'Cat' )",
-      result => {
-        val maps = Iterators.asList(result)
-        assertEquals(3, maps.size)
-      })
+    val result = executeWith(expectSucceed,
+      "CALL org.neo4j.findNodesWithLabel( 'Cat' ) YIELD node RETURN node")
+
+    result.size should equal(3)
   }
 
   test("should call expand using Core API") {
@@ -74,25 +79,19 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite {
 
     graph.execute("CREATE (c:Cat) WITH c UNWIND [1,2,3] AS i CREATE (c)-[:HUNTS]->(m:Mouse)")
 
-    testResult(graph.getGraphDatabaseService,
-      "MATCH (c:Cat) CALL org.neo4j.expandNode( id( c ) ) YIELD node AS n RETURN n",
-      result => {
-        val maps = Iterators.asList(result)
-        assertEquals(3, maps.size)
-      })
+    val result = executeWith(expectSucceed,
+      "MATCH (c:Cat) CALL org.neo4j.expandNode( id( c ) ) YIELD node AS n RETURN n")
+
+    result.size should equal(3)
   }
 
   test("should create node with loop using Core API") {
     registerTestProcedures()
 
-    graph.execute("CALL org.neo4j.createNodeWithLoop( 'Node', 'Rel' )")
+    executeWith(expectSucceed, "CALL org.neo4j.createNodeWithLoop( 'Node', 'Rel' ) YIELD node RETURN count(node)")
 
-    testResult(graph.getGraphDatabaseService,
-      "MATCH (n)-->(n) RETURN n",
-      result => {
-        val maps = Iterators.asList(result)
-        assertEquals(1, maps.size)
-      })
+    val result = innerExecuteDeprecated("MATCH (n)-->(n) RETURN n")
+    result.size should equal(1)
   }
 
   test("should find shortest path using Graph Algos Djikstra") {
@@ -118,38 +117,26 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite {
         |CREATE (n2)-[:Rel {weight:2}]->(e)
         |""".stripMargin)
 
-    testResult(graph.getGraphDatabaseService,
-      "MATCH (s:Start),(e:End) CALL org.neo4j.graphAlgosDjikstra( s, e, 'Rel', 'weight' ) YIELD node RETURN node",
-      result => {
-        val maps = Iterators.asList(result)
-        assertEquals(5, maps.size) // s -> n3 -> n4 -> n5 -> e
-      })
+    val result = executeWith(expectSucceed,
+      "MATCH (s:Start),(e:End) CALL org.neo4j.graphAlgosDjikstra( s, e, 'Rel', 'weight' ) YIELD node RETURN node")
+
+    result.size should equal(5) // s -> n3 -> n4 -> n5 -> e
   }
 
   test("should use traversal API") {
     registerTestProcedures()
 
+    // Given
     graph.execute(movies)
-
     graph.execute("MATCH (c:Person) WHERE c.name in ['Clint Eastwood', 'Gene Hackman'] SET c:Western")
 
-    testResult(graph.getGraphDatabaseService,
+    // When
+    val result = executeWith(expectSucceed,
       """MATCH (k:Person {name:'Keanu Reeves'})
-         CALL org.neo4j.movieTraversal(k) YIELD path RETURN path""".stripMargin,
-      result => {
-        val maps = Iterators.asList(result)
-        assertEquals(1, maps.size)
-        val path = maps.get(0).get("path").asInstanceOf[Path]
-        assertEquals("Clint Eastwood", path.endNode.getProperty("name"))
-      })
-  }
+                 |CALL org.neo4j.movieTraversal(k) YIELD path RETURN last(nodes(path)).name AS name""".stripMargin)
 
-  def testResult(db: GraphDatabaseService, call: String, onResult: Result => Unit): Unit = {
-    val tx: Transaction = db.beginTx
-    try {
-      onResult(db.execute(call, Collections.emptyMap[String, AnyRef]))
-      tx.success()
-    } finally if (tx != null) tx.close()
+    // Then
+    result.toList should equal(List(Map("name" -> "Clint Eastwood")))
   }
 
   private def registerTestProcedures() = {

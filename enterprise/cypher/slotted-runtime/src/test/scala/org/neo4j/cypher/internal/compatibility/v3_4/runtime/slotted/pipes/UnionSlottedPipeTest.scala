@@ -34,7 +34,7 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.storable.Values.{longValue, stringArray, stringValue}
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue, VirtualValues}
 
 import scala.collection.immutable
 
@@ -54,9 +54,9 @@ class UnionSlottedPipeTest extends CypherFunSuite {
         fromNodeProxy(newMockedNode(invocation.getArgument[Long](0)))
     })
     when(context.nodeOps).thenReturn(nodeOps)
-    val relOps = mock[Operations[EdgeValue]]
-    when(relOps.getById(any())).thenAnswer(new Answer[EdgeValue] {
-      override def answer(invocation: InvocationOnMock): EdgeValue =
+    val relOps = mock[Operations[RelationshipValue]]
+    when(relOps.getById(any())).thenAnswer(new Answer[RelationshipValue] {
+      override def answer(invocation: InvocationOnMock): RelationshipValue =
         fromRelationshipProxy(newMockedRelationship(invocation.getArgument[Long](0)))
     })
     when(context.relationshipOps).thenReturn(relOps)
@@ -65,7 +65,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
         e.slots.mapSlot {
           case (k, s: LongSlot) =>
             val value = if (s.typ == CTNode) nodeValue(e.getLongAt(s.offset))
-            else if (s.typ == CTRelationship) edgeValue(e.getLongAt(s.offset))
+            else if (s.typ == CTRelationship) relValue(e.getLongAt(s.offset))
             else throw new AssertionError("This is clearly not right")
             k -> value
           case (k, s) => k -> e.getRefAt(s.offset)
@@ -135,7 +135,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
     // Then
     result should equal(
-      List(Map("x" -> edgeValue(42)), Map("x" -> edgeValue(43))))
+      List(Map("x" -> relValue(42)), Map("x" -> relValue(43))))
   }
 
   test("should handle one long slot and one relationship slot") {
@@ -151,7 +151,7 @@ class UnionSlottedPipeTest extends CypherFunSuite {
 
     // Then
     result should equal(
-      List(Map("x" -> nodeValue(42)), Map("x" -> edgeValue(43))))
+      List(Map("x" -> nodeValue(42)), Map("x" -> relValue(43))))
   }
 
   test("should handle multiple columns") {
@@ -177,8 +177,8 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     // Then
     result should equal(
       List(
-        Map("x" -> nodeValue(42), "y" -> edgeValue(1337),"z" -> stringValue("FOO")),
-        Map("x" -> edgeValue(43), "y" -> edgeValue(44),"z" -> edgeValue(45))
+        Map("x" -> nodeValue(42), "y" -> relValue(1337),"z" -> stringValue("FOO")),
+        Map("x" -> relValue(43), "y" -> relValue(44),"z" -> relValue(45))
       ))
   }
 
@@ -205,8 +205,8 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     // Then
     result should equal(
       List(
-        Map("x" -> nodeValue(42), "y" -> edgeValue(1337),"z" -> stringValue("FOO")),
-        Map("x" -> edgeValue(43), "y" -> edgeValue(44),"z" -> edgeValue(45))
+        Map("x" -> nodeValue(42), "y" -> relValue(1337),"z" -> stringValue("FOO")),
+        Map("x" -> relValue(43), "y" -> relValue(44),"z" -> relValue(45))
       ))
   }
 
@@ -223,5 +223,5 @@ class UnionSlottedPipeTest extends CypherFunSuite {
   }
 
   private def nodeValue(id: Long) = VirtualValues.nodeValue(id, stringArray("L"), EMPTY_MAP)
-  private def edgeValue(id: Long) = VirtualValues.edgeValue(id, nodeValue(id - 1), nodeValue(id + 1), stringValue("L"), EMPTY_MAP)
+  private def relValue(id: Long) = VirtualValues.relationshipValue(id, nodeValue(id - 1), nodeValue(id + 1), stringValue("L"), EMPTY_MAP)
 }

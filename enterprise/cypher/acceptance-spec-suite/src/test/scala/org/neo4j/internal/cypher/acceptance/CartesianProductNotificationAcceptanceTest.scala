@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, I
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -104,7 +105,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       val queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(IDPPlannerName, monitors, configuration)
       val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
       val context = CommunityRuntimeContextCreator.create(tracer, logger, planContext(statement), parsed.queryText, Set.empty,
-        None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy, Clock.systemUTC(),
+        None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy, Clock.systemUTC(), new SequentialIdGen(),
                                                          simpleExpressionEvaluator)
 
       try {

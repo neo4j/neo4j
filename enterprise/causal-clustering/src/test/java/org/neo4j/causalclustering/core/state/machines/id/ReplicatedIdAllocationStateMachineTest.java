@@ -28,7 +28,7 @@ import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class ReplicatedIdAllocationStateMachineTest
 {

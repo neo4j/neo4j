@@ -31,6 +31,8 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Guava: Google Core Libraries for Java
   javax.inject
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -38,6 +40,8 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   Netty
   Netty/All-in-One
+  Objenesis
+  WMI4Java
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

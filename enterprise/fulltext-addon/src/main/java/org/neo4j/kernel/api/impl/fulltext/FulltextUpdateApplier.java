@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Entity;
@@ -74,29 +75,29 @@ class FulltextUpdateApplier extends LifecycleAdapter
     }
 
     <E extends Entity> AsyncFulltextIndexOperation updatePropertyData(
-            Map<Long,Map<String,Object>> state, WritableFulltext index ) throws IOException
+            PrimitiveLongObjectMap<Map<String,Object>> state, WritableFulltext index ) throws IOException
     {
         FulltextIndexUpdate update = new FulltextIndexUpdate( index, () ->
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
-            for ( Map.Entry<Long,Map<String,Object>> stateEntry : state.entrySet() )
+            state.visitEntries( ( entityId, value ) ->
             {
                 Set<String> indexedProperties = index.getProperties();
-                if ( !Collections.disjoint( indexedProperties, stateEntry.getValue().keySet() ) )
+                if ( !Collections.disjoint( indexedProperties, value.keySet() ) )
                 {
-                    long entityId = stateEntry.getKey();
-                    Stream<Map.Entry<String,Object>> entryStream = stateEntry.getValue().entrySet().stream();
+                    Stream<Map.Entry<String,Object>> entryStream = value.entrySet().stream();
                     Predicate<Map.Entry<String,Object>> relevantForIndex =
                             entry -> indexedProperties.contains( entry.getKey() );
-                    Map<String,Object> allProperties = entryStream.filter( relevantForIndex ).collect(
-                            Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+                    Map<String,Object> allProperties = entryStream.filter( relevantForIndex )
+                            .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
 
                     if ( !allProperties.isEmpty() )
                     {
                         updateDocument( indexWriter, entityId, allProperties );
                     }
                 }
-            }
+                return false;
+            } );
         } );
 
         enqueueUpdate( update );
@@ -111,7 +112,7 @@ class FulltextUpdateApplier extends LifecycleAdapter
     }
 
     <E extends Entity> AsyncFulltextIndexOperation removePropertyData(
-            Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state, WritableFulltext index )
+            Iterable<PropertyEntry<E>> propertyEntries, PrimitiveLongObjectMap<Map<String,Object>> state, WritableFulltext index )
             throws IOException
     {
         FulltextIndexUpdate update = new FulltextIndexUpdate( index, () ->

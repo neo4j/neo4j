@@ -69,6 +69,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.test.rule.RepeatRule;
 
@@ -1696,7 +1697,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
     {
         configureStandardPageCache();
-        try ( PagedFile pagedFile = pageCache.map( file( "a" ), 20 ) )
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), 23 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
@@ -1708,6 +1709,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.putShort( (short) 41 ); // 12+2 = 14
                 cursor.putByte( (byte) 41 );   // 14+1 = 15
                 cursor.putBytes( data );       // 15+5 = 20
+                cursor.putBytes( 3, (byte) 47 ); // 20+3 = 23
             }
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
@@ -1723,19 +1725,25 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         cursor.getByte(),   // 19
                         cursor.getByte()    // 20
                 };
+                byte d = cursor.getByte();  // 21
+                byte e = cursor.getByte();  // 22
+                byte f = cursor.getByte();  // 23
                 cursor.setOffset( 0 );
                 cursor.putLong( 1 + a );
                 cursor.putInt( 1 + b );
                 cursor.putShort( (short) (1 + c) );
-                for ( byte d : data )
+                for ( byte g : data )
                 {
-                    d++;
-                    cursor.putByte( d );
+                    g++;
+                    cursor.putByte( g );
                 }
+                cursor.putByte( (byte) (1 + d) );
+                cursor.putByte( (byte) (1 + e) );
+                cursor.putByte( (byte) (1 + f) );
             }
         }
 
-        ByteBuffer buf = ByteBuffer.allocate( 20 );
+        ByteBuffer buf = ByteBuffer.allocate( 23 );
         try ( StoreChannel channel = fs.open( file( "a" ), OpenMode.READ ) )
         {
             channel.readAll( buf );
@@ -1751,6 +1759,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( buf.get(), is( (byte) 45 ) );
         assertThat( buf.get(), is( (byte) 46 ) );
         assertThat( buf.get(), is( (byte) 47 ) );
+        assertThat( buf.get(), is( (byte) 48 ) );
+        assertThat( buf.get(), is( (byte) 48 ) );
+        assertThat( buf.get(), is( (byte) 48 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
@@ -2102,7 +2113,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void tracerMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading() throws IOException
     {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( tracer );
         getPageCache( fs, maxPages, tracer, cursorTracerSupplier );
 
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
@@ -2163,7 +2174,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         long pagesToGenerate = 142;
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        DefaultPageCursorTracerSupplier tracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        DefaultPageCursorTracerSupplier tracerSupplier = getCursorTracerSupplier( tracer );
         getPageCache( fs, maxPages, tracer, tracerSupplier );
 
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
@@ -2255,6 +2266,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             dirtyManyPages( pagedFile, pinsForWrite );
         }
 
+        cursorTracerSupplier.get().reportEvents(); // Reset thread-local event counters.
         assertThat( "wrong read pin count", readCount.get(), is( pinsForRead ) );
         assertThat( "wrong write pin count", writeCount.get(), is( pinsForWrite ) );
     }
@@ -2468,6 +2480,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( cursor.getOffset(), is( 18 ) );
         cursor.putBytes( new byte[]{1, 2, 3}, 1, 1 );
         assertThat( cursor.getOffset(), is( 19 ) );
+        cursor.putBytes( 5, (byte)1 );
+        assertThat( cursor.getOffset(), is( 24 ) );
     }
 
     private void verifyReadOffsets( PageCursor cursor )
@@ -2485,16 +2499,19 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( cursor.getOffset(), is( 18 ) );
         cursor.getBytes( new byte[3], 1, 1 );
         assertThat( cursor.getOffset(), is( 19 ) );
+        cursor.getBytes( new byte[5] );
+        assertThat( cursor.getOffset(), is( 24 ) );
 
         byte[] expectedBytes = new byte[] {
                 0, 0, 0, 0, 0, 0, 0, 1, // first; long
                 0, 0, 0, 1, // second; int
                 0, 1, // third; short
                 1, // fourth; byte
-                1, 2, 3, // lastly; more bytes
-                2
+                1, 2, 3, // fifth; more bytes
+                2, // sixth; additional bytes
+                1, 1, 1, 1, 1, // lastly; more bytes
         };
-        byte[] actualBytes = new byte[19];
+        byte[] actualBytes = new byte[24];
         cursor.setOffset( 0 );
         cursor.getBytes( actualBytes );
         assertThat( actualBytes, byteArray( expectedBytes ) );
@@ -2834,7 +2851,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     public void pageCursorCloseShouldNotReturnAlreadyClosedLinkedCursorToPool() throws Exception
     {
-        getPageCache( fs, maxPages, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
@@ -2853,7 +2870,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     public void pageCursorCloseShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
     {
-        getPageCache( fs, maxPages, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
@@ -2874,7 +2891,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
-        getPageCache( fs, maxPages, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
@@ -2900,7 +2917,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
-        getPageCache( fs, maxPages, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
@@ -2970,6 +2987,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         final byte[] bytes = new byte[] { 1, 2, 3 };
         verifyPageBounds( cursor -> cursor.putBytes( bytes ) );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void putBytesRepeatedByteBeyondPageEndMustThrow() throws IOException
+    {
+        verifyPageBounds( cursor -> cursor.putBytes( 3, (byte) 1 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
@@ -4310,6 +4333,301 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    @Test
+    public void shiftBytesMustNotRaiseOutOfBoundsOnLengthWithinPageBoundary() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( 0, filePageSize, 0 );
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+            cursor.shiftBytes( 0, filePageSize - 1, 1 );
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+            cursor.shiftBytes( 1, filePageSize - 1, -1 );
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnLengthLargerThanPageSize() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( 0, filePageSize + 1, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnNegativeLength() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( 1, -1, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnNegativeSource() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( -1, 10, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnOverSizedSource() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( filePageSize, 1, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+            cursor.shiftBytes( filePageSize + 1, 0, 0 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnBufferUnderflow() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( 0, 1, -1 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustRaiseOutOfBoundsOnBufferOverflow() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.shiftBytes( filePageSize - 1, 1, 1 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustThrowOnReadCursor() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() );
+            assertTrue( reader.next() );
+
+            expectedException.expect( IllegalStateException.class );
+            reader.shiftBytes( 0, 0, 0 );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustShiftBytesToTheRightOverlapping() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            byte[] bytes = new byte[30];
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] = (byte) (i + 1);
+            }
+
+            int srcOffset = 10;
+            cursor.setOffset( srcOffset );
+            cursor.putBytes( bytes );
+
+            int shift = 5;
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.shiftBytes( srcOffset, bytes.length, shift );
+
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length + shift, filePageSize - srcOffset - bytes.length - shift );
+
+            cursor.setOffset( srcOffset );
+            for ( int i = 0; i < shift; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustShiftBytesToTheRightNotOverlapping() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            byte[] bytes = new byte[30];
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] = (byte) (i + 1);
+            }
+
+            int srcOffset = 10;
+            cursor.setOffset( srcOffset );
+            cursor.putBytes( bytes );
+
+            int gap = 5;
+            int shift = bytes.length + gap;
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.shiftBytes( srcOffset, bytes.length, shift );
+
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length + shift, filePageSize - srcOffset - bytes.length - shift );
+
+            cursor.setOffset( srcOffset );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+            assertZeroes( cursor, srcOffset + bytes.length + shift, gap );
+            cursor.setOffset( srcOffset + shift );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustShiftBytesToTheLeftOverlapping() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            byte[] bytes = new byte[30];
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] = (byte) (i + 1);
+            }
+
+            int srcOffset = 10;
+            cursor.setOffset( srcOffset );
+            cursor.putBytes( bytes );
+
+            int shift = -5;
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.shiftBytes( srcOffset, bytes.length, shift );
+
+            assertZeroes( cursor, 0, srcOffset + shift );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.setOffset( srcOffset + shift );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+            for ( int i = shift; i < 0; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (bytes.length + i + 1) ) );
+            }
+
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    @Test
+    public void shiftBytesMustShiftBytesToTheLeftNotOverlapping() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            byte[] bytes = new byte[30];
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] = (byte) (i + 1);
+            }
+
+            int srcOffset = filePageSize - bytes.length - 10;
+            cursor.setOffset( srcOffset );
+            cursor.putBytes( bytes );
+
+            int gap = 5;
+            int shift = -bytes.length - gap;
+            assertZeroes( cursor, 0, srcOffset );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.shiftBytes( srcOffset, bytes.length, shift );
+
+            assertZeroes( cursor, 0, srcOffset + shift );
+            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+
+            cursor.setOffset( srcOffset + shift );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+            assertZeroes( cursor, srcOffset + bytes.length + shift, gap );
+            cursor.setOffset( srcOffset );
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (i + 1) ) );
+            }
+
+            assertFalse( cursor.checkAndClearBoundsFlag() );
+        }
+    }
+
+    private void assertZeroes( PageCursor cursor, int offset, int length )
+    {
+        for ( int i = 0; i < length; i++ )
+        {
+            assertThat( cursor.getByte( offset + i ), is( (byte) 0 ) );
+        }
+    }
+
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void readCursorsCanOpenLinkedCursor() throws Exception
     {
@@ -5208,6 +5526,255 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             writeRecords( cursor );
             assertTrue( cursor.next() ); // this will unpin and flush page 0
             verifyRecordsInFile( file, recordsPerFilePage );
+        }
+    }
+
+    @Test
+    public void noFaultNextReadOnInMemoryPages() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor faulter = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT ) )
+        {
+            verifyNoFaultAccessToInMemoryPages( faulter, nofault );
+        }
+    }
+
+    @Test
+    public void noFaultNextWriteOnInMemoryPages() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor faulter = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT ) )
+        {
+            verifyNoFaultAccessToInMemoryPages( faulter, nofault );
+        }
+    }
+
+    @Test
+    public void noFaultNextLinkedReadOnInMemoryPages() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor faulter = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT );
+              PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
+        {
+            verifyNoFaultAccessToInMemoryPages( faulter, linkedNoFault );
+        }
+    }
+
+    @Test
+    public void noFaultNextLinkedWriteOnInMemoryPages() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor faulter = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT );
+              PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
+        {
+            verifyNoFaultAccessToInMemoryPages( faulter, linkedNoFault );
+        }
+    }
+
+    private void verifyNoFaultAccessToInMemoryPages( PageCursor faulter, PageCursor nofault ) throws IOException
+    {
+        assertTrue( faulter.next() ); // Page 0 now exists.
+        assertTrue( nofault.next() ); // NO_FAULT next on page that is in memory.
+        verifyNoFaultCursorIsInMemory( nofault, 0L ); // Page id must be bound for page that is in memory.
+
+        assertTrue( faulter.next() ); // Page 1 now exists.
+        assertTrue( nofault.next( 1 ) ); // NO_FAULT next with page id on page that is in memory.
+        verifyNoFaultCursorIsInMemory( nofault, 1L ); // Still bound.
+    }
+
+    private void verifyNoFaultCursorIsInMemory( PageCursor nofault, long expectedPageId )
+    {
+        assertThat( nofault.getCurrentPageId(), is( expectedPageId ) );
+        nofault.getByte();
+        assertFalse( nofault.checkAndClearBoundsFlag() ); // Access must not be out of bounds.
+        nofault.getByte( 0 );
+        assertFalse( nofault.checkAndClearBoundsFlag() ); // Access must not be out of bounds.
+    }
+
+    @Test
+    public void noFaultReadOfPagesNotInMemory() throws Exception
+    {
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
+        getPageCache( fs, maxPages, cacheTracer, cursorTracerSupplier );
+
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT ) )
+        {
+            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, nofault );
+        }
+    }
+
+    private DefaultPageCursorTracerSupplier getCursorTracerSupplier( DefaultPageCacheTracer cacheTracer )
+    {
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        // This cursor tracer is thread-local, so we'll initialise it on behalf of this thread.
+        PageCursorTracer cursorTracer = cursorTracerSupplier.get();
+        // Clear any stray counts that might have been carried over form other tests,
+        // by reporting into a throw-away cache tracer.
+        cursorTracer.init( new DefaultPageCacheTracer() );
+        cursorTracer.reportEvents();
+        // Initialise it for real.
+        cursorTracer.init( cacheTracer );
+        return cursorTracerSupplier;
+    }
+
+    @Test
+    public void noFaultWriteOnPagesNotInMemory() throws Exception
+    {
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
+        getPageCache( fs, maxPages, cacheTracer, cursorTracerSupplier );
+
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT ) )
+        {
+            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, nofault );
+            verifyNoFaultWriteIsOutOfBounds( nofault );
+        }
+    }
+
+    @Test
+    public void noFaultLinkedReadOfPagesNotInMemory() throws Exception
+    {
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
+        getPageCache( fs, maxPages, cacheTracer, cursorTracerSupplier );
+
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT );
+              PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
+        {
+            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, linkedNoFault );
+        }
+    }
+
+    @Test
+    public void noFaultLinkedWriteOnPagesNotInMemory() throws Exception
+    {
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( cacheTracer );
+        getPageCache( fs, maxPages, cacheTracer, cursorTracerSupplier );
+
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT );
+              PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
+        {
+            verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorTracerSupplier, linkedNoFault );
+            verifyNoFaultWriteIsOutOfBounds( linkedNoFault );
+        }
+    }
+
+    private void verifyNoFaultAccessToPagesNotInMemory( DefaultPageCacheTracer cacheTracer,
+                                                        DefaultPageCursorTracerSupplier cursorTracerSupplier,
+                                                        PageCursor nofault ) throws IOException
+    {
+        assertTrue( nofault.next() ); // File contains a page id 0.
+        verifyNoFaultReadIsNotInMemory( nofault ); // But page is not in memory.
+        assertTrue( nofault.next() ); // File contains a page id 1.
+        verifyNoFaultReadIsNotInMemory( nofault ); // Also not in memory.
+        assertFalse( nofault.next() ); // But there is no page id 2.
+        assertTrue( nofault.next( 0 ) ); // File has page id 0, even when using next with id.
+        verifyNoFaultReadIsNotInMemory( nofault ); // Still not in memory.
+        assertFalse( nofault.next( 2 ) ); // Still no page id two, even when using next with id.
+
+        // Also check that no faults happened.
+        cursorTracerSupplier.get().reportEvents();
+        assertThat( cacheTracer.faults(), is( 0L ) );
+    }
+
+    private void verifyNoFaultReadIsNotInMemory( PageCursor nofault )
+    {
+        assertThat( nofault.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+        nofault.getByte();
+        assertTrue( nofault.checkAndClearBoundsFlag() ); // Access must be out of bounds.
+        nofault.getByte( 0 );
+        assertTrue( nofault.checkAndClearBoundsFlag() ); // Access must be out of bounds.
+    }
+
+    private void verifyNoFaultWriteIsOutOfBounds( PageCursor nofault ) throws IOException
+    {
+        assertTrue( nofault.next( 0 ) );
+        assertThat( nofault.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+        nofault.putByte( (byte) 1 );
+        assertTrue( nofault.checkAndClearBoundsFlag() ); // Access must be out of bounds.
+        nofault.putByte( 0, (byte) 1 );
+        assertTrue( nofault.checkAndClearBoundsFlag() ); // Access must be out of bounds.
+    }
+
+    @Test
+    public void noFaultNextReadMustStrideForwardMonotonically() throws Exception
+    {
+        configureStandardPageCache();
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 6, recordSize );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor faulter = pf.io( 0, PF_SHARED_READ_LOCK );
+              PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT ) )
+        {
+            assertTrue( faulter.next( 1 ) );
+            assertTrue( faulter.next( 3 ) );
+            assertTrue( faulter.next( 5 ) );
+            assertTrue( nofault.next() ); // Page id 0.
+            verifyNoFaultReadIsNotInMemory( nofault );
+            assertTrue( nofault.next() ); // Page id 1.
+            verifyNoFaultCursorIsInMemory( nofault, 1 );
+            assertTrue( nofault.next() ); // Page id 2.
+            verifyNoFaultReadIsNotInMemory( nofault );
+            assertTrue( nofault.next() ); // Page id 3.
+            verifyNoFaultCursorIsInMemory( nofault, 3 );
+            assertTrue( nofault.next() ); // Page id 4.
+            verifyNoFaultReadIsNotInMemory( nofault );
+            assertTrue( nofault.next() ); // Page id 5.
+            verifyNoFaultCursorIsInMemory( nofault, 5 );
+            assertFalse( nofault.next() ); // There's no page id 6..
+        }
+    }
+
+    @Test
+    public void noFaultReadCursorMustCopeWithPageEviction() throws Exception
+    {
+        configureStandardPageCache();
+        File file = file( "a" );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor faulter = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT ) )
+        {
+            assertTrue( faulter.next() ); // Page id 0 now exists.
+            assertTrue( faulter.next() ); // And page id 1 now exists.
+            assertTrue( nofault.next() ); // No_FAULT cursor parked on page id 0.
+            verifyNoFaultCursorIsInMemory( nofault, 0 );
+            PageCursor[] writerArray = new PageCursor[maxPages - 1]; // The `- 1` to leave our `faulter` cursor.
+            for ( int i = 0; i < writerArray.length; i++ )
+            {
+                writerArray[i] = pf.io( 2 + i, PF_SHARED_WRITE_LOCK );
+                assertTrue( writerArray[i].next() );
+            }
+            // The page the nofault cursor is bound to should now be evicted.
+            for ( PageCursor writer : writerArray )
+            {
+                writer.close();
+            }
+            // If the page is evicted, then our read must have been inconsistent.
+            assertTrue( nofault.shouldRetry() );
+            // However, we are no longer in memory, because the page we had earlier got evicted.
+            verifyNoFaultReadIsNotInMemory( nofault );
         }
     }
 }

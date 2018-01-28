@@ -86,6 +86,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
                     // No batches were emitted so we couldn't track done batches in that way.
                     // We can see that we're the last step so increment here instead
                     doneBatches.incrementAndGet();
+                    control.recycle( batch );
                 }
                 totalProcessingTime.add( nanoTime() - startTime - sender.sendTime );
 

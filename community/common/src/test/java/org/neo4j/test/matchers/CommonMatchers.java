@@ -49,6 +49,17 @@ public final class CommonMatchers
     }
 
     /**
+     * Checks that an exception message matches given matcher
+     *
+     * @param matcher
+     * @return
+     */
+    public static Matcher<Throwable> matchesExceptionMessage( Matcher<? super String> matcher )
+    {
+        return new ExceptionMessageMatcher( matcher );
+    }
+
+    /**
      * Checks that exception has expected array or suppressed exceptions.
      *
      * @param expectedSuppressedErrors expected suppressed exceptions.

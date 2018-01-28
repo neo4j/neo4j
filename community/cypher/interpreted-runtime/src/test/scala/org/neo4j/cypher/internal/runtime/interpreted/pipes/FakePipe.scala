@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.scalatest.mock.MockitoSugar
@@ -34,5 +34,5 @@ class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, Cyph
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     data.map(m => ExecutionContext(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*)))
 
-  var id = LogicalPlanId.DEFAULT
+  var id: Id = Id.INVALID_ID
 }

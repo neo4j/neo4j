@@ -30,7 +30,7 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.JavaConverters._
 
@@ -107,7 +107,7 @@ class ContainerIndexTest extends CypherFunSuite {
     implicit val expression = Literal(rel)
     when(qtx.getPropertyKeyId("v")).thenReturn(0)
     when(qtx.getPropertyKeyId("c")).thenReturn(1)
-    val relOps = mock[Operations[EdgeValue]]
+    val relOps = mock[Operations[RelationshipValue]]
     when(relOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
       override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
     })

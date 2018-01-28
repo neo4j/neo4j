@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,9 +30,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.PageCacheFlusher;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -41,19 +44,20 @@ public class StreamToDisk implements StoreFileStreams
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final FileCopyMonitor fileCopyMonitor;
-    private final Map<String,WritableByteChannel> channels;
-    private final Map<String,PagedFile> pagedFiles;
+    private final PageCacheFlusher flusherThread;
+    private final Map<String,PageCacheDestination> channels;
+    private boolean closed;
 
     public StreamToDisk( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Monitors monitors ) throws IOException
     {
         this.storeDir = storeDir;
         this.fs = fs;
         this.pageCache = pageCache;
+        this.flusherThread = new PageCacheFlusher( pageCache );
+        flusherThread.start();
         fs.mkdirs( storeDir );
         this.fileCopyMonitor = monitors.newMonitor( FileCopyMonitor.class );
         channels = new HashMap<>();
-        pagedFiles = new HashMap<>();
-
     }
 
     @Override
@@ -65,21 +69,8 @@ public class StreamToDisk implements StoreFileStreams
         fileCopyMonitor.copyFile( fileName );
         if ( StoreType.shouldBeManagedByPageCache( destination ) )
         {
-            WritableByteChannel channel = channels.get( destination );
-            if ( channel == null )
-            {
-                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
-                PagedFile pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
-                channel = pagedFile.openWritableByteChannel();
-                pagedFiles.put( destination, pagedFile );
-                channels.put( destination, channel );
-            }
-
-            ByteBuffer buffer = ByteBuffer.wrap( data );
-            while ( buffer.hasRemaining() )
-            {
-                channel.write( buffer );
-            }
+            PageCacheDestination dest = getPageCacheDestination( destination, requiredAlignment, fileName );
+            dest.write( data );
         }
         else
         {
@@ -90,16 +81,86 @@ public class StreamToDisk implements StoreFileStreams
         }
     }
 
-    @Override
-    public void close() throws IOException
+    private synchronized PageCacheDestination getPageCacheDestination(
+            String destination, int requiredAlignment, File fileName ) throws IOException
     {
-        for ( WritableByteChannel channel : channels.values() )
+        if ( closed )
         {
-            channel.close();
+            throw new IOException( "Destination has been closed: " + fileName );
         }
-        for ( PagedFile pagedFile : pagedFiles.values() )
+        PageCacheDestination dest = channels.get( destination );
+        if ( dest == null )
         {
-            pagedFile.close();
+            dest = new PageCacheDestination( pageCache, fileName, requiredAlignment );
+            channels.put( destination, dest );
         }
+        return dest;
+    }
+
+    private static final class PageCacheDestination implements Closeable
+    {
+        private final PagedFile pagedFile;
+        private final WritableByteChannel channel;
+
+        PageCacheDestination( PageCache pageCache, File fileName, int requiredAlignment ) throws IOException
+        {
+            int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
+            pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
+            try
+            {
+                channel = pagedFile.openWritableByteChannel();
+            }
+            catch ( IOException channelException )
+            {
+                try
+                {
+                    pagedFile.close();
+                }
+                catch ( IOException pagedFileException )
+                {
+                    channelException.addSuppressed( pagedFileException );
+                }
+                channelException.printStackTrace();
+                throw channelException;
+            }
+        }
+
+        public synchronized void write( byte[] data ) throws IOException
+        {
+            ByteBuffer buf = ByteBuffer.wrap( data );
+            while ( buf.hasRemaining() )
+            {
+                channel.write( buf );
+            }
+        }
+
+        @Override
+        public synchronized void close() throws IOException
+        {
+            IOUtils.closeAll( channel, pagedFile );
+        }
+    }
+
+    @Override
+    public synchronized void close() throws IOException
+    {
+        closed = true;
+        try
+        {
+            flusherThread.halt();
+        }
+        catch ( Exception haltException )
+        {
+            try
+            {
+                IOUtils.closeAll( channels.values() );
+            }
+            catch ( IOException channelsException )
+            {
+                haltException.addSuppressed( channelsException );
+            }
+            throw haltException;
+        }
+        IOUtils.closeAll( channels.values() );
     }
 }

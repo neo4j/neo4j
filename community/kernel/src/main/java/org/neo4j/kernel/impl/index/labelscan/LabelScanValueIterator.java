@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.labelscan;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -36,48 +37,38 @@ import org.neo4j.index.internal.gbptree.Hit;
  * The provided {@link RawCursor} is managed externally, e.g. {@link NativeLabelScanReader},
  * this because implemented interface lacks close-method.
  */
-class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
+class LabelScanValueIterator extends LabelScanValueIndexAccessor implements PrimitiveLongResourceIterator
 {
-    /**
-     * {@link RawCursor} to lazily read new {@link LabelScanValue} from.
-     */
-    private final RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+    private boolean hasNextDecided;
+    private boolean hasNext;
+    protected long next;
 
-    /**
-     * Current base nodeId, i.e. the {@link LabelScanKey#idRange} of the current {@link LabelScanKey}.
-     */
-    private long baseNodeId;
+    @Override
+    public boolean hasNext()
+    {
+        if ( !hasNextDecided )
+        {
+            hasNext = fetchNext();
+            hasNextDecided = true;
+        }
+        return hasNext;
+    }
 
-    /**
-     * Bit set of the current {@link LabelScanValue}.
-     */
-    private long bits;
-
-    /**
-     * LabelId of previously retrieved {@link LabelScanKey}, for debugging and asserting purposes.
-     */
-    private int prevLabel = -1;
-
-    /**
-     * IdRange of previously retrieved {@link LabelScanKey}, for debugging and asserting purposes.
-     */
-    private long prevRange = -1;
-
-    /**
-     * Remove provided cursor from this collection when iterator is exhausted.
-     */
-    private final Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed;
-
-    /**
-     * Indicate provided cursor has been closed.
-     */
-    private boolean closed;
+    @Override
+    public long next()
+    {
+        if ( !hasNext() )
+        {
+            throw new NoSuchElementException( "No more elements in " + this );
+        }
+        hasNextDecided = false;
+        return next;
+    }
 
     LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
             Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed )
     {
-        this.cursor = cursor;
-        this.toRemoveFromWhenClosed = toRemoveFromWhenClosed;
+        super( toRemoveFromWhenClosed, cursor );
     }
 
     /**
@@ -85,14 +76,17 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
      * goes to next {@link LabelScanValue} from {@link RawCursor}. Returns {@code true} if next node id
      * was found, otherwise {@code false}.
      */
-    @Override
     protected boolean fetchNext()
     {
         while ( true )
         {
             if ( bits != 0 )
             {
-                return nextFromCurrent();
+                int delta = Long.numberOfTrailingZeros( bits );
+                bits &= bits - 1;
+                next =  baseNodeId + delta ;
+                hasNext = true;
+                return true;
             }
 
             try
@@ -114,46 +108,6 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
 
             //noinspection AssertWithSideEffects
             assert keysInOrder( hit.key() );
-        }
-    }
-
-    private boolean keysInOrder( LabelScanKey key )
-    {
-        assert key.labelId >= prevLabel : "Expected to get ordered results, got " + key +
-                " where previous label was " + prevLabel;
-        assert key.idRange > prevRange : "Expected to get ordered results, got " + key +
-                " where previous range was " + prevRange;
-        prevLabel = key.labelId;
-        prevRange = key.idRange;
-        // Made as a method returning boolean so that it can participate in an assert call.
-        return true;
-    }
-
-    private boolean nextFromCurrent()
-    {
-        int delta = Long.numberOfTrailingZeros( bits );
-        bits &= bits - 1;
-        return next( baseNodeId + delta );
-    }
-
-    @Override
-    public void close()
-    {
-        if ( !closed )
-        {
-            try
-            {
-                cursor.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-            finally
-            {
-                toRemoveFromWhenClosed.remove( cursor );
-                closed = true;
-            }
         }
     }
 }

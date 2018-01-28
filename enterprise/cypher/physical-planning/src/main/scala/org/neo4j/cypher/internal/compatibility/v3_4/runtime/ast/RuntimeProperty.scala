@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
 import org.neo4j.cypher.internal.util.v3_4.AssertionUtils.ifAssertionsEnabled
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition, InternalException}
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, InternalException, Rewritable}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, LogicalProperty, PropertyKeyName}
 
 abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression{
@@ -35,7 +35,7 @@ abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalPropert
   override def propertyKey: PropertyKeyName = prop.propertyKey
 
   override def dup(children: Seq[AnyRef]): this.type = {
-    val constructor = this.copyConstructor
+    val constructor = Rewritable.copyConstructor(this)
     val args = children.toVector
 
     ifAssertionsEnabled {

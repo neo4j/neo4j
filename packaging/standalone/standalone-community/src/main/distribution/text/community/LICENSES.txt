@@ -5,10 +5,10 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Configuration
+  Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
   Caffeine cache
-  Commons IO
   Commons Lang
   Commons Logging
   ConcurrentLinkedHashMap
@@ -27,16 +27,20 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
   Netty/All-in-One
+  Objenesis
   opencsv
   parboiled-core
   parboiled-scala
   rxjs.js
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License

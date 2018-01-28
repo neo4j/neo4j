@@ -315,6 +315,32 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         }
     }
 
+    @Test
+    public void shouldBeAbleToForceTypeChangeOfProperty()
+    {
+        // Given
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            node.setProperty( "prop", 1337 );
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.setProperty( "prop", 1337.0 );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction ignore = db.beginTx() )
+        {
+            assertThat( node.getProperty( "prop" ), instanceOf( Double.class ) );
+        }
+    }
+
     private void createNodeWith( String key )
     {
         try ( Transaction tx = db.beginTx() )

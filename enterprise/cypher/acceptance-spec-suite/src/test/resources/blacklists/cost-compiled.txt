@@ -74,6 +74,10 @@ Using `length()` on undirected pattern expression
 Using `length()` on pattern expression with complex relationship predicate
 Returning pattern expression in `exists()`
 Pattern expression inside list comprehension
+Nested pattern comprehensions
+Nested pattern comprehensions 2
+Nested pattern comprehensions 3
+Nested pattern comprehensions 4
 Get node degree via length of pattern expression
 Get node degree via length of pattern expression that specifies a relationship type
 Get node degree via length of pattern expression that specifies multiple relationship types

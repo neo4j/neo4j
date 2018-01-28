@@ -109,5 +109,14 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 rawConfiguration.put( GraphDatabaseSettings.allow_upgrade.name(), value );
             }
         } );
+        add( new SpecificPropertyMigration( "dbms.logs.timezone",
+                "dbms.logs.timezone has been replaced with dbms.db.timezone." )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                rawConfiguration.put( GraphDatabaseSettings.db_timezone.name(), value );
+            }
+        } );
     }
 }

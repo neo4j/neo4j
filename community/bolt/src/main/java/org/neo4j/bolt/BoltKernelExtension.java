@@ -23,7 +23,6 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.time.Clock;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -31,7 +30,8 @@ import java.util.stream.Collectors;
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
+import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
+import org.neo4j.bolt.transport.DefaultBoltProtocolHandlerFactory;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
@@ -42,7 +42,6 @@ import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
-import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -149,7 +148,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
         ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
-        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config );
+        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
+        BoltProtocolHandlerFactory handlerFactory = createHandlerFactory( workerFactory, throttleGroup, logService );
 
         Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
                 .collect( Collectors.toMap( Function.identity(), connConfig ->
@@ -186,13 +186,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                         break;
                     }
 
-                    final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers =
-                            getProtocolHandlers( logService, workerFactory, throttleGroup );
-                    return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                            boltLogging, throttleGroup, protocolHandlers );
+                    return new SocketTransport( listenAddress, sslCtx, requireEncryption,
+                            logService.getInternalLogProvider(), boltLogging, throttleGroup, handlerFactory );
                 } ) );
 
-        if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )
+        if ( !connectors.isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
             life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors, connectionRegister ) );
             log.info( "Bolt Server extension loaded." );
@@ -230,20 +228,14 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         }
     }
 
-    private Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> getProtocolHandlers(
-            LogService logging, WorkerFactory workerFactory, TransportThrottleGroup throttleGroup )
-    {
-        Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers = new HashMap<>();
-        protocolHandlers.put(
-                (long) BoltMessagingProtocolV1Handler.VERSION,
-                boltChannel ->
-                        new BoltMessagingProtocolV1Handler( boltChannel, workerFactory.newWorker( boltChannel ), throttleGroup, logging )
-        );
-        return protocolHandlers;
-    }
-
     private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
         return new BasicAuthentication( authManager, userManagerSupplier );
+    }
+
+    private static BoltProtocolHandlerFactory createHandlerFactory( WorkerFactory workerFactory,
+            TransportThrottleGroup throttleGroup, LogService logService )
+    {
+        return new DefaultBoltProtocolHandlerFactory( workerFactory, throttleGroup, logService );
     }
 }

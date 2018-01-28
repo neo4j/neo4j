@@ -258,6 +258,9 @@ public class MuninnPageCache implements PageCache
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
         int maxPages = calculatePageCount( memoryAllocator, cachePageSize );
 
+        // Expose the total number of pages
+        pageCacheTracer.maxPages( maxPages );
+
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
@@ -538,7 +541,7 @@ public class MuninnPageCache implements PageCache
     {
         if ( limiter == null )
         {
-            throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
+            throw new IllegalArgumentException( "IOLimiter cannot be null" );
         }
         assertNotClosed();
         flushAllPages( limiter );

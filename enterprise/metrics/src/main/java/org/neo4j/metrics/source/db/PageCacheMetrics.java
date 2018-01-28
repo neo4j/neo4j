@@ -49,6 +49,8 @@ public class PageCacheMetrics extends LifecycleAdapter
     public static final String PC_HITS = name( PAGE_CACHE_PREFIX, "hits" );
     @Documented( "The ratio of hits to the total number of lookups in the page cache" )
     public static final String PC_HIT_RATIO = name( PAGE_CACHE_PREFIX, "hit_ratio" );
+    @Documented( "The ratio of number of used pages to total number of available pages" )
+    public static final String PC_USAGE_RATIO = name( PAGE_CACHE_PREFIX, "usage_ratio" );
 
     private final MetricRegistry registry;
     private final PageCacheCounters pageCacheCounters;
@@ -70,6 +72,7 @@ public class PageCacheMetrics extends LifecycleAdapter
         registry.register( PC_FLUSHES, (Gauge<Long>) pageCacheCounters::flushes );
         registry.register( PC_EVICTION_EXCEPTIONS, (Gauge<Long>) pageCacheCounters::evictionExceptions );
         registry.register( PC_HIT_RATIO, (Gauge<Double>) pageCacheCounters::hitRatio );
+        registry.register( PC_USAGE_RATIO, (Gauge<Double>) pageCacheCounters::usageRatio );
     }
 
     @Override
@@ -83,5 +86,6 @@ public class PageCacheMetrics extends LifecycleAdapter
         registry.remove( PC_FLUSHES );
         registry.remove( PC_EVICTION_EXCEPTIONS );
         registry.remove( PC_HIT_RATIO );
+        registry.remove( PC_USAGE_RATIO );
     }
 }

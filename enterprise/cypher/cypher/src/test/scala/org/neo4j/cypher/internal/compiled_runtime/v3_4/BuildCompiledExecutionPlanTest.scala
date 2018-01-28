@@ -26,16 +26,17 @@ import org.neo4j.cypher.internal.compiler.v3_4.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{CantCompileQueryException, HardcodedGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, QueryGraph, RegularPlannerQuery}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, LogicalPlan, ProduceResult}
 import org.neo4j.kernel.monitoring.Monitors
 
 class BuildCompiledExecutionPlanTest extends CypherFunSuite {
 
-  private val solved = CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty), 0.0)
+  implicit val idGen = new SequentialIdGen()
 
   test("should tell the monitor when building works") {
     // Given
@@ -44,7 +45,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
     monitors.addMonitorListener(monitor)
 
     // When
-    process(monitors, ProduceResult(Argument()(solved), Seq.empty))
+    process(monitors, ProduceResult(Argument(), Seq.empty))
 
     // Then
     monitor.successfullyPlanned should equal(true)
@@ -56,21 +57,20 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
     val monitor = new SpyingMonitor
     monitors.addMonitorListener(monitor)
 
-    process(monitors, Argument()(solved))
+    process(monitors, Argument())
 
     // Then
     monitor.failedToPlan should equal(true)
   }
 
   private def process(monitors: WrappedMonitors, plan: LogicalPlan) = {
-    plan.assignIds()
     val context = codegen.CompiledRuntimeContextHelper.create(
       monitors = monitors,
       planContext = new NotImplementedPlanContext {
         override def statistics: GraphStatistics = HardcodedGraphStatistics
       }, codeStructure = GeneratedQueryStructure)
 
-    val state = LogicalPlanState("apa", None, CostBasedPlannerName.default,
+    val state = LogicalPlanState("apa", None, CostBasedPlannerName.default, new Solveds, new Cardinalities,
                                  maybeLogicalPlan = Some(plan), maybeSemanticTable = Some(new SemanticTable()))
 
     // When

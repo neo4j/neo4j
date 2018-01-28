@@ -144,7 +144,7 @@ public class TransactionTemplateTest
     public void defaultExceptionsForExit() throws Exception
     {
         Error error = new Error();
-        TransactionTerminatedException terminatedException = new TransactionTerminatedException( Status.Transaction.TransactionTerminated );
+        TransactionTerminatedException terminatedException = new TransactionTerminatedException( Status.Transaction.Terminated );
 
         try
         {
@@ -200,7 +200,7 @@ public class TransactionTemplateTest
     {
         template = template.retryOn( e -> !IllegalArgumentException.class.isInstance( e ) );
 
-        TransactionTerminatedException fakeException = new TransactionTerminatedException( Status.Transaction.TransactionTerminated );
+        TransactionTerminatedException fakeException = new TransactionTerminatedException( Status.Transaction.Terminated );
         template.execute( new FailingRetryConsumer( 1, fakeException ) );
 
         assertThat( monitor.numRetry, is( 1 ) );

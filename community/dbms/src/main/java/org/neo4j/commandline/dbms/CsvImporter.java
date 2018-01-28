@@ -113,8 +113,7 @@ class CsvImporter implements Importer
                 relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                 idType,
                 new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
-                badCollector,
-                configuration.maxNumberOfProcessors(), !ignoreBadRelationships );
+                badCollector );
 
         ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), storeDir, logsDir,
                 reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration );

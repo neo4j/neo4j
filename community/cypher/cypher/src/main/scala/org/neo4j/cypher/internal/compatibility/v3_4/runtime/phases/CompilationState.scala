@@ -26,6 +26,6 @@ import scala.util.{Failure, Try}
 
 class CompilationState(ls: LogicalPlanState,
                            val maybeExecutionPlan: Try[ExecutionPlan] = Failure(new UnsupportedOperationException))
-  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.maybeStatement, ls.maybeSemantics,
+  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.solveds, ls.cardinalities, ls.maybeStatement, ls.maybeSemantics,
                            ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan,
                            ls.maybePeriodicCommit, ls.accumulatedConditions)

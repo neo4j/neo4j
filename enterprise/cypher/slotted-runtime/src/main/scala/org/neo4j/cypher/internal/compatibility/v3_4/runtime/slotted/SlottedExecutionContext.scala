@@ -26,7 +26,9 @@ import org.neo4j.cypher.internal.util.v3_4.{InternalException, ParameterWrongTyp
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{VirtualEdgeValue, VirtualNodeValue, VirtualValues}
+import org.neo4j.values.virtual._
+
+import scala.collection.mutable
 
 object SlottedExecutionContext {
   def empty = new SlottedExecutionContext(SlotConfiguration.empty)
@@ -120,37 +122,8 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
   //-----------------------------------------------------------------------------------------------------------
   // Compatibility implementations of the old ExecutionContext API used by Community interpreted runtime pipes
   //-----------------------------------------------------------------------------------------------------------
-  // TODO: As an optimization we can create a map from string key to precompiled getter/setter methods in the SlotConfiguration and use below
-  // to avoid matching and unapplys
-
   override def get(key: String): Option[AnyValue] = {
-    slots.get(key) match {
-      case Some(RefSlot(offset, _, _)) =>
-        Some(getRefAt(offset))
-
-      case Some(LongSlot(offset, false, CTNode)) =>
-        Some(VirtualValues.node(getLongAt(offset)))
-
-      case Some(LongSlot(offset, false, CTRelationship)) =>
-        Some(VirtualValues.edge(getLongAt(offset)))
-
-      case Some(LongSlot(offset, true, CTNode)) =>
-        val nodeId = getLongAt(offset)
-        if (entityIsNull(nodeId))
-          Some(Values.NO_VALUE)
-        else
-          Some(VirtualValues.node(nodeId))
-
-      case Some(LongSlot(offset, true, CTRelationship)) =>
-        val relId = getLongAt(offset)
-        if (entityIsNull(relId))
-          Some(Values.NO_VALUE)
-        else
-          Some(VirtualValues.edge(relId))
-
-      case _ =>
-        None
-    }
+    slots.maybeGetter(key).map(g => g(this))
   }
 
   override def +=(kv: (String, AnyValue)): this.type = {
@@ -220,42 +193,10 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
   }
 
   private def setValue(key1: String, value1: AnyValue): Unit = {
-    (slots.get(key1), value1) match {
-      case (Some(RefSlot(offset, _, _)), _) =>
-        setRefAt(offset, value1)
-
-      case (Some(LongSlot(offset, false, CTNode)),
-            nodeVal: VirtualNodeValue) =>
-        setLongAt(offset, nodeVal.id())
-
-      case (Some(LongSlot(offset, false, CTRelationship)),
-            relVal: VirtualEdgeValue) =>
-        setLongAt(offset, relVal.id())
-
-      case (Some(LongSlot(offset, true, CTNode)), nodeVal) if nodeVal == Values.NO_VALUE =>
-        setLongAt(offset, -1L)
-
-      case (Some(LongSlot(offset, true, CTRelationship)), relVal) if relVal == Values.NO_VALUE =>
-        setLongAt(offset, -1L)
-
-      case (Some(LongSlot(offset, true, CTNode)),
-            nodeVal: VirtualNodeValue) =>
-        setLongAt(offset, nodeVal.id())
-
-      case (Some(LongSlot(offset, true, CTRelationship)),
-            relVal: VirtualEdgeValue) =>
-        setLongAt(offset, relVal.id())
-
-      case (Some(LongSlot(offset, _, CTNode)), value) =>
-        throw new ParameterWrongTypeException(s"Expected to find a node at long slot $offset but found $value instead")
-
-      case (Some(LongSlot(offset, _, CTRelationship)), value) =>
-        throw new ParameterWrongTypeException(s"Expected to find a relationship at long slot $offset but found $value instead")
-
-      case _ =>
-        throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: ${slots}")
-    }
-  }
+    slots.maybeSetter(key1)
+      .getOrElse(throw new InternalException(s"Ouch, no suitable slot for key $key1 = $value1\nSlots: ${slots}"))
+      .apply(this, value1)
+ }
 
   def isRefInitialized(offset: Int): Boolean = {
     refs(offset) != null
@@ -292,4 +233,52 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
     copyTo(clone)
     clone
   }
+
+  // TODO: If we save currently utilized slot size per logical plan this could be simplified to checking
+  // if the slot offset is less than the current size.
+  // This is also the only way that we could detect if a LongSlot was not initialized
+  override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] = {
+    var entities = mutable.Map.empty[String, AnyValue]
+    slots.foreachSlot {
+      case (key, RefSlot(offset, _, _)) =>
+        if (isRefInitialized(offset)) {
+          val entity = getRefAtWithoutCheckingInitialized(offset)
+          entity match {
+            case _: NodeValue | _: RelationshipValue =>
+              entities += key -> entity
+            case nodeRef: NodeReference =>
+              entities += key -> materializeNode(nodeRef.id())
+            case relRef: RelationshipReference =>
+              entities += key -> materializeRelationship(relRef.id())
+            case _ => // Do nothing
+          }
+        }
+      case (key, LongSlot(offset, false, CTNode)) =>
+        entities += key -> materializeNode(getLongAt(offset))
+      case (key, LongSlot(offset, false, CTRelationship)) =>
+        entities += key -> materializeRelationship(getLongAt(offset))
+      case (key, LongSlot(offset, true, CTNode)) =>
+        val entityId = getLongAt(offset)
+        if (entityId >= 0)
+          entities += key -> materializeNode(getLongAt(offset))
+      case (key, LongSlot(offset, true, CTRelationship)) =>
+        val entityId = getLongAt(offset)
+        if (entityId >= 0)
+          entities += key -> materializeRelationship(getLongAt(offset))
+      case _ => // Do nothing
+    }
+    entities.toMap
+  }
+
+  override def isNull(key: String): Boolean =
+    slots.get(key) match {
+      case Some(RefSlot(offset, true, _)) if isRefInitialized(offset) =>
+        getRefAtWithoutCheckingInitialized(offset) == Values.NO_VALUE
+      case Some(LongSlot(offset, true, CTNode)) =>
+        entityIsNull(getLongAt(offset))
+      case Some(LongSlot(offset, true, CTRelationship)) =>
+        entityIsNull(getLongAt(offset))
+      case _ =>
+        false
+    }
 }

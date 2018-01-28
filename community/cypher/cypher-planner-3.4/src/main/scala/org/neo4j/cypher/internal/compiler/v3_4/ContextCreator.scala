@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{ExpressionEvaluator, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 trait ContextCreator[Context <: BaseContext] {
   def create(tracer: CompilationPhaseTracer,
@@ -39,5 +40,6 @@ trait ContextCreator[Context <: BaseContext] {
              config: CypherCompilerConfiguration,
              updateStrategy: UpdateStrategy,
              clock: Clock,
+             logicalPlanIdGen: IdGen,
              evaluator: ExpressionEvaluator): Context
 }

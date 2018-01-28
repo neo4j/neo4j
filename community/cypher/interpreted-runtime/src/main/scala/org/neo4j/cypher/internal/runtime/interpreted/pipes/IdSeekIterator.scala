@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 abstract class IdSeekIterator[T]
   extends Iterator[ExecutionContext] with NumericHelper {
@@ -73,9 +73,9 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
                                                toNode: String,
                                                baseContext: ExecutionContext,
                                                executionContextFactory: ExecutionContextFactory,
-                                               protected val operations: Operations[EdgeValue],
+                                               protected val operations: Operations[RelationshipValue],
                                                protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[EdgeValue] {
+  extends IdSeekIterator[RelationshipValue] {
 
   def hasNext: Boolean = hasNextEntity
 
@@ -91,11 +91,11 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  toNode: String,
                                                  baseContext: ExecutionContext,
                                                  executionContextFactory: ExecutionContextFactory,
-                                                 protected val operations: Operations[EdgeValue],
+                                                 protected val operations: Operations[RelationshipValue],
                                                  protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[EdgeValue] {
+  extends IdSeekIterator[RelationshipValue] {
 
-  private var lastEntity: EdgeValue = _
+  private var lastEntity: RelationshipValue = _
   private var lastStart: NodeValue = _
   private var lastEnd: NodeValue = _
   private var emitSibling = false

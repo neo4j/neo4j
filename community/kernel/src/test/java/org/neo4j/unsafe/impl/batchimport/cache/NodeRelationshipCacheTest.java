@@ -29,10 +29,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
@@ -41,7 +44,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
 
-import static java.lang.Math.max;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -51,9 +53,13 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Math.max;
+
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.Iterators.single;
 
 @RunWith( Parameterized.class )
 public class NodeRelationshipCacheTest
@@ -495,6 +501,24 @@ public class NodeRelationshipCacheTest
 
         // THEN
         assertEquals( highCount + 1, nextHighCount );
+    }
+
+    @Test
+    public void shouldFailFastOnTooHighNodeCount() throws Exception
+    {
+        // given
+        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1 );
+
+        try
+        {
+            // when
+            cache.setNodeCount( 2L << (5 * Byte.SIZE) );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // then good
+        }
     }
 
     private void testNode( NodeRelationshipCache link, long node, Direction direction )

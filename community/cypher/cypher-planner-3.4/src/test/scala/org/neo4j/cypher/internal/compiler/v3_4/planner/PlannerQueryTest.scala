@@ -66,7 +66,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val tail = RegularPlannerQuery(queryGraph = QueryGraph.empty)
     val firstQueryGraph = QueryGraph.empty
-    val secondQueryGraph = QueryGraph(patternNodes = Set(IdName("a")))
+    val secondQueryGraph = QueryGraph(patternNodes = Set("a"))
     val input = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {

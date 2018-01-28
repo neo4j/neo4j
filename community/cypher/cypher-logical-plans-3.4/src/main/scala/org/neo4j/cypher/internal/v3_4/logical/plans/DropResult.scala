@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /*
  * Produce zero rows without even using source.
  */
-case class DropResult(source: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+case class DropResult(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
 

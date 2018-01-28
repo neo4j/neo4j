@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For every row in left, assert that all rows in right produce the same value
@@ -32,11 +32,10 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *
   * This operator is planned for merges using unique index seeks.
   */
-case class AssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class AssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols + node
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols + node
 }

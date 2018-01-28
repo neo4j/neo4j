@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
 
@@ -40,7 +40,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
                                        slots: SlotConfiguration,
                                        groupingExpressions: Map[Slot, Expression],
                                        aggregations: Map[Int, AggregationExpression])
-                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                      (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))

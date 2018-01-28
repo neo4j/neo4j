@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.ir.v3_4.helpers
 
 import org.neo4j.cypher.internal.util.v3_4.{FreshIdNameGenerator, InternalException}
 import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, ShortestPathPattern}
+import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, ShortestPathPattern}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 object PatternConverters {
 
   object DestructResult { def empty = DestructResult(Seq.empty, Seq.empty, Seq.empty) }
 
-  case class DestructResult(nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortestPaths: Seq[ShortestPathPattern]) {
-    def addNodeId(newId: IdName*): DestructResult = copy(nodeIds = nodeIds ++ newId)
+  case class DestructResult(nodeIds: Seq[String], rels: Seq[PatternRelationship], shortestPaths: Seq[ShortestPathPattern]) {
+    def addNodeId(newId: String*): DestructResult = copy(nodeIds = nodeIds ++ newId)
     def addRel(r: PatternRelationship*): DestructResult = copy(rels = rels ++ r)
     def addShortestPaths(r: ShortestPathPattern*): DestructResult = copy(shortestPaths = shortestPaths ++ r)
   }
@@ -43,7 +43,7 @@ object PatternConverters {
 
   implicit class NodePatternConverter(val node: NodePattern) extends AnyVal {
     def destructedNodePattern =
-      DestructResult(nodeIds = Seq(IdName(node.variable.get.name)), Seq.empty, Seq.empty)
+      DestructResult(nodeIds = Seq(node.variable.get.name), Seq.empty, Seq.empty)
   }
 
   //RelationshipChain(
@@ -56,17 +56,17 @@ object PatternConverters {
       case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None),
                              RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
                              NodePattern(Some(rightNodeId), Seq(), None)) =>
-        val leftNode = IdName(leftNodeId.name)
-        val rightNode = IdName(rightNodeId.name)
-        val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
+        val leftNode = leftNodeId.name
+        val rightNode = rightNodeId.name
+        val r = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
         DestructResult(Seq(leftNode, rightNode), Seq(r), Seq.empty)
 
       // ...->[r]->(b)
       case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), relTypes, length, None, direction, _), NodePattern(Some(rightNodeId), Seq(), None)) =>
         val destructed = relChain.destructedRelationshipChain
-        val leftNode = IdName(destructed.rels.last.right.name)
-        val rightNode = IdName(rightNodeId.name)
-        val newRel = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
+        val leftNode = destructed.rels.last.right
+        val rightNode = rightNodeId.name
+        val newRel = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
         destructed.
           addNodeId(rightNode).
           addRel(newRel)
@@ -78,7 +78,7 @@ object PatternConverters {
       pattern.patternParts.foldLeft(DestructResult.empty) {
         case (acc, NamedPatternPart(ident, sps@ShortestPaths(element, single))) =>
           val desctructedElement: DestructResult = element.destructed
-          val pathName = IdName(ident.name)
+          val pathName = ident.name
           val newShortest = ShortestPathPattern(Some(pathName), desctructedElement.rels.head, single)(sps)
           acc.
             addNodeId(desctructedElement.nodeIds:_*).
@@ -86,7 +86,7 @@ object PatternConverters {
 
         case (acc, sps@ShortestPaths(element, single)) =>
           val destructedElement = element.destructed
-          val newShortest = ShortestPathPattern(Some(IdName(FreshIdNameGenerator.name(sps.position))), destructedElement.rels.head, single)(sps)
+          val newShortest = ShortestPathPattern(Some(FreshIdNameGenerator.name(sps.position)), destructedElement.rels.head, single)(sps)
           acc.
             addNodeId(destructedElement.nodeIds:_*).
             addShortestPaths(newShortest)

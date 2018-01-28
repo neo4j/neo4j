@@ -65,15 +65,12 @@ public class DijkstraTest extends Neo4jAlgoTestCase
 
         // WHEN
         PathFinder<WeightedPath> finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        try ( WeightedPath path = finder.findSinglePath( start, start ) )
-        {
-
-            // THEN
-            assertNotNull( path );
-            assertEquals( start, path.startNode() );
-            assertEquals( start, path.endNode() );
-            assertEquals( 0, path.length() );
-        }
+        WeightedPath path = finder.findSinglePath( start, start );
+        // THEN
+        assertNotNull( path );
+        assertEquals( start, path.startNode() );
+        assertEquals( start, path.endNode() );
+        assertEquals( 0, path.length() );
     }
 
     @Test

@@ -41,8 +41,8 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class ReadOnlyIndexSnapshotFileIteratorTest
 {

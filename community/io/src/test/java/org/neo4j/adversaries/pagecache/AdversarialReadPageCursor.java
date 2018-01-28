@@ -60,8 +60,7 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 @SuppressWarnings( "unchecked" )
 class AdversarialReadPageCursor extends DelegatingPageCursor
 {
-    private static final boolean enableInconsistencyTracing = FeatureToggles.flag(
-            AdversarialReadPageCursor.class, "enableInconsistencyTracing", false );
+    private static final boolean enableInconsistencyTracing = FeatureToggles.flag( AdversarialReadPageCursor.class, "enableInconsistencyTracing", false );
 
     private static class State implements Adversary
     {
@@ -106,7 +105,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
             return value;
         }
 
-        private void inconsistently( byte[] data )
+        private void inconsistently( byte[] data, int arrayOffset, int length )
         {
             if ( currentReadIsPreparingInconsistent )
             {
@@ -114,7 +113,9 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
             }
             else if ( currentReadIsInconsistent )
             {
-                ThreadLocalRandom.current().nextBytes( data );
+                byte[] gunk = new byte[length];
+                ThreadLocalRandom.current().nextBytes( gunk );
+                System.arraycopy( gunk, 0, data, arrayOffset, length );
                 inconsistentReadHistory.add( Arrays.copyOf( data, data.length ) );
             }
         }
@@ -196,9 +197,9 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
         return state.inconsistently( value, delegate );
     }
 
-    private void inconsistently( byte[] data )
+    private void inconsistently( byte[] data, int arrayOffset, int length )
     {
-        state.inconsistently( data );
+        state.inconsistently( data, arrayOffset, length );
     }
 
     @Override
@@ -271,14 +272,14 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
     public void getBytes( byte[] data )
     {
         delegate.getBytes( data );
-        inconsistently( data );
+        inconsistently( data, 0, data.length );
     }
 
     @Override
     public void getBytes( byte[] data, int arrayOffset, int length )
     {
         delegate.getBytes( data, arrayOffset, length );
-        inconsistently( data );
+        inconsistently( data, arrayOffset, length );
     }
 
     @Override
@@ -370,8 +371,8 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
 
     private void prepareNext()
     {
-        boolean currentReadIsPreparingInconsistent = state.injectFailureOrMischief( FileNotFoundException.class, IOException.class,
-                SecurityException.class, IllegalStateException.class );
+        boolean currentReadIsPreparingInconsistent =
+                state.injectFailureOrMischief( FileNotFoundException.class, IOException.class, SecurityException.class, IllegalStateException.class );
         state.reset( currentReadIsPreparingInconsistent );
     }
 
@@ -385,8 +386,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
-        state.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
-                IllegalStateException.class );
+        state.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class, IllegalStateException.class );
         if ( state.hasPreparedInconsistentRead() )
         {
             resetDelegate();

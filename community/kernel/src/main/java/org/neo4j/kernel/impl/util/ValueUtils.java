@@ -42,7 +42,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
@@ -234,26 +234,26 @@ public final class ValueUtils
     {
         NodeValue[] nodes = stream( path.nodes().spliterator(), false )
                 .map( ValueUtils::fromNodeProxy ).toArray( NodeValue[]::new );
-        EdgeValue[] edges = stream( path.relationships().spliterator(), false )
-                .map( ValueUtils::fromRelationshipProxy ).toArray( EdgeValue[]::new );
+        RelationshipValue[] relationships = stream( path.relationships().spliterator(), false )
+                .map( ValueUtils::fromRelationshipProxy ).toArray( RelationshipValue[]::new );
 
-        return VirtualValues.path( nodes, edges );
+        return VirtualValues.path( nodes, relationships );
     }
 
     public static ListValue asListOfEdges( Iterable<Relationship> rels )
     {
         return VirtualValues.list( StreamSupport.stream( rels.spliterator(), false )
-                .map( ValueUtils::fromRelationshipProxy ).toArray( EdgeValue[]::new ) );
+                .map( ValueUtils::fromRelationshipProxy ).toArray( RelationshipValue[]::new ) );
     }
 
     public static ListValue asListOfEdges( Relationship[] rels )
     {
-        EdgeValue[] edgeValues = new EdgeValue[rels.length];
-        for ( int i = 0; i < edgeValues.length; i++ )
+        RelationshipValue[] relValues = new RelationshipValue[rels.length];
+        for ( int i = 0; i < relValues.length; i++ )
         {
-            edgeValues[i] = fromRelationshipProxy( rels[i] );
+            relValues[i] = fromRelationshipProxy( rels[i] );
         }
-        return VirtualValues.list( edgeValues );
+        return VirtualValues.list( relValues );
     }
 
     public static MapValue asMapValue( Map<String,Object> map )
@@ -329,8 +329,8 @@ public final class ValueUtils
         return new NodeProxyWrappingNodeValue( node );
     }
 
-    public static EdgeValue fromRelationshipProxy( Relationship relationship )
+    public static RelationshipValue fromRelationshipProxy( Relationship relationship )
     {
-        return new RelationshipProxyWrappingEdgeValue( relationship );
+        return new RelationshipProxyWrappingValue( relationship );
     }
 }

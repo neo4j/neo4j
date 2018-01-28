@@ -192,9 +192,11 @@ public class Neo4jError
 
     public static Neo4jError combine( List<Neo4jError> errors )
     {
-        assert errors.size() >= 1;
-
-        if ( errors.size() == 1 )
+        if ( errors == null || errors.isEmpty() )
+        {
+            return null;
+        }
+        else if ( errors.size() == 1 )
         {
             return errors.get( 0 );
         }
@@ -214,7 +216,7 @@ public class Neo4jError
                         .append( error.message );
             }
 
-            return from(combinedStatus, combinedMessage.toString());
+            return from( combinedStatus, combinedMessage.toString() );
         }
     }
 

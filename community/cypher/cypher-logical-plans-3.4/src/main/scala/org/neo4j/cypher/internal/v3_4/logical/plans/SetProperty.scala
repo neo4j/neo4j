@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, PropertyKeyName}
 
 /**
@@ -34,13 +35,13 @@ case class SetProperty(
                         entity: Expression,
                         propertyKey: PropertyKeyName,
                         value: Expression
-                      )(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+                      )(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override def lhs = Some(source)
 
   override def rhs = None
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols
 
   override def strictness: StrictnessMode = source.strictness
 }

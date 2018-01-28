@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Throws exception if evaluated.
   */
-case class ErrorPlan(source: LogicalPlan, exception: Exception)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+case class ErrorPlan(source: LogicalPlan, exception: Exception)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   override val lhs: Option[LogicalPlan] = Some(source)
 
   override val rhs: Option[LogicalPlan] = None
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols
 
   override def strictness: StrictnessMode = source.strictness
 }

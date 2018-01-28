@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
-                             (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+                             (val id: Id = Id.INVALID_ID) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val keyTokenId = keyToken.getOrCreateId(state.query)
     val propertyKeyId = propertyKey.getOrCreateId(state.query)

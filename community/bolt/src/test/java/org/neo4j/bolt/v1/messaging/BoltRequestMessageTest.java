@@ -33,7 +33,7 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -54,7 +54,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
@@ -104,12 +104,12 @@ public class BoltRequestMessageTest
     @Test
     public void shouldSerializeRelationship() throws Throwable
     {
-        EdgeValue edgeValue = edgeValue( 12L,
+        RelationshipValue rel = relationshipValue( 12L,
                 nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),
                 nodeValue( 2L, stringArray(), VirtualValues.EMPTY_MAP ),
                 stringValue( "KNOWS" ), map( new String[]{"name", "age"},
                         new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
-        assertThat( serialized( edgeValue ),
+        assertThat( serialized( rel ),
                 equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
                          "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
     }
@@ -129,10 +129,11 @@ public class BoltRequestMessageTest
     private <T extends RequestMessage> T serializeAndDeserialize( T msg ) throws IOException
     {
         RecordingByteChannel channel = new RecordingByteChannel();
+        Neo4jPack neo4jPack = new Neo4jPackV1();
         BoltRequestMessageReader reader = new BoltRequestMessageReader(
-                new Neo4jPack.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
+                neo4jPack.newUnpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
         BoltRequestMessageWriter writer = new BoltRequestMessageWriter(
-                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                neo4jPack.newPacker( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
 
         writer.write( msg ).flush();
 

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 class OptionalExpandAllPipeTest extends CypherFunSuite {
 
@@ -134,8 +134,8 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
   }
 
   private def mockRelationships(rels: Relationship*) {
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]] {
-      def answer(invocation: InvocationOnMock): Iterator[EdgeValue] = rels.iterator.map(fromRelationshipProxy)
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
+      def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = rels.iterator.map(fromRelationshipProxy)
     })
   }
 

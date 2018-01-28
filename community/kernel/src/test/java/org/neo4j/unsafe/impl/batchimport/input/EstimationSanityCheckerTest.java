@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker.Monitor;
+import org.neo4j.unsafe.impl.batchimport.ImportLogic.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 
 import static org.mockito.Mockito.mock;
@@ -45,8 +45,8 @@ public class EstimationSanityCheckerTest
         new EstimationSanityChecker( formats, monitor ).sanityCheck( estimates );
 
         // then
-        verify( monitor ).nodeCountCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
-        verify( monitor ).relationshipCountCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
+        verify( monitor ).mayExceedNodeIdCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
+        verify( monitor ).mayExceedRelationshipIdCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
     }
 
     @Test
@@ -62,8 +62,8 @@ public class EstimationSanityCheckerTest
         new EstimationSanityChecker( formats, monitor ).sanityCheck( estimates );
 
         // then
-        verify( monitor ).nodeCountCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
-        verify( monitor ).relationshipCountCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
+        verify( monitor ).mayExceedNodeIdCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
+        verify( monitor ).mayExceedRelationshipIdCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
     }
 
     @Test

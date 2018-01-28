@@ -40,7 +40,6 @@ import java.time.Clock;
 
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
@@ -49,7 +48,6 @@ import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.RaftMessageDecoder;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -59,10 +57,10 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_listen_address;
 
 public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
-    private static final Setting<ListenSocketAddress> setting = CausalClusteringSettings.raft_listen_address;
     private final ChannelMarshal<ReplicatedContent> marshal;
     private final PipelineHandlerAppender pipelineAppender;
     private final ListenSocketAddress listenAddress;
@@ -83,7 +81,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     {
         this.marshal = marshal;
         this.pipelineAppender = pipelineAppender;
-        this.listenAddress = config.get( setting );
+        this.listenAddress = config.get( raft_listen_address );
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
@@ -164,8 +162,8 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
             //noinspection ConstantConditions
             if ( e instanceof BindException )
             {
-                userLog.error( "Address is already bound for setting: " + setting + " with value: " + listenAddress );
-                log.error( "Address is already bound for setting: " + setting + " with value: " + listenAddress, e );
+                userLog.error( "Address is already bound for setting: " + raft_listen_address + " with value: " + listenAddress );
+                log.error( "Address is already bound for setting: " + raft_listen_address + " with value: " + listenAddress, e );
                 throw e;
             }
         }

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -126,6 +127,12 @@ public class StubPageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         return 0;
+    }
+
+    @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        throw new UnsupportedOperationException( "Stub cursor does not support this method... yet" );
     }
 
     @Override
@@ -341,6 +348,14 @@ public class StubPageCursor extends PageCursor
         {
             handleOverflow();
         }
+    }
+
+    @Override
+    public void putBytes( int bytes, byte value )
+    {
+        byte[] byteArray = new byte[bytes];
+        Arrays.fill( byteArray, value );
+        putBytes( byteArray, 0, bytes );
     }
 
     @Override

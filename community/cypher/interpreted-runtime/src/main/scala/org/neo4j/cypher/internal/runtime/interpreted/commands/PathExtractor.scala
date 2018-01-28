@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, PathValue, VirtualValues}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue, PathValue, VirtualValues}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -32,14 +32,14 @@ case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression
   override def apply(ctx: ExecutionContext, queryState: QueryState): AnyValue = {
     def getNode(x: String): NodeValue = ctx(x).asInstanceOf[NodeValue]
 
-    def getRel(x: String): EdgeValue = ctx(x).asInstanceOf[EdgeValue]
+    def getRel(x: String): RelationshipValue = ctx(x).asInstanceOf[RelationshipValue]
 
     def getPath(x: String): PathValue = ctx(x).asInstanceOf[PathValue]
 
     val firstNode = getFirstNode(pathPattern)
 
     val nodes = ArrayBuffer.empty[NodeValue]
-    val rels = ArrayBuffer.empty[EdgeValue]
+    val rels = ArrayBuffer.empty[RelationshipValue]
     nodes.append(getNode(firstNode))
     for (path <- pathPattern) {
       path match {
@@ -53,10 +53,10 @@ case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression
           val n = p.nodes()
           if (n.head == nodes.last) {
             nodes.append(n: _*)
-            rels.append(p.edges(): _*)
+            rels.append(p.relationships(): _*)
           } else {
             nodes.append(n.reverse: _*)
-            rels.append(p.edges().reverse: _*)
+            rels.append(p.relationships().reverse: _*)
           }
       }
     }

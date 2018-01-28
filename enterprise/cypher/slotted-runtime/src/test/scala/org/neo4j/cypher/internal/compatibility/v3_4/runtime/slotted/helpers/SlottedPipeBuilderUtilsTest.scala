@@ -50,7 +50,7 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
   }
 
   private def assertGetNode(slot: Slot, id: Long) = assertGetLong(slot, id, VirtualValues.node(id))
-  private def assertGetRelationship(slot: Slot, id: Long) = assertGetLong(slot, id, VirtualValues.edge(id))
+  private def assertGetRelationship(slot: Slot, id: Long) = assertGetLong(slot, id, VirtualValues.relationship(id))
 
   test("getter for non-nullable node slot") {
     assertGetNode(slots("n1"), 42L)
@@ -99,7 +99,7 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
   }
 
   private def assertSetNode(slot: Slot, id: Long) = assertSetLong(slot, VirtualValues.node(id), id)
-  private def assertSetRelationship(slot: Slot, id: Long) = assertSetLong(slot, VirtualValues.edge(id), id)
+  private def assertSetRelationship(slot: Slot, id: Long) = assertSetLong(slot, VirtualValues.relationship(id), id)
 
   private def assertSetFails(slot: Slot, value: AnyValue): Unit = {
     val context = SlottedExecutionContext(slots)

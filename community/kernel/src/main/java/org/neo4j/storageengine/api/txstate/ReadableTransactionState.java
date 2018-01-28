@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -51,9 +52,19 @@ public interface ReadableTransactionState
     // ENTITY RELATED
 
     /**
-     * Returns all nodes that, in this tx, have had labelId removed.
+     * Returns all nodes that, in this tx, have had the labels changed.
      */
-    ReadableDiffSets<Long> nodesWithLabelChanged( int labelId );
+    ReadableDiffSets<Long> nodesWithLabelChanged( int label );
+
+    /**
+     * Returns all nodes that, in this tx, have had any of the labels changed.
+     */
+    ReadableDiffSets<Long> nodesWithAnyOfLabelsChanged( int... labels );
+
+    /**
+     * Returns all nodes that, in this tx, have had all the labels changed.
+     */
+    ReadableDiffSets<Long> nodesWithAllLabelsChanged( int... labels );
 
     /**
      * Returns nodes that have been added and removed in this tx.
@@ -95,7 +106,7 @@ public interface ReadableTransactionState
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
 
-    PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
+    PrimitiveLongResourceIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
     RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 
@@ -124,19 +135,19 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    ReadableDiffSets<Long> indexUpdatesForScan( IndexDescriptor index );
+    PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor index );
 
-    ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
+    PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
                                                              Number lower, boolean includeLower,
                                                              Number upper, boolean includeUpper );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor index,
                                                              String lower, boolean includeLower,
                                                              String upper, boolean includeUpper );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 

@@ -36,8 +36,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.ports.allocation.PortAuthority;
 
 import static java.util.Collections.emptySortedMap;
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class PrometheusOutputTest
 {

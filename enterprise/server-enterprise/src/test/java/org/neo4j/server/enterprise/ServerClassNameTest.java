@@ -53,8 +53,8 @@ public class ServerClassNameTest
     public void shouldMaintainNamingOfEnterpriseNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
             throws Exception
     {
-        assertEquals( getErrorMessage( EnterpriseNeoServer.class ), "enterpriseneoserver",
-                EnterpriseNeoServer.class.getSimpleName().toLowerCase() );
+        assertEquals( getErrorMessage( OpenEnterpriseNeoServer.class ), "openenterpriseneoserver",
+                OpenEnterpriseNeoServer.class.getSimpleName().toLowerCase() );
     }
 
     private String getErrorMessage( Class<? extends AbstractNeoServer> neoServerClass )

@@ -24,12 +24,11 @@ import java.util.TimeZone;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.unsafe.impl.batchimport.CountGroupsStage;
+import org.neo4j.unsafe.impl.batchimport.DataImporter;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics;
 import org.neo4j.unsafe.impl.batchimport.IdMapperPreparationStage;
 import org.neo4j.unsafe.impl.batchimport.NodeDegreeCountStage;
-import org.neo4j.unsafe.impl.batchimport.NodeStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipGroupStage;
-import org.neo4j.unsafe.impl.batchimport.RelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.ScanAndCacheGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.SparseNodeFirstRelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -50,6 +49,8 @@ import static org.neo4j.helpers.Format.count;
 import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterables.last;
+import static org.neo4j.unsafe.impl.batchimport.ImportMemoryCalculator.defensivelyPadMemoryEstimate;
+import static org.neo4j.unsafe.impl.batchimport.ImportMemoryCalculator.estimatedCacheSize;
 import static org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor.totalMemoryUsageOf;
 
 /**
@@ -131,9 +132,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         IdMapper idMapper = dependencyResolver.resolveDependency( IdMapper.class );
         NodeRelationshipCache nodeRelationshipCache = dependencyResolver.resolveDependency( NodeRelationshipCache.class );
 
-        long biggestCacheMemory = defensivelyPadMemoryEstimate( max(
-                idMapper.calculateMemoryUsage( estimates.numberOfNodes() ),
-                nodeRelationshipCache.calculateMemoryUsage( estimates.numberOfNodes() ) ) );
+        long biggestCacheMemory = estimatedCacheSize( neoStores,
+                nodeRelationshipCache.memoryEstimation( estimates.numberOfNodes() ),
+                idMapper.memoryEstimation( estimates.numberOfNodes() ) );
         printStageHeader( "Import starting",
                 ESTIMATED_NUMBER_OF_NODES, count( estimates.numberOfNodes() ),
                 ESTIMATED_NUMBER_OF_NODE_PROPERTIES, count( estimates.numberOfNodeProperties() ),
@@ -144,7 +145,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                         relationshipsDiskUsage( estimates, neoStores ) +
                         // TODO also add some padding to include relationship groups?
                         estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() ),
-                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( baselineMemoryRequirement( neoStores ) + biggestCacheMemory ) );
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( biggestCacheMemory ) );
         out.println();
     }
 
@@ -171,7 +172,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     public void start( StageExecution execution )
     {
         // Divide into 4 progress stages:
-        if ( execution.getStageName().equals( NodeStage.NAME ) )
+        if ( execution.getStageName().equals( DataImporter.NODE_IMPORT_NAME ) )
         {
             // Import nodes:
             // - import nodes
@@ -181,7 +182,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                     dependencyResolver.resolveDependency( IdMapper.class ),
                     dependencyResolver.resolveDependency( BatchingNeoStores.class ) );
         }
-        else if ( execution.getStageName().equals( RelationshipStage.NAME ) )
+        else if ( execution.getStageName().equals( DataImporter.RELATIONSHIP_IMPORT_NAME ) )
         {
             endPrevious();
 
@@ -243,7 +244,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                         estimates.sizeOfNodeProperties() ),
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
                         baselineMemoryRequirement( neoStores ) +
-                        defensivelyPadMemoryEstimate( idMapper.calculateMemoryUsage( numberOfNodes ) ) ) );
+                        defensivelyPadMemoryEstimate( idMapper.memoryEstimation( numberOfNodes ) ) ) );
 
         // A difficulty with the goal here is that we don't know how much woek there is to be done in id mapper preparation stage.
         // In addition to nodes themselves and SPLIT,SORT,DETECT there may be RESOLVE,SORT,DEDUPLICATE too, if there are collisions
@@ -273,7 +274,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         printStageHeader( "(3/4) Relationship linking",
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
                         baselineMemoryRequirement( neoStores ) +
-                        defensivelyPadMemoryEstimate( nodeRelationshipCache.calculateMemoryUsage( distribution.getNodeCount() ) ) ) );
+                        defensivelyPadMemoryEstimate( nodeRelationshipCache.memoryEstimation( distribution.getNodeCount() ) ) ) );
         // The reason the highId of the relationship store is used, as opposed to actual number of imported relationships
         // is that the stages underneath operate on id ranges, not knowing which records are actually in use.
         long relationshipRecordIdCount = neoStores.getRelationshipStore().getHighId();
@@ -305,11 +306,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 relationshipRecordIdCount,   // Relationship counts
                 ImportStage.postProcessing
                 );
-    }
-
-    private static long defensivelyPadMemoryEstimate( long bytes )
-    {
-        return (long) (bytes * 1.1);
     }
 
     private void initializeProgress( long goal, ImportStage stage )

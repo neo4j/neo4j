@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
@@ -51,9 +51,9 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
       case _ => throw new IllegalArgumentException("Runtime is not supported in Cypher 2.3")
     }
 
-    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+    val proxySpi = graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
     CypherCompilerFactory.costBasedCompiler(
-      graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService, new EntityAccessorWrapper(nodeManager), config, clock, new WrappedMonitors(kernelMonitors),
+      graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService, new EntityAccessorWrapper(proxySpi), config, clock, new WrappedMonitors(kernelMonitors),
       new StringInfoLogger(log), rewriterSequencer, plannerName, runtimeName)
   }
 

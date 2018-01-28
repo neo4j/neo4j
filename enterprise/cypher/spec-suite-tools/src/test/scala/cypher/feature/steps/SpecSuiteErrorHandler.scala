@@ -183,6 +183,8 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal("InvalidNumberOfArguments")
     else if (msg.matches("Expected a parameter named .+"))
       detail should equal("MissingParameter")
+    else if (msg.matches("Expected parameter\\(s\\): .+"))
+      detail should equal("MissingParameter")
     else if (msg.startsWith("Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement."))
       detail should equal("InvalidAggregation")
     else if (msg.startsWith("Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)"))

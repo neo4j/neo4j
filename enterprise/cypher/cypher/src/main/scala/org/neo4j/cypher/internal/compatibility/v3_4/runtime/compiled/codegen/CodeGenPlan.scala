@@ -21,20 +21,21 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.JoinTableType
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 trait CodeGenPlan {
 
   val logicalPlan: LogicalPlan
 
-  def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction])
+  def produce(context: CodeGenContext, cardinalities: Cardinalities): (Option[JoinTableMethod], List[Instruction])
 
-  def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction])
+  def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities): (Option[JoinTableMethod], List[Instruction])
 }
 
 trait LeafCodeGenPlan extends CodeGenPlan {
 
-  override final def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) =
+  override final def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities): (Option[JoinTableMethod], List[Instruction]) =
     throw new UnsupportedOperationException("Leaf plan does not consume")
 }
 

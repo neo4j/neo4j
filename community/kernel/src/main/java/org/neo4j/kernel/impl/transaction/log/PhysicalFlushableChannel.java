@@ -35,6 +35,8 @@ import static java.lang.Math.min;
  */
 public class PhysicalFlushableChannel implements FlushableChannel
 {
+    public static final int DEFAULT_BUFFER_SIZE = (int) ByteUnit.kibiBytes( 512 );
+
     private volatile boolean closed;
 
     protected final ByteBuffer buffer;
@@ -42,7 +44,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
 
     public PhysicalFlushableChannel( StoreChannel channel )
     {
-        this( channel, (int) ByteUnit.kibiBytes( 512 ) );
+        this( channel, DEFAULT_BUFFER_SIZE );
     }
 
     public PhysicalFlushableChannel( StoreChannel channel, int bufferSize )

@@ -22,15 +22,13 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -45,39 +43,36 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
+import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.CachedInput;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker;
-import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
-import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.Long.max;
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
-import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.calculateMaxMemoryUsage;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 
 /**
@@ -90,6 +85,54 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
  */
 public class ImportLogic implements Closeable
 {
+    public interface Monitor
+    {
+        void doubleRelationshipRecordUnitsEnabled();
+
+        void mayExceedNodeIdCapacity( long capacity, long estimatedCount );
+
+        void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount );
+
+        void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize );
+
+        void abundantHeapSize( long optimalMinimalHeapSize, long heapSize );
+
+        void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory );
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount )
+        {   // no-op
+        }
+
+        @Override
+        public void mayExceedNodeIdCapacity( long capacity, long estimatedCount )
+        {   // no-op
+        }
+
+        @Override
+        public void doubleRelationshipRecordUnitsEnabled()
+        {   // no-op
+        }
+
+        @Override
+        public void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize )
+        {   // no-op
+        }
+
+        @Override
+        public void abundantHeapSize( long optimalMinimalHeapSize, long heapSize )
+        {   // no-op
+        }
+
+        @Override
+        public void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory )
+        {   // no-op
+        }
+    };
+
     private final File storeDir;
     private final FileSystemAbstraction fileSystem;
     private final BatchingNeoStores neoStore;
@@ -97,9 +140,11 @@ public class ImportLogic implements Closeable
     private final Log log;
     private final ExecutionMonitor executionMonitor;
     private final RecordFormats recordFormats;
-    protected final CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
+    private final DataImporter.Monitor storeUpdateMonitor = new DataImporter.Monitor();
     private final long maxMemory;
     private final Dependencies dependencies = new Dependencies();
+    private final Monitor monitor;
+    private Input input;
 
     // This map contains additional state that gets populated, created and used throughout the stages.
     // The reason that this is a map is to allow for a uniform way of accessing and loading this stage
@@ -114,12 +159,7 @@ public class ImportLogic implements Closeable
     private InputCache inputCache;
     private NumberArrayFactory numberArrayFactory;
     private Collector badCollector;
-    private IoMonitor writeMonitor;
     private IdMapper idMapper;
-    private IdGenerator idGenerator;
-    private InputIterable<InputNode> nodes;
-    private InputIterable<InputRelationship> relationships;
-    private InputIterable<InputNode> cachedNodes;
     private long peakMemoryUsage;
     private long availableMemoryForLinking;
 
@@ -131,16 +171,18 @@ public class ImportLogic implements Closeable
      * @param logService {@link LogService} to use.
      * @param executionMonitor {@link ExecutionMonitor} to follow progress as the import proceeds.
      * @param recordFormats which {@link RecordFormats record format} to use for the created db.
+     * @param monitor {@link Monitor} for some events.
      */
     public ImportLogic( File storeDir, FileSystemAbstraction fileSystem, BatchingNeoStores neoStore,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            RecordFormats recordFormats )
+            RecordFormats recordFormats, Monitor monitor )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.neoStore = neoStore;
         this.config = config;
         this.recordFormats = recordFormats;
+        this.monitor = monitor;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = ExecutionSupervisors.withDynamicProcessorAssignment( executionMonitor, config );
         this.maxMemory = config.maxMemoryUsage();
@@ -150,48 +192,29 @@ public class ImportLogic implements Closeable
     {
         log.info( "Import starting" );
         startTime = currentTimeMillis();
-        inputCache = new InputCache( fileSystem, storeDir, recordFormats, config );
-
+        inputCache = new InputCache( fileSystem, storeDir, recordFormats, toIntExact( mebiBytes( 1 ) ) );
+        this.input = CachedInput.cacheAsNecessary( input, inputCache );
         numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap() );
         badCollector = input.badCollector();
         // Some temporary caches and indexes in the import
-        writeMonitor = new IoMonitor( neoStore.getIoTracer() );
         idMapper = input.idMapper( numberArrayFactory );
-        idGenerator = input.idGenerator();
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, config.denseNodeThreshold() );
-        nodes = input.nodes();
-        relationships = input.relationships();
-        cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
         Estimates inputEstimates = input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() );
-        sanityCheckEstimatesWithRecordFormat( inputEstimates );
+
+        // Sanity checking against estimates
+        new EstimationSanityChecker( recordFormats, monitor ).sanityCheck( inputEstimates );
+        new HeapSizeSanityChecker( monitor ).sanityCheck( inputEstimates, recordFormats, neoStore,
+                nodeRelationshipCache.memoryEstimation( inputEstimates.numberOfNodes() ),
+                idMapper.memoryEstimation( inputEstimates.numberOfNodes() ) );
+
         dependencies.satisfyDependencies( inputEstimates, idMapper, neoStore, nodeRelationshipCache );
 
         if ( neoStore.determineDoubleRelationshipRecordUnits( inputEstimates ) )
         {
-            System.out.println( "Will use double record units for all relationships" );
+            monitor.doubleRelationshipRecordUnitsEnabled();
         }
 
         executionMonitor.initialize( dependencies );
-    }
-
-    private void sanityCheckEstimatesWithRecordFormat( Estimates inputEstimates )
-    {
-        new EstimationSanityChecker( recordFormats, new Monitor()
-        {
-            @Override
-            public void nodeCountCapacity( long capacity, long estimatedCount )
-            {
-                System.err.printf( "WARNING: estimated number of relationships %d may exceed capacity %d of selected record format%n",
-                        estimatedCount, capacity );
-            }
-
-            @Override
-            public void relationshipCountCapacity( long capacity, long estimatedCount )
-            {
-                System.err.printf( "WARNING: estimated number of nodes %d may exceed capacity %d of selected record format%n",
-                        estimatedCount, capacity );
-            }
-        } ).sanityCheck( inputEstimates );
     }
 
     /**
@@ -230,13 +253,9 @@ public class ImportLogic implements Closeable
     public void importNodes() throws IOException
     {
         // Import nodes, properties, labels
-        Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
-        MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
-        NodeStage nodeStage = new NodeStage( nodeConfig, writeMonitor,
-                nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
-                storeUpdateMonitor, memoryUsageStats );
         neoStore.startFlushingPageCache();
-        executeStage( nodeStage );
+        DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
+              executionMonitor, storeUpdateMonitor );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
     }
@@ -249,12 +268,12 @@ public class ImportLogic implements Closeable
         if ( idMapper.needsPreparation() )
         {
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
-            executeStage( new IdMapperPreparationStage( config, idMapper, cachedNodes,
-                    badCollector, memoryUsageStats ) );
-            PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
+            LongFunction<Object> inputIdLookup = new NodeInputIdPropertyLookup( neoStore.getTemporaryPropertyStore() );
+            executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup, badCollector, memoryUsageStats ) );
+            PrimitiveLongIterator duplicateNodeIds = idMapper.leftOverDuplicateNodesIds();
             if ( duplicateNodeIds.hasNext() )
             {
-                executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore ) );
+                executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore, storeUpdateMonitor ) );
             }
             updatePeakMemoryUsage();
         }
@@ -270,19 +289,15 @@ public class ImportLogic implements Closeable
     public void importRelationships() throws IOException
     {
         // Import relationships (unlinked), properties
-        Configuration relationshipConfig =
-                configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
-        MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
-        RelationshipStage unlinkedRelationshipStage =
-                new RelationshipStage( relationshipConfig, writeMonitor, relationships, idMapper,
-                        badCollector, inputCache, neoStore, storeUpdateMonitor, memoryUsageStats );
         neoStore.startFlushingPageCache();
-        executeStage( unlinkedRelationshipStage );
+        DataStatistics typeDistribution = DataImporter.importRelationships(
+                config.maxNumberOfProcessors(), input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
+                !badCollector.isCollectingBadRelationships() );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
         idMapper.close();
         idMapper = null;
-        putState( unlinkedRelationshipStage.getDistribution() );
+        putState( typeDistribution );
     }
 
     /**
@@ -346,7 +361,7 @@ public class ImportLogic implements Closeable
         int upToType = nextSetOfTypesThatFitInMemory(
                 relationshipTypeDistribution, startingFromType, availableMemoryForLinking, nodeRelationshipCache.getNumberOfDenseNodes() );
 
-        Collection<Object> typesToLinkThisRound = relationshipTypeDistribution.types( startingFromType, upToType );
+        PrimitiveIntSet typesToLinkThisRound = relationshipTypeDistribution.types( startingFromType, upToType );
         int typesImported = typesToLinkThisRound.size();
         boolean thisIsTheFirstRound = startingFromType == 0;
         boolean thisIsTheOnlyRound = thisIsTheFirstRound && upToType == relationshipTypeDistribution.getNumberOfRelationshipTypes();
@@ -362,11 +377,11 @@ public class ImportLogic implements Closeable
         String topic = " " + range + "/" + relationshipTypeDistribution.getNumberOfRelationshipTypes();
         int nodeTypes = thisIsTheFirstRound ? NodeType.NODE_TYPE_ALL : NodeType.NODE_TYPE_DENSE;
         Predicate<RelationshipRecord> readFilter = thisIsTheFirstRound
-                ? null // optimization when all rels are imported in this round
-                : typeIdFilter( typesToLinkThisRound, neoStore.getRelationshipTypeRepository() );
+                ? alwaysTrue() // optimization when all rels are imported in this round
+                : record -> typesToLinkThisRound.contains( record.getType() );
         Predicate<RelationshipRecord> denseChangeFilter = thisIsTheOnlyRound
-                ? null // optimization when all rels are imported in this round
-                : typeIdFilter( typesToLinkThisRound, neoStore.getRelationshipTypeRepository() );
+                ? alwaysTrue() // optimization when all rels are imported in this round
+                : record -> typesToLinkThisRound.contains( record.getType() );
 
         // LINK Forward
         RelationshipLinkforwardStage linkForwardStage = new RelationshipLinkforwardStage( topic, relationshipConfig,
@@ -439,8 +454,8 @@ public class ImportLogic implements Closeable
         for ( ; toType < numberOfTypes; toType++ )
         {
             // Calculate worst-case scenario
-            Pair<Object,Long> type = typeDistribution.get( toType );
-            long relationshipCountForThisType = type.other();
+            RelationshipTypeCount type = typeDistribution.get( toType );
+            long relationshipCountForThisType = type.getCount();
             long memoryUsageForThisType = calculateMaxMemoryUsage( numberOfDenseNodes, relationshipCountForThisType );
             long memoryUsageUpToAndIncludingThisType =
                     currentSetOfRelationshipsMemoryUsage + memoryUsageForThisType;
@@ -478,9 +493,9 @@ public class ImportLogic implements Closeable
             MigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
             nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
-            executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
+            executeStage( new NodeCountsAndLabelIndexBuildStage( config, nodeLabelsCache, neoStore.getNodeStore(),
                     neoStore.getLabelRepository().getHighId(), countsUpdater, progressMonitor.startSection( "Nodes" ),
-                    memoryUsageStats ) );
+                    neoStore.getLabelScanStore(), memoryUsageStats ) );
             // Count label-[type]->label
             executeStage( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
                     neoStore.getLabelRepository().getHighId(),
@@ -494,9 +509,8 @@ public class ImportLogic implements Closeable
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;
-        DataStatistics stats = getState( DataStatistics.class );
-        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", stats, bytes( peakMemoryUsage ) ) );
-        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + stats );
+        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", storeUpdateMonitor, bytes( peakMemoryUsage ) ) );
+        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
 
         if ( nodeRelationshipCache != null )
         {
@@ -543,26 +557,6 @@ public class ImportLogic implements Closeable
             }
         }
         return total.getHeapUsage() + total.getOffHeapUsage();
-    }
-
-    private static Predicate<RelationshipRecord> typeIdFilter( Collection<Object> typesToLinkThisRound,
-            BatchingRelationshipTypeTokenRepository relationshipTypeRepository )
-    {
-        PrimitiveIntSet set = Primitive.intSet( typesToLinkThisRound.size() );
-        for ( Object type : typesToLinkThisRound )
-        {
-            int id;
-            if ( type instanceof Number )
-            {
-                id = ((Number) type).intValue();
-            }
-            else
-            {
-                id = relationshipTypeRepository.applyAsInt( type );
-            }
-            set.add( id );
-        }
-        return relationship -> set.contains( relationship.getType() );
     }
 
     private static Configuration configWithRecordsPerPageBasedBatchSize( Configuration source, RecordStore<?> store )

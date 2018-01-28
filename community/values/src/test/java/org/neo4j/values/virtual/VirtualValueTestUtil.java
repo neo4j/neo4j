@@ -28,7 +28,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
@@ -61,19 +61,19 @@ public class VirtualValueTestUtil
     {
         assert pathElements.length % 2 == 1;
         NodeValue[] nodes = new NodeValue[pathElements.length / 2 + 1];
-        EdgeValue[] edges = new EdgeValue[pathElements.length / 2];
+        RelationshipValue[] rels = new RelationshipValue[pathElements.length / 2];
         nodes[0] = (NodeValue) pathElements[0];
         for ( int i = 1; i < pathElements.length; i += 2 )
         {
-            edges[i / 2] = (EdgeValue) pathElements[i];
+            rels[i / 2] = (RelationshipValue) pathElements[i];
             nodes[i / 2 + 1] = (NodeValue) pathElements[i + 1];
         }
-        return VirtualValues.path( nodes, edges );
+        return VirtualValues.path( nodes, rels );
     }
 
-    public static EdgeValue edge( long id, long start, long end )
+    public static RelationshipValue rel( long id, long start, long end )
     {
-        return edgeValue( id, node( start ), node( end ), stringValue( "T" ), emptyMap() );
+        return relationshipValue( id, node( start ), node( end ), stringValue( "T" ), emptyMap() );
     }
 
     public static ListValue list( Object... objects )
@@ -106,10 +106,10 @@ public class VirtualValueTestUtil
                 .toArray( NodeValue[]::new );
     }
 
-    public static EdgeValue[] edges( long... ids )
+    public static RelationshipValue[] relationships( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( id -> edgeValue( id, node( 0L ), node( 1L ), stringValue( "T" ), emptyMap() ) )
-                .toArray( EdgeValue[]::new );
+                .mapToObj( id -> relationshipValue( id, node( 0L ), node( 1L ), stringValue( "T" ), emptyMap() ) )
+                .toArray( RelationshipValue[]::new );
     }
 }

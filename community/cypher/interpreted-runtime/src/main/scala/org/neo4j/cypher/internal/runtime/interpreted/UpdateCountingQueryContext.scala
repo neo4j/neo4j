@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
@@ -79,8 +79,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   override def nodeOps: Operations[NodeValue] =
     new CountingOps[NodeValue](inner.nodeOps, nodesDeleted)
 
-  override def relationshipOps: Operations[EdgeValue] =
-    new CountingOps[EdgeValue](inner.relationshipOps, relationshipsDeleted)
+  override def relationshipOps: Operations[RelationshipValue] =
+    new CountingOps[RelationshipValue](inner.relationshipOps, relationshipsDeleted)
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     val added = inner.setLabelsOnNode(node, labelIds)

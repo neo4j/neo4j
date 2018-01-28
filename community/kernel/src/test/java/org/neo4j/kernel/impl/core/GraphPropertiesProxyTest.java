@@ -66,6 +66,6 @@ public class GraphPropertiesProxyTest
 
     private GraphProperties graphProperties()
     {
-        return db.getDependencyResolver().resolveDependency( NodeManager.class ).newGraphProperties();
+        return db.getDependencyResolver().resolveDependency( EmbeddedProxySPI.class ).newGraphPropertiesProxy();
     }
 }

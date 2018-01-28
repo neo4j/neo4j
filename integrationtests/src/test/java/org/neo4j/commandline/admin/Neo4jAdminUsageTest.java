@@ -35,7 +35,7 @@ public class Neo4jAdminUsageTest
     }
 
     @Test
-    public void verifyUsageMatchesExpectedCommands() throws Exception
+    public void verifyUsageMatchesExpectedCommands()
     {
         final StringBuilder sb = new StringBuilder();
         usageCmd.print( s -> sb.append( s ).append( "\n" ) );
@@ -48,7 +48,7 @@ public class Neo4jAdminUsageTest
                         "    NEO4J_CONF    Path to directory which contains neo4j.conf.\n" +
                         "    NEO4J_DEBUG   Set to anything to enable debug output.\n" +
                         "    NEO4J_HOME    Neo4j home directory.\n" +
-                        "    HEAP_SIZE     Set size of JVM heap during command execution.\n" +
+                        "    HEAP_SIZE     Set JVM maximum heap size during command execution.\n" +
                         "                  Takes a number and a unit, for example 512m.\n" +
                         "\n" +
                         "available commands:\n" +
@@ -58,6 +58,10 @@ public class Neo4jAdminUsageTest
                         "        Check the consistency of a database.\n" +
                         "    import\n" +
                         "        Import from a collection of CSV files or a pre-3.0 database.\n" +
+                        "    memrec\n" +
+                        "        Print Neo4j heap and pagecache memory settings recommendations.\n" +
+                        "    report\n" +
+                        "        Produces a zip/tar of the most common information needed for remote assessments.\n" +
                         "    store-info\n" +
                         "        Prints information about a Neo4j database store.\n" +
                         "\n" +

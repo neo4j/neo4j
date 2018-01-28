@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.v3_4.planner.AstRewritingTestSupport
+import org.neo4j.cypher.internal.compiler.v3_4.planner.{AstRewritingTestSupport, LogicalPlanConstructionTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
-class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingTestSupport {
+class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 
   test("MATCH (a) WHERE id(a) = 42 (no dependencies on the RHS)") {
     shouldRewrite(
@@ -73,7 +73,7 @@ class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingT
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val input = LogicalPlanState(null, null, null, Some(original))
+    val input = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(original))
     val result = rewriteEqualityToInPredicate.transform(input, ContextHelper.create())
 
     result.statement should equal(expected)

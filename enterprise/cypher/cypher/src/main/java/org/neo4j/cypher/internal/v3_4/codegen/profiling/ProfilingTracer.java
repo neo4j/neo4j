@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.QueryExecutionEvent;
 import org.neo4j.cypher.internal.planner.v3_4.spi.KernelStatisticProvider;
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id;
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer;
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId;
 import org.neo4j.helpers.MathUtil;
 
 public class ProfilingTracer implements QueryExecutionTracer
@@ -54,7 +54,7 @@ public class ProfilingTracer implements QueryExecutionTracer
 
     private final Clock clock;
     private final KernelStatisticProvider statisticProvider;
-    private final Map<LogicalPlanId, Data> data = new HashMap<>();
+    private final Map<Id, Data> data = new HashMap<>();
 
     public ProfilingTracer( KernelStatisticProvider statisticProvider )
     {
@@ -67,29 +67,29 @@ public class ProfilingTracer implements QueryExecutionTracer
         this.statisticProvider = statisticProvider;
     }
 
-    public ProfilingInformation get( LogicalPlanId query )
+    public ProfilingInformation get( Id query )
     {
         Data value = data.get( query );
         return value == null ? ZERO : value;
     }
 
-    public long timeOf( LogicalPlanId query )
+    public long timeOf( Id query )
     {
         return get( query ).time();
     }
 
-    public long dbHitsOf( LogicalPlanId query )
+    public long dbHitsOf( Id query )
     {
         return get( query ).dbHits();
     }
 
-    public long rowsOf( LogicalPlanId query )
+    public long rowsOf( Id query )
     {
         return get( query ).rows();
     }
 
     @Override
-    public QueryExecutionEvent executeOperator( LogicalPlanId queryId )
+    public QueryExecutionEvent executeOperator( Id queryId )
     {
         Data data = this.data.get( queryId );
         if ( data == null && queryId != null )

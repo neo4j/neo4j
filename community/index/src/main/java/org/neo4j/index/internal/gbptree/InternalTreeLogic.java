@@ -23,15 +23,21 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.KeySearch.isHit;
 import static org.neo4j.index.internal.gbptree.KeySearch.positionOf;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
-import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_MID_CHILD;
-import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_RIGHT_CHILD;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.BUBBLE;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.REPLACE;
+import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_LEFT_CHILD;
+import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_MID_CHILD;
+import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_RIGHT_CHILD;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO_NEED_DEFRAG;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 /**
  * Implementation of GB+ tree insert/remove algorithms.
@@ -254,7 +260,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // We still need to go down further, but we're on the right path
             int keyCount = TreeNode.keyCount( cursor );
-            int searchResult = search( cursor, key, readKey, keyCount );
+            int searchResult = search( cursor, INTERNAL, key, readKey, keyCount );
             int childPos = positionOf( searchResult );
             if ( isHit( searchResult ) )
             {
@@ -279,7 +285,7 @@ class InternalTreeLogic<KEY,VALUE>
                 }
                 else
                 {
-                    bTreeNode.keyAt( cursor, level.lower, childPos - 1 );
+                    bTreeNode.keyAt( cursor, level.lower, childPos - 1, INTERNAL );
                 }
             }
             level.upperIsOpenEnded = childPos >= keyCount &&
@@ -293,7 +299,7 @@ class InternalTreeLogic<KEY,VALUE>
                 }
                 else
                 {
-                    bTreeNode.keyAt( cursor, level.upper, childPos );
+                    bTreeNode.keyAt( cursor, level.upper, childPos, INTERNAL );
                 }
             }
 
@@ -348,32 +354,12 @@ class InternalTreeLogic<KEY,VALUE>
 
         insertInLeaf( cursor, structurePropagation, key, value, valueMerger, stableGeneration, unstableGeneration );
 
-        while ( structurePropagation.hasMidChildUpdate || structurePropagation.hasRightKeyInsert )
-        {
-            int pos = levels[currentLevel].childPos;
-            if ( !popLevel( cursor ) )
-            {
-                // Root split, let that be handled outside
-                break;
-            }
-
-            if ( structurePropagation.hasMidChildUpdate )
-            {
-                updateMidChild( cursor, structurePropagation, pos, stableGeneration, unstableGeneration );
-            }
-            if ( structurePropagation.hasRightKeyInsert )
-            {
-                structurePropagation.hasRightKeyInsert = false;
-                insertInInternal( cursor, structurePropagation, TreeNode.keyCount( cursor ),
-                        structurePropagation.rightKey, structurePropagation.rightChild,
-                        stableGeneration, unstableGeneration );
-            }
-        }
+        handleStructureChanges( cursor, structurePropagation, stableGeneration, unstableGeneration );
     }
 
-    private int search( PageCursor cursor, KEY key, KEY readKey, int keyCount )
+    private int search( PageCursor cursor, TreeNode.Type type, KEY key, KEY readKey, int keyCount )
     {
-        int searchResult = KeySearch.search( cursor, bTreeNode, key, readKey, keyCount );
+        int searchResult = KeySearch.search( cursor, bTreeNode, type, key, readKey, keyCount );
         KeySearch.assertSuccess( searchResult );
         return searchResult;
     }
@@ -414,27 +400,34 @@ class InternalTreeLogic<KEY,VALUE>
     {
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
-        if ( keyCount < bTreeNode.internalMaxKeyCount() )
+
+        doInsertInInternal( cursor, structurePropagation, keyCount, primKey, rightChild, stableGeneration, unstableGeneration );
+    }
+
+    private void doInsertInInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, int keyCount, KEY primKey,
+            long rightChild, long stableGeneration, long unstableGeneration ) throws IOException
+    {
+        Overflow overflow = bTreeNode.internalOverflow( cursor, keyCount, primKey );
+        if ( overflow == YES )
         {
-            // No overflow
-            int pos = positionOf( search( cursor, primKey, readKey, keyCount ) );
-
-            bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount );
-            // NOTE pos+1 since we never insert a new child before child(0) because its key is really
-            // the one from the parent.
-            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, stableGeneration, unstableGeneration );
-
-            // Increase key count
-            TreeNode.setKeyCount( cursor, keyCount + 1 );
-
+            // Overflow
+            // We will overwrite rightKey in structurePropagation, so copy it over to a place holder
+            layout.copyKey( primKey, newKeyPlaceHolder );
+            splitInternal( cursor, structurePropagation, newKeyPlaceHolder, rightChild, keyCount,
+                    stableGeneration, unstableGeneration );
             return;
         }
 
-        // Overflow
-        // We will overwrite rightKey in structurePropagation, so copy it over to a place holder
-        layout.copyKey( structurePropagation.rightKey, newKeyPlaceHolder );
-        splitInternal( cursor, structurePropagation, newKeyPlaceHolder, rightChild, keyCount,
-                stableGeneration, unstableGeneration );
+        if ( overflow == NO_NEED_DEFRAG )
+        {
+            bTreeNode.defragmentInternal( cursor );
+        }
+
+        // No overflow
+        int pos = positionOf( search( cursor, INTERNAL, primKey, readKey, keyCount ) );
+        bTreeNode.insertKeyAndRightChildAt( cursor, primKey, rightChild, pos, keyCount, stableGeneration, unstableGeneration );
+        // Increase key count
+        TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
     /**
@@ -458,135 +451,38 @@ class InternalTreeLogic<KEY,VALUE>
         long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration );
 
         // Find position to insert new key
-        int pos = positionOf( search( cursor, newKey, readKey, keyCount ) );
-
-        int keyCountAfterInsert = keyCount + 1;
-        int middlePos = middle( keyCountAfterInsert );
+        int pos = positionOf( search( cursor, INTERNAL, newKey, readKey, keyCount ) );
 
         // Update structurePropagation
         structurePropagation.hasRightKeyInsert = true;
         structurePropagation.midChild = current;
         structurePropagation.rightChild = newRight;
-        if ( middlePos == pos )
-        {
-            layout.copyKey( newKey, structurePropagation.rightKey );
-        }
-        else
-        {
-            bTreeNode.keyAt( cursor, structurePropagation.rightKey, pos < middlePos ? middlePos - 1 : middlePos );
-        }
 
-        // Update new right
         try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
         {
+            // Initialize new right
             TreeNode.goTo( rightCursor, "new right sibling in split", newRight );
-            TreeNode.initializeInternal( rightCursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeInternal( rightCursor, stableGeneration, unstableGeneration );
             TreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
-            int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
 
-            if ( pos < middlePos )
-            {
-                //                         v-------v       copy
-                // before key    _,_,_,_,_,_,_,_,_,_
-                // before child -,-,-,-,-,-,-,-,-,-,-
-                // insert key    _,_,X,_,_,_,_,_,_,_,_
-                // insert child -,-,-,x,-,-,-,-,-,-,-,-
-                // middle key              ^
-
-                // children
-                cursor.copyTo( bTreeNode.keyOffset( middlePos ), rightCursor, bTreeNode.keyOffset( 0 ),
-                        rightKeyCount * bTreeNode.keySize() );
-                cursor.copyTo( bTreeNode.childOffset( middlePos ), rightCursor, bTreeNode.childOffset( 0 ),
-                        (rightKeyCount + 1) * TreeNode.childSize() );
-            }
-            else
-            {
-                // pos > middlePos
-                //                         v-v          first copy
-                //                             v-v-v    second copy
-                // before key    _,_,_,_,_,_,_,_,_,_
-                // before child -,-,-,-,-,-,-,-,-,-,-
-                // insert key    _,_,_,_,_,_,_,X,_,_,_
-                // insert child -,-,-,-,-,-,-,-,x,-,-,-
-                // middle key              ^
-
-                // pos == middlePos
-                //                                      first copy
-                //                         v-v-v-v-v    second copy
-                // before key    _,_,_,_,_,_,_,_,_,_
-                // before child -,-,-,-,-,-,-,-,-,-,-
-                // insert key    _,_,_,_,_,X,_,_,_,_,_
-                // insert child -,-,-,-,-,-,x,-,-,-,-,-
-                // middle key              ^
-
-                // Keys
-                int countBeforePos = pos - (middlePos + 1);
-                // ... first copy
-                if ( countBeforePos > 0 )
-                {
-                    cursor.copyTo( bTreeNode.keyOffset( middlePos + 1 ), rightCursor, bTreeNode.keyOffset( 0 ),
-                            countBeforePos * bTreeNode.keySize() );
-                }
-                // ... insert
-                if ( countBeforePos >= 0 )
-                {
-                    bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos );
-                }
-                // ... second copy
-                int countAfterPos = keyCount - pos;
-                if ( countAfterPos > 0 )
-                {
-                    cursor.copyTo( bTreeNode.keyOffset( pos ), rightCursor,
-                            bTreeNode.keyOffset( countBeforePos + 1 ), countAfterPos * bTreeNode.keySize() );
-                }
-
-                // Children
-                countBeforePos = pos - middlePos;
-                // ... first copy
-                if ( countBeforePos > 0 )
-                {
-                    // first copy
-                    cursor.copyTo( bTreeNode.childOffset( middlePos + 1 ), rightCursor, bTreeNode.childOffset( 0 ),
-                            countBeforePos * TreeNode.childSize() );
-                }
-                // ... insert
-                bTreeNode.insertChildAt( rightCursor, newRightChild, countBeforePos, countBeforePos,
-                        stableGeneration, unstableGeneration );
-                // ... second copy
-                if ( countAfterPos > 0 )
-                {
-                    cursor.copyTo( bTreeNode.childOffset( pos + 1 ), rightCursor,
-                            bTreeNode.childOffset( countBeforePos + 1 ), countAfterPos * TreeNode.childSize() );
-                }
-            }
-            TreeNode.setKeyCount( rightCursor, rightKeyCount );
+            // Do split
+            bTreeNode.doSplitInternal( cursor, keyCount, rightCursor, pos, newKey, newRightChild, stableGeneration, unstableGeneration,
+                    structurePropagation.rightKey );
         }
 
         // Update old right with new left sibling (newRight)
         if ( TreeNode.isNode( oldRight ) )
         {
-            TreeNode.goTo( cursor, "old right sibling", oldRight );
-            TreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
+            try ( PageCursor oldRightCursor = cursor.openLinkedCursor( oldRight ) )
+            {
+                TreeNode.goTo( oldRightCursor, "old right sibling", oldRight );
+                TreeNode.setLeftSibling( oldRightCursor, newRight, stableGeneration, unstableGeneration );
+            }
         }
 
-        // Update left node
-        // Move cursor back to left
-        TreeNode.goTo( cursor, "left", current );
-        TreeNode.setKeyCount( cursor, middlePos );
-        if ( pos < middlePos )
-        {
-            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1 );
-            bTreeNode.insertChildAt( cursor, newRightChild, pos + 1, middlePos - 1,
-                    stableGeneration, unstableGeneration );
-        }
-
+        // Update left node with new right sibling
         TreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
-    }
-
-    private static int middle( int keyCountAfterInsert )
-    {
-        return keyCountAfterInsert / 2;
     }
 
     /**
@@ -601,42 +497,71 @@ class InternalTreeLogic<KEY,VALUE>
      * @param valueMerger {@link ValueMerger} for deciding what to do with existing keys
      * @throws IOException on cursor failure
      */
-    private void insertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger,
-            long stableGeneration, long unstableGeneration ) throws IOException
+    private void insertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value,
+            ValueMerger<KEY,VALUE> valueMerger, long stableGeneration, long unstableGeneration ) throws IOException
     {
         int keyCount = TreeNode.keyCount( cursor );
-        int search = search( cursor, key, readKey, keyCount );
+        int search = search( cursor, LEAF, key, readKey, keyCount );
         int pos = positionOf( search );
         if ( isHit( search ) )
         {
-            // this key already exists, what shall we do? ask the valueMerger
-            bTreeNode.valueAt( cursor, readValue, pos );
-            VALUE mergedValue = valueMerger.merge( readKey, key, readValue, value );
-            if ( mergedValue != null )
-            {
-                createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                        stableGeneration, unstableGeneration );
-                // simple, just write the merged value right in there
-                bTreeNode.setValueAt( cursor, mergedValue, pos );
-            }
-            return; // No split has occurred
+            overwriteValue( cursor, structurePropagation, key, value, valueMerger, pos, keyCount, stableGeneration, unstableGeneration );
+            return;
         }
 
-        createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                stableGeneration, unstableGeneration );
+        createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration );
 
-        if ( keyCount < bTreeNode.leafMaxKeyCount() )
+        doInsertInLeaf( cursor, structurePropagation, key, value, pos, keyCount, stableGeneration, unstableGeneration );
+    }
+
+    private void overwriteValue( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value,
+            ValueMerger<KEY,VALUE> valueMerger, int pos, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
+    {
+        // this key already exists, what shall we do? ask the valueMerger
+        bTreeNode.valueAt( cursor, readValue, pos );
+        VALUE mergedValue = valueMerger.merge( readKey, key, readValue, value );
+        if ( mergedValue != null )
         {
-            // No overflow, insert key and value
-            bTreeNode.insertKeyAt( cursor, key, pos, keyCount );
-            bTreeNode.insertValueAt( cursor, value, pos, keyCount );
-            TreeNode.setKeyCount( cursor, keyCount + 1 );
-
-            return; // No split has occurred
+            createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration );
+            // simple, just write the merged value right in there
+            boolean couldOverwrite = bTreeNode.setValueAt( cursor, mergedValue, pos );
+            //noinspection StatementWithEmptyBody
+            if ( !couldOverwrite )
+            {
+                // Value could not be overwritten in a simple way because they differ in size.
+                // Delete old value
+                bTreeNode.removeKeyValueAt( cursor, pos, keyCount );
+                TreeNode.setKeyCount( cursor, keyCount - 1 );
+                boolean didSplit =
+                        doInsertInLeaf( cursor, structurePropagation, key, mergedValue, pos, keyCount - 1, stableGeneration, unstableGeneration );
+                if ( !didSplit && bTreeNode.leafUnderflow( cursor, keyCount ) )
+                {
+                    underflowInLeaf( cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration );
+                }
+            }
         }
-        // Overflow, split leaf
-        splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGeneration, unstableGeneration );
+    }
+
+    private boolean doInsertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value, int pos,
+            int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
+    {
+        Overflow overflow = bTreeNode.leafOverflow( cursor, keyCount, key, value );
+        if ( overflow == YES )
+        {
+            // Overflow, split leaf
+            splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGeneration, unstableGeneration );
+            return true;
+        }
+
+        if ( overflow == NO_NEED_DEFRAG )
+        {
+            bTreeNode.defragmentLeaf( cursor );
+        }
+
+        // No overflow, insert key and value
+        bTreeNode.insertKeyValueAt( cursor, key, value, pos, keyCount );
+        TreeNode.setKeyCount( cursor, keyCount + 1 );
+        return false;
     }
 
     /**
@@ -655,7 +580,6 @@ class InternalTreeLogic<KEY,VALUE>
                     throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
-        // Save data that needs transferring and then add it to right node.
 
         // UPDATE SIBLINGS
         //
@@ -714,70 +638,22 @@ class InternalTreeLogic<KEY,VALUE>
         // 5. Write new key/values into L
 
         // Position where newKey / newValue is to be inserted
-        int pos = positionOf( search( cursor, newKey, readKey, keyCount ) );
-        int keyCountAfterInsert = keyCount + 1;
-        int middlePos = middle( keyCountAfterInsert );
-
-        // allKeysIncludingNewKey should now contain all keys in sorted order and
-        // allValuesIncludingNewValue should now contain all values in same order as corresponding keys
-        // and are ready to be split between left and newRight.
-
-        // We now have everything we need to start working on newRight
-        // and everything that needs to be updated in left has been so.
+        int pos = positionOf( search( cursor, LEAF, newKey, readKey, keyCount ) );
 
         structurePropagation.hasRightKeyInsert = true;
         structurePropagation.midChild = current;
         structurePropagation.rightChild = newRight;
 
-        if ( middlePos == pos )
-        {
-            layout.copyKey( newKey, structurePropagation.rightKey );
-        }
-        else
-        {
-            bTreeNode.keyAt( cursor, structurePropagation.rightKey, pos < middlePos ? middlePos - 1 : middlePos );
-        }
-
-        // Update new right
         try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
         {
+            // Initialize new right
             TreeNode.goTo( rightCursor, "new right sibling in split", newRight );
-            TreeNode.initializeLeaf( rightCursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( rightCursor, stableGeneration, unstableGeneration );
             TreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
-            int rightKeyCount = keyCountAfterInsert - middlePos;
 
-            if ( pos < middlePos )
-            {
-                //                  v-------v       copy
-                // before _,_,_,_,_,_,_,_,_,_
-                // insert _,_,_,X,_,_,_,_,_,_,_
-                // middle           ^
-                copyKeysAndValues( cursor, middlePos - 1, rightCursor, 0, rightKeyCount );
-            }
-            else
-            {
-                //                  v---v           first copy
-                //                        v-v       second copy
-                // before _,_,_,_,_,_,_,_,_,_
-                // insert _,_,_,_,_,_,_,_,X,_,_
-                // middle           ^
-                int countBeforePos = pos - middlePos;
-                if ( countBeforePos > 0 )
-                {
-                    // first copy
-                    copyKeysAndValues( cursor, middlePos, rightCursor, 0, countBeforePos );
-                }
-                bTreeNode.insertKeyAt( rightCursor, newKey, countBeforePos, countBeforePos );
-                bTreeNode.insertValueAt( rightCursor, newValue, countBeforePos, countBeforePos );
-                int countAfterPos = keyCount - pos;
-                if ( countAfterPos > 0 )
-                {
-                    // second copy
-                    copyKeysAndValues( cursor, pos, rightCursor, countBeforePos + 1, countAfterPos );
-                }
-            }
-            TreeNode.setKeyCount( rightCursor, rightKeyCount );
+            // Do split
+            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, pos, newKey, newValue, structurePropagation.rightKey );
         }
 
         // Update old right with new left sibling (newRight)
@@ -791,22 +667,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         // Update left child
-        // If pos < middle. Write shifted values to left node. Else, don't write anything.
-        if ( pos < middlePos )
-        {
-            bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1 );
-            bTreeNode.insertValueAt( cursor, newValue, pos, middlePos - 1 );
-        }
-        TreeNode.setKeyCount( cursor, middlePos );
         TreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
-    }
-
-    private void copyKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
-    {
-        fromCursor.copyTo( bTreeNode.keyOffset( fromPos ), toCursor, bTreeNode.keyOffset( toPos ),
-                count * bTreeNode.keySize() );
-        fromCursor.copyTo( bTreeNode.valueOffset( fromPos ), toCursor, bTreeNode.valueOffset( toPos ),
-                count * bTreeNode.valueSize() );
     }
 
     /**
@@ -844,11 +705,25 @@ class InternalTreeLogic<KEY,VALUE>
             return null;
         }
 
+        handleStructureChanges( cursor, structurePropagation, stableGeneration, unstableGeneration );
+
+        if ( currentLevel <= 0 )
+        {
+            tryShrinkTree( cursor, structurePropagation, stableGeneration, unstableGeneration );
+        }
+
+        return into;
+    }
+
+    private void handleStructureChanges( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+            long stableGeneration, long unstableGeneration ) throws IOException
+    {
         while ( structurePropagation.hasLeftChildUpdate  ||
                 structurePropagation.hasMidChildUpdate ||
                 structurePropagation.hasRightChildUpdate ||
                 structurePropagation.hasLeftKeyReplace ||
-                structurePropagation.hasRightKeyReplace )
+                structurePropagation.hasRightKeyReplace ||
+                structurePropagation.hasRightKeyInsert )
         {
             int pos = levels[currentLevel].childPos;
             if ( !popLevel( cursor ) )
@@ -893,6 +768,17 @@ class InternalTreeLogic<KEY,VALUE>
                 }
             }
 
+            // Insert before replace because replace can lead to split and another insert in next level.
+            // Replace can only come from rebalance on lower levels and because we do no rebalance among
+            // internal nodes we will only ever have one replace on our way up.
+            if ( structurePropagation.hasRightKeyInsert )
+            {
+                structurePropagation.hasRightKeyInsert = false;
+                insertInInternal( cursor, structurePropagation, TreeNode.keyCount( cursor ),
+                        structurePropagation.rightKey, structurePropagation.rightChild,
+                        stableGeneration, unstableGeneration );
+            }
+
             if ( structurePropagation.hasLeftKeyReplace &&
                     levels[currentLevel].covers( structurePropagation.leftKey ) )
             {
@@ -900,9 +786,8 @@ class InternalTreeLogic<KEY,VALUE>
                 switch ( structurePropagation.keyReplaceStrategy )
                 {
                 case REPLACE:
-                    createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                    overwriteKeyInternal( cursor, structurePropagation, structurePropagation.leftKey, pos - 1,
                             stableGeneration, unstableGeneration );
-                    bTreeNode.setKeyAt( cursor, structurePropagation.leftKey, pos - 1 );
                     break;
                 case BUBBLE:
                     replaceKeyByBubbleRightmostFromSubtree( cursor, structurePropagation, pos - 1,
@@ -921,9 +806,8 @@ class InternalTreeLogic<KEY,VALUE>
                 switch ( structurePropagation.keyReplaceStrategy )
                 {
                 case REPLACE:
-                    createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                    overwriteKeyInternal( cursor, structurePropagation, structurePropagation.rightKey, pos,
                             stableGeneration, unstableGeneration );
-                    bTreeNode.setKeyAt( cursor, structurePropagation.rightKey, pos );
                     break;
                 case BUBBLE:
                     replaceKeyByBubbleRightmostFromSubtree( cursor, structurePropagation, pos,
@@ -935,13 +819,24 @@ class InternalTreeLogic<KEY,VALUE>
                 }
             }
         }
+    }
 
-        if ( currentLevel <= 0 )
+    private void overwriteKeyInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY newKey, int pos,
+            long stableGeneration, long unstableGeneration ) throws IOException
+    {
+        createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                stableGeneration, unstableGeneration );
+        int keyCount = TreeNode.keyCount( cursor );
+        boolean couldOverwrite = bTreeNode.setKeyAtInternal( cursor, newKey, pos );
+        if ( !couldOverwrite )
         {
-            tryShrinkTree( cursor, structurePropagation, stableGeneration, unstableGeneration );
-        }
+            // Remove key and right child
+            long rightChild = bTreeNode.childAt( cursor, pos + 1, stableGeneration, unstableGeneration );
+            bTreeNode.removeKeyAndRightChildAt( cursor, pos, keyCount );
+            TreeNode.setKeyCount( cursor, keyCount - 1 );
 
-        return into;
+            doInsertInInternal( cursor, structurePropagation, keyCount - 1, newKey, rightChild, stableGeneration, unstableGeneration );
+        }
     }
 
     private void tryShrinkTree( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
@@ -995,10 +890,9 @@ class InternalTreeLogic<KEY,VALUE>
         if ( foundKeyBelow )
         {
             // A key has been bubble up to us.
-            // It's in structurePropagation.leftKey and should be inserted in subtreePosition.
-            createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+            // It's in structurePropagation.bubbleKey and should be inserted in subtreePosition.
+            overwriteKeyInternal( cursor, structurePropagation, structurePropagation.bubbleKey, subtreePosition,
                     stableGeneration, unstableGeneration );
-            bTreeNode.setKeyAt( cursor, structurePropagation.bubbleKey, subtreePosition );
         }
         else
         {
@@ -1008,7 +902,7 @@ class InternalTreeLogic<KEY,VALUE>
             createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                     stableGeneration, unstableGeneration);
             int keyCount = TreeNode.keyCount( cursor );
-            simplyRemoveFromInternal( cursor, keyCount, subtreePosition, subtreePosition );
+            simplyRemoveFromInternal( cursor, keyCount, subtreePosition, true );
         }
     }
 
@@ -1054,10 +948,9 @@ class InternalTreeLogic<KEY,VALUE>
             }
 
             // Create new version of node, save rightmost key in structurePropagation, remove rightmost key and child
-            createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                    stableGeneration, unstableGeneration );
-            bTreeNode.keyAt( cursor, structurePropagation.bubbleKey, keyCount - 1 );
-            simplyRemoveFromInternal( cursor, keyCount, keyCount - 1, keyCount );
+            createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration );
+            bTreeNode.keyAt( cursor, structurePropagation.bubbleKey, keyCount - 1, INTERNAL );
+            simplyRemoveFromInternal( cursor, keyCount, keyCount - 1, false );
 
             return true;
         }
@@ -1067,11 +960,17 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    private int simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, int childPos )
+    private int simplyRemoveFromInternal( PageCursor cursor, int keyCount, int keyPos, boolean leftChild )
     {
         // Remove key and child
-        bTreeNode.removeKeyAt( cursor, keyPos, keyCount );
-        bTreeNode.removeChildAt( cursor, childPos, keyCount );
+        if ( leftChild )
+        {
+            bTreeNode.removeKeyAndLeftChildAt(  cursor, keyPos, keyCount );
+        }
+        else
+        {
+            bTreeNode.removeKeyAndRightChildAt( cursor, keyPos, keyCount );
+        }
 
         // Decrease key count
         int newKeyCount = keyCount - 1;
@@ -1130,7 +1029,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         int keyCount = TreeNode.keyCount( cursor );
 
-        int search = search( cursor, key, readKey, keyCount );
+        int search = search( cursor, LEAF, key, readKey, keyCount );
         int pos = positionOf( search );
         boolean hit = isHit( search );
         if ( !hit )
@@ -1142,7 +1041,7 @@ class InternalTreeLogic<KEY,VALUE>
                 stableGeneration, unstableGeneration );
         keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos );
 
-        if ( keyCount < (bTreeNode.leafMaxKeyCount() + 1) / 2 )
+        if ( bTreeNode.leafUnderflow( cursor, keyCount ) )
         {
             // Underflow
             underflowInLeaf( cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration );
@@ -1167,13 +1066,14 @@ class InternalTreeLogic<KEY,VALUE>
                 leftSiblingCursor.next();
                 int leftSiblingKeyCount = TreeNode.keyCount( leftSiblingCursor );
 
-                if ( keyCount + leftSiblingKeyCount >= bTreeNode.leafMaxKeyCount() )
+                int keysToRebalance = bTreeNode.canRebalanceLeaves( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount );
+                if ( keysToRebalance > 0 )
                 {
-                    createSuccessorIfNeeded( leftSiblingCursor, structurePropagation,
-                            StructurePropagation.UPDATE_LEFT_CHILD, stableGeneration, unstableGeneration );
-                    rebalanceLeaf( cursor, leftSiblingCursor, structurePropagation, keyCount, leftSiblingKeyCount );
+                    createSuccessorIfNeeded( leftSiblingCursor, structurePropagation, UPDATE_LEFT_CHILD,
+                            stableGeneration, unstableGeneration );
+                    rebalanceLeaf( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, keysToRebalance , structurePropagation );
                 }
-                else
+                else if ( keysToRebalance == -1 )
                 {
                     // No need to create new unstable version of left sibling.
                     // Parent pointer will be updated later.
@@ -1190,7 +1090,7 @@ class InternalTreeLogic<KEY,VALUE>
                 rightSiblingCursor.next();
                 int rightSiblingKeyCount = TreeNode.keyCount( rightSiblingCursor );
 
-                if ( keyCount + rightSiblingKeyCount <= bTreeNode.leafMaxKeyCount() )
+                if ( bTreeNode.canMergeLeaves( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount ) )
                 {
                     createSuccessorIfNeeded( rightSiblingCursor, structurePropagation, UPDATE_RIGHT_CHILD,
                             stableGeneration, unstableGeneration );
@@ -1229,7 +1129,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         // Read the right-most key from the right sibling to use when comparing whether or not
         // a common parent covers the keys in right sibling too
-        bTreeNode.keyAt( rightSiblingCursor, structurePropagation.rightKey, rightSiblingKeyCount - 1 );
+        bTreeNode.keyAt( rightSiblingCursor, structurePropagation.rightKey, rightSiblingKeyCount - 1, LEAF );
         merge( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount, stableGeneration, unstableGeneration );
 
         // Propagate change
@@ -1247,7 +1147,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         // Read the left-most key from the left sibling to use when comparing whether or not
         // a common parent covers the keys in left sibling too
-        bTreeNode.keyAt( leftSiblingCursor, structurePropagation.leftKey, 0 );
+        bTreeNode.keyAt( leftSiblingCursor, structurePropagation.leftKey, 0, LEAF );
         merge( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, stableGeneration, unstableGeneration );
 
         // Propagate change
@@ -1262,13 +1162,7 @@ class InternalTreeLogic<KEY,VALUE>
     private void merge( PageCursor leftSiblingCursor, int leftSiblingKeyCount, PageCursor rightSiblingCursor,
             int rightSiblingKeyCount, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        // Push keys in right sibling to the right
-        bTreeNode.insertKeySlotsAt( rightSiblingCursor, 0, leftSiblingKeyCount, rightSiblingKeyCount );
-        bTreeNode.insertValueSlotsAt( rightSiblingCursor, 0, leftSiblingKeyCount, rightSiblingKeyCount );
-
-        // Move keys and values from left sibling to right sibling
-        copyKeysAndValues( leftSiblingCursor, 0, rightSiblingCursor, 0, leftSiblingKeyCount );
-        TreeNode.setKeyCount( rightSiblingCursor, rightSiblingKeyCount + leftSiblingKeyCount );
+        bTreeNode.copyKeyValuesFromLeftToRight( leftSiblingCursor, leftSiblingKeyCount, rightSiblingCursor, rightSiblingKeyCount );
 
         // Update successor of left sibling to be right sibling
         TreeNode.setSuccessor( leftSiblingCursor, rightSiblingCursor.getCurrentPageId(),
@@ -1279,26 +1173,15 @@ class InternalTreeLogic<KEY,VALUE>
         idProvider.releaseId( stableGeneration, unstableGeneration, leftSiblingCursor.getCurrentPageId() );
     }
 
-    private void rebalanceLeaf( PageCursor cursor, PageCursor leftSiblingCursor,
-            StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount )
+    private void rebalanceLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount,
+            int numberOfKeysToMove, StructurePropagation<KEY> structurePropagation )
     {
-        int totalKeyCount = keyCount + leftSiblingKeyCount;
-        int keyCountInLeftSiblingAfterRebalance = totalKeyCount / 2;
-        int numberOfKeysToMove = leftSiblingKeyCount - keyCountInLeftSiblingAfterRebalance;
-
-        // Push keys in right sibling to the right
-        bTreeNode.insertKeySlotsAt( cursor, 0, numberOfKeysToMove, keyCount );
-        bTreeNode.insertValueSlotsAt( cursor, 0, numberOfKeysToMove, keyCount );
-
-        // Move keys and values from left sibling to right sibling
-        copyKeysAndValues( leftSiblingCursor, keyCountInLeftSiblingAfterRebalance, cursor, 0, numberOfKeysToMove );
-        TreeNode.setKeyCount( cursor, keyCount + numberOfKeysToMove );
-        TreeNode.setKeyCount( leftSiblingCursor, leftSiblingKeyCount - numberOfKeysToMove );
+        bTreeNode.moveKeyValuesFromLeftToRight( leftCursor, leftKeyCount, rightCursor, rightKeyCount, leftKeyCount - numberOfKeysToMove );
 
         // Propagate change
         structurePropagation.hasLeftKeyReplace = true;
         structurePropagation.keyReplaceStrategy = REPLACE;
-        bTreeNode.keyAt( cursor, structurePropagation.leftKey, 0 );
+        bTreeNode.keyAt( rightCursor, structurePropagation.leftKey, 0, LEAF );
     }
 
     /**
@@ -1313,10 +1196,10 @@ class InternalTreeLogic<KEY,VALUE>
      */
     private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos )
     {
-        // Remove key/value
-        bTreeNode.removeKeyAt( cursor, pos, keyCount );
+        // Save value to remove
         bTreeNode.valueAt( cursor, into, pos );
-        bTreeNode.removeValueAt( cursor, pos, keyCount );
+        // Remove key/value
+        bTreeNode.removeKeyValueAt( cursor, pos, keyCount );
 
         // Decrease key count
         int newKeyCount = keyCount - 1;

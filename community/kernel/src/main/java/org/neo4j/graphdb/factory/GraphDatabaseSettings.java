@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
-import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DEFAULT;
@@ -299,8 +298,11 @@ public class GraphDatabaseSettings implements LoadableConfig
                     Boolean.toString( Configuration.DEFAULT_LEGACY_STYLE_QUOTING ) );
 
     @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU." )
+    @Dynamic
     public static Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, TRUE );
+
     @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query." )
+    @Dynamic
     public static Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, TRUE );
 
     @Description( "The size of the morsels" )
@@ -363,7 +365,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
 
+    @Description( "Database timezone." )
+    public static final Setting<LogTimeZone> db_timezone =
+            setting( "dbms.db.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
+
     @Description( "Database logs timezone." )
+    @Deprecated
+    @ReplacedBy( "dbms.db.timezone" )
     public static final Setting<LogTimeZone> log_timezone =
             setting( "dbms.logs.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
@@ -504,13 +512,19 @@ public class GraphDatabaseSettings implements LoadableConfig
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
             "prune logical logs that only contains transactions older than 10 days from the current time, " +
             "or \"100k txs\" will keep the 100k latest transactions and prune any older transactions." )
-    public static final Setting<String> keep_logical_logs = buildSetting( "dbms.tx_log.rotation.retention_policy",
-            STRING, "7 days" ).constraint( illegalValueMessage( "must be `true`/`false` or " +
-                    "of format '<number><optional unit> <type>' for example `100M size` for " +
-                    "limiting logical log space on disk to 100Mb," +
-                    " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY) ) ).build();
+    @Dynamic
+    public static final Setting<String> keep_logical_logs =
+            buildSetting( "dbms.tx_log.rotation.retention_policy", STRING, "7 days" ).constraint( illegalValueMessage(
+                    "must be `true`, `false` or of format `<number><optional unit> <type>`. " +
+                            "Valid units are `k`, `M` and `G`. " +
+                            "Valid types are `files`, `size`, `txs`, `entries`, `hours` and `days`. " +
+                            "For example, `100M size` will limiting logical log space on disk to 100Mb," +
+                            " or `200k txs` will limiting the number of transactions to keep to 200 000", matches(
+                            "^(true|keep_all|false|keep_none|(\\d+[KkMmGg]?( (files|size|txs|entries|hours|days))))$" ) ) )
+                    .build();
 
     @Description( "Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 1M. " )
+    @Dynamic
     public static final Setting<Long> logical_log_rotation_threshold =
             buildSetting( "dbms.tx_log.rotation.size", BYTES, "250M" ).constraint( min( ByteUnit.mebiBytes( 1 ) ) ).build();
 
@@ -781,6 +795,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> bolt_write_buffer_low_water_mark =
             buildSetting( "unsupported.dbms.bolt.write_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
                     range( (int) ByteUnit.kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
+
+    @Description( "When the total time write throttle lock is held exceeds this value, the corresponding bolt channel will be aborted. Setting "
+            + " this to 0 will disable this behaviour." )
+    @Internal
+    public static final Setting<Duration> bolt_write_throttle_max_duration =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.max_duration", DURATION, "15m" ).constraint(
+                    min( Duration.ofSeconds( 30 ) ) ).build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal

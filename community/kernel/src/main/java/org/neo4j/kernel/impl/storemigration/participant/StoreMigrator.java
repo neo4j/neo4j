@@ -35,7 +35,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -68,8 +67,6 @@ import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
@@ -91,21 +88,20 @@ import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -118,6 +114,8 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_L
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
@@ -373,14 +371,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
-            BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem, pageCache,
-                    importConfig, logService,
+            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( migrationDir.getAbsoluteFile(),
+                    fileSystem, pageCache, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), importConfig ), additionalInitialIds, config, newFormat );
-            InputIterable<InputNode> nodes =
-                    legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
-            InputIterable<InputRelationship> relationships =
-                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors );
+                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR );
+            InputIterable nodes = replayable( () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors ) );
+            InputIterable relationships = replayable( () ->
+                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors ) );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
@@ -392,8 +389,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     propertyStoreSize / 2, propertyStoreSize / 2,
                     0 /*node labels left as 0 for now*/);
             importer.doImport(
-                    Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
-                            Collectors.badCollector( badOutput, 0 ), estimates ) );
+                    Inputs.input( nodes, relationships, IdMappers.actual(), Collectors.badCollector( badOutput, 0 ), estimates ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written
@@ -570,71 +566,66 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 config, progressReporter );
     }
 
-    private InputIterable<InputRelationship> legacyRelationshipsAsInput( NeoStores legacyStore,
+    private InputIterator legacyRelationshipsAsInput( NeoStores legacyStore,
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         RelationshipStore store = legacyStore.getRelationshipStore();
-        final BiConsumer<InputRelationship,RelationshipRecord> propertyDecorator =
+        final BiConsumer<InputEntityVisitor,RelationshipRecord> propertyDecorator =
                 propertyDecorator( requiresPropertyMigration, cursors );
-        return new StoreScanAsInputIterable<InputRelationship,RelationshipRecord>( store )
+        return new StoreScanAsInputIterator<RelationshipRecord>( store )
         {
             @Override
-            protected InputRelationship inputEntityOf( RelationshipRecord record )
+            protected boolean visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
             {
-                InputRelationship result = new InputRelationship(
-                        "legacy store", record.getId(), record.getId() * RelationshipRecordFormat.RECORD_SIZE,
-                        InputEntity.NO_PROPERTIES, record.getNextProp(),
-                        record.getFirstNode(), record.getSecondNode(), null, record.getType() );
-                propertyDecorator.accept( result, record );
-                return result;
+                visitor.startId( record.getFirstNode() );
+                visitor.endId( record.getSecondNode() );
+                visitor.type( record.getType() );
+                propertyDecorator.accept( visitor, record );
+                return true;
             }
         };
     }
 
-    private InputIterable<InputNode> legacyNodesAsInput( NeoStores legacyStore,
+    private InputIterator legacyNodesAsInput( NeoStores legacyStore,
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         NodeStore store = legacyStore.getNodeStore();
-        final BiConsumer<InputNode,NodeRecord> propertyDecorator =
+        final BiConsumer<InputEntityVisitor,NodeRecord> propertyDecorator =
                 propertyDecorator( requiresPropertyMigration, cursors );
 
-        return new StoreScanAsInputIterable<InputNode,NodeRecord>( store )
+        return new StoreScanAsInputIterator<NodeRecord>( store )
         {
             @Override
-            protected InputNode inputEntityOf( NodeRecord record )
+            protected boolean visitRecord( NodeRecord record, InputEntityVisitor visitor )
             {
-                InputNode node = new InputNode(
-                        "legacy store", record.getId(), record.getId() * NodeRecordFormat.RECORD_SIZE,
-                        record.getId(), InputEntity.NO_PROPERTIES, record.getNextProp(),
-                        InputNode.NO_LABELS, record.getLabelField() );
-                propertyDecorator.accept( node, record );
-                return node;
+                visitor.id( record.getId() );
+                visitor.labelField( record.getLabelField() );
+                propertyDecorator.accept( visitor, record );
+                return true;
             }
         };
     }
 
-    private <ENTITY extends InputEntity, RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
+    private <RECORD extends PrimitiveRecord> BiConsumer<InputEntityVisitor,RECORD> propertyDecorator(
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         if ( !requiresPropertyMigration )
         {
-            return ( a, b ) ->
+            return ( entity, record ) ->
             {
+                entity.propertyId( record.getNextProp() );
             };
         }
 
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
-        final List<Object> scratch = new ArrayList<>();
-        return ( ENTITY entity, RECORD record ) ->
+        return ( InputEntityVisitor entity, RECORD record ) ->
         {
             cursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
-            scratch.clear();
             while ( cursor.next() )
             {
-                scratch.add( cursor.propertyKeyId() ); // add key as int here as to have the importer use the token id
-                scratch.add( cursor.value().asObject() );
+                // add key as int here as to have the importer use the token id
+                entity.property( cursor.propertyKeyId(), cursor.value().asObject() );
             }
-            entity.setProperties( scratch.isEmpty() ? InputEntity.NO_PROPERTIES : scratch.toArray() );
             cursor.close();
         };
     }

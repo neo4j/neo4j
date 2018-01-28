@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -65,6 +66,13 @@ public class TestProcedure
     {
         Result result = db.execute( "MATCH (n:" + label + ") RETURN n LIMIT 1" );
         return result.stream().map( row -> new NodeResult( (Node)row.get( "n" ) ) );
+    }
+
+    @Procedure( "org.neo4j.stream123" )
+    @Description( "org.neo4j.stream123" )
+    public Stream<CountResult> stream123() throws Exception
+    {
+        return IntStream.of( 1, 2, 3 ).mapToObj( i -> new CountResult( i, "count" + i ) );
     }
 
     @Procedure( "org.neo4j.recurseN" )
@@ -140,6 +148,18 @@ public class TestProcedure
         NodeResult( Node node )
         {
             this.node = node;
+        }
+    }
+
+    public static class CountResult
+    {
+        public long count;
+        public String name;
+
+        CountResult( long count, String name )
+        {
+            this.count = count;
+            this.name = name;
         }
     }
 

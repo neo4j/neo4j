@@ -19,6 +19,7 @@
  */
 package org.neo4j.tooling;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -45,10 +46,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -86,6 +87,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
@@ -188,7 +190,7 @@ public class ImportToolTest
             // Then insert one with 3 array entries which will get ids greater than 4096. These cannot be inlined
             // due 36 bits being divided into 3 parts of 12 bits each and 4097 > 2^12, thus these labels will be
             // need to be dynamic records.
-            writer.println( "FIRST 4096|SECOND 4096|" );
+            writer.println( "FIRST 4096|SECOND 4096|THIRD 4096" );
         }
 
         // WHEN
@@ -655,29 +657,67 @@ public class ImportToolTest
                         lines( RELATIONSHIP_COUNT / 2, RELATIONSHIP_COUNT ), false ).getAbsolutePath() );
 
         // THEN
+        MutableInt numberOfNodesWithFirstSetOfLabels = new MutableInt();
+        MutableInt numberOfNodesWithSecondSetOfLabels = new MutableInt();
+        MutableInt numberOfRelationshipsWithFirstType = new MutableInt();
+        MutableInt numberOfRelationshipsWithSecondType = new MutableInt();
         verifyData(
                 node ->
                 {
-                    if ( node.getId() < NODE_COUNT / 2 )
+                    if ( nodeHasLabels( node, firstLabels ) )
                     {
-                        assertNodeHasLabels( node, firstLabels );
+                        numberOfNodesWithFirstSetOfLabels.increment();
+                    }
+                    else if ( nodeHasLabels( node, secondLabels ) )
+                    {
+                        numberOfNodesWithSecondSetOfLabels.increment();
                     }
                     else
                     {
-                        assertNodeHasLabels( node, secondLabels );
+                        fail( node + " has neither set of labels, it has " + labelsOf( node ) );
                     }
                 },
                 relationship ->
                 {
-                    if ( relationship.getId() < RELATIONSHIP_COUNT / 2 )
+                    if ( relationship.isType( RelationshipType.withName( firstType ) ) )
                     {
-                        assertEquals( firstType, relationship.getType().name() );
+                        numberOfRelationshipsWithFirstType.increment();
+                    }
+                    else if ( relationship.isType( RelationshipType.withName( secondType ) ) )
+                    {
+                        numberOfRelationshipsWithSecondType.increment();
                     }
                     else
                     {
-                        assertEquals( secondType, relationship.getType().name() );
+                        fail( relationship + " didn't have either type, it has " + relationship.getType().name() );
                     }
                 } );
+        assertEquals( NODE_COUNT / 2, numberOfNodesWithFirstSetOfLabels.intValue() );
+        assertEquals( NODE_COUNT / 2, numberOfNodesWithSecondSetOfLabels.intValue() );
+        assertEquals( RELATIONSHIP_COUNT / 2, numberOfRelationshipsWithFirstType.intValue() );
+        assertEquals( RELATIONSHIP_COUNT / 2, numberOfRelationshipsWithSecondType.intValue() );
+    }
+
+    private static String labelsOf( Node node )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( Label label : node.getLabels() )
+        {
+            builder.append( label.name() + " " );
+        }
+        return builder.toString();
+    }
+
+    private boolean nodeHasLabels( Node node, String[] labels )
+    {
+        for ( String name : labels )
+        {
+            if ( !node.hasLabel( Label.label( name ) ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Test
@@ -750,7 +790,7 @@ public class ImportToolTest
     }
 
     @Test
-    public void shouldNotBeAbleToMixSpecifiedAndUnspecifiedGroups() throws Exception
+    public void shouldBeAbleToMixSpecifiedAndUnspecifiedGroups() throws Exception
     {
         // GIVEN
         List<String> groupOneNodeIds = asList( "1", "2", "3" );
@@ -758,20 +798,15 @@ public class ImportToolTest
         Configuration config = Configuration.COMMAS;
 
         // WHEN
-        try
-        {
-            importTool(
-                    "--into", dbRule.getStoreDirAbsolutePath(),
-                    "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                               nodeData( false, config, groupOneNodeIds, TRUE ).getAbsolutePath(),
-                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                               nodeData( false, config, groupTwoNodeIds, TRUE ).getAbsolutePath() );
-            fail( "Should have failed" );
-        }
-        catch ( Exception e )
-        {
-            assertExceptionContains( e, "Mixing specified", IllegalStateException.class );
-        }
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                           nodeData( false, config, groupOneNodeIds, TRUE ).getAbsolutePath(),
+                "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                           nodeData( false, config, groupTwoNodeIds, TRUE ).getAbsolutePath() );
+
+        // THEN
+        verifyData( 6, 0, Validators.emptyValidator(), Validators.emptyValidator() );
     }
 
     @Test
@@ -817,8 +852,7 @@ public class ImportToolTest
         catch ( Exception e )
         {
             // THEN
-            assertExceptionContains( e, nodeData1.getPath() + ":" + 1, DuplicateInputIdException.class );
-            assertExceptionContains( e, nodeData2.getPath() + ":" + 3, DuplicateInputIdException.class );
+            assertExceptionContains( e, "'a' is defined more than once", DuplicateInputIdException.class );
         }
     }
 
@@ -840,19 +874,19 @@ public class ImportToolTest
                            nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                            nodeData2.getAbsolutePath() );
 
-        // THEN
+        // THEN there should not be duplicates of any node
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        Set<String> expectedNodeIds = new HashSet<>( nodeIds );
         try ( Transaction tx = db.beginTx() )
         {
-            // there should not be duplicates of any node
-            Iterator<Node> nodes = db.getAllNodes().iterator();
-            Iterator<String> expectedIds = FilteringIterator.noDuplicates( nodeIds.iterator() );
-            while ( expectedIds.hasNext() )
+            Set<String> foundNodesIds = new HashSet<>();
+            for ( Node node : db.getAllNodes() )
             {
-                assertTrue( nodes.hasNext() );
-                assertEquals( expectedIds.next(), nodes.next().getProperty( "id" ) );
+                String id = (String) node.getProperty( "id" );
+                assertTrue( id + ", " + foundNodesIds, foundNodesIds.add( id ) );
+                assertTrue( expectedNodeIds.contains( id ) );
             }
-            assertFalse( nodes.hasNext() );
+            assertEquals( expectedNodeIds, foundNodesIds );
 
             // also all nodes in the label index should exist
             for ( int i = 0; i < MAX_LABEL_ID; i++ )
@@ -862,7 +896,12 @@ public class ImportToolTest
                 {
                     while ( nodesByLabel.hasNext() )
                     {
-                        assertTrue( nodesByLabel.next().hasLabel( label ) );
+                        Node node = nodesByLabel.next();
+                        if ( !node.hasLabel( label ) )
+                        {
+                            fail( "Expected " + node + " to have label " + label.name() + ", but instead had " +
+                                    asList( node.getLabels() ) );
+                        }
                     }
                 }
             }
@@ -904,10 +943,8 @@ public class ImportToolTest
 
         // THEN
         String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
-        assertTrue( "Didn't contain first bad relationship",
-                badContents.contains( relationshipData1.getAbsolutePath() + ":3" ) );
-        assertTrue( "Didn't contain second bad relationship",
-                badContents.contains( relationshipData2.getAbsolutePath() + ":3" ) );
+        assertTrue( "Didn't contain first bad relationship", badContents.contains( "bogus" ) );
+        assertTrue( "Didn't contain second bad relationship", badContents.contains( "missing" ) );
         verifyRelationships( relationships );
     }
 
@@ -955,8 +992,7 @@ public class ImportToolTest
                 relationship( "b", "c", "KNOWS" ), //         line 1 of file2
                 relationship( "c", "a", "KNOWS" ), //         line 2 of file2
                 relationship( "missing", "a", "KNOWS" ) ); // line 3 of file2
-        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
-        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+        File relationshipData = relationshipData( true, config, relationships.iterator(), TRUE, true );
         File bad = badFile();
 
         // WHEN importing data where some relationships refer to missing nodes
@@ -967,14 +1003,13 @@ public class ImportToolTest
                     "--nodes", nodeData.getAbsolutePath(),
                     "--bad", bad.getAbsolutePath(),
                     "--bad-tolerance", "1",
-                    "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
-                                       relationshipData2.getAbsolutePath() );
+                    "--relationships", relationshipData.getAbsolutePath() );
             fail();
         }
         catch ( Exception e )
         {
             // THEN
-            assertExceptionContains( e, relationshipData2.getAbsolutePath() + ":3", InputException.class );
+            assertExceptionContains( e, relationshipData.getAbsolutePath(), InputException.class );
         }
     }
 
@@ -1011,7 +1046,7 @@ public class ImportToolTest
         catch ( Exception e )
         {
             // THEN
-            assertExceptionContains( e, relationshipData1.getAbsolutePath() + ":3", InputException.class );
+            assertExceptionContains( e, relationshipData1.getAbsolutePath(), InputException.class );
         }
     }
 
@@ -1346,7 +1381,9 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             Node node = Iterables.single( db.getAllNodes() );
-            assertEquals( "three", Iterables.single( node.getPropertyKeys() ) );
+            assertFalse( node.hasProperty( "one" ) );
+            assertFalse( node.hasProperty( "two" ) );
+            assertEquals( "value", node.getProperty( "three" ) );
             tx.success();
         }
     }
@@ -1471,7 +1508,7 @@ public class ImportToolTest
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine ) ) );
+            assertThat( e.getMessage(), containsString( String.format( "Multi-line fields are illegal", unbalancedStartLine ) ) );
         }
     }
 
@@ -1525,7 +1562,7 @@ public class ImportToolTest
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine ) ) );
+            assertThat( e.getMessage(), containsString( String.format( "Multi-line fields" ) ) );
         }
     }
 
@@ -1567,7 +1604,7 @@ public class ImportToolTest
     }
 
     @Test
-    public void shouldFailAndReportStartingLineForUnbalancedQuoteWithMultilinesEnabled() throws Exception
+    public void shouldFailOnUnbalancedQuoteWithMultilinesEnabled() throws Exception
     {
         // GIVEN
         int unbalancedStartLine = 10;
@@ -1583,11 +1620,7 @@ public class ImportToolTest
             fail( "Should have failed" );
         }
         catch ( InputException e )
-        {
-            // THEN
-            assertThat( e.getMessage(), containsString( String.format( "started on line %d", unbalancedStartLine ) ) );
-            // make sure end was reached
-            assertThat( e.getMessage(), containsString( String.format( "line:%d", 2 * unbalancedStartLine + 1 ) ) );
+        {   // THEN OK
         }
     }
 
@@ -1738,7 +1771,7 @@ public class ImportToolTest
     {
         // GIVEN
         List<String> nodeIds = nodeIds();
-        Configuration config = Configuration.TABS;
+        Configuration config = Configuration.COMMAS;
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
@@ -1890,7 +1923,7 @@ public class ImportToolTest
     {
         // GIVEN
         List<String> nodeIds = nodeIds();
-        Configuration config = Configuration.TABS;
+        Configuration config = Configuration.COMMAS;
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
@@ -2076,6 +2109,13 @@ public class ImportToolTest
             Validator<Node> nodeAdditionalValidation,
             Validator<Relationship> relationshipAdditionalValidation )
     {
+        verifyData( NODE_COUNT, RELATIONSHIP_COUNT, nodeAdditionalValidation, relationshipAdditionalValidation );
+    }
+
+    private void verifyData( int expectedNodeCount, int expectedRelationshipCount,
+            Validator<Node> nodeAdditionalValidation,
+            Validator<Relationship> relationshipAdditionalValidation )
+    {
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
@@ -2087,14 +2127,14 @@ public class ImportToolTest
                 nodeAdditionalValidation.validate( node );
                 nodeCount++;
             }
-            assertEquals( NODE_COUNT, nodeCount );
+            assertEquals( expectedNodeCount, nodeCount );
             for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "created" ) );
                 relationshipAdditionalValidation.validate( relationship );
                 relationshipCount++;
             }
-            assertEquals( RELATIONSHIP_COUNT, relationshipCount );
+            assertEquals( expectedRelationshipCount, relationshipCount );
             tx.success();
         }
     }

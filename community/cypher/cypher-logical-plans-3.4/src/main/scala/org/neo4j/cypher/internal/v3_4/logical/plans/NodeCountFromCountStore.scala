@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
 /**
@@ -27,9 +27,8 @@ import org.neo4j.cypher.internal.v3_4.expressions.LabelName
   * number of nodes with that label is fetched from the counts store. These counts are multiplied together, and the
   * result is assigned to 'idName'
   */
-case class NodeCountFromCountStore(idName: IdName, labelNames: List[Option[LabelName]], argumentIds: Set[IdName])
-                                    (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan {
+case class NodeCountFromCountStore(idName: String, labelNames: List[Option[LabelName]], argumentIds: Set[String])(implicit idGen: IdGen)
+  extends LogicalLeafPlan(idGen) {
 
-  def availableSymbols = Set(idName)
+  override val availableSymbols = Set(idName)
 }

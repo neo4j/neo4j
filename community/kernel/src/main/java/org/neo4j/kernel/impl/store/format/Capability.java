@@ -43,11 +43,6 @@ public enum Capability
     RELATIONSHIP_TYPE_3BYTES( CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
-     * Store has version trailers in the end of cleanly shut down store
-     */
-    VERSION_TRAILERS( CapabilityType.STORE ),
-
-    /**
      * Lucene version 3.x
      */
     LUCENE_3( CapabilityType.INDEX ),

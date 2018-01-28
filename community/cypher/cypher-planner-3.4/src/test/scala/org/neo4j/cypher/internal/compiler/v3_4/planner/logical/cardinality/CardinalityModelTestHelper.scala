@@ -37,6 +37,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
   implicit class RichTestUnit(testUnit: CardinalityTestHelper#TestUnit) {
     def shouldHaveQueryGraphCardinality(number: Double) {
+      // used to handle double rounding errors in assertion
       import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.CardinalitySupport.Eq
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
@@ -49,6 +50,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
     }
 
     def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
+      // used to handle double rounding errors in assertion
       import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.CardinalitySupport.Eq
 
       val (statistics, semanticTable) = testUnit.prepareTestContext

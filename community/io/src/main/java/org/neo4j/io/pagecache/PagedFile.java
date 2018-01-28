@@ -66,10 +66,15 @@ public interface PagedFile extends AutoCloseable
      */
     int PF_READ_AHEAD = 1 << 3; // TBD
     /**
-     * Do not load in the page if it is not loaded already. Only useful with
-     * exclusive locking when you want to overwrite the whole page anyway.
+     * Do not load in the page if it is not loaded already. The methods {@link PageCursor#next()} and
+     * {@link PageCursor#next(long)} will always return {@code true} for pages that are within the range of the file,
+     * but the {@link PageCursor#getCurrentPageId()} will return {@link PageCursor#UNBOUND_PAGE_ID} for pages that are
+     * not in-memory. The current page id <em>must</em> be checked on every {@link PageCursor#shouldRetry()} loop
+     * iteration, in case it (for a read cursor) was evicted concurrently with the page access.
+     * <p>
+     * {@link #PF_NO_FAULT} implies {@link #PF_NO_GROW}, since a page fault is necessary to be able to extend a file.
      */
-    int PF_NO_FAULT = 1 << 4; // TBD
+    int PF_NO_FAULT = 1 << 4;
     /**
      * Do not update page access statistics.
      */

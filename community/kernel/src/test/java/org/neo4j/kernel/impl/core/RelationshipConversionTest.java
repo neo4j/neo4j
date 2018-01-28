@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verify;
 public class RelationshipConversionTest
 {
 
-    private NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
+    private EmbeddedProxySPI nodeActions = mock( EmbeddedProxySPI.class );
     private Statement statement = mock( Statement.class );
     private RelationshipConversion relationshipConversion;
 

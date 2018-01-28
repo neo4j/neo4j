@@ -26,12 +26,14 @@ import java.util.Objects;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
@@ -59,6 +61,8 @@ abstract class MuninnPageCursor extends PageCursor
     protected long pageId;
     protected int pf_flags;
     protected boolean eagerFlush;
+    protected boolean noFault;
+    protected boolean noGrow;
     protected long currentPageId;
     protected long nextPageId;
     protected MuninnPageCursor linkedCursor;
@@ -92,7 +96,14 @@ abstract class MuninnPageCursor extends PageCursor
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
-        this.eagerFlush = (pf_flags & PF_EAGER_FLUSH) == PF_EAGER_FLUSH;
+        this.eagerFlush = isFlagRaised( pf_flags, PF_EAGER_FLUSH );
+        this.noFault = isFlagRaised( pf_flags, PF_NO_FAULT );
+        this.noGrow = noFault | isFlagRaised( pf_flags, PagedFile.PF_NO_GROW );
+    }
+
+    private boolean isFlagRaised( int flagSet, int flag )
+    {
+        return (flagSet & flag) == flag;
     }
 
     @Override
@@ -148,7 +159,7 @@ abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private void closeLinkedCursorIfAny() throws IOException
+    private void closeLinkedCursorIfAny()
     {
         if ( linkedCursor != null )
         {
@@ -157,7 +168,7 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId ) throws IOException
+    public PageCursor openLinkedCursor( long pageId )
     {
         closeLinkedCursorIfAny();
         MuninnPagedFile pf = pagedFile;
@@ -182,13 +193,21 @@ abstract class MuninnPageCursor extends PageCursor
     /**
      * Must be called by {@link #unpinCurrentPage()}.
      */
-    void clearPageState()
+    void clearPageCursorState()
     {
-        pointer = victimPage; // make all future page access go to the victim page
-        pageSize = 0; // make all future bound checks fail
-        pinnedPageRef = 0;
+        // We don't need to clear the pointer field, because setting the page size to 0 will make all future accesses
+        // go out of bounds, which in turn imply that they will always end up accessing the victim page anyway.
+        clearPageReference();
         currentPageId = UNBOUND_PAGE_ID;
         cursorException = null;
+    }
+
+    void clearPageReference()
+    {
+        // Make all future bounds checks fail, and send future accesses to the victim page.
+        pageSize = 0;
+        // Decouple us from the memory page, so we avoid messing with the page meta-data.
+        pinnedPageRef = 0;
     }
 
     @Override
@@ -274,6 +293,12 @@ abstract class MuninnPageCursor extends PageCursor
 
     private boolean uncommonPin( long filePageId, long chunkOffset, int[] chunk ) throws IOException
     {
+        if ( noFault )
+        {
+            // The only page state that needs to be cleared is the currentPageId, since it was set prior to pin.
+            currentPageId = UNBOUND_PAGE_ID;
+            return true;
+        }
         // Looks like there's no mapping, so we'd like to do a page fault.
         LatchMap.Latch latch = pagedFile.pageFaultLatches.takeOrAwaitLatch( filePageId );
         if ( latch != null )
@@ -359,7 +384,7 @@ abstract class MuninnPageCursor extends PageCursor
 
     private void abortPageFault( Throwable throwable, int[] chunk, long chunkOffset,
                                  LatchMap.Latch latch,
-                                 PageFaultEvent faultEvent ) throws IOException
+                                 PageFaultEvent faultEvent )
     {
         UnsafeUtil.putIntVolatile( chunk, chunkOffset, UNMAPPED_TTE );
         latch.release();
@@ -662,6 +687,17 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        long p = getBoundedPointer( offset, bytes );
+        if ( !outOfBounds )
+        {
+            UnsafeUtil.setMemory( p, bytes, value );
+        }
+        offset += bytes;
+    }
+
+    @Override
     public final short getShort()
     {
         long p = nextBoundedPointer( SIZE_OF_SHORT );
@@ -751,6 +787,74 @@ abstract class MuninnPageCursor extends PageCursor
         }
         outOfBounds = true;
         return 0;
+    }
+
+    @Override
+    public void shiftBytes( int sourceStart, int length, int shift )
+    {
+        int sourceEnd = sourceStart + length;
+        int targetStart = sourceStart + shift;
+        int targetEnd = sourceStart + length + shift;
+        if ( sourceStart < 0
+                | sourceEnd > filePageSize
+                | targetStart < 0
+                | targetEnd > filePageSize
+                | length < 0 )
+        {
+            outOfBounds = true;
+            return;
+        }
+
+        if ( shift < 0 )
+        {
+            unsafeShiftLeft( sourceStart, sourceEnd, length, shift );
+        }
+        else
+        {
+            unsafeShiftRight( sourceEnd, sourceStart, length, shift );
+        }
+    }
+
+    private void unsafeShiftLeft( int fromPos, int toPos, int length, int shift )
+    {
+        int longSteps = length >> 3;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess && longSteps > 0 )
+        {
+            for ( int i = 0; i < longSteps; i++ )
+            {
+                long x = UnsafeUtil.getLong( pointer + fromPos );
+                UnsafeUtil.putLong( pointer + fromPos + shift, x );
+                fromPos += Long.BYTES;
+            }
+        }
+
+        while ( fromPos < toPos )
+        {
+            byte b = UnsafeUtil.getByte( pointer + fromPos );
+            UnsafeUtil.putByte( pointer + fromPos + shift, b );
+            fromPos++;
+        }
+    }
+
+    private void unsafeShiftRight( int fromPos, int toPos, int length, int shift )
+    {
+        int longSteps = length >> 3;
+        if ( UnsafeUtil.allowUnalignedMemoryAccess && longSteps > 0 )
+        {
+            for ( int i = 0; i < longSteps; i++ )
+            {
+                fromPos -= Long.BYTES;
+                long x = UnsafeUtil.getLong( pointer + fromPos );
+                UnsafeUtil.putLong( pointer + fromPos + shift, x );
+            }
+        }
+
+        while ( fromPos > toPos )
+        {
+            fromPos--;
+            byte b = UnsafeUtil.getByte( pointer + fromPos );
+            UnsafeUtil.putByte( pointer + fromPos + shift, b );
+        }
     }
 
     @Override
@@ -862,6 +966,6 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public boolean isWriteLocked()
     {
-        return (pf_flags & PF_SHARED_WRITE_LOCK) == PF_SHARED_WRITE_LOCK;
+        return isFlagRaised( pf_flags, PF_SHARED_WRITE_LOCK );
     }
 }

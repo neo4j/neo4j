@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition, LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, LabelId, PropertyKeyId, RelTypeId}
 
-class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport {
+class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 
   test("warn when missing label") {
     //given
@@ -127,7 +126,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
     val notificationLogger = new RecordingNotificationLogger
-    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
+    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, new StubSolveds, new StubCardinalities, maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
     val context = ContextHelper.create(notificationLogger = notificationLogger)
     CheckForUnresolvedTokens.transform(compilationState, context)
     notificationLogger.notifications

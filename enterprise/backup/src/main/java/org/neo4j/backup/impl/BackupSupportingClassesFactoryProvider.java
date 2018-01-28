@@ -26,7 +26,7 @@ import org.neo4j.helpers.Service;
 
 import static java.util.Comparator.comparingInt;
 
-class BackupSupportingClassesFactoryProvider extends Service
+public class BackupSupportingClassesFactoryProvider extends Service
 {
     /**
      * Create a new instance of a service implementation identified with the
@@ -34,12 +34,12 @@ class BackupSupportingClassesFactoryProvider extends Service
      *
      * @param key the main key for identifying this service implementation
      */
-    protected BackupSupportingClassesFactoryProvider( String key )
+    public BackupSupportingClassesFactoryProvider( String key )
     {
         super( key );
     }
 
-    protected BackupSupportingClassesFactoryProvider()
+    public BackupSupportingClassesFactoryProvider()
     {
         super( "default-backup-support-provider" );
     }

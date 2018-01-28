@@ -325,6 +325,12 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        throw new UnsupportedOperationException( "Composite page cursor does not yet support this operation" );
+    }
+
+    @Override
     public short getShort()
     {
         short s = cursor( Short.BYTES ).getShort();
@@ -440,6 +446,12 @@ public class CompositePageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         throw new UnsupportedOperationException( "Composite cursor does not support copyTo functionality." );
+    }
+
+    @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        throw new UnsupportedOperationException( "Composite cursor does not support shiftBytes functionality... yet." );
     }
 
     @Override

@@ -26,6 +26,7 @@ import java.io.Reader;
 import org.neo4j.csv.reader.Source.Chunk;
 
 import static java.lang.String.format;
+
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
 /**
@@ -279,15 +280,15 @@ public class BufferedCharSeeker implements CharSeeker
     @Override
     public boolean tryExtract( Mark mark, Extractor<?> extractor )
     {
-        long from = mark.startPosition();
-        long to = mark.position();
-        return extractor.extract( buffer, (int) from, (int) (to - from), mark.isQuoted() );
+        int from = mark.startPosition();
+        int to = mark.position();
+        return extractor.extract( buffer, from, to - from, mark.isQuoted() );
     }
 
     private int nextChar( int skippedChars ) throws IOException
     {
         int ch;
-        if ( fillBufferIfWeHaveExhaustedIt() )
+        if ( bufferPos < bufferEnd || fillBuffer() )
         {
             ch = buffer[bufferPos];
         }
@@ -308,59 +309,55 @@ public class BufferedCharSeeker implements CharSeeker
     /**
      * @return {@code true} if something was read, otherwise {@code false} which means that we reached EOF.
      */
-    private boolean fillBufferIfWeHaveExhaustedIt() throws IOException
+    private boolean fillBuffer() throws IOException
     {
-        if ( bufferPos >= bufferEnd )
+        boolean first = currentChunk == null;
+
+        if ( !first )
         {
-            boolean first = currentChunk == null;
-
-            if ( !first )
+            if ( bufferPos - seekStartPos >= dataCapacity )
             {
-                currentChunk.close();
-                if ( bufferPos - seekStartPos >= dataCapacity )
-                {
-                    throw new IllegalStateException( "Tried to read a field larger than buffer size " +
-                            dataLength + ". A common cause of this is that a field has an unterminated " +
-                            "quote and so will try to seek until the next quote, which ever line it may be on." +
-                            " This should not happen if multi-line fields are disabled, given that the fields contains " +
-                            "no new-line characters. This field started at " + sourceDescription() + ":" + lineNumber() );
-                }
+                throw new IllegalStateException( "Tried to read a field larger than buffer size " +
+                        dataLength + ". A common cause of this is that a field has an unterminated " +
+                        "quote and so will try to seek until the next quote, which ever line it may be on." +
+                        " This should not happen if multi-line fields are disabled, given that the fields contains " +
+                        "no new-line characters. This field started at " + sourceDescription() + ":" + lineNumber() );
             }
-
-            absoluteBufferStartPosition += dataLength;
-
-            // Fill the buffer with new characters
-            Chunk nextChunk = source.nextChunk( first ? -1 : seekStartPos );
-            if ( nextChunk.backPosition() == nextChunk.startPosition() + nextChunk.length() )
-            {
-                return false;
-            }
-            buffer = nextChunk.data();
-            dataLength = nextChunk.length();
-            dataCapacity = nextChunk.maxFieldSize();
-            bufferPos = nextChunk.startPosition();
-            bufferStartPos = bufferPos;
-            bufferEnd = bufferPos + dataLength;
-            int shift = seekStartPos - nextChunk.backPosition();
-            seekStartPos = nextChunk.backPosition();
-            if ( first )
-            {
-                lineStartPos = seekStartPos;
-            }
-            else
-            {
-                lineStartPos -= shift;
-            }
-            String sourceDescriptionAfterRead = nextChunk.sourceDescription();
-            if ( !sourceDescriptionAfterRead.equals( sourceDescription ) )
-            {   // We moved over to a new source, reset line number
-                lineNumber = 0;
-                sourceDescription = sourceDescriptionAfterRead;
-            }
-            currentChunk = nextChunk;
-            return dataLength > 0;
         }
-        return true;
+
+        absoluteBufferStartPosition += dataLength;
+
+        // Fill the buffer with new characters
+        Chunk nextChunk = source.nextChunk( first ? -1 : seekStartPos );
+        if ( nextChunk == Source.EMPTY_CHUNK )
+        {
+            return false;
+        }
+
+        buffer = nextChunk.data();
+        dataLength = nextChunk.length();
+        dataCapacity = nextChunk.maxFieldSize();
+        bufferPos = nextChunk.startPosition();
+        bufferStartPos = bufferPos;
+        bufferEnd = bufferPos + dataLength;
+        int shift = seekStartPos - nextChunk.backPosition();
+        seekStartPos = nextChunk.backPosition();
+        if ( first )
+        {
+            lineStartPos = seekStartPos;
+        }
+        else
+        {
+            lineStartPos -= shift;
+        }
+        String sourceDescriptionAfterRead = nextChunk.sourceDescription();
+        if ( !sourceDescriptionAfterRead.equals( sourceDescription ) )
+        {   // We moved over to a new source, reset line number
+            lineNumber = 0;
+            sourceDescription = sourceDescriptionAfterRead;
+        }
+        currentChunk = nextChunk;
+        return dataLength > 0;
     }
 
     @Override
@@ -381,7 +378,6 @@ public class BufferedCharSeeker implements CharSeeker
         return sourceDescription;
     }
 
-    @Override
     public long lineNumber()
     {
         return lineNumber;
@@ -392,5 +388,10 @@ public class BufferedCharSeeker implements CharSeeker
     {
         return format( "%s[source:%s, position:%d, line:%d]", getClass().getSimpleName(),
                 sourceDescription(), position(), lineNumber() );
+    }
+
+    public static boolean isEolChar( char c )
+    {
+        return c == EOL_CHAR || c == EOL_CHAR_2;
     }
 }

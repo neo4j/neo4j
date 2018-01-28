@@ -36,8 +36,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.impl.core.NodeProxy.NodeActions;
-import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.coreapi.TxStateTransactionDataSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -52,13 +51,11 @@ public class TransactionEventHandlers
 {
     private final CopyOnWriteArraySet<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
-    private final NodeActions nodeActions;
-    private final RelationshipActions relationshipActions;
+    private final EmbeddedProxySPI proxySpi;
 
-    public TransactionEventHandlers( NodeActions nodeActions, RelationshipActions relationshipActions )
+    public TransactionEventHandlers( EmbeddedProxySPI spi )
     {
-        this.nodeActions = nodeActions;
-        this.relationshipActions = relationshipActions;
+        this.proxySpi = spi;
     }
 
     @Override
@@ -120,8 +117,7 @@ public class TransactionEventHandlers
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, nodeActions, relationshipActions,
-                        storeReadLayer, statement, transaction );
+                new TxStateTransactionDataSnapshot( state, proxySpi, storeReadLayer, statement, transaction );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         while ( handlers.hasNext() )

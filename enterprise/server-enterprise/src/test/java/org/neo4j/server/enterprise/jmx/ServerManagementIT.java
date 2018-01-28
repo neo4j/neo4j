@@ -28,7 +28,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.enterprise.EnterpriseNeoServer;
+import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -64,7 +64,7 @@ public class ServerManagementIT
                 .build();
 
         // When
-        NeoServer server = cleanup.add( new EnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider
+        NeoServer server = cleanup.add( new OpenEnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider
                 .getInstance() ) );
         server.start();
 

@@ -20,10 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, LabelId, NameId, RelTypeId}
-import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.v3_4.expressions.SymbolicName
 
 sealed trait TokenSpec[+ID <: NameId] {
   def id: Option[ID]
@@ -32,8 +28,8 @@ sealed trait TokenSpec[+ID <: NameId] {
 }
 
 object TokenSpec {
-  type LabelSpecs = Map[IdName, Set[TokenSpec[LabelId]]]
-  type RelTypeSpecs = Map[IdName, Set[TokenSpec[RelTypeId]]]
+  type LabelSpecs = Map[String, Set[TokenSpec[LabelId]]]
+  type RelTypeSpecs = Map[String, Set[TokenSpec[RelTypeId]]]
 }
 
 case class SpecifiedButUnknown() extends TokenSpec[Nothing] {
@@ -53,4 +49,3 @@ case class SpecifiedAndKnown[+ID <: NameId](_id: ID) extends TokenSpec[ID] {
 
   override def map[T](f: Option[ID] => T): Option[T] = Some(f(id))
 }
-

@@ -60,7 +60,7 @@ public class TestPlaceboTransaction
         readOps = mock( ReadOperations.class );
         when( statement.readOperations() ).thenReturn( readOps );
         when( bridge.get() ).thenReturn( statement );
-        placeboTx = new PlaceboTransaction( () -> kernelTransaction, bridge );
+        placeboTx = new PlaceboTransaction( kernelTransaction, bridge );
         resource = mock( Node.class );
         when( resource.getId() ).thenReturn( 1L );
     }
@@ -137,7 +137,7 @@ public class TestPlaceboTransaction
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
                 .thenReturn( Optional.of( Status.Transaction.Interrupted ) );
 
-        PlaceboTransaction tx = new PlaceboTransaction( () -> kernelTransaction, new ThreadToStatementContextBridge() );
+        PlaceboTransaction tx = new PlaceboTransaction( kernelTransaction, new ThreadToStatementContextBridge() );
 
         Optional<Status> terminationReason1 = tx.terminationReason();
         Optional<Status> terminationReason2 = tx.terminationReason();

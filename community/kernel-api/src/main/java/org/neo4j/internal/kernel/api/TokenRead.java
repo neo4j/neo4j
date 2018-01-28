@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 
@@ -30,20 +31,13 @@ public interface TokenRead
     int NO_TOKEN = -1;
 
     /**
-     * Returns the name corresponding to given token
-     * @param token The token associated with the name
-     * @return The name corresponding to the token
-     * @throws LabelNotFoundKernelException if the token doesn't exist in the database
+     * Returns the name of a label given its label id
+     *
+     * @param labelId The label id
+     * @return The name of the label
+     * @throws LabelNotFoundKernelException if no label is associates with this id
      */
-    String labelGetName( int token ) throws LabelNotFoundKernelException;
-
-    /**
-     * Returns the token corresponding to the provided name
-     * @param name The name associated with the token
-     * @return The token corresponding withe
-     * @throws LabelNotFoundKernelException
-     */
-    int labelGetForName( String name ) throws LabelNotFoundKernelException;
+    String nodeLabelName( int labelId ) throws LabelNotFoundKernelException;
 
     /**
      * Return the id of the provided label, or NO_TOKEN if the label isn't known to the graph.
@@ -62,6 +56,14 @@ public interface TokenRead
     int relationshipType( String name );
 
     /**
+     * Returns the name of a relationship type given its id
+     *
+     * @param relationshipTypeId The id of the relationship type
+     * @return The name of the relationship type
+     */
+    String relationshipTypeName( int relationshipTypeId ) throws KernelException;
+
+    /**
      * Return the id of the provided property key, or NO_TOKEN if the property isn't known to the graph.
      *
      * @param name The property key name.
@@ -76,5 +78,5 @@ public interface TokenRead
      * @return The name of the key
      * @throws PropertyKeyIdNotFoundKernelException if no key is associated with the id
      */
-    String propertyKeyGetName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
+    String propertyKeyName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 }

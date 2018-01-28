@@ -19,9 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.csv.reader.Extractors;
@@ -29,7 +30,6 @@ import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
@@ -39,11 +39,11 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.unsafe.impl.batchimport.IdRangeInput.idRangeInput;
+import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
- * and then a function for generating {@link InputNode} and another for generating {@link InputRelationship}.
+ * and then a function for generating the nodes and another for generating the relationships.
  * Data can be generated in parallel and so those generator functions accepts a {@link Range} for which
  * an array of input objects are generated, everything else will be taken care of. So typical usage would be:
  *
@@ -71,72 +71,54 @@ public class DataGeneratorInput implements Input
 {
     private final long nodes;
     private final long relationships;
-    private final Function<Range,InputNode[]> nodeGenerator;
-    private final Function<Range,InputRelationship[]> relGenerator;
     private final IdType idType;
     private final Collector badCollector;
+    private final long seed;
+    private final Header nodeHeader;
+    private final Header relationshipHeader;
+    private final Distribution<String> labels;
+    private final Distribution<String> relationshipTypes;
+    private final float factorBadNodeData;
+    private final float factorBadRelationshipData;
+    private final long startId;
+    private final Groups groups = new Groups();
 
-    public DataGeneratorInput( long nodes, long relationships,
-            Function<Range,InputNode[]> nodeGenerator,
-            Function<Range,InputRelationship[]> relGenerator,
-            IdType idType, Collector badCollector )
+    public DataGeneratorInput( long nodes, long relationships, IdType idType, Collector badCollector, long seed, long startId,
+            Header nodeHeader, Header relationshipHeader, int labelCount, int relationshipTypeCount,
+            float factorBadNodeData, float factorBadRelationshipData )
     {
         this.nodes = nodes;
         this.relationships = relationships;
-        this.nodeGenerator = nodeGenerator;
-        this.relGenerator = relGenerator;
         this.idType = idType;
         this.badCollector = badCollector;
+        this.seed = seed;
+        this.startId = startId;
+        this.nodeHeader = nodeHeader;
+        this.relationshipHeader = relationshipHeader;
+        this.factorBadNodeData = factorBadNodeData;
+        this.factorBadRelationshipData = factorBadRelationshipData;
+        this.labels = new Distribution<>( tokens( "Label", labelCount ) );
+        this.relationshipTypes = new Distribution<>( tokens( "TYPE", relationshipTypeCount ) );
     }
 
     @Override
-    public InputIterable<InputNode> nodes()
+    public InputIterable nodes()
     {
-        return new InputIterable<InputNode>()
-        {
-            @Override
-            public InputIterator<InputNode> iterator()
-            {
-                return new EntityDataGenerator<>( nodeGenerator, nodes );
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return replayable( () -> new RandomEntityDataGenerator( nodes, nodes, 10_000, seed, startId, nodeHeader, labels, relationshipTypes,
+                factorBadNodeData, factorBadRelationshipData ) );
     }
 
     @Override
-    public InputIterable<InputRelationship> relationships()
+    public InputIterable relationships()
     {
-        return new InputIterable<InputRelationship>()
-        {
-            @Override
-            public InputIterator<InputRelationship> iterator()
-            {
-                return new EntityDataGenerator<>( relGenerator, relationships );
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return replayable( () -> new RandomEntityDataGenerator( nodes, relationships, 10_000, seed, startId, relationshipHeader,
+                labels, relationshipTypes, factorBadNodeData, factorBadRelationshipData ) );
     }
 
     @Override
     public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
     {
-        return idType.idMapper( numberArrayFactory );
-    }
-
-    @Override
-    public IdGenerator idGenerator()
-    {
-        return idType.idGenerator();
+        return idType.idMapper( numberArrayFactory, groups );
     }
 
     @Override
@@ -149,11 +131,10 @@ public class DataGeneratorInput implements Input
     public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator )
     {
         int sampleSize = 100;
-        InputNode[] nodeSample = nodeGenerator.apply( idRangeInput( sampleSize, sampleSize ).next() );
+        InputEntity[] nodeSample = sample( nodes(), sampleSize );
         double labelsPerNodeEstimate = sampleLabels( nodeSample );
         double[] nodePropertyEstimate = sampleProperties( nodeSample, valueSizeCalculator );
-        double[] relationshipPropertyEstimate = sampleProperties( relGenerator.apply( idRangeInput( sampleSize, sampleSize ).next() ),
-                valueSizeCalculator );
+        double[] relationshipPropertyEstimate = sampleProperties( sample( relationships(), sampleSize ), valueSizeCalculator );
         return Inputs.knownEstimates(
                 nodes, relationships,
                 (long) (nodes * nodePropertyEstimate[0]), (long) (relationships * relationshipPropertyEstimate[0]),
@@ -161,10 +142,32 @@ public class DataGeneratorInput implements Input
                 (long) (nodes * labelsPerNodeEstimate) );
     }
 
-    private static double sampleLabels( InputNode[] nodes )
+    private InputEntity[] sample( InputIterable source, int size )
+    {
+        try ( InputIterator iterator = source.iterator();
+              InputChunk chunk = iterator.newChunk() )
+        {
+            InputEntity[] sample = new InputEntity[size];
+            int cursor = 0;
+            while ( cursor < size && iterator.next( chunk ) )
+            {
+                while ( cursor < size && chunk.next( sample[cursor++] = new InputEntity() ) )
+                {
+                    // just loop
+                }
+            }
+            return sample;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private static double sampleLabels( InputEntity[] nodes )
     {
         int labels = 0;
-        for ( InputNode node : nodes )
+        for ( InputEntity node : nodes )
         {
             labels += node.labels().length;
         }
@@ -214,5 +217,15 @@ public class DataGeneratorInput implements Input
         entries.add( new Entry( null, Type.TYPE, null, extractors.string() ) );
         entries.addAll( asList( additionalEntries ) );
         return new Header( entries.toArray( new Entry[entries.size()] ) );
+    }
+
+    private static String[] tokens( String prefix, int count )
+    {
+        String[] result = new String[count];
+        for ( int i = 0; i < count; i++ )
+        {
+            result[i] = prefix + (i + 1);
+        }
+        return result;
     }
 }

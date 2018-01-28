@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.Iterator;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.concat;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
+import static org.neo4j.helpers.collection.Iterators.asIterator;
 
 public class PropertyPhysicalToLogicalConverter
 {
@@ -45,12 +49,14 @@ public class PropertyPhysicalToLogicalConverter
     public void convertPropertyRecord( long nodeId, Iterable<PropertyRecordChange> changes,
             NodeUpdates.Builder properties )
     {
-        Map<Integer, PropertyBlock> beforeMap = new HashMap<>();
-        Map<Integer, PropertyBlock> afterMap = new HashMap<>();
+        PrimitiveIntObjectMap<PropertyBlock> beforeMap = Primitive.intObjectMap();
+        PrimitiveIntObjectMap<PropertyBlock> afterMap = Primitive.intObjectMap();
         mapBlocks( nodeId, changes, beforeMap, afterMap );
 
-        for ( int key : union( beforeMap.keySet(), afterMap.keySet() ) )
+        PrimitiveIntIterator uniqueIntIterator = uniqueIntIterator( beforeMap, afterMap );
+        while ( uniqueIntIterator.hasNext() )
         {
+            int key = uniqueIntIterator.next();
             PropertyBlock beforeBlock = beforeMap.get( key );
             PropertyBlock afterBlock = afterMap.get( key );
 
@@ -83,15 +89,16 @@ public class PropertyPhysicalToLogicalConverter
         }
     }
 
-    private <T> Set<T> union( Set<T> first, Set<T> other )
+    private PrimitiveIntIterator uniqueIntIterator( PrimitiveIntObjectMap<PropertyBlock> beforeMap,
+            PrimitiveIntObjectMap<PropertyBlock> afterMap )
     {
-        Set<T> union = new HashSet<>( first );
-        union.addAll( other );
-        return union;
+        Iterator<PrimitiveIntIterator> intIterator =
+                asIterator( 2, beforeMap.iterator(), afterMap.iterator() );
+        return deduplicate( concat( intIterator ) );
     }
 
-    private long mapBlocks( long nodeId, Iterable<PropertyRecordChange> changes,
-            Map<Integer,PropertyBlock> beforeMap, Map<Integer,PropertyBlock> afterMap )
+    private void mapBlocks( long nodeId, Iterable<PropertyRecordChange> changes,
+            PrimitiveIntObjectMap<PropertyBlock> beforeMap, PrimitiveIntObjectMap<PropertyBlock> afterMap )
     {
         for ( PropertyRecordChange change : changes )
         {
@@ -100,7 +107,6 @@ public class PropertyPhysicalToLogicalConverter
             mapBlocks( change.getBefore(), beforeMap );
             mapBlocks( change.getAfter(), afterMap );
         }
-        return nodeId;
     }
 
     private void equalCheck( long nodeId, long expectedNodeId )
@@ -108,7 +114,7 @@ public class PropertyPhysicalToLogicalConverter
         assert nodeId == expectedNodeId : "Node id differs expected " + expectedNodeId + ", but was " + nodeId;
     }
 
-    private void mapBlocks( PropertyRecord record, Map<Integer, PropertyBlock> blocks )
+    private void mapBlocks( PropertyRecord record, PrimitiveIntObjectMap<PropertyBlock> blocks )
     {
         for ( PropertyBlock block : record )
         {
@@ -122,7 +128,6 @@ public class PropertyPhysicalToLogicalConverter
         {
             return null;
         }
-
         return block.getType().value( block, propertyStore );
     }
 }

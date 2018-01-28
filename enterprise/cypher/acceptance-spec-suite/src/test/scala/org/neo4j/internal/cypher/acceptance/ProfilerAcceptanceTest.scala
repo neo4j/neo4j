@@ -432,7 +432,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       test("should show expand with types in a simple form") {
         val result = profileWithExecute(Configs.All + Configs.Morsel, "match (n)-[r:T]->() return *")
 
-        result.executionPlanDescription().toString should include("(n)-[r:T]->()")
+        result.executionPlanDescription().toString should include("()<-[r:T]-(n)")
       }
 
       test("should report correct dbhits and rows for label scan") {
@@ -610,7 +610,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
         //when
         val result = innerExecuteDeprecated(query, Map.empty)
-    //    val result = profileWithPlannerNew(Configs.AllExceptSlotted, query, Map.empty)
 
         //then
         assertDbHits(2)(result)("NodeByLabelScan")
@@ -661,19 +660,19 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
+      plan => assert(getArgument[Rows](plan).value === expectedRows, s" wrong row count for plan: ${plan.name}")
     }
   }
 
   private def assertEstimatedRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[EstimatedRows](plan).value, s" wrong estiamted row count for plan: ${plan.name}")
+      plan => assert(getArgument[EstimatedRows](plan).value === expectedRows , s" wrong estiamted row count for plan: ${plan.name}")
     }
   }
 
   private def assertDbHits(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[DbHits](plan).value, s" wrong db hits for plan: ${plan.name}")
+      plan => assert(getArgument[DbHits](plan).value === expectedRows , s" wrong db hits for plan: ${plan.name}")
     }
   }
 

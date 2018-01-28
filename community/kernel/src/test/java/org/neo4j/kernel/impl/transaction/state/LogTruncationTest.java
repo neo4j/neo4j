@@ -63,8 +63,8 @@ import org.neo4j.storageengine.api.StorageCommand;
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 /**

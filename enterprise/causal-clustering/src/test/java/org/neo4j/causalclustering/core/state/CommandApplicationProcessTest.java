@@ -29,10 +29,10 @@ import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.SessionTracker;
 import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
-import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.ProgressTrackerImpl;
@@ -49,8 +49,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -256,7 +256,7 @@ public class CommandApplicationProcessTest
     public void shouldPanicIfUnableToApply() throws Throwable
     {
         // given
-        doThrow( IOException.class ).when( commandDispatcher )
+        doThrow( RuntimeException.class ).when( commandDispatcher )
                 .dispatch( any( ReplicatedTransaction.class ), anyLong(), anyCallback() );
         applicationProcess.start();
 

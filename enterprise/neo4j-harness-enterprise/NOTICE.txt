@@ -29,6 +29,7 @@ Apache Software License, Version 2.0
   Apache Commons Collections
   Apache Commons Compress
   Apache Commons Configuration
+  Apache Commons IO
   Apache Commons Lang
   Apache Commons Logging
   Apache Commons Text
@@ -42,7 +43,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
-  Commons IO
   Commons Lang
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
@@ -60,6 +60,8 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -68,6 +70,7 @@ Apache Software License, Version 2.0
   Metrics Core
   Netty
   Netty/All-in-One
+  Objenesis
   opencsv
   parboiled-core
   parboiled-scala
@@ -75,6 +78,7 @@ Apache Software License, Version 2.0
   Prometheus Java Simpleclient Common
   Prometheus Java Simpleclient Dropwizard
   Prometheus Java Simpleclient Httpserver
+  WMI4Java
 
 BSD - Scala License
   Scala Library

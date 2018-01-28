@@ -30,7 +30,7 @@ public abstract class FormatException extends IllegalStateException
 
     protected FormatException( @Nonnull SourceTraceability source, @Nonnull String description )
     {
-        super( "At " + source.sourceDescription() + ":" + source.lineNumber() + " - " + description );
+        super( "At " + source.sourceDescription() + " @ position " + source.position() + " - " + description );
         this.source = source;
     }
 

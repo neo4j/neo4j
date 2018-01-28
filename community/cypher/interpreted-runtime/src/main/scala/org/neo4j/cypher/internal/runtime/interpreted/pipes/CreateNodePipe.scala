@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
   extends PipeWithSource(src) with GraphElementPropertyFunctions {
@@ -47,7 +47,7 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
   private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {
     properties.foreach { expr =>
       expr(context, state) match {
-        case _: NodeValue | _: EdgeValue =>
+        case _: NodeValue | _: RelationshipValue =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
         case IsMap(map) =>
           map(state.query).foreach(new BiConsumer[String, AnyValue] {
@@ -79,7 +79,7 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
 }
 
 case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-                         (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends BaseCreateNodePipe(src, key, labels, properties) {
+                         (val id: Id = Id.INVALID_ID) extends BaseCreateNodePipe(src, key, labels, properties) {
 
   override protected def handleNull(key: String) {
     // do nothing
@@ -87,7 +87,7 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
 }
 
 case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends BaseCreateNodePipe(src, key, labels, properties) {
+                              (val id: Id = Id.INVALID_ID) extends BaseCreateNodePipe(src, key, labels, properties) {
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create
     throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")

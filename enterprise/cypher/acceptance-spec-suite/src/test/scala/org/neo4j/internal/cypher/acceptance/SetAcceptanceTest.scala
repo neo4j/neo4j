@@ -45,6 +45,26 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     result.toList should be(List(Map("n2" -> n2)))
   }
 
+  test("should be able to force a type change of a node property") {
+    // given
+    createNode("prop" -> 1337)
+
+    // when
+    executeWith(expectedToSucceed, "MATCH (n) SET n.prop = tofloat(n.prop)")
+
+    executeWith(Configs.All, "MATCH (n) RETURN n.prop").next()("n.prop") shouldBe a[java.lang.Double]
+  }
+
+  test("should be able to force a type change of a relationship property") {
+    // given
+    relate(createNode(), createNode(), "prop" -> 1337)
+
+    // when
+    executeWith(expectedToSucceed, "MATCH ()-[r]->() SET r.prop = tofloat(r.prop)")
+
+    executeWith(Configs.All, "MATCH ()-[r]->() RETURN r.prop").next()("r.prop") shouldBe a[java.lang.Double]
+  }
+
   test("should be able to set property to collection") {
     // given
     val node = createNode()

@@ -24,13 +24,14 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost]
+  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Set[(String, Seq[String])]
   def uniqueIndexes: Set[(String, Seq[String])]

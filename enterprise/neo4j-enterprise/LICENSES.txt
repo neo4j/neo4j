@@ -23,6 +23,8 @@ Apache Software License, Version 2.0
   Graphite Integration for Metrics
   hazelcast-all
   Jackson
+  jPowerShell
+  jProcesses
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -31,6 +33,7 @@ Apache Software License, Version 2.0
   Metrics Core
   Netty
   Netty/All-in-One
+  Objenesis
   opencsv
   parboiled-core
   parboiled-scala
@@ -38,6 +41,7 @@ Apache Software License, Version 2.0
   Prometheus Java Simpleclient Common
   Prometheus Java Simpleclient Dropwizard
   Prometheus Java Simpleclient Httpserver
+  WMI4Java
 ------------------------------------------------------------------------------
 
                                  Apache License

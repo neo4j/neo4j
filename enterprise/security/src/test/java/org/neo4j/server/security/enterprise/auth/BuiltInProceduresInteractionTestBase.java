@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
-import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.newapi.Operations;
@@ -76,7 +76,6 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.enterprise.builtinprocs.ProceduresTimeFormatHelper.UTC_ZONE_ID;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
@@ -275,7 +274,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String listQueriesQuery = "CALL dbms.listQueries()";
 
         DoubleLatch latch = new DoubleLatch( 2 );
-        OffsetDateTime startTime = now( UTC_ZONE_ID );
+        OffsetDateTime startTime = now( ZoneOffset.UTC );
 
         ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
         tx.execute( threading, writeSubject, setMetaDataQuery, matchQuery );
@@ -1436,6 +1435,6 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     private static OffsetDateTime getStartTime()
     {
-        return ofInstant( Instant.ofEpochMilli( now().toEpochSecond() ), UTC_ZONE_ID );
+        return ofInstant( Instant.ofEpochMilli( now().toEpochSecond() ), ZoneOffset.UTC );
     }
 }

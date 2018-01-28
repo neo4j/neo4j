@@ -50,6 +50,7 @@ import static org.neo4j.helper.StressTestingHelper.fromEnv;
 import static org.neo4j.kernel.stresstests.transaction.checkpoint.mutation.RandomMutationFactory.defaultRandomMutation;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
@@ -80,7 +81,7 @@ public class CheckPointingLogRotationStressTesting
             Config dbConfig = Config.defaults();
             new ParallelBatchImporter( ensureExistsAndEmpty( storeDir ), fileSystem, null, DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.defaultVisible(), EMPTY, dbConfig,
-                    RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ) )
+                    RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ), NO_MONITOR )
                     .doImport( new NodeCountInputs( nodeCount ) );
         }
 

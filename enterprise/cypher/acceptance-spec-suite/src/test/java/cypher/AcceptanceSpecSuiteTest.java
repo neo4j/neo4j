@@ -34,7 +34,7 @@ import static cypher.SpecSuiteConstants.DB_CONFIG;
 import static cypher.SpecSuiteConstants.GLUE_PATH;
 import static cypher.SpecSuiteConstants.HTML_REPORT;
 import static cypher.SpecSuiteConstants.JSON_REPORT;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.fail;
 
 @RunWith( Enclosed.class )
 public class AcceptanceSpecSuiteTest
@@ -201,6 +201,23 @@ public class AcceptanceSpecSuiteTest
             strict = true
     )
     public static class Compatibility31 extends Base
+    {
+    }
+
+    @RunWith( Cucumber.class )
+    @CucumberOptions(
+            plugin = {
+                    DB_CONFIG + "compatibility-33.json",
+                    HTML_REPORT + SUITE_NAME + "/compatibility-33",
+                    JSON_REPORT + SUITE_NAME + "/compatibility-33",
+                    BLACKLIST_PLUGIN + "compatibility-33.txt"
+            },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
+            strict = true
+    )
+    public static class Compatibility33 extends Base
     {
     }
 

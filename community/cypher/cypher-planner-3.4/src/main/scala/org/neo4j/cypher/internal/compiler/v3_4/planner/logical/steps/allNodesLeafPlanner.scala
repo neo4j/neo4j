@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanner, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 
 object allNodesLeafPlanner extends LeafPlanner {
-  def apply(queryGraph: QueryGraph, context: LogicalPlanningContext) =
+  def apply(queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) =
     queryGraph.patternNodes
     .filter(!queryGraph.argumentIds.contains(_))
     .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds, context)).toIndexedSeq

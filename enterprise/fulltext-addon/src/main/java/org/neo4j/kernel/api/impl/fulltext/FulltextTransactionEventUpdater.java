@@ -21,12 +21,13 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -45,8 +46,8 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Fulltex
     @Override
     public FulltextTransactionContext beforeCommit( TransactionData data ) throws Exception
     {
-        Map<Long,Map<String,Object>> nodeMap = new HashMap<>();
-        Map<Long,Map<String,Object>> relationshipMap = new HashMap<>();
+        PrimitiveLongObjectMap<Map<String,Object>> nodeMap = Primitive.longObjectMap();
+        PrimitiveLongObjectMap<Map<String,Object>> relationshipMap = Primitive.longObjectMap();
         Lock lock = fulltextProvider.readLockIndexConfiguration();
         FulltextTransactionContext fulltextTransactionContext = new FulltextTransactionContext( nodeMap, relationshipMap, lock );
 
@@ -94,8 +95,8 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Fulltex
         {
             try
             {
-                Map<Long,Map<String,Object>> nodeMap = state.getNodeMap();
-                Map<Long,Map<String,Object>> relationshipMap = state.getRelationshipMap();
+                PrimitiveLongObjectMap<Map<String,Object>> nodeMap = state.getNodeMap();
+                PrimitiveLongObjectMap<Map<String,Object>> relationshipMap = state.getRelationshipMap();
 
                 //update node indices
                 for ( WritableFulltext nodeIndex : fulltextProvider.writableNodeIndices() )
@@ -150,23 +151,24 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Fulltex
 
     public static class FulltextTransactionContext
     {
-        private final Map<Long,Map<String,Object>> nodeMap;
-        private final Map<Long,Map<String,Object>> relationshipMap;
+        private final PrimitiveLongObjectMap<Map<String,Object>> nodeMap;
+        private final PrimitiveLongObjectMap<Map<String,Object>> relationshipMap;
         private final Lock lock;
 
-        private FulltextTransactionContext( Map<Long,Map<String,Object>> nodeMap, Map<Long,Map<String,Object>> relationshipMap, Lock lock )
+        private FulltextTransactionContext( PrimitiveLongObjectMap<Map<String,Object>> nodeMap,
+                PrimitiveLongObjectMap<Map<String,Object>> relationshipMap, Lock lock )
         {
             this.nodeMap = nodeMap;
             this.relationshipMap = relationshipMap;
             this.lock = lock;
         }
 
-        public Map<Long,Map<String,Object>> getRelationshipMap()
+        public PrimitiveLongObjectMap<Map<String,Object>> getRelationshipMap()
         {
             return relationshipMap;
         }
 
-        public Map<Long,Map<String,Object>> getNodeMap()
+        public PrimitiveLongObjectMap<Map<String,Object>> getNodeMap()
         {
             return nodeMap;
         }

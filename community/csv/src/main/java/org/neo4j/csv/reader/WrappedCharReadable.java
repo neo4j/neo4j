@@ -63,6 +63,7 @@ class WrappedCharReadable extends CharReadable.Adapter
             }
             totalRead += read;
         }
+        position += totalRead;
         return totalRead == 0 && eof ? -1 : totalRead;
     }
 
@@ -88,5 +89,11 @@ class WrappedCharReadable extends CharReadable.Adapter
     public long length()
     {
         return length;
+    }
+
+    @Override
+    public String toString()
+    {
+        return sourceDescription;
     }
 }

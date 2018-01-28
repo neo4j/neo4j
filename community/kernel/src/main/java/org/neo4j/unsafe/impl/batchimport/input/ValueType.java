@@ -49,6 +49,12 @@ public abstract class ValueType
             }
 
             @Override
+            public int length( Object value )
+            {
+                return Byte.BYTES;
+            }
+
+            @Override
             public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.put( (Boolean)value ? (byte)1 : (byte)0 );
@@ -60,6 +66,12 @@ public abstract class ValueType
             public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.get();
+            }
+
+            @Override
+            public int length( Object value )
+            {
+                return Byte.BYTES;
             }
 
             @Override
@@ -77,6 +89,12 @@ public abstract class ValueType
             }
 
             @Override
+            public int length( Object value )
+            {
+                return Short.BYTES;
+            }
+
+            @Override
             public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putShort( (Short)value );
@@ -88,6 +106,12 @@ public abstract class ValueType
             public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return (char)from.getInt();
+            }
+
+            @Override
+            public int length( Object value )
+            {
+                return Character.BYTES;
             }
 
             @Override
@@ -105,6 +129,12 @@ public abstract class ValueType
             }
 
             @Override
+            public int length( Object value )
+            {
+                return Integer.BYTES;
+            }
+
+            @Override
             public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putInt( (Integer) value );
@@ -119,6 +149,12 @@ public abstract class ValueType
             }
 
             @Override
+            public int length( Object value )
+            {
+                return Long.BYTES;
+            }
+
+            @Override
             public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putLong( (Long)value );
@@ -130,6 +166,12 @@ public abstract class ValueType
             public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.getFloat();
+            }
+
+            @Override
+            public int length( Object value )
+            {
+                return Float.BYTES;
             }
 
             @Override
@@ -150,6 +192,12 @@ public abstract class ValueType
             }
 
             @Override
+            public int length( Object value )
+            {
+                return Integer.BYTES + ((String)value).length() * Character.BYTES; // pessimistic
+            }
+
+            @Override
             public void write( Object value, FlushableChannel into ) throws IOException
             {
                 byte[] bytes = UTF8.encode( (String)value );
@@ -162,6 +210,12 @@ public abstract class ValueType
             public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.getDouble();
+            }
+
+            @Override
+            public int length( Object value )
+            {
+                return Double.BYTES;
             }
 
             @Override
@@ -184,6 +238,19 @@ public abstract class ValueType
                 Array.set( value, i, componentType.read( from ) );
             }
             return value;
+        }
+
+        @Override
+        public int length( Object value )
+        {
+            ValueType componentType = typeOf( value.getClass().getComponentType() );
+            int arrayLlength = Array.getLength( value );
+            int length = Integer.BYTES; // array length
+            for ( int i = 0; i < arrayLlength; i++ )
+            {
+                length += componentType.length( Array.get( value, i ) );
+            }
+            return length;
         }
 
         @Override
@@ -262,6 +329,8 @@ public abstract class ValueType
     }
 
     public abstract Object read( ReadableClosableChannel from ) throws IOException;
+
+    public abstract int length( Object value );
 
     public abstract void write( Object value, FlushableChannel into ) throws IOException;
 }

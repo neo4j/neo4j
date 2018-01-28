@@ -24,8 +24,8 @@ import java.util.function.ToIntFunction;
 
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.values.storable.Value;
 
@@ -80,21 +80,18 @@ public interface Input
     }
 
     /**
-     * Provides all {@link InputNode input nodes} for an import. The returned {@link InputIterable iterable's}
-     * {@link InputIterable#iterator() iterator()} method may be called multiple times.
+     * Provides all node data for an import.
      *
-     * @return an {@link InputIterable} which will provide all {@link InputNode input nodes} for the whole import.
+     * @return an {@link InputIterator} which will provide all node data for the whole import.
      */
-    InputIterable<InputNode> nodes();
+    InputIterable nodes();
 
     /**
-     * Provides all {@link InputRelationship input relationships} for an import. The returned
-     * {@link InputIterable iterable's} {@link InputIterable#iterator() iterator()} method may be called multiple times.
+     * Provides all relationship data for an import.
      *
-     * @return an {@link InputIterable} which will provide all {@link InputRelationship input relationships}
-     * for the whole import.
+     * @return an {@link InputIterator} which will provide all relationship data for the whole import.
      */
-    InputIterable<InputRelationship> relationships();
+    InputIterable relationships();
 
     /**
      * @return {@link IdMapper} which will get populated by {@link InputNode#id() input node ids}
@@ -103,11 +100,6 @@ public interface Input
      * @param numberArrayFactory The factory for creating data-structures to use for caching internally in the IdMapper.
      */
     IdMapper idMapper( NumberArrayFactory numberArrayFactory );
-
-    /**
-     * @return {@link IdGenerator} which is responsible for generating actual node ids from input node ids.
-     */
-    IdGenerator idGenerator();
 
     /**
      * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships}

@@ -30,11 +30,11 @@ import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
 
 import scala.collection.Iterator
 
@@ -54,7 +54,7 @@ trait QueryContext extends TokenContext {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
 
-  def entityAccessor: NodeManager
+  def entityAccessor: EmbeddedProxySPI
 
   def transactionalContext: QueryTransactionalContext
 
@@ -62,21 +62,21 @@ trait QueryContext extends TokenContext {
 
   def nodeOps: Operations[NodeValue]
 
-  def relationshipOps: Operations[EdgeValue]
+  def relationshipOps: Operations[RelationshipValue]
 
   def createNode(): Node
 
   def createNodeId(): Long
 
-  def createRelationship(start: Long, end: Long, relType: Int): EdgeValue
+  def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[EdgeValue]
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue]
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator
 
-  def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): EdgeValue
+  def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue
 
   def getOrCreateLabelId(labelName: String): Int
 
@@ -153,9 +153,9 @@ trait QueryContext extends TokenContext {
    */
   def createNewQueryContext(): QueryContext
 
-  def edgeGetStartNode(edge: EdgeValue): NodeValue
+  def edgeGetStartNode(edge: RelationshipValue): NodeValue
 
-  def edgeGetEndNode(edge: EdgeValue): NodeValue
+  def edgeGetEndNode(edge: RelationshipValue): NodeValue
 
   def nodeGetDegree(node: Long, dir: SemanticDirection): Int
 

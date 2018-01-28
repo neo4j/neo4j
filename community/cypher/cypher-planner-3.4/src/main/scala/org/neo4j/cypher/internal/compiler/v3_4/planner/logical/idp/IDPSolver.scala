@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.LazyIterable
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{ProjectingSelector, Selector}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Solveds
 
 import scala.collection.immutable.BitSet
 
@@ -45,7 +46,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
                          iterationDurationLimit: Long, // limits computation effort, reducing result quality
                          monitor: IDPSolverMonitor) {
 
-  def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable], context: Context): Iterator[(Set[Solvable], Result)] = {
+  def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable], context: Context, solveds: Solveds): Iterator[(Set[Solvable], Result)] = {
     val registry = registryFactory()
     val table = tableFactory(registry, seed)
     var toDo = registry.registerAll(initialToDo)
@@ -64,7 +65,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
           if (!table.contains(goal)) {
-            val candidates = LazyIterable(generator(registry, goal, table, context))
+            val candidates = LazyIterable(generator(registry, goal, table, context, solveds))
             projectingSelector(candidates).foreach(table.put(goal, _))
             keepGoing = blockSize == 2 ||
               (table.size <= maxTableSize && (System.currentTimeMillis() - start) < iterationDurationLimit)

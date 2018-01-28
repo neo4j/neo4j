@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.IsList
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 import scala.collection.JavaConverters._
@@ -60,7 +60,7 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
 }
 
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+                           (val id: Id = Id.INVALID_ID) extends Pipe {
 
   nodeIdsExpr.registerOwningPipe(this)
 

@@ -30,6 +30,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -165,40 +170,40 @@ public class SchemaCache
     {
         private final ConstraintSemantics constraintSemantics;
         private final Set<ConstraintDescriptor> constraints;
-        private final Map<Long,IndexRule> indexRuleById;
-        private final Map<Long,ConstraintRule> constraintRuleById;
+        private final PrimitiveLongObjectMap<IndexRule> indexRuleById;
+        private final PrimitiveLongObjectMap<ConstraintRule> constraintRuleById;
 
         private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors;
-        private final Map<Integer,Set<IndexDescriptor>> indexDescriptorsByLabel;
+        private final PrimitiveIntObjectMap<Set<IndexDescriptor>> indexDescriptorsByLabel;
 
         private final Map<Class<?>,Object> dependantState;
-        private final Map<Integer,List<IndexDescriptor>> indexByProperty;
+        private final PrimitiveIntObjectMap<List<IndexDescriptor>> indexByProperty;
 
         SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules )
         {
             this.constraintSemantics = constraintSemantics;
             this.constraints = new HashSet<>();
-            this.indexRuleById = new HashMap<>();
-            this.constraintRuleById = new HashMap<>();
+            this.indexRuleById = Primitive.longObjectMap();
+            this.constraintRuleById = Primitive.longObjectMap();
 
             this.indexDescriptors = new HashMap<>();
-            this.indexDescriptorsByLabel = new HashMap<>();
+            this.indexDescriptorsByLabel = Primitive.intObjectMap();
             this.dependantState = new HashMap<>();
-            this.indexByProperty = new HashMap<>();
+            this.indexByProperty = Primitive.intObjectMap();
             load( rules );
         }
 
         SchemaCacheState( SchemaCacheState schemaCacheState )
         {
             this.constraintSemantics = schemaCacheState.constraintSemantics;
-            this.indexRuleById = new HashMap<>( schemaCacheState.indexRuleById );
-            this.constraintRuleById = new HashMap<>( schemaCacheState.constraintRuleById );
+            this.indexRuleById = PrimitiveLongCollections.copy( schemaCacheState.indexRuleById );
+            this.constraintRuleById = PrimitiveLongCollections.copy( schemaCacheState.constraintRuleById );
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
-            this.indexDescriptorsByLabel = new HashMap<>( schemaCacheState.indexDescriptorsByLabel );
+            this.indexDescriptorsByLabel = PrimitiveIntCollections.copy( schemaCacheState.indexDescriptorsByLabel );
             this.dependantState = new HashMap<>();
-            this.indexByProperty = new HashMap<>( schemaCacheState.indexByProperty );
+            this.indexByProperty = PrimitiveIntCollections.copy( schemaCacheState.indexByProperty );
         }
 
         public void load( Iterable<SchemaRule> schemaRuleIterator )

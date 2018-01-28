@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecu
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.AnyValue
 
 import scala.annotation.tailrec
@@ -34,7 +34,7 @@ case class UnwindSlottedPipe(source: Pipe,
                              collection: Expression,
                              offset: Int,
                              slots: SlotConfiguration)
-                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with ListSupport {
+                            (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with ListSupport {
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     new UnwindIterator(input, state)
 

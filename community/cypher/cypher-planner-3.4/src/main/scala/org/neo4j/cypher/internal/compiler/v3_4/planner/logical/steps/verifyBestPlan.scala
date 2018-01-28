@@ -25,12 +25,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
-  def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val constructed = plan.solved
+  def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+    val constructed = solveds.get(plan.id)
     if (expected != constructed) {
       val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext)
       val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)
@@ -68,7 +69,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
         }
       } else {
         processUnfulfilledIndexHints(context, unfulfillableIndexHints)
-        processUnfulfilledJoinHints(context, unfulfillableJoinHints)
+        processUnfulfilledJoinHints(plan, context, unfulfillableJoinHints)
       }
     }
     plan
@@ -88,12 +89,12 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def processUnfulfilledJoinHints(context: LogicalPlanningContext, hints: Set[UsingJoinHint]) = {
+  private def processUnfulfilledJoinHints(plan: LogicalPlan, context: LogicalPlanningContext, hints: Set[UsingJoinHint]): Unit = {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
         val firstJoinHint = hints.head
-        throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), "Unable to plan hash join")
+        throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), s"Unable to plan hash join. Instead, constructed\n$plan")
       } else {
         hints.foreach { hint =>
           context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq))

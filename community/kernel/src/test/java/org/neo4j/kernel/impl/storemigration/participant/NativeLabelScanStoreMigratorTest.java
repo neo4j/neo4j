@@ -202,7 +202,7 @@ public class NativeLabelScanStoreMigratorTest
     private NativeLabelScanStore getNativeLabelScanStore( File dir, boolean readOnly )
     {
         return new NativeLabelScanStore( pageCache, dir, FullStoreChangeStream.EMPTY, readOnly, new Monitors(),
-                RecoveryCleanupWorkCollector.NULL );
+                RecoveryCleanupWorkCollector.IGNORE );
     }
 
     private void initializeNativeLabelScanStoreWithContent( File dir ) throws IOException

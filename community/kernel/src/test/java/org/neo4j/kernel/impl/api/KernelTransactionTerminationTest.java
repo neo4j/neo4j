@@ -26,6 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.pool.Pool;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -339,10 +341,11 @@ public class KernelTransactionTerminationTest
             super( mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
                     mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor, () -> mock( ExplicitIndexTransactionState.class ),
-                    mock( Pool.class ), Clocks.fakeClock(), CpuClock.NOT_AVAILABLE, HeapAllocation.NOT_AVAILABLE,
+                    mock( Pool.class ), Clocks.fakeClock(),
+                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
-                    mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock( Cursors.class ),
+                    mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock( KernelToken.class ), mock( Cursors.class ),
                     AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
 
             this.monitor = monitor;

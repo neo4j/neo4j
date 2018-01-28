@@ -327,7 +327,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("shouldComplainWhenMissingParams") {
     createNode()
-    failWithError(Configs.AbsolutelyAll, "match (pA) where id(pA) = {a} return pA", List("Expected a parameter named a"))
+    failWithError(Configs.AbsolutelyAll, "match (pA) where id(pA) = {a} return pA", List("Expected a parameter named a", "Expected parameter(s): a"))
   }
 
   test("shouldSupportMultipleRegexes") {

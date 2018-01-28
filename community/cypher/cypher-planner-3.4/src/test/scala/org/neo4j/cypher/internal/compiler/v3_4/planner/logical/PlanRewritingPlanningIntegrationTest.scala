@@ -33,9 +33,9 @@ class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalP
 
     result should equal(
       Projection(
-        AllNodesScan("n", Set.empty)(solved),
+        AllNodesScan("n", Set.empty),
         Map("deg" -> GetDegree(varFor("n"), None, OUTGOING)_)
-      )(result.solved)
+      )
     )
   }
 }

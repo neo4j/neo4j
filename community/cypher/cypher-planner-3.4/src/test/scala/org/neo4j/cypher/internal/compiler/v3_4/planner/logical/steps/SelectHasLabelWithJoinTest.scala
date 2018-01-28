@@ -28,9 +28,9 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
 
     implicit val plan = new given {
       cost = {
-        case (_: Selection, _) => 1000.0
-        case (_: NodeHashJoin, _) => 20.0
-        case (_: NodeByLabelScan, _) => 20.0
+        case (_: Selection, _, _) => 1000.0
+        case (_: NodeHashJoin, _, _) => 20.0
+        case (_: NodeByLabelScan, _, _) => 20.0
       }
     } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 

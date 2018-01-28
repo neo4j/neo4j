@@ -24,15 +24,12 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
-
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
+import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
 import org.neo4j.bolt.transport.HandshakeOutcome;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
@@ -49,8 +46,6 @@ import static org.neo4j.bolt.transport.HandshakeOutcome.PROTOCOL_CHOSEN;
 
 public class BoltHandshakeProtocolHandlerTest
 {
-    private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers = new HashMap<>();
-    private final Function<BoltChannel,BoltMessagingProtocolHandler> factory = newChannelToProtocolFunctionMock();
     private final BoltMessagingProtocolHandler protocol = mock( BoltMessagingProtocolHandler.class );
     private final ChannelHandlerContext ctx = newChannelHandlerContextMock();
     private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
@@ -61,10 +56,8 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            when( factory.apply( boltChannel ) ).thenReturn( protocol );
-            protocolHandlers.put( 1L, factory );
-
-            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, false, true );
+            BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
+            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( handlerFactory, false, true );
 
             // When
             HandshakeOutcome outcome =
@@ -87,10 +80,8 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            when( factory.apply( boltChannel ) ).thenReturn( protocol );
-            protocolHandlers.put( 1L, factory );
-
-            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, false, true );
+            BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
+            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( handlerFactory, false, true );
 
             // When
             HandshakeOutcome firstOutcome = handshake.perform( boltChannel, wrappedBuffer( new byte[]{
@@ -121,10 +112,8 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            when( factory.apply( boltChannel ) ).thenReturn( protocol );
-            protocolHandlers.put( 1L, factory );
-
-            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, false, true );
+            BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
+            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( handlerFactory, false, true );
 
             // When
             ByteBuf buffer = wrappedBuffer( new byte[]{
@@ -151,11 +140,8 @@ public class BoltHandshakeProtocolHandlerTest
         {
             // Given
             long maxUnsignedInt32 = 4_294_967_295L;
-
-            when( factory.apply( boltChannel ) ).thenReturn( protocol );
-            protocolHandlers.put( maxUnsignedInt32, factory );
-
-            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, false, true );
+            BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( maxUnsignedInt32, protocol );
+            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( handlerFactory, false, true );
 
             // When
             HandshakeOutcome outcome = handshake.perform( boltChannel, wrappedBuffer( new byte[]{
@@ -177,11 +163,8 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            Function<BoltChannel,BoltMessagingProtocolHandler> factory = newChannelToProtocolFunctionMock();
-
-            protocolHandlers.put( 1L, factory );
-
-            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, false, true );
+            BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
+            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( handlerFactory, false, true );
 
             // When
             HandshakeOutcome outcome = handshake.perform( boltChannel, wrappedBuffer( new byte[]{
@@ -203,11 +186,8 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            Function<BoltChannel,BoltMessagingProtocolHandler> factory = newChannelToProtocolFunctionMock();
-
-            protocolHandlers.put( 1L, factory );
-
-            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, false, true );
+            BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
+            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( handlerFactory, false, true );
 
             // When
             HandshakeOutcome outcome = handshake.perform( boltChannel, wrappedBuffer( new byte[]{
@@ -229,11 +209,8 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            Function<BoltChannel,BoltMessagingProtocolHandler> factory = newChannelToProtocolFunctionMock();
-
-            protocolHandlers.put( 1L, factory );
-
-            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, true, false );
+            BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
+            BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( handlerFactory, true, false );
 
             // When
             HandshakeOutcome outcome = handshake.perform( boltChannel, wrappedBuffer( new byte[]{
@@ -249,10 +226,9 @@ public class BoltHandshakeProtocolHandlerTest
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static Function<BoltChannel,BoltMessagingProtocolHandler> newChannelToProtocolFunctionMock()
+    private static BoltProtocolHandlerFactory newHandlerFactory( long version, BoltMessagingProtocolHandler handler )
     {
-        return mock( Function.class );
+        return ( givenVersion, channel ) -> version == givenVersion ? handler : null;
     }
 
     private static ChannelHandlerContext newChannelHandlerContextMock()

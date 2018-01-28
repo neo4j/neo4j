@@ -44,7 +44,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             pinEvent.done();
         }
         lockStamp = 0; // make sure not to accidentally keep a lock state around
-        clearPageState();
+        clearPageCursorState();
     }
 
     @Override
@@ -56,9 +56,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         {
             return false;
         }
-        pin( nextPageId, false );
         currentPageId = nextPageId;
         nextPageId++;
+        pin( currentPageId, false );
         return true;
     }
 
@@ -148,7 +148,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             // First, forget about this page in case pin() throws and the cursor
             // is closed; we don't want unpinCurrentPage() to try unlocking
             // this page.
-            pinnedPageRef = 0;
+            clearPageReference();
             // Then try pin again.
             pin( currentPageId, false );
         }
@@ -180,6 +180,12 @@ final class MuninnReadPageCursor extends MuninnPageCursor
 
     @Override
     public void putShort( short value )
+    {
+        throw new IllegalStateException( "Cannot write to read-locked page" );
+    }
+
+    @Override
+    public void shiftBytes( int sourceStart, int length, int shift )
     {
         throw new IllegalStateException( "Cannot write to read-locked page" );
     }

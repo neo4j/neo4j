@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -55,6 +56,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -370,12 +373,11 @@ public class TxStateTransactionDataViewTest
     @Test
     public void shouldAccessExampleMetaData()
     {
-        NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
-        final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
+        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
         final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.getMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
         TxStateTransactionDataSnapshot transactionDataSnapshot =
-                new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement, transaction );
+                new TxStateTransactionDataSnapshot( state, spi, ops, storeStatement, transaction );
         assertEquals( 1, transactionDataSnapshot.metaData().size() );
         assertThat( "Expected metadata map to contain defined username", transactionDataSnapshot.metaData(),
                 equalTo( genericMap( "username", "Igor" ) ) );
@@ -393,8 +395,12 @@ public class TxStateTransactionDataViewTest
 
     private TxStateTransactionDataSnapshot snapshot()
     {
-        NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
-        final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement, transaction );
+        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
+        when( spi.newNodeProxy( anyLong() ) ).thenAnswer( invocation -> new NodeProxy( spi, invocation.getArgument( 0 ) ) );
+        when( spi.newRelationshipProxy( anyLong() ) ).thenAnswer( invocation -> new RelationshipProxy( spi, invocation.getArgument( 0 ) ) );
+        when( spi.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).thenAnswer(
+                invocation -> new RelationshipProxy( spi, invocation.getArgument( 0 ), invocation.getArgument( 1 ),
+                        invocation.getArgument( 2 ), invocation.getArgument( 3 ) ) );
+        return new TxStateTransactionDataSnapshot( state, spi, ops, storeStatement, transaction );
     }
 }

@@ -30,6 +30,15 @@ public class Numbers
         return (short) value;
     }
 
+    public static byte safeCastIntToUnsignedByte( int value )
+    {
+        if ( (value & ~0xFF) != 0 )
+        {
+            throw new ArithmeticException( getOverflowMessage( value, "unsigned byte" ) );
+        }
+        return (byte) value;
+    }
+
     public static int safeCastLongToInt( long value )
     {
         if ( (int) value != value )
@@ -60,6 +69,11 @@ public class Numbers
     public static int unsignedShortToInt( short value )
     {
         return value & 0xFFFF;
+    }
+
+    public static int unsignedByteToInt( byte value )
+    {
+        return value & 0xFF;
     }
 
     private static String getOverflowMessage( long value, Class<?> clazz )

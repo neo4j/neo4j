@@ -32,10 +32,10 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.NamedFunction;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.fail;
 
 class ThreadedTransaction<S>
 {

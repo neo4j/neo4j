@@ -23,7 +23,7 @@ import java.util.Comparator
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
 
@@ -66,7 +66,7 @@ abstract class TopPipe(source: Pipe, sortDescription: List[ColumnOrder])
 }
 
 case class TopNPipe(source: Pipe, sortDescription: List[ColumnOrder], countExpression: Expression)
-                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends TopPipe(source, sortDescription) {
+                   (val id: Id = Id.INVALID_ID) extends TopPipe(source, sortDescription) {
 
   countExpression.registerOwningPipe(this)
 
@@ -124,7 +124,7 @@ case class TopNPipe(source: Pipe, sortDescription: List[ColumnOrder], countExpre
  * an array, instead just store a single value.
  */
 case class Top1Pipe(source: Pipe, sortDescription: List[ColumnOrder])
-                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                   (val id: Id = Id.INVALID_ID)
   extends TopPipe(source, sortDescription) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
@@ -156,7 +156,7 @@ case class Top1Pipe(source: Pipe, sortDescription: List[ColumnOrder])
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
 case class Top1WithTiesPipe(source: Pipe, sortDescription: List[ColumnOrder])
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                           (val id: Id = Id.INVALID_ID)
   extends TopPipe(source, sortDescription) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],

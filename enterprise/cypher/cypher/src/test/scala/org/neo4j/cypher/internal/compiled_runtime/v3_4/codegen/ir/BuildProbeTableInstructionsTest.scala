@@ -34,12 +34,12 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{Co
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
@@ -53,7 +53,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val buildTableMethodName = "buildProbeTable"
   private val resultRowKey = "resultKey"
 
-  private val entityAccessor = mock[NodeManager]
+  private val entityAccessor = mock[EmbeddedProxySPI]
   private val queryContext = mock[QueryContext]
   private val transactionalContext = mock[TransactionalContextWrapper]
   private val readOps = mock[ReadOperations]
@@ -170,7 +170,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
     ids.foreach { id =>
       val nodeMock = mock[NodeProxy]
       when(nodeMock.getId).thenReturn(id)
-      when(entityAccessor.newNodeProxyById(id)).thenReturn(nodeMock)
+      when(entityAccessor.newNodeProxy(id)).thenReturn(nodeMock)
       allNodeIds += id
     }
   }
@@ -221,7 +221,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
     val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
-    val ids: Map[String, LogicalPlanId] = instructions.flatMap(_.allOperatorIds.map(id => id -> LogicalPlanId.DEFAULT)).toMap
+    val ids: Map[String, Id] = instructions.flatMap(_.allOperatorIds.map(id => id -> Id.INVALID_ID)).toMap
     evaluate(instructions, queryContext, Seq(resultRowKey), EMPTY_MAP, ids)
   }
 

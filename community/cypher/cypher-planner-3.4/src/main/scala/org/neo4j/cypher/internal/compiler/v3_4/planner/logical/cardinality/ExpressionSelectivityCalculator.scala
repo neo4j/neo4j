@@ -24,7 +24,7 @@ import java.math.RoundingMode
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, Selections}
+import org.neo4j.cypher.internal.ir.v3_4.Selections
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics._
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, Selectivity}
@@ -136,7 +136,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       selections: Selections,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(IdName(variable))
+    val labels = selections.labelsOnNode(variable)
     val indexSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
@@ -209,7 +209,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       selections: Selections,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(IdName(variable))
+    val labels = selections.labelsOnNode(variable)
     val indexPropertyExistsSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {

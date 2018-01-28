@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable
 
 case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
-                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(left) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

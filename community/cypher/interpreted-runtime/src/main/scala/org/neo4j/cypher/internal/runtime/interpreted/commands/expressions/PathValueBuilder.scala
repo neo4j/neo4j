@@ -29,7 +29,7 @@ import scala.collection.mutable.ArrayBuffer
 final class PathValueBuilder {
 
   private val nodes = ArrayBuffer.empty[NodeValue]
-  private val rels = ArrayBuffer.empty[EdgeValue]
+  private val rels = ArrayBuffer.empty[RelationshipValue]
   private var nulled = false
   private var previousNode: NodeValue = null
   def result(): AnyValue = if (nulled) Values.NO_VALUE else VirtualValues.path(nodes.toArray, rels.toArray)
@@ -49,7 +49,7 @@ final class PathValueBuilder {
   }
 
   def addIncomingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
-    val rel = relOrNull.asInstanceOf[EdgeValue]
+    val rel = relOrNull.asInstanceOf[RelationshipValue]
     rels += rel
     previousNode = rel.startNode()
     nodes += previousNode
@@ -57,7 +57,7 @@ final class PathValueBuilder {
   }
 
   def addOutgoingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
-    val rel = relOrNull.asInstanceOf[EdgeValue]
+    val rel = relOrNull.asInstanceOf[RelationshipValue]
     rels += rel
     previousNode = rel.endNode()
     nodes += previousNode
@@ -65,7 +65,7 @@ final class PathValueBuilder {
   }
 
   def addUndirectedRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
-    val rel = relOrNull.asInstanceOf[EdgeValue]
+    val rel = relOrNull.asInstanceOf[RelationshipValue]
     if (rel.startNode() == previousNode) addOutgoingRelationship(rel)
     else if (rel.endNode() == previousNode) addIncomingRelationship(rel)
     else throw new IllegalArgumentException(s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
@@ -75,7 +75,7 @@ final class PathValueBuilder {
     val relsToAdd = relsOrNull.asInstanceOf[ListValue]
     val iterator = relsToAdd.iterator
     while (iterator.hasNext)
-      addIncomingRelationship(iterator.next().asInstanceOf[EdgeValue])
+      addIncomingRelationship(iterator.next().asInstanceOf[RelationshipValue])
     this
   }
 
@@ -83,7 +83,7 @@ final class PathValueBuilder {
     val relsToAdd = relsOrNull.asInstanceOf[ListValue]
     val iterator = relsToAdd.iterator
     while (iterator.hasNext)
-      addOutgoingRelationship(iterator.next().asInstanceOf[EdgeValue])
+      addOutgoingRelationship(iterator.next().asInstanceOf[RelationshipValue])
     this
   }
 
@@ -93,11 +93,11 @@ final class PathValueBuilder {
 
     def consumeIterator(i: Iterator[AnyValue]) =
       while (i.hasNext)
-        addUndirectedRelationship(i.next().asInstanceOf[EdgeValue])
+        addUndirectedRelationship(i.next().asInstanceOf[RelationshipValue])
 
 
     if (relIterator.hasNext) {
-      val first = relIterator.next().asInstanceOf[EdgeValue]
+      val first = relIterator.next().asInstanceOf[RelationshipValue]
       val rightDirection = first.startNode() == previousNode || first.endNode() == previousNode
 
       if (rightDirection) {

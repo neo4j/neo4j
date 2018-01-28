@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Operator which loads a CSV from some URL. For every source row, the CSV is loaded. Each CSV line is produced as a
@@ -31,13 +32,13 @@ import org.neo4j.cypher.internal.ir.v3_4._
   */
 case class LoadCSV(source: LogicalPlan,
                    url: Expression,
-                   variableName: IdName,
+                   variableName: String,
                    format: CSVFormat,
                    fieldTerminator: Option[String],
                    legacyCsvQuoteEscaping: Boolean)
-                  (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+                  (implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + variableName
+  override val availableSymbols: Set[String] = source.availableSymbols + variableName
 
   override def lhs = Some(source)
 

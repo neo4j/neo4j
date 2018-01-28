@@ -45,9 +45,11 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import static java.lang.String.format;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -401,7 +403,7 @@ public class IndexingAcceptanceTest
         }
     }
 
-    @Test( expected = MultipleFoundException.class )
+    @Test
     public void shouldThrowWhenMulitpleResultsForSingleNode() throws Exception
     {
         // given
@@ -423,6 +425,13 @@ public class IndexingAcceptanceTest
         try ( Transaction tx = graph.beginTx() )
         {
             graph.findNode( LABEL1, "name", "Stefan" );
+            fail( "Expected MultipleFoundException but got none" );
+        }
+        catch ( MultipleFoundException e )
+        {
+            assertThat( e.getMessage(), equalTo(
+                    format( "Found multiple nodes with label: '%s', property name: 'name' " +
+                            "and property value: 'Stefan' while only one was expected.", LABEL1 ) ) );
         }
     }
 

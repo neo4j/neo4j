@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
-import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -101,30 +101,29 @@ public class NodeProxySingleRelationshipTest
 
     private NodeProxy mockNodeWithRels( final long... relIds ) throws EntityNotFoundException
     {
-        NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
-        final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).then( invocation ->
+        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
+        when( spi.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).then( invocation ->
         {
             Long id = invocation.getArgument(0);
             Long startNode = invocation.getArgument( 1 );
             Integer type = invocation.getArgument( 2 );
             Long endNode = invocation.getArgument( 3 );
-            return new RelationshipProxy( relActions, id, startNode, type, endNode );
+            return new RelationshipProxy( spi, id, startNode, type, endNode );
         } );
 
         GraphDatabaseService gds = mock( GraphDatabaseService.class );
 
         when(gds.getRelationshipById( REL_ID )).thenReturn( mock( Relationship.class ) );
         when(gds.getRelationshipById( REL_ID + 1)).thenReturn( mock(Relationship.class) );
-        when( nodeActions.getGraphDatabase() ).thenReturn( gds );
+        when( spi.getGraphDatabase() ).thenReturn( gds );
 
-        NodeProxy nodeImpl = new NodeProxy( nodeActions, 1 );
+        NodeProxy nodeImpl = new NodeProxy( spi, 1 );
 
         Statement stmt = mock( Statement.class );
         ReadOperations readOps = mock( ReadOperations.class );
 
         when( stmt.readOperations() ).thenReturn( readOps );
-        when( nodeActions.statement() ).thenReturn( stmt );
+        when( spi.statement() ).thenReturn( stmt );
         when( readOps.relationshipTypeGetForName( loves.name() ) ).thenReturn( 2 );
 
         when( readOps.nodeGetRelationships( eq( 1L ), eq( Direction.OUTGOING ), eq( new int[]{2} ) ) ).thenAnswer(

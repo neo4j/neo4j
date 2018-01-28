@@ -30,10 +30,10 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.impl.transaction.log.ArrayIOCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 
-import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;

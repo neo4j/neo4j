@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -56,36 +56,21 @@ import static java.lang.String.format;
 
 public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
 {
-    public interface RelationshipActions
-    {
-        Statement statement();
-
-        Node newNodeProxy( long nodeId );
-
-        RelationshipType getRelationshipTypeById( int type );
-
-        GraphDatabaseService getGraphDatabaseService();
-
-        void failTransaction();
-
-        void assertInUnterminatedTransaction();
-    }
-
-    private final RelationshipActions actions;
+    private final EmbeddedProxySPI actions;
     private long id = AbstractBaseRecord.NO_ID;
     private long startNode = AbstractBaseRecord.NO_ID;
     private long endNode = AbstractBaseRecord.NO_ID;
     private int type;
 
-    public RelationshipProxy( RelationshipActions actions, long id, long startNode, int type, long endNode )
+    public RelationshipProxy( EmbeddedProxySPI spi, long id, long startNode, int type, long endNode )
     {
-        this.actions = actions;
+        this.actions = spi;
         visit( id, type, startNode, endNode );
     }
 
-    public RelationshipProxy( RelationshipActions actions, long id )
+    public RelationshipProxy( EmbeddedProxySPI spi, long id )
     {
-        this.actions = actions;
+        this.actions = spi;
         this.id = id;
     }
 
@@ -141,7 +126,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
-        return actions.getGraphDatabaseService();
+        return actions.getGraphDatabase();
     }
 
     @Override
@@ -467,21 +452,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public int compareTo( Object rel )
     {
         Relationship r = (Relationship) rel;
-        long ourId = this.getId();
-        long theirId = r.getId();
-
-        if ( ourId < theirId )
-        {
-            return -1;
-        }
-        else if ( ourId > theirId )
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
+        return Long.compare( this.getId(), r.getId() );
     }
 
     @Override

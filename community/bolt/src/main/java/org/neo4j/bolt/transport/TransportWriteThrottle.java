@@ -26,7 +26,10 @@ import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.util.AttributeKey;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.function.Supplier;
 
 /**
@@ -36,21 +39,26 @@ import java.util.function.Supplier;
  */
 public class TransportWriteThrottle implements TransportThrottle
 {
-    private static final AttributeKey<ThrottleLock> LOCK_KEY = AttributeKey.valueOf( "BOLT.WRITE_THROTTLE.LOCK" );
+    static final AttributeKey<ThrottleLock> LOCK_KEY = AttributeKey.valueOf( "BOLT.WRITE_THROTTLE.LOCK" );
+    static final AttributeKey<Boolean> MAX_DURATION_EXCEEDED_KEY = AttributeKey.valueOf( "BOLT.WRITE_THROTTLE.MAX_DURATION_EXCEEDED" );
     private final int lowWaterMark;
     private final int highWaterMark;
+    private final Clock clock;
+    private final long maxLockDuration;
     private final Supplier<ThrottleLock> lockSupplier;
     private final ChannelInboundHandler listener;
 
-    public TransportWriteThrottle( int lowWaterMark, int highWaterMark )
+    public TransportWriteThrottle( int lowWaterMark, int highWaterMark, Clock clock, Duration maxLockDuration )
     {
-        this( lowWaterMark, highWaterMark, () -> new DefaultThrottleLock() );
+        this( lowWaterMark, highWaterMark, clock, maxLockDuration, () -> new DefaultThrottleLock() );
     }
 
-    public TransportWriteThrottle( int lowWaterMark, int highWaterMark, Supplier<ThrottleLock> lockSupplier )
+    public TransportWriteThrottle( int lowWaterMark, int highWaterMark, Clock clock, Duration maxLockDuration, Supplier<ThrottleLock> lockSupplier )
     {
         this.lowWaterMark = lowWaterMark;
         this.highWaterMark = highWaterMark;
+        this.clock = clock;
+        this.maxLockDuration = maxLockDuration.toMillis();
         this.lockSupplier = lockSupplier;
         this.listener = new ChannelStatusListener();
     }
@@ -66,19 +74,46 @@ public class TransportWriteThrottle implements TransportThrottle
     }
 
     @Override
-    public void acquire( Channel channel )
+    public void acquire( Channel channel ) throws TransportThrottleException
     {
-        ThrottleLock lock = channel.attr( LOCK_KEY ).get();
-
-        while ( channel.isOpen() && !channel.isWritable() )
+        // if this channel's max lock duration is already exceeded, we'll allow the protocol to
+        // (at least) try to communicate the error to the client before aborting the connection
+        if ( !isDurationAlreadyExceeded( channel ) )
         {
-            try
+            ThrottleLock lock = channel.attr( LOCK_KEY ).get();
+
+            long startTimeMillis = 0;
+            while ( channel.isOpen() && !channel.isWritable() )
             {
-                lock.lock( channel, 1000 );
-            }
-            catch ( InterruptedException ex )
-            {
-                Thread.currentThread().interrupt();
+                if ( maxLockDuration > 0 )
+                {
+                    long currentTimeMillis = clock.millis();
+                    if ( startTimeMillis == 0 )
+                    {
+                        startTimeMillis = currentTimeMillis;
+                    }
+                    else
+                    {
+                        if ( currentTimeMillis - startTimeMillis > maxLockDuration )
+                        {
+                            setDurationExceeded( channel );
+
+                            throw new TransportThrottleException( String.format(
+                                    "Bolt connection [%s] will be closed because the client did not consume outgoing buffers for %s which is not expected.",
+                                    channel.remoteAddress(), DurationFormatUtils.formatDurationHMS( maxLockDuration ) ) );
+                        }
+                    }
+                }
+
+                try
+                {
+                    lock.lock( channel, 1000 );
+                }
+                catch ( InterruptedException ex )
+                {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException( ex );
+                }
             }
         }
     }
@@ -98,6 +133,18 @@ public class TransportWriteThrottle implements TransportThrottle
     public void uninstall( Channel channel )
     {
         channel.attr( LOCK_KEY ).set( null );
+    }
+
+    private static boolean isDurationAlreadyExceeded( Channel channel )
+    {
+        Boolean marker = channel.attr( MAX_DURATION_EXCEEDED_KEY ).get();
+
+        return marker != null && marker.booleanValue();
+    }
+
+    private static void setDurationExceeded( Channel channel )
+    {
+        channel.attr( MAX_DURATION_EXCEEDED_KEY ).set( Boolean.TRUE );
     }
 
     @ChannelHandler.Sharable

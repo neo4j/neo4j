@@ -56,7 +56,9 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -64,6 +66,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.track_query_allocation;
@@ -271,6 +274,70 @@ public class ListQueriesProcedureTest
     }
 
     @Test
+    public void shouldOnlyGetActiveLockCountFromCurrentQuery() throws Exception
+    {
+        // given
+        String query1 = "MATCH (x:X) SET x.v = 1";
+        String query2 = "MATCH (y:Y) SET y.v = 2 WITH count(y) AS y MATCH (z:Z) SET z.v = y";
+        try ( Resource<Node> test = test( () ->
+        {
+            for ( int i = 0; i < 5; i++ )
+            {
+                db.createNode( label( "X" ) );
+            }
+            db.createNode( label( "Y" ) );
+            return db.createNode( label( "Z" ) );
+        }, query1, query2 ) )
+        {
+            // when
+            try ( Result rows = db.execute( "CALL dbms.listQueries() "
+                    + "YIELD query AS queryText, queryId, activeLockCount "
+                    + "WHERE queryText = $queryText "
+                    + "CALL dbms.listActiveLocks(queryId) YIELD resourceId "
+                    + "WITH queryText, queryId, activeLockCount, count(resourceId) AS allLocks "
+                    + "RETURN *", singletonMap( "queryText", query2 ) ) )
+            {
+                assertTrue( "should have at least one row", rows.hasNext() );
+                Map<String,Object> row = rows.next();
+                Object activeLockCount = row.get( "activeLockCount" );
+                Object allLocks = row.get( "allLocks" );
+                assertFalse( "should have at most one row", rows.hasNext() );
+                assertThat( "activeLockCount", activeLockCount, instanceOf( Long.class ) );
+                assertThat( "allLocks", allLocks, instanceOf( Long.class ) );
+                assertThat( (Long) activeLockCount, lessThan( (Long) allLocks ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldContainSpecificConnectionDetails() throws Exception
+    {
+        // when
+        Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );
+
+        // then
+        assertThat( data, hasKey( "protocol" ) );
+        assertThat( data, hasKey( "clientAddress" ) );
+        assertThat( data, hasKey( "requestUri" ) );
+    }
+
+    @Test
+    public void shouldContainPageHitsAndPageFaults() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            // when
+            Map<String,Object> data = getQueryListing( query );
+
+            // then
+            assertThat( data, hasEntry( equalTo( "pageHits" ), instanceOf( Long.class ) ) );
+            assertThat( data, hasEntry( equalTo( "pageFaults" ), instanceOf( Long.class ) ) );
+        }
+    }
+
+    @Test
     public void shouldListUsedIndexes() throws Exception
     {
         // given
@@ -361,6 +428,40 @@ public class ListQueriesProcedureTest
     }
 
     @Test
+    public void cpuTimeTrackingShouldBeADynamicSetting() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        Map<String,Object> data;
+
+        // when
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), notNullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_cpu_time.name() + "', 'false')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), nullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_cpu_time.name() + "', 'true')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), notNullValue() ) );
+    }
+
+    @Test
     public void shouldDisableHeapAllocationTracking() throws Exception
     {
         // given
@@ -376,6 +477,42 @@ public class ListQueriesProcedureTest
 
         // then
         assertThat( data, hasEntry( equalTo( "allocatedBytes" ), nullValue() ) );
+    }
+
+    @Test
+    public void heapAllocationTrackingShouldBeADynamicSetting() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        Map<String,Object> data;
+
+        // when
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), anyOf( nullValue(), (Matcher) allOf(
+                instanceOf( Long.class ), greaterThan( 0L ) ) ) ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_allocation.name() + "', 'false')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), nullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_allocation.name() + "', 'true')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), anyOf( nullValue(), (Matcher) allOf(
+                instanceOf( Long.class ), greaterThan( 0L ) ) ) ) );
     }
 
     private void shouldListUsedIndexes( String label, String property ) throws Exception
@@ -478,7 +615,7 @@ public class ListQueriesProcedureTest
         }
     }
 
-    private <T extends PropertyContainer> Resource<T> test( Supplier<T> setup, String query )
+    private <T extends PropertyContainer> Resource<T> test( Supplier<T> setup, String... queries )
             throws TimeoutException, InterruptedException, ExecutionException
     {
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
@@ -506,7 +643,10 @@ public class ListQueriesProcedureTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( query ).close();
+                for ( String query : queries )
+                {
+                    db.execute( query ).close();
+                }
                 tx.success();
             }
             catch ( Throwable t )

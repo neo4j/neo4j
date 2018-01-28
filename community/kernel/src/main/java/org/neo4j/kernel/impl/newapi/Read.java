@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -31,6 +30,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -49,11 +49,13 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.newapi.References.clearFlags;
-import static org.neo4j.kernel.impl.newapi.References.hasDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
+import static org.neo4j.kernel.impl.newapi.GroupReferenceEncoding.isRelationship;
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.OUTGOING;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 abstract class Read implements TxStateHolder,
@@ -75,7 +77,7 @@ abstract class Read implements TxStateHolder,
             org.neo4j.internal.kernel.api.IndexReference index,
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
             IndexOrder indexOrder,
-            IndexQuery... query ) throws IndexNotApplicableKernelException
+            IndexQuery... query ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
 
@@ -98,7 +100,7 @@ abstract class Read implements TxStateHolder,
                     break;
                 case exact:
                     Value value = ((IndexQuery.ExactPredicate) q).value();
-                    if ( value.valueGroup() == ValueGroup.NUMBER )
+                    if ( value.valueGroup() == ValueGroup.NUMBER || Values.isArrayValue( value ) )
                     {
                         if ( !reader.hasFullNumberPrecision( q ) )
                         {
@@ -139,8 +141,9 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
 
-        ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithLabel( label ) );
+        NodeLabelIndexCursor indexCursor = (NodeLabelIndexCursor) cursor;
+        indexCursor.setRead( this );
+        labelScanReader().nodesWithLabel( indexCursor, label);
     }
 
     @Override
@@ -148,8 +151,10 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
 
-        ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAnyOfLabels( labels ) );
+        NodeLabelIndexCursor client = (NodeLabelIndexCursor) cursor;
+        client.setRead( this );
+        client.unionScan( new NodeLabelIndexProgressor( labelScanReader().nodesWithAnyOfLabels( labels ), client ),
+                false, labels );
     }
 
     @Override
@@ -157,13 +162,11 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
 
-        ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
-    }
-
-    private void labelScan( IndexProgressor.NodeLabelClient client, PrimitiveLongResourceIterator iterator )
-    {
-        client.initialize( new NodeLabelIndexProgressor( iterator, client ), false );
+        NodeLabelIndexCursor client = (NodeLabelIndexCursor) cursor;
+        client.setRead( this );
+        client.intersectionScan(
+                new NodeLabelIndexProgressor( labelScanReader().nodesWithAllLabels( labels ), client ),
+                false, labels );
     }
 
     @Override
@@ -238,9 +241,9 @@ abstract class Read implements TxStateHolder,
         {
             cursor.close();
         }
-        else if ( hasDirectFlag( reference ) ) // the relationships for this node are not grouped
+        else if ( isRelationship( reference ) ) // the relationships for this node are not grouped in the store
         {
-            ((RelationshipGroupCursor) cursor).buffer( nodeReference, clearFlags( reference ), this );
+            ((RelationshipGroupCursor) cursor).buffer( nodeReference, clearEncoding( reference ), this );
         }
         else // this is a normal group reference.
         {
@@ -252,7 +255,7 @@ abstract class Read implements TxStateHolder,
     public final void relationships(
             long nodeReference, long reference, org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
-        /* TODO: There are actually five (5!) different ways a relationship traversal cursor can be initialized:
+        /* There are 5 different ways a relationship traversal cursor can be initialized:
          *
          * 1. From a batched group in a detached way. This happens when the user manually retrieves the relationships
          *    references from the group cursor and passes it to this method and if the group cursor was based on having
@@ -280,21 +283,45 @@ abstract class Read implements TxStateHolder,
          * This means that we need reference encodings (flags) for cases: 1, 3, 4, 5
          */
         ktx.assertOpen();
-        if ( reference == NO_ID ) // there are no relationships for this node
+
+        int relationshipType;
+        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
+
+        switch ( encoding )
         {
-            cursor.close();
-        }
-        else if ( hasGroupFlag( reference ) ) // this reference is actually to a group record
-        {
-            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearFlags( reference ), this );
-        }
-        else if ( hasFilterFlag( reference ) ) // this relationship chain need to be filtered
-        {
-            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearFlags( reference ), this );
-        }
-        else // this is a normal relationship reference
-        {
+        case NONE: // this is a normal relationship reference
             ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference, this );
+            break;
+
+        case FILTER: // this relationship chain needs to be filtered
+            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearEncoding( reference ), this, true );
+            break;
+
+        case FILTER_TX_STATE: // tx-state changes should be filtered by the head of this chain
+            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearEncoding( reference ), this, false );
+            break;
+
+        case GROUP: // this reference is actually to a group record
+            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearEncoding( reference ), this );
+            break;
+
+        case NO_OUTGOING_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
+            ((RelationshipTraversalCursor) cursor).filteredTxState( nodeReference, this, relationshipType, OUTGOING );
+            break;
+
+        case NO_INCOMING_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
+            ((RelationshipTraversalCursor) cursor).filteredTxState( nodeReference, this, relationshipType, INCOMING );
+            break;
+
+        case NO_LOOP_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
+            ((RelationshipTraversalCursor) cursor).filteredTxState( nodeReference, this, relationshipType, LOOP );
+            break;
+
+        default:
+            throw new IllegalStateException( "Unknown encoding " + encoding );
         }
     }
 
@@ -302,7 +329,7 @@ abstract class Read implements TxStateHolder,
     public final void nodeProperties( long nodeReference, long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( References.setNodeFlag( nodeReference ), reference, this, ktx );
+        ((PropertyCursor) cursor).initNode( nodeReference, reference, this, ktx );
     }
 
     @Override
@@ -310,14 +337,14 @@ abstract class Read implements TxStateHolder,
             org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( References.setRelationshipFlag( relationshipReference ), reference, this, ktx );
+        ((PropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
     }
 
     @Override
     public final void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((PropertyCursor) cursor).init( NO_ID, graphPropertiesReference(), this, ktx );
+        ((PropertyCursor) cursor).initGraph( graphPropertiesReference(), this, ktx );
     }
 
     abstract long graphPropertiesReference();
@@ -433,7 +460,8 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
     }
 
-    abstract IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index );
+    abstract IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
+            throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();
 

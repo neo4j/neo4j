@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.helpers.collection.PrefetchingIterator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -48,7 +48,7 @@ trait CachingExpandInto {
    * Finds all relationships connecting fromNode and toNode.
    */
   protected def findRelationships(query: QueryContext, fromNode: NodeValue, toNode: NodeValue,
-                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Array[Int]]): Iterator[EdgeValue] = {
+                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Array[Int]]): Iterator[RelationshipValue] = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode.id())
     val toNodeIsDense = query.nodeIsDense(toNode.id())
@@ -90,11 +90,11 @@ trait CachingExpandInto {
                           relTypes: Option[Array[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes)
-    new PrefetchingIterator[EdgeValue] {
+    new PrefetchingIterator[RelationshipValue] {
       //we do not expect two nodes to have many connecting relationships
-      val connectedRelationships = new ArrayBuffer[EdgeValue](2)
+      val connectedRelationships = new ArrayBuffer[RelationshipValue](2)
 
-      override def fetchNextOrNull(): EdgeValue = {
+      override def fetchNextOrNull(): RelationshipValue = {
         while (relationships.hasNext) {
           val rel = relationships.next()
           val other = rel.otherNode(start)
@@ -130,11 +130,11 @@ trait CachingExpandInto {
 
   protected final class RelationshipsCache(capacity: Int) {
 
-    val table = new mutable.OpenHashMap[(Long, Long), Seq[EdgeValue]]()
+    val table = new mutable.OpenHashMap[(Long, Long), Seq[RelationshipValue]]()
 
-    def get(start: NodeValue, end: NodeValue, dir: SemanticDirection): Option[Seq[EdgeValue]] = table.get(key(start, end, dir))
+    def get(start: NodeValue, end: NodeValue, dir: SemanticDirection): Option[Seq[RelationshipValue]] = table.get(key(start, end, dir))
 
-    def put(start: NodeValue, end: NodeValue, rels: Seq[EdgeValue], dir: SemanticDirection) = {
+    def put(start: NodeValue, end: NodeValue, rels: Seq[RelationshipValue], dir: SemanticDirection) = {
       if (table.size < capacity) {
         table.put(key(start, end, dir), rels)
       }

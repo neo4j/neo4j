@@ -52,8 +52,7 @@ public interface Extractor<T> extends Cloneable
     /**
      * @return string representation of what type of value of produces. Also used as key in {@link Extractors}.
      */
-    @Override
-    String toString();
+    String name();
 
     Extractor<T> clone();
 }

@@ -54,7 +54,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
 import org.neo4j.kernel.api.{exceptions, _}
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.storable.Values
 
@@ -64,12 +64,12 @@ import scala.collection.JavaConverters._
 final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(txContext.statement) with QueryContext with SchemaDescriptorTranslation {
 
-  type EntityAccessor = NodeManager
+  type EntityAccessor = EmbeddedProxySPI
 
   val nodeOps = new NodeOperations
   val relationshipOps = new RelationshipOperations
 
-  override lazy val entityAccessor = txContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+  override lazy val entityAccessor = txContext.graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (txContext.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count

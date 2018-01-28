@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.util.v3_4.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.v3_4.expressions.Variable
@@ -58,7 +59,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
                       knownRelationshipCardinality: Map[(String, String, String), Double] = Map.empty,
                       knownNodeNames: Set[String] = Set.empty,
                       knownRelNames: Set[String] = Set.empty,
-                      queryGraphArgumentIds: Set[IdName] = Set.empty,
+                      queryGraphArgumentIds: Set[String] = Set.empty,
                       inboundCardinality: Cardinality = Cardinality(1),
                       strictness: Option[StrictnessMode] = None) {
 
@@ -79,7 +80,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       copy(knownLabelCardinality = knownLabelCardinality.fuse(increments)(_ + _))
     }
 
-    def withQueryGraphArgumentIds(idNames: IdName*): TestUnit =
+    def withQueryGraphArgumentIds(idNames: String*): TestUnit =
       copy(queryGraphArgumentIds = Set(idNames: _*))
 
     def withGraphNodes(number: Double): TestUnit = copy(allNodes = Some(number))
@@ -232,8 +233,8 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
     }
 
     def createQueryGraph(semanticTable: SemanticTable): (QueryGraph, SemanticTable) = {
-      val (queryGraph, rewrittenTable) = produceQueryGraphForPattern(query)
-      (queryGraph.withArgumentIds(queryGraphArgumentIds), semanticTable.transplantResolutionOnto(rewrittenTable))
+      val (plannerQuery, rewrittenTable) = producePlannerQueryForPattern(query)
+      (plannerQuery.lastQueryGraph.withArgumentIds(queryGraphArgumentIds), semanticTable.transplantResolutionOnto(rewrittenTable))
     }
   }
 }

@@ -102,13 +102,6 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
         return sourceDescription;
     }
 
-    @Override
-    public long lineNumber()
-    {   // Generally line numbers aren't tracked at this level of the reading process, let's leave that
-        // to CharSeeker for the time being.
-        return 1;
-    }
-
     public static CharReadable threadAhead( CharReadable actual, int bufferSize )
     {
         return new ThreadAheadReadable( actual, bufferSize );

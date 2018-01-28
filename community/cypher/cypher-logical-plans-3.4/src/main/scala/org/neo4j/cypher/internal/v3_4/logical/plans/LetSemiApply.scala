@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For every row in left, set that row as the argument, and apply to right. Produce left row, and set 'idName' =
@@ -31,9 +31,7 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *   produce leftRow
   * }
   */
-case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
-                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractLetSemiApply(left, right, idName, solved)
+case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen)
 
 /**
   * For every row in left, set that row as the argument, and apply to right. Produce left row, and set 'idName' =
@@ -45,15 +43,11 @@ case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
   *   produce leftRow
   * }
   */
-case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName)
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractLetSemiApply(left, right, idName, solved)
+case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen)
 
-abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan,
-                                    idName: IdName, solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + idName
+  override val availableSymbols: Set[String] = left.availableSymbols + idName
 }

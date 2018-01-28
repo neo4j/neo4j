@@ -21,7 +21,10 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.ListSupport
+import org.neo4j.graphdb.Transaction
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.api.exceptions.Status
+
 
 class PropertyExistenceConstraintAcceptanceTest
   extends ExecutionEngineFunSuite

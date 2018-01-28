@@ -67,7 +67,7 @@ public final class ConfigurableStandalonePageCacheFactory
             PageCursorTracerSupplier pageCursorTracerSupplier, Config config )
     {
         config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8M" );
-        ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, pageCacheTracer, pageCursorTracerSupplier,

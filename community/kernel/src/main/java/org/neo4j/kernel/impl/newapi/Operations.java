@@ -60,6 +60,8 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -77,11 +79,13 @@ public class Operations implements Write, ExplicitIndexWrite
 {
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
+    private final KernelToken token;
     private final StorageStatement statement;
     private final AutoIndexing autoIndexing;
     private org.neo4j.kernel.impl.newapi.NodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
     private PropertyCursor propertyCursor;
+    private RelationshipScanCursor relationshipCursor;
     private final Cursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
 
@@ -90,8 +94,12 @@ public class Operations implements Write, ExplicitIndexWrite
             IndexTxStateUpdater updater,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
-            Cursors cursors, AutoIndexing autoIndexing, NodeSchemaMatcher schemaMatcher )
+            KernelToken token,
+            Cursors cursors,
+            AutoIndexing autoIndexing,
+            NodeSchemaMatcher schemaMatcher )
     {
+        this.token = token;
         this.autoIndexing = autoIndexing;
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
@@ -105,6 +113,7 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
+        this.relationshipCursor = cursors.allocateRelationshipScanCursor();
     }
 
     @Override
@@ -149,17 +158,42 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode )
+    public long relationshipCreate( long sourceNode, int relationshipType, long targetNode ) throws EntityNotFoundException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+
+        sharedRelationshipTypeLock( relationshipType );
+        lockRelationshipNodes( sourceNode, targetNode );
+
+        nodeExists( sourceNode );
+        nodeExists( targetNode );
+
+        long id = statement.reserveRelationship();
+        ktx.txState().relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
+        return id;
     }
 
     @Override
-    public void relationshipDelete( long relationship )
+    public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+
+        allStoreHolder.singleRelationship( relationship, relationshipCursor ); // tx-state aware
+
+        if ( relationshipCursor.next() )
+        {
+            lockRelationshipNodes( relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            acquireExclusiveRelationshipLock( relationship );
+            ktx.assertOpen();
+
+            autoIndexing.relationships().entityRemoved( this, relationship );
+            ktx.txState().relationshipDoDelete( relationship, relationshipCursor.getType(),
+                    relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            return true;
+        }
+
+        // tried to delete relationship that does not exist
+        return false;
     }
 
     @Override
@@ -169,11 +203,7 @@ public class Operations implements Write, ExplicitIndexWrite
         acquireExclusiveNodeLock( node );
 
         ktx.assertOpen();
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
+        singleNode( node );
 
         if ( nodeCursor.labels().contains( nodeLabel ) )
         {
@@ -204,6 +234,15 @@ public class Operations implements Write, ExplicitIndexWrite
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
         updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
         return true;
+    }
+
+    private void singleNode( long node ) throws EntityNotFoundException
+    {
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, node );
+        }
     }
 
     /**
@@ -300,11 +339,7 @@ public class Operations implements Write, ExplicitIndexWrite
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
+        singleNode( node );
 
         if ( !nodeCursor.labels().contains( nodeLabel ) )
         {
@@ -324,11 +359,7 @@ public class Operations implements Write, ExplicitIndexWrite
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
+        singleNode( node );
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL,
                 nodeCursor.labels().all() );
         Iterator<ConstraintDescriptor> constraints = Iterators.filter( hasProperty( propertyKey ),
@@ -341,7 +372,7 @@ public class Operations implements Write, ExplicitIndexWrite
                 {
                     if ( propertyIds.contains( propertyKey ) )
                     {
-                        Value previousValue = readNodeProperty( node, propertyKey );
+                        Value previousValue = readNodeProperty( propertyKey );
                         if ( value.equals( previousValue ) )
                         {
                             // since we are changing to the same value, there is no need to check
@@ -352,7 +383,7 @@ public class Operations implements Write, ExplicitIndexWrite
                             getAllPropertyValues( constraint.schema(), propertyKey, value ), node );
                 } );
 
-        Value existingValue = readNodeProperty( node, propertyKey );
+        Value existingValue = readNodeProperty( propertyKey );
 
         if ( existingValue == NO_VALUE )
         {
@@ -364,7 +395,7 @@ public class Operations implements Write, ExplicitIndexWrite
         }
         else
         {
-            if ( !value.equals( existingValue ) )
+            if ( propertyHasChanged( value, existingValue ) )
             {
                 //the value has changed to a new value
                 autoIndexing.nodes().propertyChanged( this, node, propertyKey, existingValue, value );
@@ -381,7 +412,8 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
-        Value existingValue = readNodeProperty( node, propertyKey );
+        singleNode( node );
+        Value existingValue = readNodeProperty( propertyKey );
 
         if ( existingValue != NO_VALUE )
         {
@@ -511,14 +543,8 @@ public class Operations implements Write, ExplicitIndexWrite
         allStoreHolder.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
-    private Value readNodeProperty( long node, int propertyKey ) throws EntityNotFoundException
+    private Value readNodeProperty( int propertyKey )
     {
-        allStoreHolder.singleNode( node, nodeCursor );
-        if ( !nodeCursor.next() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, node );
-        }
-
         nodeCursor.properties( propertyCursor );
 
         //Find out if the property had a value
@@ -555,7 +581,7 @@ public class Operations implements Write, ExplicitIndexWrite
 
     public Token token()
     {
-        return allStoreHolder;
+        return token;
     }
 
     private void acquireExclusiveNodeLock( long node )
@@ -566,9 +592,48 @@ public class Operations implements Write, ExplicitIndexWrite
         }
     }
 
+    private void acquireExclusiveRelationshipLock( long relationshipId )
+    {
+        if ( !ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx( relationshipId ) )
+        {
+            ktx.locks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+        }
+    }
+
     private void acquireSharedLabelLock( int labelId )
     {
         ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labelId );
+    }
+
+    private void sharedRelationshipTypeLock( long typeId )
+    {
+        ktx.locks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
+    }
+
+    private void lockRelationshipNodes( long startNodeId, long endNodeId )
+    {
+        // Order the locks to lower the risk of deadlocks with other threads creating/deleting rels concurrently
+        acquireExclusiveNodeLock( min( startNodeId, endNodeId ) );
+        if ( startNodeId != endNodeId )
+        {
+            acquireExclusiveNodeLock( max( startNodeId, endNodeId ) );
+        }
+    }
+
+    private boolean propertyHasChanged( Value lhs, Value rhs )
+    {
+        //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
+        //so by only checking for equality users cannot change type of property without also "changing" the value.
+        //Hence the extra type check here.
+        return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
+    }
+
+    private void nodeExists( long sourceNode ) throws EntityNotFoundException
+    {
+        if ( !allStoreHolder.nodeExists( sourceNode ) )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, sourceNode );
+        }
     }
 
     public ExplicitIndexRead indexRead()

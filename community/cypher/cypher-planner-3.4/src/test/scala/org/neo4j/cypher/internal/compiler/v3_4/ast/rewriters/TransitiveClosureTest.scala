@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.v3_4.planner.AstRewritingTestSupport
+import org.neo4j.cypher.internal.compiler.v3_4.planner.{AstRewritingTestSupport, LogicalPlanConstructionTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{CNFNormalizer, transitiveClosure}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
-class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport {
+class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 
   test("MATCH (a)-->(b) WHERE a.prop = b.prop AND b.prop = 42") {
     shouldRewrite(
@@ -72,12 +72,12 @@ class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport 
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
 
-    val input = LogicalPlanState(null, null, null, Some(original))
+    val input = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(original))
     //We use CNFNormalizer to get it to the canonical form without duplicates
     val result = (transitiveClosure andThen  CNFNormalizer).transform(input, ContextHelper.create())
 
     //We must also use CNFNormalizer on the expected to get the AND -> ANDS rewrite
-    val expectedInput = LogicalPlanState(null, null, null, Some(expected))
+    val expectedInput = LogicalPlanState(null, null, null, new StubSolveds, new StubCardinalities, Some(expected))
     val expectedResult = CNFNormalizer.transform(expectedInput, ContextHelper.create())
     result.statement() should equal(expectedResult.statement())
   }

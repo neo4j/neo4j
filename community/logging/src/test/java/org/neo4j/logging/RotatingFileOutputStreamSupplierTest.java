@@ -58,6 +58,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -72,6 +73,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
+import static org.neo4j.logging.RotatingFileOutputStreamSupplier.getAllArchives;
 
 public class RotatingFileOutputStreamSupplierTest
 {
@@ -278,6 +280,24 @@ public class RotatingFileOutputStreamSupplierTest
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile3 ), is( false ) );
+    }
+
+    @Test
+    public void shouldFindAllArchives() throws Exception
+    {
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 2,
+                DIRECT_EXECUTOR );
+
+        write( supplier, "A string longer than 10 bytes" );
+        write( supplier, "A string longer than 10 bytes" );
+
+        assertThat( fileSystem.fileExists( logFile ), is( true ) );
+        assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
+        assertThat( fileSystem.fileExists( archiveLogFile2 ), is( false ) );
+
+        List<File> allArchives = getAllArchives( fileSystem, logFile );
+        assertThat( allArchives.size(), is( 1 ) );
+        assertThat( allArchives, hasItem( archiveLogFile1 ) );
     }
 
     @Test

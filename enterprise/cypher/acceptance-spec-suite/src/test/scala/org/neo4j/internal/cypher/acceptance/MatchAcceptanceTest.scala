@@ -84,7 +84,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |MATCH (rfq:Study_Dataset:RFQ) WHERE (rfq IN datasets)
         |OPTIONAL MATCH (wasi:Study_Dataset:WASI) WHERE (wasi IN datasets)
         |OPTIONAL MATCH (ypq:Study_Dataset:YPQ) WHERE (ypq IN datasets)
-        |RETURN DISTINCT derivedData AS DerivedData, subject , stai, pswq, pss, njre_q_r, iu, gad_7, fmps, bdi, wdq, treasurehunt, scid_v2, ybocs, bis, sdq, ehi, oci_r, pi_wsur, rfq, wasi, ypq""".stripMargin, Map.empty)
+        |RETURN DISTINCT derivedData AS DerivedData, subject , stai, pswq, pss, njre_q_r, iu, gad_7, fmps, bdi, wdq, treasurehunt, scid_v2, ybocs, bis, sdq, ehi, oci_r, pi_wsur, rfq, wasi, ypq""".stripMargin, Map("studyUUID" -> 1))
   }
 
   test("Should not use both pruning var expand and projections that need path info") {
@@ -399,7 +399,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Not TCK material -- indexes
 
-  test("should handle queries that cant be index solved because expressions lack dependencies") {
+  test("should handle queries that cant be index seek solved because expressions lack dependencies") {
     // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
     val b = createLabeledNode(Map("property" -> 42), "Label")
@@ -411,7 +411,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     graph.createIndex("Label", "property")
 
     // when
-    val result = executeWith(Configs.All, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
+    val result = executeWith(Configs.Interpreted, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
 
     // then does not throw exceptions
     result.toList should equal(List(Map("a" -> a, "b" -> b)))

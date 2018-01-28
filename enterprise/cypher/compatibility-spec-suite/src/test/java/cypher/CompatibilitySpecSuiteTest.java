@@ -34,7 +34,7 @@ import static cypher.SpecSuiteConstants.DB_CONFIG;
 import static cypher.SpecSuiteConstants.GLUE_PATH;
 import static cypher.SpecSuiteConstants.HTML_REPORT;
 import static cypher.SpecSuiteConstants.JSON_REPORT;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.fail;
 
 @RunWith( CompatibilitySpecSuiteResources.class )
 public class CompatibilitySpecSuiteTest

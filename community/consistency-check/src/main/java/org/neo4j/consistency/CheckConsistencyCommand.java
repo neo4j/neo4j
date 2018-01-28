@@ -182,7 +182,7 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             File storeDir = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
             checkDbState( storeDir, config );
-            ZoneId logTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+            ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             // Only output progress indicator if a console receives the output
             ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
             if ( System.console() != null )

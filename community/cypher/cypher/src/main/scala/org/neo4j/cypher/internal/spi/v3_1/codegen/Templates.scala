@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 
 /**
   * Contains common code generation constructs.
@@ -123,8 +123,8 @@ object Templates {
     put(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description", load("description", typeRef[InternalPlanDescription])).
     put(self(classHandle), typeRef[QueryExecutionTracer], "tracer", load("tracer", typeRef[QueryExecutionTracer])).
     put(self(classHandle), typeRef[util.Map[String, Object]], "params", load("params", typeRef[util.Map[String, Object]])).
-    put(self(classHandle), typeRef[NodeManager], "nodeManager",
-        cast(typeRef[NodeManager],
+    put(self(classHandle), typeRef[EmbeddedProxySPI], "proxySpi",
+        cast(typeRef[EmbeddedProxySPI],
              invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, Object]("entityAccessor")))).
     build()
 

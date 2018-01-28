@@ -103,7 +103,9 @@ public interface Status
                 "The client provided a request that was missing required fields, or had values that are not allowed." ),
         TransactionRequired( ClientError,
                 "The request cannot be performed outside of a transaction, and there is no transaction present to " +
-                "use. Wrap your request in a transaction and retry." );
+                "use. Wrap your request in a transaction and retry." ),
+        InvalidUsage( ClientError,  // TODO: see above
+                "The client made a request but did not consume outgoing buffers in a timely fashion." );
         private final Code code;
 
         @Override
@@ -129,12 +131,6 @@ public interface Status
                 "The transaction is of the wrong type to service the request. For instance, a transaction that has " +
                 "had schema modifications performed in it cannot be used to subsequently perform data operations, " +
                 "and vice versa." ),
-        TransactionTerminated( ClientError,
-                "The current transaction has been marked as terminated, meaning no more interactions with it are " +
-                "allowed. There are several reasons this happens - the client might have asked for the transaction " +
-                "to be terminated, an operator might have asked for the database to be shut down, or the current " +
-                "instance is about to go through a cluster role switch. Simply retry your operation in a new " +
-                "transaction." ),
         TransactionValidationFailed( ClientError,
                 "Transaction changes did not pass validation checks" ),
         TransactionHookFailed( ClientError,
@@ -181,7 +177,9 @@ public interface Status
                 "Transaction has seen state which has been invalidated by applied updates while " +
                 "transaction was active. Transaction may succeed if retried." ),
         LockClientStopped( TransientError,
-                "Transaction terminated, no more locks can be acquired." ),
+                "The transaction has been terminated, so no more locks can be acquired. This can occur because the " +
+                "transaction ran longer than the configured transaction timeout, or because a human operator manually " +
+                "terminated the transaction, or because the database is shutting down." ),
         LockAcquisitionTimeout( TransientError,
                 "Unable to acquire lock within configured timeout." ),
         Terminated( TransientError,

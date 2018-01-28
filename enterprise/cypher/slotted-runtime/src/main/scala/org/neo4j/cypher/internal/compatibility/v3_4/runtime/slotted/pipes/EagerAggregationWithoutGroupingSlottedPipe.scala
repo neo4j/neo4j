@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Aggreg
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 /*
 This pipe can be used whenever we are aggregating and not grouping on anything
@@ -33,7 +33,7 @@ This pipe can be used whenever we are aggregating and not grouping on anything
 case class EagerAggregationWithoutGroupingSlottedPipe(source: Pipe,
                                                       slots: SlotConfiguration,
                                                       aggregations: Map[Int, AggregationExpression])
-                                                     (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                                                     (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))

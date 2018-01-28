@@ -484,7 +484,7 @@ public class Cluster
         );
     }
 
-    private ReadReplica createReadReplica( int serverId,
+    protected ReadReplica createReadReplica( int serverId,
                                            List<AdvertisedSocketAddress> initialHosts,
                                            Map<String, String> extraParams,
                                            Map<String, IntFunction<String>> instanceExtraParams,

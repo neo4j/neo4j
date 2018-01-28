@@ -25,17 +25,17 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -84,6 +84,7 @@ import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -119,7 +120,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLoggingMonitor;
@@ -164,8 +165,6 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
-
-import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
 {
@@ -330,7 +329,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.accessCapability = accessCapability;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
 
-        readOnly = config.get( Configuration.read_only );
+        readOnly = config.get( GraphDatabaseSettings.read_only );
         this.idController = idController;
         this.operationalMode = operationalMode;
         msgLog = logProvider.getLog( getClass() );
@@ -410,7 +409,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
-        RecordFormats formats = selectStoreFormats( config, storeDir, fs, pageCache, logService );
+        RecordFormats formats = selectStoreFormats( config, storeDir, pageCache, logService );
         upgradeStore( formats, tailScanner );
 
         // Build all modules and their services
@@ -528,8 +527,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         databaseHealth.healed();
     }
 
-    private static RecordFormats selectStoreFormats( Config config, File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, LogService logService )
+    private static RecordFormats selectStoreFormats( Config config, File storeDir, PageCache pageCache, LogService logService )
     {
         LogProvider logging = logService.getInternalLogProvider();
         RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, pageCache, logging );
@@ -584,11 +582,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         {
             config.augmentDefaults( GraphDatabaseSettings.keep_logical_logs, "1 files" );
         }
-        String pruningConf = config.get( GraphDatabaseSettings.keep_logical_logs );
 
-        LogPruneStrategy logPruneStrategy = fromConfigValue( fs, logFiles, clock, pruningConf );
-
-        final LogPruning logPruning = new LogPruningImpl( fs, logPruneStrategy, logFiles, logProvider );
+        final LogPruning logPruning = new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config );
 
         final LogRotation logRotation =
                 new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFiles, databaseHealth );
@@ -641,18 +636,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender, IndexingService indexingService,
             StoreReadLayer storeLayer, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
-            AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor ) throws KernelException, IOException
+            AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor )
     {
-        CpuClock cpuClock = CpuClock.NOT_AVAILABLE;
-        if ( config.get( GraphDatabaseSettings.track_query_cpu_time ) )
-        {
-            cpuClock = CpuClock.CPU_CLOCK;
-        }
-        HeapAllocation heapAllocation = HeapAllocation.NOT_AVAILABLE;
-        if ( config.get( GraphDatabaseSettings.track_query_allocation ) )
-        {
-            heapAllocation = HeapAllocation.HEAP_ALLOCATION;
-        }
+        AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
+        AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
 
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
                 config );
@@ -664,26 +651,28 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         Supplier<InwardKernel> kernelProvider = () -> kernelModule.kernelAPI();
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
-                propertyAccessor );
+                propertyAccessor, monitors );
 
         ExplicitIndexStore explicitIndexStore = new ExplicitIndexStore( config,
                 indexConfigStore, kernelProvider, explicitIndexProviderLookup );
 
         StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClock, heapAllocation ) );
+                        constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
+        KernelToken token = new KernelToken( storageEngine.storeReadLayer() );
+
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
-                cpuClock, heapAllocation, accessCapability, new Cursors(), autoIndexing, explicitIndexStore ) );
+                cpuClockRef, heapAllocationRef, accessCapability, token, new Cursors(), autoIndexing, explicitIndexStore ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
-                config, storageEngine );
+                config, storageEngine, token );
 
         kernel.registerTransactionHook( transactionEventHandlers );
         life.add( kernel );
@@ -692,6 +681,44 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 indexingService, explicitIndexProviderLookup, storageEngine );
 
         return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
+    }
+
+    private AtomicReference<CpuClock> setupCpuClockAtomicReference()
+    {
+        AtomicReference<CpuClock> cpuClock = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
+        BiConsumer<Boolean,Boolean> cpuClockUpdater = ( before, after ) ->
+        {
+            if ( after )
+            {
+                cpuClock.set( CpuClock.CPU_CLOCK );
+            }
+            else
+            {
+                cpuClock.set( CpuClock.NOT_AVAILABLE );
+            }
+        };
+        cpuClockUpdater.accept( null, config.get( GraphDatabaseSettings.track_query_cpu_time ) );
+        config.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
+        return cpuClock;
+    }
+
+    private AtomicReference<HeapAllocation> setupHeapAllocationAtomicReference()
+    {
+        AtomicReference<HeapAllocation> heapAllocation = new AtomicReference<>( HeapAllocation.NOT_AVAILABLE );
+        BiConsumer<Boolean,Boolean> heapAllocationUpdater = ( before, after ) ->
+        {
+            if ( after )
+            {
+                heapAllocation.set( HeapAllocation.HEAP_ALLOCATION );
+            }
+            else
+            {
+                heapAllocation.set( HeapAllocation.NOT_AVAILABLE );
+            }
+        };
+        heapAllocationUpdater.accept( null, config.get( GraphDatabaseSettings.track_query_allocation ) );
+        config.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_allocation, heapAllocationUpdater );
+        return heapAllocation;
     }
 
     private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
@@ -801,7 +828,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private StatementOperationParts buildStatementOperations( StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
-            ExplicitIndexStore explicitIndexStore, CpuClock cpuClock, HeapAllocation heapAllocation )
+            ExplicitIndexStore explicitIndexStore, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
         // To it we add:
@@ -810,7 +837,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 autoIndexing, constraintIndexCreator, explicitIndexStore );
 
         QueryRegistrationOperations queryRegistrationOperations =
-                new StackingQueryRegistrationOperations( clock, cpuClock, heapAllocation );
+                new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef );
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
@@ -885,12 +912,4 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         return life;
     }
-
-    @SuppressWarnings( "deprecation" )
-    public abstract static class Configuration
-    {
-        public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
-        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-    }
-
 }

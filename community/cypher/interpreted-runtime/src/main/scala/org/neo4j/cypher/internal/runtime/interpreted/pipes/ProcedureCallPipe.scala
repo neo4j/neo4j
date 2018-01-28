@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.values.AnyValue
@@ -45,7 +45,7 @@ case class ProcedureCallPipe(source: Pipe,
                              rowProcessing: ProcedureCallRowProcessing,
                              resultSymbols: Seq[(String, CypherType)],
                              resultIndices: Seq[(Int, String)])
-                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                            (val id: Id = Id.INVALID_ID)
 
   extends PipeWithSource(source) {
 

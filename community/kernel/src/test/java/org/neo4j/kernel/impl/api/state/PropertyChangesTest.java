@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.api.state;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
-import java.util.Set;
-
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 
 public class PropertyChangesTest
 {
@@ -43,16 +43,16 @@ public class PropertyChangesTest
         changes.removeProperty( 2L, 2, "to" );
 
         // When & Then
-        assertThat( changes.changesForProperty( 2, "to" ), isDiffSets( asSet( 1L ), asSet( 2L ) ) );
+        assertThat( changes.changesForProperty( 2, "to" ), isDiffSets( setOf( 1L ), setOf( 2L ) ) );
 
-        assertThat( changes.changesForProperty( 3, "from" ), isDiffSets( asSet( 1L ), null ) );
+        assertThat( changes.changesForProperty( 3, "from" ), isDiffSets( setOf( 1L ), emptySet() ) );
 
-        assertThat( changes.changesForProperty( 2, "from" ), isDiffSets( null, asSet( 1L ) ) );
+        assertThat( changes.changesForProperty( 2, "from" ), isDiffSets( emptySet(), setOf( 1L ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<? super ReadableDiffSets<Long>> isDiffSets( Set<Long> added, Set<Long> removed )
+    private Matcher<? super PrimitiveLongReadableDiffSets> isDiffSets( PrimitiveLongSet added, PrimitiveLongSet removed )
     {
-        return (Matcher) equalTo( new DiffSets<Long>( added, removed ) );
+        return (Matcher) equalTo( new PrimitiveLongDiffSets( added, removed ) );
     }
 }

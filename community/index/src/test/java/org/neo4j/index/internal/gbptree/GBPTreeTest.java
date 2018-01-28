@@ -29,8 +29,10 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -50,10 +52,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.DelegatingPageCache;
@@ -624,6 +624,21 @@ public class GBPTreeTest
         verifyHeader( pageCache, expectedHeader );
     }
 
+    @Test( timeout = 10_000 )
+    public void writeHeaderInDirtyTreeMustNotDeadlock() throws Exception
+    {
+        PageCache pageCache = createPageCache( 256 );
+        makeDirty( pageCache );
+
+        Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.IGNORE ).build() )
+        {
+            index.checkpoint( IOLimiter.unlimited(), headerWriter );
+        }
+
+        verifyHeader( pageCache, "failed".getBytes() );
+    }
+
     private void verifyHeader( PageCache pageCache, byte[] expectedHeader ) throws IOException
     {
         // WHEN
@@ -665,6 +680,110 @@ public class GBPTreeTest
         catch ( NoSuchFileException e )
         {
             // good
+        }
+    }
+
+    @Test
+    public void openWithReadHeaderMustThrowIOExceptionIfFileIsEmpty() throws Exception
+    {
+        openMustThrowIOExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void openWithConstructorMustThrowIOExceptionIfFileIsEmpty() throws Exception
+    {
+        openMustThrowIOExceptionIfFileIsEmpty( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowIOExceptionIfFileIsEmpty( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    {
+        // given an existing empty file
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        pageCache.map( indexFile, pageCache.pageSize(), StandardOpenOption.CREATE ).close();
+
+        // when
+        try
+        {
+            opener.accept( pageCache );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( IOException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void readHeaderMustThrowIOExceptionIfSomeMetaPageIsMissing() throws Exception
+    {
+        openMustThrowIOExceptionIfSomeMetaPageIsMissing(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void constructorMustThrowIOExceptionIfSomeMetaPageIsMissing() throws Exception
+    {
+        openMustThrowIOExceptionIfSomeMetaPageIsMissing( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowIOExceptionIfSomeMetaPageIsMissing( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    {
+        // given an existing index with only the first page in it
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {   // Just for creating it
+        }
+        fs.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
+
+        // when
+        try
+        {
+            opener.accept( pageCache );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( IOException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
+    {
+        openMustThrowIOExceptionIfStatePagesAreAllZeros(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void constructorMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
+    {
+        openMustThrowIOExceptionIfStatePagesAreAllZeros( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowIOExceptionIfStatePagesAreAllZeros( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    {
+        // given an existing index with all-zero state pages
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {   // Just for creating it
+        }
+        fs.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
+        try ( OutputStream out = fs.openAsOutputStream( indexFile, true ) )
+        {
+            byte[] allZeroPage = new byte[DEFAULT_PAGE_SIZE];
+            out.write( allZeroPage ); // page A
+            out.write( allZeroPage ); // page B
+        }
+
+        // when
+        try
+        {
+            opener.accept( pageCache );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( IOException e )
+        {
+            // then good
         }
     }
 
@@ -1105,115 +1224,6 @@ public class GBPTreeTest
         }
     }
 
-    // todo checkpointMustRecognizeFailedCleaning
-
-    /* Insertion and read tests */
-
-    @Test
-    public void shouldSeeSimpleInsertions() throws Exception
-    {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            int count = 1000;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    writer.put( new MutableLong( i ), new MutableLong( i ) );
-                }
-            }
-
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    assertTrue( cursor.next() );
-                    assertEquals( i, cursor.get().key().longValue() );
-                }
-                assertFalse( cursor.next() );
-            }
-        }
-    }
-
-    @Test
-    public void shouldSeeSimpleInsertionsWithExactMatch() throws Exception
-    {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            int count = 1000;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    writer.put( new MutableLong( i ), new MutableLong( i ) );
-                }
-            }
-
-            for ( int i = 0; i < count; i++ )
-            {
-                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                              index.seek( new MutableLong( i ), new MutableLong( i ) ) )
-                {
-                    assertTrue( cursor.next() );
-                    assertEquals( i, cursor.get().key().longValue() );
-                    assertFalse( cursor.next() );
-                }
-            }
-        }
-    }
-
-    /* Randomized tests */
-
-    @Test
-    public void shouldSplitCorrectly() throws Exception
-    {
-        // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            // WHEN
-            int count = 1_000;
-            PrimitiveLongSet seen = Primitive.longSet( count );
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    MutableLong key;
-                    do
-                    {
-                        key = new MutableLong( random.nextInt( 100_000 ) );
-                    }
-                    while ( !seen.add( key.longValue() ) );
-                    MutableLong value = new MutableLong( i );
-                    writer.put( key, value );
-                    seen.add( key.longValue() );
-                }
-            }
-
-            // THEN
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
-            {
-                long prev = -1;
-                while ( cursor.next() )
-                {
-                    MutableLong hit = cursor.get().key();
-                    if ( hit.longValue() < prev )
-                    {
-                        fail( hit + " smaller than prev " + prev );
-                    }
-                    prev = hit.longValue();
-                    assertTrue( seen.remove( hit.longValue() ) );
-                }
-
-                if ( !seen.isEmpty() )
-                {
-                    fail( "expected hits " + Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
-                }
-            }
-        }
-    }
-
     /* Checkpoint tests */
 
     @Test
@@ -1604,8 +1614,15 @@ public class GBPTreeTest
             CleanupJob job;
             while ( (job = jobs.poll()) != null )
             {
-                job.run();
-                startedJobs.add( job );
+                try
+                {
+                    job.run();
+                    startedJobs.add( job );
+                }
+                finally
+                {
+                    job.close();
+                }
             }
         }
 
@@ -1688,7 +1705,12 @@ public class GBPTreeTest
 
     private void makeDirty() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        makeDirty( createPageCache( DEFAULT_PAGE_SIZE ) );
+    }
+
+    private void makeDirty( PageCache pageCache ) throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
         {
             // Make dirty
             index.writer().close();

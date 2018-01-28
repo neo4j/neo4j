@@ -285,7 +285,7 @@ public class Ls extends TransactionProvidingApp
             while ( iterator.hasNext() )
             {
                 Relationship rel = iterator.next();
-                StringBuffer buf = new StringBuffer( getDisplayName(
+                StringBuilder buf = new StringBuilder( getDisplayName(
                         getServer(), session, thing, true ) );
                 String relDisplay = quiet ? "" : getDisplayName( getServer(), session, rel, verbose, true );
                 buf.append( withArrows( rel, relDisplay, thing.asNode() ) );

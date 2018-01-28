@@ -41,7 +41,7 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
@@ -106,23 +106,23 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeEdgeReference( long edgeId ) throws RuntimeException
+    public void writeRelationshipReference( long relId ) throws RuntimeException
     {
         throw new UnsupportedOperationException( "Cannot write a raw edge reference" );
     }
 
     @Override
-    public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
             throws RuntimeException
     {
-        if ( edgeId >= 0 )
+        if ( relId >= 0 )
         {
-            writeValue( newRelationshipProxyById( edgeId ) );
+            writeValue( newRelationshipProxyById( relId ) );
         }
     }
 
     @Override
-    public void writeVirtualEdgeHack( Object relationship )
+    public void writeVirtualRelationshipHack( Object relationship )
     {
         writeValue( relationship );
     }
@@ -154,22 +154,22 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws RuntimeException
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws RuntimeException
     {
         assert nodes != null;
         assert nodes.length > 0;
-        assert edges != null;
-        assert nodes.length == edges.length + 1;
+        assert relationships != null;
+        assert nodes.length == relationships.length + 1;
 
         Node[] nodeProxies = new Node[nodes.length];
         for ( int i = 0; i < nodes.length; i++ )
         {
             nodeProxies[i] = newNodeProxyById( nodes[i].id() );
         }
-        Relationship[] relationship = new Relationship[edges.length];
-        for ( int i = 0; i < edges.length; i++ )
+        Relationship[] relationship = new Relationship[relationships.length];
+        for ( int i = 0; i < relationships.length; i++ )
         {
-            relationship[i] = newRelationshipProxyById( edges[i].id() );
+            relationship[i] = newRelationshipProxyById( relationships[i].id() );
         }
         writeValue( new Path()
         {

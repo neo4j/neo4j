@@ -21,20 +21,18 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object projection {
 
-  def apply(in: LogicalPlan, projs: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
+  def apply(in: LogicalPlan, projs: Map[String, Expression], context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
 
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs, context)
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs, context, solveds, cardinalities)
 
     val ids = plan.availableSymbols
 
-    val projectAllCoveredIds: Set[(String, Expression)] = ids.map {
-      case IdName(id) => id -> Variable(id)(null)
-    }
+    val projectAllCoveredIds: Set[(String, Expression)] = ids.map(id => id -> Variable(id)(null))
     val projections: Set[(String, Expression)] = projectionsMap.toIndexedSeq.toSet
 
     if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds) {

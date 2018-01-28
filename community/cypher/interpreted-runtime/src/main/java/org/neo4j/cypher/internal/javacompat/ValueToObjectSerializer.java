@@ -23,29 +23,29 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
 public class ValueToObjectSerializer extends BaseToObjectValueWriter<RuntimeException>
 {
-    private final NodeManager nodeManager;
-    public ValueToObjectSerializer( NodeManager nodeManager )
+    private final EmbeddedProxySPI proxySPI;
+    public ValueToObjectSerializer( EmbeddedProxySPI proxySPI )
     {
         super();
-        this.nodeManager = nodeManager;
+        this.proxySPI = proxySPI;
     }
 
     @Override
     protected Node newNodeProxyById( long id )
     {
-        return nodeManager.newNodeProxyById( id );
+        return proxySPI.newNodeProxy( id );
     }
 
     @Override
     protected Relationship newRelationshipProxyById( long id )
     {
-        return nodeManager.newRelationshipProxyById( id );
+        return proxySPI.newRelationshipProxy( id );
     }
 
     @Override

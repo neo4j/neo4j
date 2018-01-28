@@ -313,6 +313,11 @@ public class Randoms
         }
     }
 
+    public long nextLong()
+    {
+        return random.nextLong();
+    }
+
     public long nextLong( long bound )
     {
         return abs( random.nextLong() ) % bound;

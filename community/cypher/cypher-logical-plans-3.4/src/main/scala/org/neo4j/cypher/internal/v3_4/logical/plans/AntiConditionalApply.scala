@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * AntiConditionalApply works like ConditionalApply, but with reversed condition.
@@ -35,11 +35,11 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *   }
   * }
   */
-case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[String])(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(left)
   override val rhs = Some(right)
 
-  override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols ++ items
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols ++ items
 }
