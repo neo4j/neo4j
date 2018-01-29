@@ -35,10 +35,10 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 @SuppressWarnings("unchecked")
 class TrackingResponseHandler implements CatchUpResponseHandler
 {
+    private CatchUpResponseCallback delegate;
+    private CompletableFuture<?> requestOutcomeSignal = new CompletableFuture<>();
     private final Clock clock;
-    private volatile CatchUpResponseCallback delegate;
-    private volatile CompletableFuture<?> requestOutcomeSignal = new CompletableFuture<>();
-    private volatile Long lastResponseTime;
+    private Long lastResponseTime;
 
     TrackingResponseHandler( CatchUpResponseCallback delegate, Clock clock )
     {

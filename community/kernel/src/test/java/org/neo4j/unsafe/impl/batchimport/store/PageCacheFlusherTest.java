@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl;
+package org.neo4j.unsafe.impl.batchimport.store;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,9 +32,6 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-/**
- * This test is in the kernel module because the OtherThreadRule is really convenient here.
- */
 public class PageCacheFlusherTest
 {
     @Rule
@@ -46,12 +43,12 @@ public class PageCacheFlusherTest
         // GIVEN
         PageCache pageCache = mock( PageCache.class );
         Barrier.Control barrier = new Barrier.Control();
-        PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
         doAnswer( invocation ->
         {
             barrier.reached();
             return null;
-        } ).when( pageCache ).flushAndForce( flusher );
+        } ).when( pageCache ).flushAndForce();
+        PageCacheFlusher flusher = new PageCacheFlusher( pageCache );
         flusher.start();
 
         // WHEN
