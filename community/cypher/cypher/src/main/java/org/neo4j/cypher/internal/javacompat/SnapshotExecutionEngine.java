@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * {@link ExecutionEngine} engine that will try to run cypher query with guarantee that query will never see any data
@@ -50,6 +51,13 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     }
 
     @Override
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext context )
+            throws QueryExecutionKernelException
+    {
+        return executeWithRetries( query, parameters, context, super::executeQuery );
+    }
+
+    @Override
     public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
             throws QueryExecutionKernelException
     {
@@ -63,8 +71,8 @@ public class SnapshotExecutionEngine extends ExecutionEngine
         return executeWithRetries( query, parameters, context, super::profileQuery );
     }
 
-    protected Result executeWithRetries( String query, Map<String,Object> parameters, TransactionalContext context,
-            QueryExecutor executor ) throws QueryExecutionKernelException
+    protected <T> Result executeWithRetries( String query, T parameters, TransactionalContext context,
+            ParametrizedQueryExecutor<T> executor ) throws QueryExecutionKernelException
     {
         VersionContext versionContext = getCursorContext( context );
         EagerResult eagerResult;
@@ -105,9 +113,9 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     }
 
     @FunctionalInterface
-    protected interface QueryExecutor
+    protected interface ParametrizedQueryExecutor<T>
     {
-        Result execute( String query, Map<String,Object> parameters, TransactionalContext context ) throws QueryExecutionKernelException;
+        Result execute( String query, T parameters, TransactionalContext context ) throws QueryExecutionKernelException;
     }
 
 }

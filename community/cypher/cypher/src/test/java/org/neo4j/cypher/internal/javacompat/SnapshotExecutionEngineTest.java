@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.Map;
 
 import org.neo4j.cypher.internal.CompatibilityFactory;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
@@ -57,7 +56,7 @@ public class SnapshotExecutionEngineTest
     private CompatibilityFactory compatibilityFactory;
     private TestSnapshotExecutionEngine executionEngine;
     private VersionContext versionContext;
-    private SnapshotExecutionEngine.QueryExecutor executor;
+    private SnapshotExecutionEngine.ParametrizedQueryExecutor executor;
     private TransactionalContext transactionalContext;
     private final Config config = Config.defaults();
 
@@ -69,7 +68,7 @@ public class SnapshotExecutionEngineTest
         compatibilityFactory = mock( CompatibilityFactory.class );
         transactionalContext = mock( TransactionalContext.class );
         KernelStatement kernelStatement = mock( KernelStatement.class );
-        executor = mock( SnapshotExecutionEngine.QueryExecutor.class );
+        executor = mock( SnapshotExecutionEngine.ParametrizedQueryExecutor.class );
         versionContext = mock( VersionContext.class );
 
         executionEngine = createExecutionEngine(cypherService);
@@ -128,8 +127,8 @@ public class SnapshotExecutionEngineTest
         }
 
         @Override
-        public Result executeWithRetries( String query, Map<String,Object> parameters, TransactionalContext context,
-                QueryExecutor executor ) throws QueryExecutionKernelException
+        public <T> Result executeWithRetries( String query, T parameters, TransactionalContext context,
+                ParametrizedQueryExecutor<T> executor ) throws QueryExecutionKernelException
         {
             return super.executeWithRetries( query, parameters, context, executor );
         }
