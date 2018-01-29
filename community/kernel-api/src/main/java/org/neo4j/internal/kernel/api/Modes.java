@@ -19,16 +19,15 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
-
 /**
- * The Kernel.
+ * Define Kernel modes.
  */
-public interface Kernel
+public interface Modes
 {
-    CursorFactory cursors();
-
-    Session beginSession( SecurityContext securityContext );
-
-    Modes modes();
+    /**
+     * True if the kernel supports the two-layer transaction state. If false, both {@link Transaction#dataRead()}
+     * and {@link Transaction#stableDataRead()} will refer to the same active instance, and
+     * {@link Transaction#markAsStable()} will be ignored.
+     */
+    boolean twoLayerTransactionState();
 }
