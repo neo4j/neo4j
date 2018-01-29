@@ -65,7 +65,7 @@ public class NumberSchemaIndexProviderTest
     private static final int propId = 1;
     private NumberSchemaIndexProvider provider;
     private final AssertableLogProvider logging = new AssertableLogProvider();
-    private SchemaIndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
+    private final SchemaIndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
 
     @Before
     public void setup() throws IOException
@@ -187,7 +187,7 @@ public class NumberSchemaIndexProviderTest
         // then
         try
         {
-            provider.getPopulationFailure( indexId );
+            provider.getPopulationFailure( indexId, descriptor() );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -219,7 +219,7 @@ public class NumberSchemaIndexProviderTest
         // then
         try
         {
-            provider.getPopulationFailure( nonFailedIndexId );
+            provider.getPopulationFailure( nonFailedIndexId, descriptor() );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -243,7 +243,7 @@ public class NumberSchemaIndexProviderTest
         populator.close( false );
 
         // then
-        String populationFailure = provider.getPopulationFailure( indexId );
+        String populationFailure = provider.getPopulationFailure( indexId, descriptor() );
         assertThat( populationFailure, is( failureMessage ) );
     }
 
@@ -272,11 +272,11 @@ public class NumberSchemaIndexProviderTest
         thirdPopulator.close( false );
 
         // then
-        assertThat( provider.getPopulationFailure( first ), is( firstFailure ) );
-        assertThat( provider.getPopulationFailure( third ), is( thirdFailure ) );
+        assertThat( provider.getPopulationFailure( first, descriptor() ), is( firstFailure ) );
+        assertThat( provider.getPopulationFailure( third, descriptor() ), is( thirdFailure ) );
         try
         {
-            provider.getPopulationFailure( second );
+            provider.getPopulationFailure( second, descriptor() );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -300,7 +300,7 @@ public class NumberSchemaIndexProviderTest
 
         // then
         provider = newProvider();
-        String populationFailure = provider.getPopulationFailure( indexId );
+        String populationFailure = provider.getPopulationFailure( indexId, descriptor() );
         assertThat( populationFailure, is( failureMessage ) );
     }
 

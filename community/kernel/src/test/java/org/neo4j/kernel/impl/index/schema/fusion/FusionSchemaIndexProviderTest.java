@@ -45,6 +45,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 
 public class FusionSchemaIndexProviderTest
 {
@@ -141,12 +142,12 @@ public class FusionSchemaIndexProviderTest
         // ... no failure
         IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenThrow( nativeThrow );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenThrow( luceneThrow );
+        when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
+        when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
         // then
         try
         {
-            fusionSchemaIndexProvider.getPopulationFailure( 0 );
+            fusionSchemaIndexProvider.getPopulationFailure( 0, null );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -163,10 +164,10 @@ public class FusionSchemaIndexProviderTest
         // ... native failure
         String nativeFailure = "native failure";
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( nativeFailure );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenThrow( luceneThrow );
+        when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( nativeFailure );
+        when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
         // then
-        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0 ), containsString( nativeFailure ) );
+        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( nativeFailure ) );
     }
 
     @Test
@@ -178,10 +179,10 @@ public class FusionSchemaIndexProviderTest
         // ... lucene failure
         String luceneFailure = "lucene failure";
         IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenThrow( nativeThrow );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( luceneFailure );
+        when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
+        when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( luceneFailure );
         // then
-        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0 ), containsString( luceneFailure ) );
+        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( luceneFailure ) );
     }
 
     @Test
@@ -193,10 +194,10 @@ public class FusionSchemaIndexProviderTest
         // ... native and lucene failure
         String luceneFailure = "lucene failure";
         String nativeFailure = "native failure";
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( nativeFailure );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( luceneFailure );
+        when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( nativeFailure );
+        when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( luceneFailure );
         // then
-        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0 );
+        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
         assertThat( populationFailure, containsString( nativeFailure ) );
         assertThat( populationFailure, containsString( luceneFailure ) );
     }

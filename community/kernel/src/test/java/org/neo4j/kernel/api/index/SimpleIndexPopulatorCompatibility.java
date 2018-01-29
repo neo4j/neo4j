@@ -74,7 +74,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             p.close( false );
 
             // THEN
-            assertThat( indexProvider.getPopulationFailure( 17 ), containsString( failure ) );
+            assertThat( indexProvider.getPopulationFailure( 17, descriptor ), containsString( failure ) );
         } );
     }
 
