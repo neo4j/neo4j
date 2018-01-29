@@ -26,7 +26,10 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.helpers.Numbers;
 import org.neo4j.io.pagecache.PageSwapper;
+
+import static org.neo4j.helpers.Numbers.safeCastLongToShort;
 
 /**
  * The SwapperSet maintains the set of allocated {@link PageSwapper}s, and their mapping to swapper ids.
@@ -98,8 +101,7 @@ final class SwapperSet
         {
             if ( !free.isEmpty() )
             {
-                //TODO safe cast
-                short id = (short) free.iterator().next();
+                short id = Numbers.safeCastIntToShort( free.iterator().next() );
                 free.remove( id );
                 swapperMappings[id] = new SwapperMapping( id, swapper );
                 this.swapperMappings = swapperMappings; // Volatile store synchronizes-with loads in getters.
@@ -108,7 +110,7 @@ final class SwapperSet
         }
 
         // No free slot was found above, so we extend the array to make room for a new slot.
-        short id = (short) swapperMappings.length;
+        short id = safeCastLongToShort( swapperMappings.length );
         if ( id + 1 > MAX_SWAPPER_ID )
         {
             throw new IllegalStateException( "All swapper ids are allocated: " + MAX_SWAPPER_ID );

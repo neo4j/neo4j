@@ -1379,6 +1379,20 @@ public class PageListTest
     }
 
     @Test
+    public void pageWith5BytesFilePageIdMustBeLoadedAndBoundAfterFault() throws Exception
+    {
+        // exclusive lock implied by constructor
+        short swapperId = 12;
+        long filePageId = Integer.MAX_VALUE + 1L;
+        pageList.initBuffer( pageRef );
+        pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
+        assertThat( pageList.getFilePageId( pageRef ), is( filePageId ) );
+        assertThat( pageList.getSwapperId( pageRef ), is( swapperId ) );
+        assertTrue( pageList.isLoaded( pageRef ) );
+        assertTrue( pageList.isBoundTo( pageRef, swapperId, filePageId ) );
+    }
+
+    @Test
     public void pageMustBeLoadedAndNotBoundIfFaultThrows() throws Exception
     {
         // exclusive lock implied by constructor
@@ -2045,6 +2059,14 @@ public class PageListTest
         }
         assertTrue( pageList.validateReadLock( prevPageRef, prevStamp ) );
         assertTrue( pageList.validateReadLock( nextPageRef, nextStamp ) );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void failToSetHigherThenSupportedFilePageIdOnFault() throws IOException
+    {
+        pageList.unlockExclusive( pageRef );
+        short swapperId = 2;
+        doFault( swapperId, Long.MAX_VALUE );
     }
 
     private void doFault( short swapperId, long filePageId ) throws IOException

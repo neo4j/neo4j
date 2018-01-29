@@ -42,10 +42,10 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
  *     <tr><th>Bytes</th><th>Use</th></tr>
  *     <tr><td>8</td><td>Sequence lock word.</td></tr>
  *     <tr><td>8</td><td>Pointer to the memory page.</td></tr>
- *     <tr><td>8</td><td>File page id.</td></tr>
  *     <tr><td>8</td><td>Last modified transaction id.</td></tr>
- *     <tr><td>2</td><td>Page swapper id.</td></tr>
+ *     <tr><td>5</td><td>File page id.</td></tr>
  *     <tr><td>1</td><td>Usage stamp. Optimistically incremented; truncated to a max of 4.</td></tr>
+ *     <tr><td>2</td><td>Page swapper id.</td></tr>
  * </table>
  */
 class PageList
@@ -53,17 +53,20 @@ class PageList
     private static final boolean forceSlowMemoryClear = flag( PageList.class, "forceSlowMemoryClear", false );
 
     private static final int UNBOUND_LAST_MODIFIED_TX_ID = -1;
+    private static final int UNSIGNED_BYTE_MASK = 0xFF;
+    private static final long UNSIGNED_INT_MASK = 0xFFFFFFFFL;
 
-    private static final int META_DATA_BYTES_PER_PAGE = 64; // to simplify
+    // 40 bits for file page id
+    private static final long MAX_FILE_PAGE_ID = 0b11111111_11111111_11111111_11111111_11111111L;
+
+    private static final int META_DATA_BYTES_PER_PAGE = 32;
     private static final int OFFSET_LOCK_WORD = 0; // 8 bytes
     private static final int OFFSET_ADDRESS = 8; // 8 bytes
-    private static final int OFFSET_FILE_PAGE_ID = 16; // 8 bytes
-    private static final int OFFSET_LAST_TX_ID = 24; // 8 bytes
-    private static final int OFFSET_SWAPPER_ID = 32; // 2 bytes
-    private static final int OFFSET_USAGE_COUNTER = 34; // 1 byte
-    // todo it's possible to reduce the overhead of the individual page to just 24 bytes,
-    // todo because the file page id can be represented with 5 bytes (enough to address 8-4 PBs),
-    // todo and then the usage counter can use the high bits of that word
+    private static final int OFFSET_LAST_TX_ID = 16; // 8 bytes
+    private static final int OFFSET_FILE_PAGE_ID = 24; // 5 bytes
+    private static final int OFFSET_USAGE_COUNTER = 29; // 1 byte
+    private static final int OFFSET_SWAPPER_ID = 30; // 2 bytes
+
     // todo we can alternatively also make use of the lower 12 bits of the address field, because
     // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
 
@@ -144,17 +147,13 @@ class PageList
 
     private void clearMemorySimple( long baseAddress, long pageCount )
     {
-        long address = baseAddress - 8;
+        long address = baseAddress - Long.BYTES;
         for ( long i = 0; i < pageCount; i++ )
         {
-            UnsafeUtil.putLong( address += 8, OffHeapPageLock.initialLockWordWithExclusiveLock() ); // lock word
-            UnsafeUtil.putLong( address += 8, 0 ); // pointer
-            UnsafeUtil.putLong( address += 8, PageCursor.UNBOUND_PAGE_ID ); // file page id
-            UnsafeUtil.putLong( address += 8, 0 ); // rest
-            UnsafeUtil.putLong( address += 8, 0 ); // rest
-            UnsafeUtil.putLong( address += 8, 0 ); // rest
-            UnsafeUtil.putLong( address += 8, 0 ); // rest
-            UnsafeUtil.putLong( address += 8, 0 ); // rest
+            UnsafeUtil.putLong( address += Long.BYTES, OffHeapPageLock.initialLockWordWithExclusiveLock() ); // lock word
+            UnsafeUtil.putLong( address += Long.BYTES, 0 ); // pointer
+            UnsafeUtil.putLong( address += Long.BYTES, 0 ); // last tx id
+            UnsafeUtil.putLong( address += Long.BYTES, MAX_FILE_PAGE_ID );
         }
     }
 
@@ -205,7 +204,7 @@ class PageList
     public int toId( long pageRef )
     {
         // >> 5 is equivalent to dividing by 32, META_DATA_BYTES_PER_PAGE.
-        return (int) ((pageRef - baseAddress) >> 6);
+        return (int) ((pageRef - baseAddress) >> 5);
     }
 
     private long offLastModifiedTransactionId( long pageRef )
@@ -363,12 +362,22 @@ class PageList
 
     public long getFilePageId( long pageRef )
     {
-        return UnsafeUtil.getLong( offFilePageId( pageRef ) );
+        int highByte = UnsafeUtil.getByte( offFilePageId( pageRef ) ) & UNSIGNED_BYTE_MASK;
+        long lowInt = UnsafeUtil.getInt( offFilePageId( pageRef ) + Byte.BYTES ) & UNSIGNED_INT_MASK;
+        long filePageId = (((long) highByte) << Integer.SIZE) | lowInt;
+        return filePageId == MAX_FILE_PAGE_ID ? PageCursor.UNBOUND_PAGE_ID : filePageId;
     }
 
     private void setFilePageId( long pageRef, long filePageId )
     {
-        UnsafeUtil.putLong( offFilePageId( pageRef ), filePageId );
+        if ( filePageId > MAX_FILE_PAGE_ID )
+        {
+            throw new IllegalArgumentException(
+                    format( "File page id: %s is bigger then max supported value %s.", filePageId, MAX_FILE_PAGE_ID ) );
+        }
+        byte highByte = (byte) (filePageId >> Integer.SIZE);
+        UnsafeUtil.putByte( offFilePageId( pageRef ), highByte );
+        UnsafeUtil.putInt( offFilePageId( pageRef ) + Byte.BYTES, (int) filePageId );
     }
 
     long getLastModifiedTxId( long pageRef )
@@ -377,7 +386,7 @@ class PageList
     }
 
     /**
-     * @return return last modifier transsaction id and resets it to {@link #UNBOUND_LAST_MODIFIED_TX_ID}
+     * @return return last modifier transaction id and resets it to {@link #UNBOUND_LAST_MODIFIED_TX_ID}
      */
     long getAndResetLastModifiedTransactionId( long pageRef )
     {

@@ -77,7 +77,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected int recordSize = 9;
     protected int maxPages = 20;
-    protected int pageCachePageSize = 64;
+    protected int pageCachePageSize = 32;
     protected int recordsPerFilePage = pageCachePageSize / recordSize;
     protected int recordCount = 25 * maxPages * recordsPerFilePage;
     protected int filePageSize = recordsPerFilePage * recordSize;
