@@ -171,44 +171,44 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     else tokenWrite.labelGetOrCreateForName(labelName)
   }
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue] = {
+  private def selectRelationships(nodeCursor: NodeCursor, dir: SemanticDirection, types: Option[Array[Int]]) = {
+    val cursors = transactionalContext.kernelTransaction.cursors()
+    if (nodeCursor.isDense) {
+      val groupCursor = cursors.allocateRelationshipGroupCursor()
+      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
+      val denseSelectionCursor = new RelationshipDenseSelectionCursor()
+      dir match {
+        case OUTGOING => denseSelectionCursor.outgoing(groupCursor, traversalCursor, types.orNull)
+        case INCOMING => denseSelectionCursor.incoming(groupCursor, traversalCursor, types.orNull)
+        case BOTH => denseSelectionCursor.all(groupCursor, traversalCursor, types.orNull)
+      }
+      denseSelectionCursor
+    } else {
+      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
+      val sparseSelectionCursor = new RelationshipSparseSelectionCursor()
+      dir match {
+        case OUTGOING => sparseSelectionCursor.outgoing(traversalCursor, types.orNull)
+        case INCOMING => sparseSelectionCursor.incoming(traversalCursor, types.orNull)
+        case BOTH => sparseSelectionCursor.all(traversalCursor, types.orNull)
+      }
+      sparseSelectionCursor
+    }
+  }
+
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection,
+                             types: Option[Array[Int]]): Iterator[RelationshipValue] = {
     val read = reads()
     read.singleNode(node, nodeCursor)
     if (!nodeCursor.next()) return Iterator.empty
 
-    val cursors = transactionalContext.kernelTransaction.cursors
+    val selectionCursor = selectRelationships(nodeCursor, dir, types)
+    new CursorIterator[RelationshipValue] {
+      override protected def close(): Unit = selectionCursor.close()
 
-    if (nodeCursor.isDense) {
-      val groupCursor = cursors.allocateRelationshipGroupCursor()
-      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
-      val selectionCursor = new RelationshipDenseSelectionCursor()
-      dir match {
-        case OUTGOING => selectionCursor.outgoing(groupCursor, traversalCursor, types.orNull)
-        case INCOMING => selectionCursor.incoming(groupCursor, traversalCursor, types.orNull)
-        case BOTH => selectionCursor.all(groupCursor, traversalCursor, types.orNull)
-      }
-      new CursorIterator[RelationshipValue] {
-        override protected def close(): Unit = selectionCursor.close()
-        override protected def fetchNext(): RelationshipValue =
-          if (selectionCursor.next())
-            fromRelationshipProxy(entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference()))
-          else null
-      }
-    } else {
-      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
-      val selectionCursor = new RelationshipSparseSelectionCursor()
-      dir match {
-        case OUTGOING => selectionCursor.outgoing(traversalCursor, types.orNull)
-        case INCOMING => selectionCursor.incoming(traversalCursor, types.orNull)
-        case BOTH => selectionCursor.all(traversalCursor, types.orNull)
-      }
-      new CursorIterator[RelationshipValue] {
-        override protected def close(): Unit = selectionCursor.close()
-        override protected def fetchNext(): RelationshipValue =
-          if (selectionCursor.next())
-            fromRelationshipProxy(entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference()))
-          else null
-      }
+      override protected def fetchNext(): RelationshipValue =
+        if (selectionCursor.next())
+          fromRelationshipProxy(entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference()))
+        else null
     }
   }
 
@@ -217,30 +217,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val read = reads()
     read.singleNode(node, nodeCursor)
     if (!nodeCursor.next()) return RelationshipIterator.EMPTY
+    val selectionCursor = selectRelationships(nodeCursor, dir, types)
 
-    val cursors = transactionalContext.kernelTransaction.cursors
-
-    if (nodeCursor.isDense) {
-      val groupCursor = cursors.allocateRelationshipGroupCursor()
-      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
-      val selectionCursor = new RelationshipDenseSelectionCursor()
-      dir match {
-        case OUTGOING => selectionCursor.outgoing(groupCursor, traversalCursor, types.orNull)
-        case INCOMING => selectionCursor.incoming(groupCursor, traversalCursor, types.orNull)
-        case BOTH => selectionCursor.all(groupCursor, traversalCursor, types.orNull)
-      }
-      new RelationShipCursorIterator(selectionCursor)
-
-    } else {
-      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
-      val selectionCursor = new RelationshipSparseSelectionCursor()
-      dir match {
-        case OUTGOING => selectionCursor.outgoing(traversalCursor, types.orNull)
-        case INCOMING => selectionCursor.incoming(traversalCursor, types.orNull)
-        case BOTH => selectionCursor.all(traversalCursor, types.orNull)
-      }
-      new RelationShipCursorIterator(selectionCursor)
-    }
+    new RelationShipCursorIterator(selectionCursor)
   }
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long,
