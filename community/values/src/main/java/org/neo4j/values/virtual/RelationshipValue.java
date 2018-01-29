@@ -26,7 +26,7 @@ import static java.lang.String.format;
 
 public abstract class RelationshipValue extends VirtualRelationshipValue
 {
-    private final long id;
+    protected long id;
 
     protected RelationshipValue( long id )
     {

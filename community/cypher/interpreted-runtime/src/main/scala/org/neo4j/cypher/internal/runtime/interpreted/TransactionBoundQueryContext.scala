@@ -58,11 +58,10 @@ import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, RelationshipProxy, ThreadTo
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
-import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
+import org.neo4j.kernel.impl.util.{CoreNodeWrappingNodeValue, CoreRelationshipWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value, Values}
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -176,7 +175,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case Some(typeIds) =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds)
     }
-    new BeansAPIRelationshipIterator(relationships, entityAccessor).map(fromRelationshipProxy)
+    new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection,
@@ -190,7 +189,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long,
                                   endNodeId: Long): RelationshipValue = try {
-    fromRelationshipProxy(entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId))
+    entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId)
   } catch {
     case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
   }
@@ -427,8 +426,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def asObject(value: AnyValue): Any = {
     value match {
-      case node: NodeProxyWrappingNodeValue => node.nodeProxy
-      case edge: RelationshipProxyWrappingValue => edge.relationshipProxy
+      case node: Node => node
+      case edge: Relationship => edge
+      case node: CoreNodeWrappingNodeValue => node.nodeProxy
+      case edge: CoreRelationshipWrappingValue => edge.relationshipProxy
       case _ =>
 
         val converter = new ValueToObjectSerializer(entityAccessor)
@@ -506,7 +507,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getById(id: Long): NodeValue = try {
-      fromNodeProxy(entityAccessor.newNodeProxy(id))
+      entityAccessor.newNodeProxy(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
@@ -568,7 +569,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def getByIdIfExists(id: Long): Option[NodeValue] =
       if (transactionalContext.statement.readOperations().nodeExists(id))
-        Some(fromNodeProxy(entityAccessor.newNodeProxy(id)))
+        Some(entityAccessor.newNodeProxy(id))
       else
         None
   }
@@ -623,7 +624,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getById(id: Long): RelationshipValue = try {
-      fromRelationshipProxy(entityAccessor.newRelationshipProxy(id))
+      entityAccessor.newRelationshipProxy(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
@@ -635,7 +636,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
           relationship = entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId)
         }
       })
-      Option(fromRelationshipProxy(relationship))
+      Option(relationship)
     } catch {
       case _: exceptions.EntityNotFoundException => None
     }
@@ -1011,7 +1012,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     private var _next: NodeValue = fetchNext()
 
     private def fetchNext() = {
-      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+      if (nodeCursor.next()) entityAccessor.newNodeProxy(nodeCursor.nodeReference())
       else null
     }
 
@@ -1036,7 +1037,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     private var _next: NodeValue = fetchNext()
 
     private def fetchNext() = {
-      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+      if (nodeCursor.next()) entityAccessor.newNodeProxy(nodeCursor.nodeReference())
       else null
     }
 
@@ -1061,7 +1062,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     private var _next: NodeValue = fetchNext()
 
     private def fetchNext() = {
-      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+      if (nodeCursor.next()) entityAccessor.newNodeProxy(nodeCursor.nodeReference())
       else null
     }
 

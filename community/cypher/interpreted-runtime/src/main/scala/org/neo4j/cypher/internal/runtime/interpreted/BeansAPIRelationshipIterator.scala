@@ -19,19 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI
+import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, RelationshipProxy}
 
 /**
   * Converts a RelationshipIterator coming from the Kernel API into an Iterator[Relationship] while
   * still sticking to the fact that each relationship record is only loaded once.
   */
 class BeansAPIRelationshipIterator(relationships: RelationshipIterator,
-                                   nodeManager: EmbeddedProxySPI) extends Iterator[Relationship] {
+                                   nodeManager: EmbeddedProxySPI) extends Iterator[RelationshipProxy] {
 
-  private var nextRelationship: Relationship = null
+  private var nextRelationship: RelationshipProxy = null
   private val visitor = new RelationshipVisitor[RuntimeException] {
     override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long) {
       nextRelationship = nodeManager.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId)
@@ -40,7 +39,7 @@ class BeansAPIRelationshipIterator(relationships: RelationshipIterator,
 
   override def hasNext: Boolean = relationships.hasNext
 
-  override def next(): Relationship = {
+  override def next(): RelationshipProxy = {
     if (hasNext) {
       val relationshipId = relationships.next()
       relationships.relationshipVisit(relationshipId, visitor)

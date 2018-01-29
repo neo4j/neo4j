@@ -46,6 +46,13 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 
@@ -220,19 +227,17 @@ public class SchemaProcedure
         return graphResult;
     }
 
-    private static class VirtualRelationshipHack implements Relationship
+    private static class VirtualRelationshipHack extends RelationshipValue implements Relationship
     {
-
         private static AtomicLong MIN_ID = new AtomicLong( -1 );
 
-        private final long id;
         private final Node startNode;
         private final Node endNode;
         private final RelationshipType relationshipType;
 
         VirtualRelationshipHack( final VirtualNodeHack startNode, final VirtualNodeHack endNode, final String type )
         {
-            this.id = MIN_ID.getAndDecrement();
+            super( MIN_ID.getAndDecrement() );
             this.startNode = startNode;
             this.endNode = endNode;
             relationshipType = () -> type;
@@ -293,6 +298,24 @@ public class SchemaProcedure
         }
 
         @Override
+        public long getStartNodeId()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getEndNodeId()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getOtherNodeId( long id )
+        {
+            return 0;
+        }
+
+        @Override
         public GraphDatabaseService getGraphDatabase()
         {
             return null;
@@ -345,20 +368,43 @@ public class SchemaProcedure
         {
             return String.format( "VirtualRelationshipHack[%s]", id );
         }
+
+        @Override
+        public NodeValue startNode()
+        {
+            return null;
+        }
+
+        @Override
+        public NodeValue endNode()
+        {
+            return null;
+        }
+
+        @Override
+        public TextValue type()
+        {
+            return null;
+        }
+
+        @Override
+        public MapValue properties()
+        {
+            return null;
+        }
     }
 
-    private static class VirtualNodeHack implements Node
+    private static class VirtualNodeHack extends NodeValue implements Node
     {
 
         private final HashMap<String,Object> propertyMap = new HashMap<>();
 
         private static AtomicLong MIN_ID = new AtomicLong( -1 );
-        private final long id;
         private final Label label;
 
         VirtualNodeHack( final String label, Map<String,Object> properties )
         {
-            this.id = MIN_ID.getAndDecrement();
+            super( MIN_ID.getAndDecrement() );
             this.label = Label.label( label );
             propertyMap.putAll( properties );
             propertyMap.put( "name", label );
@@ -554,6 +600,18 @@ public class SchemaProcedure
         public Map<String,Object> getProperties( String... keys )
         {
             return null;
+        }
+
+        @Override
+        public TextArray labels()
+        {
+            return Values.EMPTY_TEXT_ARRAY;
+        }
+
+        @Override
+        public MapValue properties()
+        {
+            return VirtualValues.EMPTY_MAP;
         }
 
         @Override
