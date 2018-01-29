@@ -113,19 +113,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private PropertyChanges propertyChangesForNodes;
 
-    // Tracks added and removed nodes, not modified nodes
-    private DiffSets<Long> nodes;
-
-    // Tracks added and removed relationships, not modified relationships
-    private RelationshipDiffSets<Long> relationships;
-
-    /**
-     * These two sets are needed because create-delete in same transaction is a no-op in {@link DiffSets}
-     * but we still need to provide correct answer in {@link #nodeIsDeletedInThisTx(long)} and
-     * {@link #relationshipIsDeletedInThisTx(long)} methods.
-     */
-    private PrimitiveLongSet nodesDeletedInTx;
-    private PrimitiveLongSet relationshipsDeletedInTx;
+    private RemovalsCountingDiffSets nodes;
+    private RemovalsCountingRelationshipsDiffSets relationships;
 
     private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
 
@@ -426,10 +415,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void nodeDoDelete( long nodeId )
     {
-        if ( nodes().remove( nodeId ) )
-        {
-            recordNodeDeleted( nodeId );
-        }
+        nodes().remove( nodeId );
 
         if ( nodeStatesMap != null )
         {
@@ -471,7 +457,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
-        return nodesDeletedInTx != null && nodesDeletedInTx.contains( nodeId );
+        return nodes != null && nodes.wasRemoved( nodeId );
     }
 
     @Override
@@ -483,10 +469,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void relationshipDoDelete( long id, int type, long startNodeId, long endNodeId )
     {
-        if ( relationships().remove( id ) )
-        {
-            recordRelationshipDeleted( id );
-        }
+        relationships().remove( id );
 
         if ( startNodeId == endNodeId )
         {
@@ -519,7 +502,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public boolean relationshipIsDeletedInThisTx( long relationshipId )
     {
-        return relationshipsDeletedInTx != null && relationshipsDeletedInTx.contains( relationshipId );
+        return relationships != null && relationships.wasRemoved( relationshipId );
     }
 
     @Override
@@ -814,11 +797,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return ReadableDiffSets.Empty.ifNull( nodes );
     }
 
-    private DiffSets<Long> nodes()
+    private RemovalsCountingDiffSets nodes()
     {
         if ( nodes == null )
         {
-            nodes = new DiffSets<>();
+            nodes = new RemovalsCountingDiffSets();
         }
         return nodes;
     }
@@ -847,11 +830,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return ReadableRelationshipDiffSets.Empty.ifNull( relationships );
     }
 
-    private RelationshipDiffSets<Long> relationships()
+    private RemovalsCountingRelationshipsDiffSets relationships()
     {
         if ( relationships == null )
         {
-            relationships = new RelationshipDiffSets<>( this );
+            relationships = new RemovalsCountingRelationshipsDiffSets( this );
         }
         return relationships;
     }
@@ -1276,24 +1259,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return hasDataChanges;
     }
 
-    private void recordNodeDeleted( long id )
-    {
-        if ( nodesDeletedInTx == null )
-        {
-            nodesDeletedInTx = Primitive.longSet();
-        }
-        nodesDeletedInTx.add( id );
-    }
-
-    private void recordRelationshipDeleted( long id )
-    {
-        if ( relationshipsDeletedInTx == null )
-        {
-            relationshipsDeletedInTx = Primitive.longSet();
-        }
-        relationshipsDeletedInTx.add( id );
-    }
-
     private static class LabelTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
     {
         private final TxStateVisitor visitor;
@@ -1410,6 +1375,69 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         void setMap( TxState state, PrimitiveLongObjectMap<RelationshipStateImpl> map )
         {
             state.relationshipStatesMap = map;
+        }
+    }
+
+    /**
+     * This class works around the fact that create-delete in the same transaction is a no-op in {@link DiffSets},
+     * whereas we need to know total number of explicit removals.
+     */
+    private static class RemovalsCountingDiffSets extends DiffSets<Long>
+    {
+        private PrimitiveLongSet removedFromAdded;
+
+        @Override
+        public boolean remove( Long elem )
+        {
+            if ( added( false ).remove( elem ) )
+            {
+                if ( removedFromAdded == null )
+                {
+                    removedFromAdded = Primitive.longSet();
+                }
+                removedFromAdded.add( elem );
+                return true;
+            }
+            return removed( true ).add( elem );
+        }
+
+        private boolean wasRemoved( long id )
+        {
+            return (removedFromAdded != null && removedFromAdded.contains( id )) || super.isRemoved( id );
+        }
+    }
+
+    /**
+     * This class works around the fact that create-delete in the same transaction is a no-op in {@link DiffSets},
+     * whereas we need to know total number of explicit removals.
+     */
+    private static class RemovalsCountingRelationshipsDiffSets extends RelationshipDiffSets<Long>
+    {
+        private PrimitiveLongSet removedFromAdded;
+
+        private RemovalsCountingRelationshipsDiffSets( RelationshipVisitor.Home txStateRelationshipHome )
+        {
+            super( txStateRelationshipHome );
+        }
+
+        @Override
+        public boolean remove( Long elem )
+        {
+            if ( added( false ).remove( elem ) )
+            {
+                if ( removedFromAdded == null )
+                {
+                    removedFromAdded = Primitive.longSet();
+                }
+                removedFromAdded.add( elem );
+                return true;
+            }
+            return removed( true ).add( elem );
+        }
+
+        private boolean wasRemoved( long id )
+        {
+            return (removedFromAdded != null && removedFromAdded.contains( id )) || super.isRemoved( id );
         }
     }
 }
