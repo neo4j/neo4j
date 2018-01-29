@@ -33,7 +33,6 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -57,9 +56,9 @@ import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 {
     private final int pageSize = 256;
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
-    private final PageAwareByteArrayCursor readCursor = cursor.duplicate();
-    private final SimpleIdProvider id = new SimpleIdProvider( cursor::duplicate );
+    private PageAwareByteArrayCursor cursor;
+    private PageAwareByteArrayCursor readCursor;
+    private SimpleIdProvider id;
 
     private TestLayout<KEY,VALUE> layout;
     private TreeNode<KEY,VALUE> node;
@@ -102,6 +101,10 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     @Before
     public void setUp() throws IOException
     {
+        cursor = new PageAwareByteArrayCursor( pageSize );
+        readCursor = cursor.duplicate();
+        id = new SimpleIdProvider( cursor::duplicate );
+
         id.reset();
         long newId = id.acquireNewId( stableGeneration, unstableGeneration );
         goTo( cursor, newId );
