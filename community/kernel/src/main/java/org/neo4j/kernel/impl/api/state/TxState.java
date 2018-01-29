@@ -95,11 +95,10 @@ import static org.neo4j.helpers.collection.Iterables.map;
  */
 public class TxState implements TransactionState, RelationshipVisitor.Home
 {
-    private static final LabelState.Defaults LABEL_STATE = new TransactionLabelState();
     private static final NodeStateImpl.Defaults NODE_STATE = new TransactionNodeState();
     private static final RelationshipStateImpl.Defaults RELATIONSHIP_STATE = new TransactionRelationshipState();
 
-    private PrimitiveLongObjectMap<LabelState.Mutable> labelStatesMap;
+    private PrimitiveIntObjectMap<DiffSets<Long>> labelStatesMap;
     private PrimitiveLongObjectMap<NodeStateImpl> nodeStatesMap;
     private PrimitiveLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
@@ -358,7 +357,21 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private DiffSets<Long> getOrCreateLabelStateNodeDiffSets( int labelId )
     {
-        return LABEL_STATE.getOrCreate( this, labelId ).getOrCreateNodeDiffSets();
+        if ( labelStatesMap == null )
+        {
+            labelStatesMap = Primitive.intObjectMap();
+        }
+        return labelStatesMap.computeIfAbsent( labelId, unused -> new DiffSets<>() );
+    }
+
+    private ReadableDiffSets<Long> getLabelStateNodeDiffSets( int labelId )
+    {
+        if ( labelStatesMap == null )
+        {
+            return ReadableDiffSets.Empty.instance();
+        }
+        final DiffSets<Long> nodeDiffSets = labelStatesMap.get( labelId );
+        return ReadableDiffSets.Empty.ifNull( nodeDiffSets );
     }
 
     @Override
@@ -706,7 +719,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public ReadableDiffSets<Long> nodesWithLabelChanged( int label )
     {
-        return LABEL_STATE.get( this, label ).nodeDiffSets();
+        return getLabelStateNodeDiffSets( label );
     }
 
     @Override
@@ -718,7 +731,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         Set<Long> removed = new HashSet<>();
         for ( int i = 0; i < labels.length; i++ )
         {
-            ReadableDiffSets<Long> nodeDiffSets = LABEL_STATE.get( this, labels[i] ).nodeDiffSets();
+            ReadableDiffSets<Long> nodeDiffSets = getLabelStateNodeDiffSets( labels[i] );
             if ( i == 0 )
             {
                 removed.addAll( nodeDiffSets.getRemoved() );
@@ -739,9 +752,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         DiffSets<Long> changes = new DiffSets<>();
         for ( int label : labels )
         {
-            LabelState labelState = LABEL_STATE.get( this, label );
-            changes.addAll( labelState.nodeDiffSets().getAdded().iterator() );
-            changes.removeAll( labelState.nodeDiffSets().getRemoved().iterator() );
+            final ReadableDiffSets<Long> nodeDiffSets = getLabelStateNodeDiffSets( label );
+            changes.addAll( nodeDiffSets.getAdded().iterator() );
+            changes.removeAll( nodeDiffSets.getRemoved().iterator() );
         }
         return changes;
     }
@@ -1330,21 +1343,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         public void visitRemoved( ConstraintDescriptor constraint ) throws ConstraintValidationException
         {
             visitor.visitRemovedConstraint( constraint );
-        }
-    }
-
-    private static class TransactionLabelState extends LabelState.Defaults
-    {
-        @Override
-        PrimitiveLongObjectMap<LabelState.Mutable> getMap( TxState state )
-        {
-            return state.labelStatesMap;
-        }
-
-        @Override
-        void setMap( TxState state, PrimitiveLongObjectMap<LabelState.Mutable> map )
-        {
-            state.labelStatesMap = map;
         }
     }
 
