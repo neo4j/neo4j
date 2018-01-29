@@ -441,6 +441,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             }
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
+            cursor.checkAndClearCursorException();
 
             // Act
             if ( !endedUpOnExpectedNode() )
@@ -504,7 +505,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             do
             {
                 // Where we are
-                if ( !readHeader() )
+                if ( !readHeader() || isInternal )
                 {
                     continue;
                 }
@@ -549,9 +550,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             }
             while ( concurrentWriteHappened = cursor.shouldRetry() );
             checkOutOfBoundsAndClosed();
+            cursor.checkAndClearCursorException();
 
             // Act
-            if ( !endedUpOnExpectedNode() )
+            if ( !endedUpOnExpectedNode() || isInternal )
             {
                 // This node has been reused for something else than a tree node. Restart seek from root.
                 prepareToStartFromRoot();
