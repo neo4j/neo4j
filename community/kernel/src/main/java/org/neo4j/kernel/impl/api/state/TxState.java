@@ -95,8 +95,6 @@ import static org.neo4j.helpers.collection.Iterables.map;
  */
 public class TxState implements TransactionState, RelationshipVisitor.Home
 {
-    private static final RelationshipStateImpl.Defaults RELATIONSHIP_STATE = new TransactionRelationshipState();
-
     private PrimitiveIntObjectMap<DiffSets<Long>> labelStatesMap;
     private PrimitiveLongObjectMap<NodeStateImpl> nodeStatesMap;
     private PrimitiveLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
@@ -508,7 +506,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void relationshipDoDeleteAddedInThisTx( long relationshipId )
     {
-        RELATIONSHIP_STATE.get( this, relationshipId ).accept( this::relationshipDoDelete );
+        getRelationshipState( relationshipId ).accept( this::relationshipDoDelete );
     }
 
     @Override
@@ -648,7 +646,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public RelationshipState getRelationshipState( long id )
     {
-        return RELATIONSHIP_STATE.get( this, id );
+        if ( relationshipStatesMap == null )
+        {
+            return RelationshipStateImpl.EMPTY;
+        }
+        final RelationshipStateImpl relationshipState = relationshipStatesMap.get( id );
+        return relationshipState == null ? RelationshipStateImpl.EMPTY : relationshipState;
     }
 
     @Override
@@ -859,7 +862,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public Iterable<RelationshipState> modifiedRelationships()
     {
-        return RELATIONSHIP_STATE.values( this );
+        return relationshipStatesMap == null ? Iterables.empty() : Iterables.cast( relationshipStatesMap.values() );
     }
 
     private NodeStateImpl getOrCreateNodeState( long nodeId )
@@ -873,7 +876,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private RelationshipStateImpl getOrCreateRelationshipState( long relationshipId )
     {
-        return RELATIONSHIP_STATE.getOrCreate( this, relationshipId );
+        if ( relationshipStatesMap == null )
+        {
+            relationshipStatesMap = Primitive.longObjectMap();
+        }
+        return relationshipStatesMap.computeIfAbsent( relationshipId, unused -> new RelationshipStateImpl( relationshipId ) );
     }
 
     private GraphState getOrCreateGraphState()
@@ -1271,7 +1278,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor ) throws EX
     {
-        return RELATIONSHIP_STATE.get( this, relId ).accept( visitor );
+        return getRelationshipState( relId ).accept( visitor );
     }
 
     @Override
@@ -1351,21 +1358,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         public void visitRemoved( ConstraintDescriptor constraint ) throws ConstraintValidationException
         {
             visitor.visitRemovedConstraint( constraint );
-        }
-    }
-
-    private static class TransactionRelationshipState extends RelationshipStateImpl.Defaults
-    {
-        @Override
-        PrimitiveLongObjectMap<RelationshipStateImpl> getMap( TxState state )
-        {
-            return state.relationshipStatesMap;
-        }
-
-        @Override
-        void setMap( TxState state, PrimitiveLongObjectMap<RelationshipStateImpl> map )
-        {
-            state.relationshipStatesMap = map;
         }
     }
 
