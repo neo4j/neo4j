@@ -115,25 +115,17 @@ class ParallelLifecycle extends LifecycleAdapter
             }
             catch ( InterruptedException | ExecutionException e )
             {
-                exception = combine( exception, e );
+                if ( exception == null )
+                {
+                    exception = new RuntimeException();
+                }
+                exception.addSuppressed( e );
             }
         }
         if ( exception != null )
         {
             throw exception;
         }
-    }
-
-    private static <E extends Throwable> E combine( E first, E second )
-    {
-        Throwable current = first;
-        while ( current.getCause() != null )
-        {
-            current = current.getCause();
-        }
-
-        current.initCause( second );
-        return first;
     }
 
     private interface Action

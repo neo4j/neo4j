@@ -19,7 +19,7 @@
  */
 package org.neo4j.helpers;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.neo4j.helpers.collection.Iterables.asArray;
@@ -40,7 +40,7 @@ public class RunCarefully
 
     public void run()
     {
-        List<Throwable> errors = new LinkedList<>();
+        List<Throwable> errors = new ArrayList<>();
 
         for ( Runnable o : operations )
         {
