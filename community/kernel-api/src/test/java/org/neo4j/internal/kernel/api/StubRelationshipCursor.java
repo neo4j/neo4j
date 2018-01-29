@@ -28,6 +28,7 @@ class StubRelationshipCursor implements RelationshipTraversalCursor
 
     private int offset;
     private int chainId;
+    private boolean isClosed;
 
     StubRelationshipCursor( TestRelationshipChain chain )
     {
@@ -39,17 +40,19 @@ class StubRelationshipCursor implements RelationshipTraversalCursor
         this.store = store;
         this.chainId = 0;
         this.offset = -1;
+        this.isClosed = true;
     }
 
     void rewind()
     {
         this.offset = -1;
+        this.isClosed = true;
     }
 
     void read( int chainId )
     {
         this.chainId = chainId;
-        this.offset = -1;
+        rewind();
     }
 
     @Override
@@ -152,11 +155,12 @@ class StubRelationshipCursor implements RelationshipTraversalCursor
     @Override
     public void close()
     {
+        isClosed = true;
     }
 
     @Override
     public boolean isClosed()
     {
-        return store.get( chainId ).isValidOffset( offset );
+        return isClosed;
     }
 }

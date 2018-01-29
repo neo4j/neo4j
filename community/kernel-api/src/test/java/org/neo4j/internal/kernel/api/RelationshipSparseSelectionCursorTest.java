@@ -22,6 +22,8 @@ package org.neo4j.internal.kernel.api;
 import org.junit.Before;
 import org.junit.Test;
 
+import static junit.framework.TestCase.assertTrue;
+
 public class RelationshipSparseSelectionCursorTest extends RelationshipSelectionTestBase
 {
     private StubRelationshipCursor innerByGroup =
@@ -53,6 +55,7 @@ public class RelationshipSparseSelectionCursorTest extends RelationshipSelection
     @Before
     public void rewindInner()
     {
+        innerByDir.rewind();
         innerByGroup.rewind();
     }
 
@@ -60,112 +63,118 @@ public class RelationshipSparseSelectionCursorTest extends RelationshipSelection
     public void shouldSelectOutgoing()
     {
         // given
-        RelationshipSparseSelectionCursor cursor = new RelationshipSparseSelectionCursor();
+        RelationshipSparseSelectionIterator<R> iterator = new RelationshipSparseSelectionIterator<>( R::new );
 
         // when
-        cursor.outgoing( innerByGroup );
+        iterator.outgoing( innerByGroup );
 
         // then
-        assertOutgoing( cursor, 10, typeA );
-        assertLoop( cursor, typeA );
-        assertOutgoing( cursor, 20, typeB );
-        assertLoop( cursor, typeB );
-        assertOutgoing( cursor, 30, typeC );
-        assertLoop( cursor, typeC );
-        assertEmpty( cursor );
+        assertOutgoing( iterator, 10, typeA );
+        assertLoop( iterator, typeA );
+        assertOutgoing( iterator, 20, typeB );
+        assertLoop( iterator, typeB );
+        assertOutgoing( iterator, 30, typeC );
+        assertLoop( iterator, typeC );
+        assertEmptyAndClosed( iterator, innerByGroup );
     }
 
     @Test
     public void shouldSelectIncoming()
     {
         // given
-        RelationshipSparseSelectionCursor cursor = new RelationshipSparseSelectionCursor();
+        RelationshipSparseSelectionIterator<R> iterator = new RelationshipSparseSelectionIterator<>( R::new );
 
         // when
-        cursor.incoming( innerByGroup );
+        iterator.incoming( innerByGroup );
 
         // then
-        assertIncoming( cursor, 11, typeA );
-        assertLoop( cursor, typeA );
-        assertIncoming( cursor, 21, typeB );
-        assertLoop( cursor, typeB );
-        assertIncoming( cursor, 31, typeC );
-        assertLoop( cursor, typeC );
-        assertEmpty( cursor );
+        assertIncoming( iterator, 11, typeA );
+        assertLoop( iterator, typeA );
+        assertIncoming( iterator, 21, typeB );
+        assertLoop( iterator, typeB );
+        assertIncoming( iterator, 31, typeC );
+        assertLoop( iterator, typeC );
+        assertEmptyAndClosed( iterator, innerByGroup );
     }
 
     @Test
     public void shouldSelectAll()
     {
         // given
-        RelationshipSparseSelectionCursor cursor = new RelationshipSparseSelectionCursor();
+        RelationshipSparseSelectionIterator<R> iterator = new RelationshipSparseSelectionIterator<>( R::new );
 
         // when
-        cursor.all( innerByGroup );
+        iterator.all( innerByGroup );
 
         // then
-        assertOutgoing( cursor, 10, typeA );
-        assertIncoming( cursor, 11, typeA );
-        assertLoop( cursor, typeA );
-        assertOutgoing( cursor, 20, typeB );
-        assertIncoming( cursor, 21, typeB );
-        assertLoop( cursor, typeB );
-        assertOutgoing( cursor, 30, typeC );
-        assertIncoming( cursor, 31, typeC );
-        assertLoop( cursor, typeC );
-        assertEmpty( cursor );
+        assertOutgoing( iterator, 10, typeA );
+        assertIncoming( iterator, 11, typeA );
+        assertLoop( iterator, typeA );
+        assertOutgoing( iterator, 20, typeB );
+        assertIncoming( iterator, 21, typeB );
+        assertLoop( iterator, typeB );
+        assertOutgoing( iterator, 30, typeC );
+        assertIncoming( iterator, 31, typeC );
+        assertLoop( iterator, typeC );
+        assertEmptyAndClosed( iterator, innerByGroup );
     }
 
     @Test
     public void shouldSelectOutgoingOfType()
     {
         // given
-        RelationshipSparseSelectionCursor cursor = new RelationshipSparseSelectionCursor();
+        RelationshipSparseSelectionIterator<R> iterator = new RelationshipSparseSelectionIterator<>( R::new );
 
         // when
-        cursor.outgoing( innerByDir, types( typeA, typeC ) );
+        iterator.outgoing( innerByDir, types( typeA, typeC ) );
 
         // then
-        assertOutgoing( cursor, 10, typeA );
-        assertOutgoing( cursor, 12, typeC );
-        assertLoop( cursor, typeA );
-        assertLoop( cursor, typeC );
-        assertEmpty( cursor );
+        assertOutgoing( iterator, 10, typeA );
+        assertOutgoing( iterator, 12, typeC );
+        assertLoop( iterator, typeA );
+        assertLoop( iterator, typeC );
+        assertEmptyAndClosed( iterator, innerByDir );
     }
 
     @Test
     public void shouldSelectIncomingOfType()
     {
         // given
-        RelationshipSparseSelectionCursor cursor = new RelationshipSparseSelectionCursor();
+        RelationshipSparseSelectionIterator<R> iterator = new RelationshipSparseSelectionIterator<>( R::new );
 
         // when
-        cursor.incoming( innerByDir, types( typeA, typeC ) );
+        iterator.incoming( innerByDir, types( typeA, typeC ) );
 
         // then
-        assertIncoming( cursor, 20, typeA );
-        assertIncoming( cursor, 22, typeC );
-        assertLoop( cursor, typeA );
-        assertLoop( cursor, typeC );
-        assertEmpty( cursor );
+        assertIncoming( iterator, 20, typeA );
+        assertIncoming( iterator, 22, typeC );
+        assertLoop( iterator, typeA );
+        assertLoop( iterator, typeC );
+        assertEmptyAndClosed( iterator, innerByDir );
     }
 
     @Test
     public void shouldSelectAllOfType()
     {
         // given
-        RelationshipSparseSelectionCursor cursor = new RelationshipSparseSelectionCursor();
+        RelationshipSparseSelectionIterator<R> iterator = new RelationshipSparseSelectionIterator<>( R::new );
 
         // when
-        cursor.all( innerByDir, types( typeA, typeC ) );
+        iterator.all( innerByDir, types( typeA, typeC ) );
 
         // then
-        assertOutgoing( cursor, 10, typeA );
-        assertOutgoing( cursor, 12, typeC );
-        assertIncoming( cursor, 20, typeA );
-        assertIncoming( cursor, 22, typeC );
-        assertLoop( cursor, typeA );
-        assertLoop( cursor, typeC );
-        assertEmpty( cursor );
+        assertOutgoing( iterator, 10, typeA );
+        assertOutgoing( iterator, 12, typeC );
+        assertIncoming( iterator, 20, typeA );
+        assertIncoming( iterator, 22, typeC );
+        assertLoop( iterator, typeA );
+        assertLoop( iterator, typeC );
+        assertEmptyAndClosed( iterator, innerByDir );
+    }
+
+    private void assertEmptyAndClosed( RelationshipSparseSelectionIterator<R> iterator, RelationshipTraversalCursor inner )
+    {
+        assertEmpty( iterator );
+        assertTrue( "closed traversal cursor", inner.isClosed() );
     }
 }

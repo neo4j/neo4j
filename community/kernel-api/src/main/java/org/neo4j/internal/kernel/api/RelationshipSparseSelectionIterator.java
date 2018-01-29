@@ -22,21 +22,27 @@ package org.neo4j.internal.kernel.api;
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
- * Helper cursor for traversing specific types and directions of a sparse node.
+ * Helper iterator for traversing specific types and directions of a sparse node.
  */
-public class RelationshipSparseSelectionCursor implements RelationshipSelectionCursor
+public final class RelationshipSparseSelectionIterator<R> extends RelationshipSelectionIterator<R>
 {
-    private RelationshipTraversalCursor cursor;
-    private int[] types;
-    private Dir targetDirection;
-    private boolean onRelationship;
-    private boolean firstNext;
-
     private enum Dir
     {
         OUT,
         IN,
         BOTH
+    }
+
+    private RelationshipTraversalCursor cursor;
+    private final RelationshipSelectionIterator.RelationshipFactory<R> factory;
+    private int[] types;
+    private Dir targetDirection;
+    private boolean onRelationship;
+    private boolean firstNext;
+
+    public RelationshipSparseSelectionIterator( RelationshipFactory<R> factory )
+    {
+        this.factory = factory;
     }
 
     /**
@@ -117,20 +123,6 @@ public class RelationshipSparseSelectionCursor implements RelationshipSelectionC
         this.firstNext = true;
     }
 
-    @Override
-    public boolean next()
-    {
-        if ( onRelationship || firstNext )
-        {
-            firstNext = false;
-            do
-            {
-                onRelationship = cursor.next();
-            } while ( onRelationship && (!correctDirection() || !correctType()) );
-        }
-        return onRelationship;
-    }
-
     private boolean correctDirection()
     {
         return targetDirection == Dir.BOTH ||
@@ -141,12 +133,6 @@ public class RelationshipSparseSelectionCursor implements RelationshipSelectionC
     private boolean correctType()
     {
         return types == null || ArrayUtils.contains( types, cursor.label() );
-    }
-
-    @Override
-    public boolean shouldRetry()
-    {
-        return false;
     }
 
     @Override
@@ -165,63 +151,22 @@ public class RelationshipSparseSelectionCursor implements RelationshipSelectionC
         }
     }
 
-    @Override
-    public boolean isClosed()
+    protected R fetchNext()
     {
-        return cursor == null;
-    }
+        if ( onRelationship || firstNext )
+        {
+            firstNext = false;
+            do
+            {
+                onRelationship = cursor.next();
+            } while ( onRelationship && (!correctDirection() || !correctType()) );
+        }
 
-    @Override
-    public long relationshipReference()
-    {
-        return cursor.relationshipReference();
-    }
-
-    @Override
-    public int label()
-    {
-        return cursor.label();
-    }
-
-    @Override
-    public boolean hasProperties()
-    {
-        return cursor.hasProperties();
-    }
-
-    @Override
-    public void source( NodeCursor cursor )
-    {
-        this.cursor.source( cursor );
-    }
-
-    @Override
-    public void target( NodeCursor cursor )
-    {
-        this.cursor.target( cursor );
-    }
-
-    @Override
-    public void properties( PropertyCursor cursor )
-    {
-        this.cursor.properties( cursor );
-    }
-
-    @Override
-    public long sourceNodeReference()
-    {
-        return cursor.sourceNodeReference();
-    }
-
-    @Override
-    public long targetNodeReference()
-    {
-        return cursor.targetNodeReference();
-    }
-
-    @Override
-    public long propertiesReference()
-    {
-        return cursor.propertiesReference();
+        return !onRelationship ? null :
+               factory.relationship(
+                                cursor.relationshipReference(),
+                                cursor.sourceNodeReference(),
+                                cursor.label(),
+                                cursor.targetNodeReference() );
     }
 }

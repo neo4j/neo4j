@@ -30,34 +30,53 @@ class RelationshipSelectionTestBase
     final int typeB = 101;
     final int typeC = 102;
 
-    void assertOutgoing( RelationshipSelectionCursor cursor, int targetNode, int type )
+    void assertOutgoing( RelationshipSelectionIterator<R> iterator, int targetNode, int type )
     {
-        assertTrue( "has next", cursor.next() );
-        assertEquals( "expected type", type, cursor.label() );
-        assertEquals( "expected target", targetNode, cursor.targetNodeReference() );
+        assertTrue( "has next", iterator.hasNext() );
+        R r = iterator.next();
+        assertEquals( "expected type", type, r.type );
+        assertEquals( "expected target", targetNode, r.targetNode );
     }
 
-    void assertIncoming( RelationshipSelectionCursor cursor, int sourceNode, int type )
+    void assertIncoming( RelationshipSelectionIterator<R> iterator, int sourceNode, int type )
     {
-        assertTrue( "has next", cursor.next() );
-        assertEquals( "expected type", type, cursor.label() );
-        assertEquals( "expected source", sourceNode, cursor.sourceNodeReference() );
+        assertTrue( "has next", iterator.hasNext() );
+        R r = iterator.next();
+        assertEquals( "expected type", type, r.type );
+        assertEquals( "expected source", sourceNode, r.sourceNode );
     }
 
-    void assertLoop( RelationshipSelectionCursor cursor, int type )
+    void assertLoop( RelationshipSelectionIterator<R> iterator, int type )
     {
-        assertTrue( "has next", cursor.next() );
-        assertEquals( "expected type", type, cursor.label() );
-        assertEquals( "expected loop", cursor.sourceNodeReference(), cursor.targetNodeReference() );
+        assertTrue( "has next", iterator.hasNext() );
+        R r = iterator.next();
+        assertEquals( "expected type", type, r.type );
+        assertEquals( "expected loop", r.sourceNode, r.targetNode );
     }
 
-    void assertEmpty( RelationshipSelectionCursor cursor )
+    void assertEmpty( RelationshipSelectionIterator<R> iterator )
     {
-        assertFalse( "no more", cursor.next() );
+        assertFalse( "no more", iterator.hasNext() );
     }
 
     int[] types( int... types )
     {
         return types;
+    }
+
+    static class R
+    {
+        final long relationship;
+        final long sourceNode;
+        final int type;
+        final long targetNode;
+
+        R( long relationship, long sourceNode, int type, long targetNode )
+        {
+            this.relationship = relationship;
+            this.sourceNode = sourceNode;
+            this.type = type;
+            this.targetNode = targetNode;
+        }
     }
 }
