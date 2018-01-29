@@ -33,7 +33,7 @@ import org.opencypher.tools.tck.values.CypherValue
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-case class Neo4jValueRecords(header: List[String], rows: List[Array[AnyRef]]) {}
+case class Neo4jValueRecords(header: List[String], rows: List[Array[AnyRef]])
 
 object Neo4jValueRecords {
   def apply(record: CypherValueRecords): Neo4jValueRecords = {
