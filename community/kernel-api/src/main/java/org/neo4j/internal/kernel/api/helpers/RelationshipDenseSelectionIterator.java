@@ -17,31 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.ResourceIterator;
 
 /**
- * Iterator for traversing selected relationships of a single node, based on type and direction.
+ * Helper iterator for traversing specific types and directions of a dense node.
  */
-public abstract class RelationshipSelectionIterator<R> implements ResourceIterator<R>
+public final class RelationshipDenseSelectionIterator<R> extends RelationshipDenseSelection
+        implements ResourceIterator<R>
 {
-    public interface RelationshipFactory<R>
-    {
-        R relationship( long id, long startNodeId, int typeId, long endNodeId );
-    }
-
+    private RelationshipFactory<R> factory;
     private R _next;
-    private boolean initialized = false;
+    private boolean initialized;
+
+    public RelationshipDenseSelectionIterator( RelationshipFactory<R> factory )
+    {
+        this.factory = factory;
+        this.initialized = false;
+    }
 
     @Override
     public boolean hasNext()
     {
         if ( !initialized )
         {
-            _next = fetchNext();
+            fetchNext();
             initialized = true;
         }
 
@@ -61,9 +64,17 @@ public abstract class RelationshipSelectionIterator<R> implements ResourceIterat
             throw new NoSuchElementException();
         }
         R current = _next;
-        _next = fetchNext();
+        if ( !fetchNext() )
+        {
+            _next = null;
+        }
+
         return current;
     }
 
-    protected abstract R fetchNext();
+    @Override
+    protected void setRelationship( long id, long sourceNode, int type, long targetNode )
+    {
+        _next = factory.relationship( id, sourceNode, type, targetNode );
+    }
 }

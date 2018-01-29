@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.internal.kernel.api.helpers;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+
 /**
- * Helper iterator for traversing specific types and directions of a sparse node.
+ * Helper for traversing specific types and directions of a sparse node.
  */
-public final class RelationshipSparseSelectionIterator<R> extends RelationshipSelectionIterator<R>
+abstract class RelationshipSparseSelection
 {
     private enum Dir
     {
@@ -33,17 +35,11 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSe
         BOTH
     }
 
-    private RelationshipTraversalCursor cursor;
-    private final RelationshipSelectionIterator.RelationshipFactory<R> factory;
+    protected RelationshipTraversalCursor cursor;
     private int[] types;
     private Dir targetDirection;
     private boolean onRelationship;
     private boolean firstNext;
-
-    public RelationshipSparseSelectionIterator( RelationshipFactory<R> factory )
-    {
-        this.factory = factory;
-    }
 
     /**
      * Traverse all outgoing relationships including loops of the provided relationship types.
@@ -123,6 +119,43 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSe
         this.firstNext = true;
     }
 
+    /**
+     * Fetch the next valid relationship. If a valid relationship is found, will callback
+     * using {@link #setRelationship(long, long, int, long)}
+     *
+     * @return True is a valid relationship was found
+     */
+    protected boolean fetchNext()
+    {
+        if ( onRelationship || firstNext )
+        {
+            firstNext = false;
+            do
+            {
+                onRelationship = cursor.next();
+            } while ( onRelationship && (!correctDirection() || !correctType()) );
+        }
+
+        if ( onRelationship )
+        {
+           setRelationship( cursor.relationshipReference(),
+                            cursor.sourceNodeReference(),
+                            cursor.label(),
+                            cursor.targetNodeReference() );
+        }
+        return onRelationship;
+    }
+
+    /**
+     * Called when {@link #fetchNext()} finds a valid relationship.
+     *
+     * @param id relationship id
+     * @param sourceNode source node id
+     * @param type relationship type
+     * @param targetNode target node id
+     */
+    protected abstract void setRelationship( long id, long sourceNode, int type, long targetNode );
+
     private boolean correctDirection()
     {
         return targetDirection == Dir.BOTH ||
@@ -135,7 +168,6 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSe
         return types == null || ArrayUtils.contains( types, cursor.label() );
     }
 
-    @Override
     public void close()
     {
         try
@@ -149,24 +181,5 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSe
         {
             cursor = null;
         }
-    }
-
-    protected R fetchNext()
-    {
-        if ( onRelationship || firstNext )
-        {
-            firstNext = false;
-            do
-            {
-                onRelationship = cursor.next();
-            } while ( onRelationship && (!correctDirection() || !correctType()) );
-        }
-
-        return !onRelationship ? null :
-               factory.relationship(
-                                cursor.relationshipReference(),
-                                cursor.sourceNodeReference(),
-                                cursor.label(),
-                                cursor.targetNodeReference() );
     }
 }
