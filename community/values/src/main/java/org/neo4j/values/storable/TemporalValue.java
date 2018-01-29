@@ -415,7 +415,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( builder.timezone != null )
                 {
-                    throw new IllegalArgumentException( "cannot assign timezone twice" );
+                    throw new IllegalArgumentException( "Cannot assign timezone twice." );
                 }
                 builder.timezone = value;
             }
@@ -526,19 +526,19 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         @Override
         BuilderState<Input> assign( Field field, Input value )
         {
-            throw new IllegalArgumentException( "cannot assign " + field + " when selecting datetime" );
+            throw new IllegalArgumentException( "Cannot assign " + field + " when selecting datetime." );
         }
 
         @Override
         BuilderState<Input> date( Input date )
         {
-            throw new IllegalArgumentException( "cannot select date when selecting datetime" );
+            throw new IllegalArgumentException( "Cannot select date when selecting datetime." );
         }
 
         @Override
         BuilderState<Input> time( Input time )
         {
-            throw new IllegalArgumentException( "cannot select time when selecting datetime" );
+            throw new IllegalArgumentException( "Cannot select time when selecting datetime." );
         }
 
         @Override

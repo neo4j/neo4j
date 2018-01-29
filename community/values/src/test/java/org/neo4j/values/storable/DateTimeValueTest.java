@@ -19,6 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -26,11 +31,10 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.AssertingStructureBuilder.asserting;
 import static org.neo4j.values.storable.DateTimeValue.builder;
@@ -46,6 +50,7 @@ import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.TimeValueTest.inUTC;
 import static org.neo4j.values.storable.TimeValueTest.orFail;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertThrows;
 
 public class DateTimeValueTest
 {
@@ -64,6 +69,65 @@ public class DateTimeValueTest
         assertEquals(
                 datetime( date( 2017, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
                 parse( "2017-12-17T17:14:35.123456789+0000", orFail ) );
+        assertEquals(
+                datetime( date( 10000, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
+                parse( "+10000-12-17T17:14:35.123456789+0000", orFail ) );
+        assertEquals(
+                datetime( date( -1, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
+                parse( "-1-12-17T17:14:35.123456789+0000", orFail ) );
+    }
+
+    @Ignore
+    public void shouldSupportLeadSeconds() throws Exception
+    {
+        // Leap second according to https://www.timeanddate.com/time/leap-seconds-future.html
+        assertEquals( datetime( 2016, 12, 31, 23, 59, 60, 0, UTC ), parse( "2016-12-31T23:59:60Z", orFail ) );
+    }
+
+    @Test
+    public void shouldRejectInvalidDateTimeString() throws Exception
+    {
+        // Wrong year
+        assertThrows( DateTimeException.class, () -> parse( "10000-12-17T17:14:35", inUTC ) );
+        assertThrows( DateTimeException.class, () -> parse( "10000-12-17T17:14:35Z", orFail ) );
+
+        // Wrong month
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-13-17T17:14:35", inUTC ) ).getMessage(),
+                startsWith( "Invalid value for MonthOfYear" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-00-17T17:14:35", inUTC ) ).getMessage(),
+                startsWith( "Invalid value for MonthOfYear" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-13-17T17:14:35Z", orFail ) ).getMessage(),
+                startsWith( "Invalid value for MonthOfYear" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-00-17T17:14:35Z", orFail ) ).getMessage(),
+                startsWith( "Invalid value for MonthOfYear" ) );
+
+        // Wrong day of month
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-32T17:14:35", inUTC ) ).getMessage(),
+                startsWith( "Invalid value for DayOfMonth" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-00T17:14:35", inUTC ) ).getMessage(),
+                startsWith( "Invalid value for DayOfMonth" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-32T17:14:35Z", orFail ) ).getMessage(),
+                startsWith( "Invalid value for DayOfMonth" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-00T17:14:35Z", orFail ) ).getMessage(),
+                startsWith( "Invalid value for DayOfMonth" ) );
+
+        // Wrong hour
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T24:14:35", inUTC ) ).getMessage(),
+                startsWith( "Invalid value for HourOfDay" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T24:14:35Z", orFail ) ).getMessage(),
+                startsWith( "Invalid value for HourOfDay" ) );
+
+        // Wrong minute
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T17:60:35", inUTC ) ).getMessage(),
+                startsWith( "Invalid value for MinuteOfHour" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T17:60:35Z", orFail ) ).getMessage(),
+                startsWith( "Invalid value for MinuteOfHour" ) );
+
+        // Wrong second
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T17:14:61", inUTC ) ).getMessage(),
+                startsWith( "Invalid value for SecondOfMinute" ) );
+        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T17:14:61Z", orFail ) ).getMessage(),
+                startsWith( "Invalid value for SecondOfMinute" ) );
     }
 
     @Test
@@ -168,12 +232,51 @@ public class DateTimeValueTest
                 .add( "month", 12 )
                 .add( "dayOfWeek", 5 )
                 .assertThrows( IllegalArgumentException.class, "Cannot assign dayOfWeek to calendar date." );
-        // TODO: more assertions
+        asserting( fromValues( builder( clock ) ) )
+                .add( "datetime", localDateTime( LocalDateTime.now( clock ) ) )
+                .add( "day", 12 )
+                .assertThrows( IllegalArgumentException.class, "Cannot assign day when selecting datetime." );
+        asserting( fromValues( builder( clock ) ) )
+                .add( "datetime", localDateTime( LocalDateTime.now( clock ) ) )
+                .add( "hour", 12 )
+                .assertThrows( IllegalArgumentException.class, "Cannot assign hour when selecting datetime." );
+        asserting( fromValues( builder( clock ) ) )
+                .add( "year", 2018 )
+                .add( "week", 12 )
+                .add( "day", 12 )
+                .assertThrows( IllegalArgumentException.class, "Cannot assign day to week date." );
+        asserting( fromValues( builder( clock ) ) )
+                .add( "year", 2018 )
+                .add( "ordinalDay", 12 )
+                .add( "dayOfWeek", 1 )
+                .assertThrows( IllegalArgumentException.class, "Cannot assign dayOfWeek to ordinal date." );
+        asserting( fromValues( builder( clock ) ) )
+                .add( "year", 2018 )
+                .add( "month", 12 )
+                .add( "day", 5 )
+                .add( "hour", 5 )
+                .add( "minute", 5 )
+                .add( "second", 5 )
+                .add( "millisecond", 1 )
+                .add( "nanosecond", 1 )
+                .assertThrows( IllegalArgumentException.class, "Cannot assign ..." );
     }
 
     @Test
     public void shouldRejectInvalidComponentValues() throws Exception
     {
-        // TODO: add assertions
+        asserting( fromValues( builder( clock ) ) )
+                .add( "year", 2018 )
+                .add( "moment", 12 )
+                .assertThrows( IllegalArgumentException.class, "No such field: moment" );
+        asserting( fromValues( builder( clock ) ) )
+                .add( "year", 2018 )
+                .add( "month", 12 )
+                .add( "day", 5 )
+                .add( "hour", 5 )
+                .add( "minute", 5 )
+                .add( "second", 5 )
+                .add( "picosecond", 12 )
+                .assertThrows( IllegalArgumentException.class, "No such field: picosecond" );
     }
 }

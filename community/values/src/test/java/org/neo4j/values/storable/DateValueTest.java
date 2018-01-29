@@ -19,15 +19,14 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.Test;
+
 import java.time.DateTimeException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.IsoFields;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
-
-import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -39,6 +38,7 @@ import static org.neo4j.values.storable.DateValue.ordinalDate;
 import static org.neo4j.values.storable.DateValue.parse;
 import static org.neo4j.values.storable.DateValue.quarterDate;
 import static org.neo4j.values.storable.DateValue.weekDate;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertThrows;
 
 @SuppressWarnings( "ThrowableNotThrown" )
 public class DateValueTest
@@ -204,26 +204,5 @@ public class DateValueTest
             return e;
         }
         throw new AssertionError( String.format( "'%s' parsed to %s", text, value ) );
-    }
-
-    private static <X extends Exception, T> X assertThrows( Class<X> exception, Supplier<T> thunk )
-    {
-        T value;
-        try
-        {
-            value = thunk.get();
-        }
-        catch ( Exception e )
-        {
-            if ( exception.isInstance( e ) )
-            {
-                return exception.cast( e );
-            }
-            else
-            {
-                throw new AssertionError( "Expected " + exception.getName(), e );
-            }
-        }
-        throw new AssertionError( "Expected " + exception.getName() + " but returned: " + value );
     }
 }

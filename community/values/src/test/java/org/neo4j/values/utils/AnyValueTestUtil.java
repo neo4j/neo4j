@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.utils;
 
+import java.util.function.Supplier;
+
 import org.neo4j.values.AnyValue;
 
 import static org.junit.Assert.assertFalse;
@@ -67,5 +69,26 @@ public class AnyValueTestUtil
         assertFalse( b + " should not be equivalent to " + a, b.equals( a ) );
         assertNull( a + " should be incomparable to " + b, a.ternaryEquals( b ) );
         assertNull( b + " should be incomparable to " + a, b.ternaryEquals( a ) );
+    }
+
+    public static <X extends Exception, T> X assertThrows( Class<X> exception, Supplier<T> thunk )
+    {
+        T value;
+        try
+        {
+            value = thunk.get();
+        }
+        catch ( Exception e )
+        {
+            if ( exception.isInstance( e ) )
+            {
+                return exception.cast( e );
+            }
+            else
+            {
+                throw new AssertionError( "Expected " + exception.getName(), e );
+            }
+        }
+        throw new AssertionError( "Expected " + exception.getName() + " but returned: " + value );
     }
 }
