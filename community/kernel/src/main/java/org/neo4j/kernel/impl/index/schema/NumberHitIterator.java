@@ -31,8 +31,6 @@ import org.neo4j.index.internal.gbptree.Hit;
 
 /**
  * Wraps number key/value results in a {@link PrimitiveLongIterator}.
- * The {@link RawCursor seeker} which gets passed in will have to be closed somewhere else because
- * the {@link PrimitiveLongIterator} is just a plain iterator, no resource.
  *
  * @param <KEY> type of {@link NumberSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
