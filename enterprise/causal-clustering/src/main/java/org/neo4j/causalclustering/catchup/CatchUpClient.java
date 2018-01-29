@@ -86,13 +86,18 @@ public class CatchUpClient extends LifecycleAdapter
             }
         } );
 
-        channel.setResponseHandler( responseHandler, future );
+        SynchronizedCatchupResponseCallback<T> synchronizedHandler = new SynchronizedCatchupResponseCallback<>( responseHandler );
+
+        channel.setResponseHandler( synchronizedHandler, future );
         channel.send( request );
 
         String operation = format( "Timed out executing operation %s on %s ",
                 request, upstream );
 
-        return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
+        T result = waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
+        synchronizedHandler.abortAndAwaitDone();
+
+        return result;
     }
 
     private class CatchUpChannel implements CatchUpChannelPool.Channel
