@@ -296,13 +296,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             @Override
             public void visitAdded( IndexDescriptor index )
-                    throws ConstraintValidationException, CreateConstraintFailureException
             {
                 visitor.visitAddedIndex( index );
             }
 
             @Override
-            public void visitRemoved( IndexDescriptor index ) throws ConstraintValidationException
+            public void visitRemoved( IndexDescriptor index )
             {
                 visitor.visitRemovedIndex( index );
             }
@@ -1313,7 +1312,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public boolean visited( int key, String value ) throws RuntimeException
+        public boolean visited( int key, String value )
         {
             visitor.visitCreatedPropertyKeyToken( value, key );
             return false;
@@ -1330,7 +1329,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public boolean visited( int key, String value ) throws RuntimeException
+        public boolean visited( int key, String value )
         {
             visitor.visitCreatedRelationshipTypeToken( value, key );
             return false;
@@ -1347,14 +1346,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public void visitAdded( ConstraintDescriptor constraint )
-                throws ConstraintValidationException, CreateConstraintFailureException
+        public void visitAdded( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
         {
             visitor.visitAddedConstraint( constraint );
         }
 
         @Override
-        public void visitRemoved( ConstraintDescriptor constraint ) throws ConstraintValidationException
+        public void visitRemoved( ConstraintDescriptor constraint )
         {
             visitor.visitRemovedConstraint( constraint );
         }
