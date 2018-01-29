@@ -41,6 +41,10 @@ import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
+/**
+ * Best-effort sender service, with non-blocking and blocking semantics.
+ * Designated for use with the Raft protocol.
+ */
 public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
 {
     private NonBlockingChannels nonBlockingChannels;
