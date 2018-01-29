@@ -42,6 +42,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -173,6 +174,37 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   private def selectRelationships(nodeCursor: NodeCursor, dir: SemanticDirection, types: Option[Array[Int]]) = {
     val cursors = transactionalContext.kernelTransaction.cursors()
+    val factory = new RelationshipFactory[RelationshipValue] {
+      override def relationship(id: Long, startNodeId: Long, typeId: Int,
+                                endNodeId: Long): RelationshipValue =
+        fromRelationshipProxy(entityAccessor.newRelationshipProxy(id, startNodeId, typeId, endNodeId))
+    }
+    if (nodeCursor.isDense) {
+      val groupCursor = cursors.allocateRelationshipGroupCursor()
+      nodeCursor.relationships(groupCursor)
+      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
+      val denseSelectionIterator = new RelationshipDenseSelectionIterator[RelationshipValue](factory)
+      dir match {
+        case OUTGOING => denseSelectionIterator.outgoing(groupCursor, traversalCursor, types.orNull)
+        case INCOMING => denseSelectionIterator.incoming(groupCursor, traversalCursor, types.orNull)
+        case BOTH => denseSelectionIterator.all(groupCursor, traversalCursor, types.orNull)
+      }
+      denseSelectionIterator
+    } else {
+      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
+      nodeCursor.allRelationships(traversalCursor)
+      val sparseSelectionIterator = new RelationshipSparseSelectionIterator[RelationshipValue](factory)
+      dir match {
+        case OUTGOING => sparseSelectionIterator.outgoing(traversalCursor, types.orNull)
+        case INCOMING => sparseSelectionIterator.incoming(traversalCursor, types.orNull)
+        case BOTH => sparseSelectionIterator.all(traversalCursor, types.orNull)
+      }
+      sparseSelectionIterator
+    }
+  }
+
+  private def selectRelationshipsPrimitive(nodeCursor: NodeCursor, dir: SemanticDirection, types: Option[Array[Int]]) = {
+    val cursors = transactionalContext.kernelTransaction.cursors()
     if (nodeCursor.isDense) {
       val groupCursor = cursors.allocateRelationshipGroupCursor()
       nodeCursor.relationships(groupCursor)
@@ -203,25 +235,15 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     read.singleNode(node, nodeCursor)
     if (!nodeCursor.next()) return Iterator.empty
 
-    val selectionCursor = selectRelationships(nodeCursor, dir, types)
-    new CursorIterator[RelationshipValue] {
-      override protected def close(): Unit = selectionCursor.close()
-
-      override protected def fetchNext(): RelationshipValue =
-        if (selectionCursor.next())
-          fromRelationshipProxy(entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference()))
-        else null
-    }
+    selectRelationships(nodeCursor, dir, types).asScala
   }
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection,
                                                types: Option[Array[Int]]): RelationshipIterator = {
     val read = reads()
     read.singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) return RelationshipIterator.EMPTY
-    val selectionCursor = selectRelationships(nodeCursor, dir, types)
-
-    new RelationShipCursorIterator(selectionCursor)
+    if (!nodeCursor.next()) RelationshipIterator.EMPTY
+    else new RelationShipCursorIterator(selectRelationshipsPrimitive(nodeCursor, dir, types))
   }
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long,
@@ -1026,35 +1048,50 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  class RelationShipCursorIterator(selectionCursor: RelationshipSelectionCursor)
-    extends PrimitiveCursorIterator with RelationshipIterator {
-    private var label: Int = -1
+  class RelationShipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator {
+    private var _next = -2L
+    private var typeId: Int = -1
     private var source: Long = -1L
     private var target: Long = -1L
 
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
                                                            visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
-      visitor.visit(relationshipId, label, source, target)
+      visitor.visit(relationshipId, typeId, source, target)
       //TODO what does this even mean?
       true
     }
 
-    override protected def fetchNext(): Long =
-      if (selectionCursor.next()) {
-        label = selectionCursor.label()
-        source = selectionCursor.sourceNodeReference()
-        target = selectionCursor.targetNodeReference()
-        selectionCursor.relationshipReference()
-      } else {
-        close()
-        -1L
+    private def fetchNext(): Long = if (selectionCursor.next()) selectionCursor.relationshipReference() else -1L
+
+    override def hasNext: Boolean = {
+      if (_next == -2L) {
+        _next = fetchNext()
       }
 
-    override def close(): Unit = {
-      label = -1
-      source = -1L
-      target = -1L
-      selectionCursor.close()
+      _next >= 0
+    }
+
+    //We store the current state in case the underlying cursor is
+    //closed when calling next.
+    private def storeState(): Unit = {
+      typeId = selectionCursor.`type`()
+      source = selectionCursor.sourceNodeReference()
+      target = selectionCursor.targetNodeReference()
+    }
+
+    override def next(): Long = {
+      if (!hasNext) {
+        selectionCursor.close()
+        Iterator.empty.next()
+      }
+
+      val current = _next
+      storeState()
+      //Note that if no more elements are found the selection cursor
+      //will be closed so no need to do a extra check after fetching.
+      _next = fetchNext()
+
+      current
     }
   }
 
