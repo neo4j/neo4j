@@ -100,6 +100,11 @@ public final class UTF8StringValue extends StringValue
     @Override
     public int length()
     {
+        return numberOfCodePoints( bytes, offset, byteLength );
+    }
+
+    private static int numberOfCodePoints( byte[] bytes, int offset, int byteLength )
+    {
         int count = 0, i = offset, len = offset + byteLength;
         while ( i < len )
         {
@@ -161,7 +166,7 @@ public final class UTF8StringValue extends StringValue
                 bytesNeeded++;
                 b = (byte) (b << 1);
             }
-            int codePoint = codePoint( b, i, bytesNeeded );
+            int codePoint = codePoint( bytes, b, i, bytesNeeded );
             i += bytesNeeded;
 
             hash = 31 * hash + codePoint;
@@ -332,15 +337,26 @@ public final class UTF8StringValue extends StringValue
             return super.compareTo( other );
         }
         UTF8StringValue otherUTF8 = (UTF8StringValue) other;
-        int len1 = bytes.length;
-        int len2 = otherUTF8.bytes.length;
+        return codePointByteArrayCompare( bytes, offset, byteLength, otherUTF8.bytes, otherUTF8.offset, otherUTF8.byteLength );
+    }
+
+    public static int codePointByteArrayCompare( byte[] value1, byte[] value2 )
+    {
+        return codePointByteArrayCompare( value1, 0, value1.length, value2, 0, value2.length );
+    }
+
+    public static int codePointByteArrayCompare( byte[] value1, int value1Offset, int value1Length,
+            byte[] value2, int value2Offset, int value2Length )
+    {
+        int len1 = value1.length;
+        int len2 = value2.length;
         int lim = Math.min( len1, len2 );
         int i = 0;
         while ( i < lim )
         {
-            byte b = bytes[i];
+            byte b = value1[i];
             int thisCodePoint;
-            int thatCodePoint = codePointAt( otherUTF8.bytes, i );
+            int thatCodePoint = codePointAt( value2, i );
             if ( b >= 0 )
             {
                 i++;
@@ -354,7 +370,7 @@ public final class UTF8StringValue extends StringValue
                     bytesNeeded++;
                     b = (byte) (b << 1);
                 }
-                thisCodePoint = codePoint( b, i, bytesNeeded );
+                thisCodePoint = codePoint( value1, b, i, bytesNeeded );
                 i += bytesNeeded;
             }
             if ( thisCodePoint != thatCodePoint )
@@ -362,8 +378,7 @@ public final class UTF8StringValue extends StringValue
                 return thisCodePoint - thatCodePoint;
             }
         }
-
-        return length() - other.length();
+        return numberOfCodePoints( value1, value1Offset, value1Length ) - numberOfCodePoints( value2, value2Offset, value2Length );
     }
 
     @Override
@@ -372,7 +387,7 @@ public final class UTF8StringValue extends StringValue
         return pattern.matcher( value() ); // TODO: can we do better here?
     }
 
-    private int codePointAt( byte[] bytes, int i )
+    private static int codePointAt( byte[] bytes, int i )
     {
         assert i < bytes.length;
         byte b = bytes[i];
@@ -397,7 +412,7 @@ public final class UTF8StringValue extends StringValue
                    ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
                    | (bytes[i + 3] & HIGH_BIT_MASK);
         default:
-            throw new IllegalArgumentException( "Malformed UTF8 value" );
+            throw new IllegalArgumentException( "Malformed UTF8 value " + bytesNeeded );
         }
     }
 
@@ -434,7 +449,7 @@ public final class UTF8StringValue extends StringValue
                 bytesNeeded++;
                 b = (byte) (b << 1);
             }
-            int codePoint = codePoint( b, i, bytesNeeded );
+            int codePoint = codePoint( bytes, b, i, bytesNeeded );
             if ( !Character.isWhitespace( codePoint ) )
             {
                 return i;
@@ -477,7 +492,7 @@ public final class UTF8StringValue extends StringValue
                 b = bytes[--index];
             }
 
-            int codePoint = codePoint( (byte) (b << bytesNeeded), index, bytesNeeded );
+            int codePoint = codePoint( bytes, (byte) (b << bytesNeeded), index, bytesNeeded );
             if ( !Character.isWhitespace( codePoint ) )
             {
                 return Math.min( index + bytesNeeded - 1, bytes.length - 1 );
@@ -493,7 +508,7 @@ public final class UTF8StringValue extends StringValue
         return bytes;
     }
 
-    private int codePoint( byte currentByte, int i, int bytesNeeded )
+    private static int codePoint( byte[] bytes, byte currentByte, int i, int bytesNeeded )
     {
         int codePoint;
         byte[] values = bytes;
