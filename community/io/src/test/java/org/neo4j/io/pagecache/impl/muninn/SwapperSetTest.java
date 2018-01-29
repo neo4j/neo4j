@@ -55,8 +55,8 @@ public class SwapperSetTest
     {
         DummyPageSwapper a = new DummyPageSwapper( "a", 42 );
         DummyPageSwapper b = new DummyPageSwapper( "b", 43 );
-        int idA = set.allocate( a );
-        int idB = set.allocate( b );
+        short idA = set.allocate( a );
+        short idB = set.allocate( b );
         SwapperSet.SwapperMapping allocA = set.getAllocation( idA );
         SwapperSet.SwapperMapping allocB = set.getAllocation( idB );
         assertThat( allocA.swapper, is( a ) );
@@ -66,7 +66,7 @@ public class SwapperSetTest
     @Test
     public void accessingFreedAllocationMustReturnNull() throws Exception
     {
-        int id = set.allocate( new DummyPageSwapper( "a", 42 ) );
+        short id = set.allocate( new DummyPageSwapper( "a", 42 ) );
         set.free( id );
         assertNull( set.getAllocation( id ) );
     }
@@ -166,7 +166,7 @@ public class SwapperSetTest
     public void mustNotUseZeroAsSwapperId() throws Exception
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
-        Matcher<Integer> isNotZero = is( not( 0 ) );
+        Matcher<Short> isNotZero = is( not( (short) 0 ) );
         for ( int i = 0; i < 10_000; i++ )
         {
             assertThat( set.allocate( swapper ), isNotZero );
@@ -177,7 +177,7 @@ public class SwapperSetTest
     public void gettingAllocationZeroMustThrow() throws Exception
     {
         exception.expect( IllegalArgumentException.class );
-        set.getAllocation( 0 );
+        set.getAllocation( (short) 0 );
     }
 
     @Test
@@ -191,12 +191,12 @@ public class SwapperSetTest
     public void mustKeepTrackOfAvailableSwapperIds() throws Exception
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
-        int initial = Short.MAX_VALUE - 1;
+        short initial = Short.MAX_VALUE - 1;
         assertThat( set.countAvailableIds(), is( initial ) );
         int id = set.allocate( swapper );
-        assertThat( set.countAvailableIds(), is( initial - 1 ) );
+        assertThat( set.countAvailableIds(), is( (short) (initial - 1) ) );
         set.free( id );
-        assertThat( set.countAvailableIds(), is( initial - 1 ) );
+        assertThat( set.countAvailableIds(), is( (short) (initial - 1) ) );
         set.vacuum( x -> {} );
         assertThat( set.countAvailableIds(), is( initial ) );
     }

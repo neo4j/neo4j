@@ -67,7 +67,7 @@ final class SwapperSet
     /**
      * Get the {@link SwapperMapping} for the given swapper id.
      */
-    SwapperMapping getAllocation( int id )
+    SwapperMapping getAllocation( short id )
     {
         checkId( id );
         SwapperMapping swapperMapping = swapperMappings[id];
@@ -89,7 +89,7 @@ final class SwapperSet
     /**
      * Allocate a new swapper id for the given {@link PageSwapper}.
      */
-    synchronized int allocate( PageSwapper swapper )
+    synchronized short allocate( PageSwapper swapper )
     {
         SwapperMapping[] swapperMappings = this.swapperMappings;
 
@@ -98,7 +98,8 @@ final class SwapperSet
         {
             if ( !free.isEmpty() )
             {
-                int id = free.iterator().next();
+                //TODO safe cast
+                short id = (short) free.iterator().next();
                 free.remove( id );
                 swapperMappings[id] = new SwapperMapping( id, swapper );
                 this.swapperMappings = swapperMappings; // Volatile store synchronizes-with loads in getters.
@@ -107,7 +108,7 @@ final class SwapperSet
         }
 
         // No free slot was found above, so we extend the array to make room for a new slot.
-        int id = swapperMappings.length;
+        short id = (short) swapperMappings.length;
         if ( id + 1 > MAX_SWAPPER_ID )
         {
             throw new IllegalStateException( "All swapper ids are allocated: " + MAX_SWAPPER_ID );
@@ -145,7 +146,7 @@ final class SwapperSet
 
     /**
      * Collect all freed page swapper ids, and pass them to the given callback, after which the freed ids will be
-     * elegible for reuse.
+     * eligible for reuse.
      * This is done with careful synchronisation such that allocating and freeing of ids is allowed to mostly proceed
      * concurrently.
      */
@@ -195,10 +196,10 @@ final class SwapperSet
         }
     }
 
-    synchronized int countAvailableIds()
+    synchronized short countAvailableIds()
     {
         // the max id is one less than the allowed count, but we subtract one for the reserved id 0
-        int available = MAX_SWAPPER_ID;
+        short available = MAX_SWAPPER_ID;
         available -= swapperMappings.length; // ids that are allocated are not available
         available += free.size(); // add back the ids that are free to be reused
         return available;

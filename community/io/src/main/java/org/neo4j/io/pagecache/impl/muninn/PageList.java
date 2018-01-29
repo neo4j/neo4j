@@ -44,9 +44,8 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
  *     <tr><td>8</td><td>Pointer to the memory page.</td></tr>
  *     <tr><td>8</td><td>File page id.</td></tr>
  *     <tr><td>8</td><td>Last modified transaction id.</td></tr>
- *     <tr><td>4</td><td>Page swapper id.</td></tr>
+ *     <tr><td>2</td><td>Page swapper id.</td></tr>
  *     <tr><td>1</td><td>Usage stamp. Optimistically incremented; truncated to a max of 4.</td></tr>
- *     <tr><td>3</td><td>Padding.</td></tr>
  * </table>
  */
 class PageList
@@ -60,12 +59,11 @@ class PageList
     private static final int OFFSET_ADDRESS = 8; // 8 bytes
     private static final int OFFSET_FILE_PAGE_ID = 16; // 8 bytes
     private static final int OFFSET_LAST_TX_ID = 24; // 8 bytes
-    private static final int OFFSET_SWAPPER_ID = 32; // 4 bytes
-    private static final int OFFSET_USAGE_COUNTER = 36; // 1 byte
+    private static final int OFFSET_SWAPPER_ID = 32; // 2 bytes
+    private static final int OFFSET_USAGE_COUNTER = 34; // 1 byte
     // todo it's possible to reduce the overhead of the individual page to just 24 bytes,
     // todo because the file page id can be represented with 5 bytes (enough to address 8-4 PBs),
-    // todo and then the usage counter can use the high bits of that word, and the swapper id
-    // todo can use the rest (2 bytes or 20 bits).
+    // todo and then the usage counter can use the high bits of that word
     // todo we can alternatively also make use of the lower 12 bits of the address field, because
     // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
 
@@ -391,14 +389,14 @@ class PageList
         UnsafeUtil.compareAndSetMaxLong( null, offLastModifiedTransactionId( pageRef ), modifierTxId );
     }
 
-    public int getSwapperId( long pageRef )
+    public short getSwapperId( long pageRef )
     {
-        return UnsafeUtil.getInt( offSwapperId( pageRef ) );
+        return UnsafeUtil.getShort( offSwapperId( pageRef ) );
     }
 
-    private void setSwapperId( long pageRef, int swapperId )
+    private void setSwapperId( long pageRef, short swapperId )
     {
-        UnsafeUtil.putInt( offSwapperId( pageRef ), swapperId );
+        UnsafeUtil.putShort( offSwapperId( pageRef ), swapperId );
     }
 
     public boolean isLoaded( long pageRef )
@@ -406,12 +404,12 @@ class PageList
         return getFilePageId( pageRef ) != PageCursor.UNBOUND_PAGE_ID;
     }
 
-    public boolean isBoundTo( long pageRef, int swapperId, long filePageId )
+    public boolean isBoundTo( long pageRef, short swapperId, long filePageId )
     {
         return getSwapperId( pageRef ) == swapperId && getFilePageId( pageRef ) == filePageId;
     }
 
-    public void fault( long pageRef, PageSwapper swapper, int swapperId, long filePageId, PageFaultEvent event )
+    public void fault( long pageRef, PageSwapper swapper, short swapperId, long filePageId, PageFaultEvent event )
             throws IOException
     {
         if ( swapper == null )
@@ -444,7 +442,7 @@ class PageList
         return new IllegalArgumentException( "swapper cannot be null" );
     }
 
-    private static IllegalStateException cannotFaultException( long pageRef, PageSwapper swapper, int swapperId,
+    private static IllegalStateException cannotFaultException( long pageRef, PageSwapper swapper, short swapperId,
                                                         long filePageId, int currentSwapper, long currentFilePageId )
     {
         String msg = format(
@@ -477,7 +475,7 @@ class PageList
         long filePageId = getFilePageId( pageRef );
         evictionEvent.setFilePageId( filePageId );
         evictionEvent.setCachePageId( pageRef );
-        int swapperId = getSwapperId( pageRef );
+        short swapperId = getSwapperId( pageRef );
         if ( swapperId != 0 )
         {
             // If the swapper id is non-zero, then the page was not only loaded, but also bound, and possibly modified.
@@ -524,7 +522,7 @@ class PageList
     protected void clearBinding( long pageRef )
     {
         setFilePageId( pageRef, PageCursor.UNBOUND_PAGE_ID );
-        setSwapperId( pageRef, 0 );
+        setSwapperId( pageRef, (short) 0 );
     }
 
     public String toString( long pageRef )
