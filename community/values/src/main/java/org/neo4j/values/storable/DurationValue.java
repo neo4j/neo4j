@@ -28,6 +28,7 @@ import java.time.temporal.IsoFields;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -224,6 +225,41 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
         this.days = days;
         this.seconds = seconds;
         this.nanos = (int) nanos;
+    }
+
+    public int compareTo( DurationValue other )
+    {
+        return Comparator.comparingLong(DurationValue::averageLengthInNanos)
+                .thenComparingLong( DurationValue::getMonths )
+                .thenComparingLong( DurationValue::getDays )
+                .thenComparingLong( DurationValue::getSeconds )
+                .thenComparingInt( DurationValue::getNanos ).compare( this, other );
+    }
+
+    private long averageLengthInNanos()
+    {
+        return this.nanos + this.seconds * NANOS_PER_SECOND + this.days * NANOS_PER_SECOND * SECONDS_PER_DAY +
+                this.months * NANOS_PER_SECOND * (long) (SECONDS_PER_DAY * AVERAGE_DAYS_PER_MONTH);
+    }
+
+    public long getMonths()
+    {
+        return months;
+    }
+
+    public long getDays()
+    {
+        return days;
+    }
+
+    public long getSeconds()
+    {
+        return seconds;
+    }
+
+    public int getNanos()
+    {
+        return nanos;
     }
 
     long nanosOfDay()

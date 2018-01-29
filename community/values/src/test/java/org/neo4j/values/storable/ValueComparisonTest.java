@@ -29,9 +29,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
-
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.pointValue;
 
 public class ValueComparisonTest
@@ -72,6 +77,42 @@ public class ValueComparisonTest
             pointValue( Cartesian, 1.0, 1.0 ),
             pointValue( Cartesian, 1.0, 2.0 ),
             pointValue( Cartesian, 2.0, 1.0 ),
+
+            // DateTime and the likes
+            datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00"),
+            datetime(2018, 2, 2, 1, 30, 0, 0, "+01:00"),
+            datetime(2018, 2, 2, 1, 0, 0, 0, "+00:00"),
+            localDateTime(2018, 2, 2, 0, 0, 0, 0),
+            localDateTime(2018, 2, 2, 0, 0, 0, 1),
+            localDateTime(2018, 2, 2, 0, 0, 1, 0),
+            localDateTime(2018, 2, 2, 0, 1, 0, 0),
+            localDateTime(2018, 2, 2, 1, 0, 0, 0),
+            date(2018, 2, 1),
+            date(2018, 2, 2),
+            time(12, 0, 0, 0, "+00:00"),
+            time(13, 30, 0, 0, "+01:00"),
+            time(13, 0, 0, 0, "+00:00"),
+            localTime(0, 0, 0, 1),
+            localTime(0, 0, 0, 3),
+
+            // Duration
+            duration(0, 0, 0, 0),
+            duration(0, 0, 0, 1),
+            duration(0, 0, 1, 0),
+            duration(0, 0, 60, 0),
+            duration(0, 0, 60 * 60, 0),
+            duration(0, 0, 60 * 60 * 24, 0),
+            duration(0, 1, 0, 0),
+            duration(0, 0, 60 * 60 * 24, 1),
+            duration(0, 1, 60 * 60 * 24, 0),
+            duration(0, 2, 0, 0),
+            duration(0, 1, 60 * 60 * 24, 1),
+            duration(0, 30, 0, 0),
+            duration(1, 0, 0, 0),
+            duration(0, 31, 0, 0),
+            duration(9999999999L * 12, 0, 0, 0),
+            duration(9999999999L * 12, 0, 0, 1),
+            duration(9999999999L * 12, 0, 0, 2),
 
             // STRING
             "",
