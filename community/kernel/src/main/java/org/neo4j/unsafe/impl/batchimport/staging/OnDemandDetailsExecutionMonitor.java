@@ -35,7 +35,7 @@ import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.cache.MeasureDoNothing;
 import org.neo4j.kernel.impl.cache.MeasureDoNothing.CollectingMonitor;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
