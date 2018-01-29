@@ -30,6 +30,7 @@ import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.values.storable.DateValue.date;
@@ -49,6 +50,8 @@ public class DateValueTest
         assertEquals( date( 2015, 1, 1 ), parse( "2015" ) );
         assertEquals( date( 2015, 1, 1 ), parse( "+2015" ) );
         assertEquals( date( 2015, 1, 1 ), parse( "+0002015" ) );
+        assertCannotParse( "10000" );
+        assertCannotParse( "2K18" );
     }
 
     @Test
@@ -58,6 +61,8 @@ public class DateValueTest
         assertEquals( date( 2015, 3, 1 ), parse( "2015-03" ) );
         assertEquals( date( 2015, 3, 1 ), parse( "2015-3" ) );
         assertEquals( date( 2015, 3, 1 ), parse( "+2015-03" ) );
+        assertCannotParse( "2018-00" );
+        assertCannotParse( "2018-13" );
     }
 
     @Test
@@ -79,6 +84,8 @@ public class DateValueTest
         assertEquals( quarterDate( 2017, 3, 1 ), parse( "2017Q3" ) );
         assertEquals( quarterDate( 2017, 3, 1 ), parse( "2017-Q3" ) );
         assertEquals( quarterDate( 2017, 3, 1 ), parse( "+2017-Q3" ) );
+        assertCannotParse( "2015Q0" );
+        assertCannotParse( "2015Q5" );
     }
 
     @Test
@@ -87,6 +94,8 @@ public class DateValueTest
         assertEquals( date( 2016, 1, 27 ), parse( "20160127" ) );
         assertEquals( date( 2016, 1, 27 ), parse( "+2016-01-27" ) );
         assertEquals( date( 2016, 1, 27 ), parse( "+2016-1-27" ) );
+        assertCannotParse( "2015-01-32" );
+        assertCannotParse( "2015-01-00" );
     }
 
     @Test
@@ -116,6 +125,7 @@ public class DateValueTest
         assertCannotParse( "20173" );
         assertEquals( ordinalDate( 2017, 3 ), parse( "2017-003" ) );
         assertEquals( ordinalDate( 2017, 3 ), parse( "+2017-003" ) );
+        assertCannotParse( "2017-366" );
     }
 
     @Test
@@ -189,6 +199,40 @@ public class DateValueTest
             // then
             assertEquals( singletonList( value ), values );
         }
+    }
+
+    @Test
+    public void shouldAddDurationToDates() throws Exception
+    {
+        assertEquals( date( 2018, 2, 1 ),
+                date( 2018, 1, 1 ).add( DurationValue.duration( 1, 0, 900, 0 ) ) );
+        assertEquals(date( 2018, 2, 28 ),
+                date( 2018, 1, 31 ).add( DurationValue.duration( 1, 0, 0, 0 ) ) );
+        assertEquals(date( 2018, 1, 28 ),
+                date( 2018, 2, 28 ).add( DurationValue.duration( -1, 0, 0, 0 ) ) );
+    }
+
+    @Test
+    public void shouldReuseInstanceInArithmetics() throws Exception
+    {
+        final DateValue date = date( 2018, 2, 1 );
+        assertSame( date,
+                date.add( DurationValue.duration( 0, 0, 0, 0 ) ) );
+        assertSame( date,
+                date.add( DurationValue.duration( 0, 0, 1, 1 ) ) );
+        assertSame( date,
+                date.add( DurationValue.duration( -0, 0, 1, -1 ) ) );
+    }
+
+    @Test
+    public void shouldSubtractDurationFromDates() throws Exception
+    {
+        assertEquals( date( 2018, 1, 1 ),
+                date( 2018, 2, 1 ).sub( DurationValue.duration( 1, 0, 900, 0 ) ) );
+        assertEquals( date( 2018, 1, 28 ),
+                date( 2018, 2, 28 ).sub( DurationValue.duration( 1, 0, 0, 0 ) ) );
+        assertEquals( date( 2018, 2, 28 ),
+                date( 2018, 1, 31 ).sub( DurationValue.duration( -1, 0, 0, 0 ) ) );
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

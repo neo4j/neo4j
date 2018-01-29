@@ -36,6 +36,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.neo4j.values.storable.AssertingStructureBuilder.asserting;
 import static org.neo4j.values.storable.DateTimeValue.builder;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -265,18 +266,41 @@ public class DateTimeValueTest
     @Test
     public void shouldRejectInvalidComponentValues() throws Exception
     {
-        asserting( fromValues( builder( clock ) ) )
-                .add( "year", 2018 )
-                .add( "moment", 12 )
-                .assertThrows( IllegalArgumentException.class, "No such field: moment" );
-        asserting( fromValues( builder( clock ) ) )
-                .add( "year", 2018 )
-                .add( "month", 12 )
-                .add( "day", 5 )
-                .add( "hour", 5 )
-                .add( "minute", 5 )
-                .add( "second", 5 )
-                .add( "picosecond", 12 )
-                .assertThrows( IllegalArgumentException.class, "No such field: picosecond" );
+        asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "moment", 12 ).assertThrows( IllegalArgumentException.class,
+                "No such field: moment" );
+        asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "month", 12 ).add( "day", 5 ).add( "hour", 5 ).add( "minute", 5 ).add( "second",
+                5 ).add( "picosecond", 12 ).assertThrows( IllegalArgumentException.class, "No such field: picosecond" );
+    }
+
+    @Test
+    public void shouldAddDurationToDateTimes() throws Exception
+    {
+        assertEquals( datetime( date( 2018, 2, 1 ), time( 1, 17, 3, 0, UTC ) ),
+                datetime( date( 2018, 1, 1 ), time( 1, 2, 3, 0, UTC ) ).add( DurationValue.duration( 1, 0, 900, 0 ) ) );
+        assertEquals( datetime( date( 2018, 2, 28 ), time( 0, 0, 0, 0, UTC ) ),
+                datetime( date( 2018, 1, 31 ), time( 0, 0, 0, 0, UTC ) ).add( DurationValue.duration( 1, 0, 0, 0 ) ) );
+        assertEquals( datetime( date( 2018, 1, 28 ), time( 0, 0, 0, 0, UTC ) ),
+                datetime( date( 2018, 2, 28 ), time( 0, 0, 0, 0, UTC ) ).add( DurationValue.duration( -1, 0, 0, 0 ) ) );
+    }
+
+
+
+    @Test
+    public void shouldReuseInstanceInArithmetics() throws Exception
+    {
+        final DateTimeValue datetime = datetime( date( 2018, 2, 1 ), time( 1, 17, 3, 0, UTC ) );
+        assertSame( datetime,
+                datetime.add( DurationValue.duration( 0, 0, 0, 0 ) ) );
+    }
+
+    @Test
+    public void shouldSubtractDurationFromDateTimes() throws Exception
+    {
+        assertEquals( datetime( date( 2018, 1, 1 ), time( 1, 2, 3, 0, UTC ) ),
+                datetime( date( 2018, 2, 1 ), time( 1, 17, 3, 0, UTC ) ).sub( DurationValue.duration( 1, 0, 900, 0 ) ) );
+        assertEquals( datetime( date( 2018, 1, 28 ), time( 0, 0, 0, 0, UTC ) ),
+                datetime( date( 2018, 2, 28 ), time( 0, 0, 0, 0, UTC ) ).sub( DurationValue.duration( 1, 0, 0, 0 ) ) );
+        assertEquals( datetime( date( 2018, 2, 28 ), time( 0, 0, 0, 0, UTC ) ),
+                datetime( date( 2018, 1, 31 ), time( 0, 0, 0, 0, UTC ) ).sub( DurationValue.duration( -1, 0, 0, 0 ) ) );
     }
 }

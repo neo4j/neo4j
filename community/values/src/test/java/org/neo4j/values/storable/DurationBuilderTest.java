@@ -26,6 +26,7 @@ import static org.neo4j.helpers.collection.MapUtil.entry;
 import static org.neo4j.values.storable.DurationValue.build;
 import static org.neo4j.values.storable.DurationValue.parse;
 import static org.neo4j.values.storable.Values.of;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertThrows;
 
 public class DurationBuilderTest
 {
@@ -60,5 +61,19 @@ public class DurationBuilderTest
                         .entry( "microseconds", of( -900_000 ) )
                         .entry( "nanoseconds", of( 900_000_009 ) )
                         .create() ) );
+    }
+
+    @Test
+    public void shouldRejectUnknownKeys() throws Exception
+    {
+        assertEquals( "Unknown field: millenia",
+                assertThrows( IllegalStateException.class, () -> build( entry( "millenia", of( 2 ) ).create() ) ).getMessage() );
+    }
+
+    @Test
+    public void shouldAcceptOverlapping() throws Exception
+    {
+        assertEquals( parse( "PT1H90M" ), build( entry( "hours", of( 1 ) ).entry( "minutes", of( 90 ) ).create() ) );
+        assertEquals( parse( "P1DT30H" ), build( entry( "days", of( 1 ) ).entry( "hours", of( 30 ) ).create() ) );
     }
 }

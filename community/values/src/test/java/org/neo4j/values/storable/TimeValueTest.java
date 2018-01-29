@@ -32,6 +32,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.neo4j.values.storable.LocalTimeValue.inUTC;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.parse;
@@ -124,6 +125,40 @@ public class TimeValueTest
             assertEquals( singletonList( time ), values );
             assertEquals( singletonList( inUTC( time ) ), locals );
         }
+    }
+
+    @Test
+    public void shouldAddDurationToTimes() throws Exception
+    {
+        assertEquals( time(12, 15, 0, 0, UTC),
+                time(12, 0, 0, 0, UTC).add( DurationValue.duration( 1, 1, 900, 0 ) ) );
+        assertEquals( time(12, 0, 2, 0, UTC),
+                time(12, 0, 0, 0, UTC).add( DurationValue.duration( 0, 0, 1, 1_000_000_000 ) ) );
+        assertEquals( time(12, 0, 0, 0, UTC),
+                time(12, 0, 0, 0, UTC).add( DurationValue.duration( 0, 0, 1, -1_000_000_000 ) ) );
+    }
+
+    @Test
+    public void shouldReuseInstanceInArithmetics() throws Exception
+    {
+        final TimeValue noon = time( 12, 0, 0, 0, UTC );
+        assertSame( noon,
+                noon.add( DurationValue.duration( 0, 0, 0, 0 ) ) );
+        assertSame( noon,
+                noon.add( DurationValue.duration( 1, 1, 0, 0 ) ) );
+        assertSame( noon,
+                noon.add( DurationValue.duration( -1, 1, 0, -0 ) ) );
+    }
+
+    @Test
+    public void shouldSubtractDurationFromTimes() throws Exception
+    {
+        assertEquals( time(12, 0, 0, 0, UTC),
+                time(12, 15, 0, 0, UTC).sub( DurationValue.duration( 1, 1, 900, 0 ) ) );
+        assertEquals( time(12, 0, 0, 0, UTC),
+                time(12, 0, 2, 0, UTC).sub( DurationValue.duration( 0, 0, 1, 1_000_000_000 ) ) );
+        assertEquals( time(12, 0, 0, 0, UTC),
+                time(12, 0, 0, 0, UTC).sub( DurationValue.duration( 0, 0, 1, -1_000_000_000 ) ) );
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

@@ -521,6 +521,12 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
     }
 
     @Override
+    public final String toString()
+    {
+        return getClass().getSimpleName() + "<" + prettyPrint() + ">";
+    }
+
+    @Override
     public String prettyPrint()
     {
         if ( this == ZERO )

@@ -368,7 +368,6 @@ public class DurationValueTest
         assertEquals( duration( 0, 693, 0, 0 ), between(WEEKS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
         assertEquals( duration( 22, 0, 0, 0 ), between(MONTHS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
         assertEquals( duration( 12, 0, 0, 0 ), between(YEARS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        //        assertEquals( duration( 0, 0, 0, 0 ), between( HOURS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
     }
 
     @Test
@@ -376,8 +375,6 @@ public class DurationValueTest
     {
         assertEquals( duration( 0, 0, 10623, 0 ), durationBetween(
                 localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
-        //        assertEquals( duration( 0,0,0,0 ), between(
-        //                DAYS, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
         assertEquals( duration( 0, 0, 7200, 0 ), between(
                 HOURS, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
         assertEquals( duration( 0, 0, 10620, 0 ), between(
@@ -391,8 +388,6 @@ public class DurationValueTest
     {
         assertEquals( duration( 0, 0, 140223, 0 ), durationBetween(
                 time( 11, 30, 52, 0, ofHours( 18 ) ), time( 14, 27, 55, 0, ofHours( -18 ) ) ) );
-        //        assertEquals( duration( 0,0,0,0 ), days.between(
-        //                time( 11, 30, 52, 0, UTC ), time( 14, 27, 55, 0, UTC ) ) );
         assertEquals( duration( 0, 0, 0, 0 ), between(
                 HOURS, time( 11, 30, 52, 0, ofHours( -1 ) ), time( 14, 27, 55, 0, ofHours( 1 ) ) ) );
         assertEquals( duration( 0, 0, 3420, 0 ), between(
@@ -408,9 +403,6 @@ public class DurationValueTest
                 localTime( 14, 27, 55, 0 ), time( 11, 30, 52, 0, UTC ) ) );
         assertEquals( duration( 0, 0, -10623, 0 ), durationBetween(
                 localTime( 14, 27, 55, 0 ), time( 11, 30, 52, 0, ofHours( 17 ) ) ) );
-
-        //        assertEquals( duration( 0, 1, 0, 0 ), between(
-        //                DAYS, time( 14, 30, 22, 0, ofHours( -12 ) ), time( 14, 30, 22, 0, ofHours( 12 ) ) ) );
     }
 
     @Test
@@ -433,14 +425,28 @@ public class DurationValueTest
                 datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ), localTime( 14, 32, 11, 0 ) ) );
         assertEquals( parse( "PT-8H+20M" ), durationBetween(
                 localTime( 14, 32, 11, 0 ), datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ) ) );
-        //
-        //assertEquals( parse( "-PT14H32M11S" ), durationBetween( localTime( 14, 32, 11, 0 ), date( 2017, 12, 21 ) ) );
-        //assertEquals( parse( "PT14H32M11S" ), durationBetween( date( 2017, 12, 21 ), time( 14, 32, 11, 0, UTC ) ) );
-        //assertEquals( parse( "-PT14H32M11S" ), durationBetween( time( 14, 32, 11, 0, UTC ), date( 2017, 12, 21 ) ) );
-        //assertEquals( parse( "PT14H32M11S" ), durationBetween(
-        //        date( 2017, 12, 21 ), time( 14, 32, 11, 0, ofHours( -12 ) ) ) );
-        //assertEquals( parse( "-PT14H32M11S" ), durationBetween(
-        //        time( 14, 32, 11, 0, ofHours( -12 ) ), date( 2017, 12, 21 ) ) );
+
+        assertEquals( parse( "-PT14H32M11S" ), durationBetween( localTime( 14, 32, 11, 0 ), date( 2017, 12, 21 ) ) );
+        assertEquals( parse( "PT14H32M11S" ), durationBetween( date( 2017, 12, 21 ), time( 14, 32, 11, 0, UTC ) ) );
+        assertEquals( parse( "-PT14H32M11S" ), durationBetween( time( 14, 32, 11, 0, UTC ), date( 2017, 12, 21 ) ) );
+        assertEquals( parse( "PT14H32M11S" ), durationBetween(
+                date( 2017, 12, 21 ), time( 14, 32, 11, 0, ofHours( -12 ) ) ) );
+        assertEquals( parse( "-PT14H32M11S" ), durationBetween(
+                time( 14, 32, 11, 0, ofHours( -12 ) ), date( 2017, 12, 21 ) ) );
+    }
+
+    @Test
+    public void shouldComputeDurationBetweenDateTimeAndDateTime() throws Exception
+    {
+        assertEquals( parse( "PT1H" ), durationBetween(
+                datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ),
+                datetime( date( 2017, 12, 21 ), time( 7, 52, 11, 0, UTC ) ) ) );
+        assertEquals( parse( "P1D" ), durationBetween(
+                datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ),
+                datetime( date( 2017, 12, 22 ), time( 6, 52, 11, 0, UTC ) ) ) );
+        assertEquals( parse( "P1DT1H" ), durationBetween(
+                datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ),
+                datetime( date( 2017, 12, 22 ), time( 7, 52, 11, 0, UTC ) ) ) );
     }
 
     @Test
