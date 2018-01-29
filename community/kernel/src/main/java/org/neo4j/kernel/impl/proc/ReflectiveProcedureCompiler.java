@@ -80,17 +80,40 @@ class ReflectiveProcedureCompiler
     private final Log log;
     private final TypeMappers typeMappers;
     private final ProcedureConfig config;
+    private final NamingRestrictions restrictions;
 
     ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry safeComponents,
             ComponentRegistry allComponents, Log log, ProcedureConfig config )
     {
-        inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
-        outputMappers = new OutputMappers( typeMappers );
-        this.safeFieldInjections = new FieldInjections( safeComponents );
-        this.allFieldInjections = new FieldInjections( allComponents );
+        this(
+                new MethodSignatureCompiler( typeMappers ),
+                new OutputMappers( typeMappers ),
+                new FieldInjections( safeComponents ),
+                new FieldInjections( allComponents ),
+                log,
+                typeMappers,
+                config,
+                ReflectiveProcedureCompiler::rejectEmptyNamespace );
+    }
+
+    private ReflectiveProcedureCompiler(
+            MethodSignatureCompiler inputSignatureCompiler,
+            OutputMappers outputMappers,
+            FieldInjections safeFieldInjections,
+            FieldInjections allFieldInjections,
+            Log log,
+            TypeMappers typeMappers,
+            ProcedureConfig config,
+            NamingRestrictions restrictions )
+    {
+        this.inputSignatureDeterminer = inputSignatureCompiler;
+        this.outputMappers = outputMappers;
+        this.safeFieldInjections = safeFieldInjections;
+        this.allFieldInjections = allFieldInjections;
         this.log = log;
         this.typeMappers = typeMappers;
         this.config = config;
+        this.restrictions = restrictions;
     }
 
     List<CallableUserFunction> compileFunction( Class<?> fcnDefinition ) throws KernelException
@@ -298,13 +321,7 @@ class ReflectiveProcedureCompiler
             QualifiedName procName )
             throws ProcedureException, IllegalAccessException
     {
-
-        if ( procName.namespace() == null || procName.namespace().length == 0 )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, " +
-                            "e.g. `@UserFunction(\"org.example.com.%s\")", procName.name() );
-        }
+        restrictions.verify( procName );
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         Class<?> returnType = method.getReturnType();
@@ -342,12 +359,7 @@ class ReflectiveProcedureCompiler
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
             Method method, QualifiedName funcName ) throws ProcedureException, IllegalAccessException
     {
-        if ( funcName.namespace() == null || funcName.namespace().length == 0 )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, " +
-                            "e.g. `@UserFunction(\"org.example.com.%s\")", funcName.name() );
-        }
+        restrictions.verify( funcName );
 
         //find update and result method
         Method update = null;
@@ -518,6 +530,22 @@ class ReflectiveProcedureCompiler
         String[] namespace = pkg == null ? new String[0] : pkg.getName().split( "\\." );
         String name = m.getName();
         return new QualifiedName( namespace, name );
+    }
+
+    public ReflectiveProcedureCompiler withoutNamingRestrictions()
+    {
+        return new ReflectiveProcedureCompiler(
+                inputSignatureDeterminer,
+                outputMappers,
+                safeFieldInjections,
+                allFieldInjections,
+                log,
+                typeMappers,
+                config,
+                name ->
+                {
+                    // all ok
+                } );
     }
 
     private abstract static class ReflectiveBase
@@ -870,6 +898,16 @@ class ReflectiveProcedureCompiler
                             "Caused by: " + throwable );
                 }
             }
+        }
+    }
+
+    private static void rejectEmptyNamespace( QualifiedName name ) throws ProcedureException
+    {
+        if ( name.namespace() == null || name.namespace().length == 0 )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "It is not allowed to define functions in the root namespace please use a namespace, " +
+                            "e.g. `@UserFunction(\"org.example.com.%s\")", name.name() );
         }
     }
 }
