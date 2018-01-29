@@ -55,10 +55,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private Bootstrap bootstrap;
     private NioEventLoopGroup eventLoopGroup;
 
-    public SenderService( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, Monitors monitors )
+    public SenderService(ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, Monitors monitors)
     {
         this.channelInitializer = channelInitializer;
-        this.log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog(getClass());
         this.monitors = monitors;
         this.nonBlockingChannels = new NonBlockingChannels();
     }
@@ -90,7 +90,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
     private NonBlockingChannel channel( AdvertisedSocketAddress to )
     {
-        MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
+        MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class ); // aaahhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh!
         NonBlockingChannel nonBlockingChannel = nonBlockingChannels.get( to );
 
         if ( nonBlockingChannel == null )
