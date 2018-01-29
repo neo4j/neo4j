@@ -37,10 +37,10 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * msb [ 3 ][ 2 ][ 1 ][ 0 ] lsb
  *       ▲    ▲    ▲    ▲
  *       │    │    │    │
- *       │    │    │    └──────────── {@link TreeNode#formatIdentifier()}
- *       │    │    └───────────────── {@link TreeNode#formatVersion()}
- *       │    └────────────────────── {@link #CURRENT_STATE_VERSION}
- *       └─────────────────────────── {@link #CURRENT_GBPTREE_VERSION}
+ *       │    │    │    └──────────── {@link #getFormatIdentifier()}
+ *       │    │    └───────────────── {@link #getFormatVersion()}
+ *       │    └────────────────────── {@link #getUnusedVersionSlot3()}
+ *       └─────────────────────────── {@link #getUnusedVersionSlot4()}
  * </pre>
  *
  * {@link #CURRENT_STATE_VERSION} and {@link #CURRENT_GBPTREE_VERSION} aren't used yet because they have
@@ -196,12 +196,12 @@ class Meta
         return (byte) ((format >>> shift) & MASK_BYTE);
     }
 
-    int allVersionsCombined()
+    private int allVersionsCombined()
     {
         return formatIdentifier >>> SHIFT_FORMAT_IDENTIFIER | formatVersion >>> SHIFT_FORMAT_VERSION;
     }
 
-    public int getPageSize()
+    int getPageSize()
     {
         return pageSize;
     }
@@ -211,7 +211,7 @@ class Meta
         return formatIdentifier;
     }
 
-    public byte getFormatVersion()
+    byte getFormatVersion()
     {
         return formatVersion;
     }

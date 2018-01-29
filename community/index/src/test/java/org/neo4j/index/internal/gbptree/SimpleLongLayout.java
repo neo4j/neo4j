@@ -85,7 +85,7 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
         }
     }
 
-    static Builder layout()
+    static Builder longLayout()
     {
         return new Builder();
     }

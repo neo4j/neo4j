@@ -42,7 +42,7 @@ import static java.lang.ProcessBuilder.Redirect.INHERIT;
 import static java.util.Arrays.asList;
 import static org.neo4j.graphdb.config.Configuration.EMPTY;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.SimpleLongLayout.layout;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 /**
  * Tests functionality around process crashing, or similar, when having started, but not completed creation of an index file,
@@ -70,7 +70,7 @@ public class GBPTreePartialCreateFuzzIT
         // then reading it should either work or throw IOException
         try ( PageCache pageCache = storage.pageCache() )
         {
-            SimpleLongLayout layout = layout().build();
+            SimpleLongLayout layout = longLayout().build();
 
             // check readHeader
             try
@@ -107,7 +107,7 @@ public class GBPTreePartialCreateFuzzIT
             try ( PageCache pageCache = new MuninnPageCache( swapper, 10, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL ) )
             {
                 fs.deleteFile( file );
-                new GBPTreeBuilder<>( pageCache, file, layout().build() ).build().close();
+                new GBPTreeBuilder<>( pageCache, file, longLayout().build() ).build().close();
             }
         }
     }

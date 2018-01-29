@@ -128,7 +128,7 @@ class TreeNodeSelector
          * Specifies the format identifier of the physical layout of tree nodes.
          * A format identifier must be unique among all possible existing format identifiers.
          * It's used to differentiate between different types of formats.
-         * On top of this a specific format identifier may be {@link #formatVersion()}.
+         * On top of this a specific {@link #formatVersion() format version} can specify a version of this format.
          *
          * @return format identifier for the specific {@link TreeNode} that this factory represents.
          * Can return this w/o instantiating the {@link TreeNode}.

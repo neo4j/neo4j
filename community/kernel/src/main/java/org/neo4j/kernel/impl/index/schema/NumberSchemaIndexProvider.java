@@ -98,9 +98,8 @@ public class NumberSchemaIndexProvider extends SchemaIndexProvider
     {
         File storeFile = nativeIndexFileFromIndexId( indexId );
         NumberLayout layout = layout( descriptor );
-        return new NumberSchemaIndexAccessor<>(
-                pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId,
-                samplingConfig );
+        return new NumberSchemaIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor,
+                descriptor, indexId, samplingConfig );
     }
 
     private NumberLayout layout( IndexDescriptor descriptor )
@@ -151,8 +150,7 @@ public class NumberSchemaIndexProvider extends SchemaIndexProvider
         try
         {
             NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-            GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ),
-                    headerReader );
+            GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ), headerReader );
             switch ( headerReader.state )
             {
             case BYTE_FAILED:

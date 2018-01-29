@@ -80,7 +80,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.SimpleLongLayout.layout;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -91,7 +91,7 @@ public class GBPTreeTest
 {
     private static final int DEFAULT_PAGE_SIZE = 256;
 
-    private static final Layout<MutableLong,MutableLong> layout = layout().build();
+    private static final Layout<MutableLong,MutableLong> layout = longLayout().build();
 
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
@@ -144,7 +144,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = layout().withCustomerNameAsMetaData( "Something else" ).build();
+        SimpleLongLayout otherLayout = longLayout().withCustomerNameAsMetaData( "Something else" ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -167,7 +167,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = layout().withIdentifier( 123456 ).build();
+        SimpleLongLayout otherLayout = longLayout().withIdentifier( 123456 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -187,7 +187,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = layout().withMajorVersion( 123 ).build();
+        SimpleLongLayout otherLayout = longLayout().withMajorVersion( 123 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -207,7 +207,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = layout().withMinorVersion( 123 ).build();
+        SimpleLongLayout otherLayout = longLayout().withMinorVersion( 123 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -356,7 +356,7 @@ public class GBPTreeTest
         try
         {
             // WHEN
-            builder.with( layout().withFixedSize( false ).build() ).build();
+            builder.with( longLayout().withFixedSize( false ).build() ).build();
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )

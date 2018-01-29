@@ -21,14 +21,14 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
-import static org.neo4j.index.internal.gbptree.SimpleLongLayout.layout;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 public class SeekCursorFixedSizeTest extends SeekCursorTestBase<MutableLong,MutableLong>
 {
     @Override
     TestLayout<MutableLong,MutableLong> getLayout()
     {
-        return layout().build();
+        return longLayout().build();
     }
 
     @Override

@@ -45,7 +45,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.index.internal.gbptree.SimpleLongLayout.layout;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
@@ -68,7 +68,7 @@ public class CrashGenerationCleanerTest
     private static final int PAGE_SIZE = 256;
 
     private PagedFile pagedFile;
-    private final Layout<MutableLong,MutableLong> layout = layout().build();
+    private final Layout<MutableLong,MutableLong> layout = longLayout().build();
     private final CorruptibleTreeNode corruptibleTreeNode = new CorruptibleTreeNode( PAGE_SIZE, layout );
     private final int oldStableGeneration = 9;
     private final int stableGeneration = 10;

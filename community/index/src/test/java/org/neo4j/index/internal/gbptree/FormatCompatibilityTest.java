@@ -57,7 +57,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.index.internal.gbptree.SimpleLongLayout.layout;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 /**
@@ -79,8 +79,8 @@ public class FormatCompatibilityTest
     public static List<Object[]> data()
     {
         return asList(
-                new Object[] {layout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_ZIP},
-                new Object[] {layout().withFixedSize( false ).build(), CURRENT_DYNAMIC_SIZE_FORMAT_ZIP} );
+                new Object[] {longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_ZIP},
+                new Object[] {longLayout().withFixedSize( false ).build(), CURRENT_DYNAMIC_SIZE_FORMAT_ZIP} );
     }
 
     @Parameter
