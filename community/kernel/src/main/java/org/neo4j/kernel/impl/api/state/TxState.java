@@ -998,7 +998,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor descriptor, ValueTuple values )
     {
-        assert values != null;
         PrimitiveLongDiffSets indexUpdatesForSeek = getIndexUpdatesForSeek( descriptor.schema(), values, /*create=*/false );
         return indexUpdatesForSeek == null ? EmptyPrimitiveLongReadableDiffSets.INSTANCE : indexUpdatesForSeek;
     }
