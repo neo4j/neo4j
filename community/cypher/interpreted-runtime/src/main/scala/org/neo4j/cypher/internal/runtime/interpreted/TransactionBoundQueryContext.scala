@@ -172,13 +172,44 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue] = {
-    val relationships = types match {
-      case None =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir))
-      case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds)
+    val read = reads()
+    read.singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) return Iterator.empty
+
+    val cursors = transactionalContext.kernelTransaction.cursors
+
+    if (nodeCursor.isDense) {
+      val groupCursor = cursors.allocateRelationshipGroupCursor()
+      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
+      val selectionCursor = new RelationshipDenseSelectionCursor()
+      dir match {
+        case OUTGOING => selectionCursor.outgoing(groupCursor, traversalCursor, types.orNull)
+        case INCOMING => selectionCursor.incoming(groupCursor, traversalCursor, types.orNull)
+        case BOTH => selectionCursor.all(groupCursor, traversalCursor, types.orNull)
+      }
+      new CursorIterator[RelationshipValue] {
+        override protected def close(): Unit = selectionCursor.close()
+        override protected def fetchNext(): RelationshipValue =
+          if (selectionCursor.next())
+            fromRelationshipProxy(entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference()))
+          else null
+      }
+    } else {
+      val traversalCursor = cursors.allocateRelationshipTraversalCursor()
+      val selectionCursor = new RelationshipSparseSelectionCursor()
+      dir match {
+        case OUTGOING => selectionCursor.outgoing(traversalCursor, types.orNull)
+        case INCOMING => selectionCursor.incoming(traversalCursor, types.orNull)
+        case BOTH => selectionCursor.all(traversalCursor, types.orNull)
+      }
+      new CursorIterator[RelationshipValue] {
+        override protected def close(): Unit = selectionCursor.close()
+        override protected def fetchNext(): RelationshipValue =
+          if (selectionCursor.next())
+            fromRelationshipProxy(entityAccessor.newRelationshipProxy(selectionCursor.relationshipReference()))
+          else null
+      }
     }
-    new BeansAPIRelationshipIterator(relationships, entityAccessor).map(fromRelationshipProxy)
   }
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection,
