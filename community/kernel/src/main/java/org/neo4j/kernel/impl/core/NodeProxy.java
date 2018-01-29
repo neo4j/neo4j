@@ -42,10 +42,9 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipDenseSelectionIterator;
+import org.neo4j.internal.kernel.api.helpers.RelationshipDenseSelectionIterator;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
-import org.neo4j.internal.kernel.api.RelationshipSelectionIterator;
-import org.neo4j.internal.kernel.api.RelationshipSparseSelectionIterator;
+import org.neo4j.internal.kernel.api.helpers.RelationshipSparseSelectionIterator;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -753,7 +752,7 @@ public class NodeProxy implements Node
         }
     }
 
-    private RelationshipSelectionIterator<Relationship> getRelationshipSelectionIterator( Direction direction, int[] typeIds )
+    private ResourceIterator<Relationship> getRelationshipSelectionIterator( Direction direction, int[] typeIds )
     {
         KernelTransaction transaction = safeAcquireTransaction();
         NodeCursor node = transaction.nodeCursor();

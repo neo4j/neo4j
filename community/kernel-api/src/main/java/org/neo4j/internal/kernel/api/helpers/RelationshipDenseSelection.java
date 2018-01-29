@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.internal.kernel.api.helpers;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+
 /**
- * Helper iterator for traversing specific types and directions of a dense node.
+ * Helper for traversing specific types and directions of a dense node.
  */
-public final class RelationshipDenseSelectionIterator<R> extends RelationshipSelectionIterator<R>
+abstract class RelationshipDenseSelection
 {
     private enum Dir
     {
@@ -34,8 +37,7 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipSel
     }
 
     private RelationshipGroupCursor groupCursor;
-    private RelationshipTraversalCursor relationshipCursor;
-    private RelationshipSelectionIterator.RelationshipFactory<R> factory;
+    protected RelationshipTraversalCursor relationshipCursor;
     private int[] types;
     private Dir[] directions;
     private int currentDirection;
@@ -44,9 +46,8 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipSel
     private boolean onGroup;
     private int foundTypes;
 
-    public RelationshipDenseSelectionIterator( RelationshipFactory<R> factory )
+    RelationshipDenseSelection()
     {
-        this.factory = factory;
         this.directions = new Dir[3];
     }
 
@@ -162,8 +163,13 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipSel
         this.foundTypes = 0;
     }
 
-    @Override
-    protected R fetchNext()
+    /**
+     * Fetch the next valid relationship. If a valid relationship is found, will callback
+     * using {@link #setRelationship(long, long, int, long)}
+     *
+     * @return True is a valid relationship was found
+     */
+    protected boolean fetchNext()
     {
         if ( onRelationship )
         {
@@ -178,7 +184,7 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipSel
                 if ( types != null && foundTypes >= types.length )
                 {
                     onGroup = false;
-                    return null;
+                    return false;
                 }
 
                 do
@@ -195,7 +201,7 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipSel
 
             if ( !onGroup )
             {
-                return null;
+                return false;
             }
 
             Dir d = directions[currentDirection];
@@ -222,18 +228,28 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipSel
             }
         }
 
-        return factory.relationship(relationshipCursor.relationshipReference(),
-                                    relationshipCursor.sourceNodeReference(),
-                                    relationshipCursor.label(),
-                                    relationshipCursor.targetNodeReference() );
+        setRelationship(relationshipCursor.relationshipReference(),
+                        relationshipCursor.sourceNodeReference(),
+                        relationshipCursor.label(),
+                        relationshipCursor.targetNodeReference() );
+        return true;
     }
+
+    /**
+     * Called when {@link #fetchNext()} finds a valid relationship.
+     *
+     * @param id relationship id
+     * @param sourceNode source node id
+     * @param type relationship type
+     * @param targetNode target node id
+     */
+    protected abstract void setRelationship( long id, long sourceNode, int type, long targetNode );
 
     private boolean correctRelationshipType()
     {
         return types == null || ArrayUtils.contains( types, groupCursor.relationshipLabel() );
     }
 
-    @Override
     public void close()
     {
         Throwable closeGroupError = null;
