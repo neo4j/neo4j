@@ -23,16 +23,19 @@ class StubGroupCursor implements RelationshipGroupCursor
 {
     private int offset;
     private final GroupData[] groups;
+    private boolean isClosed;
 
     StubGroupCursor( GroupData... groups )
     {
         this.groups = groups;
-        offset = -1;
+        this.offset = -1;
+        this.isClosed = false;
     }
 
     void rewind()
     {
         this.offset = -1;
+        this.isClosed = false;
     }
 
     @Override
@@ -63,12 +66,13 @@ class StubGroupCursor implements RelationshipGroupCursor
     @Override
     public void close()
     {
+        isClosed = true;
     }
 
     @Override
     public boolean isClosed()
     {
-        return offset >= groups.length;
+        return isClosed;
     }
 
     @Override

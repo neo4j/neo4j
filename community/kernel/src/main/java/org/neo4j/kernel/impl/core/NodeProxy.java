@@ -42,10 +42,10 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipDenseSelectionCursor;
+import org.neo4j.internal.kernel.api.RelationshipDenseSelectionIterator;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
-import org.neo4j.internal.kernel.api.RelationshipSelectionCursor;
-import org.neo4j.internal.kernel.api.RelationshipSparseSelectionCursor;
+import org.neo4j.internal.kernel.api.RelationshipSelectionIterator;
+import org.neo4j.internal.kernel.api.RelationshipSparseSelectionIterator;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -161,11 +161,7 @@ public class NodeProxy implements Node
     private ResourceIterable<Relationship> innerGetRelationships( final Direction direction, int[] typeIds )
     {
         assertInUnterminatedTransaction();
-        return () ->
-        {
-            RelationshipSelectionCursor selectionCursor = getRelationshipSelectionCursor( direction, typeIds );
-            return new RelationshipConversion( spi, selectionCursor );
-        };
+        return () -> getRelationshipSelectionIterator( direction, typeIds );
     }
 
     @Override
@@ -206,10 +202,7 @@ public class NodeProxy implements Node
     private boolean innerHasRelationships( final Direction direction, int[] typeIds )
     {
         assertInUnterminatedTransaction();
-        try ( RelationshipSelectionCursor selectionCursor = getRelationshipSelectionCursor( direction, typeIds ) )
-        {
-            return selectionCursor.next();
-        }
+        return getRelationshipSelectionIterator( direction, typeIds ).hasNext();
     }
 
     @Override
@@ -760,9 +753,8 @@ public class NodeProxy implements Node
         }
     }
 
-    private RelationshipSelectionCursor getRelationshipSelectionCursor( Direction direction, int[] typeIds )
+    private RelationshipSelectionIterator<Relationship> getRelationshipSelectionIterator( Direction direction, int[] typeIds )
     {
-        RelationshipSelectionCursor selectionCursor;
         KernelTransaction transaction = safeAcquireTransaction();
         NodeCursor node = transaction.nodeCursor();
         transaction.dataRead().singleNode( getId(), node );
@@ -778,7 +770,8 @@ public class NodeProxy implements Node
             try
             {
                 node.relationships( relationshipGroup );
-                RelationshipDenseSelectionCursor denseCursor = new RelationshipDenseSelectionCursor();
+                RelationshipDenseSelectionIterator<Relationship> denseCursor =
+                        new RelationshipDenseSelectionIterator<>( spi::newRelationshipProxy );
 
                 switch ( direction )
                 {
@@ -798,7 +791,7 @@ public class NodeProxy implements Node
                     throw new IllegalStateException( "Unsupported direction: " + direction );
                 }
 
-                selectionCursor = denseCursor;
+                return denseCursor;
             }
             catch ( Throwable e )
             {
@@ -812,7 +805,8 @@ public class NodeProxy implements Node
             try
             {
                 node.allRelationships( relationship );
-                RelationshipSparseSelectionCursor sparseCursor = new RelationshipSparseSelectionCursor();
+                RelationshipSparseSelectionIterator<Relationship> sparseCursor =
+                        new RelationshipSparseSelectionIterator<>( spi::newRelationshipProxy );
 
                 switch ( direction )
                 {
@@ -832,7 +826,7 @@ public class NodeProxy implements Node
                     throw new IllegalStateException( "Unsupported direction: " + direction );
                 }
 
-                selectionCursor = sparseCursor;
+                return sparseCursor;
             }
             catch ( Throwable e )
             {
@@ -840,7 +834,6 @@ public class NodeProxy implements Node
                 throw e;
             }
         }
-        return selectionCursor;
     }
 
     private int[] relTypeIds( RelationshipType[] types, Statement statement )

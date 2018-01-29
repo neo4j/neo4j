@@ -25,6 +25,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static junit.framework.TestCase.assertTrue;
+
 public class RelationshipDenseSelectionCursorTest extends RelationshipSelectionTestBase
 {
 
@@ -74,112 +76,119 @@ public class RelationshipDenseSelectionCursorTest extends RelationshipSelectionT
     public void shouldSelectOutgoing()
     {
         // given
-        RelationshipDenseSelectionCursor cursor = new RelationshipDenseSelectionCursor();
+        RelationshipDenseSelectionIterator<R> iterator = new RelationshipDenseSelectionIterator<>( R::new );
 
         // when
-        cursor.outgoing( innerGroupCursor, innerRelationshipCursor );
+        iterator.outgoing( innerGroupCursor, innerRelationshipCursor );
 
         // then
-        assertLoop( cursor, typeA );
-        assertOutgoing( cursor, 10, typeB );
-        assertLoop( cursor, typeB );
-        assertLoop( cursor, typeB );
-        assertOutgoing( cursor, 20, typeC );
-        assertOutgoing( cursor, 21, typeC );
-        assertEmpty( cursor );
+        assertLoop( iterator, typeA );
+        assertOutgoing( iterator, 10, typeB );
+        assertLoop( iterator, typeB );
+        assertLoop( iterator, typeB );
+        assertOutgoing( iterator, 20, typeC );
+        assertOutgoing( iterator, 21, typeC );
+        assertEmptyAndClosed( iterator );
     }
 
     @Test
     public void shouldSelectIncoming()
     {
         // given
-        RelationshipDenseSelectionCursor cursor = new RelationshipDenseSelectionCursor();
+        RelationshipDenseSelectionIterator<R> iterator = new RelationshipDenseSelectionIterator<>( R::new );
 
         // when
-        cursor.incoming( innerGroupCursor, innerRelationshipCursor );
+        iterator.incoming( innerGroupCursor, innerRelationshipCursor );
 
         // then
-        assertIncoming( cursor, 1, typeA );
-        assertIncoming( cursor, 2, typeA );
-        assertLoop( cursor, typeA );
-        assertLoop( cursor, typeB );
-        assertLoop( cursor, typeB );
-        assertIncoming( cursor, 22, typeC );
-        assertEmpty( cursor );
+        assertIncoming( iterator, 1, typeA );
+        assertIncoming( iterator, 2, typeA );
+        assertLoop( iterator, typeA );
+        assertLoop( iterator, typeB );
+        assertLoop( iterator, typeB );
+        assertIncoming( iterator, 22, typeC );
+        assertEmptyAndClosed( iterator );
     }
 
     @Test
     public void shouldSelectAll()
     {
         // given
-        RelationshipDenseSelectionCursor cursor = new RelationshipDenseSelectionCursor();
+        RelationshipDenseSelectionIterator<R> iterator = new RelationshipDenseSelectionIterator<>( R::new );
 
         // when
-        cursor.all( innerGroupCursor, innerRelationshipCursor );
+        iterator.all( innerGroupCursor, innerRelationshipCursor );
 
         // then
-        assertIncoming( cursor, 1, typeA );
-        assertIncoming( cursor, 2, typeA );
-        assertLoop( cursor, typeA );
-        assertOutgoing( cursor, 10, typeB );
-        assertLoop( cursor, typeB );
-        assertLoop( cursor, typeB );
-        assertOutgoing( cursor, 20, typeC );
-        assertOutgoing( cursor, 21, typeC );
-        assertIncoming( cursor, 22, typeC );
-        assertEmpty( cursor );
+        assertIncoming( iterator, 1, typeA );
+        assertIncoming( iterator, 2, typeA );
+        assertLoop( iterator, typeA );
+        assertOutgoing( iterator, 10, typeB );
+        assertLoop( iterator, typeB );
+        assertLoop( iterator, typeB );
+        assertOutgoing( iterator, 20, typeC );
+        assertOutgoing( iterator, 21, typeC );
+        assertIncoming( iterator, 22, typeC );
+        assertEmptyAndClosed( iterator );
     }
 
     @Test
     public void shouldSelectOutgoingOfType()
     {
         // given
-        RelationshipDenseSelectionCursor cursor = new RelationshipDenseSelectionCursor();
+        RelationshipDenseSelectionIterator<R> iterator = new RelationshipDenseSelectionIterator<>( R::new );
 
         // when
-        cursor.outgoing( innerGroupCursor, innerRelationshipCursor, types( typeA, typeC ) );
+        iterator.outgoing( innerGroupCursor, innerRelationshipCursor, types( typeA, typeC ) );
 
         // then
-        assertLoop( cursor, typeA );
-        assertOutgoing( cursor, 20, typeC );
-        assertOutgoing( cursor, 21, typeC );
-        assertEmpty( cursor );
+        assertLoop( iterator, typeA );
+        assertOutgoing( iterator, 20, typeC );
+        assertOutgoing( iterator, 21, typeC );
+        assertEmptyAndClosed( iterator );
     }
 
     @Test
     public void shouldSelectIncomingOfType()
     {
         // given
-        RelationshipDenseSelectionCursor cursor = new RelationshipDenseSelectionCursor();
+        RelationshipDenseSelectionIterator<R> iterator = new RelationshipDenseSelectionIterator<>( R::new );
 
         // when
-        cursor.incoming( innerGroupCursor, innerRelationshipCursor, types( typeA, typeC ) );
+        iterator.incoming( innerGroupCursor, innerRelationshipCursor, types( typeA, typeC ) );
 
         // then
-        assertIncoming( cursor, 1, typeA );
-        assertIncoming( cursor, 2, typeA );
-        assertLoop( cursor, typeA );
-        assertIncoming( cursor, 22, typeC );
-        assertEmpty( cursor );
+        assertIncoming( iterator, 1, typeA );
+        assertIncoming( iterator, 2, typeA );
+        assertLoop( iterator, typeA );
+        assertIncoming( iterator, 22, typeC );
+        assertEmptyAndClosed( iterator );
     }
 
     @Test
     public void shouldSelectAllOfType()
     {
         // given
-        RelationshipDenseSelectionCursor cursor = new RelationshipDenseSelectionCursor();
+        RelationshipDenseSelectionIterator<R> iterator = new RelationshipDenseSelectionIterator<>( R::new );
 
         // when
-        cursor.all( innerGroupCursor, innerRelationshipCursor, types( typeA, typeC ) );
+        iterator.all( innerGroupCursor, innerRelationshipCursor, types( typeA, typeC ) );
 
         // then
-        assertIncoming( cursor, 1, typeA );
-        assertIncoming( cursor, 2, typeA );
-        assertLoop( cursor, typeA );
-        assertOutgoing( cursor, 20, typeC );
-        assertOutgoing( cursor, 21, typeC );
-        assertIncoming( cursor, 22, typeC );
-        assertEmpty( cursor );
+        assertIncoming( iterator, 1, typeA );
+        assertIncoming( iterator, 2, typeA );
+        assertLoop( iterator, typeA );
+        assertOutgoing( iterator, 20, typeC );
+        assertOutgoing( iterator, 21, typeC );
+        assertIncoming( iterator, 22, typeC );
+        assertEmptyAndClosed( iterator );
+    }
+
+    private void assertEmptyAndClosed( RelationshipDenseSelectionIterator<R> iterator )
+    {
+        assertEmpty( iterator );
+        assertTrue( "close group cursor", innerGroupCursor.isClosed() );
+        assertTrue( "close traversal cursor", innerRelationshipCursor.isClosed() );
     }
 
     private StubGroupCursor.GroupData group(

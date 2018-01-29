@@ -22,12 +22,20 @@ package org.neo4j.internal.kernel.api;
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
- * Helper cursor for traversing specific types and directions of a dense node.
+ * Helper iterator for traversing specific types and directions of a dense node.
  */
-public class RelationshipDenseSelectionCursor implements RelationshipSelectionCursor
+public final class RelationshipDenseSelectionIterator<R> extends RelationshipSelectionIterator<R>
 {
+    private enum Dir
+    {
+        OUT,
+        IN,
+        LOOP
+    }
+
     private RelationshipGroupCursor groupCursor;
     private RelationshipTraversalCursor relationshipCursor;
+    private RelationshipSelectionIterator.RelationshipFactory<R> factory;
     private int[] types;
     private Dir[] directions;
     private int currentDirection;
@@ -36,16 +44,10 @@ public class RelationshipDenseSelectionCursor implements RelationshipSelectionCu
     private boolean onGroup;
     private int foundTypes;
 
-    private enum Dir
+    public RelationshipDenseSelectionIterator( RelationshipFactory<R> factory )
     {
-        OUT,
-        IN,
-        LOOP
-    }
-
-    public RelationshipDenseSelectionCursor()
-    {
-        directions = new Dir[3];
+        this.factory = factory;
+        this.directions = new Dir[3];
     }
 
     /**
@@ -161,7 +163,7 @@ public class RelationshipDenseSelectionCursor implements RelationshipSelectionCu
     }
 
     @Override
-    public boolean next()
+    protected R fetchNext()
     {
         if ( onRelationship )
         {
@@ -176,7 +178,7 @@ public class RelationshipDenseSelectionCursor implements RelationshipSelectionCu
                 if ( types != null && foundTypes >= types.length )
                 {
                     onGroup = false;
-                    return false;
+                    return null;
                 }
 
                 do
@@ -193,7 +195,7 @@ public class RelationshipDenseSelectionCursor implements RelationshipSelectionCu
 
             if ( !onGroup )
             {
-                return false;
+                return null;
             }
 
             Dir d = directions[currentDirection];
@@ -219,18 +221,16 @@ public class RelationshipDenseSelectionCursor implements RelationshipSelectionCu
                 throw new IllegalStateException( "Lorem ipsus, Brutus" );
             }
         }
-        return true;
+
+        return factory.relationship(relationshipCursor.relationshipReference(),
+                                    relationshipCursor.sourceNodeReference(),
+                                    relationshipCursor.label(),
+                                    relationshipCursor.targetNodeReference() );
     }
 
     private boolean correctRelationshipType()
     {
         return types == null || ArrayUtils.contains( types, groupCursor.relationshipLabel() );
-    }
-
-    @Override
-    public boolean shouldRetry()
-    {
-        return false;
     }
 
     @Override
@@ -269,65 +269,5 @@ public class RelationshipDenseSelectionCursor implements RelationshipSelectionCu
             relationshipCursor = null;
             groupCursor = null;
         }
-    }
-
-    @Override
-    public boolean isClosed()
-    {
-        return relationshipCursor == null;
-    }
-
-    @Override
-    public long relationshipReference()
-    {
-        return relationshipCursor.relationshipReference();
-    }
-
-    @Override
-    public int label()
-    {
-        return relationshipCursor.label();
-    }
-
-    @Override
-    public boolean hasProperties()
-    {
-        return relationshipCursor.hasProperties();
-    }
-
-    @Override
-    public void source( NodeCursor cursor )
-    {
-        relationshipCursor.source( cursor );
-    }
-
-    @Override
-    public void target( NodeCursor cursor )
-    {
-        relationshipCursor.target( cursor );
-    }
-
-    @Override
-    public void properties( PropertyCursor cursor )
-    {
-        relationshipCursor.properties( cursor );
-    }
-
-    @Override
-    public long sourceNodeReference()
-    {
-        return relationshipCursor.sourceNodeReference();
-    }
-
-    @Override
-    public long targetNodeReference()
-    {
-        return relationshipCursor.targetNodeReference();
-    }
-
-    @Override
-    public long propertiesReference()
-    {
-        return relationshipCursor.propertiesReference();
     }
 }
