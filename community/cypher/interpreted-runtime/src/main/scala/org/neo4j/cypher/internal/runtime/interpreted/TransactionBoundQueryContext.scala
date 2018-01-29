@@ -175,6 +175,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val cursors = transactionalContext.kernelTransaction.cursors()
     if (nodeCursor.isDense) {
       val groupCursor = cursors.allocateRelationshipGroupCursor()
+      nodeCursor.relationships(groupCursor)
       val traversalCursor = cursors.allocateRelationshipTraversalCursor()
       val denseSelectionCursor = new RelationshipDenseSelectionCursor()
       dir match {
@@ -185,6 +186,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       denseSelectionCursor
     } else {
       val traversalCursor = cursors.allocateRelationshipTraversalCursor()
+      nodeCursor.allRelationships(traversalCursor)
       val sparseSelectionCursor = new RelationshipSparseSelectionCursor()
       dir match {
         case OUTGOING => sparseSelectionCursor.outgoing(traversalCursor, types.orNull)
@@ -1026,20 +1028,34 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   class RelationShipCursorIterator(selectionCursor: RelationshipSelectionCursor)
     extends PrimitiveCursorIterator with RelationshipIterator {
+    private var label: Int = -1
+    private var source: Long = -1L
+    private var target: Long = -1L
 
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
                                                            visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
-      visitor.visit(relationshipId, selectionCursor.label(),
-                    selectionCursor.sourceNodeReference(),
-                    selectionCursor.targetNodeReference())
+      visitor.visit(relationshipId, label, source, target)
       //TODO what does this even mean?
       true
     }
 
     override protected def fetchNext(): Long =
-      if (selectionCursor.next()) selectionCursor.relationshipReference() else -1L
+      if (selectionCursor.next()) {
+        label = selectionCursor.label()
+        source = selectionCursor.sourceNodeReference()
+        target = selectionCursor.targetNodeReference()
+        selectionCursor.relationshipReference()
+      } else {
+        close()
+        -1L
+      }
 
-    override def close(): Unit = selectionCursor.close()
+    override def close(): Unit = {
+      label = -1
+      source = -1L
+      target = -1L
+      selectionCursor.close()
+    }
   }
 
   abstract class PrimitiveCursorIterator extends PrimitiveLongResourceIterator {
