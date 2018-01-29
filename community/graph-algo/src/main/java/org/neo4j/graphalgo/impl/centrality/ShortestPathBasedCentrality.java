@@ -91,7 +91,7 @@ public abstract class ShortestPathBasedCentrality<CentralityType,ShortestPathCos
     public void reset()
     {
         doneCalculation = false;
-        centralities = new HashMap<Node,CentralityType>();
+        centralities = new HashMap<>();
         for ( Node node : nodeSet )
         {
             centralities.put( node, zeroValue );

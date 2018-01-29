@@ -19,19 +19,18 @@
  */
 package org.neo4j.server.web;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-
-import javax.servlet.ServletException;
-
-import org.neo4j.server.database.InjectableProvider;
-
 import com.sun.jersey.api.core.ClassNamesResourceConfig;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.WebApplication;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import com.sun.jersey.spi.container.servlet.WebConfig;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import javax.servlet.ServletException;
+
+import org.neo4j.server.database.InjectableProvider;
 
 @SuppressWarnings( "serial" )
 public class NeoServletContainer extends ServletContainer
@@ -49,10 +48,7 @@ public class NeoServletContainer extends ServletContainer
         super.configure( wc, rc, wa );
 
         Set<Object> singletons = rc.getSingletons();
-        for ( InjectableProvider<?> injectable : injectables )
-        {
-            singletons.add( injectable );
-        }
+        singletons.addAll( injectables );
     }
 
     @Override

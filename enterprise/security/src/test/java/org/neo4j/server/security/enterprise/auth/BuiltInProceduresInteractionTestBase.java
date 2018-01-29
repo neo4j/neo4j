@@ -1043,7 +1043,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldClearQueryCachesIfAdmin()
     {
-        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", r -> r.close());
+        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", ResourceIterator::close );
         // any answer is okay, as long as it isn't denied. That is why we don't care about the actual result here
     }
 

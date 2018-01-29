@@ -871,7 +871,7 @@ public class DatabaseActionsTest
 
         try ( Transaction transaction = graph.beginTx() )
         {
-            assertEquals( 2, serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+            assertEquals( 2, serialize( actions.traverse( startNode, new HashMap<>(),
                     TraverserReturnType.node ) ).size() );
         }
     }
@@ -947,7 +947,7 @@ public class DatabaseActionsTest
         List<Object> hits;
         try ( Transaction transaction = graph.beginTx() )
         {
-            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+            hits = serialize( actions.traverse( startNode, new HashMap<>(),
                     TraverserReturnType.relationship ) );
         }
 
@@ -967,7 +967,7 @@ public class DatabaseActionsTest
         List<Object> hits;
         try ( Transaction transaction = graph.beginTx() )
         {
-            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+            hits = serialize( actions.traverse( startNode, new HashMap<>(),
                     TraverserReturnType.path ) );
         }
 
@@ -989,7 +989,7 @@ public class DatabaseActionsTest
         List<Object> hits;
         try ( Transaction transaction = graph.beginTx() )
         {
-            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+            hits = serialize( actions.traverse( startNode, new HashMap<>(),
                     TraverserReturnType.fullpath ) );
         }
 

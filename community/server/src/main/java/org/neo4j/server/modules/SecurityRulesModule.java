@@ -74,7 +74,7 @@ public class SecurityRulesModule implements ServerModule
 
     private Iterable<SecurityRule> getSecurityRules()
     {
-        ArrayList<SecurityRule> rules = new ArrayList<SecurityRule>();
+        ArrayList<SecurityRule> rules = new ArrayList<>();
 
         for ( String classname : config.get( ServerSettings.security_rules ) )
         {

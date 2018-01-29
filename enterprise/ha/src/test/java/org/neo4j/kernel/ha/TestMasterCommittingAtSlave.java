@@ -239,7 +239,7 @@ public class TestMasterCommittingAtSlave
 
     private Iterable<Slave> instantiateSlaves( int count, boolean[] failingSlaves )
     {
-        List<Slave> slaves = new ArrayList<Slave>();
+        List<Slave> slaves = new ArrayList<>();
         for ( int i = 0; i < count; i++ )
         {
             slaves.add( new FakeSlave( i < failingSlaves.length && failingSlaves[i], i + MasterServerId + 1 ) );
@@ -249,7 +249,7 @@ public class TestMasterCommittingAtSlave
 
     private static class FakeSlave implements Slave
     {
-        private volatile Queue<Long> calledWithTxId = new LinkedList<Long>();
+        private volatile Queue<Long> calledWithTxId = new LinkedList<>();
         private final boolean failing;
         private final int serverId;
 

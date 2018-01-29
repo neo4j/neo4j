@@ -29,7 +29,7 @@ import static java.lang.System.lineSeparator;
 public class ColumnPrinter
 {
     private final Column rawColumn;
-    private final List<Column> columns = new ArrayList<Column>();
+    private final List<Column> columns = new ArrayList<>();
 
     public ColumnPrinter( String... columnPrefixes )
     {
@@ -84,7 +84,7 @@ public class ColumnPrinter
     private static class Column
     {
         private int widest;
-        protected final List<String> cells = new ArrayList<String>();
+        protected final List<String> cells = new ArrayList<>();
         protected final String prefix;
 
         Column( String prefix )

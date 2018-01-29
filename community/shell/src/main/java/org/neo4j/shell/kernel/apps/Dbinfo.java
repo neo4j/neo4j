@@ -147,8 +147,7 @@ public class Dbinfo extends NonTransactionProvidingApp
         ObjectName mbean;
         {
             mbean = kernel.getMBeanQuery();
-            Hashtable<String, String> properties = new Hashtable<String, String>(
-                    mbean.getKeyPropertyList() );
+            Hashtable<String, String> properties = new Hashtable<>( mbean.getKeyPropertyList() );
             properties.put( "name", bean );
             try
             {
@@ -240,11 +239,10 @@ public class Dbinfo extends NonTransactionProvidingApp
 
     private Map<?, ?> compositeDataAsMap( CompositeData item )
     {
-        Map<String, Object> result = new HashMap<String, Object>();
-        CompositeData compositeData = item;
-        for ( String key : compositeData.getCompositeType().keySet() )
+        Map<String, Object> result = new HashMap<>();
+        for ( String key : item.getCompositeType().keySet() )
         {
-            result.put( key, compositeData.get( key ) );
+            result.put( key, item.get( key ) );
         }
         return result;
     }

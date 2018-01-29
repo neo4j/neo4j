@@ -761,7 +761,7 @@ public class TransactionRecordStateTest
                 String name = invocation.getMethod().getName();
                 if ( name.equals( "acquireNodeLock" ) || name.equals( "acquireRelationshipLock" ) )
                 {
-                    return mock( Lock.class, (Answer) invocationOnMock -> null );
+                    return mock( Lock.class, invocationOnMock -> null );
                 }
                 return null;
             }

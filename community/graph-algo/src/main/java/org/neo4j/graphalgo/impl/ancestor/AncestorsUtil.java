@@ -67,7 +67,7 @@ public class AncestorsUtil
 
     private static LinkedList<Node> getAncestorsPlusSelf( Node node, PathExpander expander )
     {
-        LinkedList<Node> ancestors = new LinkedList<Node>();
+        LinkedList<Node> ancestors = new LinkedList<>();
         ancestors.add( node );
         ResourceIterator<Relationship> relIterator =
                 Iterators.asResourceIterator( expander.expand( singleNodePath( node ), NO_STATE ).iterator() );

@@ -35,7 +35,7 @@ public class ClusterProtocolAtomicbroadcastTestUtil
 
     public static Iterable<InstanceId> ids( int size )
     {
-        List<InstanceId> ids = new ArrayList<InstanceId>();
+        List<InstanceId> ids = new ArrayList<>();
         for ( int i = 1; i <= size; i++ )
         {
             ids.add( new InstanceId( i ) );
@@ -45,7 +45,7 @@ public class ClusterProtocolAtomicbroadcastTestUtil
 
     public static Map<InstanceId,URI> members( int size )
     {
-        Map<InstanceId,URI> members = new HashMap<InstanceId,URI>();
+        Map<InstanceId,URI> members = new HashMap<>();
         for ( int i = 1; i <= size; i++ )
         {
             members.put( new InstanceId( i ), URI.create( "http://localhost:" + (6000 + i) + "?serverId=" + i ) );

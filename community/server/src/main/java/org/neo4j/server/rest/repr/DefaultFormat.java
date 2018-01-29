@@ -145,7 +145,14 @@ public class DefaultFormat extends RepresentationFormat
         {
             if ( !map.containsKey( key ) )
             {
-                (missing == null ? (missing = new HashSet<String>()) : missing).add( key );
+                if ( missing == null )
+                {
+                    (missing = new HashSet<>()).add( key );
+                }
+                else
+                {
+                    missing.add( key );
+                }
             }
         }
         if ( missing != null )

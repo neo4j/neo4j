@@ -45,16 +45,16 @@ public interface InitialBranchState<STATE>
         }
     };
 
-    InitialBranchState<Double> DOUBLE_ZERO = new InitialBranchState()
+    InitialBranchState<Double> DOUBLE_ZERO = new InitialBranchState<Double>()
     {
         @Override
-        public Number initialState( Path path )
+        public Double initialState( Path path )
         {
             return 0d;
         }
 
         @Override
-        public InitialBranchState reverse()
+        public InitialBranchState<Double> reverse()
         {
             return this;
         }
@@ -105,7 +105,7 @@ public interface InitialBranchState<STATE>
         @Override
         public InitialBranchState<STATE> reverse()
         {
-            return new State<STATE>( reversedInitialState, initialState );
+            return new State<>( reversedInitialState, initialState );
         }
 
         @Override

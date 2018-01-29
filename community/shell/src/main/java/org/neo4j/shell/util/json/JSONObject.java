@@ -1234,7 +1234,7 @@ public class JSONObject
         try
         {
             Object o = opt( key );
-            return o instanceof Number ? ((Number) o).doubleValue() : new Double( (String) o ).doubleValue();
+            return o instanceof Number ? ((Number) o).doubleValue() : new Double( (String) o );
         }
         catch ( Exception e )
         {

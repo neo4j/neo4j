@@ -389,12 +389,12 @@ public abstract class Iterators
 
     public static <T> Collection<T> asCollection( Iterator<T> iterable )
     {
-        return addToCollection( iterable, new ArrayList<T>() );
+        return addToCollection( iterable, new ArrayList<>() );
     }
 
     public static <T> List<T> asList( Iterator<T> iterator )
     {
-        return addToCollection( iterator, new ArrayList<T>() );
+        return addToCollection( iterator, new ArrayList<>() );
     }
 
     public static <T, EX extends Exception> List<T> asList( RawIterator<T, EX> iterator ) throws EX
@@ -409,7 +409,7 @@ public abstract class Iterators
 
     public static <T> Set<T> asSet( Iterator<T> iterator )
     {
-        return addToCollection( iterator, new HashSet<T>() );
+        return addToCollection( iterator, new HashSet<>() );
     }
 
     /**

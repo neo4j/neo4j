@@ -192,7 +192,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "B", "C", "length", 3d );
         graph.makeEdge( "A", "C", "length", 10d );
 
-        final Map<Node, Double> seenBranchStates = new HashMap<Node, Double>();
+        final Map<Node, Double> seenBranchStates = new HashMap<>();
         PathExpander<Double> expander = new PathExpander<Double>()
         {
             @Override

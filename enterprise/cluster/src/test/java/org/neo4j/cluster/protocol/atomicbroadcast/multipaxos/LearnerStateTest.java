@@ -138,7 +138,7 @@ public class LearnerStateTest
     {
         // Given
 
-        List<URI> allMembers = new ArrayList<URI>( 3 );
+        List<URI> allMembers = new ArrayList<>( 3 );
         URI instance1 = URI.create( "c:/1" ); // this one is failed
         URI instance2 = URI.create( "c:/2" ); // this one is ok and will respond
         URI instance3 = URI.create( "c:/3" ); // this one is the requesting instance
@@ -148,7 +148,7 @@ public class LearnerStateTest
         allMembers.add( instance3 );
         allMembers.add( instance4 );
 
-        Set<org.neo4j.cluster.InstanceId> aliveInstanceIds = new HashSet<org.neo4j.cluster.InstanceId>();
+        Set<org.neo4j.cluster.InstanceId> aliveInstanceIds = new HashSet<>();
         org.neo4j.cluster.InstanceId id2 = new org.neo4j.cluster.InstanceId( 2 );
         org.neo4j.cluster.InstanceId id4 = new org.neo4j.cluster.InstanceId( 4 );
         aliveInstanceIds.add( id2 );

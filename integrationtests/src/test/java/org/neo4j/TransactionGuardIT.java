@@ -19,6 +19,10 @@
  */
 package org.neo4j;
 
+import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,14 +33,9 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.driver.v1.Driver;
@@ -62,7 +61,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -738,14 +736,7 @@ public class TransactionGuardIT
 
         CustomClockEnterpriseFacadeFactory()
         {
-            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>()
-            {
-                @Override
-                public EditionModule apply( PlatformModule platformModule )
-                {
-                    return new TransactionGuardTerminationEditionModule( platformModule );
-                }
-            } );
+            super( DatabaseInfo.ENTERPRISE, TransactionGuardTerminationEditionModule::new );
         }
         @Override
         protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,

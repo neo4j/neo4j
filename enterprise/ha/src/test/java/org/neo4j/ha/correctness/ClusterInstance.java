@@ -75,7 +75,7 @@ class ClusterInstance
     private final ClusterInstanceOutput output;
     private final URI uri;
 
-    public static final Executor DIRECT_EXECUTOR = command -> command.run();
+    public static final Executor DIRECT_EXECUTOR = Runnable::run;
 
     private boolean online = true;
 

@@ -42,15 +42,14 @@ public class Message<MESSAGETYPE extends MessageType>
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, URI to,
                                                                              Object payload )
     {
-        return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, to.toString() );
+        return new Message<>( messageType, payload ).setHeader( TO, to.toString() );
     }
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> respond( MESSAGETYPE messageType,
                                                                                   Message<?> message, Object payload )
     {
-        return message.hasHeader( Message.FROM ) ?
-                new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, message.getHeader( Message.FROM ) ) :
-                internal( messageType, payload );
+        return message.hasHeader( Message.FROM ) ? new Message<>( messageType, payload ).setHeader( TO, message.getHeader( Message.FROM ) ) :
+               internal( messageType, payload );
     }
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal( MESSAGETYPE message )
@@ -60,7 +59,7 @@ public class Message<MESSAGETYPE extends MessageType>
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal( MESSAGETYPE message, Object payload )
     {
-        return new Message<MESSAGETYPE>( message, payload );
+        return new Message<>( message, payload );
     }
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> timeout( MESSAGETYPE message,
@@ -96,7 +95,7 @@ public class Message<MESSAGETYPE extends MessageType>
 
     private MESSAGETYPE messageType;
     private Object payload;
-    private Map<String, String> headers = new HashMap<String, String>();
+    private Map<String, String> headers = new HashMap<>();
 
     protected Message( MESSAGETYPE messageType, Object payload )
     {

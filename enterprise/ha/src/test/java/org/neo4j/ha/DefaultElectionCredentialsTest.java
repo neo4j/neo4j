@@ -19,16 +19,17 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
 import org.neo4j.cluster.protocol.election.ElectionCredentials;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentials;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class DefaultElectionCredentialsTest
 {
@@ -44,7 +45,7 @@ public class DefaultElectionCredentialsTest
         DefaultElectionCredentials lowTxId =
                 new DefaultElectionCredentials( 2, 10, false );
 
-        List<ElectionCredentials> toSort = new ArrayList<ElectionCredentials>( 2 );
+        List<ElectionCredentials> toSort = new ArrayList<>( 2 );
         toSort.add( mediumTxId);
         toSort.add( highTxId);
         toSort.add( lowTxId );
@@ -62,7 +63,7 @@ public class DefaultElectionCredentialsTest
 
         DefaultElectionCredentials lowSameTxId = new DefaultElectionCredentials( 2, 10, false );
 
-        List<ElectionCredentials> toSort = new ArrayList<ElectionCredentials>( 2 );
+        List<ElectionCredentials> toSort = new ArrayList<>( 2 );
         toSort.add( highSameTxId );
         toSort.add(lowSameTxId);
         Collections.sort( toSort );
@@ -76,7 +77,7 @@ public class DefaultElectionCredentialsTest
         DefaultElectionCredentials currentMaster = new DefaultElectionCredentials( 1, 10, true );
         DefaultElectionCredentials incoming = new DefaultElectionCredentials( 2, 11, false );
 
-        List<ElectionCredentials> toSort = new ArrayList<ElectionCredentials>( 2 );
+        List<ElectionCredentials> toSort = new ArrayList<>( 2 );
         toSort.add( currentMaster );
         toSort.add( incoming );
         Collections.sort( toSort );
@@ -91,7 +92,7 @@ public class DefaultElectionCredentialsTest
         DefaultElectionCredentials currentMaster = new DefaultElectionCredentials( 2, 10, true );
         DefaultElectionCredentials incoming = new DefaultElectionCredentials( 1, 10, false );
 
-        List<ElectionCredentials> toSort = new ArrayList<ElectionCredentials>( 2 );
+        List<ElectionCredentials> toSort = new ArrayList<>( 2 );
         toSort.add( currentMaster );
         toSort.add( incoming );
         Collections.sort( toSort );
@@ -106,7 +107,7 @@ public class DefaultElectionCredentialsTest
         DefaultElectionCredentials currentMaster = new DefaultElectionCredentials( 1, 10, true );
         DefaultElectionCredentials incoming = new DefaultElectionCredentials( 2, 9, false );
 
-        List<ElectionCredentials> toSort = new ArrayList<ElectionCredentials>( 2 );
+        List<ElectionCredentials> toSort = new ArrayList<>( 2 );
         toSort.add( currentMaster );
         toSort.add( incoming );
         Collections.sort( toSort );

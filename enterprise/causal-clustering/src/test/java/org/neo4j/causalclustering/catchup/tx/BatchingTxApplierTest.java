@@ -144,22 +144,17 @@ public class BatchingTxApplierTest
 
         // when
         CountDownLatch latch = new CountDownLatch( 1 );
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            latch.countDown();
+            try
             {
-                latch.countDown();
-                try
-                {
-                    txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
+                txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
             }
-        };
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
 
         thread.start();
 

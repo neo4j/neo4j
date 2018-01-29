@@ -75,11 +75,6 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 
     private DiffSets<Long> propertyValueDiffSet( Object value )
     {
-        DiffSets<Long> diffSets = referenceCount.get( value );
-        if ( diffSets == null )
-        {
-            referenceCount.put( value, diffSets = new DiffSets<>() );
-        }
-        return diffSets;
+        return referenceCount.computeIfAbsent( value, k -> new DiffSets<>() );
     }
 }

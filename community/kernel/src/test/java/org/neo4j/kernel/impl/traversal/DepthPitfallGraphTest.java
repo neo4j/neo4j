@@ -247,8 +247,7 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     private void testAllUniqueRelationshipPathsAreReturned( TraversalDescription description )
             throws Exception
     {
-        Set<String> expected = new HashSet<String>(
-                Arrays.asList( NODE_UNIQUE_PATHS ) );
+        Set<String> expected = new HashSet<>( Arrays.asList( NODE_UNIQUE_PATHS ) );
         expected.addAll( Arrays.asList( RELATIONSHIP_UNIQUE_EXTRA_PATHS ) );
 
         Traverser traverser = description.uniqueness(

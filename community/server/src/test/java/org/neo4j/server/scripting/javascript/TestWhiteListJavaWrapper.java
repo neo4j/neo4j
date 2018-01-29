@@ -57,7 +57,7 @@ public class TestWhiteListJavaWrapper
     public void shouldBlockAttemptsAtAccessingClassLoader() throws Exception
     {
         // Given
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<String>() ) );
+        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<>() ) );
 
         // When
         wrapper.wrap( null, null, getClass().getClassLoader(), null );
@@ -67,7 +67,7 @@ public class TestWhiteListJavaWrapper
     public void shouldDownCastSubclassesToAllowedParentClass() throws Exception
     {
         // Given
-        Set<String> whiteList = new HashSet<String>(  );
+        Set<String> whiteList = new HashSet<>();
         whiteList.add( Object.class.getName() );
 
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
@@ -90,7 +90,7 @@ public class TestWhiteListJavaWrapper
     public void shouldThrowSecurityExceptionWhenAccessingLockedClasses() throws Exception
     {
         // Given
-        Set<String> whiteList = new HashSet<String>(  );
+        Set<String> whiteList = new HashSet<>();
         whiteList.add( Object.class.getName() );
 
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );

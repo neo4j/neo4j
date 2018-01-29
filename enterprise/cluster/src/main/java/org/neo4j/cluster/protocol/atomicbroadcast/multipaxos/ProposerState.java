@@ -474,7 +474,7 @@ public enum ProposerState
             // Never include node that is leaving
             if ( state.getLeave() != null )
             {
-                acceptors = new ArrayList<URI>( acceptors );
+                acceptors = new ArrayList<>( acceptors );
                 acceptors.remove( currentMembers.get(state.getLeave()) );
             }
 

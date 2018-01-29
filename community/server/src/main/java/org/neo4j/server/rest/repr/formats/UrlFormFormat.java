@@ -81,7 +81,7 @@ public class UrlFormFormat extends RepresentationFormat
     @Override
     public Map<String, Object> readMap( final String input, String... requiredKeys ) throws BadInputException
     {
-        HashMap<String, Object> result = new HashMap<String, Object>();
+        HashMap<String, Object> result = new HashMap<>();
         if ( input.isEmpty() )
         {
             return result;

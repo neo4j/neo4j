@@ -49,7 +49,7 @@ public class JsonFormat extends RepresentationFormat
     @Override
     protected ListWriter serializeList( String type )
     {
-        return new ListWrappingWriter( new ArrayList<Object>() );
+        return new ListWrappingWriter( new ArrayList<>() );
     }
 
     @Override
@@ -61,7 +61,7 @@ public class JsonFormat extends RepresentationFormat
     @Override
     protected MappingWriter serializeMapping( String type )
     {
-        return new MapWrappingWriter( new LinkedHashMap<String, Object>() );
+        return new MapWrappingWriter( new LinkedHashMap<>() );
     }
 
     @Override
@@ -106,11 +106,7 @@ public class JsonFormat extends RepresentationFormat
         {
             return (List<Object>) JsonHelper.readJson( input );
         }
-        catch ( ClassCastException ex )
-        {
-            throw new BadInputException( ex );
-        }
-        catch ( JsonParseException ex )
+        catch ( ClassCastException | JsonParseException ex )
         {
             throw new BadInputException( ex );
         }

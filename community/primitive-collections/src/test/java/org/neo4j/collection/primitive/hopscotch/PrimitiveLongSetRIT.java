@@ -76,7 +76,7 @@ public class PrimitiveLongSetRIT
     {
         for ( Long value : target.normalSet )
         {
-            assertTrue( target.set.contains( value.longValue() ) );
+            assertTrue( target.set.contains( value ) );
         }
 
         for ( int i = 0; i < target.normalSet.size(); i++ )
@@ -98,7 +98,7 @@ public class PrimitiveLongSetRIT
 
     private TargetFactory<Sets> setFactory()
     {
-        return () -> new Sets();
+        return Sets::new;
     }
 
     protected Action<Sets,String> generateAction( Random random, Sets from )

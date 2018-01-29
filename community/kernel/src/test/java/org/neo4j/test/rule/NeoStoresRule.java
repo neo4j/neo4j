@@ -167,7 +167,7 @@ public class NeoStoresRule extends ExternalResource
             }
             if ( idGeneratorFactory == null )
             {
-                idGeneratorFactory = fs -> new DefaultIdGeneratorFactory( fs );
+                idGeneratorFactory = DefaultIdGeneratorFactory::new;
             }
             return open( fs, pageCache, format, idGeneratorFactory, config );
         }

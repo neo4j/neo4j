@@ -250,13 +250,10 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
             throws IOException, IndexEntryConflictException
     {
         @SuppressWarnings( "unchecked" )
-        ArgumentCaptor<List<Value[]>> captor = ArgumentCaptor.forClass((Class)List.class);
+        ArgumentCaptor<List<Value[]>> captor = ArgumentCaptor.forClass( List.class );
         verify( index ).verifyUniqueness(
                 any(), eq( descriptor.getPropertyIds() ), captor.capture() );
 
-        assertThat( captor.getValue(),
-                containsInAnyOrder(
-                        valueTupleList( values ).toArray()
-                ) );
+        assertThat( captor.getValue(), containsInAnyOrder( valueTupleList( values ).toArray() ) );
     }
 }

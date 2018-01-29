@@ -36,7 +36,7 @@ public class TestScriptExecutorFactoryRepository
     public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages() throws Exception
     {
         // Given
-        ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<String, ScriptExecutor.Factory>() );
+        ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<>() );
 
         // When
         repo.getFactory( "Blah" );
@@ -46,7 +46,7 @@ public class TestScriptExecutorFactoryRepository
     public void shouldReturnRegisteredFactory() throws Exception
     {
         // Given
-        Map<String, ScriptExecutor.Factory> languages = new HashMap<String, ScriptExecutor.Factory>(  );
+        Map<String, ScriptExecutor.Factory> languages = new HashMap<>();
         languages.put( "js", mock(ScriptExecutor.Factory.class) );
 
         ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( languages );

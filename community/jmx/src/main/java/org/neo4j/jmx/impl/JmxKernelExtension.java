@@ -149,7 +149,7 @@ public class JmxKernelExtension implements Lifecycle
         if ( result == null )
         {
             // Fall back: if we cannot create proxy, we can search for instances
-            result = new ArrayList<T>();
+            result = new ArrayList<>();
             for ( Neo4jMBean bean : beans )
             {
                 if ( beanInterface.isInstance( bean ) )

@@ -35,16 +35,16 @@ import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.relationships;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
-import static org.neo4j.values.virtual.VirtualValues.relationship;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.relationships;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.node;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
+import static org.neo4j.values.virtual.VirtualValues.relationship;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 public class AnyValueComparatorTest
 {
@@ -173,6 +173,6 @@ public class AnyValueComparatorTest
 
     private int sign( int value )
     {
-        return value == 0 ? 0 : (value < 0 ? -1 : +1);
+        return Integer.compare( value, 0 );
     }
 }

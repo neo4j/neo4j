@@ -114,7 +114,7 @@ public class JSONArray
      */
     public JSONArray()
     {
-        this.myArrayList = new ArrayList<Object>();
+        this.myArrayList = new ArrayList<>();
     }
 
     /**
@@ -211,7 +211,7 @@ public class JSONArray
 
     public JSONArray( Collection collection, boolean includeSuperClass )
     {
-        this.myArrayList = new ArrayList<Object>();
+        this.myArrayList = new ArrayList<>();
         if ( collection != null )
         {
             Iterator iter = collection.iterator();

@@ -45,7 +45,6 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 
 /**
@@ -200,7 +199,7 @@ public class Trav extends TransactionProvidingApp
                 }
                 else
                 {
-                    printAndInterpretTemplateLines( commandsToRun, false, true,
+                    printAndInterpretTemplateLines( commandsToRun, true,
                             NodeOrRelationship.wrap( path.endNode() ), getServer(), session, out );
                 }
             }

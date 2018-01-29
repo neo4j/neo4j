@@ -53,16 +53,10 @@ public class LargePageListIT
         assertThat( pageList.getPageCount(), is( pages ) );
 
         // Spot-check the accessibility in the bulk of the pages.
-        IntStream.range( 0, pages / 32 ).parallel().forEach( id ->
-        {
-            verifyPageMetaDataIsAccessible( pageList, id * 32 );
-        } );
+        IntStream.range( 0, pages / 32 ).parallel().forEach( id -> verifyPageMetaDataIsAccessible( pageList, id * 32 ) );
 
         // Thoroughly check the accessibility around the tail end of the page list.
-        IntStream.range( pages - 2000, pages ).parallel().forEach( id ->
-        {
-            verifyPageMetaDataIsAccessible( pageList, id );
-        } );
+        IntStream.range( pages - 2000, pages ).parallel().forEach( id -> verifyPageMetaDataIsAccessible( pageList, id ) );
     }
 
     private void verifyPageMetaDataIsAccessible( PageList pageList, int id )

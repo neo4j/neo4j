@@ -258,13 +258,7 @@ public class SingleSourceShortestPathBFS implements
                 {
                     // Put this into the next layer and the predecessors
                     nextLayer.add( targetNode );
-                    List<Relationship> targetPreds = predecessors
-                        .get( targetNode );
-                    if ( targetPreds == null )
-                    {
-                        targetPreds = new LinkedList<>();
-                        predecessors.put( targetNode, targetPreds );
-                    }
+                    List<Relationship> targetPreds = predecessors.computeIfAbsent( targetNode, k -> new LinkedList<>() );
                     targetPreds.add( relationship );
                 }
             }

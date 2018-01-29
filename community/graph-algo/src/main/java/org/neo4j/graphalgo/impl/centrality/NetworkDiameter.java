@@ -61,8 +61,7 @@ public class NetworkDiameter<ShortestPathCostType> extends
     {
         super( singleSourceShortestPath, null, zeroValue, nodeSet );
         this.distanceComparator = distanceComparator;
-        eccentricity = new Eccentricity<ShortestPathCostType>(
-            singleSourceShortestPath, zeroValue, nodeSet, distanceComparator );
+        eccentricity = new Eccentricity<>( singleSourceShortestPath, zeroValue, nodeSet, distanceComparator );
     }
 
     @Override

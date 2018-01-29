@@ -96,6 +96,6 @@ public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
         PathEvaluator[] newArray = new PathEvaluator[this.evaluators.length + 1];
         System.arraycopy( this.evaluators, 0, newArray, 0, this.evaluators.length );
         newArray[newArray.length - 1] = evaluator;
-        return new MultiEvaluator<STATE>( newArray );
+        return new MultiEvaluator<>( newArray );
     }
 }

@@ -51,15 +51,7 @@ public class Followers
         for ( MEMBER member : votingMembers )
         {
             long txId = states.get( member ).getMatchIndex();
-            Integer currentCount = appendedCounts.get( txId );
-            if ( currentCount == null )
-            {
-                appendedCounts.put( txId, 1 );
-            }
-            else
-            {
-                appendedCounts.put( txId, currentCount + 1 );
-            }
+            appendedCounts.merge( txId, 1, ( a, b ) -> a + b );
         }
 
         // Iterate over it until we find a majority

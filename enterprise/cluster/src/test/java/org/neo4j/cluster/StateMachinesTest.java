@@ -57,7 +57,7 @@ public class StateMachinesTest
         StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ),
                 Mockito.mock( MessageSender.class ), Mockito.mock( Timeouts.class ),
-                Mockito.mock( DelayedDirectExecutor.class ), command -> command.run(), mock( InstanceId.class )
+                Mockito.mock( DelayedDirectExecutor.class ), Runnable::run, mock( InstanceId.class )
         );
 
         ArrayList<TestMessage> handleOrder = new ArrayList<>();
@@ -76,7 +76,7 @@ public class StateMachinesTest
     public void shouldAlwaysAddItsInstanceIdToOutgoingMessages() throws Exception
     {
         InstanceId me = new InstanceId( 42 );
-        final List<Message> sentOut = new LinkedList<Message>();
+        final List<Message> sentOut = new LinkedList<>();
 
         /*
          * Lots of setup required. Must have a sender that keeps messages so we can see what the machine sent out.

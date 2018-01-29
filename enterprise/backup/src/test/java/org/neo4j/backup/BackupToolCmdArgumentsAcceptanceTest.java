@@ -209,7 +209,7 @@ public class BackupToolCmdArgumentsAcceptanceTest
     private static List<List<String>> permutations( List<String> list )
     {
         List<List<String>> result = new ArrayList<>();
-        permutations( result, new ArrayList<String>(), list );
+        permutations( result, new ArrayList<>(), list );
         return result;
     }
 

@@ -192,19 +192,14 @@ public class NeoStoresTest
         Config config = Config.defaults();
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
-        NeoStores neoStores = sf.openNeoStores( true, StoreType.NODE_LABEL );
 
         exception.expect( IllegalStateException.class );
         exception.expectMessage(
                 "Specified store was not initialized. Please specify " + StoreType.META_DATA.name() +
                 " as one of the stores types that should be open to be able to use it." );
-        try
+        try ( NeoStores neoStores = sf.openNeoStores( true, StoreType.NODE_LABEL ) )
         {
             neoStores.getMetaDataStore();
-        }
-        finally
-        {
-            neoStores.close();
         }
     }
 

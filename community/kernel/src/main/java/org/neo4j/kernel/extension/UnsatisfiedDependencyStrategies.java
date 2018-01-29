@@ -45,9 +45,6 @@ public class UnsatisfiedDependencyStrategies
     // Perhaps not used, but very useful for debugging kernel extension loading problems
     public static UnsatisfiedDependencyStrategy print( PrintStream out )
     {
-        return ( kernelExtensionFactory, e ) ->
-        {
-            out.println( kernelExtensionFactory + " missing dep " + e );
-        };
+        return ( kernelExtensionFactory, e ) -> out.println( kernelExtensionFactory + " missing dep " + e );
     }
 }

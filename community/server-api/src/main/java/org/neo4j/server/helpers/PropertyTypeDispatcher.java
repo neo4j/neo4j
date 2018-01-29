@@ -725,7 +725,7 @@ public abstract class PropertyTypeDispatcher<K, T>
         @Override
         public Iterator<T> iterator()
         {
-            return new ArrayIterator<T>( array );
+            return new ArrayIterator<>( array );
         }
 
         @Override

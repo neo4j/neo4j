@@ -85,7 +85,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
 
     final class InMemoryDirectoryFactory implements DirectoryFactory
     {
-        private final Map<File, RAMDirectory> directories = new HashMap<File, RAMDirectory>( );
+        private final Map<File, RAMDirectory> directories = new HashMap<>();
 
         @Override
         public synchronized Directory open( File dir ) throws IOException

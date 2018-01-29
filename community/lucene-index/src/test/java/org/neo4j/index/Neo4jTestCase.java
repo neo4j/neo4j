@@ -158,7 +158,7 @@ public abstract class Neo4jTestCase
 
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
-        List<T> list = new ArrayList<T>();
+        List<T> list = new ArrayList<>();
         for ( T item : iterable )
         {
             list.add( item );

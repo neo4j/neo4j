@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.com.master;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -98,7 +97,7 @@ public abstract class SlavePriorities
 
     /**
      * @return {@link SlavePriority} which returns the slaves in the same fixed order
-     * sorted by server id in ascending order. This is generally preferrable to {@link #fixedDescending()},
+     * sorted by server id in ascending order. This is generally preferable to {@link #fixedDescending()},
      * because this aligns with the tie-breaker aspect of the lowest server id becoming master.
      * <p>
      * Eg. if you want to ensure that failover most likely will happen in a specific datacenter,
@@ -117,13 +116,12 @@ public abstract class SlavePriorities
 
     private static List<Slave> sortSlaves( final Iterable<Slave> slaves, boolean asc )
     {
-        ArrayList<Slave> slaveList = Iterables.addAll( new ArrayList<Slave>(), slaves );
-        Collections.sort( slaveList, asc ? SERVER_ID_COMPARATOR : REVERSE_SERVER_ID_COMPARATOR );
+        ArrayList<Slave> slaveList = Iterables.addAll( new ArrayList<>(), slaves );
+        slaveList.sort( asc ? SERVER_ID_COMPARATOR : REVERSE_SERVER_ID_COMPARATOR );
         return slaveList;
     }
 
-    private static final Comparator<Slave> SERVER_ID_COMPARATOR =
-            ( first, second ) -> first.getServerId() - second.getServerId();
+    private static final Comparator<Slave> SERVER_ID_COMPARATOR = Comparator.comparingInt( Slave::getServerId );
 
     private static final Comparator<Slave> REVERSE_SERVER_ID_COMPARATOR = reverseOrder( SERVER_ID_COMPARATOR );
 }

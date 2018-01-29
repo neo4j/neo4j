@@ -56,9 +56,8 @@ public class Unzip
                 }
                 else
                 {
-                    OutputStream file = new BufferedOutputStream(
-                            new FileOutputStream( new File( targetDirectory, entry.getName() ) ) );
-                    try
+                    try ( OutputStream file = new BufferedOutputStream(
+                            new FileOutputStream( new File( targetDirectory, entry.getName() ) ) ) )
                     {
                         long toCopy = entry.getSize();
                         while ( toCopy > 0 )
@@ -67,10 +66,6 @@ public class Unzip
                             file.write( scratch, 0, read );
                             toCopy -= read;
                         }
-                    }
-                    finally
-                    {
-                        file.close();
                     }
                 }
                 zipStream.closeEntry();

@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -107,17 +106,7 @@ public class DumpProcessInformationTest
         Set<String> expectedStringSet = asSet( expectedStrings );
         try ( Stream<String> lines = Files.lines( file.toPath() ) )
         {
-            lines.forEach( line ->
-            {
-                Iterator<String> expectedStringIterator = expectedStringSet.iterator();
-                while ( expectedStringIterator.hasNext() )
-                {
-                    if ( line.contains( expectedStringIterator.next() ) )
-                    {
-                        expectedStringIterator.remove();
-                    }
-                }
-            } );
+            lines.forEach( line -> expectedStringSet.removeIf( line::contains ) );
         }
         return expectedStringSet.isEmpty();
     }

@@ -214,7 +214,7 @@ public final class FunctionalTestHelper
 
     public Map<String, Object> removeAnyAutoIndex( Map<String, Object> map )
     {
-        Map<String, Object> result = new HashMap<String, Object>();
+        Map<String, Object> result = new HashMap<>();
         for ( Map.Entry<String, Object> entry : map.entrySet() )
         {
             Map<?, ?> innerMap = (Map<?,?>) entry.getValue();

@@ -35,7 +35,7 @@ public abstract class MappingWriter
 
     ListWriter newList( RepresentationType type, String param )
     {
-        if ( type.valueName == "map" )
+        if ( type.valueName.equals( "map" ) )
         {
             return newList( type.listName, param );
         }

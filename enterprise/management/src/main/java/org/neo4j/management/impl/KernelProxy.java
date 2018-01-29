@@ -67,7 +67,7 @@ public abstract class KernelProxy
 
     protected List<Object> allBeans()
     {
-        List<Object> beans = new ArrayList<Object>();
+        List<Object> beans = new ArrayList<>();
         Iterable<ObjectInstance> mbeans;
         try
         {
@@ -167,14 +167,14 @@ public abstract class KernelProxy
 
     protected static ObjectName createObjectName( String kernelIdentifier, String beanName, String... extraNaming )
     {
-        Hashtable<String, String> properties = new Hashtable<String, String>();
+        Hashtable<String, String> properties = new Hashtable<>();
         properties.put( "instance", "kernel#" + kernelIdentifier );
         return createObjectName( "org.neo4j", properties, beanName, false, extraNaming );
     }
 
     static ObjectName createObjectNameQuery( String kernelIdentifier, String beanName, String... extraNaming )
     {
-        Hashtable<String, String> properties = new Hashtable<String, String>();
+        Hashtable<String, String> properties = new Hashtable<>();
         properties.put( "instance", "kernel#" + kernelIdentifier );
         return createObjectName( "org.neo4j", properties, beanName, true, extraNaming );
     }
@@ -191,7 +191,7 @@ public abstract class KernelProxy
 
     private static ObjectName createObjectName( ObjectName query, String beanName, boolean isQuery )
     {
-        Hashtable<String,String> properties = new Hashtable<String,String>( query.getKeyPropertyList() );
+        Hashtable<String,String> properties = new Hashtable<>( query.getKeyPropertyList() );
         return createObjectName( query.getDomain(), properties, beanName, isQuery );
     }
 

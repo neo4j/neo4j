@@ -115,7 +115,7 @@ public class ElectionStateTest
 
           // Like it says on the box, we are the only instance
         final InstanceId myInstanceId = new InstanceId( 1 );
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( myInstanceId, URI.create( "ha://me" ) );
         when( context.getMembers() ).thenReturn( members );
 
@@ -220,8 +220,8 @@ public class ElectionStateTest
     @Test
     public void voteResponseShouldHaveSameVersionAsVoteRequest() throws Throwable
     {
-        final List<Message> messages = new ArrayList<Message>( 1 );
-        MessageHolder holder = message -> messages.add( message );
+        final List<Message> messages = new ArrayList<>( 1 );
+        MessageHolder holder = messages::add;
 
         ElectionContext context = mock( ElectionContext.class );
 
@@ -248,7 +248,7 @@ public class ElectionStateTest
         InstanceId winner = new InstanceId( 2 );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder holder = message -> messages.add( message );
+        MessageHolder holder = messages::add;
         ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext electionContext = mock( ElectionContext.class );

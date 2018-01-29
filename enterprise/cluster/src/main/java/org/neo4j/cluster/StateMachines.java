@@ -68,10 +68,9 @@ public class StateMachines
     private DelayedDirectExecutor executor;
     private Executor stateMachineExecutor;
     private Timeouts timeouts;
-    private final Map<Class<? extends MessageType>, StateMachine> stateMachines = new LinkedHashMap<Class<? extends
-            MessageType>, StateMachine>();
+    private final Map<Class<? extends MessageType>, StateMachine> stateMachines = new LinkedHashMap<>();
 
-    private final List<MessageProcessor> outgoingProcessors = new ArrayList<MessageProcessor>();
+    private final List<MessageProcessor> outgoingProcessors = new ArrayList<>();
     private final OutgoingMessageHolder outgoing;
     // This is used to ensure fairness of message delivery
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
@@ -248,7 +247,7 @@ public class StateMachines
     @Override
     public String toString()
     {
-        List<String> states = new ArrayList<String>();
+        List<String> states = new ArrayList<>();
         for ( StateMachine stateMachine : stateMachines.values() )
         {
             states.add( stateMachine.getState().getClass().getSuperclass().getSimpleName() + ":" + stateMachine
@@ -264,8 +263,7 @@ public class StateMachines
 
     private class OutgoingMessageHolder implements MessageHolder
     {
-        private Deque<Message<? extends MessageType>> outgoingMessages = new ArrayDeque<Message<? extends
-                MessageType>>();
+        private Deque<Message<? extends MessageType>> outgoingMessages = new ArrayDeque<>();
 
         @Override
         public synchronized void offer( Message<? extends MessageType> message )

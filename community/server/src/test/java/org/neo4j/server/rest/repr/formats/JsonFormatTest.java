@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -28,8 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -39,6 +38,8 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ServerListRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
+
+import static org.junit.Assert.assertEquals;
 
 public class JsonFormatTest
 {
@@ -146,7 +147,7 @@ public class JsonFormatTest
             @Override
             protected void serialize( MappingSerializer serializer )
             {
-                ArrayList<Representation> maps = new ArrayList<Representation>();
+                ArrayList<Representation> maps = new ArrayList<>();
                 maps.add( new MappingRepresentation( "map" )
                 {
 

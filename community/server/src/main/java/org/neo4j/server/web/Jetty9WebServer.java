@@ -45,9 +45,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -204,12 +204,7 @@ public class Jetty9WebServer implements WebServer
         mountPoint = ensureRelativeUri( mountPoint );
         mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
 
-        JaxRsServletHolderFactory factory = jaxRSPackages.get( mountPoint );
-        if ( factory == null )
-        {
-            factory = new JaxRsServletHolderFactory.Packages();
-            jaxRSPackages.put( mountPoint, factory );
-        }
+        JaxRsServletHolderFactory factory = jaxRSPackages.computeIfAbsent( mountPoint, k -> new JaxRsServletHolderFactory.Packages() );
         factory.add( packageNames, injectables );
 
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
@@ -222,12 +217,7 @@ public class Jetty9WebServer implements WebServer
         mountPoint = ensureRelativeUri( mountPoint );
         mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
 
-        JaxRsServletHolderFactory factory = jaxRSClasses.get( mountPoint );
-        if ( factory == null )
-        {
-            factory = new JaxRsServletHolderFactory.Classes();
-            jaxRSClasses.put( mountPoint, factory );
-        }
+        JaxRsServletHolderFactory factory = jaxRSClasses.computeIfAbsent( mountPoint, k -> new JaxRsServletHolderFactory.Classes() );
         factory.add( classNames, injectables );
 
         log.debug( "Adding JAXRS classes %s at [%s]", classNames, mountPoint );
@@ -280,15 +270,7 @@ public class Jetty9WebServer implements WebServer
     @Override
     public void removeFilter( Filter filter, String pathSpec )
     {
-        Iterator<FilterDefinition> iter = filters.iterator();
-        while ( iter.hasNext() )
-        {
-            FilterDefinition current = iter.next();
-            if ( current.matches( filter, pathSpec ) )
-            {
-                iter.remove();
-            }
-        }
+        filters.removeIf( current -> current.matches( filter, pathSpec ) );
     }
 
     @Override
@@ -366,11 +348,11 @@ public class Jetty9WebServer implements WebServer
                         .orElseThrow( () -> new IllegalStateException( "Secure connector is not configured" ) );
     }
 
-    private void loadAllMounts() throws IOException
+    private void loadAllMounts()
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<>( ( o1, o2 ) -> o2.compareTo( o1 ) );
+        final SortedSet<String> mountpoints = new TreeSet<>( Comparator.reverseOrder() );
 
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );

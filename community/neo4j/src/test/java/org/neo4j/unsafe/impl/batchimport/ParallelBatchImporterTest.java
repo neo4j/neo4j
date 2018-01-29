@@ -37,6 +37,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -63,22 +64,20 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
+import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -148,7 +147,7 @@ public class ParallelBatchImporterTest
     @Parameterized.Parameters( name = "{0},{1},{3}" )
     public static Collection<Object[]> data()
     {
-        return Arrays.<Object[]>asList(
+        return Arrays.asList(
                 // Long input ids, actual node id input
                 new Object[]{new LongInputIdGenerator(), (Function<Groups,IdMapper>) groups -> longs( AUTO_WITHOUT_PAGECACHE, groups )},
                 // String input ids, generate ids from stores
@@ -294,7 +293,7 @@ public class ParallelBatchImporterTest
         @Override
         synchronized Object nextNodeId( Random random, long item )
         {
-            return (long) item;
+            return item;
         }
 
         @Override
@@ -307,13 +306,13 @@ public class ParallelBatchImporterTest
         @Override
         Object miss( Random random, Object id, float chance )
         {
-            return random.nextFloat() < chance ? ((Long)id).longValue() + 100_000_000 : id;
+            return random.nextFloat() < chance ? (Long) id + 100_000_000 : id;
         }
 
         @Override
         boolean isMiss( Object id )
         {
-            return ((Long)id).longValue() >= 100_000_000;
+            return (Long) id >= 100_000_000;
         }
     }
 
@@ -528,33 +527,28 @@ public class ParallelBatchImporterTest
             final InputIdGenerator idGenerator, final IdGroupDistribution groups )
     {
         return replayable( () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
-                new GeneratingInputIterator.Generator<Randoms>()
-                {
-                    @Override
-                    public void accept( Randoms randoms, InputEntityVisitor visitor, long id ) throws IOException
+                ( randoms, visitor, id ) -> {
+                    randomProperties( randoms, "Name " + id, visitor );
+                    ExistingId startNodeExistingId = idGenerator.randomExisting( randoms.random() );
+                    Group startNodeGroup = groups.groupOf( startNodeExistingId.nodeIndex );
+                    ExistingId endNodeExistingId = idGenerator.randomExisting( randoms.random() );
+                    Group endNodeGroup = groups.groupOf( endNodeExistingId.nodeIndex );
+
+                    // miss some
+                    Object startNode = idGenerator.miss( randoms.random(), startNodeExistingId.id, 0.001f );
+                    Object endNode = idGenerator.miss( randoms.random(), endNodeExistingId.id, 0.001f );
+
+                    visitor.startId( startNode, startNodeGroup );
+                    visitor.endId( endNode, endNodeGroup );
+
+                    String type = idGenerator.randomType( randoms.random() );
+                    if ( randoms.random().nextFloat() < 0.00005 )
                     {
-                        randomProperties( randoms, "Name " + id, visitor );
-                        ExistingId startNodeExistingId = idGenerator.randomExisting( randoms.random() );
-                        Group startNodeGroup = groups.groupOf( startNodeExistingId.nodeIndex );
-                        ExistingId endNodeExistingId = idGenerator.randomExisting( randoms.random() );
-                        Group endNodeGroup = groups.groupOf( endNodeExistingId.nodeIndex );
-
-                        // miss some
-                        Object startNode = idGenerator.miss( randoms.random(), startNodeExistingId.id, 0.001f );
-                        Object endNode = idGenerator.miss( randoms.random(), endNodeExistingId.id, 0.001f );
-
-                        visitor.startId( startNode, startNodeGroup );
-                        visitor.endId( endNode, endNodeGroup );
-
-                        String type = idGenerator.randomType( randoms.random() );
-                        if ( randoms.random().nextFloat() < 0.00005 )
-                        {
-                            // Let there be a small chance of introducing a one-off relationship
-                            // with a type that no, or at least very few, other relationships have.
-                            type += "_odd";
-                        }
-                        visitor.type( type );
+                        // Let there be a small chance of introducing a one-off relationship
+                        // with a type that no, or at least very few, other relationships have.
+                        type += "_odd";
                     }
+                    visitor.type( type );
                 }, 0 ) );
     }
 
@@ -562,17 +556,12 @@ public class ParallelBatchImporterTest
             final InputIdGenerator inputIdGenerator, final IdGroupDistribution groups )
     {
         return replayable( () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
-                new GeneratingInputIterator.Generator<Randoms>()
-                {
-                    @Override
-                    public void accept( Randoms randoms, InputEntityVisitor visitor, long id ) throws IOException
-                    {
-                        Object nodeId = inputIdGenerator.nextNodeId( randoms.random(), id );
-                        Group group = groups.groupOf( id );
-                        visitor.id( nodeId, group );
-                        randomProperties( randoms, uniqueId( group, nodeId ), visitor );
-                        visitor.labels( randoms.selection( TOKENS, 0, TOKENS.length, true ) );
-                    }
+                ( randoms, visitor, id ) -> {
+                    Object nodeId = inputIdGenerator.nextNodeId( randoms.random(), id );
+                    Group group = groups.groupOf( id );
+                    visitor.id( nodeId, group );
+                    randomProperties( randoms, uniqueId( group, nodeId ), visitor );
+                    visitor.labels( randoms.selection( TOKENS, 0, TOKENS.length, true ) );
                 }, 0 ) );
     }
 

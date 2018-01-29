@@ -268,12 +268,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     {
         for ( String username : role.users() )
         {
-            SortedSet<String> memberOfRoles = rolesByUsername.get( username );
-            if ( memberOfRoles == null )
-            {
-                memberOfRoles = new ConcurrentSkipListSet<>();
-                rolesByUsername.put( username, memberOfRoles );
-            }
+            SortedSet<String> memberOfRoles = rolesByUsername.computeIfAbsent( username, k -> new ConcurrentSkipListSet<>() );
             memberOfRoles.add( role.name() );
         }
     }

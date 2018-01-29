@@ -66,7 +66,7 @@ class AsOneStartBranch implements TraversalBranch
     {
         if ( uniqueness.eagerStartBranches() )
         {
-            List<TraversalBranch> result = new ArrayList<TraversalBranch>();
+            List<TraversalBranch> result = new ArrayList<>();
             for ( Node node : nodes )
             {
                 result.add( new StartNodeTraversalBranch( context, this, node, initialState ) );

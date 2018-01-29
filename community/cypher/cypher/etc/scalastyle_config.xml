@@ -1,6 +1,6 @@
 <scalastyle commentFilter="enabled">
  <name>Scalastyle standard configuration</name>
- <check level="warning" class="org.scalastyle.file.FileTabChecker" enabled="true"></check>
+ <check level="warning" class="org.scalastyle.file.FileTabChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.file.FileLengthChecker" enabled="true">
   <parameters>
    <parameter name="maxFileLength"><![CDATA[800]]></parameter>
@@ -25,9 +25,9 @@
 // limitations under the License.]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.SpacesAfterPlusChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.file.WhitespaceEndOfLineChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.SpacesBeforePlusChecker" enabled="true"></check>
+ <check level="warning" class="org.scalastyle.scalariform.SpacesAfterPlusChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.file.WhitespaceEndOfLineChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.SpacesBeforePlusChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.file.FileLineLengthChecker" enabled="true">
   <parameters>
    <parameter name="maxLineLength"><![CDATA[160]]></parameter>
@@ -49,7 +49,7 @@
    <parameter name="regex"><![CDATA[^[a-z][A-Za-z]*$]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.EqualsHashCodeChecker" enabled="true"></check>
+ <check level="warning" class="org.scalastyle.scalariform.EqualsHashCodeChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.scalariform.IllegalImportsChecker" enabled="true">
   <parameters>
    <parameter name="illegalImports"><![CDATA[sun._,java.awt._]]></parameter>
@@ -65,14 +65,14 @@
    <parameter name="ignore"><![CDATA[-1,0,1,2,3]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceBeforeLeftBracketChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceAfterLeftBracketChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.ReturnChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.NullChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.NoCloneChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.NoFinalizeChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.CovariantEqualsChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.StructuralTypeChecker" enabled="true"></check>
+ <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceBeforeLeftBracketChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceAfterLeftBracketChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.ReturnChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.NullChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.NoCloneChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.NoFinalizeChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.CovariantEqualsChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.StructuralTypeChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.file.RegexChecker" enabled="true">
   <parameters>
    <parameter name="regex"><![CDATA[println]]></parameter>
@@ -88,8 +88,8 @@
    <parameter name="maximum"><![CDATA[10]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.UppercaseLChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.SimplifyBooleanExpressionChecker" enabled="true"></check>
+ <check level="warning" class="org.scalastyle.scalariform.UppercaseLChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.SimplifyBooleanExpressionChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.scalariform.IfBraceChecker" enabled="true">
   <parameters>
    <parameter name="singleLineAllowed"><![CDATA[true]]></parameter>
@@ -111,32 +111,32 @@
    <parameter name="maxMethods"><![CDATA[30]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.PublicMethodsHaveTypeChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.file.NewLineAtEofChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.file.NoNewLineAtEofChecker" enabled="false"></check>
- <check level="warning" class="org.scalastyle.scalariform.WhileChecker" enabled="false"></check>
- <check level="warning" class="org.scalastyle.scalariform.VarFieldChecker" enabled="false"></check>
- <check level="warning" class="org.scalastyle.scalariform.VarLocalChecker" enabled="false"></check>
- <check level="warning" class="org.scalastyle.scalariform.RedundantIfChecker" enabled="false"></check>
+ <check level="warning" class="org.scalastyle.scalariform.PublicMethodsHaveTypeChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.file.NewLineAtEofChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.file.NoNewLineAtEofChecker" enabled="false"/>
+ <check level="warning" class="org.scalastyle.scalariform.WhileChecker" enabled="false"/>
+ <check level="warning" class="org.scalastyle.scalariform.VarFieldChecker" enabled="false"/>
+ <check level="warning" class="org.scalastyle.scalariform.VarLocalChecker" enabled="false"/>
+ <check level="warning" class="org.scalastyle.scalariform.RedundantIfChecker" enabled="false"/>
  <check level="warning" class="org.scalastyle.scalariform.TokenChecker" enabled="false">
   <parameters>
    <parameter name="regex"><![CDATA[println]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.DeprecatedJavaChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.EmptyClassChecker" enabled="true"></check>
+ <check level="warning" class="org.scalastyle.scalariform.DeprecatedJavaChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.EmptyClassChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.scalariform.ClassTypeParameterChecker" enabled="true">
   <parameters>
    <parameter name="regex"><![CDATA[^[A-Z_]$]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.UnderscoreImportChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.scalariform.LowercasePatternMatchChecker" enabled="true"></check>
+ <check level="warning" class="org.scalastyle.scalariform.UnderscoreImportChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.LowercasePatternMatchChecker" enabled="true"/>
  <check level="warning" class="org.scalastyle.scalariform.MultipleStringLiteralsChecker" enabled="true">
   <parameters>
    <parameter name="allowed"><![CDATA[2]]></parameter>
    <parameter name="ignoreRegex"><![CDATA[^""$]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.ImportGroupingChecker" enabled="true"></check>
+ <check level="warning" class="org.scalastyle.scalariform.ImportGroupingChecker" enabled="true"/>
 </scalastyle>

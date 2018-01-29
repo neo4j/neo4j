@@ -53,6 +53,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -64,9 +65,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.union;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -993,10 +991,9 @@ public class CsvInputTest
         return wrap( data );
     }
 
-    @SuppressWarnings( { "rawtypes", "unchecked" } )
     private Iterable<DataFactory> dataIterable( DataFactory... data )
     {
-        return Iterables.<DataFactory,DataFactory>iterable( data );
+        return Iterables.iterable( data );
     }
 
     private static class CapturingDataFactories implements Iterable<DataFactory>

@@ -41,12 +41,9 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     protected Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph,
         Double startCost, String startNode, String endNode )
     {
-        return new Dijkstra<Double>( startCost, graph.getNode( startNode ),
-            graph.getNode( endNode ),
-            CommonEvaluators.doubleCostEvaluator( "cost" ),
-            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        return new Dijkstra<>( startCost, graph.getNode( startNode ), graph.getNode( endNode ), CommonEvaluators.doubleCostEvaluator( "cost" ),
+                new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                Direction.BOTH, MyRelTypes.R1 );
     }
 
     /**
@@ -207,12 +204,9 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             (double) 1 );
         graph.makeEdge( "a", "b2", "cost", (double) 4 );
         graph.makeEdge( "b2", "c", "cost", -2 );
-        Dijkstra<Double> dijkstra = new Dijkstra<Double>( 0.0, graph
-            .getNode( "a" ), graph.getNode( "z" ),
-            CommonEvaluators.doubleCostEvaluator( "cost" ),
-            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.OUTGOING, MyRelTypes.R1 );
+        Dijkstra<Double> dijkstra = new Dijkstra<>( 0.0, graph.getNode( "a" ), graph.getNode( "z" ),
+                CommonEvaluators.doubleCostEvaluator( "cost" ), new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.OUTGOING, MyRelTypes.R1 );
         List<List<Node>> paths = dijkstra.getPathsAsNodes();
         assertTrue( paths.size() == 2 );
     }
@@ -228,12 +222,9 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         Relationship edgeB2C = graph.makeEdge( "b2", "c" );
         Relationship edgeCD2 = graph.makeEdge( "c", "d2" );
         Relationship edgeD2E = graph.makeEdge( "d2", "e" );
-        Dijkstra<Double> dijkstra = new Dijkstra<Double>(
-            0.0,
-            graph.getNode( "a" ),
-            graph.getNode( "e" ),
-                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
-            MyRelTypes.R1 );
+        Dijkstra<Double> dijkstra =
+                new Dijkstra<>( 0.0, graph.getNode( "a" ), graph.getNode( "e" ), ( relationship, direction ) -> 1.0,
+                        new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING, MyRelTypes.R1 );
         // path discovery flags
         boolean pathBD = false;
         boolean pathB2D = false;
@@ -312,12 +303,10 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         Relationship edgeB2C = graph.makeEdge( "b2", "c" );
         Relationship edgeCD2 = graph.makeEdge( "c", "d2" );
         Relationship edgeD2E = graph.makeEdge( "d2", "e" );
-        Dijkstra<Double> dijkstra = new Dijkstra<Double>(
-            0.0,
-            graph.getNode( "a" ),
-            graph.getNode( "e" ),
-                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
-            MyRelTypes.R1 );
+        Dijkstra<Double> dijkstra =
+                new Dijkstra<>( 0.0, graph.getNode( "a" ), graph.getNode( "e" ), ( relationship, direction ) -> 1.0,
+                        new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
+                        MyRelTypes.R1 );
         // path discovery flags
         boolean pathBD = false;
         boolean pathB2D = false;

@@ -434,11 +434,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
 
         String title = findTitle( session, node );
-        StringBuilder result = new StringBuilder( "(" );
-        result.append( title != null ? title + "," : "" );
-        result.append( node.getId() );
-        result.append( ")" );
-        return result.toString();
+        return "(" + (title != null ? title + "," : "") + node.getId() + ")";
     }
 
     protected static String findTitle( Session session, Node node ) throws ShellException
@@ -500,11 +496,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             return getDisplayNameForCurrent( server, session );
         }
 
-        StringBuilder result = new StringBuilder( "[" );
-        result.append( ":" ).append( relationship.getType().name() );
-        result.append( verbose ? "," + relationship.getId() : "" );
-        result.append( "]" );
-        return result.toString();
+        return "[" + ":" + relationship.getType().name() + (verbose ? "," + relationship.getId() : "") + "]";
     }
 
     public static String withArrows( Relationship relationship, String displayName, Node leftNode )
@@ -659,19 +651,18 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return result;
     }
 
-    protected static void printAndInterpretTemplateLines( Collection<String> templateLines,
-            boolean forcePrintHitHeader, boolean newLineBetweenHits, NodeOrRelationship entity,
-            GraphDatabaseShellServer server, Session session, Output out )
+    protected static void printAndInterpretTemplateLines( Collection<String> templateLines, boolean newLineBetweenHits,
+            NodeOrRelationship entity, GraphDatabaseShellServer server, Session session, Output out )
             throws ShellException, RemoteException
     {
-        if ( templateLines.isEmpty() || forcePrintHitHeader )
+        if ( templateLines.isEmpty() )
         {
             out.println( getDisplayName( server, session, entity, true ) );
         }
 
         if ( !templateLines.isEmpty() )
         {
-            Map<String, Object> data = new HashMap<String, Object>();
+            Map<String, Object> data = new HashMap<>();
             data.put( "i", entity.getId() );
             for ( String command : templateLines )
             {
@@ -694,7 +685,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
      */
     public static List<TypedId> readCurrentWorkingDir( Session session ) throws RemoteException
     {
-        List<TypedId> list = new ArrayList<TypedId>();
+        List<TypedId> list = new ArrayList<>();
         String path = session.getPath();
         if ( path != null && path.trim().length() > 0 )
         {
@@ -730,7 +721,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             Direction defaultDirection, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
             boolean looseFilters ) throws ShellException
     {
-        Map<String, Direction> matches = new TreeMap<String, Direction>();
+        Map<String, Direction> matches = new TreeMap<>();
         for ( RelationshipType type : db.getAllRelationshipTypes() )
         {
             Direction direction = null;

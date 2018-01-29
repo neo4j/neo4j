@@ -230,7 +230,7 @@ public class DatabaseActions
     public Representation getAllPropertyKeys()
     {
         Collection<ValueRepresentation> propKeys =
-                Iterables.asSet( map( key -> ValueRepresentation.string( key ), graphDb.getAllPropertyKeys() ) );
+                Iterables.asSet( map( ValueRepresentation::string, graphDb.getAllPropertyKeys() ) );
 
         return new ListRepresentation( RepresentationType.STRING, propKeys );
     }
@@ -1264,29 +1264,23 @@ public class DatabaseActions
         private PathFinder<? extends Path> getAlgorithm( String algorithm,
                 PathExpander expander, int maxDepth )
         {
-            if ( algorithm.equals( "shortestPath" ) )
+            switch ( algorithm )
             {
+            case "shortestPath":
                 return GraphAlgoFactory.shortestPath( expander, maxDepth );
-            }
-            else if ( algorithm.equals( "allSimplePaths" ) )
-            {
+            case "allSimplePaths":
                 return GraphAlgoFactory.allSimplePaths( expander, maxDepth );
-            }
-            else if ( algorithm.equals( "allPaths" ) )
-            {
+            case "allPaths":
                 return GraphAlgoFactory.allPaths( expander, maxDepth );
-            }
-            else if ( algorithm.equals( "dijkstra" ) )
-            {
+            case "dijkstra":
                 String costProperty = (String) map.get( "cost_property" );
                 Number defaultCost = (Number) map.get( "default_cost" );
-                CostEvaluator<Double> costEvaluator = defaultCost == null ? CommonEvaluators.doubleCostEvaluator(
-                        costProperty )
-                                                                          : CommonEvaluators
-                                                              .doubleCostEvaluator( costProperty,
-                                                                      defaultCost.doubleValue() );
+                CostEvaluator<Double> costEvaluator =
+                        defaultCost == null ? CommonEvaluators.doubleCostEvaluator( costProperty ) : CommonEvaluators
+                                .doubleCostEvaluator( costProperty, defaultCost.doubleValue() );
                 representationCreator = WEIGHTED_PATH_REPRESENTATION_CREATOR;
                 return GraphAlgoFactory.dijkstra( expander, costEvaluator );
+            default:
             }
 
             throw new RuntimeException( "Failed to find matching algorithm" );
@@ -1385,11 +1379,10 @@ public class DatabaseActions
         PathRepresentation<T> from( T path );
     }
 
-    private static final PathRepresentationCreator<Path> PATH_REPRESENTATION_CREATOR =
-            path -> new PathRepresentation<>( path );
+    private static final PathRepresentationCreator<Path> PATH_REPRESENTATION_CREATOR = PathRepresentation::new;
 
     private static final PathRepresentationCreator<WeightedPath> WEIGHTED_PATH_REPRESENTATION_CREATOR =
-            path -> new WeightedPathRepresentation( path );
+            WeightedPathRepresentation::new;
 
     private void assertIsLegalIndexName( String indexName )
     {

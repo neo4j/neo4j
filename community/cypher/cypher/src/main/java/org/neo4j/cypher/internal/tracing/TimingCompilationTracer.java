@@ -52,7 +52,7 @@ public class TimingCompilationTracer implements CompilationTracer
     {
         long nanoTime();
 
-        Clock SYSTEM = () -> System.nanoTime();
+        Clock SYSTEM = System::nanoTime;
     }
 
     private final Clock clock;

@@ -137,7 +137,6 @@ public class BetweennessCentrality<ShortestPathCostType> extends
             .reversedPredecessors( predecessors );
         PathCounter counter = new Util.PathCounter( predecessors );
         // Recursively update the node dependencies
-        getAndUpdateNodeDependency( node, true, successors, counter,
-            new HashMap<Node,Double>() );
+        getAndUpdateNodeDependency( node, true, successors, counter, new HashMap<>() );
     }
 }

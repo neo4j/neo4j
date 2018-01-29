@@ -271,7 +271,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Node nodeA = graph.makeNode( "A" );
         Node nodeB = graph.makeNode( "B" );
         Node nodeC = graph.makeNode( "C" );
-        Set<Relationship> expectedFirsts = new HashSet<Relationship>();
+        Set<Relationship> expectedFirsts = new HashSet<>();
         expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
         expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1 ) );
         Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2L );

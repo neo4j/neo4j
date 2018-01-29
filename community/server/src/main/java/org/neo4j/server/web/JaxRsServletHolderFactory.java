@@ -41,8 +41,8 @@ import org.neo4j.server.rest.web.AllowAjaxFilter;
  */
 public abstract class JaxRsServletHolderFactory
 {
-    private final List<String> items = new ArrayList<String>();
-    private final List<Injectable<?>> injectables = new ArrayList<Injectable<?>>();
+    private final List<String> items = new ArrayList<>();
+    private final List<Injectable<?>> injectables = new ArrayList<>();
 
     public void add( List<String> items, Collection<Injectable<?>> injectableProviders )
     {
@@ -81,7 +81,7 @@ public abstract class JaxRsServletHolderFactory
     private Collection<InjectableProvider<?>> mergeInjectables( Collection<InjectableProvider<?>> defaultInjectables,
             Collection<Injectable<?>> injectables )
     {
-        Collection<InjectableProvider<?>> injectableProviders = new ArrayList<InjectableProvider<?>>();
+        Collection<InjectableProvider<?>> injectableProviders = new ArrayList<>();
         if ( defaultInjectables != null )
         {
             injectableProviders.addAll( defaultInjectables );

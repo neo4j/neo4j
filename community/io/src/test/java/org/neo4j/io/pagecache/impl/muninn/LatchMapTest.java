@@ -76,10 +76,7 @@ public class LatchMapTest
         BinaryLatch latch = latches.takeOrAwaitLatch( 42 );
         assertThat( latch, is( notNullValue() ) );
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<BinaryLatch> future = executor.submit( () ->
-        {
-            return latches.takeOrAwaitLatch( 33 );
-        } );
+        Future<BinaryLatch> future = executor.submit( () -> latches.takeOrAwaitLatch( 33 ) );
         assertThat( future.get( 1, TimeUnit.SECONDS ), is( notNullValue() ) );
         latch.release();
     }

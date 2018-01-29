@@ -147,33 +147,21 @@ public class PruningSchedulerTest
         // when
         scheduler.start();
 
-        Thread runCheckPointer = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                jobScheduler.runJob();
-            }
-        };
+        Thread runCheckPointer = new Thread( jobScheduler::runJob );
         runCheckPointer.start();
 
         checkPointerLatch.waitForAllToStart();
 
-        Thread stopper = new Thread()
-        {
-            @Override
-            public void run()
+        Thread stopper = new Thread( () -> {
+            try
             {
-                try
-                {
-                    scheduler.stop();
-                }
-                catch ( Throwable throwable )
-                {
-                    ex.set( throwable );
-                }
+                scheduler.stop();
             }
-        };
+            catch ( Throwable throwable )
+            {
+                ex.set( throwable );
+            }
+        } );
 
         stopper.start();
 

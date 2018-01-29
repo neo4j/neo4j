@@ -186,12 +186,7 @@ public class DebugUtil
         public AtomicInteger add( Throwable t )
         {
             CallStack key = new CallStack( t, considerMessages );
-            AtomicInteger count = uniqueStackTraces.get( key );
-            if ( count == null )
-            {
-                count = new AtomicInteger();
-                uniqueStackTraces.put( key, count );
-            }
+            AtomicInteger count = uniqueStackTraces.computeIfAbsent( key, k -> new AtomicInteger() );
             count.incrementAndGet();
             return count;
         }
@@ -215,14 +210,7 @@ public class DebugUtil
 
         public StackTracer printAtShutdown( final PrintStream out, final int interestThreshold )
         {
-            Runtime.getRuntime().addShutdownHook( new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    print( out, interestThreshold );
-                }
-            } );
+            Runtime.getRuntime().addShutdownHook( new Thread( () -> print( out, interestThreshold ) ) );
             return this;
         }
 
@@ -318,50 +306,6 @@ public class DebugUtil
         }
     }
 
-    public static class CallCounter<T>
-    {
-        private final Map<T, AtomicInteger> calls = new HashMap<>();
-        private final String name;
-
-        public CallCounter( String name )
-        {
-            this.name = name;
-        }
-
-        public CallCounter<T> printAtShutdown( final PrintStream out )
-        {
-            Runtime.getRuntime().addShutdownHook( new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    print( out );
-                }
-            } );
-            return this;
-        }
-
-        public void inc( T key )
-        {
-            AtomicInteger count = calls.get( key );
-            if ( count == null )
-            {
-                count = new AtomicInteger();
-                calls.put( key, count );
-            }
-            count.incrementAndGet();
-        }
-
-        private void print( PrintStream out )
-        {
-            out.println( "Calls made regarding " + name + ":" );
-            for ( Map.Entry<T, AtomicInteger> entry : calls.entrySet() )
-            {
-                out.println( "\t" + entry.getKey() + ": " + entry.getValue() );
-            }
-        }
-    }
-
     /**
      * Only enabled iff -ea is enabled.
      *
@@ -399,7 +343,6 @@ public class DebugUtil
                 catch ( ClassNotFoundException | SecurityException | NoSuchMethodException e )
                 {
                     // This is so weird, but hey, who am I to judge all ours precious JVM and class loader
-                    continue;
                 }
             }
         }

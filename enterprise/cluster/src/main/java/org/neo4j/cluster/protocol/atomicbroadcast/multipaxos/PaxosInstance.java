@@ -47,9 +47,9 @@ public class PaxosInstance
     State state = State.empty;
     long ballot;
     List<URI> acceptors;
-    List<ProposerMessage.PromiseState> promises = new ArrayList<ProposerMessage.PromiseState>();
-    List<ProposerMessage.AcceptedState> accepts = new ArrayList<ProposerMessage.AcceptedState>();
-    List<ProposerMessage.RejectAcceptState> rejectedAccepts = new ArrayList<ProposerMessage.RejectAcceptState>();
+    List<ProposerMessage.PromiseState> promises = new ArrayList<>();
+    List<ProposerMessage.AcceptedState> accepts = new ArrayList<>();
+    List<ProposerMessage.RejectAcceptState> rejectedAccepts = new ArrayList<>();
     Object value_1;
     long phase1Ballot;
     Object value_2;

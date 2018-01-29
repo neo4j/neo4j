@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RecordingChannel implements Channel
 {
-    private Queue<ChannelBuffer> recievedMessages = new LinkedList<ChannelBuffer>();
+    private Queue<ChannelBuffer> recievedMessages = new LinkedList<>();
 
     @Override
     public ChannelFuture write( Object message )

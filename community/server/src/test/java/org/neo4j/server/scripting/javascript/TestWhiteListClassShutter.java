@@ -34,7 +34,7 @@ public class TestWhiteListClassShutter
     public void shouldAllowWhiteListedClasses() throws Exception
     {
         // Given
-        Set<String> whiteList = new HashSet<String>();
+        Set<String> whiteList = new HashSet<>();
         whiteList.add( getClass().getName() );
         WhiteListClassShutter shutter = new WhiteListClassShutter( whiteList );
 
@@ -48,7 +48,7 @@ public class TestWhiteListClassShutter
     @Test
     public void shouldDisallowUnlistedClasses() throws Exception
     {
-        WhiteListClassShutter shutter = new WhiteListClassShutter( new HashSet<String>() );
+        WhiteListClassShutter shutter = new WhiteListClassShutter( new HashSet<>() );
 
         // When
         boolean visible = shutter.visibleToScripts( getClass().getName() );

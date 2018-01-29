@@ -100,7 +100,7 @@ public class TestRelationshipCount
         EnumMap<MyRelTypes,Set<Relationship>> rels = new EnumMap<>( MyRelTypes.class );
         for ( MyRelTypes type : MyRelTypes.values() )
         {
-            rels.put( type, new HashSet<Relationship>() );
+            rels.put( type, new HashSet<>() );
         }
         int expectedRelCount = 0;
         for ( int i = 0; i < 6; i++, expectedRelCount++ )

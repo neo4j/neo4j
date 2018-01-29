@@ -198,7 +198,7 @@ public class CypherOrderability
             throw new UnorderableValueException( value.getClass().getSimpleName() );
         }
 
-        public static Comparator<SuperType> TYPE_ID_COMPARATOR = ( left, right ) -> left.typeId - right.typeId;
+        public static Comparator<SuperType> TYPE_ID_COMPARATOR = Comparator.comparingInt( left -> left.typeId );
     }
 
     // NOTE: nulls are handled at the top of the public compare() method
@@ -267,18 +267,18 @@ public class CypherOrderability
         }
     };
 
-    private static Comparator<Boolean> BOOLEAN_COMPARATOR = ( lhs, rhs ) -> lhs.compareTo( rhs );
+    private static Comparator<Boolean> BOOLEAN_COMPARATOR = Boolean::compareTo;
 
-    private static Comparator<NodeIdWrapper> NODE_COMPARATOR = ( lhs, rhs ) -> Long.compare( lhs.id(), rhs.id() );
+    private static Comparator<NodeIdWrapper> NODE_COMPARATOR = Comparator.comparingLong( NodeIdWrapper::id );
 
     private static Comparator<RelationshipIdWrapper> RELATIONSHIP_COMPARATOR =
-            ( lhs, rhs ) -> Long.compare( lhs.id(), rhs.id() );
+            Comparator.comparingLong( RelationshipIdWrapper::id );
 
     // TODO test
     private static Comparator<Path> PATH_COMPARATOR = ( lhs, rhs ) ->
     {
         Iterator<PropertyContainer> lhsIter = lhs.iterator();
-        Iterator<PropertyContainer> rhsIter = lhs.iterator();
+        Iterator<PropertyContainer> rhsIter = rhs.iterator();
         while ( lhsIter.hasNext() && rhsIter.hasNext() )
         {
             int result = compare( lhsIter.next(), rhsIter.next() );
@@ -314,7 +314,7 @@ public class CypherOrderability
 
         private Iterator toIterator( Object o )
         {
-            Class clazz = o.getClass();
+            Class<?> clazz = o.getClass();
             if ( Iterable.class.isAssignableFrom( clazz) )
             {
                 return ((Iterable) o).iterator();

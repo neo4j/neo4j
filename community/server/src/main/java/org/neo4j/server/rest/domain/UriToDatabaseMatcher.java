@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 public class UriToDatabaseMatcher
 {
 
-    private static ArrayList<Tuple> tuples = new ArrayList<Tuple>();
+    private static ArrayList<Tuple> tuples = new ArrayList<>();
 
     public GraphDatabaseName lookup( URI requestUri )
     {

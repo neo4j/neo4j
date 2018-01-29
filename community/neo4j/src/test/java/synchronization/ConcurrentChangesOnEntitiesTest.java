@@ -146,46 +146,36 @@ public class ConcurrentChangesOnEntitiesTest
 
     private Thread newThreadForNodeAction( final long nodeId, final Consumer<Node> nodeConsumer )
     {
-        return new Thread()
-        {
-            @Override
-            public void run()
+        return new Thread( () -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Node node = db.getNodeById( nodeId );
-                    barrier.await();
-                    nodeConsumer.accept( node );
-                    tx.success();
-                }
-                catch ( Exception e )
-                {
-                    ex.set( e );
-                }
+                Node node = db.getNodeById( nodeId );
+                barrier.await();
+                nodeConsumer.accept( node );
+                tx.success();
             }
-        };
+            catch ( Exception e )
+            {
+                ex.set( e );
+            }
+        } );
     }
 
     private Thread newThreadForRelationshipAction( final long relationshipId, final Consumer<Relationship> relConsumer )
     {
-        return new Thread()
-        {
-            @Override
-            public void run()
+        return new Thread( () -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Relationship relationship = db.getRelationshipById( relationshipId );
-                    barrier.await();
-                    relConsumer.accept( relationship );
-                    tx.success();
-                }
-                catch ( Exception e )
-                {
-                    ex.set( e );
-                }
+                Relationship relationship = db.getRelationshipById( relationshipId );
+                barrier.await();
+                relConsumer.accept( relationship );
+                tx.success();
             }
-        };
+            catch ( Exception e )
+            {
+                ex.set( e );
+            }
+        } );
     }
 
     private void startAndWait( Thread t1, Thread t2 ) throws Exception

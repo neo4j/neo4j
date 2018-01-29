@@ -49,7 +49,7 @@ public class MultiPaxosTest
                 new MultipleFailureLatencyStrategy( networkLatency ),
                 new MessageTimeoutStrategy( new FixedTimeoutStrategy( 1000 ) ) );
 
-        List<TestProtocolServer> nodes = new ArrayList<TestProtocolServer>();
+        List<TestProtocolServer> nodes = new ArrayList<>();
 
         TestProtocolServer server = network.addServer( 1, URI.create( "cluster://server1" ) );
         server.newClient( Cluster.class ).create( "default" );

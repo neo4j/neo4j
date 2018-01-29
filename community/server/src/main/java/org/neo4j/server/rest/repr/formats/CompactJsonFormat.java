@@ -103,7 +103,7 @@ public class CompactJsonFormat extends RepresentationFormat
             this.key = key;
         }
 
-        static final Map<String, MappingTemplate> TEMPLATES = new HashMap<String, MappingTemplate>();
+        static final Map<String, MappingTemplate> TEMPLATES = new HashMap<>();
         static
         {
             for ( MappingTemplate template : values() )
@@ -121,14 +121,14 @@ public class CompactJsonFormat extends RepresentationFormat
 
         CompactJsonWriter( MappingTemplate template )
         {
-            super( new HashMap<String, Object>(), true );
+            super( new HashMap<>(), true );
             this.template = template;
         }
 
         @Override
         protected MappingWriter newMapping( String type, String key )
         {
-            Map<String, Object> map = new HashMap<String, Object>();
+            Map<String, Object> map = new HashMap<>();
             data.put( key, map );
             return new MapWrappingWriter( map, interactive );
         }
@@ -142,7 +142,7 @@ public class CompactJsonFormat extends RepresentationFormat
         @Override
         protected ListWriter newList( String type, String key )
         {
-            List<Object> list = new ArrayList<Object>();
+            List<Object> list = new ArrayList<>();
             data.put( key, list );
             return new ListWrappingWriter( list, interactive );
         }
@@ -157,7 +157,7 @@ public class CompactJsonFormat extends RepresentationFormat
     @Override
     protected ListWriter serializeList( String type )
     {
-        return new ListWrappingWriter( new ArrayList<Object>() );
+        return new ListWrappingWriter( new ArrayList<>() );
     }
 
     @Override

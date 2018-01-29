@@ -50,7 +50,7 @@ public class TransportWriteThrottle implements TransportThrottle
 
     public TransportWriteThrottle( int lowWaterMark, int highWaterMark, Clock clock, Duration maxLockDuration )
     {
-        this( lowWaterMark, highWaterMark, clock, maxLockDuration, () -> new DefaultThrottleLock() );
+        this( lowWaterMark, highWaterMark, clock, maxLockDuration, DefaultThrottleLock::new );
     }
 
     public TransportWriteThrottle( int lowWaterMark, int highWaterMark, Clock clock, Duration maxLockDuration, Supplier<ThrottleLock> lockSupplier )

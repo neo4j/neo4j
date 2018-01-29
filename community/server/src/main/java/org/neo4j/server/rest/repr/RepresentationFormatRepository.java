@@ -39,7 +39,7 @@ public final class RepresentationFormatRepository
     public RepresentationFormatRepository( AbstractNeoServer injectorProvider )
     {
         this.injectorProvider = injectorProvider;
-        this.formats = new HashMap<MediaType, RepresentationFormat>();
+        this.formats = new HashMap<>();
         for ( RepresentationFormat format : Service.load( RepresentationFormat.class ) )
         {
             formats.put( format.mediaType, format );

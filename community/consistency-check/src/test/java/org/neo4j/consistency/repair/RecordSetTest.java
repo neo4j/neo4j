@@ -33,7 +33,7 @@ public class RecordSetTest
         // given
         NodeRecord record1 = new NodeRecord( 1, false, 1, 1 );
         NodeRecord record2 = new NodeRecord( 2, false, 2, 2 );
-        RecordSet<NodeRecord> set = new RecordSet<NodeRecord>();
+        RecordSet<NodeRecord> set = new RecordSet<>();
         set.add( record1 );
         set.add( record2 );
 

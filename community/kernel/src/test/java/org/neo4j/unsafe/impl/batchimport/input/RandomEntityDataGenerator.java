@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
@@ -34,7 +33,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 import static java.lang.Integer.min;
-
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 
 /**
@@ -45,67 +43,62 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
     public RandomEntityDataGenerator( long nodeCount, long count, int batchSize, long seed, long startId, Header header,
            Distribution<String> labels, Distribution<String> relationshipTypes, float factorBadNodeData, float factorBadRelationshipData )
     {
-        super( count, batchSize, new RandomsStates( seed ), new Generator<Randoms>()
-        {
-            @Override
-            public void accept( Randoms randoms, InputEntityVisitor visitor, long id ) throws IOException
+        super( count, batchSize, new RandomsStates( seed ), ( randoms, visitor, id ) -> {
+            for ( Entry entry : header.entries() )
             {
-                for ( Entry entry : header.entries() )
+                switch ( entry.type() )
                 {
-                    switch ( entry.type() )
+                case ID:
+                    if ( factorBadNodeData > 0 && id > 0 )
                     {
-                    case ID:
-                        if ( factorBadNodeData > 0 && id > 0 )
+                        if ( randoms.nextFloat() <= factorBadNodeData )
                         {
-                            if ( randoms.nextFloat() <= factorBadNodeData )
-                            {
-                                // id between 0 - id
-                                id = randoms.nextLong( id );
-                            }
+                            // id between 0 - id
+                            id = randoms.nextLong( id );
                         }
-                        visitor.id( idValue( entry, id ), entry.group() );
-                        if ( entry.name() != null )
-                        {
-                            visitor.property( entry.name(), id );
-                        }
-                        break;
-                    case PROPERTY:
-                        visitor.property( entry.name(), randomProperty( entry, randoms ) );
-                        break;
-                    case LABEL:
-                        visitor.labels( randomLabels( randoms.random(), labels ) );
-                        break;
-                    case START_ID:
-                    case END_ID:
-                        long nodeId = randoms.nextLong( nodeCount );
-                        if ( factorBadRelationshipData > 0 && nodeId > 0 )
-                        {
-                            if ( randoms.nextFloat() <= factorBadRelationshipData )
-                            {
-                                if ( randoms.nextBoolean() )
-                                {
-                                    // simply missing field
-                                    break;
-                                }
-                                // referencing some very likely non-existent node id
-                                nodeId = randoms.nextLong();
-                            }
-                        }
-                        if ( entry.type() == Type.START_ID )
-                        {
-                            visitor.startId( idValue( entry, nodeId ), entry.group() );
-                        }
-                        else
-                        {
-                            visitor.endId( idValue( entry, nodeId ), entry.group() );
-                        }
-                        break;
-                    case TYPE:
-                        visitor.type( randomRelationshipType( randoms.random(), relationshipTypes ) );
-                        break;
-                    default:
-                        throw new IllegalArgumentException( entry.toString() );
                     }
+                    visitor.id( idValue( entry, id ), entry.group() );
+                    if ( entry.name() != null )
+                    {
+                        visitor.property( entry.name(), id );
+                    }
+                    break;
+                case PROPERTY:
+                    visitor.property( entry.name(), randomProperty( entry, randoms ) );
+                    break;
+                case LABEL:
+                    visitor.labels( randomLabels( randoms.random(), labels ) );
+                    break;
+                case START_ID:
+                case END_ID:
+                    long nodeId = randoms.nextLong( nodeCount );
+                    if ( factorBadRelationshipData > 0 && nodeId > 0 )
+                    {
+                        if ( randoms.nextFloat() <= factorBadRelationshipData )
+                        {
+                            if ( randoms.nextBoolean() )
+                            {
+                                // simply missing field
+                                break;
+                            }
+                            // referencing some very likely non-existent node id
+                            nodeId = randoms.nextLong();
+                        }
+                    }
+                    if ( entry.type() == Type.START_ID )
+                    {
+                        visitor.startId( idValue( entry, nodeId ), entry.group() );
+                    }
+                    else
+                    {
+                        visitor.endId( idValue( entry, nodeId ), entry.group() );
+                    }
+                    break;
+                case TYPE:
+                    visitor.type( randomRelationshipType( randoms.random(), relationshipTypes ) );
+                    break;
+                default:
+                    throw new IllegalArgumentException( entry.toString() );
                 }
             }
         }, startId );

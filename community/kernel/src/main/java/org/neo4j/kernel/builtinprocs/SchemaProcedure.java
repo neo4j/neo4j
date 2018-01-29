@@ -215,7 +215,7 @@ public class SchemaProcedure
         }
 
         GraphResult graphResult;
-        graphResult = new GraphResult( new ArrayList<Node>( nodeMap.values() ), relationships );
+        graphResult = new GraphResult( new ArrayList<>( nodeMap.values() ), relationships );
 
         return graphResult;
     }

@@ -70,17 +70,11 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
                 ExecutorService es = Executors.newCachedThreadPool();
 
                 Collection<Future<Long>> futures = new ArrayList<>();
-                futures.add( es.submit( new TimedTask( () ->
-                {
-                    write( raftLog );
-                }, time, unit ) ) );
+                futures.add( es.submit( new TimedTask( () -> write( raftLog ), time, unit ) ) );
 
                 for ( int i = 0; i < nReaders; i++ )
                 {
-                    futures.add( es.submit( new TimedTask( () ->
-                    {
-                        read( raftLog );
-                    }, time, unit ) ) );
+                    futures.add( es.submit( new TimedTask( () -> read( raftLog ), time, unit ) ) );
                 }
 
                 for ( Future<Long> f : futures )

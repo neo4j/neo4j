@@ -57,7 +57,7 @@ public class HttpHeaderUtils
         {
             return mediaType;
         }
-        Map<String,String> paramsWithCharset = new HashMap<String,String>( parameters );
+        Map<String,String> paramsWithCharset = new HashMap<>( parameters );
         paramsWithCharset.putAll( CHARSET );
         return new MediaType( mediaType.getType(), mediaType.getSubtype(), paramsWithCharset );
     }

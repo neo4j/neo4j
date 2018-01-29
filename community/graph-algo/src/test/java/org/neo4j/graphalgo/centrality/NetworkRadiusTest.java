@@ -34,19 +34,15 @@ public class NetworkRadiusTest extends Neo4jAlgoTestCase
 {
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
-        return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
-                ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
     @Test
     public void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
-        NetworkRadius<Double> radius = new NetworkRadius<Double>(
-            getSingleSourceShortestPath(), 0.0, graph.getAllNodes(),
-            new DoubleComparator() );
+        NetworkRadius<Double> radius = new NetworkRadius<>( getSingleSourceShortestPath(), 0.0, graph.getAllNodes(), new DoubleComparator() );
         assertTrue( radius.getCentrality( null ) == 2.0 );
     }
 
@@ -55,9 +51,7 @@ public class NetworkRadiusTest extends Neo4jAlgoTestCase
     {
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "d,b,e" );
-        NetworkRadius<Double> radius = new NetworkRadius<Double>(
-            getSingleSourceShortestPath(), 0.0, graph.getAllNodes(),
-            new DoubleComparator() );
+        NetworkRadius<Double> radius = new NetworkRadius<>( getSingleSourceShortestPath(), 0.0, graph.getAllNodes(), new DoubleComparator() );
         assertTrue( radius.getCentrality( null ) == 1.0 );
     }
 
@@ -65,9 +59,7 @@ public class NetworkRadiusTest extends Neo4jAlgoTestCase
     public void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );
-        NetworkRadius<Double> radius = new NetworkRadius<Double>(
-            getSingleSourceShortestPath(), 0.0, graph.getAllNodes(),
-            new DoubleComparator() );
+        NetworkRadius<Double> radius = new NetworkRadius<>( getSingleSourceShortestPath(), 0.0, graph.getAllNodes(), new DoubleComparator() );
         assertTrue( radius.getCentrality( null ) == 2.0 );
     }
 }

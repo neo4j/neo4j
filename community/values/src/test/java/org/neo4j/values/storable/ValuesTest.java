@@ -73,7 +73,7 @@ public class ValuesTest
         assertEqual( floatArray( new float[]{} ), floatArray( new float[]{} ) );
         assertEqual( doubleArray( new double[]{} ), doubleArray( new double[]{} ) );
         assertEqual( charArray( new char[]{} ), charArray( new char[]{} ) );
-        assertEqual( stringArray( new String[]{} ), stringArray( new String[]{} ) );
+        assertEqual( stringArray(), stringArray() );
 
         assertEqual( booleanArray( new boolean[]{true} ), booleanArray( new boolean[]{true} ) );
         assertEqual( byteArray( new byte[]{1} ), byteArray( new byte[]{1} ) );
@@ -83,6 +83,6 @@ public class ValuesTest
         assertEqual( floatArray( new float[]{1.0f} ), floatArray( new float[]{1.0f} ) );
         assertEqual( doubleArray( new double[]{1.0} ), doubleArray( new double[]{1.0} ) );
         assertEqual( charArray( new char[]{'x'} ), charArray( new char[]{'x'} ) );
-        assertEqual( stringArray( new String[]{"hi"} ), stringArray( new String[]{"hi"} ) );
+        assertEqual( stringArray( "hi" ), stringArray( "hi" ) );
     }
 }

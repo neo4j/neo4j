@@ -19,11 +19,10 @@
  */
 package org.neo4j.shell;
 
-import java.io.Serializable;
+import org.junit.Test;
+
 import java.rmi.RemoteException;
 import java.util.HashMap;
-
-import org.junit.Test;
 
 import org.neo4j.helpers.Cancelable;
 import org.neo4j.shell.impl.AbstractClient;
@@ -50,7 +49,7 @@ public class CtrlCTest
     public void shouldInstallProvidedHandlerAfterReadingUserInput() throws Exception
     {
         final StubCtrlCHandler handler = new StubCtrlCHandler();
-        AbstractClient client = new AbstractClient( new HashMap<String, Serializable>(), handler )
+        AbstractClient client = new AbstractClient( new HashMap<>(), handler )
         {
             @Override
             public ShellServer getServer()

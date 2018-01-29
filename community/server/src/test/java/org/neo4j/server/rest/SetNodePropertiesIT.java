@@ -78,7 +78,7 @@ public class SetNodePropertiesIT extends
     public void shouldReturn400WhenSendinIncompatibleJsonProperties()
             throws JsonParseException
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "jim", new HashMap<String, Object>() );
         gen.get().payload( JsonHelper.createJsonFrom( map ) ).expectedStatus(
                 400 ).put( getPropertiesUri( data.get().get( "jim" ) ) );

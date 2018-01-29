@@ -262,13 +262,8 @@ public class NetworkSender
 
         final URI to = URI.create( message.getHeader( Message.TO ) );
 
-        ExecutorService senderExecutor = senderExecutors.get( to );
-        if ( senderExecutor == null )
-        {
-            senderExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender " + to
-                    .toASCIIString(), monitor ) );
-            senderExecutors.put( to, senderExecutor );
-        }
+        ExecutorService senderExecutor = senderExecutors.computeIfAbsent( to, t -> Executors
+                .newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender " + t.toASCIIString(), monitor ) ) );
 
         senderExecutor.submit( () ->
         {

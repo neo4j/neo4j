@@ -76,7 +76,7 @@ public class TestGraphDescription implements GraphHolder
     public void canCreateGraphFromMultipleStrings() throws Exception
     {
         Map<String,Node> graph = data.get();
-        Set<Node> unique = new HashSet<Node>();
+        Set<Node> unique = new HashSet<>();
         Node n = graph.get( "a" );
         while ( unique.add( n ) )
         {

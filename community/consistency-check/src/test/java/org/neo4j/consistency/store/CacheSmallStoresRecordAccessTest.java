@@ -106,7 +106,7 @@ public class CacheSmallStoresRecordAccessTest
     @SuppressWarnings( "unchecked" )
     private static <T extends AbstractBaseRecord> Matcher<RecordReference<T>> isDirectReferenceTo( T record )
     {
-        return (Matcher) new DirectReferenceMatcher<T>( record );
+        return (Matcher) new DirectReferenceMatcher<>( record );
     }
 
     private static class DirectReferenceMatcher<T extends AbstractBaseRecord>

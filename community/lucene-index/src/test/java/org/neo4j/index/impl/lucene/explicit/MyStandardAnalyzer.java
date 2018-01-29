@@ -34,7 +34,7 @@ public final class MyStandardAnalyzer extends AnalyzerWrapper
     public MyStandardAnalyzer()
     {
         super( GLOBAL_REUSE_STRATEGY );
-        CharArraySet stopWords = CharArraySet.copy( new HashSet<String>( Arrays.asList( "just", "some", "words" ) ) );
+        CharArraySet stopWords = CharArraySet.copy( new HashSet<>( Arrays.asList( "just", "some", "words" ) ) );
         actual = new StandardAnalyzer( stopWords );
     }
 

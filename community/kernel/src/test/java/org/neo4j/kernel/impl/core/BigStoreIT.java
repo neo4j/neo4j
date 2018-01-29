@@ -302,7 +302,7 @@ public class BigStoreIT implements RelationshipType
 
     private static <T> Collection<T> asSet( Collection<T> collection )
     {
-        return new HashSet<T>( collection );
+        return new HashSet<>( collection );
     }
 
     private void setHighId( IdType type, long highId )

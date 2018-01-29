@@ -29,8 +29,8 @@ import org.neo4j.helpers.HostnamePort;
 public class UdcTimerTask extends TimerTask
 {
     // ABKTODO: make this thread safe
-    public static final Map<String, Integer> successCounts = new HashMap<String, Integer>();
-    public static final Map<String, Integer> failureCounts = new HashMap<String, Integer>();
+    public static final Map<String, Integer> successCounts = new HashMap<>();
+    public static final Map<String, Integer> failureCounts = new HashMap<>();
 
     private final String storeId;
     private final Pinger pinger;

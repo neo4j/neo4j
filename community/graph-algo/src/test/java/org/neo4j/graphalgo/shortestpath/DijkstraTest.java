@@ -19,27 +19,24 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertTrue;
-
+import common.Neo4jAlgoTestCase;
+import common.SimpleGraphBuilder;
 import org.junit.Test;
+
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 
-import common.Neo4jAlgoTestCase;
-import common.SimpleGraphBuilder;
+import static org.junit.Assert.assertTrue;
 
 public class DijkstraTest extends Neo4jAlgoTestCase
 {
     protected Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph,
         Double startCost, String startNode, String endNode )
     {
-        return new Dijkstra<Double>( startCost, graph.getNode( startNode ),
-            graph.getNode( endNode ),
-            CommonEvaluators.doubleCostEvaluator( "cost" ),
-            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        return new Dijkstra<>( startCost, graph.getNode( startNode ), graph.getNode( endNode ), CommonEvaluators.doubleCostEvaluator( "cost" ),
+                new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                Direction.BOTH, MyRelTypes.R1 );
     }
 
     /**

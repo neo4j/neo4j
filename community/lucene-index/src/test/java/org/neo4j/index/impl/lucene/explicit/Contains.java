@@ -74,6 +74,6 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
     @Factory
     public static <T> Contains<T> contains( T... expectedItems )
     {
-        return new Contains<T>( expectedItems );
+        return new Contains<>( expectedItems );
     }
 }

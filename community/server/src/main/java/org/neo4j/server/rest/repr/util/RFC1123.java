@@ -28,7 +28,7 @@ import java.util.TimeZone;
 
 public final class RFC1123
 {
-    private static final ThreadLocal<RFC1123> INSTANCES = new ThreadLocal<RFC1123>();
+    private static final ThreadLocal<RFC1123> INSTANCES = new ThreadLocal<>();
 
     public static final TimeZone GMT = TimeZone.getTimeZone( "GMT" );
 

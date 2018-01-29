@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.membership;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -27,7 +28,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-public class RaftTestGroup implements RaftGroup
+public class RaftTestGroup implements RaftGroup<MemberId>
 {
     private final Set<MemberId> members = new HashSet<>();
 
@@ -46,10 +47,7 @@ public class RaftTestGroup implements RaftGroup
 
     public RaftTestGroup( MemberId... memberIds )
     {
-        for ( MemberId memberId : memberIds )
-        {
-            this.members.add( memberId );
-        }
+        this.members.addAll( Arrays.asList( memberIds ) );
     }
 
     @Override
