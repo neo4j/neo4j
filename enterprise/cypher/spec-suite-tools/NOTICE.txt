@@ -25,7 +25,6 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Apache Commons IO
   Apache Commons Lang
   Caffeine cache
   casbah-commons
@@ -37,13 +36,13 @@ Apache Software License, Version 2.0
   json4s-ast
   json4s-core
   json4s-native
-  Logging
   Lucene Core
   Lucene Memory
   MongoDB Java Driver
   Netty/All-in-One
   nscala-time
-  openCypher TCK Developer Tools
+  openCypher TCK API
+  openCypher TCK Features and Graphs
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
   parboiled-core
@@ -55,6 +54,7 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  ANTLR 4 Runtime
   ParaNamer Core
   Scala Compiler
   scala-parser-combinators

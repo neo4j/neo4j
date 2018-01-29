@@ -19,22 +19,22 @@
  */
 package cypher.features
 
-import java.nio.file.FileSystems
 import java.util.Collection
 
 import cypher.features.ScenarioTestHelper._
+import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.{AfterEach, DynamicTest, Test, TestFactory}
-import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
+import org.junit.jupiter.api.{DynamicTest, Test, TestFactory}
+import org.opencypher.tools.tck.api.Scenario
 
-class TCKTest {
-
+abstract class BaseFeatureTest {
   // these two should be empty on commit!
   val featureToRun = ""
   val scenarioToRun = ""
 
-  val allScenarios = CypherTCK.allTckScenarios
-  val scenarios: Seq[Scenario] = {
+  val scenarios: Seq[Scenario]
+
+  def filterScenarios(allScenarios: Seq[Scenario]): Seq[Scenario] = {
     if (featureToRun.nonEmpty) {
       val filteredFeature = allScenarios.filter(s => s.featureName == featureToRun)
       if (scenarioToRun.nonEmpty) {
@@ -47,52 +47,46 @@ class TCKTest {
       allScenarios
   }
 
-  @AfterEach
-  def tearDown(): Unit = {
-    //TODO: This method can be removed with new release of TCK (1.0.0-M10)
-    FileSystems.getFileSystem(CypherTCK.getClass.getResource(CypherTCK.featuresPath).toURI).close()
-  }
-
   @TestFactory
-  def runTCKTestsDefault(): Collection[DynamicTest] = {
+  def runDefault(): Collection[DynamicTest] = {
     createTests(scenarios, DefaultTestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCostSlotted(): Collection[DynamicTest] = {
+  def runCostSlotted(): Collection[DynamicTest] = {
     createTests(scenarios, CostSlottedTestConfig)
   }
 
   //  Morsel engine is not complete and executes tests very slowly
   // eg. MorselExecutionContext.createClone is not implemented
   //  @TestFactory
-  //  def runTCKTestsCostMorsel(): Collection[DynamicTest] = {
-  // TODO: once Morsel is complete, generate blacklist with: generateBlacklistTCKTestCostMorsel further down
+  //  def runCostMorsel(): Collection[DynamicTest] = {
+  // TODO: once Morsel is complete, generate blacklist with: generateBlacklistCostMorsel further down
   //    createTests(scenarios, CostMorselTestConfig)
   //  }
 
   @TestFactory
-  def runTCKTestsCostCompiled(): Collection[DynamicTest] = {
+  def runCostCompiled(): Collection[DynamicTest] = {
     createTests(scenarios, CostCompiledTestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCost(): Collection[DynamicTest] = {
+  def runCost(): Collection[DynamicTest] = {
     createTests(scenarios, CostTestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCompatibility33(): Collection[DynamicTest] = {
+  def runCompatibility33(): Collection[DynamicTest] = {
     createTests(scenarios, Compatibility33TestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCompatibility31(): Collection[DynamicTest] = {
+  def runCompatibility31(): Collection[DynamicTest] = {
     createTests(scenarios, Compatibility31TestConfig)
   }
 
   @TestFactory
-  def runTCKTestsCompatibility23(): Collection[DynamicTest] = {
+  def runCompatibility23(): Collection[DynamicTest] = {
     createTests(scenarios, Compatibility23TestConfig)
   }
 
@@ -108,57 +102,56 @@ class TCKTest {
   }
 
   /*
-  All methods for generating blacklists. Comment them out for commit
+  All methods for generating blacklists. Ignore them for commit
    */
-/*
-  @Test
-  def generateBlacklistTCKTestDefault(): Unit = {
+
+  @Ignore
+  def generateBlacklistDefault(): Unit = {
     printComputedBlacklist(scenarios, DefaultTestConfig)
-    fail("Do not forget to comment this method out")
+    fail("Do not forget to add @ignore to this method")
   }
 
-  @Test
-  def generateBlacklistTCKTestCostSlotted(): Unit = {
+  @Ignore
+  def generateBlacklistCostSlotted(): Unit = {
     printComputedBlacklist(scenarios, CostSlottedTestConfig)
-    fail("Do not forget to comment this method out")
+    fail("Do not forget to add @ignore to this method")
   }
 
   //  Morsel engine is not complete and executes tests very slowly
-  // eg. MorselExecutionContext.createClone is not implemented
-  //  @Test
-  //  def generateBlacklistTCKTestCostMorsel(): Unit = {
-  //    printComputedBlacklist(scenarios, CostMorselTestConfig)
-  //    fail("Do not forget to comment this method out")
-  //  }
+  //eg. MorselExecutionContext.createClone is not implemented
+  @Ignore
+  def generateBlacklistTCKTestCostMorsel(): Unit = {
+    printComputedBlacklist(scenarios, CostMorselTestConfig)
+    fail("Do not forget to add @ignore to this method")
+  }
 
-  @Test
-  def generateBlacklistTCKTestCostCompiled(): Unit = {
+  @Ignore
+  def generateBlacklistCostCompiled(): Unit = {
     printComputedBlacklist(scenarios, CostCompiledTestConfig)
-    fail("Do not forget to comment this method out")
+    fail("Do not forget to add @ignore to this method")
   }
 
-  @Test
-  def generateBlacklistTCKTestCost(): Unit = {
+  @Ignore
+  def generateBlacklistCost(): Unit = {
     printComputedBlacklist(scenarios, CostTestConfig)
-    fail("Do not forget to comment this method out")
+    fail("Do not forget to add @ignore to this method")
   }
 
-  @Test
-  def generateBlacklistTCKTestCompatibility33(): Unit = {
+  @Ignore
+  def generateBlacklistCompatibility33(): Unit = {
     printComputedBlacklist(scenarios, Compatibility33TestConfig)
-    fail("Do not forget to comment this method out")
+    fail("Do not forget to add @ignore to this method")
   }
 
-  @Test
-  def generateBlacklistTCKTestCompatibility31(): Unit = {
+  @Ignore
+  def generateBlacklistCompatibility31(): Unit = {
     printComputedBlacklist(scenarios, Compatibility31TestConfig)
-    fail("Do not forget to comment this method out")
+    fail("Do not forget to add @ignore to this method")
   }
 
-  @Test
-  def generateBlacklistTCKTestCompatibility23(): Unit = {
+  @Ignore
+  def generateBlacklistCompatibility23(): Unit = {
     printComputedBlacklist(scenarios, Compatibility23TestConfig)
-    fail("Do not forget to comment this method out")
+    fail("Do not forget to add @ignore to this method")
   }
-*/
 }
