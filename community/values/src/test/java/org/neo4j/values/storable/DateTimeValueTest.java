@@ -283,8 +283,6 @@ public class DateTimeValueTest
                 datetime( date( 2018, 2, 28 ), time( 0, 0, 0, 0, UTC ) ).add( DurationValue.duration( -1, 0, 0, 0 ) ) );
     }
 
-
-
     @Test
     public void shouldReuseInstanceInArithmetics() throws Exception
     {
