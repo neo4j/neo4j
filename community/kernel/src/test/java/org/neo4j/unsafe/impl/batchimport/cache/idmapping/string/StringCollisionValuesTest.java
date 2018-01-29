@@ -49,7 +49,7 @@ public class StringCollisionValuesTest
         @Override
         public int stringMaxLength()
         {
-            return 1 << Short.SIZE;
+            return (1 << Short.SIZE) - 1;
         }
     } );
 
