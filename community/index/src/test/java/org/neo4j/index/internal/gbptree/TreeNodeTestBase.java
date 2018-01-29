@@ -51,7 +51,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     private static final int HIGH_GENERATION = 4;
 
     private static final int PAGE_SIZE = 512;
-    final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+    PageCursor cursor;
 
     private TestLayout<KEY,VALUE> layout;
     private TreeNode<KEY,VALUE> node;
@@ -62,6 +62,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     @Before
     public void prepareCursor() throws IOException
     {
+        cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         cursor.next();
         layout = getLayout();
         node = getNode( PAGE_SIZE, layout );

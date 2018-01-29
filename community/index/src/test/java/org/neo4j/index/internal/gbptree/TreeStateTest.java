@@ -34,11 +34,12 @@ import static org.junit.Assert.fail;
 public class TreeStateTest
 {
     private final int pageSize = 256;
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
+    private PageAwareByteArrayCursor cursor;
 
     @Before
     public void initiateCursor() throws IOException
     {
+        cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next();
     }
 
