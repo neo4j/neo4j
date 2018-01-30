@@ -147,7 +147,7 @@ public class Primitive
 
     public static PrimitiveIntSet offHeapIntSet( MemoryAllocationTracker allocationTracker )
     {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( 1 << 20, VALUE_MARKER, allocationTracker ),
+        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( DEFAULT_OFFHEAP_CAPACITY, VALUE_MARKER, allocationTracker ),
                 VALUE_MARKER, NO_MONITOR );
     }
 
@@ -164,7 +164,7 @@ public class Primitive
 
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap( int initialCapacity )
     {
-        return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
+        return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<>( initialCapacity ), NO_MONITOR );
     }
 
     public static PrimitiveIntLongMap intLongMap()
