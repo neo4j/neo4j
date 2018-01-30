@@ -20,18 +20,20 @@
 package org.neo4j.bolt.v1.runtime.concurrent;
 
 import java.time.Clock;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.THREAD_ID;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.sessionWorker;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * A {@link WorkerFactory} implementation that creates one thread for every session started, requests are then executed
@@ -44,12 +46,13 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.sessionWorker;
  * If we find ourselves with tens of thousands of concurrent sessions per neo4j instance, we may want to introduce an
  * alternate strategy.
  */
-public class ThreadedWorkerFactory implements WorkerFactory
+public class ThreadedWorkerFactory extends LifecycleAdapter implements WorkerFactory
 {
     private final BoltFactory connector;
     private final JobScheduler scheduler;
     private final LogService logging;
     private final Clock clock;
+    private final ExecutorService threadPool;
 
     public ThreadedWorkerFactory( BoltFactory connector, JobScheduler scheduler, LogService logging, Clock clock )
     {
@@ -57,6 +60,8 @@ public class ThreadedWorkerFactory implements WorkerFactory
         this.scheduler = scheduler;
         this.logging = logging;
         this.clock = clock;
+        this.threadPool = new ThreadPoolExecutor( 200, 1000, 5, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>( 300 ), new NamedThreadFactory( "neo4j.Session" ) );
     }
 
     @Override
@@ -65,8 +70,15 @@ public class ThreadedWorkerFactory implements WorkerFactory
         BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, clock );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging );
 
-        scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, machine.key() ) );
+//        scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, machine.key() ) );
+        threadPool.execute( worker );
 
         return worker;
+    }
+
+    @Override
+    public void shutdown()
+    {
+        threadPool.shutdownNow();
     }
 }
