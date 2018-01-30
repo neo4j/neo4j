@@ -68,7 +68,7 @@ public class StringSchemaIndexProvider extends NativeSchemaIndexProvider<StringS
     protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor,
             long indexId, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
+        return new StringSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 indexId, samplingConfig );
     }
 

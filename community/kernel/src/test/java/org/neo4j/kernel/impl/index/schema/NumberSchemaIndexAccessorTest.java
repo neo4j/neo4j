@@ -40,13 +40,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
-public abstract class NumberSchemaIndexAccessorTest<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue>
-        extends NativeSchemaIndexAccessorTest<KEY,VALUE>
+public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<NumberSchemaKey,NativeSchemaValue>
 {
     @Override
-    NativeSchemaIndexAccessor<KEY,VALUE> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    NumberSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor<>( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId, samplingConfig );
     }
 
     @Test

@@ -26,19 +26,22 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-public class StringSchemaIndexAccessor<KEY extends StringSchemaKey, VALUE extends NativeSchemaValue>
-        extends NativeSchemaIndexAccessor<KEY,VALUE>
+/**
+ * {@link IndexAccessor} using {@link StringLayout}, i.e for {@link String} values.
+ */
+public class StringSchemaIndexAccessor extends NativeSchemaIndexAccessor<StringSchemaKey,NativeSchemaValue>
 {
     StringSchemaIndexAccessor(
             PageCache pageCache,
             FileSystemAbstraction fs,
             File storeFile,
-            Layout<KEY,VALUE> layout,
+            Layout<StringSchemaKey,NativeSchemaValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             SchemaIndexProvider.Monitor monitor,
             IndexDescriptor descriptor,
@@ -52,6 +55,6 @@ public class StringSchemaIndexAccessor<KEY extends StringSchemaKey, VALUE extend
     public IndexReader newReader()
     {
         assertOpen();
-        return new StringSchemaIndexReader<>( tree, layout, samplingConfig, descriptor );
+        return new StringSchemaIndexReader( tree, layout, samplingConfig, descriptor );
     }
 }

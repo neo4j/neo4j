@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public class StringUniqueSchemaIndexAccessorTest extends StringSchemaIndexAccessorTest<StringSchemaKey,NativeSchemaValue>
+public class StringUniqueSchemaIndexAccessorTest extends StringSchemaIndexAccessorTest
 {
     @Override
     protected LayoutTestUtil<StringSchemaKey,NativeSchemaValue> createLayoutTestUtil()

@@ -41,6 +41,12 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
+/**
+ * Base class for native indexes on top of {@link GBPTree}.
+ *
+ * @param <KEY> type of {@link NativeSchemaKey}
+ * @param <VALUE> type of {@link NativeSchemaValue}
+ */
 abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue> extends SchemaIndexProvider
 {
     protected final PageCache pageCache;

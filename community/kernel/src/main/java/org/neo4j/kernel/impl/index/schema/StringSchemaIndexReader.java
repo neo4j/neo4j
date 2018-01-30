@@ -30,9 +30,10 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-class StringSchemaIndexReader<KEY extends StringSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
+class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,NativeSchemaValue>
 {
-    StringSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+    StringSchemaIndexReader( GBPTree<StringSchemaKey,NativeSchemaValue> tree, Layout<StringSchemaKey,NativeSchemaValue> layout,
+            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
     }
@@ -52,7 +53,7 @@ class StringSchemaIndexReader<KEY extends StringSchemaKey, VALUE extends NativeS
     }
 
     @Override
-    void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    void initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
         // todo initialize the keys to prepare for seek
         IndexQuery predicate = predicates[0];
@@ -80,7 +81,7 @@ class StringSchemaIndexReader<KEY extends StringSchemaKey, VALUE extends NativeS
         }
     }
 
-    private void initFromForRange( StringRangePredicate rangePredicate, KEY treeKeyFrom )
+    private void initFromForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromAsValue();
         if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
@@ -94,7 +95,7 @@ class StringSchemaIndexReader<KEY extends StringSchemaKey, VALUE extends NativeS
         }
     }
 
-    private void initToForRange( StringRangePredicate rangePredicate, KEY treeKeyTo )
+    private void initToForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyTo )
     {
         Value toValue = rangePredicate.toAsValue();
         if ( toValue.valueGroup() == ValueGroup.NO_VALUE )

@@ -68,7 +68,7 @@ public class NumberSchemaIndexProvider extends NativeSchemaIndexProvider<NumberS
     protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor,
             long indexId, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
+        return new NumberSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 indexId, samplingConfig );
     }
 

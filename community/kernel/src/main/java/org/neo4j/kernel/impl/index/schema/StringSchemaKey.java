@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -32,12 +33,8 @@ import static java.lang.String.format;
 import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompare;
 
 /**
- * Includes value and entity id (to be able to handle non-unique values).
- * A value can be any {@link Number} and is represented as a {@code long} to store the raw bits and a type
- * to say if it's a long, double or float.
- *
- * Distinction between double and float exists because coersions between each other and long may differ.
- * TODO this should be figured out and potentially reduced to long, double types only.
+ * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link String},
+ * or rather any string that {@link GBPTree} can handle.
  */
 class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements NativeSchemaKey
 {
@@ -89,7 +86,6 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
 
     private TextValue assertValidValue( Value... values )
     {
-        // TODO: support multiple values, right?
         if ( values.length > 1 )
         {
             throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
@@ -118,7 +114,7 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
         return bytes == null ? Values.NO_VALUE : Values.utf8Value( bytes );
     }
 
-    // TODO perhaps merge into parent or something
+    // TODO perhaps merge these lowest/highest methods into parent
     @Override
     public void initAsLowest()
     {
@@ -138,11 +134,6 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     private boolean isHighest()
     {
         return entityIdIsSpecialTieBreaker && entityId == Long.MAX_VALUE && bytes == null;
-    }
-
-    private boolean isLowest()
-    {
-        return entityIdIsSpecialTieBreaker && entityId == Long.MIN_VALUE && bytes == null;
     }
 
     /**
@@ -170,6 +161,7 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
         {
             return 0;
         }
+
         try
         {
             // TODO change to not throw
@@ -223,13 +215,12 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     @Override
     public void writeString( String value )
     {
-        // expensiveness
         bytes = UTF8.encode( value );
     }
 
     @Override
     public void writeString( char value )
     {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "Not supported a.t.m. should it be?" );
     }
 }

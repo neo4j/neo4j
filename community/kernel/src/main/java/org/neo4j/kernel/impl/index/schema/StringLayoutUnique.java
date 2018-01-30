@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 
 /**
- * {@link Layout} for numbers where numbers need to be unique.
+ * {@link Layout} for strings that need to be unique.
  */
 class StringLayoutUnique extends StringLayout
 {

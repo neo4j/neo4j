@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 
+/**
+ * {@link Layout} for strings that doesn't need to be unique.
+ */
 public class StringLayoutNonUnique extends StringLayout
 {
     private static final String IDENTIFIER_NAME = "NUSI";
