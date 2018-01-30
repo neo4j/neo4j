@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -278,16 +275,6 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
     public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
 
-    /**
-     * Provides a snapshot of meta files about this index provider, not the indexes themselves.
-     *
-     * @return {@link ResourceIterator} over all meta files for this index provider.
-     */
-    public ResourceIterator<File> snapshotMetaFiles()
-    {
-        return Iterators.emptyResourceIterator();
-    }
-
     public static class Descriptor
     {
         private final String key;
@@ -331,7 +318,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         @Override
         public boolean equals( Object obj )
         {
-            if ( obj != null && obj instanceof Descriptor )
+            if ( obj instanceof Descriptor )
             {
                 Descriptor otherDescriptor = (Descriptor) obj;
                 return key.equals( otherDescriptor.getKey() ) && version.equals( otherDescriptor.getVersion() );

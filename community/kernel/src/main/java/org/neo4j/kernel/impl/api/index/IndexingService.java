@@ -24,10 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
@@ -640,17 +638,10 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
         Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
-        Set<SchemaIndexProvider.Descriptor> fromProviders = new HashSet<>();
         for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
         {
-            Descriptor providerDescriptor = indexProxy.getProviderDescriptor();
-            if ( fromProviders.add( providerDescriptor ) )
-            {
-                snapshots.add( providerMap.apply( providerDescriptor ).snapshotMetaFiles() );
-            }
             snapshots.add( indexProxy.snapshotFiles() );
         }
-
         return Iterators.concatResourceIterators( snapshots.iterator() );
     }
 
