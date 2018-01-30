@@ -164,9 +164,8 @@ public class InternalJettyServletRequest extends Request
 
         this.headers = new HashMap<>();
 
-        setUri( uri );
+        this.setHttpURI( uri );
         setCharacterEncoding( encoding );
-        setRequestURI( null );
         setQueryString( null );
 
         setScheme(uri.getScheme());
@@ -359,7 +358,7 @@ public class InternalJettyServletRequest extends Request
     @Override
     public String toString()
     {
-        return String.format( "%s %s %s\n%s", getMethod(), getUri(), getProtocol(), getHttpFields() );
+        return String.format( "%s %s %s\n%s", getMethod(), getHttpURI(), getProtocol(), getHttpFields() );
     }
 
     @Override

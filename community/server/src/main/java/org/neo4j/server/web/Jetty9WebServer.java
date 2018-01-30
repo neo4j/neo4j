@@ -23,12 +23,10 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -368,7 +366,7 @@ public class Jetty9WebServer implements WebServer
 
     private void loadAllMounts() throws IOException
     {
-        SessionManager sm = new HashSessionManager();
+        SessionHandler sm = new SessionHandler();
 
         final SortedSet<String> mountpoints = new TreeSet<>( ( o1, o2 ) -> o2.compareTo( o1 ) );
 
@@ -464,12 +462,11 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private void loadStaticContent( SessionManager sm, String mountPoint )
+    private void loadStaticContent( SessionHandler sessionHandler, String mountPoint )
     {
         String contentLocation = staticContent.get( mountPoint );
         try
         {
-            SessionHandler sessionHandler = new SessionHandler( sm );
             sessionHandler.setServer( getJetty() );
             final WebAppContext staticContext = new WebAppContext();
             staticContext.setServer( getJetty() );
@@ -503,20 +500,19 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private void loadJAXRSPackage( SessionManager sm, String mountPoint )
+    private void loadJAXRSPackage( SessionHandler sessionHandler, String mountPoint )
     {
-        loadJAXRSResource( sm, mountPoint, jaxRSPackages.get( mountPoint ) );
+        loadJAXRSResource( sessionHandler, mountPoint, jaxRSPackages.get( mountPoint ) );
     }
 
-    private void loadJAXRSClasses( SessionManager sm, String mountPoint )
+    private void loadJAXRSClasses( SessionHandler sessionHandler, String mountPoint )
     {
-        loadJAXRSResource( sm, mountPoint, jaxRSClasses.get( mountPoint ) );
+        loadJAXRSResource( sessionHandler, mountPoint, jaxRSClasses.get( mountPoint ) );
     }
 
-    private void loadJAXRSResource( SessionManager sm, String mountPoint,
+    private void loadJAXRSResource( SessionHandler sessionHandler, String mountPoint,
                                     JaxRsServletHolderFactory jaxRsServletHolderFactory )
     {
-        SessionHandler sessionHandler = new SessionHandler( sm );
         sessionHandler.setServer( getJetty() );
         log.debug( "Mounting servlet at [%s]", mountPoint );
         ServletContextHandler jerseyContext = new ServletContextHandler();
