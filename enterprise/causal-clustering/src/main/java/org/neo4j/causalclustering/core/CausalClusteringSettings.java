@@ -424,6 +424,10 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<String> load_balancing_plugin =
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
 
+    @Description( "Time out for protocol negotiation handshake" )
+    public static final Setting<Duration> handshake_timeout =
+            setting( "causal_clustering.handshake_timeout", DURATION, "5000ms" );
+
     static BaseSetting<String> prefixSetting( final String name, final Function<String, String> parser,
                                               final String defaultValue )
     {

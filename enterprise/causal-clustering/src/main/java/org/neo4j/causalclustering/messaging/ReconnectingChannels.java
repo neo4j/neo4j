@@ -24,9 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
-public class NonBlockingChannels
+public class ReconnectingChannels
 {
-    private final ConcurrentHashMap<AdvertisedSocketAddress, NonBlockingChannel> lazyChannelMap =
+    private final ConcurrentHashMap<AdvertisedSocketAddress,ReconnectingChannel> lazyChannelMap =
             new ConcurrentHashMap<>();
 
     public int size()
@@ -34,17 +34,17 @@ public class NonBlockingChannels
         return lazyChannelMap.size();
     }
 
-    public NonBlockingChannel get( AdvertisedSocketAddress to )
+    public ReconnectingChannel get( AdvertisedSocketAddress to )
     {
         return lazyChannelMap.get( to );
     }
 
-    public NonBlockingChannel putIfAbsent( AdvertisedSocketAddress to, NonBlockingChannel timestampedLazyChannel )
+    public ReconnectingChannel putIfAbsent( AdvertisedSocketAddress to, ReconnectingChannel timestampedLazyChannel )
     {
         return lazyChannelMap.putIfAbsent( to, timestampedLazyChannel );
     }
 
-    public Collection<NonBlockingChannel> values()
+    public Collection<ReconnectingChannel> values()
     {
         return lazyChannelMap.values();
     }

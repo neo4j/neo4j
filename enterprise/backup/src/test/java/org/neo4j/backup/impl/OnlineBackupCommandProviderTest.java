@@ -21,8 +21,8 @@ package org.neo4j.backup.impl;
 
 import org.junit.Test;
 
-import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppender;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.kernel.configuration.Config;
 
@@ -42,8 +42,8 @@ public class OnlineBackupCommandProviderTest
 
         BackupSupportingClassesFactoryProvider provider = getProvidersByPriority().findFirst().get();
         BackupSupportingClassesFactory factory = provider.getFactory( backupModule );
-        assertEquals( NoOpPipelineHandlerAppender.class,
-                factory.createPipelineHandlerAppender( Config.defaults() ).getClass() );
+        assertEquals( VoidPipelineWrapperFactory.VOID_WRAPPER,
+                factory.createPipelineWrapper( Config.defaults() ) );
     }
 
     /**
@@ -57,7 +57,7 @@ public class OnlineBackupCommandProviderTest
             return new BackupSupportingClassesFactory( backupModule )
             {
                 @Override
-                protected PipelineHandlerAppender createPipelineHandlerAppender( Config config )
+                protected PipelineWrapper createPipelineWrapper( Config config )
                 {
                     throw new AssertionError( "This provider should never be loaded" );
                 }

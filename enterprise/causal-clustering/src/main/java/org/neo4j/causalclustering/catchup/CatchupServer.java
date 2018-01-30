@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -64,7 +65,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -95,7 +96,7 @@ public class CatchupServer extends LifecycleAdapter
     private final BooleanSupplier dataSourceAvailabilitySupplier;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final PipelineHandlerAppender pipelineAppender;
+    private final PipelineWrapper pipelineWrapper;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
@@ -112,7 +113,7 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
                           CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
                           FileSystemAbstraction fs, PageCache pageCache,
-                          StoreCopyCheckPointMutex storeCopyCheckPointMutex, PipelineHandlerAppender pipelineAppender )
+                          StoreCopyCheckPointMutex storeCopyCheckPointMutex, PipelineWrapper pipelineWrapper )
     {
         this.snapshotService = snapshotService;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
@@ -129,7 +130,7 @@ public class CatchupServer extends LifecycleAdapter
         this.checkPointerSupplier = checkPointerSupplier;
         this.fs = fs;
         this.pageCache = pageCache;
-        this.pipelineAppender = pipelineAppender;
+        this.pipelineWrapper = pipelineWrapper;
     }
 
     @Override
@@ -153,7 +154,10 @@ public class CatchupServer extends LifecycleAdapter
 
                         ChannelPipeline pipeline = ch.pipeline();
 
-                        pipelineAppender.addPipelineHandlerForServer( pipeline, ch );
+                        for ( ChannelHandler handler : pipelineWrapper.handlersFor( ch ) )
+                        {
+                            pipeline.addLast( handler );
+                        }
 
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );

@@ -39,10 +39,10 @@ public class IdleChannelReaperHandlerTest
     {
         // given
         AdvertisedSocketAddress address = new AdvertisedSocketAddress( "localhost", 1984 );
-        NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
-        nonBlockingChannels.putIfAbsent( address, mock( NonBlockingChannel.class) );
+        ReconnectingChannels channels = new ReconnectingChannels();
+        channels.putIfAbsent( address, mock( ReconnectingChannel.class) );
 
-        IdleChannelReaperHandler reaper = new IdleChannelReaperHandler( nonBlockingChannels );
+        IdleChannelReaperHandler reaper = new IdleChannelReaperHandler( channels );
 
         final InetSocketAddress socketAddress = address.socketAddress();
 
@@ -56,6 +56,6 @@ public class IdleChannelReaperHandlerTest
         reaper.userEventTriggered( context, IdleStateEvent.ALL_IDLE_STATE_EVENT );
 
         // then
-        assertNull( nonBlockingChannels.get( address ) );
+        assertNull( channels.get( address ) );
     }
 }

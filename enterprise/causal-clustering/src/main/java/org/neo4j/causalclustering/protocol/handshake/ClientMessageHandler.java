@@ -17,20 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.handlers;
+package org.neo4j.causalclustering.protocol.handshake;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelPipeline;
-
-public interface PipelineHandlerAppender
+public interface ClientMessageHandler
 {
-    default void addPipelineHandlerForServer( ChannelPipeline pipeline, Channel ch ) throws Exception
-    {
+    void handle( InitialMagicMessage magicMessage );
 
-    }
+    void handle( ApplicationProtocolResponse applicationProtocolResponse );
 
-    default void addPipelineHandlerForClient( ChannelPipeline pipeline, Channel ch ) throws Exception
-    {
+    void handle( ModifierProtocolResponse modifierProtocolResponse );
 
-    }
+    void handle( SwitchOverResponse switchOverResponse );
 }

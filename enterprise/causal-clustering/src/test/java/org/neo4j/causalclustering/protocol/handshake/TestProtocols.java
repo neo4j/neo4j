@@ -17,17 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.handlers;
+package org.neo4j.causalclustering.protocol.handshake;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.causalclustering.protocol.Protocol;
 
-public class NoOpPipelineHandlerAppenderFactory implements PipelineHandlerAppenderFactory
+public enum TestProtocols implements Protocol
 {
-    @Override
-    public PipelineHandlerAppender create( Config config, Dependencies dependencies, LogProvider logProvider )
+    RAFT_1( Identifier.RAFT, 1 ),
+    RAFT_2( Identifier.RAFT, 2 ),
+    RAFT_3( Identifier.RAFT, 3 ),
+    CATCHUP_1( Identifier.CATCHUP, 1 ),
+    CATCHUP_2( Identifier.CATCHUP, 2 ),
+    CATCHUP_3( Identifier.CATCHUP, 3 ),
+    CATCHUP_4( Identifier.CATCHUP, 4 );
+
+    private final int version;
+    private final Identifier identifier;
+
+    TestProtocols( Identifier identifier, int version )
     {
-        return new NoOpPipelineHandlerAppender( config, logProvider );
+        this.identifier = identifier;
+        this.version = version;
+    }
+
+    @Override
+    public String identifier()
+    {
+        return this.identifier.canonicalName();
+    }
+
+    @Override
+    public int version()
+    {
+        return version;
     }
 }

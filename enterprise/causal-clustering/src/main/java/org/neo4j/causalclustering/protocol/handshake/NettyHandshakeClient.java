@@ -17,14 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.handlers;
+package org.neo4j.causalclustering.protocol.handshake;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
-public class NoOpPipelineHandlerAppender implements PipelineHandlerAppender
+public class NettyHandshakeClient extends SimpleChannelInboundHandler<ClientMessage>
 {
-    public NoOpPipelineHandlerAppender( Config config, LogProvider logProvider )
+    private final HandshakeClient handler;
+
+    public NettyHandshakeClient( HandshakeClient handler )
     {
+        this.handler = handler;
+    }
+
+    @Override
+    protected void channelRead0( ChannelHandlerContext ctx, ClientMessage msg ) throws Exception
+    {
+        msg.dispatch( handler );
     }
 }

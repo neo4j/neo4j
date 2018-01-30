@@ -19,11 +19,38 @@
  */
 package org.neo4j.causalclustering.handlers;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+
+import java.util.Collections;
+import java.util.List;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 
-public interface PipelineHandlerAppenderFactory
+import static java.util.Collections.emptyList;
+
+public class VoidPipelineWrapperFactory implements DuplexPipelineWrapperFactory
 {
-    PipelineHandlerAppender create( Config config, Dependencies dependencies, LogProvider logProvider );
+    public static final PipelineWrapper VOID_WRAPPER = new PipelineWrapper()
+    {
+        @Override
+        public List<ChannelHandler> handlersFor( Channel channel ) throws Exception
+        {
+            return emptyList();
+        }
+    };
+
+    @Override
+    public PipelineWrapper forServer( Config config, Dependencies dependencies, LogProvider logProvider )
+    {
+        return VOID_WRAPPER;
+    }
+
+    @Override
+    public PipelineWrapper forClient( Config config, Dependencies dependencies, LogProvider logProvider )
+    {
+        return VOID_WRAPPER;
+    }
 }

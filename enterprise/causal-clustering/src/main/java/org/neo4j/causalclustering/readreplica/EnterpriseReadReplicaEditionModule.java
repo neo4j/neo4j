@@ -49,9 +49,9 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
-import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
+import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.com.storecopy.StoreUtil;
@@ -198,12 +198,13 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
         dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
 
-        PipelineHandlerAppenderFactory appenderFactory = appenderFactory();
-        PipelineHandlerAppender handlerAppender = appenderFactory.create( config, dependencies, logProvider );
+        DuplexPipelineWrapperFactory pipelineWrapperFactory = pipelineWrapperFactory();
+        PipelineWrapper serverPipelineWrapper = pipelineWrapperFactory.forServer( config, dependencies, logProvider );
+        PipelineWrapper clientPipelineWrapper = pipelineWrapperFactory.forClient( config, dependencies, logProvider );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient =
-                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, handlerAppender ) );
+                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, clientPipelineWrapper ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -276,7 +277,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                         platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                         null, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache,
-                        platformModule.storeCopyCheckPointMutex, handlerAppender );
+                        platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
 
         servicesToStopOnStoreCopy.add( catchupServer );
 
@@ -290,9 +291,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     {
     }
 
-    protected PipelineHandlerAppenderFactory appenderFactory()
+    protected DuplexPipelineWrapperFactory pipelineWrapperFactory()
     {
-        return new NoOpPipelineHandlerAppenderFactory();
+        return new VoidPipelineWrapperFactory();
     }
 
     static Predicate<String> fileWatcherFileNameFilter()
