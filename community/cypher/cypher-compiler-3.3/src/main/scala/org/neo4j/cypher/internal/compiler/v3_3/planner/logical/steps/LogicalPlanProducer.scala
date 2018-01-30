@@ -305,9 +305,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     Optional(inputPlan, ids)(solved)
   }
 
-  def planOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan)
-                       (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(right.solved.queryGraph))
+  def planOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint])
+                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(right.solved.queryGraph.addHints(hints)))
     OuterHashJoin(nodes, left, right)(solved)
   }
 

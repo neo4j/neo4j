@@ -28,23 +28,36 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
 
   override def apply(implicit context: LogicalPlanningContext): CandidateSelector = new CandidateSelector {
     override def apply[X](projector: (X) => LogicalPlan, input: Iterable[X]): Option[X] = {
+
+      def stringTo(level: Int, plan: LogicalPlan): String = {
+        def indent(level: Int, in: String): String = level match {
+          case 0 => in
+          case _ => "\n" + "  " * level + in
+        }
+
+        val cost = context.cost(plan, context.input)
+        val thisPlan = indent(level, s"${plan.getClass.getSimpleName} costs $cost cardinality ${plan.solved.estimatedCardinality}")
+        val l = plan.lhs.map(p => stringTo(level + 1, p)).getOrElse("")
+        val r = plan.rhs.map(p => stringTo(level + 1, p)).getOrElse("")
+        thisPlan + l + r
+      }
+
       val inputOrdering = new Ordering[X] {
         override def compare(x: X, y: X): Int = baseOrdering.compare(score(projector, x), score(projector, y))
       }
 
       if (VERBOSE) {
-        val costs = context.cost
         val sortedPlans = input.toIndexedSeq.sorted(inputOrdering).map(projector)
 
         if (sortedPlans.size > 1) {
           println("- Get best of:")
           for (plan <- sortedPlans) {
+            val planTextWithCosts = stringTo(0, plan).replaceAll(System.lineSeparator(), System.lineSeparator() + "\t\t")
             val planText = plan.toString.replaceAll(System.lineSeparator(), System.lineSeparator() + "\t\t")
             println("=-" * 10)
             println(s"* Plan #${plan.debugId}")
+            println(s"\t$planTextWithCosts")
             println(s"\t$planText")
-            println(s"\t\t${costs(plan, context.input)}")
-            println(s"\t\t${plan.solved.estimatedCardinality}")
             println(s"\t\tHints(${plan.solved.numHints})")
             println(s"\t\tlhs: ${plan.lhs}")
           }
@@ -54,8 +67,8 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
           println("- Best is:")
           println(s"Plan #${best.debugId}")
           println(s"\t${best.toString}")
-          println(s"\t\t${costs(best, context.input)}")
-          println(s"\t\t${best.solved.estimatedCardinality}")
+          val planTextWithCosts = stringTo(0, best)
+          println(s"\t$planTextWithCosts")
           println(s"\t\tHints(${best.solved.numHints})")
           println(s"\t\tlhs: ${best.lhs}")
           println("!¡" * 10)

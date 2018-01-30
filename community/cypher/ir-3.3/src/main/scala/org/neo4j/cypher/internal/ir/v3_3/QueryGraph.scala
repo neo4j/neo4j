@@ -259,8 +259,6 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   val allHints: Set[Hint] =
     if (optionalMatches.isEmpty) hints else hints ++ optionalMatches.flatMap(_.allHints)
 
-  def numHints: Int = allHints.size
-
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
       selections = selections ++ other.selections,
