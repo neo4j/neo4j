@@ -50,6 +50,7 @@ import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalDateTimeValue.optTime;
 import static org.neo4j.values.storable.TimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.TimeValue.parseOffset;
+import static org.neo4j.values.storable.TimeValue.validNano;
 
 public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeValue>
 {
@@ -216,15 +217,8 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                         (int) safeCastIntegral( "hour", hour, 0 ),
                         (int) safeCastIntegral( "minute", minute, 0 ),
                         (int) safeCastIntegral( "second", second, 0 ),
-                        nano( millisecond, microsecond, nanosecond ),
+                        validNano( millisecond, microsecond, nanosecond ),
                         timezone() );
-            }
-
-            private int nano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
-            {
-                return (int) safeCastIntegral( "millisecond", millisecond, 0 ) * 1000_000 +
-                        (int) safeCastIntegral( "microsecond", microsecond, 0 ) * 1000 +
-                        (int) safeCastIntegral( "nanosecond", nanosecond, 0 );
             }
 
             @Override

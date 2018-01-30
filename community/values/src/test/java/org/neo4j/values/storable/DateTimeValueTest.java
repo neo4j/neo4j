@@ -259,8 +259,8 @@ public class DateTimeValueTest
                 .add( "minute", 5 )
                 .add( "second", 5 )
                 .add( "millisecond", 1 )
-                .add( "nanosecond", 1 )
-                .assertThrows( IllegalArgumentException.class, "Cannot assign ..." );
+                .add( "nanosecond", 1000 )
+                .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000" );
     }
 
     @Test

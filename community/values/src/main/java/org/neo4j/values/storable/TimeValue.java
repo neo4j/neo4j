@@ -43,6 +43,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.DurationValue.SECONDS_PER_DAY;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalTimeValue.optInt;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
@@ -100,6 +101,26 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             Supplier<ZoneId> defaultZone )
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    static int validNano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
+    {
+        long ms = safeCastIntegral( "millisecond", millisecond, 0 );
+        long us = safeCastIntegral( "microsecond", microsecond, 0 );
+        long ns = safeCastIntegral( "nanosecond", nanosecond, 0 );
+        if ( ms < 0 || ms >= 1000 )
+        {
+            throw new IllegalArgumentException( "Invalid millisecond: " + ms );
+        }
+        if ( us < 0 || us >= (millisecond != null || nanosecond != null ? 1000 : 1000_000) )
+        {
+            throw new IllegalArgumentException( "Invalid microsecond: " + us );
+        }
+        if ( ns < 0 || ns >= ((millisecond != null || microsecond != null) ? 1000 : 1000_000_000) )
+        {
+            throw new IllegalArgumentException( "Invalid nanosecond: " + ns );
+        }
+        return (int) (ms * 1000_000 + us * 1000 + ns);
     }
 
     static StructureBuilder<AnyValue,TimeValue> builder( Supplier<ZoneId> defaultZone )
@@ -263,7 +284,8 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private static TimeValue parse( Matcher matcher, Supplier<ZoneId> defaultZone )
     {
-        return new TimeValue( OffsetTime.of( parseTime( matcher ), zoneOffset( parseOffset( matcher, defaultZone ) ) ) );
+        return new TimeValue( OffsetTime
+                .of( parseTime( matcher ), zoneOffset( parseOffset( matcher, defaultZone ) ) ) );
     }
 
     private static ZoneId parseOffset( Matcher matcher, Supplier<ZoneId> defaultZone )
