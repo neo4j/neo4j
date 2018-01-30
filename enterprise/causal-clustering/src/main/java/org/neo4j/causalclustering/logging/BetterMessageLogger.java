@@ -49,7 +49,7 @@ public class BetterMessageLogger<MEMBER> extends LifecycleAdapter implements Mes
 
     private final PrintWriter printWriter;
     private final Clock clock;
-    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern( "yyyy-MM-ddHH:mm:ss.SSSZ" );
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss.SSSZ" );
 
     public BetterMessageLogger( MEMBER myself, PrintWriter printWriter, Clock clock )
     {
